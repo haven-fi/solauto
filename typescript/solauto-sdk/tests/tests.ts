@@ -10,7 +10,11 @@ import {
   toWeb3JsKeypair,
   toWeb3JsLegacyTransaction,
 } from "@metaplex-foundation/umi-web3js-adapters";
-import { createSolautoProgram, solendOpenPosition } from "../generated";
+import {
+  createSolautoProgram,
+  deserializePosition,
+  solendOpenPosition,
+} from "../generated";
 import { generateRandomU8, getSecretKey } from "./testUtils";
 import {
   Connection,
@@ -40,7 +44,9 @@ async function simulateTransaction(transaction: Transaction) {
   const web3Transaction = toWeb3JsLegacyTransaction(transaction);
   web3Transaction.sign(toWeb3JsKeypair(signerKeypair));
 
-  const simulationResult = await connection.simulateTransaction(web3Transaction);
+  const simulationResult = await connection.simulateTransaction(
+    web3Transaction
+  );
   if (simulationResult.value.err) {
     console.log(simulationResult.value.logs);
   }
@@ -84,6 +90,12 @@ describe("Solauto tests", async () => {
   );
 
   it("should open position", async () => {
+    const settingParams = {
+      repayFromBps: 9800,
+      repayToBps: 9500,
+      boostFromBps: 4000,
+      boostToBps: 5000,
+    };
     const builder = solendOpenPosition(umi, {
       signer,
       solendProgram: publicKey(solendAccounts.solendProgram),
@@ -106,12 +118,7 @@ describe("Solauto tests", async () => {
         __option: "Some",
         value: {
           positionId,
-          settingParams: {
-            repayFromBps: 9800,
-            repayToBps: 9500,
-            boostFromBps: 4000,
-            boostToBps: 5000,
-          },
+          settingParams,
           solendData: {
             supplyReserve: publicKey(solendAccounts.solReserve.reserve),
             debtReserve: publicKey(solendAccounts.usdcReserve.reserve),
@@ -124,18 +131,14 @@ describe("Solauto tests", async () => {
     const transaction = await builder.buildWithLatestBlockhash(umi);
     await simulateTransaction(transaction);
 
-    // if (payForTransactions) {
-    //   await builder.sendAndConfirm(umi);
-    // }
+    if (payForTransactions) {
+      await builder.sendAndConfirm(umi);
+    }
 
-    // const accountInfo = await connection.getAccountInfo(solautoPosition);
-    // const accountData: PositionData = positionDataSchema.decode(
-    //   accountInfo.data
-    // );
-    // expect(accountData.settingParams).to.deep.equal(
-    //   openPositionArgs.settingParams
-    // );
-    // assert.equal(accountData.isLocked, false);
+    const account = await umi.rpc.getAccount(publicKey(solautoPosition));
+    assert(account.exists);
+    const position = deserializePosition(account);
+    expect(position.settingParams).to.deep.equal(settingParams);
   });
 
   // TODO refresh test
