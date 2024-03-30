@@ -17,7 +17,6 @@ use solend_sdk::{
     },
     state::{ LendingMarket, Obligation, Reserve },
 };
-use crate::types::shared::{ DeserializedAccount, Position, SolautoError };
 
 use crate::{
     constants::SOLEND_PROGRAM,
@@ -29,6 +28,7 @@ use crate::{
         },
         lending_protocol::*,
         obligation_position::*,
+        shared::{ DeserializedAccount, Position, SolautoError }
     },
     utils::{ ix_utils::*, solana_utils::* },
 };
@@ -67,7 +67,10 @@ pub struct SolendClient<'a> {
 }
 
 impl<'a> SolendClient<'a> {
-    pub fn init_new<'b>(ctx: &'b Context<'a, SolendOpenPositionAccounts>, solauto_position: &Option<DeserializedAccount<Position>>) -> ProgramResult {
+    pub fn init_new<'b>(
+        ctx: &'b Context<'a, SolendOpenPositionAccounts>,
+        solauto_position: &Option<DeserializedAccount<Position>>
+    ) -> ProgramResult {
         let obligation_owner = if !ctx.accounts.solauto_position.is_none() {
             ctx.accounts.solauto_position.unwrap()
         } else {

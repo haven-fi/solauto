@@ -29,27 +29,16 @@ import {
 // Accounts.
 export type SolendRefreshDataInstructionAccounts = {
   signer: Signer;
-  /** TODO */
   solendProgram: PublicKey | Pda;
-  /** TODO */
   clock: PublicKey | Pda;
-  /** TODO */
   supplyReserve: PublicKey | Pda;
-  /** TODO */
   supplyReservePythPriceOracle: PublicKey | Pda;
-  /** TODO */
   supplyReserveSwitchboardOracle: PublicKey | Pda;
-  /** TODO */
   debtReserve?: PublicKey | Pda;
-  /** TODO */
   debtReservePythPriceOracle?: PublicKey | Pda;
-  /** TODO */
   debtReserveSwitchboardOracle?: PublicKey | Pda;
-  /** TODO */
   lendingMarket: PublicKey | Pda;
-  /** TODO */
   obligation?: PublicKey | Pda;
-  /** TODO */
   solautoPosition?: PublicKey | Pda;
 };
 

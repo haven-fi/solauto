@@ -39,55 +39,30 @@ import {
 
 // Accounts.
 export type SolendProtocolInteractionInstructionAccounts = {
-  /** TODO */
   signer: Signer;
-  /** TODO */
   solendProgram: PublicKey | Pda;
-  /** TODO */
   systemProgram?: PublicKey | Pda;
-  /** TODO */
   tokenProgram?: PublicKey | Pda;
-  /** TODO */
   ataProgram?: PublicKey | Pda;
-  /** TODO */
   clock: PublicKey | Pda;
-  /** TODO */
   rent?: PublicKey | Pda;
-  /** TODO */
   lendingMarket: PublicKey | Pda;
-  /** TODO */
   obligation: PublicKey | Pda;
-  /** TODO */
   solautoPosition?: PublicKey | Pda;
-  /** TODO */
   solautoFeeReceiver: PublicKey | Pda;
-  /** TODO */
   supplyReserve?: PublicKey | Pda;
-  /** TODO */
   supplyReservePythPriceOracle?: PublicKey | Pda;
-  /** TODO */
   supplyReserveSwitchboardOracle?: PublicKey | Pda;
-  /** TODO */
   supplyLiquidityTokenMint?: PublicKey | Pda;
-  /** TODO */
   sourceSupplyLiquidity?: PublicKey | Pda;
-  /** TODO */
   reserveSupplyLiquidity?: PublicKey | Pda;
-  /** TODO */
   supplyCollateralTokenMint?: PublicKey | Pda;
-  /** TODO */
   sourceSupplyCollateral?: PublicKey | Pda;
-  /** TODO */
   reserveSupplyCollateral?: PublicKey | Pda;
-  /** TODO */
   debtReserve?: PublicKey | Pda;
-  /** TODO */
   debtReserveFeeReceiver?: PublicKey | Pda;
-  /** TODO */
   debtLiquidityTokenMint?: PublicKey | Pda;
-  /** TODO */
   sourceDebtLiquidity?: PublicKey | Pda;
-  /** TODO */
   reserveDebtLiquidity?: PublicKey | Pda;
 };
 

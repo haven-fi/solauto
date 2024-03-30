@@ -11,27 +11,27 @@ use borsh::BorshSerialize;
 /// Accounts.
 pub struct SolendRefreshData {
     pub signer: solana_program::pubkey::Pubkey,
-    /// TODO
+
     pub solend_program: solana_program::pubkey::Pubkey,
-    /// TODO
+
     pub clock: solana_program::pubkey::Pubkey,
-    /// TODO
+
     pub supply_reserve: solana_program::pubkey::Pubkey,
-    /// TODO
+
     pub supply_reserve_pyth_price_oracle: solana_program::pubkey::Pubkey,
-    /// TODO
+
     pub supply_reserve_switchboard_oracle: solana_program::pubkey::Pubkey,
-    /// TODO
+
     pub debt_reserve: Option<solana_program::pubkey::Pubkey>,
-    /// TODO
+
     pub debt_reserve_pyth_price_oracle: Option<solana_program::pubkey::Pubkey>,
-    /// TODO
+
     pub debt_reserve_switchboard_oracle: Option<solana_program::pubkey::Pubkey>,
-    /// TODO
+
     pub lending_market: solana_program::pubkey::Pubkey,
-    /// TODO
+
     pub obligation: Option<solana_program::pubkey::Pubkey>,
-    /// TODO
+
     pub solauto_position: Option<solana_program::pubkey::Pubkey>,
 }
 
@@ -192,25 +192,21 @@ impl SolendRefreshDataBuilder {
         self.signer = Some(signer);
         self
     }
-    /// TODO
     #[inline(always)]
     pub fn solend_program(&mut self, solend_program: solana_program::pubkey::Pubkey) -> &mut Self {
         self.solend_program = Some(solend_program);
         self
     }
-    /// TODO
     #[inline(always)]
     pub fn clock(&mut self, clock: solana_program::pubkey::Pubkey) -> &mut Self {
         self.clock = Some(clock);
         self
     }
-    /// TODO
     #[inline(always)]
     pub fn supply_reserve(&mut self, supply_reserve: solana_program::pubkey::Pubkey) -> &mut Self {
         self.supply_reserve = Some(supply_reserve);
         self
     }
-    /// TODO
     #[inline(always)]
     pub fn supply_reserve_pyth_price_oracle(
         &mut self,
@@ -219,7 +215,6 @@ impl SolendRefreshDataBuilder {
         self.supply_reserve_pyth_price_oracle = Some(supply_reserve_pyth_price_oracle);
         self
     }
-    /// TODO
     #[inline(always)]
     pub fn supply_reserve_switchboard_oracle(
         &mut self,
@@ -229,7 +224,6 @@ impl SolendRefreshDataBuilder {
         self
     }
     /// `[optional account]`
-    /// TODO
     #[inline(always)]
     pub fn debt_reserve(
         &mut self,
@@ -239,7 +233,6 @@ impl SolendRefreshDataBuilder {
         self
     }
     /// `[optional account]`
-    /// TODO
     #[inline(always)]
     pub fn debt_reserve_pyth_price_oracle(
         &mut self,
@@ -249,7 +242,6 @@ impl SolendRefreshDataBuilder {
         self
     }
     /// `[optional account]`
-    /// TODO
     #[inline(always)]
     pub fn debt_reserve_switchboard_oracle(
         &mut self,
@@ -258,21 +250,18 @@ impl SolendRefreshDataBuilder {
         self.debt_reserve_switchboard_oracle = debt_reserve_switchboard_oracle;
         self
     }
-    /// TODO
     #[inline(always)]
     pub fn lending_market(&mut self, lending_market: solana_program::pubkey::Pubkey) -> &mut Self {
         self.lending_market = Some(lending_market);
         self
     }
     /// `[optional account]`
-    /// TODO
     #[inline(always)]
     pub fn obligation(&mut self, obligation: Option<solana_program::pubkey::Pubkey>) -> &mut Self {
         self.obligation = obligation;
         self
     }
     /// `[optional account]`
-    /// TODO
     #[inline(always)]
     pub fn solauto_position(
         &mut self,
@@ -327,27 +316,27 @@ impl SolendRefreshDataBuilder {
 /// `solend_refresh_data` CPI accounts.
 pub struct SolendRefreshDataCpiAccounts<'a, 'b> {
     pub signer: &'b solana_program::account_info::AccountInfo<'a>,
-    /// TODO
+
     pub solend_program: &'b solana_program::account_info::AccountInfo<'a>,
-    /// TODO
+
     pub clock: &'b solana_program::account_info::AccountInfo<'a>,
-    /// TODO
+
     pub supply_reserve: &'b solana_program::account_info::AccountInfo<'a>,
-    /// TODO
+
     pub supply_reserve_pyth_price_oracle: &'b solana_program::account_info::AccountInfo<'a>,
-    /// TODO
+
     pub supply_reserve_switchboard_oracle: &'b solana_program::account_info::AccountInfo<'a>,
-    /// TODO
+
     pub debt_reserve: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    /// TODO
+
     pub debt_reserve_pyth_price_oracle: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    /// TODO
+
     pub debt_reserve_switchboard_oracle: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    /// TODO
+
     pub lending_market: &'b solana_program::account_info::AccountInfo<'a>,
-    /// TODO
+
     pub obligation: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    /// TODO
+
     pub solauto_position: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 }
 
@@ -357,27 +346,27 @@ pub struct SolendRefreshDataCpi<'a, 'b> {
     pub __program: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub signer: &'b solana_program::account_info::AccountInfo<'a>,
-    /// TODO
+
     pub solend_program: &'b solana_program::account_info::AccountInfo<'a>,
-    /// TODO
+
     pub clock: &'b solana_program::account_info::AccountInfo<'a>,
-    /// TODO
+
     pub supply_reserve: &'b solana_program::account_info::AccountInfo<'a>,
-    /// TODO
+
     pub supply_reserve_pyth_price_oracle: &'b solana_program::account_info::AccountInfo<'a>,
-    /// TODO
+
     pub supply_reserve_switchboard_oracle: &'b solana_program::account_info::AccountInfo<'a>,
-    /// TODO
+
     pub debt_reserve: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    /// TODO
+
     pub debt_reserve_pyth_price_oracle: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    /// TODO
+
     pub debt_reserve_switchboard_oracle: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    /// TODO
+
     pub lending_market: &'b solana_program::account_info::AccountInfo<'a>,
-    /// TODO
+
     pub obligation: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    /// TODO
+
     pub solauto_position: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 }
 
@@ -619,7 +608,6 @@ impl<'a, 'b> SolendRefreshDataCpiBuilder<'a, 'b> {
         self.instruction.signer = Some(signer);
         self
     }
-    /// TODO
     #[inline(always)]
     pub fn solend_program(
         &mut self,
@@ -628,13 +616,11 @@ impl<'a, 'b> SolendRefreshDataCpiBuilder<'a, 'b> {
         self.instruction.solend_program = Some(solend_program);
         self
     }
-    /// TODO
     #[inline(always)]
     pub fn clock(&mut self, clock: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
         self.instruction.clock = Some(clock);
         self
     }
-    /// TODO
     #[inline(always)]
     pub fn supply_reserve(
         &mut self,
@@ -643,7 +629,6 @@ impl<'a, 'b> SolendRefreshDataCpiBuilder<'a, 'b> {
         self.instruction.supply_reserve = Some(supply_reserve);
         self
     }
-    /// TODO
     #[inline(always)]
     pub fn supply_reserve_pyth_price_oracle(
         &mut self,
@@ -652,7 +637,6 @@ impl<'a, 'b> SolendRefreshDataCpiBuilder<'a, 'b> {
         self.instruction.supply_reserve_pyth_price_oracle = Some(supply_reserve_pyth_price_oracle);
         self
     }
-    /// TODO
     #[inline(always)]
     pub fn supply_reserve_switchboard_oracle(
         &mut self,
@@ -663,7 +647,6 @@ impl<'a, 'b> SolendRefreshDataCpiBuilder<'a, 'b> {
         self
     }
     /// `[optional account]`
-    /// TODO
     #[inline(always)]
     pub fn debt_reserve(
         &mut self,
@@ -673,7 +656,6 @@ impl<'a, 'b> SolendRefreshDataCpiBuilder<'a, 'b> {
         self
     }
     /// `[optional account]`
-    /// TODO
     #[inline(always)]
     pub fn debt_reserve_pyth_price_oracle(
         &mut self,
@@ -683,7 +665,6 @@ impl<'a, 'b> SolendRefreshDataCpiBuilder<'a, 'b> {
         self
     }
     /// `[optional account]`
-    /// TODO
     #[inline(always)]
     pub fn debt_reserve_switchboard_oracle(
         &mut self,
@@ -692,7 +673,6 @@ impl<'a, 'b> SolendRefreshDataCpiBuilder<'a, 'b> {
         self.instruction.debt_reserve_switchboard_oracle = debt_reserve_switchboard_oracle;
         self
     }
-    /// TODO
     #[inline(always)]
     pub fn lending_market(
         &mut self,
@@ -702,7 +682,6 @@ impl<'a, 'b> SolendRefreshDataCpiBuilder<'a, 'b> {
         self
     }
     /// `[optional account]`
-    /// TODO
     #[inline(always)]
     pub fn obligation(
         &mut self,
@@ -712,7 +691,6 @@ impl<'a, 'b> SolendRefreshDataCpiBuilder<'a, 'b> {
         self
     }
     /// `[optional account]`
-    /// TODO
     #[inline(always)]
     pub fn solauto_position(
         &mut self,

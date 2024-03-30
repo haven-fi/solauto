@@ -37,31 +37,18 @@ import {
 
 // Accounts.
 export type SolendOpenPositionInstructionAccounts = {
-  /** TODO */
   signer: Signer;
-  /** TODO */
   solendProgram: PublicKey | Pda;
-  /** TODO */
   systemProgram?: PublicKey | Pda;
-  /** TODO */
   tokenProgram?: PublicKey | Pda;
-  /** TODO */
   ataProgram?: PublicKey | Pda;
-  /** TODO */
   rent?: PublicKey | Pda;
-  /** TODO */
   lendingMarket: PublicKey | Pda;
-  /** TODO */
   obligation: PublicKey | Pda;
-  /** TODO */
   solautoPosition?: PublicKey | Pda;
-  /** TODO */
   supplyCollateralTokenAccount: PublicKey | Pda;
-  /** TODO */
   supplyCollateralTokenMint: PublicKey | Pda;
-  /** TODO */
   debtLiquidityTokenAccount: PublicKey | Pda;
-  /** TODO */
   debtLiquidityTokenMint: PublicKey | Pda;
 };
 

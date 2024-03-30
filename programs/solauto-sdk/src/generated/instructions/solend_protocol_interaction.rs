@@ -11,55 +11,54 @@ use borsh::BorshSerialize;
 
 /// Accounts.
 pub struct SolendProtocolInteraction {
-    /// TODO
     pub signer: solana_program::pubkey::Pubkey,
-    /// TODO
+
     pub solend_program: solana_program::pubkey::Pubkey,
-    /// TODO
+
     pub system_program: solana_program::pubkey::Pubkey,
-    /// TODO
+
     pub token_program: solana_program::pubkey::Pubkey,
-    /// TODO
+
     pub ata_program: solana_program::pubkey::Pubkey,
-    /// TODO
+
     pub clock: solana_program::pubkey::Pubkey,
-    /// TODO
+
     pub rent: solana_program::pubkey::Pubkey,
-    /// TODO
+
     pub lending_market: solana_program::pubkey::Pubkey,
-    /// TODO
+
     pub obligation: solana_program::pubkey::Pubkey,
-    /// TODO
+
     pub solauto_position: Option<solana_program::pubkey::Pubkey>,
-    /// TODO
+
     pub solauto_fee_receiver: solana_program::pubkey::Pubkey,
-    /// TODO
+
     pub supply_reserve: Option<solana_program::pubkey::Pubkey>,
-    /// TODO
+
     pub supply_reserve_pyth_price_oracle: Option<solana_program::pubkey::Pubkey>,
-    /// TODO
+
     pub supply_reserve_switchboard_oracle: Option<solana_program::pubkey::Pubkey>,
-    /// TODO
+
     pub supply_liquidity_token_mint: Option<solana_program::pubkey::Pubkey>,
-    /// TODO
+
     pub source_supply_liquidity: Option<solana_program::pubkey::Pubkey>,
-    /// TODO
+
     pub reserve_supply_liquidity: Option<solana_program::pubkey::Pubkey>,
-    /// TODO
+
     pub supply_collateral_token_mint: Option<solana_program::pubkey::Pubkey>,
-    /// TODO
+
     pub source_supply_collateral: Option<solana_program::pubkey::Pubkey>,
-    /// TODO
+
     pub reserve_supply_collateral: Option<solana_program::pubkey::Pubkey>,
-    /// TODO
+
     pub debt_reserve: Option<solana_program::pubkey::Pubkey>,
-    /// TODO
+
     pub debt_reserve_fee_receiver: Option<solana_program::pubkey::Pubkey>,
-    /// TODO
+
     pub debt_liquidity_token_mint: Option<solana_program::pubkey::Pubkey>,
-    /// TODO
+
     pub source_debt_liquidity: Option<solana_program::pubkey::Pubkey>,
-    /// TODO
+
     pub reserve_debt_liquidity: Option<solana_program::pubkey::Pubkey>,
 }
 
@@ -380,66 +379,56 @@ impl SolendProtocolInteractionBuilder {
     pub fn new() -> Self {
         Self::default()
     }
-    /// TODO
     #[inline(always)]
     pub fn signer(&mut self, signer: solana_program::pubkey::Pubkey) -> &mut Self {
         self.signer = Some(signer);
         self
     }
-    /// TODO
     #[inline(always)]
     pub fn solend_program(&mut self, solend_program: solana_program::pubkey::Pubkey) -> &mut Self {
         self.solend_program = Some(solend_program);
         self
     }
     /// `[optional account, default to '11111111111111111111111111111111']`
-    /// TODO
     #[inline(always)]
     pub fn system_program(&mut self, system_program: solana_program::pubkey::Pubkey) -> &mut Self {
         self.system_program = Some(system_program);
         self
     }
     /// `[optional account, default to 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA']`
-    /// TODO
     #[inline(always)]
     pub fn token_program(&mut self, token_program: solana_program::pubkey::Pubkey) -> &mut Self {
         self.token_program = Some(token_program);
         self
     }
     /// `[optional account, default to 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL']`
-    /// TODO
     #[inline(always)]
     pub fn ata_program(&mut self, ata_program: solana_program::pubkey::Pubkey) -> &mut Self {
         self.ata_program = Some(ata_program);
         self
     }
-    /// TODO
     #[inline(always)]
     pub fn clock(&mut self, clock: solana_program::pubkey::Pubkey) -> &mut Self {
         self.clock = Some(clock);
         self
     }
     /// `[optional account, default to 'SysvarRent111111111111111111111111111111111']`
-    /// TODO
     #[inline(always)]
     pub fn rent(&mut self, rent: solana_program::pubkey::Pubkey) -> &mut Self {
         self.rent = Some(rent);
         self
     }
-    /// TODO
     #[inline(always)]
     pub fn lending_market(&mut self, lending_market: solana_program::pubkey::Pubkey) -> &mut Self {
         self.lending_market = Some(lending_market);
         self
     }
-    /// TODO
     #[inline(always)]
     pub fn obligation(&mut self, obligation: solana_program::pubkey::Pubkey) -> &mut Self {
         self.obligation = Some(obligation);
         self
     }
     /// `[optional account]`
-    /// TODO
     #[inline(always)]
     pub fn solauto_position(
         &mut self,
@@ -448,7 +437,6 @@ impl SolendProtocolInteractionBuilder {
         self.solauto_position = solauto_position;
         self
     }
-    /// TODO
     #[inline(always)]
     pub fn solauto_fee_receiver(
         &mut self,
@@ -458,7 +446,6 @@ impl SolendProtocolInteractionBuilder {
         self
     }
     /// `[optional account]`
-    /// TODO
     #[inline(always)]
     pub fn supply_reserve(
         &mut self,
@@ -468,7 +455,6 @@ impl SolendProtocolInteractionBuilder {
         self
     }
     /// `[optional account]`
-    /// TODO
     #[inline(always)]
     pub fn supply_reserve_pyth_price_oracle(
         &mut self,
@@ -478,7 +464,6 @@ impl SolendProtocolInteractionBuilder {
         self
     }
     /// `[optional account]`
-    /// TODO
     #[inline(always)]
     pub fn supply_reserve_switchboard_oracle(
         &mut self,
@@ -488,7 +473,6 @@ impl SolendProtocolInteractionBuilder {
         self
     }
     /// `[optional account]`
-    /// TODO
     #[inline(always)]
     pub fn supply_liquidity_token_mint(
         &mut self,
@@ -498,7 +482,6 @@ impl SolendProtocolInteractionBuilder {
         self
     }
     /// `[optional account]`
-    /// TODO
     #[inline(always)]
     pub fn source_supply_liquidity(
         &mut self,
@@ -508,7 +491,6 @@ impl SolendProtocolInteractionBuilder {
         self
     }
     /// `[optional account]`
-    /// TODO
     #[inline(always)]
     pub fn reserve_supply_liquidity(
         &mut self,
@@ -518,7 +500,6 @@ impl SolendProtocolInteractionBuilder {
         self
     }
     /// `[optional account]`
-    /// TODO
     #[inline(always)]
     pub fn supply_collateral_token_mint(
         &mut self,
@@ -528,7 +509,6 @@ impl SolendProtocolInteractionBuilder {
         self
     }
     /// `[optional account]`
-    /// TODO
     #[inline(always)]
     pub fn source_supply_collateral(
         &mut self,
@@ -538,7 +518,6 @@ impl SolendProtocolInteractionBuilder {
         self
     }
     /// `[optional account]`
-    /// TODO
     #[inline(always)]
     pub fn reserve_supply_collateral(
         &mut self,
@@ -548,7 +527,6 @@ impl SolendProtocolInteractionBuilder {
         self
     }
     /// `[optional account]`
-    /// TODO
     #[inline(always)]
     pub fn debt_reserve(
         &mut self,
@@ -558,7 +536,6 @@ impl SolendProtocolInteractionBuilder {
         self
     }
     /// `[optional account]`
-    /// TODO
     #[inline(always)]
     pub fn debt_reserve_fee_receiver(
         &mut self,
@@ -568,7 +545,6 @@ impl SolendProtocolInteractionBuilder {
         self
     }
     /// `[optional account]`
-    /// TODO
     #[inline(always)]
     pub fn debt_liquidity_token_mint(
         &mut self,
@@ -578,7 +554,6 @@ impl SolendProtocolInteractionBuilder {
         self
     }
     /// `[optional account]`
-    /// TODO
     #[inline(always)]
     pub fn source_debt_liquidity(
         &mut self,
@@ -588,7 +563,6 @@ impl SolendProtocolInteractionBuilder {
         self
     }
     /// `[optional account]`
-    /// TODO
     #[inline(always)]
     pub fn reserve_debt_liquidity(
         &mut self,
@@ -688,56 +662,55 @@ impl SolendProtocolInteractionBuilder {
 
 /// `solend_protocol_interaction` CPI accounts.
 pub struct SolendProtocolInteractionCpiAccounts<'a, 'b> {
-    /// TODO
     pub signer: &'b solana_program::account_info::AccountInfo<'a>,
-    /// TODO
+
     pub solend_program: &'b solana_program::account_info::AccountInfo<'a>,
-    /// TODO
+
     pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
-    /// TODO
+
     pub token_program: &'b solana_program::account_info::AccountInfo<'a>,
-    /// TODO
+
     pub ata_program: &'b solana_program::account_info::AccountInfo<'a>,
-    /// TODO
+
     pub clock: &'b solana_program::account_info::AccountInfo<'a>,
-    /// TODO
+
     pub rent: &'b solana_program::account_info::AccountInfo<'a>,
-    /// TODO
+
     pub lending_market: &'b solana_program::account_info::AccountInfo<'a>,
-    /// TODO
+
     pub obligation: &'b solana_program::account_info::AccountInfo<'a>,
-    /// TODO
+
     pub solauto_position: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    /// TODO
+
     pub solauto_fee_receiver: &'b solana_program::account_info::AccountInfo<'a>,
-    /// TODO
+
     pub supply_reserve: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    /// TODO
+
     pub supply_reserve_pyth_price_oracle: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    /// TODO
+
     pub supply_reserve_switchboard_oracle:
         Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    /// TODO
+
     pub supply_liquidity_token_mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    /// TODO
+
     pub source_supply_liquidity: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    /// TODO
+
     pub reserve_supply_liquidity: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    /// TODO
+
     pub supply_collateral_token_mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    /// TODO
+
     pub source_supply_collateral: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    /// TODO
+
     pub reserve_supply_collateral: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    /// TODO
+
     pub debt_reserve: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    /// TODO
+
     pub debt_reserve_fee_receiver: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    /// TODO
+
     pub debt_liquidity_token_mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    /// TODO
+
     pub source_debt_liquidity: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    /// TODO
+
     pub reserve_debt_liquidity: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 }
 
@@ -745,56 +718,56 @@ pub struct SolendProtocolInteractionCpiAccounts<'a, 'b> {
 pub struct SolendProtocolInteractionCpi<'a, 'b> {
     /// The program to invoke.
     pub __program: &'b solana_program::account_info::AccountInfo<'a>,
-    /// TODO
+
     pub signer: &'b solana_program::account_info::AccountInfo<'a>,
-    /// TODO
+
     pub solend_program: &'b solana_program::account_info::AccountInfo<'a>,
-    /// TODO
+
     pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
-    /// TODO
+
     pub token_program: &'b solana_program::account_info::AccountInfo<'a>,
-    /// TODO
+
     pub ata_program: &'b solana_program::account_info::AccountInfo<'a>,
-    /// TODO
+
     pub clock: &'b solana_program::account_info::AccountInfo<'a>,
-    /// TODO
+
     pub rent: &'b solana_program::account_info::AccountInfo<'a>,
-    /// TODO
+
     pub lending_market: &'b solana_program::account_info::AccountInfo<'a>,
-    /// TODO
+
     pub obligation: &'b solana_program::account_info::AccountInfo<'a>,
-    /// TODO
+
     pub solauto_position: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    /// TODO
+
     pub solauto_fee_receiver: &'b solana_program::account_info::AccountInfo<'a>,
-    /// TODO
+
     pub supply_reserve: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    /// TODO
+
     pub supply_reserve_pyth_price_oracle: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    /// TODO
+
     pub supply_reserve_switchboard_oracle:
         Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    /// TODO
+
     pub supply_liquidity_token_mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    /// TODO
+
     pub source_supply_liquidity: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    /// TODO
+
     pub reserve_supply_liquidity: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    /// TODO
+
     pub supply_collateral_token_mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    /// TODO
+
     pub source_supply_collateral: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    /// TODO
+
     pub reserve_supply_collateral: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    /// TODO
+
     pub debt_reserve: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    /// TODO
+
     pub debt_reserve_fee_receiver: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    /// TODO
+
     pub debt_liquidity_token_mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    /// TODO
+
     pub source_debt_liquidity: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    /// TODO
+
     pub reserve_debt_liquidity: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The arguments for the instruction.
     pub __args: SolendProtocolInteractionInstructionArgs,
@@ -1231,7 +1204,6 @@ impl<'a, 'b> SolendProtocolInteractionCpiBuilder<'a, 'b> {
         });
         Self { instruction }
     }
-    /// TODO
     #[inline(always)]
     pub fn signer(
         &mut self,
@@ -1240,7 +1212,6 @@ impl<'a, 'b> SolendProtocolInteractionCpiBuilder<'a, 'b> {
         self.instruction.signer = Some(signer);
         self
     }
-    /// TODO
     #[inline(always)]
     pub fn solend_program(
         &mut self,
@@ -1249,7 +1220,6 @@ impl<'a, 'b> SolendProtocolInteractionCpiBuilder<'a, 'b> {
         self.instruction.solend_program = Some(solend_program);
         self
     }
-    /// TODO
     #[inline(always)]
     pub fn system_program(
         &mut self,
@@ -1258,7 +1228,6 @@ impl<'a, 'b> SolendProtocolInteractionCpiBuilder<'a, 'b> {
         self.instruction.system_program = Some(system_program);
         self
     }
-    /// TODO
     #[inline(always)]
     pub fn token_program(
         &mut self,
@@ -1267,7 +1236,6 @@ impl<'a, 'b> SolendProtocolInteractionCpiBuilder<'a, 'b> {
         self.instruction.token_program = Some(token_program);
         self
     }
-    /// TODO
     #[inline(always)]
     pub fn ata_program(
         &mut self,
@@ -1276,19 +1244,16 @@ impl<'a, 'b> SolendProtocolInteractionCpiBuilder<'a, 'b> {
         self.instruction.ata_program = Some(ata_program);
         self
     }
-    /// TODO
     #[inline(always)]
     pub fn clock(&mut self, clock: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
         self.instruction.clock = Some(clock);
         self
     }
-    /// TODO
     #[inline(always)]
     pub fn rent(&mut self, rent: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
         self.instruction.rent = Some(rent);
         self
     }
-    /// TODO
     #[inline(always)]
     pub fn lending_market(
         &mut self,
@@ -1297,7 +1262,6 @@ impl<'a, 'b> SolendProtocolInteractionCpiBuilder<'a, 'b> {
         self.instruction.lending_market = Some(lending_market);
         self
     }
-    /// TODO
     #[inline(always)]
     pub fn obligation(
         &mut self,
@@ -1307,7 +1271,6 @@ impl<'a, 'b> SolendProtocolInteractionCpiBuilder<'a, 'b> {
         self
     }
     /// `[optional account]`
-    /// TODO
     #[inline(always)]
     pub fn solauto_position(
         &mut self,
@@ -1316,7 +1279,6 @@ impl<'a, 'b> SolendProtocolInteractionCpiBuilder<'a, 'b> {
         self.instruction.solauto_position = solauto_position;
         self
     }
-    /// TODO
     #[inline(always)]
     pub fn solauto_fee_receiver(
         &mut self,
@@ -1326,7 +1288,6 @@ impl<'a, 'b> SolendProtocolInteractionCpiBuilder<'a, 'b> {
         self
     }
     /// `[optional account]`
-    /// TODO
     #[inline(always)]
     pub fn supply_reserve(
         &mut self,
@@ -1336,7 +1297,6 @@ impl<'a, 'b> SolendProtocolInteractionCpiBuilder<'a, 'b> {
         self
     }
     /// `[optional account]`
-    /// TODO
     #[inline(always)]
     pub fn supply_reserve_pyth_price_oracle(
         &mut self,
@@ -1346,7 +1306,6 @@ impl<'a, 'b> SolendProtocolInteractionCpiBuilder<'a, 'b> {
         self
     }
     /// `[optional account]`
-    /// TODO
     #[inline(always)]
     pub fn supply_reserve_switchboard_oracle(
         &mut self,
@@ -1358,7 +1317,6 @@ impl<'a, 'b> SolendProtocolInteractionCpiBuilder<'a, 'b> {
         self
     }
     /// `[optional account]`
-    /// TODO
     #[inline(always)]
     pub fn supply_liquidity_token_mint(
         &mut self,
@@ -1368,7 +1326,6 @@ impl<'a, 'b> SolendProtocolInteractionCpiBuilder<'a, 'b> {
         self
     }
     /// `[optional account]`
-    /// TODO
     #[inline(always)]
     pub fn source_supply_liquidity(
         &mut self,
@@ -1378,7 +1335,6 @@ impl<'a, 'b> SolendProtocolInteractionCpiBuilder<'a, 'b> {
         self
     }
     /// `[optional account]`
-    /// TODO
     #[inline(always)]
     pub fn reserve_supply_liquidity(
         &mut self,
@@ -1388,7 +1344,6 @@ impl<'a, 'b> SolendProtocolInteractionCpiBuilder<'a, 'b> {
         self
     }
     /// `[optional account]`
-    /// TODO
     #[inline(always)]
     pub fn supply_collateral_token_mint(
         &mut self,
@@ -1398,7 +1353,6 @@ impl<'a, 'b> SolendProtocolInteractionCpiBuilder<'a, 'b> {
         self
     }
     /// `[optional account]`
-    /// TODO
     #[inline(always)]
     pub fn source_supply_collateral(
         &mut self,
@@ -1408,7 +1362,6 @@ impl<'a, 'b> SolendProtocolInteractionCpiBuilder<'a, 'b> {
         self
     }
     /// `[optional account]`
-    /// TODO
     #[inline(always)]
     pub fn reserve_supply_collateral(
         &mut self,
@@ -1418,7 +1371,6 @@ impl<'a, 'b> SolendProtocolInteractionCpiBuilder<'a, 'b> {
         self
     }
     /// `[optional account]`
-    /// TODO
     #[inline(always)]
     pub fn debt_reserve(
         &mut self,
@@ -1428,7 +1380,6 @@ impl<'a, 'b> SolendProtocolInteractionCpiBuilder<'a, 'b> {
         self
     }
     /// `[optional account]`
-    /// TODO
     #[inline(always)]
     pub fn debt_reserve_fee_receiver(
         &mut self,
@@ -1438,7 +1389,6 @@ impl<'a, 'b> SolendProtocolInteractionCpiBuilder<'a, 'b> {
         self
     }
     /// `[optional account]`
-    /// TODO
     #[inline(always)]
     pub fn debt_liquidity_token_mint(
         &mut self,
@@ -1448,7 +1398,6 @@ impl<'a, 'b> SolendProtocolInteractionCpiBuilder<'a, 'b> {
         self
     }
     /// `[optional account]`
-    /// TODO
     #[inline(always)]
     pub fn source_debt_liquidity(
         &mut self,
@@ -1458,7 +1407,6 @@ impl<'a, 'b> SolendProtocolInteractionCpiBuilder<'a, 'b> {
         self
     }
     /// `[optional account]`
-    /// TODO
     #[inline(always)]
     pub fn reserve_debt_liquidity(
         &mut self,
