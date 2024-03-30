@@ -1,0 +1,25 @@
+{
+  "scripts": {
+    "test": "cd typescript/solauto-sdk && pnpm test",
+    "format:rust": "find ./programs/solauto-sdk -name '*.rs' -exec rustfmt {} +",
+    "generate": "cargo build-sbf && pnpm generate:idl && pnpm generate:clients",
+    "generate:idl": "shank idl --crate-root programs/solauto --out-dir idl --out-filename idl.json",
+    "generate:clients": "node ./generateClients.cjs && pnpm format:rust"
+  },
+  "dependencies": {
+    "@coral-xyz/borsh": "^0.29.0",
+    "@metaplex-foundation/kinobi": "^0.18.2",
+    "@solana/spl-token": "^0.4.0",
+    "@solana/web3.js": "^1.91.2"
+  },
+  "devDependencies": {
+    "@types/bn.js": "^5.1.0",
+    "@types/chai": "^4.3.0",
+    "@types/mocha": "^9.1.1",
+    "chai": "^4.3.4",
+    "mocha": "^9.2.2",
+    "prettier": "^2.6.2",
+    "ts-mocha": "^10.0.0",
+    "typescript": "^4.3.5"
+  }
+}
