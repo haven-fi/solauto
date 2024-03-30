@@ -33,12 +33,11 @@ import {
 import { assert, expect } from "chai";
 
 const connection = new Connection(clusterApiUrl("mainnet-beta"), "confirmed");
-const umi = createUmi(connection);
+let umi = createUmi(connection);
 const secretKey = getSecretKey();
 const signerKeypair = umi.eddsa.createKeypairFromSecretKey(secretKey);
 const signer = createSignerFromKeypair(umi, signerKeypair);
 const signerPublicKey = Keypair.fromSecretKey(secretKey).publicKey;
-umi.use(signerIdentity(signer));
 
 async function simulateTransaction(transaction: Transaction) {
   const web3Transaction = toWeb3JsLegacyTransaction(transaction);
@@ -60,9 +59,9 @@ export const solauto = (): UmiPlugin => ({
 });
 
 describe("Solauto tests", async () => {
-  umi.use(solauto());
+  umi = umi.use(solauto()).use(signerIdentity(signer));
 
-  const reuseAccounts = true;
+  const reuseAccounts = false;
   const payForTransactions = false;
 
   const solendAccounts = getSolendAccounts("main");
@@ -89,6 +88,7 @@ describe("Solauto tests", async () => {
     solautoManaged
   );
 
+  console.log(solautoPosition);
   it("should open position", async () => {
     const settingParams = {
       repayFromBps: 9800,

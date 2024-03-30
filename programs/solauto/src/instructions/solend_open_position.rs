@@ -50,5 +50,5 @@ pub fn solend_open_position(
         Obligation::LEN
     )?;
 
-    SolendClient::init_new(&ctx)
+    SolendClient::init_new(&ctx, solauto_position)
 }

@@ -67,7 +67,7 @@ pub struct SolendClient<'a> {
 }
 
 impl<'a> SolendClient<'a> {
-    pub fn init_new<'b>(ctx: &'b Context<'a, SolendOpenPositionAccounts>) -> ProgramResult {
+    pub fn init_new<'b>(ctx: &'b Context<'a, SolendOpenPositionAccounts>, solauto_position: &Option<DeserializedAccount<Position>>) -> ProgramResult {
         let obligation_owner = if !ctx.accounts.solauto_position.is_none() {
             ctx.accounts.solauto_position.unwrap()
         } else {
@@ -108,7 +108,7 @@ impl<'a> SolendClient<'a> {
                 ctx.accounts.rent.clone(),
                 ctx.accounts.token_program.clone(),
             ],
-            &None // TODO
+            &solauto_position
         )
     }
 
