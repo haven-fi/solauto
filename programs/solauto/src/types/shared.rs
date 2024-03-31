@@ -123,6 +123,8 @@ pub enum SolautoError {
     StaleProtocolData,
     #[error("Incorrect fee receiver account provided")]
     IncorrectFeeReceiver,
+    #[error("Missing required accounts for the given instruction")]
+    MissingRequiredAccounts
 }
 
 impl From<SolautoError> for ProgramError {

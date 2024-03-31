@@ -150,7 +150,7 @@ export function solendProtocolInteraction(
     },
     obligation: {
       index: 8,
-      isWritable: false as boolean,
+      isWritable: true as boolean,
       value: input.obligation ?? null,
     },
     solautoPosition: {
@@ -160,12 +160,12 @@ export function solendProtocolInteraction(
     },
     solautoFeeReceiver: {
       index: 10,
-      isWritable: false as boolean,
+      isWritable: true as boolean,
       value: input.solautoFeeReceiver ?? null,
     },
     supplyReserve: {
       index: 11,
-      isWritable: false as boolean,
+      isWritable: true as boolean,
       value: input.supplyReserve ?? null,
     },
     supplyReservePythPriceOracle: {
@@ -185,12 +185,12 @@ export function solendProtocolInteraction(
     },
     sourceSupplyLiquidity: {
       index: 15,
-      isWritable: false as boolean,
+      isWritable: true as boolean,
       value: input.sourceSupplyLiquidity ?? null,
     },
     reserveSupplyLiquidity: {
       index: 16,
-      isWritable: false as boolean,
+      isWritable: true as boolean,
       value: input.reserveSupplyLiquidity ?? null,
     },
     supplyCollateralTokenMint: {
@@ -200,22 +200,22 @@ export function solendProtocolInteraction(
     },
     sourceSupplyCollateral: {
       index: 18,
-      isWritable: false as boolean,
+      isWritable: true as boolean,
       value: input.sourceSupplyCollateral ?? null,
     },
     reserveSupplyCollateral: {
       index: 19,
-      isWritable: false as boolean,
+      isWritable: true as boolean,
       value: input.reserveSupplyCollateral ?? null,
     },
     debtReserve: {
       index: 20,
-      isWritable: false as boolean,
+      isWritable: true as boolean,
       value: input.debtReserve ?? null,
     },
     debtReserveFeeReceiver: {
       index: 21,
-      isWritable: false as boolean,
+      isWritable: true as boolean,
       value: input.debtReserveFeeReceiver ?? null,
     },
     debtLiquidityTokenMint: {
@@ -225,12 +225,12 @@ export function solendProtocolInteraction(
     },
     sourceDebtLiquidity: {
       index: 23,
-      isWritable: false as boolean,
+      isWritable: true as boolean,
       value: input.sourceDebtLiquidity ?? null,
     },
     reserveDebtLiquidity: {
       index: 24,
-      isWritable: false as boolean,
+      isWritable: true as boolean,
       value: input.reserveDebtLiquidity ?? null,
     },
   } satisfies ResolvedAccountsWithIndices;

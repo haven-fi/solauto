@@ -205,7 +205,7 @@
         },
         {
           "name": "obligation",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         },
         {
@@ -216,12 +216,12 @@
         },
         {
           "name": "solautoFeeReceiver",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         },
         {
           "name": "supplyReserve",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false,
           "isOptional": true
         },
@@ -245,13 +245,13 @@
         },
         {
           "name": "sourceSupplyLiquidity",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false,
           "isOptional": true
         },
         {
           "name": "reserveSupplyLiquidity",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false,
           "isOptional": true
         },
@@ -263,25 +263,25 @@
         },
         {
           "name": "sourceSupplyCollateral",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false,
           "isOptional": true
         },
         {
           "name": "reserveSupplyCollateral",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false,
           "isOptional": true
         },
         {
           "name": "debtReserve",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false,
           "isOptional": true
         },
         {
           "name": "debtReserveFeeReceiver",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false,
           "isOptional": true
         },
@@ -293,13 +293,13 @@
         },
         {
           "name": "sourceDebtLiquidity",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false,
           "isOptional": true
         },
         {
           "name": "reserveDebtLiquidity",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false,
           "isOptional": true
         }
@@ -592,6 +592,11 @@
       "code": 3,
       "name": "IncorrectFeeReceiver",
       "msg": "Incorrect fee receiver account provided"
+    },
+    {
+      "code": 4,
+      "name": "MissingRequiredAccounts",
+      "msg": "Missing required accounts for the given instruction"
     }
   ],
   "metadata": {

@@ -76,6 +76,7 @@ pub fn process_solend_interaction_instruction<'a>(
     validation_utils::validate_signer(ctx.accounts.signer, &solauto_position, true)?;
     validation_utils::validate_solend_accounts(ctx.accounts.solend_program)?;
     validation_utils::validate_fee_receiver(ctx.accounts.solauto_fee_receiver)?;
+    validation_utils::validate_solend_protocol_interaction_accounts(&ctx, &args)?;
     protocol_interaction::solend_interaction(ctx, &mut solauto_position, args)?;
     ix_utils::update_position(&mut solauto_position)
 }

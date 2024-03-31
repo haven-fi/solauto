@@ -24,6 +24,9 @@ pub enum SolautoError {
     /// 3 (0x3) - Incorrect fee receiver account provided
     #[error("Incorrect fee receiver account provided")]
     IncorrectFeeReceiver,
+    /// 4 (0x4) - Missing required accounts for the given instruction
+    #[error("Missing required accounts for the given instruction")]
+    MissingRequiredAccounts,
 }
 
 impl solana_program::program_error::PrintProgramError for SolautoError {

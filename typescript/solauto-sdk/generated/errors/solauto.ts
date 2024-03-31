@@ -78,6 +78,23 @@ export class IncorrectFeeReceiverError extends ProgramError {
 codeToErrorMap.set(0x3, IncorrectFeeReceiverError);
 nameToErrorMap.set('IncorrectFeeReceiver', IncorrectFeeReceiverError);
 
+/** MissingRequiredAccounts: Missing required accounts for the given instruction */
+export class MissingRequiredAccountsError extends ProgramError {
+  override readonly name: string = 'MissingRequiredAccounts';
+
+  readonly code: number = 0x4; // 4
+
+  constructor(program: Program, cause?: Error) {
+    super(
+      'Missing required accounts for the given instruction',
+      program,
+      cause
+    );
+  }
+}
+codeToErrorMap.set(0x4, MissingRequiredAccountsError);
+nameToErrorMap.set('MissingRequiredAccounts', MissingRequiredAccountsError);
+
 /**
  * Attempts to resolve a custom program error from the provided error code.
  * @category Errors

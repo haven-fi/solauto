@@ -5,7 +5,15 @@ use solana_program::{
     program_error::ProgramError,
     pubkey::Pubkey,
 };
-use crate::types::shared::{ DeserializedAccount, Position, SolautoError, SolautoSettingsParameters };
+use crate::types::instruction::accounts::{ Context, SolendProtocolInteractionAccounts };
+use crate::types::instruction::ProtocolInteractionArgs;
+use crate::types::shared::{
+    DeserializedAccount,
+    Position,
+    ProtocolAction,
+    SolautoError,
+    SolautoSettingsParameters,
+};
 
 use crate::constants::{ FEE_RECEIVER, SOLEND_PROGRAM };
 
@@ -99,6 +107,91 @@ pub fn validate_fee_receiver(fee_receiver: &AccountInfo) -> ProgramResult {
     if fee_receiver.key != &FEE_RECEIVER {
         msg!("Fee receiver account must be {}", FEE_RECEIVER);
         return Err(SolautoError::IncorrectFeeReceiver.into());
+    }
+    Ok(())
+}
+
+pub fn require_accounts(accounts: &[Option<&AccountInfo>]) -> ProgramResult {
+    for acc in accounts.into_iter() {
+        if acc.is_none() {
+            return Err(SolautoError::MissingRequiredAccounts.into());
+        }
+    }
+
+    Ok(())
+}
+
+pub fn validate_solend_protocol_interaction_accounts(
+    ctx: &Context<SolendProtocolInteractionAccounts>,
+    args: &ProtocolInteractionArgs
+) -> ProgramResult {
+    let require_supply_accounts = || {
+        return require_accounts(
+            &[
+                ctx.accounts.supply_reserve,
+                ctx.accounts.supply_reserve_pyth_price_oracle,
+                ctx.accounts.supply_reserve_switchboard_oracle,
+                ctx.accounts.supply_liquidity_token_mint,
+                ctx.accounts.source_supply_liquidity,
+                ctx.accounts.reserve_supply_liquidity,
+                ctx.accounts.supply_collateral_token_mint,
+                ctx.accounts.supply_collateral_token_mint,
+                ctx.accounts.source_supply_collateral,
+                ctx.accounts.reserve_supply_collateral,
+            ]
+        );
+    };
+
+    let require_debt_accounts = || {
+        return require_accounts(
+            &[
+                ctx.accounts.debt_reserve,
+                ctx.accounts.debt_reserve_fee_receiver,
+                ctx.accounts.debt_liquidity_token_mint,
+                ctx.accounts.source_debt_liquidity,
+                ctx.accounts.reserve_debt_liquidity,
+            ]
+        );
+    };
+
+    let require_all_accounts = || -> ProgramResult {
+        require_supply_accounts()?;
+        require_debt_accounts()?;
+        Ok(())
+    };
+
+    match &args.action {
+        ProtocolAction::Deposit(action_details) => {
+            if !action_details.rebalance_utilization_rate_bps.is_none() {
+                require_all_accounts()?;
+            } else {
+                require_supply_accounts()?;
+            }
+        }
+        ProtocolAction::Withdraw(action_details) => {
+            if !action_details.rebalance_utilization_rate_bps.is_none() {
+                require_all_accounts()?;
+            } else {
+                require_supply_accounts()?;
+            }
+        }
+        ProtocolAction::Borrow(action_details) => {
+            if !action_details.rebalance_utilization_rate_bps.is_none() {
+                require_all_accounts()?;
+            } else {
+                require_debt_accounts()?;
+            }
+        }
+        ProtocolAction::Repay(action_details) => {
+            if !action_details.rebalance_utilization_rate_bps.is_none() {
+                require_all_accounts()?;
+            } else {
+                require_debt_accounts()?;
+            }
+        }
+        ProtocolAction::ClosePosition => {
+           require_all_accounts()?;
+        }
     }
     Ok(())
 }

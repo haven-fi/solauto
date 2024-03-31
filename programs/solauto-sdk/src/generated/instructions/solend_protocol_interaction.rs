@@ -106,7 +106,7 @@ impl SolendProtocolInteraction {
             self.lending_market,
             false,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+        accounts.push(solana_program::instruction::AccountMeta::new(
             self.obligation,
             false,
         ));
@@ -121,12 +121,12 @@ impl SolendProtocolInteraction {
                 false,
             ));
         }
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+        accounts.push(solana_program::instruction::AccountMeta::new(
             self.solauto_fee_receiver,
             false,
         ));
         if let Some(supply_reserve) = self.supply_reserve {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            accounts.push(solana_program::instruction::AccountMeta::new(
                 supply_reserve,
                 false,
             ));
@@ -170,7 +170,7 @@ impl SolendProtocolInteraction {
             ));
         }
         if let Some(source_supply_liquidity) = self.source_supply_liquidity {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            accounts.push(solana_program::instruction::AccountMeta::new(
                 source_supply_liquidity,
                 false,
             ));
@@ -181,7 +181,7 @@ impl SolendProtocolInteraction {
             ));
         }
         if let Some(reserve_supply_liquidity) = self.reserve_supply_liquidity {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            accounts.push(solana_program::instruction::AccountMeta::new(
                 reserve_supply_liquidity,
                 false,
             ));
@@ -203,7 +203,7 @@ impl SolendProtocolInteraction {
             ));
         }
         if let Some(source_supply_collateral) = self.source_supply_collateral {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            accounts.push(solana_program::instruction::AccountMeta::new(
                 source_supply_collateral,
                 false,
             ));
@@ -214,7 +214,7 @@ impl SolendProtocolInteraction {
             ));
         }
         if let Some(reserve_supply_collateral) = self.reserve_supply_collateral {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            accounts.push(solana_program::instruction::AccountMeta::new(
                 reserve_supply_collateral,
                 false,
             ));
@@ -225,7 +225,7 @@ impl SolendProtocolInteraction {
             ));
         }
         if let Some(debt_reserve) = self.debt_reserve {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            accounts.push(solana_program::instruction::AccountMeta::new(
                 debt_reserve,
                 false,
             ));
@@ -236,7 +236,7 @@ impl SolendProtocolInteraction {
             ));
         }
         if let Some(debt_reserve_fee_receiver) = self.debt_reserve_fee_receiver {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            accounts.push(solana_program::instruction::AccountMeta::new(
                 debt_reserve_fee_receiver,
                 false,
             ));
@@ -258,7 +258,7 @@ impl SolendProtocolInteraction {
             ));
         }
         if let Some(source_debt_liquidity) = self.source_debt_liquidity {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            accounts.push(solana_program::instruction::AccountMeta::new(
                 source_debt_liquidity,
                 false,
             ));
@@ -269,7 +269,7 @@ impl SolendProtocolInteraction {
             ));
         }
         if let Some(reserve_debt_liquidity) = self.reserve_debt_liquidity {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            accounts.push(solana_program::instruction::AccountMeta::new(
                 reserve_debt_liquidity,
                 false,
             ));
@@ -323,23 +323,23 @@ pub struct SolendProtocolInteractionInstructionArgs {
 ///   5. `[]` clock
 ///   6. `[optional]` rent (default to `SysvarRent111111111111111111111111111111111`)
 ///   7. `[]` lending_market
-///   8. `[]` obligation
+///   8. `[writable]` obligation
 ///   9. `[writable, optional]` solauto_position
-///   10. `[]` solauto_fee_receiver
-///   11. `[optional]` supply_reserve
+///   10. `[writable]` solauto_fee_receiver
+///   11. `[writable, optional]` supply_reserve
 ///   12. `[optional]` supply_reserve_pyth_price_oracle
 ///   13. `[optional]` supply_reserve_switchboard_oracle
 ///   14. `[optional]` supply_liquidity_token_mint
-///   15. `[optional]` source_supply_liquidity
-///   16. `[optional]` reserve_supply_liquidity
+///   15. `[writable, optional]` source_supply_liquidity
+///   16. `[writable, optional]` reserve_supply_liquidity
 ///   17. `[optional]` supply_collateral_token_mint
-///   18. `[optional]` source_supply_collateral
-///   19. `[optional]` reserve_supply_collateral
-///   20. `[optional]` debt_reserve
-///   21. `[optional]` debt_reserve_fee_receiver
+///   18. `[writable, optional]` source_supply_collateral
+///   19. `[writable, optional]` reserve_supply_collateral
+///   20. `[writable, optional]` debt_reserve
+///   21. `[writable, optional]` debt_reserve_fee_receiver
 ///   22. `[optional]` debt_liquidity_token_mint
-///   23. `[optional]` source_debt_liquidity
-///   24. `[optional]` reserve_debt_liquidity
+///   23. `[writable, optional]` source_debt_liquidity
+///   24. `[writable, optional]` reserve_debt_liquidity
 #[derive(Default)]
 pub struct SolendProtocolInteractionBuilder {
     signer: Option<solana_program::pubkey::Pubkey>,
@@ -852,7 +852,7 @@ impl<'a, 'b> SolendProtocolInteractionCpi<'a, 'b> {
             *self.lending_market.key,
             false,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+        accounts.push(solana_program::instruction::AccountMeta::new(
             *self.obligation.key,
             false,
         ));
@@ -867,12 +867,12 @@ impl<'a, 'b> SolendProtocolInteractionCpi<'a, 'b> {
                 false,
             ));
         }
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+        accounts.push(solana_program::instruction::AccountMeta::new(
             *self.solauto_fee_receiver.key,
             false,
         ));
         if let Some(supply_reserve) = self.supply_reserve {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            accounts.push(solana_program::instruction::AccountMeta::new(
                 *supply_reserve.key,
                 false,
             ));
@@ -916,7 +916,7 @@ impl<'a, 'b> SolendProtocolInteractionCpi<'a, 'b> {
             ));
         }
         if let Some(source_supply_liquidity) = self.source_supply_liquidity {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            accounts.push(solana_program::instruction::AccountMeta::new(
                 *source_supply_liquidity.key,
                 false,
             ));
@@ -927,7 +927,7 @@ impl<'a, 'b> SolendProtocolInteractionCpi<'a, 'b> {
             ));
         }
         if let Some(reserve_supply_liquidity) = self.reserve_supply_liquidity {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            accounts.push(solana_program::instruction::AccountMeta::new(
                 *reserve_supply_liquidity.key,
                 false,
             ));
@@ -949,7 +949,7 @@ impl<'a, 'b> SolendProtocolInteractionCpi<'a, 'b> {
             ));
         }
         if let Some(source_supply_collateral) = self.source_supply_collateral {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            accounts.push(solana_program::instruction::AccountMeta::new(
                 *source_supply_collateral.key,
                 false,
             ));
@@ -960,7 +960,7 @@ impl<'a, 'b> SolendProtocolInteractionCpi<'a, 'b> {
             ));
         }
         if let Some(reserve_supply_collateral) = self.reserve_supply_collateral {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            accounts.push(solana_program::instruction::AccountMeta::new(
                 *reserve_supply_collateral.key,
                 false,
             ));
@@ -971,7 +971,7 @@ impl<'a, 'b> SolendProtocolInteractionCpi<'a, 'b> {
             ));
         }
         if let Some(debt_reserve) = self.debt_reserve {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            accounts.push(solana_program::instruction::AccountMeta::new(
                 *debt_reserve.key,
                 false,
             ));
@@ -982,7 +982,7 @@ impl<'a, 'b> SolendProtocolInteractionCpi<'a, 'b> {
             ));
         }
         if let Some(debt_reserve_fee_receiver) = self.debt_reserve_fee_receiver {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            accounts.push(solana_program::instruction::AccountMeta::new(
                 *debt_reserve_fee_receiver.key,
                 false,
             ));
@@ -1004,7 +1004,7 @@ impl<'a, 'b> SolendProtocolInteractionCpi<'a, 'b> {
             ));
         }
         if let Some(source_debt_liquidity) = self.source_debt_liquidity {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            accounts.push(solana_program::instruction::AccountMeta::new(
                 *source_debt_liquidity.key,
                 false,
             ));
@@ -1015,7 +1015,7 @@ impl<'a, 'b> SolendProtocolInteractionCpi<'a, 'b> {
             ));
         }
         if let Some(reserve_debt_liquidity) = self.reserve_debt_liquidity {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            accounts.push(solana_program::instruction::AccountMeta::new(
                 *reserve_debt_liquidity.key,
                 false,
             ));
@@ -1124,23 +1124,23 @@ impl<'a, 'b> SolendProtocolInteractionCpi<'a, 'b> {
 ///   5. `[]` clock
 ///   6. `[]` rent
 ///   7. `[]` lending_market
-///   8. `[]` obligation
+///   8. `[writable]` obligation
 ///   9. `[writable, optional]` solauto_position
-///   10. `[]` solauto_fee_receiver
-///   11. `[optional]` supply_reserve
+///   10. `[writable]` solauto_fee_receiver
+///   11. `[writable, optional]` supply_reserve
 ///   12. `[optional]` supply_reserve_pyth_price_oracle
 ///   13. `[optional]` supply_reserve_switchboard_oracle
 ///   14. `[optional]` supply_liquidity_token_mint
-///   15. `[optional]` source_supply_liquidity
-///   16. `[optional]` reserve_supply_liquidity
+///   15. `[writable, optional]` source_supply_liquidity
+///   16. `[writable, optional]` reserve_supply_liquidity
 ///   17. `[optional]` supply_collateral_token_mint
-///   18. `[optional]` source_supply_collateral
-///   19. `[optional]` reserve_supply_collateral
-///   20. `[optional]` debt_reserve
-///   21. `[optional]` debt_reserve_fee_receiver
+///   18. `[writable, optional]` source_supply_collateral
+///   19. `[writable, optional]` reserve_supply_collateral
+///   20. `[writable, optional]` debt_reserve
+///   21. `[writable, optional]` debt_reserve_fee_receiver
 ///   22. `[optional]` debt_liquidity_token_mint
-///   23. `[optional]` source_debt_liquidity
-///   24. `[optional]` reserve_debt_liquidity
+///   23. `[writable, optional]` source_debt_liquidity
+///   24. `[writable, optional]` reserve_debt_liquidity
 pub struct SolendProtocolInteractionCpiBuilder<'a, 'b> {
     instruction: Box<SolendProtocolInteractionCpiBuilderInstruction<'a, 'b>>,
 }
