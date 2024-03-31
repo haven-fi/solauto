@@ -20,7 +20,8 @@ pub fn solend_interaction<'a>(
     let (solend_client, obligation_position) = SolendClient::from(&mut ctx)?;
     let solauto_manager = SolautoManager::from(&solend_client, &obligation_position)?;
 
-    // TODO take action based on args
+    // TODO: take action based on args
+    // TODO: if we are unable to rebalance to desired position due to borrow / withdraw caps, client should initiate flash loan
 
     if !ctx.accounts.solauto_position.is_none() {
         SolautoManager::refresh_position(&obligation_position, solauto_position.as_mut().unwrap())?;

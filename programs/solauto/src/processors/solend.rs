@@ -84,5 +84,7 @@ pub fn process_solend_interaction_instruction<'a>(
 
 pub fn process_solend_rebalance_ping() -> ProgramResult {
     // TODO
+    // TODO if current utilization rate is above 100%, ensure we have enough debt liquidity in our source token account to repay. If not, throw an error mentioning we need to perform a flash loan
+    // Let's support solend flash loans, and also marginfi (in case borrow caps are maxed)
     Ok(())
 }

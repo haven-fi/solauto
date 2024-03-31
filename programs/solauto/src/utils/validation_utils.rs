@@ -79,6 +79,9 @@ pub fn validate_position_settings(settings: &SolautoSettingsParameters) -> Progr
                 "Minimum difference between boost_to_bps to boost_from_bps must be 50 or greater"
             );
         }
+        if settings.repay_from_bps <= 10000 {
+            return invalid_params("repay_from_bps Must be lower or equal to 10000");
+        }
     } else {
         let params = vec![
             settings.repay_from_bps,
