@@ -36,6 +36,18 @@
           "isSigner": false
         },
         {
+          "name": "positionsManager",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "solautoPosition",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
           "name": "lendingMarket",
           "isMut": false,
           "isSigner": false
@@ -44,12 +56,6 @@
           "name": "obligation",
           "isMut": true,
           "isSigner": false
-        },
-        {
-          "name": "solautoPosition",
-          "isMut": true,
-          "isSigner": false,
-          "isOptional": true
         },
         {
           "name": "supplyCollateralTokenAccount",
@@ -199,14 +205,10 @@
           "isSigner": false
         },
         {
-          "name": "lendingMarket",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "obligation",
+          "name": "positionsManager",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "isOptional": true
         },
         {
           "name": "solautoPosition",
@@ -216,6 +218,16 @@
         },
         {
           "name": "solautoFeeReceiver",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "lendingMarket",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "obligation",
           "isMut": true,
           "isSigner": false
         },

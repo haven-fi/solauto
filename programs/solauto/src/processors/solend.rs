@@ -44,6 +44,7 @@ pub fn process_solend_open_position_instruction<'a>(
     } else {
         None
     };
+    // TODO: add position pubkey to positions manager account
     validation_utils::validate_signer(ctx.accounts.signer, &solauto_position, true)?;
     validation_utils::validate_solend_accounts(&ctx.accounts.solend_program)?;
     solend_open_position::solend_open_position(ctx, &mut solauto_position)?;

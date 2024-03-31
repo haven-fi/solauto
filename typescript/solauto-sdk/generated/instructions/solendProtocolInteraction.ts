@@ -41,10 +41,11 @@ export type SolendProtocolInteractionInstructionAccounts = {
   ataProgram?: PublicKey | Pda;
   clock: PublicKey | Pda;
   rent?: PublicKey | Pda;
-  lendingMarket: PublicKey | Pda;
-  obligation: PublicKey | Pda;
+  positionsManager?: PublicKey | Pda;
   solautoPosition?: PublicKey | Pda;
   solautoFeeReceiver: PublicKey | Pda;
+  lendingMarket: PublicKey | Pda;
+  obligation: PublicKey | Pda;
   supplyReserve?: PublicKey | Pda;
   supplyReservePythPriceOracle?: PublicKey | Pda;
   supplyReserveSwitchboardOracle?: PublicKey | Pda;
@@ -143,93 +144,98 @@ export function solendProtocolInteraction(
       value: input.clock ?? null,
     },
     rent: { index: 6, isWritable: false as boolean, value: input.rent ?? null },
-    lendingMarket: {
+    positionsManager: {
       index: 7,
-      isWritable: false as boolean,
-      value: input.lendingMarket ?? null,
-    },
-    obligation: {
-      index: 8,
       isWritable: true as boolean,
-      value: input.obligation ?? null,
+      value: input.positionsManager ?? null,
     },
     solautoPosition: {
-      index: 9,
+      index: 8,
       isWritable: true as boolean,
       value: input.solautoPosition ?? null,
     },
     solautoFeeReceiver: {
-      index: 10,
+      index: 9,
       isWritable: true as boolean,
       value: input.solautoFeeReceiver ?? null,
     },
-    supplyReserve: {
+    lendingMarket: {
+      index: 10,
+      isWritable: false as boolean,
+      value: input.lendingMarket ?? null,
+    },
+    obligation: {
       index: 11,
+      isWritable: true as boolean,
+      value: input.obligation ?? null,
+    },
+    supplyReserve: {
+      index: 12,
       isWritable: true as boolean,
       value: input.supplyReserve ?? null,
     },
     supplyReservePythPriceOracle: {
-      index: 12,
+      index: 13,
       isWritable: false as boolean,
       value: input.supplyReservePythPriceOracle ?? null,
     },
     supplyReserveSwitchboardOracle: {
-      index: 13,
+      index: 14,
       isWritable: false as boolean,
       value: input.supplyReserveSwitchboardOracle ?? null,
     },
     supplyLiquidityTokenMint: {
-      index: 14,
+      index: 15,
       isWritable: false as boolean,
       value: input.supplyLiquidityTokenMint ?? null,
     },
     sourceSupplyLiquidity: {
-      index: 15,
+      index: 16,
       isWritable: true as boolean,
       value: input.sourceSupplyLiquidity ?? null,
     },
     reserveSupplyLiquidity: {
-      index: 16,
+      index: 17,
       isWritable: true as boolean,
       value: input.reserveSupplyLiquidity ?? null,
     },
     supplyCollateralTokenMint: {
-      index: 17,
+      index: 18,
       isWritable: false as boolean,
       value: input.supplyCollateralTokenMint ?? null,
     },
     sourceSupplyCollateral: {
-      index: 18,
+      index: 19,
       isWritable: true as boolean,
       value: input.sourceSupplyCollateral ?? null,
     },
     reserveSupplyCollateral: {
-      index: 19,
+      index: 20,
       isWritable: true as boolean,
       value: input.reserveSupplyCollateral ?? null,
     },
     debtReserve: {
-      index: 20,
+      index: 21,
       isWritable: true as boolean,
       value: input.debtReserve ?? null,
     },
     debtReserveFeeReceiver: {
-      index: 21,
+      index: 22,
       isWritable: true as boolean,
       value: input.debtReserveFeeReceiver ?? null,
     },
     debtLiquidityTokenMint: {
-      index: 22,
+      index: 23,
       isWritable: false as boolean,
       value: input.debtLiquidityTokenMint ?? null,
     },
     sourceDebtLiquidity: {
-      index: 23,
+      index: 24,
       isWritable: true as boolean,
       value: input.sourceDebtLiquidity ?? null,
     },
     reserveDebtLiquidity: {
-      index: 24,
+      index: 25,
       isWritable: true as boolean,
       value: input.reserveDebtLiquidity ?? null,
     },

@@ -25,13 +25,15 @@ pub struct SolendProtocolInteraction {
 
     pub rent: solana_program::pubkey::Pubkey,
 
-    pub lending_market: solana_program::pubkey::Pubkey,
-
-    pub obligation: solana_program::pubkey::Pubkey,
+    pub positions_manager: Option<solana_program::pubkey::Pubkey>,
 
     pub solauto_position: Option<solana_program::pubkey::Pubkey>,
 
     pub solauto_fee_receiver: solana_program::pubkey::Pubkey,
+
+    pub lending_market: solana_program::pubkey::Pubkey,
+
+    pub obligation: solana_program::pubkey::Pubkey,
 
     pub supply_reserve: Option<solana_program::pubkey::Pubkey>,
 
@@ -75,7 +77,7 @@ impl SolendProtocolInteraction {
         args: SolendProtocolInteractionInstructionArgs,
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
-        let mut accounts = Vec::with_capacity(25 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(26 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.signer,
             true,
@@ -102,14 +104,17 @@ impl SolendProtocolInteraction {
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.rent, false,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.lending_market,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            self.obligation,
-            false,
-        ));
+        if let Some(positions_manager) = self.positions_manager {
+            accounts.push(solana_program::instruction::AccountMeta::new(
+                positions_manager,
+                false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::SOLAUTO_ID,
+                false,
+            ));
+        }
         if let Some(solauto_position) = self.solauto_position {
             accounts.push(solana_program::instruction::AccountMeta::new(
                 solauto_position,
@@ -123,6 +128,14 @@ impl SolendProtocolInteraction {
         }
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.solauto_fee_receiver,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            self.lending_market,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            self.obligation,
             false,
         ));
         if let Some(supply_reserve) = self.supply_reserve {
@@ -322,24 +335,25 @@ pub struct SolendProtocolInteractionInstructionArgs {
 ///   4. `[optional]` ata_program (default to `ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL`)
 ///   5. `[]` clock
 ///   6. `[optional]` rent (default to `SysvarRent111111111111111111111111111111111`)
-///   7. `[]` lending_market
-///   8. `[writable]` obligation
-///   9. `[writable, optional]` solauto_position
-///   10. `[writable]` solauto_fee_receiver
-///   11. `[writable, optional]` supply_reserve
-///   12. `[optional]` supply_reserve_pyth_price_oracle
-///   13. `[optional]` supply_reserve_switchboard_oracle
-///   14. `[optional]` supply_liquidity_token_mint
-///   15. `[writable, optional]` source_supply_liquidity
-///   16. `[writable, optional]` reserve_supply_liquidity
-///   17. `[optional]` supply_collateral_token_mint
-///   18. `[writable, optional]` source_supply_collateral
-///   19. `[writable, optional]` reserve_supply_collateral
-///   20. `[writable, optional]` debt_reserve
-///   21. `[writable, optional]` debt_reserve_fee_receiver
-///   22. `[optional]` debt_liquidity_token_mint
-///   23. `[writable, optional]` source_debt_liquidity
-///   24. `[writable, optional]` reserve_debt_liquidity
+///   7. `[writable, optional]` positions_manager
+///   8. `[writable, optional]` solauto_position
+///   9. `[writable]` solauto_fee_receiver
+///   10. `[]` lending_market
+///   11. `[writable]` obligation
+///   12. `[writable, optional]` supply_reserve
+///   13. `[optional]` supply_reserve_pyth_price_oracle
+///   14. `[optional]` supply_reserve_switchboard_oracle
+///   15. `[optional]` supply_liquidity_token_mint
+///   16. `[writable, optional]` source_supply_liquidity
+///   17. `[writable, optional]` reserve_supply_liquidity
+///   18. `[optional]` supply_collateral_token_mint
+///   19. `[writable, optional]` source_supply_collateral
+///   20. `[writable, optional]` reserve_supply_collateral
+///   21. `[writable, optional]` debt_reserve
+///   22. `[writable, optional]` debt_reserve_fee_receiver
+///   23. `[optional]` debt_liquidity_token_mint
+///   24. `[writable, optional]` source_debt_liquidity
+///   25. `[writable, optional]` reserve_debt_liquidity
 #[derive(Default)]
 pub struct SolendProtocolInteractionBuilder {
     signer: Option<solana_program::pubkey::Pubkey>,
@@ -349,10 +363,11 @@ pub struct SolendProtocolInteractionBuilder {
     ata_program: Option<solana_program::pubkey::Pubkey>,
     clock: Option<solana_program::pubkey::Pubkey>,
     rent: Option<solana_program::pubkey::Pubkey>,
-    lending_market: Option<solana_program::pubkey::Pubkey>,
-    obligation: Option<solana_program::pubkey::Pubkey>,
+    positions_manager: Option<solana_program::pubkey::Pubkey>,
     solauto_position: Option<solana_program::pubkey::Pubkey>,
     solauto_fee_receiver: Option<solana_program::pubkey::Pubkey>,
+    lending_market: Option<solana_program::pubkey::Pubkey>,
+    obligation: Option<solana_program::pubkey::Pubkey>,
     supply_reserve: Option<solana_program::pubkey::Pubkey>,
     supply_reserve_pyth_price_oracle: Option<solana_program::pubkey::Pubkey>,
     supply_reserve_switchboard_oracle: Option<solana_program::pubkey::Pubkey>,
@@ -414,14 +429,13 @@ impl SolendProtocolInteractionBuilder {
         self.rent = Some(rent);
         self
     }
+    /// `[optional account]`
     #[inline(always)]
-    pub fn lending_market(&mut self, lending_market: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.lending_market = Some(lending_market);
-        self
-    }
-    #[inline(always)]
-    pub fn obligation(&mut self, obligation: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.obligation = Some(obligation);
+    pub fn positions_manager(
+        &mut self,
+        positions_manager: Option<solana_program::pubkey::Pubkey>,
+    ) -> &mut Self {
+        self.positions_manager = positions_manager;
         self
     }
     /// `[optional account]`
@@ -439,6 +453,16 @@ impl SolendProtocolInteractionBuilder {
         solauto_fee_receiver: solana_program::pubkey::Pubkey,
     ) -> &mut Self {
         self.solauto_fee_receiver = Some(solauto_fee_receiver);
+        self
+    }
+    #[inline(always)]
+    pub fn lending_market(&mut self, lending_market: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.lending_market = Some(lending_market);
+        self
+    }
+    #[inline(always)]
+    pub fn obligation(&mut self, obligation: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.obligation = Some(obligation);
         self
     }
     /// `[optional account]`
@@ -608,12 +632,13 @@ impl SolendProtocolInteractionBuilder {
             rent: self.rent.unwrap_or(solana_program::pubkey!(
                 "SysvarRent111111111111111111111111111111111"
             )),
-            lending_market: self.lending_market.expect("lending_market is not set"),
-            obligation: self.obligation.expect("obligation is not set"),
+            positions_manager: self.positions_manager,
             solauto_position: self.solauto_position,
             solauto_fee_receiver: self
                 .solauto_fee_receiver
                 .expect("solauto_fee_receiver is not set"),
+            lending_market: self.lending_market.expect("lending_market is not set"),
+            obligation: self.obligation.expect("obligation is not set"),
             supply_reserve: self.supply_reserve,
             supply_reserve_pyth_price_oracle: self.supply_reserve_pyth_price_oracle,
             supply_reserve_switchboard_oracle: self.supply_reserve_switchboard_oracle,
@@ -653,13 +678,15 @@ pub struct SolendProtocolInteractionCpiAccounts<'a, 'b> {
 
     pub rent: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub lending_market: &'b solana_program::account_info::AccountInfo<'a>,
-
-    pub obligation: &'b solana_program::account_info::AccountInfo<'a>,
+    pub positions_manager: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
     pub solauto_position: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
     pub solauto_fee_receiver: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub lending_market: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub obligation: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub supply_reserve: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
@@ -710,13 +737,15 @@ pub struct SolendProtocolInteractionCpi<'a, 'b> {
 
     pub rent: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub lending_market: &'b solana_program::account_info::AccountInfo<'a>,
-
-    pub obligation: &'b solana_program::account_info::AccountInfo<'a>,
+    pub positions_manager: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
     pub solauto_position: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
     pub solauto_fee_receiver: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub lending_market: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub obligation: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub supply_reserve: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
@@ -765,10 +794,11 @@ impl<'a, 'b> SolendProtocolInteractionCpi<'a, 'b> {
             ata_program: accounts.ata_program,
             clock: accounts.clock,
             rent: accounts.rent,
-            lending_market: accounts.lending_market,
-            obligation: accounts.obligation,
+            positions_manager: accounts.positions_manager,
             solauto_position: accounts.solauto_position,
             solauto_fee_receiver: accounts.solauto_fee_receiver,
+            lending_market: accounts.lending_market,
+            obligation: accounts.obligation,
             supply_reserve: accounts.supply_reserve,
             supply_reserve_pyth_price_oracle: accounts.supply_reserve_pyth_price_oracle,
             supply_reserve_switchboard_oracle: accounts.supply_reserve_switchboard_oracle,
@@ -819,7 +849,7 @@ impl<'a, 'b> SolendProtocolInteractionCpi<'a, 'b> {
             bool,
         )],
     ) -> solana_program::entrypoint::ProgramResult {
-        let mut accounts = Vec::with_capacity(25 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(26 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             *self.signer.key,
             true,
@@ -848,14 +878,17 @@ impl<'a, 'b> SolendProtocolInteractionCpi<'a, 'b> {
             *self.rent.key,
             false,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.lending_market.key,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.obligation.key,
-            false,
-        ));
+        if let Some(positions_manager) = self.positions_manager {
+            accounts.push(solana_program::instruction::AccountMeta::new(
+                *positions_manager.key,
+                false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::SOLAUTO_ID,
+                false,
+            ));
+        }
         if let Some(solauto_position) = self.solauto_position {
             accounts.push(solana_program::instruction::AccountMeta::new(
                 *solauto_position.key,
@@ -869,6 +902,14 @@ impl<'a, 'b> SolendProtocolInteractionCpi<'a, 'b> {
         }
         accounts.push(solana_program::instruction::AccountMeta::new(
             *self.solauto_fee_receiver.key,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            *self.lending_market.key,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            *self.obligation.key,
             false,
         ));
         if let Some(supply_reserve) = self.supply_reserve {
@@ -1043,7 +1084,7 @@ impl<'a, 'b> SolendProtocolInteractionCpi<'a, 'b> {
             accounts,
             data,
         };
-        let mut account_infos = Vec::with_capacity(25 + 1 + remaining_accounts.len());
+        let mut account_infos = Vec::with_capacity(26 + 1 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
         account_infos.push(self.signer.clone());
         account_infos.push(self.solend_program.clone());
@@ -1052,12 +1093,15 @@ impl<'a, 'b> SolendProtocolInteractionCpi<'a, 'b> {
         account_infos.push(self.ata_program.clone());
         account_infos.push(self.clock.clone());
         account_infos.push(self.rent.clone());
-        account_infos.push(self.lending_market.clone());
-        account_infos.push(self.obligation.clone());
+        if let Some(positions_manager) = self.positions_manager {
+            account_infos.push(positions_manager.clone());
+        }
         if let Some(solauto_position) = self.solauto_position {
             account_infos.push(solauto_position.clone());
         }
         account_infos.push(self.solauto_fee_receiver.clone());
+        account_infos.push(self.lending_market.clone());
+        account_infos.push(self.obligation.clone());
         if let Some(supply_reserve) = self.supply_reserve {
             account_infos.push(supply_reserve.clone());
         }
@@ -1123,24 +1167,25 @@ impl<'a, 'b> SolendProtocolInteractionCpi<'a, 'b> {
 ///   4. `[]` ata_program
 ///   5. `[]` clock
 ///   6. `[]` rent
-///   7. `[]` lending_market
-///   8. `[writable]` obligation
-///   9. `[writable, optional]` solauto_position
-///   10. `[writable]` solauto_fee_receiver
-///   11. `[writable, optional]` supply_reserve
-///   12. `[optional]` supply_reserve_pyth_price_oracle
-///   13. `[optional]` supply_reserve_switchboard_oracle
-///   14. `[optional]` supply_liquidity_token_mint
-///   15. `[writable, optional]` source_supply_liquidity
-///   16. `[writable, optional]` reserve_supply_liquidity
-///   17. `[optional]` supply_collateral_token_mint
-///   18. `[writable, optional]` source_supply_collateral
-///   19. `[writable, optional]` reserve_supply_collateral
-///   20. `[writable, optional]` debt_reserve
-///   21. `[writable, optional]` debt_reserve_fee_receiver
-///   22. `[optional]` debt_liquidity_token_mint
-///   23. `[writable, optional]` source_debt_liquidity
-///   24. `[writable, optional]` reserve_debt_liquidity
+///   7. `[writable, optional]` positions_manager
+///   8. `[writable, optional]` solauto_position
+///   9. `[writable]` solauto_fee_receiver
+///   10. `[]` lending_market
+///   11. `[writable]` obligation
+///   12. `[writable, optional]` supply_reserve
+///   13. `[optional]` supply_reserve_pyth_price_oracle
+///   14. `[optional]` supply_reserve_switchboard_oracle
+///   15. `[optional]` supply_liquidity_token_mint
+///   16. `[writable, optional]` source_supply_liquidity
+///   17. `[writable, optional]` reserve_supply_liquidity
+///   18. `[optional]` supply_collateral_token_mint
+///   19. `[writable, optional]` source_supply_collateral
+///   20. `[writable, optional]` reserve_supply_collateral
+///   21. `[writable, optional]` debt_reserve
+///   22. `[writable, optional]` debt_reserve_fee_receiver
+///   23. `[optional]` debt_liquidity_token_mint
+///   24. `[writable, optional]` source_debt_liquidity
+///   25. `[writable, optional]` reserve_debt_liquidity
 pub struct SolendProtocolInteractionCpiBuilder<'a, 'b> {
     instruction: Box<SolendProtocolInteractionCpiBuilderInstruction<'a, 'b>>,
 }
@@ -1156,10 +1201,11 @@ impl<'a, 'b> SolendProtocolInteractionCpiBuilder<'a, 'b> {
             ata_program: None,
             clock: None,
             rent: None,
-            lending_market: None,
-            obligation: None,
+            positions_manager: None,
             solauto_position: None,
             solauto_fee_receiver: None,
+            lending_market: None,
+            obligation: None,
             supply_reserve: None,
             supply_reserve_pyth_price_oracle: None,
             supply_reserve_switchboard_oracle: None,
@@ -1229,20 +1275,13 @@ impl<'a, 'b> SolendProtocolInteractionCpiBuilder<'a, 'b> {
         self.instruction.rent = Some(rent);
         self
     }
+    /// `[optional account]`
     #[inline(always)]
-    pub fn lending_market(
+    pub fn positions_manager(
         &mut self,
-        lending_market: &'b solana_program::account_info::AccountInfo<'a>,
+        positions_manager: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     ) -> &mut Self {
-        self.instruction.lending_market = Some(lending_market);
-        self
-    }
-    #[inline(always)]
-    pub fn obligation(
-        &mut self,
-        obligation: &'b solana_program::account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.obligation = Some(obligation);
+        self.instruction.positions_manager = positions_manager;
         self
     }
     /// `[optional account]`
@@ -1260,6 +1299,22 @@ impl<'a, 'b> SolendProtocolInteractionCpiBuilder<'a, 'b> {
         solauto_fee_receiver: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
         self.instruction.solauto_fee_receiver = Some(solauto_fee_receiver);
+        self
+    }
+    #[inline(always)]
+    pub fn lending_market(
+        &mut self,
+        lending_market: &'b solana_program::account_info::AccountInfo<'a>,
+    ) -> &mut Self {
+        self.instruction.lending_market = Some(lending_market);
+        self
+    }
+    #[inline(always)]
+    pub fn obligation(
+        &mut self,
+        obligation: &'b solana_program::account_info::AccountInfo<'a>,
+    ) -> &mut Self {
+        self.instruction.obligation = Some(obligation);
         self
     }
     /// `[optional account]`
@@ -1468,12 +1523,7 @@ impl<'a, 'b> SolendProtocolInteractionCpiBuilder<'a, 'b> {
 
             rent: self.instruction.rent.expect("rent is not set"),
 
-            lending_market: self
-                .instruction
-                .lending_market
-                .expect("lending_market is not set"),
-
-            obligation: self.instruction.obligation.expect("obligation is not set"),
+            positions_manager: self.instruction.positions_manager,
 
             solauto_position: self.instruction.solauto_position,
 
@@ -1481,6 +1531,13 @@ impl<'a, 'b> SolendProtocolInteractionCpiBuilder<'a, 'b> {
                 .instruction
                 .solauto_fee_receiver
                 .expect("solauto_fee_receiver is not set"),
+
+            lending_market: self
+                .instruction
+                .lending_market
+                .expect("lending_market is not set"),
+
+            obligation: self.instruction.obligation.expect("obligation is not set"),
 
             supply_reserve: self.instruction.supply_reserve,
 
@@ -1527,10 +1584,11 @@ struct SolendProtocolInteractionCpiBuilderInstruction<'a, 'b> {
     ata_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     clock: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     rent: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    lending_market: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    obligation: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    positions_manager: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     solauto_position: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     solauto_fee_receiver: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    lending_market: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    obligation: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     supply_reserve: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     supply_reserve_pyth_price_oracle: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     supply_reserve_switchboard_oracle: Option<&'b solana_program::account_info::AccountInfo<'a>>,

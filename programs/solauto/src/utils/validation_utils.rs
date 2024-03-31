@@ -154,7 +154,7 @@ pub fn validate_solend_protocol_interaction_accounts(
         );
     };
 
-    let require_all_accounts = || -> ProgramResult {
+    let require_all_solend_accounts = || -> ProgramResult {
         require_supply_accounts()?;
         require_debt_accounts()?;
         Ok(())
@@ -163,34 +163,35 @@ pub fn validate_solend_protocol_interaction_accounts(
     match &args.action {
         ProtocolAction::Deposit(action_details) => {
             if !action_details.rebalance_utilization_rate_bps.is_none() {
-                require_all_accounts()?;
+                require_all_solend_accounts()?;
             } else {
                 require_supply_accounts()?;
             }
         }
         ProtocolAction::Withdraw(action_details) => {
             if !action_details.rebalance_utilization_rate_bps.is_none() {
-                require_all_accounts()?;
+                require_all_solend_accounts()?;
             } else {
                 require_supply_accounts()?;
             }
         }
         ProtocolAction::Borrow(action_details) => {
             if !action_details.rebalance_utilization_rate_bps.is_none() {
-                require_all_accounts()?;
+                require_all_solend_accounts()?;
             } else {
                 require_debt_accounts()?;
             }
         }
         ProtocolAction::Repay(action_details) => {
             if !action_details.rebalance_utilization_rate_bps.is_none() {
-                require_all_accounts()?;
+                require_all_solend_accounts()?;
             } else {
                 require_debt_accounts()?;
             }
         }
         ProtocolAction::ClosePosition => {
-           require_all_accounts()?;
+            require_all_solend_accounts()?;
+            require_accounts(&[ctx.accounts.positions_manager])?;
         }
     }
     Ok(())

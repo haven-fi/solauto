@@ -43,9 +43,10 @@ export type SolendOpenPositionInstructionAccounts = {
   tokenProgram?: PublicKey | Pda;
   ataProgram?: PublicKey | Pda;
   rent?: PublicKey | Pda;
+  positionsManager?: PublicKey | Pda;
+  solautoPosition?: PublicKey | Pda;
   lendingMarket: PublicKey | Pda;
   obligation: PublicKey | Pda;
-  solautoPosition?: PublicKey | Pda;
   supplyCollateralTokenAccount: PublicKey | Pda;
   supplyCollateralTokenMint: PublicKey | Pda;
   debtLiquidityTokenAccount: PublicKey | Pda;
@@ -129,38 +130,43 @@ export function solendOpenPosition(
       value: input.ataProgram ?? null,
     },
     rent: { index: 5, isWritable: false as boolean, value: input.rent ?? null },
-    lendingMarket: {
+    positionsManager: {
       index: 6,
+      isWritable: true as boolean,
+      value: input.positionsManager ?? null,
+    },
+    solautoPosition: {
+      index: 7,
+      isWritable: true as boolean,
+      value: input.solautoPosition ?? null,
+    },
+    lendingMarket: {
+      index: 8,
       isWritable: false as boolean,
       value: input.lendingMarket ?? null,
     },
     obligation: {
-      index: 7,
+      index: 9,
       isWritable: true as boolean,
       value: input.obligation ?? null,
     },
-    solautoPosition: {
-      index: 8,
-      isWritable: true as boolean,
-      value: input.solautoPosition ?? null,
-    },
     supplyCollateralTokenAccount: {
-      index: 9,
+      index: 10,
       isWritable: true as boolean,
       value: input.supplyCollateralTokenAccount ?? null,
     },
     supplyCollateralTokenMint: {
-      index: 10,
+      index: 11,
       isWritable: false as boolean,
       value: input.supplyCollateralTokenMint ?? null,
     },
     debtLiquidityTokenAccount: {
-      index: 11,
+      index: 12,
       isWritable: true as boolean,
       value: input.debtLiquidityTokenAccount ?? null,
     },
     debtLiquidityTokenMint: {
-      index: 12,
+      index: 13,
       isWritable: false as boolean,
       value: input.debtLiquidityTokenMint ?? null,
     },
