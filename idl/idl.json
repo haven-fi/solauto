@@ -357,15 +357,6 @@
                 "defined": "SolendPositionData"
               }
             }
-          },
-          {
-            "name": "padding",
-            "type": {
-              "array": [
-                "u8",
-                136
-              ]
-            }
           }
         ]
       }
@@ -424,7 +415,15 @@
             "type": {
               "defined": "ProtocolAction"
             }
-          },
+          }
+        ]
+      }
+    },
+    {
+      "name": "ProtocolActionDetails",
+      "type": {
+        "kind": "struct",
+        "fields": [
           {
             "name": "actionAmount",
             "type": "u64"
@@ -518,16 +517,39 @@
         "kind": "enum",
         "variants": [
           {
-            "name": "Deposit"
+            "name": "Deposit",
+            "fields": [
+              {
+                "defined": "ProtocolActionDetails"
+              }
+            ]
           },
           {
-            "name": "Borrow"
+            "name": "Borrow",
+            "fields": [
+              {
+                "defined": "ProtocolActionDetails"
+              }
+            ]
           },
           {
-            "name": "Repay"
+            "name": "Repay",
+            "fields": [
+              {
+                "defined": "ProtocolActionDetails"
+              }
+            ]
           },
           {
-            "name": "Withdraw"
+            "name": "Withdraw",
+            "fields": [
+              {
+                "defined": "ProtocolActionDetails"
+              }
+            ]
+          },
+          {
+            "name": "ClosePosition"
           }
         ]
       }

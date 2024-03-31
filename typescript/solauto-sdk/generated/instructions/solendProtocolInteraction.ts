@@ -8,8 +8,6 @@
 
 import {
   Context,
-  Option,
-  OptionOrNullable,
   Pda,
   PublicKey,
   Signer,
@@ -20,10 +18,7 @@ import {
 import {
   Serializer,
   mapSerializer,
-  option,
   struct,
-  u16,
-  u64,
   u8,
 } from '@metaplex-foundation/umi/serializers';
 import {
@@ -70,14 +65,10 @@ export type SolendProtocolInteractionInstructionAccounts = {
 export type SolendProtocolInteractionInstructionData = {
   discriminator: number;
   action: ProtocolAction;
-  actionAmount: bigint;
-  rebalanceUtilizationRateBps: Option<number>;
 };
 
 export type SolendProtocolInteractionInstructionDataArgs = {
   action: ProtocolActionArgs;
-  actionAmount: number | bigint;
-  rebalanceUtilizationRateBps: OptionOrNullable<number>;
 };
 
 export function getSolendProtocolInteractionInstructionDataSerializer(): Serializer<
@@ -93,8 +84,6 @@ export function getSolendProtocolInteractionInstructionDataSerializer(): Seriali
       [
         ['discriminator', u8()],
         ['action', getProtocolActionSerializer()],
-        ['actionAmount', u64()],
-        ['rebalanceUtilizationRateBps', option(u16())],
       ],
       { description: 'SolendProtocolInteractionInstructionData' }
     ),

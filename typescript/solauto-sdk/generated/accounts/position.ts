@@ -23,7 +23,6 @@ import {
 } from '@metaplex-foundation/umi';
 import {
   Serializer,
-  array,
   option,
   publicKey as publicKeySerializer,
   struct,
@@ -53,7 +52,6 @@ export type PositionAccountData = {
   settingParams: SolautoSettingsParameters;
   generalData: GeneralPositionData;
   solendData: Option<SolendPositionData>;
-  padding: Array<number>;
 };
 
 export type PositionAccountDataArgs = {
@@ -63,7 +61,6 @@ export type PositionAccountDataArgs = {
   settingParams: SolautoSettingsParametersArgs;
   generalData: GeneralPositionDataArgs;
   solendData: OptionOrNullable<SolendPositionDataArgs>;
-  padding: Array<number>;
 };
 
 export function getPositionAccountDataSerializer(): Serializer<
@@ -78,7 +75,6 @@ export function getPositionAccountDataSerializer(): Serializer<
       ['settingParams', getSolautoSettingsParametersSerializer()],
       ['generalData', getGeneralPositionDataSerializer()],
       ['solendData', option(getSolendPositionDataSerializer())],
-      ['padding', array(u8(), { size: 136 })],
     ],
     { description: 'PositionAccountData' }
   ) as Serializer<PositionAccountDataArgs, PositionAccountData>;
@@ -157,7 +153,6 @@ export function getPositionGpaBuilder(
       settingParams: SolautoSettingsParametersArgs;
       generalData: GeneralPositionDataArgs;
       solendData: OptionOrNullable<SolendPositionDataArgs>;
-      padding: Array<number>;
     }>({
       positionId: [0, u8()],
       authority: [1, publicKeySerializer()],
@@ -165,7 +160,6 @@ export function getPositionGpaBuilder(
       settingParams: [34, getSolautoSettingsParametersSerializer()],
       generalData: [42, getGeneralPositionDataSerializer()],
       solendData: [76, option(getSolendPositionDataSerializer())],
-      padding: [null, array(u8(), { size: 136 })],
     })
     .deserializeUsing<Position>((account) => deserializePosition(account));
 }

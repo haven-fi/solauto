@@ -5,16 +5,12 @@
 //! [https://github.com/metaplex-foundation/kinobi]
 //!
 
-use crate::generated::types::ProtocolActionDetails;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub enum ProtocolAction {
-    Deposit(ProtocolActionDetails),
-    Borrow(ProtocolActionDetails),
-    Repay(ProtocolActionDetails),
-    Withdraw(ProtocolActionDetails),
-    ClosePosition,
+pub struct ProtocolActionDetails {
+    pub action_amount: u64,
+    pub rebalance_utilization_rate_bps: Option<u16>,
 }

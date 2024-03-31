@@ -32,7 +32,6 @@ pub fn process_solend_open_position_instruction<'a>(
             setting_params: data.setting_params.clone(),
             general_data: GeneralPositionData::default(),
             solend_data: data.solend_data.clone(),
-            _padding: [0; 136],
         })
     } else {
         None

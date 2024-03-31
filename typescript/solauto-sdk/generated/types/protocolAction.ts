@@ -6,22 +6,102 @@
  * @see https://github.com/metaplex-foundation/kinobi
  */
 
-import { Serializer, scalarEnum } from '@metaplex-foundation/umi/serializers';
+import {
+  GetDataEnumKind,
+  GetDataEnumKindContent,
+  Serializer,
+  dataEnum,
+  struct,
+  tuple,
+  unit,
+} from '@metaplex-foundation/umi/serializers';
+import {
+  ProtocolActionDetails,
+  ProtocolActionDetailsArgs,
+  getProtocolActionDetailsSerializer,
+} from '.';
 
-export enum ProtocolAction {
-  Deposit,
-  Borrow,
-  Repay,
-  Withdraw,
-}
+export type ProtocolAction =
+  | { __kind: 'Deposit'; fields: [ProtocolActionDetails] }
+  | { __kind: 'Borrow'; fields: [ProtocolActionDetails] }
+  | { __kind: 'Repay'; fields: [ProtocolActionDetails] }
+  | { __kind: 'Withdraw'; fields: [ProtocolActionDetails] }
+  | { __kind: 'ClosePosition' };
 
-export type ProtocolActionArgs = ProtocolAction;
+export type ProtocolActionArgs =
+  | { __kind: 'Deposit'; fields: [ProtocolActionDetailsArgs] }
+  | { __kind: 'Borrow'; fields: [ProtocolActionDetailsArgs] }
+  | { __kind: 'Repay'; fields: [ProtocolActionDetailsArgs] }
+  | { __kind: 'Withdraw'; fields: [ProtocolActionDetailsArgs] }
+  | { __kind: 'ClosePosition' };
 
 export function getProtocolActionSerializer(): Serializer<
   ProtocolActionArgs,
   ProtocolAction
 > {
-  return scalarEnum<ProtocolAction>(ProtocolAction, {
-    description: 'ProtocolAction',
-  }) as Serializer<ProtocolActionArgs, ProtocolAction>;
+  return dataEnum<ProtocolAction>(
+    [
+      [
+        'Deposit',
+        struct<GetDataEnumKindContent<ProtocolAction, 'Deposit'>>([
+          ['fields', tuple([getProtocolActionDetailsSerializer()])],
+        ]),
+      ],
+      [
+        'Borrow',
+        struct<GetDataEnumKindContent<ProtocolAction, 'Borrow'>>([
+          ['fields', tuple([getProtocolActionDetailsSerializer()])],
+        ]),
+      ],
+      [
+        'Repay',
+        struct<GetDataEnumKindContent<ProtocolAction, 'Repay'>>([
+          ['fields', tuple([getProtocolActionDetailsSerializer()])],
+        ]),
+      ],
+      [
+        'Withdraw',
+        struct<GetDataEnumKindContent<ProtocolAction, 'Withdraw'>>([
+          ['fields', tuple([getProtocolActionDetailsSerializer()])],
+        ]),
+      ],
+      ['ClosePosition', unit()],
+    ],
+    { description: 'ProtocolAction' }
+  ) as Serializer<ProtocolActionArgs, ProtocolAction>;
+}
+
+// Data Enum Helpers.
+export function protocolAction(
+  kind: 'Deposit',
+  data: GetDataEnumKindContent<ProtocolActionArgs, 'Deposit'>['fields']
+): GetDataEnumKind<ProtocolActionArgs, 'Deposit'>;
+export function protocolAction(
+  kind: 'Borrow',
+  data: GetDataEnumKindContent<ProtocolActionArgs, 'Borrow'>['fields']
+): GetDataEnumKind<ProtocolActionArgs, 'Borrow'>;
+export function protocolAction(
+  kind: 'Repay',
+  data: GetDataEnumKindContent<ProtocolActionArgs, 'Repay'>['fields']
+): GetDataEnumKind<ProtocolActionArgs, 'Repay'>;
+export function protocolAction(
+  kind: 'Withdraw',
+  data: GetDataEnumKindContent<ProtocolActionArgs, 'Withdraw'>['fields']
+): GetDataEnumKind<ProtocolActionArgs, 'Withdraw'>;
+export function protocolAction(
+  kind: 'ClosePosition'
+): GetDataEnumKind<ProtocolActionArgs, 'ClosePosition'>;
+export function protocolAction<K extends ProtocolActionArgs['__kind']>(
+  kind: K,
+  data?: any
+): Extract<ProtocolActionArgs, { __kind: K }> {
+  return Array.isArray(data)
+    ? { __kind: kind, fields: data }
+    : { __kind: kind, ...(data ?? {}) };
+}
+export function isProtocolAction<K extends ProtocolAction['__kind']>(
+  kind: K,
+  value: ProtocolAction
+): value is ProtocolAction & { __kind: K } {
+  return value.__kind === kind;
 }

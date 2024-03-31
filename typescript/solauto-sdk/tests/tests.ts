@@ -64,9 +64,10 @@ describe("Solauto tests", async () => {
   const reuseAccounts = false;
   const payForTransactions = false;
 
-  const solendAccounts = getSolendAccounts("main");
-  const positionId = generateRandomU8();
   const solautoManaged = true;
+  const positionId = generateRandomU8();
+  
+  const solendAccounts = getSolendAccounts("main");
   const solautoPosition = solautoManaged
     ? await getPositionAccount(signerPublicKey, positionId, reuseAccounts)
     : undefined;
@@ -103,7 +104,7 @@ describe("Solauto tests", async () => {
       tokenProgram: publicKey(TOKEN_PROGRAM_ID),
       ataProgram: publicKey(ASSOCIATED_TOKEN_PROGRAM_ID),
       rent: publicKey(SYSVAR_RENT_PUBKEY),
-      solautoPosition: publicKey(solautoPosition),
+      solautoPosition: solautoManaged ? publicKey(solautoPosition) : undefined,
       obligation: publicKey(obligation),
       lendingMarket: publicKey(solendAccounts.lendingMarket),
       supplyCollateralTokenAccount: publicKey(supplyCollateralTokenAccount),
@@ -114,18 +115,22 @@ describe("Solauto tests", async () => {
       debtLiquidityTokenMint: publicKey(
         solendAccounts.usdcReserve.liquidityTokenMint
       ),
-      positionData: {
-        __option: "Some",
-        value: {
-          positionId,
-          settingParams,
-          solendData: {
-            supplyReserve: publicKey(solendAccounts.solReserve.reserve),
-            debtReserve: publicKey(solendAccounts.usdcReserve.reserve),
-            obligation: publicKey(obligation),
+      positionData: solautoManaged
+        ? {
+            __option: "Some",
+            value: {
+              positionId,
+              settingParams,
+              solendData: {
+                supplyReserve: publicKey(solendAccounts.solReserve.reserve),
+                debtReserve: publicKey(solendAccounts.usdcReserve.reserve),
+                obligation: publicKey(obligation),
+              },
+            },
+          }
+        : {
+            __option: "None",
           },
-        },
-      },
     });
 
     const transaction = await builder.buildWithLatestBlockhash(umi);
@@ -135,10 +140,12 @@ describe("Solauto tests", async () => {
       await builder.sendAndConfirm(umi);
     }
 
-    const account = await umi.rpc.getAccount(publicKey(solautoPosition));
-    assert(account.exists);
-    const position = deserializePosition(account);
-    expect(position.settingParams).to.deep.equal(settingParams);
+    if (reuseAccounts || payForTransactions) {
+      const account = await umi.rpc.getAccount(publicKey(solautoPosition));
+      assert(account.exists);
+      const position = deserializePosition(account);
+      expect(position.settingParams).to.deep.equal(settingParams);
+    }
   });
 
   // TODO refresh test

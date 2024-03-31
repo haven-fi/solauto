@@ -26,8 +26,6 @@ pub struct Position {
     pub setting_params: SolautoSettingsParameters,
     pub general_data: GeneralPositionData,
     pub solend_data: Option<SolendPositionData>,
-    #[cfg_attr(feature = "serde", serde(with = "serde_with::As::<serde_with::Bytes>"))]
-    pub padding: [u8; 136],
 }
 
 impl Position {

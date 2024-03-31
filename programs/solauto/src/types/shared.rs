@@ -11,10 +11,19 @@ use solana_program::{
 
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType)]
 pub enum ProtocolAction {
-    Deposit,
-    Borrow,
-    Repay,
-    Withdraw,
+    Deposit(ProtocolActionDetails),
+    Borrow(ProtocolActionDetails),
+    Repay(ProtocolActionDetails),
+    Withdraw(ProtocolActionDetails),
+    ClosePosition,
+}
+
+#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType)]
+pub struct ProtocolActionDetails {
+    /// Amount of liquidity to use when taking the action
+    pub action_amount: u64,
+    /// Whether to rebalance to a specific utilization after taking the action
+    pub rebalance_utilization_rate_bps: Option<u16>,
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType)]
@@ -49,7 +58,7 @@ pub struct GeneralPositionData {
     pub base_amount_borrowed: u64,
 }
 
-pub const POSITION_LEN: usize = 307;
+pub const POSITION_LEN: usize = 500;
 #[derive(ShankAccount, BorshDeserialize, BorshSerialize, Clone, Debug)]
 pub struct Position {
     pub position_id: u8,
@@ -58,7 +67,6 @@ pub struct Position {
     pub setting_params: SolautoSettingsParameters,
     pub general_data: GeneralPositionData,
     pub solend_data: Option<SolendPositionData>,
-    pub _padding: [u8; 136],
 }
 
 #[derive(Clone)]

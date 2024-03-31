@@ -87,8 +87,4 @@ pub struct OpenPositionArgs {
 pub struct ProtocolInteractionArgs {
     /// Action to take with the protocol
     pub action: ProtocolAction,
-    /// Amount of liquidity to use when taking the action
-    pub action_amount: u64,
-    /// Whether to rebalance to a specific utilization after taking the action
-    pub rebalance_utilization_rate_bps: Option<u16>,
 }

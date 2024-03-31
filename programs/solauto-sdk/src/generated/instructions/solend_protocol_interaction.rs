@@ -309,8 +309,6 @@ impl SolendProtocolInteractionInstructionData {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SolendProtocolInteractionInstructionArgs {
     pub action: ProtocolAction,
-    pub action_amount: u64,
-    pub rebalance_utilization_rate_bps: Option<u16>,
 }
 
 /// Instruction builder for `SolendProtocolInteraction`.
@@ -370,8 +368,6 @@ pub struct SolendProtocolInteractionBuilder {
     source_debt_liquidity: Option<solana_program::pubkey::Pubkey>,
     reserve_debt_liquidity: Option<solana_program::pubkey::Pubkey>,
     action: Option<ProtocolAction>,
-    action_amount: Option<u64>,
-    rebalance_utilization_rate_bps: Option<u16>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
 
@@ -576,20 +572,6 @@ impl SolendProtocolInteractionBuilder {
         self.action = Some(action);
         self
     }
-    #[inline(always)]
-    pub fn action_amount(&mut self, action_amount: u64) -> &mut Self {
-        self.action_amount = Some(action_amount);
-        self
-    }
-    /// `[optional argument]`
-    #[inline(always)]
-    pub fn rebalance_utilization_rate_bps(
-        &mut self,
-        rebalance_utilization_rate_bps: u16,
-    ) -> &mut Self {
-        self.rebalance_utilization_rate_bps = Some(rebalance_utilization_rate_bps);
-        self
-    }
     /// Add an aditional account to the instruction.
     #[inline(always)]
     pub fn add_remaining_account(
@@ -649,11 +631,6 @@ impl SolendProtocolInteractionBuilder {
         };
         let args = SolendProtocolInteractionInstructionArgs {
             action: self.action.clone().expect("action is not set"),
-            action_amount: self
-                .action_amount
-                .clone()
-                .expect("action_amount is not set"),
-            rebalance_utilization_rate_bps: self.rebalance_utilization_rate_bps.clone(),
         };
 
         accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
@@ -1198,8 +1175,6 @@ impl<'a, 'b> SolendProtocolInteractionCpiBuilder<'a, 'b> {
             source_debt_liquidity: None,
             reserve_debt_liquidity: None,
             action: None,
-            action_amount: None,
-            rebalance_utilization_rate_bps: None,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
@@ -1420,20 +1395,6 @@ impl<'a, 'b> SolendProtocolInteractionCpiBuilder<'a, 'b> {
         self.instruction.action = Some(action);
         self
     }
-    #[inline(always)]
-    pub fn action_amount(&mut self, action_amount: u64) -> &mut Self {
-        self.instruction.action_amount = Some(action_amount);
-        self
-    }
-    /// `[optional argument]`
-    #[inline(always)]
-    pub fn rebalance_utilization_rate_bps(
-        &mut self,
-        rebalance_utilization_rate_bps: u16,
-    ) -> &mut Self {
-        self.instruction.rebalance_utilization_rate_bps = Some(rebalance_utilization_rate_bps);
-        self
-    }
     /// Add an additional account to the instruction.
     #[inline(always)]
     pub fn add_remaining_account(
@@ -1477,12 +1438,6 @@ impl<'a, 'b> SolendProtocolInteractionCpiBuilder<'a, 'b> {
     ) -> solana_program::entrypoint::ProgramResult {
         let args = SolendProtocolInteractionInstructionArgs {
             action: self.instruction.action.clone().expect("action is not set"),
-            action_amount: self
-                .instruction
-                .action_amount
-                .clone()
-                .expect("action_amount is not set"),
-            rebalance_utilization_rate_bps: self.instruction.rebalance_utilization_rate_bps.clone(),
         };
         let instruction = SolendProtocolInteractionCpi {
             __program: self.instruction.__program,
@@ -1591,8 +1546,6 @@ struct SolendProtocolInteractionCpiBuilderInstruction<'a, 'b> {
     source_debt_liquidity: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     reserve_debt_liquidity: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     action: Option<ProtocolAction>,
-    action_amount: Option<u64>,
-    rebalance_utilization_rate_bps: Option<u16>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(
         &'b solana_program::account_info::AccountInfo<'a>,
