@@ -1,7 +1,7 @@
 // use solana_program::program_pack::Pack;
 // use solana_program::pubkey::Pubkey;
 // use serde_json::json;
-// use solauto_sdk::state::{test, DeserializedAccount, Position};
+// use solauto::types::shared::{ DeserializedAccount, Position };
 // use solend_sdk::math::{ TryDiv, BPS_SCALER, U192, WAD };
 // use std::result::Result;
 // use std::str::FromStr;
@@ -113,8 +113,8 @@
 // #[tokio::main]
 // async fn main() -> Result<(), MyError> {
 //     let reserve_data = get_account(
-//         // Pubkey::from_str("8PbodeaosQP19SjYFx855UMqWxH2HynZLdBXmsrbac36").unwrap() // SOL
-//         Pubkey::from_str("BgxfHJDzm44T7XG68MYKx7YisTjZu73tVovyZSjJMpmw").unwrap() // USDC
+//         Pubkey::from_str("8PbodeaosQP19SjYFx855UMqWxH2HynZLdBXmsrbac36").unwrap() // SOL
+//         // Pubkey::from_str("BgxfHJDzm44T7XG68MYKx7YisTjZu73tVovyZSjJMpmw").unwrap() // USDC
 //         // Pubkey::from_str("8K9WC8xoh2rtQNY7iEGXtPvfbDCi563SdWhCAhuMP2xE").unwrap() // USDT
 //     ).await?; // reserve
 //     let obligation_data = get_account(
