@@ -48,7 +48,7 @@ pub fn process_solend_open_position_instruction<'a>(
     validation_utils::validate_signer(ctx.accounts.signer, &solauto_position, true)?;
     validation_utils::validate_solend_accounts(&ctx.accounts.solend_program)?;
     solend_open_position::solend_open_position(ctx, &mut solauto_position)?;
-    ix_utils::update_position(&mut solauto_position)
+    ix_utils::update_data(&mut solauto_position)
 }
 
 pub fn process_solend_update_position_instruction() -> ProgramResult {
@@ -63,7 +63,7 @@ pub fn process_solend_refresh_accounts<'a>(accounts: &'a [AccountInfo<'a>]) -> P
         ctx.accounts.solauto_position
     )?;
     refresh::solend_refresh_accounts(ctx, &mut solauto_position)?;
-    ix_utils::update_position(&mut solauto_position)
+    ix_utils::update_data(&mut solauto_position)
 }
 
 pub fn process_solend_interaction_instruction<'a>(
@@ -79,12 +79,11 @@ pub fn process_solend_interaction_instruction<'a>(
     validation_utils::validate_fee_receiver(ctx.accounts.solauto_fee_receiver)?;
     validation_utils::validate_solend_protocol_interaction_accounts(&ctx, &args)?;
     protocol_interaction::solend_interaction(ctx, &mut solauto_position, args)?;
-    ix_utils::update_position(&mut solauto_position)
+    ix_utils::update_data(&mut solauto_position)
 }
 
 pub fn process_solend_rebalance_ping() -> ProgramResult {
     // TODO
     // TODO if current utilization rate is above 100%, ensure we have enough debt liquidity in our source token account to repay. If not, throw an error mentioning we need to perform a flash loan
-    // Let's support solend flash loans, and also marginfi (in case borrow caps are maxed)
     Ok(())
 }

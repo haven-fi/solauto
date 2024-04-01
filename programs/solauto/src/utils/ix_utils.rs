@@ -10,13 +10,12 @@ use crate::types::shared::{ DeserializedAccount, Position };
 use super::solana_utils::invoke_signed_with_seed;
 
 
-/// Releases Solauto position lock and writes the updated data to the account
-pub fn update_position(position: &mut Option<DeserializedAccount<Position>>) -> ProgramResult {
-    if position.is_none() {
+pub fn update_data<T: BorshSerialize>(account: &mut Option<DeserializedAccount<T>>) -> ProgramResult {
+    if account.is_none() {
         return Ok(());
     }
-    let mut_position = position.as_mut().unwrap();
-    mut_position.data.serialize(&mut &mut mut_position.account_info.data.borrow_mut()[..])?;
+    let mut_account = account.as_mut().unwrap();
+    mut_account.data.serialize(&mut &mut mut_account.account_info.data.borrow_mut()[..])?;
     Ok(())
 }
 
