@@ -7,3 +7,4 @@
  */
 
 export * from './position';
+export * from './positionsManager';

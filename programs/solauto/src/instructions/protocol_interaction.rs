@@ -22,6 +22,7 @@ pub fn solend_interaction<'a>(
 
     // TODO: take action based on args
     // TODO: if we are unable to rebalance to desired position due to borrow / withdraw caps, client should initiate flash loan
+    // TODO: if closing account, remove element from positions_manager account
 
     if !ctx.accounts.solauto_position.is_none() {
         SolautoManager::refresh_position(&obligation_position, solauto_position.as_mut().unwrap())?;

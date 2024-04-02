@@ -64,3 +64,12 @@ export async function getSolendObligationAccount(
 
   return obligationAccount;
 }
+
+export async function getPositionsManagerAccount() {
+  const [positionsManager, _] = await PublicKey.findProgramAddress(
+    [Buffer.from("positions")],
+    new PublicKey(SOLAUTO_PROGRAM_ID)
+  );
+
+  return positionsManager;
+}

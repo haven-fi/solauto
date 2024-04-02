@@ -372,6 +372,20 @@
           }
         ]
       }
+    },
+    {
+      "name": "PositionsManager",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "openPositions",
+            "type": {
+              "vec": "publicKey"
+            }
+          }
+        ]
+      }
     }
   ],
   "types": [
