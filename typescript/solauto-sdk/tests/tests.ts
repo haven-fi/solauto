@@ -132,7 +132,7 @@ describe("Solauto tests", async () => {
             __option: "None",
           },
     });
-
+    
     const transaction = await builder.buildWithLatestBlockhash(umi);
     await simulateTransaction(transaction);
 

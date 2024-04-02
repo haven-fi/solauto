@@ -12,7 +12,13 @@ use crate::{
             OpenPositionArgs,
             ProtocolInteractionArgs,
         },
-        shared::{ DeserializedAccount, GeneralPositionData, LendingPlatform, Position },
+        shared::{
+            DeserializedAccount,
+            GeneralPositionData,
+            LendingPlatform,
+            Position,
+            PositionsManager,
+        },
     },
     utils::*,
 };
@@ -47,6 +53,16 @@ pub fn process_solend_open_position_instruction<'a>(
     // TODO: add position pubkey to positions manager account
     validation_utils::validate_signer(ctx.accounts.signer, &solauto_position, true)?;
     validation_utils::validate_solend_accounts(&ctx.accounts.solend_program)?;
+    
+    if !solauto_position.is_none() {
+        let mut positions_manager = DeserializedAccount::<PositionsManager>::deserialize(
+            ctx.accounts.positions_manager
+        )?;
+        // TODO: create account if needed (allocate minimum space required)
+        // TODO: allocate more space if needed
+        ix_utils::update_data(&mut positions_manager)?;
+    }
+    
     solend_open_position::solend_open_position(ctx, &mut solauto_position)?;
     ix_utils::update_data(&mut solauto_position)
 }

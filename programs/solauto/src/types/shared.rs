@@ -69,6 +69,11 @@ pub struct Position {
     pub solend_data: Option<SolendPositionData>,
 }
 
+#[derive(ShankAccount, BorshDeserialize, BorshSerialize, Clone, Debug)]
+pub struct PositionsManager {
+    open_positions: Vec<Pubkey>,
+}
+
 #[derive(Clone)]
 pub struct DeserializedAccount<'a, T> {
     pub account_info: &'a AccountInfo<'a>,
