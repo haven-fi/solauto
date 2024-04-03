@@ -12,7 +12,6 @@ pub enum Instruction {
     #[account(name = "token_program")]
     #[account(name = "ata_program")]
     #[account(name = "rent")]
-    #[account(mut, optional, name = "positions_manager")]
     #[account(mut, optional, name = "solauto_position")]
     #[account(name = "lending_market")]
     #[account(mut, name = "obligation")]

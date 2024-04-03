@@ -24,7 +24,7 @@ import {
   clusterApiUrl,
 } from "@solana/web3.js";
 import { getSolendAccounts } from "../accounts";
-import { getPositionAccount, getPositionsManagerAccount, getSolendObligationAccount } from "../utils";
+import { getPositionAccount, getSolendObligationAccount } from "../utils";
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
@@ -115,7 +115,6 @@ describe("Solauto tests", async () => {
       debtLiquidityTokenMint: publicKey(
         solendAccounts.usdcReserve.liquidityTokenMint
       ),
-      positionsManager: solautoManaged ? publicKey(await getPositionsManagerAccount()) : undefined,
       positionData: solautoManaged
         ? {
             __option: "Some",

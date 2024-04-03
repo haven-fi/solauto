@@ -71,7 +71,7 @@ pub struct Position {
 
 #[derive(ShankAccount, BorshDeserialize, BorshSerialize, Clone, Debug)]
 pub struct PositionsManager {
-    open_positions: Vec<Pubkey>,
+    pub  open_positions: Vec<Pubkey>,
 }
 
 #[derive(Clone)]

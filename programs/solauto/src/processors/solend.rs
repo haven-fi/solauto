@@ -2,7 +2,7 @@ use solana_program::{
     account_info::AccountInfo,
     entrypoint::ProgramResult,
     msg,
-    program_error::ProgramError,
+    pubkey::Pubkey,
 };
 
 use crate::{
@@ -22,11 +22,14 @@ use crate::{
             GeneralPositionData,
             LendingPlatform,
             Position,
-            PositionsManager, SolautoError,
+            PositionsManager,
+            SolautoError,
         },
     },
     utils::*,
 };
+
+use self::solana_utils::{ account_has_custom_data, account_is_rent_exempt, init_new_account };
 
 pub fn process_solend_open_position_instruction<'a>(
     accounts: &'a [AccountInfo<'a>],
@@ -57,20 +60,6 @@ pub fn process_solend_open_position_instruction<'a>(
     };
     validation_utils::validate_signer(ctx.accounts.signer, &solauto_position, true)?;
     validation_utils::validate_solend_accounts(&ctx.accounts.solend_program)?;
-
-    if !solauto_position.is_none() {
-        if ctx.accounts.positions_manager.is_none() {
-            msg!("Missing positions manager account on a solauto-managed instruction");
-            return Err(SolautoError::MissingRequiredAccounts.into());
-        }
-        let mut positions_manager = DeserializedAccount::<PositionsManager>::deserialize(
-            ctx.accounts.positions_manager
-        )?;
-        // TODO: create account if needed (allocate minimum space required)
-        // TODO: allocate more space if needed
-        ix_utils::update_data(&mut positions_manager)?;
-    }
-
     solend_open_position::solend_open_position(ctx, &mut solauto_position)?;
     ix_utils::update_data(&mut solauto_position)
 }

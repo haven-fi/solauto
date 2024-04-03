@@ -23,8 +23,6 @@ pub struct SolendOpenPosition {
 
     pub rent: solana_program::pubkey::Pubkey,
 
-    pub positions_manager: Option<solana_program::pubkey::Pubkey>,
-
     pub solauto_position: Option<solana_program::pubkey::Pubkey>,
 
     pub lending_market: solana_program::pubkey::Pubkey,
@@ -53,7 +51,7 @@ impl SolendOpenPosition {
         args: SolendOpenPositionInstructionArgs,
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
-        let mut accounts = Vec::with_capacity(14 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(13 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.signer,
             true,
@@ -77,17 +75,6 @@ impl SolendOpenPosition {
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.rent, false,
         ));
-        if let Some(positions_manager) = self.positions_manager {
-            accounts.push(solana_program::instruction::AccountMeta::new(
-                positions_manager,
-                false,
-            ));
-        } else {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::SOLAUTO_ID,
-                false,
-            ));
-        }
         if let Some(solauto_position) = self.solauto_position {
             accounts.push(solana_program::instruction::AccountMeta::new(
                 solauto_position,
@@ -165,14 +152,13 @@ pub struct SolendOpenPositionInstructionArgs {
 ///   3. `[optional]` token_program (default to `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA`)
 ///   4. `[optional]` ata_program (default to `ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL`)
 ///   5. `[optional]` rent (default to `SysvarRent111111111111111111111111111111111`)
-///   6. `[writable, optional]` positions_manager
-///   7. `[writable, optional]` solauto_position
-///   8. `[]` lending_market
-///   9. `[writable]` obligation
-///   10. `[writable]` supply_collateral_token_account
-///   11. `[]` supply_collateral_token_mint
-///   12. `[writable]` debt_liquidity_token_account
-///   13. `[]` debt_liquidity_token_mint
+///   6. `[writable, optional]` solauto_position
+///   7. `[]` lending_market
+///   8. `[writable]` obligation
+///   9. `[writable]` supply_collateral_token_account
+///   10. `[]` supply_collateral_token_mint
+///   11. `[writable]` debt_liquidity_token_account
+///   12. `[]` debt_liquidity_token_mint
 #[derive(Default)]
 pub struct SolendOpenPositionBuilder {
     signer: Option<solana_program::pubkey::Pubkey>,
@@ -181,7 +167,6 @@ pub struct SolendOpenPositionBuilder {
     token_program: Option<solana_program::pubkey::Pubkey>,
     ata_program: Option<solana_program::pubkey::Pubkey>,
     rent: Option<solana_program::pubkey::Pubkey>,
-    positions_manager: Option<solana_program::pubkey::Pubkey>,
     solauto_position: Option<solana_program::pubkey::Pubkey>,
     lending_market: Option<solana_program::pubkey::Pubkey>,
     obligation: Option<solana_program::pubkey::Pubkey>,
@@ -229,15 +214,6 @@ impl SolendOpenPositionBuilder {
     #[inline(always)]
     pub fn rent(&mut self, rent: solana_program::pubkey::Pubkey) -> &mut Self {
         self.rent = Some(rent);
-        self
-    }
-    /// `[optional account]`
-    #[inline(always)]
-    pub fn positions_manager(
-        &mut self,
-        positions_manager: Option<solana_program::pubkey::Pubkey>,
-    ) -> &mut Self {
-        self.positions_manager = positions_manager;
         self
     }
     /// `[optional account]`
@@ -332,7 +308,6 @@ impl SolendOpenPositionBuilder {
             rent: self.rent.unwrap_or(solana_program::pubkey!(
                 "SysvarRent111111111111111111111111111111111"
             )),
-            positions_manager: self.positions_manager,
             solauto_position: self.solauto_position,
             lending_market: self.lending_market.expect("lending_market is not set"),
             obligation: self.obligation.expect("obligation is not set"),
@@ -371,8 +346,6 @@ pub struct SolendOpenPositionCpiAccounts<'a, 'b> {
 
     pub rent: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub positions_manager: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-
     pub solauto_position: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
     pub lending_market: &'b solana_program::account_info::AccountInfo<'a>,
@@ -405,8 +378,6 @@ pub struct SolendOpenPositionCpi<'a, 'b> {
 
     pub rent: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub positions_manager: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-
     pub solauto_position: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
     pub lending_market: &'b solana_program::account_info::AccountInfo<'a>,
@@ -438,7 +409,6 @@ impl<'a, 'b> SolendOpenPositionCpi<'a, 'b> {
             token_program: accounts.token_program,
             ata_program: accounts.ata_program,
             rent: accounts.rent,
-            positions_manager: accounts.positions_manager,
             solauto_position: accounts.solauto_position,
             lending_market: accounts.lending_market,
             obligation: accounts.obligation,
@@ -482,7 +452,7 @@ impl<'a, 'b> SolendOpenPositionCpi<'a, 'b> {
             bool,
         )],
     ) -> solana_program::entrypoint::ProgramResult {
-        let mut accounts = Vec::with_capacity(14 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(13 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             *self.signer.key,
             true,
@@ -507,17 +477,6 @@ impl<'a, 'b> SolendOpenPositionCpi<'a, 'b> {
             *self.rent.key,
             false,
         ));
-        if let Some(positions_manager) = self.positions_manager {
-            accounts.push(solana_program::instruction::AccountMeta::new(
-                *positions_manager.key,
-                false,
-            ));
-        } else {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::SOLAUTO_ID,
-                false,
-            ));
-        }
         if let Some(solauto_position) = self.solauto_position {
             accounts.push(solana_program::instruction::AccountMeta::new(
                 *solauto_position.key,
@@ -571,7 +530,7 @@ impl<'a, 'b> SolendOpenPositionCpi<'a, 'b> {
             accounts,
             data,
         };
-        let mut account_infos = Vec::with_capacity(14 + 1 + remaining_accounts.len());
+        let mut account_infos = Vec::with_capacity(13 + 1 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
         account_infos.push(self.signer.clone());
         account_infos.push(self.solend_program.clone());
@@ -579,9 +538,6 @@ impl<'a, 'b> SolendOpenPositionCpi<'a, 'b> {
         account_infos.push(self.token_program.clone());
         account_infos.push(self.ata_program.clone());
         account_infos.push(self.rent.clone());
-        if let Some(positions_manager) = self.positions_manager {
-            account_infos.push(positions_manager.clone());
-        }
         if let Some(solauto_position) = self.solauto_position {
             account_infos.push(solauto_position.clone());
         }
@@ -613,14 +569,13 @@ impl<'a, 'b> SolendOpenPositionCpi<'a, 'b> {
 ///   3. `[]` token_program
 ///   4. `[]` ata_program
 ///   5. `[]` rent
-///   6. `[writable, optional]` positions_manager
-///   7. `[writable, optional]` solauto_position
-///   8. `[]` lending_market
-///   9. `[writable]` obligation
-///   10. `[writable]` supply_collateral_token_account
-///   11. `[]` supply_collateral_token_mint
-///   12. `[writable]` debt_liquidity_token_account
-///   13. `[]` debt_liquidity_token_mint
+///   6. `[writable, optional]` solauto_position
+///   7. `[]` lending_market
+///   8. `[writable]` obligation
+///   9. `[writable]` supply_collateral_token_account
+///   10. `[]` supply_collateral_token_mint
+///   11. `[writable]` debt_liquidity_token_account
+///   12. `[]` debt_liquidity_token_mint
 pub struct SolendOpenPositionCpiBuilder<'a, 'b> {
     instruction: Box<SolendOpenPositionCpiBuilderInstruction<'a, 'b>>,
 }
@@ -635,7 +590,6 @@ impl<'a, 'b> SolendOpenPositionCpiBuilder<'a, 'b> {
             token_program: None,
             ata_program: None,
             rent: None,
-            positions_manager: None,
             solauto_position: None,
             lending_market: None,
             obligation: None,
@@ -691,15 +645,6 @@ impl<'a, 'b> SolendOpenPositionCpiBuilder<'a, 'b> {
     #[inline(always)]
     pub fn rent(&mut self, rent: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
         self.instruction.rent = Some(rent);
-        self
-    }
-    /// `[optional account]`
-    #[inline(always)]
-    pub fn positions_manager(
-        &mut self,
-        positions_manager: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    ) -> &mut Self {
-        self.instruction.positions_manager = positions_manager;
         self
     }
     /// `[optional account]`
@@ -836,8 +781,6 @@ impl<'a, 'b> SolendOpenPositionCpiBuilder<'a, 'b> {
 
             rent: self.instruction.rent.expect("rent is not set"),
 
-            positions_manager: self.instruction.positions_manager,
-
             solauto_position: self.instruction.solauto_position,
 
             lending_market: self
@@ -883,7 +826,6 @@ struct SolendOpenPositionCpiBuilderInstruction<'a, 'b> {
     token_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     ata_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     rent: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    positions_manager: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     solauto_position: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     lending_market: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     obligation: Option<&'b solana_program::account_info::AccountInfo<'a>>,
