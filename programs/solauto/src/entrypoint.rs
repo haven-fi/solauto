@@ -3,10 +3,12 @@ use solana_program::{
     account_info::AccountInfo,
     entrypoint,
     entrypoint::ProgramResult,
+    msg,
+    program_error::ProgramError,
     pubkey::Pubkey,
 };
 
-use crate::{ processors::{ solend::*, marginfi::* }, types::instruction::Instruction };
+use crate::{ processors::marginfi::*, types::instruction::Instruction };
 
 entrypoint!(process_instruction);
 
@@ -15,16 +17,19 @@ fn process_instruction<'a>(
     accounts: &'a [AccountInfo<'a>],
     data: &[u8]
 ) -> ProgramResult {
+    let wip_instruction = || {
+        msg!("Instruction is currently a WIP");
+        Err(ProgramError::InvalidInstructionData)
+    };
+
     let instruction = Instruction::try_from_slice(data)?;
     match instruction {
-        Instruction::SolendOpenPosition(args) =>
-            process_solend_open_position_instruction(accounts, args),
+        Instruction::SolendOpenPosition(_args) => wip_instruction()?,
         Instruction::MarginfiOpenPosition(args) =>
             process_marginfi_open_position_instruction(accounts, args),
         // TODO: update position
-        Instruction::SolendRefreshData => process_solend_refresh_accounts(accounts),
-        Instruction::SolendProtocolInteraction(args) =>
-            process_solend_interaction_instruction(accounts, args),
+        Instruction::SolendRefreshData => wip_instruction()?,
+        Instruction::SolendProtocolInteraction(_args) => wip_instruction()?,
         // TODO: refresh ping
     }
 }
