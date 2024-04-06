@@ -1,0 +1,696 @@
+{
+  "version": "0.1.0",
+  "name": "solauto",
+  "instructions": [
+    {
+      "name": "SolendOpenPosition",
+      "accounts": [
+        {
+          "name": "signer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "solendProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "ataProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "solautoPosition",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "lendingMarket",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "obligation",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "supplyCollateralTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "supplyCollateralTokenMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "debtLiquidityTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "debtLiquidityTokenMint",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "openPositionArgs",
+          "type": {
+            "defined": "OpenPositionArgs"
+          }
+        }
+      ],
+      "discriminant": {
+        "type": "u8",
+        "value": 0
+      }
+    },
+    {
+      "name": "MarginfiOpenPosition",
+      "accounts": [
+        {
+          "name": "signer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "marginfiProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "ataProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "solautoPosition",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "supplyCollateralTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "supplyCollateralTokenMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "debtLiquidityTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "debtLiquidityTokenMint",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "openPositionArgs",
+          "type": {
+            "defined": "OpenPositionArgs"
+          }
+        }
+      ],
+      "discriminant": {
+        "type": "u8",
+        "value": 1
+      }
+    },
+    {
+      "name": "SolendRefreshData",
+      "accounts": [
+        {
+          "name": "signer",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "solendProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "clock",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "supplyReserve",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "supplyReservePythPriceOracle",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "supplyReserveSwitchboardOracle",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "debtReserve",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "debtReservePythPriceOracle",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "debtReserveSwitchboardOracle",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "lendingMarket",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "obligation",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "solautoPosition",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        }
+      ],
+      "args": [],
+      "discriminant": {
+        "type": "u8",
+        "value": 2
+      }
+    },
+    {
+      "name": "SolendProtocolInteraction",
+      "accounts": [
+        {
+          "name": "signer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "solendProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "ataProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "clock",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "positionsManager",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "solautoPosition",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "solautoFeeReceiver",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "lendingMarket",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "obligation",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "supplyReserve",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "supplyReservePythPriceOracle",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "supplyReserveSwitchboardOracle",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "supplyLiquidityTokenMint",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "sourceSupplyLiquidity",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "reserveSupplyLiquidity",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "supplyCollateralTokenMint",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "sourceSupplyCollateral",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "reserveSupplyCollateral",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "debtReserve",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "debtReserveFeeReceiver",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "debtLiquidityTokenMint",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "sourceDebtLiquidity",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "reserveDebtLiquidity",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        }
+      ],
+      "args": [
+        {
+          "name": "protocolInteractionArgs",
+          "type": {
+            "defined": "ProtocolInteractionArgs"
+          }
+        }
+      ],
+      "discriminant": {
+        "type": "u8",
+        "value": 3
+      }
+    }
+  ],
+  "accounts": [
+    {
+      "name": "Position",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "positionId",
+            "type": "u8"
+          },
+          {
+            "name": "authority",
+            "type": "publicKey"
+          },
+          {
+            "name": "lendingPlatform",
+            "type": {
+              "defined": "LendingPlatform"
+            }
+          },
+          {
+            "name": "settingParams",
+            "type": {
+              "defined": "SolautoSettingsParameters"
+            }
+          },
+          {
+            "name": "generalData",
+            "type": {
+              "defined": "GeneralPositionData"
+            }
+          },
+          {
+            "name": "solendData",
+            "type": {
+              "option": {
+                "defined": "SolendPositionData"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "PositionsManager",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "openPositions",
+            "type": {
+              "vec": "publicKey"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "NewPositionData",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "positionId",
+            "type": "u8"
+          },
+          {
+            "name": "settingParams",
+            "type": {
+              "defined": "SolautoSettingsParameters"
+            }
+          },
+          {
+            "name": "solendData",
+            "type": {
+              "option": {
+                "defined": "SolendPositionData"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "OpenPositionArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "positionData",
+            "type": {
+              "option": {
+                "defined": "NewPositionData"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "ProtocolInteractionArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "action",
+            "type": {
+              "defined": "ProtocolAction"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "ProtocolActionDetails",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "actionAmount",
+            "type": "u64"
+          },
+          {
+            "name": "rebalanceUtilizationRateBps",
+            "type": {
+              "option": "u16"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "SolautoSettingsParameters",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "repayFromBps",
+            "type": "u16"
+          },
+          {
+            "name": "repayToBps",
+            "type": "u16"
+          },
+          {
+            "name": "boostFromBps",
+            "type": "u16"
+          },
+          {
+            "name": "boostToBps",
+            "type": "u16"
+          }
+        ]
+      }
+    },
+    {
+      "name": "SolendPositionData",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "supplyReserve",
+            "type": "publicKey"
+          },
+          {
+            "name": "debtReserve",
+            "type": {
+              "option": "publicKey"
+            }
+          },
+          {
+            "name": "obligation",
+            "type": "publicKey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "GeneralPositionData",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "utilizationRateBps",
+            "type": "u16"
+          },
+          {
+            "name": "netWorthUsdBaseAmount",
+            "type": "u64"
+          },
+          {
+            "name": "baseAmountLiquidityNetWorth",
+            "type": "u64"
+          },
+          {
+            "name": "baseAmountSupplied",
+            "type": "u64"
+          },
+          {
+            "name": "baseAmountBorrowed",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ProtocolAction",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Deposit",
+            "fields": [
+              {
+                "defined": "ProtocolActionDetails"
+              }
+            ]
+          },
+          {
+            "name": "Borrow",
+            "fields": [
+              {
+                "defined": "ProtocolActionDetails"
+              }
+            ]
+          },
+          {
+            "name": "Repay",
+            "fields": [
+              {
+                "defined": "ProtocolActionDetails"
+              }
+            ]
+          },
+          {
+            "name": "Withdraw",
+            "fields": [
+              {
+                "defined": "ProtocolActionDetails"
+              }
+            ]
+          },
+          {
+            "name": "ClosePosition"
+          }
+        ]
+      }
+    },
+    {
+      "name": "LendingPlatform",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Marginfi"
+          },
+          {
+            "name": "Solend"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "code": 0,
+      "name": "InvalidPositionSettings",
+      "msg": "Invalid position data given"
+    },
+    {
+      "code": 1,
+      "name": "FailedAccountDeserialization",
+      "msg": "Failed to deserialize account data, incorrect account was likely given"
+    },
+    {
+      "code": 2,
+      "name": "StaleProtocolData",
+      "msg": "Stale protocol data. Refresh instruction must be invoked before taking a protocol action"
+    },
+    {
+      "code": 3,
+      "name": "IncorrectFeeReceiver",
+      "msg": "Incorrect fee receiver account provided"
+    },
+    {
+      "code": 4,
+      "name": "MissingRequiredAccounts",
+      "msg": "Missing required accounts for the given instruction"
+    }
+  ],
+  "metadata": {
+    "origin": "shank",
+    "address": "AutoyKBRaHSBHy9RsmXCZMy6nNFAg5FYijrvZyQcNLV"
+  }
+}

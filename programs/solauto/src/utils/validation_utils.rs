@@ -8,14 +8,10 @@ use solana_program::{
 use crate::types::instruction::accounts::{ Context, SolendProtocolInteractionAccounts };
 use crate::types::instruction::ProtocolInteractionArgs;
 use crate::types::shared::{
-    DeserializedAccount,
-    Position,
-    ProtocolAction,
-    SolautoError,
-    SolautoSettingsParameters,
+    DeserializedAccount, LendingPlatform, Position, ProtocolAction, SolautoError, SolautoSettingsParameters
 };
 
-use crate::constants::{ FEE_RECEIVER, SOLEND_PROGRAM };
+use crate::constants::{ FEE_RECEIVER, MARGINFI_PROGRAM, SOLEND_PROGRAM };
 
 pub fn validate_signer(
     signer: &AccountInfo,
@@ -97,12 +93,22 @@ pub fn validate_position_settings(settings: &SolautoSettingsParameters) -> Progr
     Ok(())
 }
 
-pub fn validate_solend_accounts(solend_program: &AccountInfo) -> ProgramResult {
-    if *solend_program.key != SOLEND_PROGRAM {
-        msg!("Incorrect Solend program account");
-        return Err(ProgramError::InvalidAccountData.into());
+pub fn validate_program_account(program: &AccountInfo, lending_platform: LendingPlatform) -> ProgramResult {
+    match lending_platform {
+        LendingPlatform::Solend => {
+            if *program.key != SOLEND_PROGRAM {
+                msg!("Incorrect Solend program account");
+                return Err(ProgramError::InvalidAccountData.into());
+            }
+        }
+        LendingPlatform::Marginfi => {
+            if *program.key != MARGINFI_PROGRAM {
+                msg!("Incorrect Marginfi program account");
+                return Err(ProgramError::InvalidAccountData.into());
+            }
+        }
     }
-    // We don't need to check more than this, as Solend has it's own account checks and will fail during CPI if there is an issue
+    // We don't need to check more than this, as lending protocols have their own account checks and will fail during CPI if there is an issue
     Ok(())
 }
 

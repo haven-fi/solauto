@@ -29,9 +29,9 @@ pub struct ProtocolActionDetails {
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType)]
 #[borsh(use_discriminant = true)]
 pub enum LendingPlatform {
-    Solend = 0,
-    Kamino = 1,
-    Marginfi = 2,
+    Marginfi = 0,
+    Solend = 1,
+    // Kamino = 2,
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType)]

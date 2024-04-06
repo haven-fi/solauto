@@ -21,6 +21,19 @@ pub enum Instruction {
     #[account(name = "debt_liquidity_token_mint")]
     SolendOpenPosition(OpenPositionArgs),
 
+    #[account(signer, writable, name = "signer")]
+    #[account(name = "marginfi_program")]
+    #[account(name = "system_program")]
+    #[account(name = "token_program")]
+    #[account(name = "ata_program")]
+    #[account(name = "rent")]
+    #[account(mut, optional, name = "solauto_position")]
+    #[account(mut, name = "supply_collateral_token_account")]
+    #[account(name = "supply_collateral_token_mint")]
+    #[account(mut, name = "debt_liquidity_token_account")]
+    #[account(name = "debt_liquidity_token_mint")]
+    MarginfiOpenPosition(OpenPositionArgs),
+
     // UpdatePosition, TODO
 
     #[account(signer, name = "signer")]
