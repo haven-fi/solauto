@@ -177,19 +177,11 @@ pub fn validate_solend_protocol_interaction_accounts(
                 require_supply_accounts()?;
             }
         }
-        ProtocolAction::Withdraw(action_details) => {
-            if !action_details.rebalance_utilization_rate_bps.is_none() {
-                require_all_solend_accounts()?;
-            } else {
-                require_supply_accounts()?;
-            }
+        ProtocolAction::Withdraw(_) => {
+            require_supply_accounts()?;
         }
-        ProtocolAction::Borrow(action_details) => {
-            if !action_details.rebalance_utilization_rate_bps.is_none() {
-                require_all_solend_accounts()?;
-            } else {
-                require_debt_accounts()?;
-            }
+        ProtocolAction::Borrow(_) => {
+            require_debt_accounts()?;
         }
         ProtocolAction::Repay(action_details) => {
             if !action_details.rebalance_utilization_rate_bps.is_none() {
