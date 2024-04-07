@@ -17,8 +17,8 @@ pub fn solend_interaction<'a>(
     solauto_position: &mut Option<DeserializedAccount<Position>>,
     args: ProtocolInteractionArgs
 ) -> ProgramResult {
-    let (solend_client, obligation_position) = SolendClient::from(&mut ctx)?;
-    let solauto_manager = SolautoManager::from(&solend_client, &obligation_position)?;
+    let (solend_client, mut obligation_position) = SolendClient::from(&mut ctx)?;
+    let mut solauto_manager = SolautoManager::from(&solend_client, &mut obligation_position)?;
 
     solauto_manager.protocol_interaction(args)?;
 

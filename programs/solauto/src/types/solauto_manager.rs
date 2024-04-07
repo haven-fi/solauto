@@ -4,18 +4,18 @@ use super::{
     instruction::ProtocolInteractionArgs,
     lending_protocol::LendingProtocolClient,
     obligation_position::LendingProtocolObligationPosition,
-    shared::{ DeserializedAccount, Position },
+    shared::{ DeserializedAccount, Position, ProtocolAction },
 };
 
 pub struct SolautoManager<'a> {
     client: &'a dyn LendingProtocolClient,
-    obligation_position: &'a LendingProtocolObligationPosition,
+    obligation_position: &'a mut LendingProtocolObligationPosition,
 }
 
 impl<'a> SolautoManager<'a> {
     pub fn from(
         client: &'a dyn LendingProtocolClient,
-        obligation_position: &'a LendingProtocolObligationPosition
+        obligation_position: &'a mut LendingProtocolObligationPosition
     ) -> Result<Self, ProgramError> {
         client.validate()?;
         Ok(Self {
@@ -24,10 +24,57 @@ impl<'a> SolautoManager<'a> {
         })
     }
 
-    pub fn protocol_interaction(&self, args: ProtocolInteractionArgs) -> ProgramResult {
-        // TODO: take action based on args
+    pub fn protocol_interaction(&mut self, args: ProtocolInteractionArgs) -> ProgramResult {
+        match args.action {
+            ProtocolAction::Deposit(details) => {
+                self.deposit(details.action_amount)?;
+                if !details.rebalance_utilization_rate_bps.is_none() {
+
+                }
+            }
+            ProtocolAction::Borrow(details) => {
+                if !details.rebalance_utilization_rate_bps.is_none() {
+
+                }
+            }
+            ProtocolAction::Repay(details) => {
+                if !details.rebalance_utilization_rate_bps.is_none() {
+
+                }
+            }
+            ProtocolAction::Withdraw(details) => {
+                if !details.rebalance_utilization_rate_bps.is_none() {
+
+                }
+            }
+            ProtocolAction::ClosePosition => {
+
+            }
+        }
+
         // TODO: if we are unable to rebalance to desired position due to borrow / withdraw caps, client should initiate flash loan
+
         Ok(())
+    }
+
+    fn deposit(&mut self, base_unit_amount: u64) -> ProgramResult {
+        self.client.deposit(base_unit_amount)?;
+        self.obligation_position.supply_update(base_unit_amount as i64)
+    }
+
+    fn borrow(&mut self, base_unit_amount: u64) -> ProgramResult {
+        self.client.borrow(base_unit_amount)?;
+        self.obligation_position.debt_update(base_unit_amount as i64)
+    }
+
+    fn withdraw(&mut self, base_unit_amount: u64) -> ProgramResult {
+        self.client.withdraw(base_unit_amount)?;
+        self.obligation_position.supply_update(base_unit_amount as i64 * -1)
+    }
+
+    fn repay(&mut self, base_unit_amount: u64) -> ProgramResult {
+        self.client.repay(base_unit_amount)?;
+        self.obligation_position.debt_update(base_unit_amount as i64 * -1)
     }
 
     pub fn refresh_position(

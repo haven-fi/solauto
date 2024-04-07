@@ -110,26 +110,36 @@ impl LendingProtocolObligationPosition {
         )
     }
 
-    pub fn deposit_update(&mut self, base_unit_deposit_amount: u64) -> ProgramResult {
+    pub fn supply_update(&mut self, base_unit_supply_update: i64) -> ProgramResult {
         if let Some(supply) = self.supply.as_mut() {
-            supply.amount_used.base_unit += base_unit_deposit_amount;
-            supply.amount_can_be_used.base_unit -= base_unit_deposit_amount;
+            if base_unit_supply_update.is_positive() {
+                supply.amount_used.base_unit += base_unit_supply_update as u64;
+                supply.amount_can_be_used.base_unit -= base_unit_supply_update as u64;
+            } else {
+                supply.amount_used.base_unit -= (base_unit_supply_update * -1) as u64;
+                supply.amount_can_be_used.base_unit += (base_unit_supply_update * -1) as u64;
+            }
             supply.update_usd_values();
             Ok(())
         } else {
-            msg!("Supply liquidity not defined when attempting to modify it");
+            msg!("Supply not defined when attempting to modify it");
             return Err(ProgramError::InvalidAccountData.into());
         }
     }
 
-    pub fn borrow_update(&mut self, base_unit_borrowed_amount: u64) -> ProgramResult {
+    pub fn debt_update(&mut self, base_unit_debt_amount_update: i64) -> ProgramResult {
         if let Some(debt) = self.debt.as_mut() {
-            debt.amount_used.base_unit += base_unit_borrowed_amount;
-            debt.amount_can_be_used.base_unit -= base_unit_borrowed_amount;
+            if base_unit_debt_amount_update.is_positive() {
+                debt.amount_used.base_unit += base_unit_debt_amount_update as u64;
+                debt.amount_can_be_used.base_unit -= base_unit_debt_amount_update as u64;
+            } else {
+                debt.amount_used.base_unit -= (base_unit_debt_amount_update * -1) as u64;
+                debt.amount_can_be_used.base_unit += (base_unit_debt_amount_update * -1) as u64;
+            }
             debt.update_usd_values();
             Ok(())
         } else {
-            msg!("Debt liquidity not defined when attempting to modify it");
+            msg!("Debt not defined when attempting to modify it");
             return Err(ProgramError::InvalidAccountData.into());
         }
     }
