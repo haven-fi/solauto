@@ -34,11 +34,6 @@ pub fn process_solend_open_position_instruction<'a>(
     ix_utils::update_data(&mut solauto_position)
 }
 
-pub fn process_solend_update_position_instruction() -> ProgramResult {
-    // TODO
-    Ok(())
-}
-
 pub fn process_solend_refresh_accounts<'a>(accounts: &'a [AccountInfo<'a>]) -> ProgramResult {
     let ctx = SolendRefreshDataAccounts::context(accounts)?;
     let mut solauto_position = DeserializedAccount::<Position>::deserialize(

@@ -37,8 +37,7 @@ impl<'a> MarginfiClient<'a> {
         return Err(ProgramError::Custom(0));
     }
 
-    pub fn deserialize_solend_accounts(
-        lending_pool: &'a AccountInfo<'a>,
+    pub fn deserialize_margfinfi_accounts(
         supply_bank: Option<&'a AccountInfo<'a>>,
         debt_bank: Option<&'a AccountInfo<'a>>,
         marginfi_account: &'a AccountInfo<'a>

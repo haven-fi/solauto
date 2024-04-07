@@ -1,9 +1,10 @@
 use solana_program::{ entrypoint::ProgramResult, program_error::ProgramError };
 
 use super::{
-    shared::{ DeserializedAccount, Position },
+    instruction::ProtocolInteractionArgs,
     lending_protocol::LendingProtocolClient,
     obligation_position::LendingProtocolObligationPosition,
+    shared::{ DeserializedAccount, Position },
 };
 
 pub struct SolautoManager<'a> {
@@ -23,11 +24,18 @@ impl<'a> SolautoManager<'a> {
         })
     }
 
+    pub fn protocol_interaction(&self, args: ProtocolInteractionArgs) -> ProgramResult {
+        // TODO: take action based on args
+        // TODO: if we are unable to rebalance to desired position due to borrow / withdraw caps, client should initiate flash loan
+        Ok(())
+    }
+
     pub fn refresh_position(
         obligation_position: &LendingProtocolObligationPosition,
         solauto_position: &mut DeserializedAccount<Position>
     ) -> ProgramResult {
-        solauto_position.data.general_data.net_worth_usd_base_amount = obligation_position.net_worth_usd_base_amount();
+        solauto_position.data.general_data.net_worth_usd_base_amount =
+            obligation_position.net_worth_usd_base_amount();
         solauto_position.data.general_data.base_amount_liquidity_net_worth =
             obligation_position.net_worth_base_amount();
         solauto_position.data.general_data.utilization_rate_bps =
@@ -46,7 +54,7 @@ impl<'a> SolautoManager<'a> {
         } else {
             0
         };
-        
+
         Ok(())
     }
 }
