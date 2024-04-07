@@ -7,21 +7,6 @@ use super::shared::*;
 #[rustfmt::skip]
 pub enum Instruction {
     #[account(signer, writable, name = "signer")]
-    #[account(name = "solend_program")]
-    #[account(name = "system_program")]
-    #[account(name = "token_program")]
-    #[account(name = "ata_program")]
-    #[account(name = "rent")]
-    #[account(mut, optional, name = "solauto_position")]
-    #[account(name = "lending_market")]
-    #[account(mut, name = "obligation")]
-    #[account(mut, name = "supply_collateral_token_account")]
-    #[account(name = "supply_collateral_token_mint")]
-    #[account(mut, name = "debt_liquidity_token_account")]
-    #[account(name = "debt_liquidity_token_mint")]
-    SolendOpenPosition(OpenPositionArgs),
-
-    #[account(signer, writable, name = "signer")]
     #[account(name = "marginfi_program")]
     #[account(name = "system_program")]
     #[account(name = "token_program")]
@@ -37,7 +22,25 @@ pub enum Instruction {
     #[account(name = "debt_token_mint")]
     MarginfiOpenPosition(OpenPositionArgs),
 
+    #[account(signer, writable, name = "signer")]
+    #[account(name = "solend_program")]
+    #[account(name = "system_program")]
+    #[account(name = "token_program")]
+    #[account(name = "ata_program")]
+    #[account(name = "rent")]
+    #[account(mut, optional, name = "solauto_position")]
+    #[account(name = "lending_market")]
+    #[account(mut, name = "obligation")]
+    #[account(mut, name = "supply_collateral_token_account")]
+    #[account(name = "supply_collateral_token_mint")]
+    #[account(mut, name = "debt_liquidity_token_account")]
+    #[account(name = "debt_liquidity_token_mint")]
+    SolendOpenPosition(OpenPositionArgs),
+
     // UpdatePosition, TODO
+
+    // TODO
+    // MarginfiRefreshData,
 
     #[account(signer, name = "signer")]
     #[account(name = "solend_program")]
@@ -52,6 +55,9 @@ pub enum Instruction {
     #[account(mut, optional, name = "obligation")]
     #[account(mut, optional, name = "solauto_position")]
     SolendRefreshData,
+
+    // TODO
+    // MarginfiProtocolInteraction(ProtocolInteractionArgs),
 
     #[account(signer, writable, name = "signer")]
     #[account(name = "solend_program")]
@@ -81,7 +87,11 @@ pub enum Instruction {
     #[account(mut, optional, name = "reserve_debt_liquidity")]
     SolendProtocolInteraction(ProtocolInteractionArgs),
 
-    // RebalancePing TODO
+    // TODO
+    // MarginfiRebalancePing,
+    
+    // TODO
+    // SolendRebalancePing,
 }
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug)]
