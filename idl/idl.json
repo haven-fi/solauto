@@ -119,28 +119,43 @@
           "isSigner": false
         },
         {
+          "name": "marginfiGroup",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "lendingPool",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "marginfiAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
           "name": "solautoPosition",
           "isMut": true,
           "isSigner": false,
           "isOptional": true
         },
         {
-          "name": "supplyCollateralTokenAccount",
+          "name": "supplyTokenAccount",
           "isMut": true,
           "isSigner": false
         },
         {
-          "name": "supplyCollateralTokenMint",
+          "name": "supplyTokenMint",
           "isMut": false,
           "isSigner": false
         },
         {
-          "name": "debtLiquidityTokenAccount",
+          "name": "debtTokenAccount",
           "isMut": true,
           "isSigner": false
         },
         {
-          "name": "debtLiquidityTokenMint",
+          "name": "debtTokenMint",
           "isMut": false,
           "isSigner": false
         }
