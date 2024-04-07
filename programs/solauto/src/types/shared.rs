@@ -58,7 +58,7 @@ pub struct GeneralPositionData {
     pub base_amount_borrowed: u64,
 }
 
-pub const POSITION_LEN: usize = 500;
+pub const POSITION_ACCOUNT_SPACE: usize = 500;
 #[derive(ShankAccount, BorshDeserialize, BorshSerialize, Clone, Debug)]
 pub struct Position {
     pub position_id: u8,

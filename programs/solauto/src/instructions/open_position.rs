@@ -5,7 +5,7 @@ use crate::{
     clients::{marginfi::MarginfiClient, solend::SolendClient},
     types::{
         instruction::accounts::{ Context, MarginfiOpenPositionAccounts, SolendOpenPositionAccounts },
-        shared::{ DeserializedAccount, Position, POSITION_LEN },
+        shared::{ DeserializedAccount, Position, POSITION_ACCOUNT_SPACE },
     },
     utils::*,
 };
@@ -26,7 +26,29 @@ pub fn marginfi_open_position<'a, 'b>(
         ctx.accounts.debt_token_mint
     )?;
 
-    // TODO create obligation account
+    let marginfi_account_seeds = if !solauto_position.is_none() {
+        vec![
+            ctx.accounts.solauto_position.unwrap().key.as_ref(),
+            ctx.accounts.signer.key.as_ref(),
+            ctx.accounts.lending_pool.key.as_ref(),
+            ctx.accounts.marginfi_program.key.as_ref()
+        ]
+    } else {
+        vec![
+            ctx.accounts.signer.key.as_ref(),
+            ctx.accounts.lending_pool.key.as_ref(),
+            ctx.accounts.marginfi_program.key.as_ref()
+        ]
+    };
+    solana_utils::init_new_account(
+        ctx.accounts.system_program,
+        ctx.accounts.rent,
+        ctx.accounts.signer,
+        ctx.accounts.marginfi_account,
+        ctx.accounts.marginfi_program.key,
+        marginfi_account_seeds,
+        Obligation::LEN // TODO: get marginfi account space from MarginfiAccount::LEN from generated code
+    )?;
 
     MarginfiClient::initialize(&ctx, solauto_position)
 }
@@ -93,7 +115,7 @@ fn initialize_solauto_position<'a, 'b>(
             solauto_position.as_ref().unwrap().account_info,
             &crate::ID,
             vec![&[solauto_position.as_ref().unwrap().data.position_id], signer.key.as_ref()],
-            POSITION_LEN
+            POSITION_ACCOUNT_SPACE
         )?;
     }
 
