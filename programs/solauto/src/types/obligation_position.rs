@@ -2,7 +2,10 @@ use std::ops::{ Mul, Div };
 use solana_program::{ msg, program_error::ProgramError, entrypoint::ProgramResult };
 use solend_sdk::{ math::BPS_SCALER, state::Reserve };
 
-use crate::{constants::USD_DECIMALS, utils::math_utils::{ base_unit_to_usd_value, decimal_to_f64_div_wad, to_base_unit }};
+use crate::{
+    constants::USD_DECIMALS,
+    utils::math_utils::{ base_unit_to_usd_value, decimal_to_f64_div_wad, to_base_unit },
+};
 
 #[derive(Debug)]
 pub struct TokenAmount {
@@ -63,13 +66,13 @@ impl PositionTokenUsage {
 
 pub struct LendingProtocolObligationPosition {
     pub max_loan_to_value_ratio: f64,
-    pub supply_liquidity: Option<PositionTokenUsage>,
-    pub debt_liquidity: Option<PositionTokenUsage>,
+    pub supply: Option<PositionTokenUsage>,
+    pub debt: Option<PositionTokenUsage>,
 }
 
 impl LendingProtocolObligationPosition {
     pub fn current_utilization_rate_bps(&self) -> u16 {
-        match (&self.debt_liquidity, &self.supply_liquidity) {
+        match (&self.debt, &self.supply) {
             (Some(debt), Some(supply)) =>
                 debt.amount_used.usd_value
                     .div(supply.amount_used.usd_value.mul(self.max_loan_to_value_ratio as f32))
@@ -79,12 +82,12 @@ impl LendingProtocolObligationPosition {
     }
 
     pub fn net_worth_usd_base_amount(&self) -> u64 {
-        if self.supply_liquidity.is_none() {
+        if self.supply.is_none() {
             return 0;
         }
 
-        let supply_usd = self.supply_liquidity.as_ref().unwrap().amount_used.usd_value;
-        let net_worth_usd = if let Some(debt_lquidity) = self.debt_liquidity.as_ref() {
+        let supply_usd = self.supply.as_ref().unwrap().amount_used.usd_value;
+        let net_worth_usd = if let Some(debt_lquidity) = self.debt.as_ref() {
             supply_usd - debt_lquidity.amount_used.usd_value
         } else {
             supply_usd
@@ -94,21 +97,21 @@ impl LendingProtocolObligationPosition {
     }
 
     pub fn net_worth_base_amount(&self) -> u64 {
-        if self.supply_liquidity.is_none() {
+        if self.supply.is_none() {
             return 0;
         }
 
-        let supply_liquidity = self.supply_liquidity.as_ref().unwrap();
+        let supply = self.supply.as_ref().unwrap();
         to_base_unit::<f64, u8, u64>(
             (self.net_worth_usd_base_amount() as f64)
                 .div((10u64).pow(USD_DECIMALS) as f64)
-                .div(supply_liquidity.market_price as f64),
-            supply_liquidity.decimals
+                .div(supply.market_price as f64),
+            supply.decimals
         )
     }
 
     pub fn deposit_update(&mut self, base_unit_deposit_amount: u64) -> ProgramResult {
-        if let Some(supply) = self.supply_liquidity.as_mut() {
+        if let Some(supply) = self.supply.as_mut() {
             supply.amount_used.base_unit += base_unit_deposit_amount;
             supply.amount_can_be_used.base_unit -= base_unit_deposit_amount;
             supply.update_usd_values();
@@ -120,7 +123,7 @@ impl LendingProtocolObligationPosition {
     }
 
     pub fn borrow_update(&mut self, base_unit_borrowed_amount: u64) -> ProgramResult {
-        if let Some(debt) = self.debt_liquidity.as_mut() {
+        if let Some(debt) = self.debt.as_mut() {
             debt.amount_used.base_unit += base_unit_borrowed_amount;
             debt.amount_can_be_used.base_unit -= base_unit_borrowed_amount;
             debt.update_usd_values();

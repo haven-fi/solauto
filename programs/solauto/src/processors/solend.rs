@@ -22,7 +22,7 @@ pub fn process_solend_open_position_instruction<'a>(
     args: OpenPositionArgs
 ) -> ProgramResult {
     let ctx = SolendOpenPositionAccounts::context(accounts)?;
-    let mut solauto_position = ix_utils::create_new_solauto_position(
+    let mut solauto_position = solauto_utils::create_new_solauto_position(
         ctx.accounts.signer,
         ctx.accounts.solauto_position,
         args.position_data,
@@ -30,7 +30,7 @@ pub fn process_solend_open_position_instruction<'a>(
     )?;
     validation_utils::validate_signer(ctx.accounts.signer, &solauto_position, true)?;
     validation_utils::validate_program_account(&ctx.accounts.solend_program, LendingPlatform::Solend)?;
-    solend_open_position::solend_open_position(ctx, &mut solauto_position)?;
+    open_position::solend_open_position(ctx, &mut solauto_position)?;
     ix_utils::update_data(&mut solauto_position)
 }
 

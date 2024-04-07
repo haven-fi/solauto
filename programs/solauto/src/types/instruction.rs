@@ -27,11 +27,13 @@ pub enum Instruction {
     #[account(name = "token_program")]
     #[account(name = "ata_program")]
     #[account(name = "rent")]
+    #[account(name = "marginfi_group")]
+    #[account(mut, name = "marginfi_account")]
     #[account(mut, optional, name = "solauto_position")]
-    #[account(mut, name = "supply_collateral_token_account")]
-    #[account(name = "supply_collateral_token_mint")]
-    #[account(mut, name = "debt_liquidity_token_account")]
-    #[account(name = "debt_liquidity_token_mint")]
+    #[account(mut, name = "supply_token_account")]
+    #[account(name = "supply_token_mint")]
+    #[account(mut, name = "debt_token_account")]
+    #[account(name = "debt_token_mint")]
     MarginfiOpenPosition(OpenPositionArgs),
 
     // UpdatePosition, TODO

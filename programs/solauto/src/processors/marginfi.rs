@@ -1,6 +1,7 @@
 use solana_program::{ account_info::AccountInfo, entrypoint::ProgramResult };
 
 use crate::{
+    instructions::open_position,
     types::{
         instruction::{ accounts::MarginfiOpenPositionAccounts, OpenPositionArgs },
         shared::LendingPlatform,
@@ -13,7 +14,7 @@ pub fn process_marginfi_open_position_instruction<'a>(
     args: OpenPositionArgs
 ) -> ProgramResult {
     let ctx = MarginfiOpenPositionAccounts::context(accounts)?;
-    let mut solauto_position = ix_utils::create_new_solauto_position(
+    let mut solauto_position = solauto_utils::create_new_solauto_position(
         ctx.accounts.signer,
         ctx.accounts.solauto_position,
         args.position_data,
@@ -24,6 +25,6 @@ pub fn process_marginfi_open_position_instruction<'a>(
         &ctx.accounts.marginfi_program,
         LendingPlatform::Marginfi
     )?;
-    // TODO: open position instruction
+    open_position::marginfi_open_position(ctx, &mut solauto_position)?;
     ix_utils::update_data(&mut solauto_position)
 }
