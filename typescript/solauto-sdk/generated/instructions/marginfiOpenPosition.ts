@@ -33,64 +33,64 @@ import {
 } from '../types';
 
 // Accounts.
-export type SolendOpenPositionInstructionAccounts = {
+export type MarginfiOpenPositionInstructionAccounts = {
   signer: Signer;
-  solendProgram: PublicKey | Pda;
+  marginfiProgram: PublicKey | Pda;
   systemProgram?: PublicKey | Pda;
   tokenProgram?: PublicKey | Pda;
   ataProgram?: PublicKey | Pda;
   rent?: PublicKey | Pda;
+  marginfiGroup: PublicKey | Pda;
+  marginfiAccount: PublicKey | Pda;
   solautoPosition?: PublicKey | Pda;
-  lendingMarket: PublicKey | Pda;
-  obligation: PublicKey | Pda;
-  supplyCollateralTokenAccount: PublicKey | Pda;
-  supplyCollateralTokenMint: PublicKey | Pda;
-  debtLiquidityTokenAccount: PublicKey | Pda;
-  debtLiquidityTokenMint: PublicKey | Pda;
+  supplyTokenAccount: PublicKey | Pda;
+  supplyTokenMint: PublicKey | Pda;
+  debtTokenAccount: PublicKey | Pda;
+  debtTokenMint: PublicKey | Pda;
 };
 
 // Data.
-export type SolendOpenPositionInstructionData = {
+export type MarginfiOpenPositionInstructionData = {
   discriminator: number;
   openPositionArgs: OpenPositionArgs;
 };
 
-export type SolendOpenPositionInstructionDataArgs = {
+export type MarginfiOpenPositionInstructionDataArgs = {
   openPositionArgs: OpenPositionArgsArgs;
 };
 
-export function getSolendOpenPositionInstructionDataSerializer(): Serializer<
-  SolendOpenPositionInstructionDataArgs,
-  SolendOpenPositionInstructionData
+export function getMarginfiOpenPositionInstructionDataSerializer(): Serializer<
+  MarginfiOpenPositionInstructionDataArgs,
+  MarginfiOpenPositionInstructionData
 > {
   return mapSerializer<
-    SolendOpenPositionInstructionDataArgs,
+    MarginfiOpenPositionInstructionDataArgs,
     any,
-    SolendOpenPositionInstructionData
+    MarginfiOpenPositionInstructionData
   >(
-    struct<SolendOpenPositionInstructionData>(
+    struct<MarginfiOpenPositionInstructionData>(
       [
         ['discriminator', u8()],
         ['openPositionArgs', getOpenPositionArgsSerializer()],
       ],
-      { description: 'SolendOpenPositionInstructionData' }
+      { description: 'MarginfiOpenPositionInstructionData' }
     ),
-    (value) => ({ ...value, discriminator: 1 })
+    (value) => ({ ...value, discriminator: 0 })
   ) as Serializer<
-    SolendOpenPositionInstructionDataArgs,
-    SolendOpenPositionInstructionData
+    MarginfiOpenPositionInstructionDataArgs,
+    MarginfiOpenPositionInstructionData
   >;
 }
 
 // Args.
-export type SolendOpenPositionInstructionArgs =
-  SolendOpenPositionInstructionDataArgs;
+export type MarginfiOpenPositionInstructionArgs =
+  MarginfiOpenPositionInstructionDataArgs;
 
 // Instruction.
-export function solendOpenPosition(
+export function marginfiOpenPosition(
   context: Pick<Context, 'programs'>,
-  input: SolendOpenPositionInstructionAccounts &
-    SolendOpenPositionInstructionArgs
+  input: MarginfiOpenPositionInstructionAccounts &
+    MarginfiOpenPositionInstructionArgs
 ): TransactionBuilder {
   // Program ID.
   const programId = context.programs.getPublicKey(
@@ -105,10 +105,10 @@ export function solendOpenPosition(
       isWritable: true as boolean,
       value: input.signer ?? null,
     },
-    solendProgram: {
+    marginfiProgram: {
       index: 1,
       isWritable: false as boolean,
-      value: input.solendProgram ?? null,
+      value: input.marginfiProgram ?? null,
     },
     systemProgram: {
       index: 2,
@@ -126,45 +126,45 @@ export function solendOpenPosition(
       value: input.ataProgram ?? null,
     },
     rent: { index: 5, isWritable: false as boolean, value: input.rent ?? null },
-    solautoPosition: {
+    marginfiGroup: {
       index: 6,
+      isWritable: false as boolean,
+      value: input.marginfiGroup ?? null,
+    },
+    marginfiAccount: {
+      index: 7,
+      isWritable: true as boolean,
+      value: input.marginfiAccount ?? null,
+    },
+    solautoPosition: {
+      index: 8,
       isWritable: true as boolean,
       value: input.solautoPosition ?? null,
     },
-    lendingMarket: {
-      index: 7,
-      isWritable: false as boolean,
-      value: input.lendingMarket ?? null,
-    },
-    obligation: {
-      index: 8,
-      isWritable: true as boolean,
-      value: input.obligation ?? null,
-    },
-    supplyCollateralTokenAccount: {
+    supplyTokenAccount: {
       index: 9,
       isWritable: true as boolean,
-      value: input.supplyCollateralTokenAccount ?? null,
+      value: input.supplyTokenAccount ?? null,
     },
-    supplyCollateralTokenMint: {
+    supplyTokenMint: {
       index: 10,
       isWritable: false as boolean,
-      value: input.supplyCollateralTokenMint ?? null,
+      value: input.supplyTokenMint ?? null,
     },
-    debtLiquidityTokenAccount: {
+    debtTokenAccount: {
       index: 11,
       isWritable: true as boolean,
-      value: input.debtLiquidityTokenAccount ?? null,
+      value: input.debtTokenAccount ?? null,
     },
-    debtLiquidityTokenMint: {
+    debtTokenMint: {
       index: 12,
       isWritable: false as boolean,
-      value: input.debtLiquidityTokenMint ?? null,
+      value: input.debtTokenMint ?? null,
     },
   } satisfies ResolvedAccountsWithIndices;
 
   // Arguments.
-  const resolvedArgs: SolendOpenPositionInstructionArgs = { ...input };
+  const resolvedArgs: MarginfiOpenPositionInstructionArgs = { ...input };
 
   // Default values.
   if (!resolvedAccounts.systemProgram.value) {
@@ -207,8 +207,8 @@ export function solendOpenPosition(
   );
 
   // Data.
-  const data = getSolendOpenPositionInstructionDataSerializer().serialize(
-    resolvedArgs as SolendOpenPositionInstructionDataArgs
+  const data = getMarginfiOpenPositionInstructionDataSerializer().serialize(
+    resolvedArgs as MarginfiOpenPositionInstructionDataArgs
   );
 
   // Bytes Created On Chain.

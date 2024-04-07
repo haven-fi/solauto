@@ -3,6 +3,89 @@
   "name": "solauto",
   "instructions": [
     {
+      "name": "MarginfiOpenPosition",
+      "accounts": [
+        {
+          "name": "signer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "marginfiProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "ataProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "marginfiGroup",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "marginfiAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "solautoPosition",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "supplyTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "supplyTokenMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "debtTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "debtTokenMint",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "openPositionArgs",
+          "type": {
+            "defined": "OpenPositionArgs"
+          }
+        }
+      ],
+      "discriminant": {
+        "type": "u8",
+        "value": 0
+      }
+    },
+    {
       "name": "SolendOpenPosition",
       "accounts": [
         {
@@ -82,7 +165,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 0
+        "value": 1
       }
     },
     {
@@ -157,7 +240,7 @@
       "args": [],
       "discriminant": {
         "type": "u8",
-        "value": 1
+        "value": 2
       }
     },
     {
@@ -320,7 +403,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 2
+        "value": 3
       }
     }
   ],
@@ -580,13 +663,10 @@
         "kind": "enum",
         "variants": [
           {
-            "name": "Solend"
-          },
-          {
-            "name": "Kamino"
-          },
-          {
             "name": "Marginfi"
+          },
+          {
+            "name": "Solend"
           }
         ]
       }

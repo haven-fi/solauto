@@ -5,10 +5,12 @@
 //! [https://github.com/metaplex-foundation/kinobi]
 //!
 
+pub(crate) mod r#marginfi_open_position;
 pub(crate) mod r#solend_open_position;
 pub(crate) mod r#solend_protocol_interaction;
 pub(crate) mod r#solend_refresh_data;
 
+pub use self::r#marginfi_open_position::*;
 pub use self::r#solend_open_position::*;
 pub use self::r#solend_protocol_interaction::*;
 pub use self::r#solend_refresh_data::*;

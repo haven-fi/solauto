@@ -6,6 +6,7 @@
  * @see https://github.com/metaplex-foundation/kinobi
  */
 
+export * from './marginfiOpenPosition';
 export * from './solendOpenPosition';
 export * from './solendProtocolInteraction';
 export * from './solendRefreshData';
