@@ -28,7 +28,7 @@ use crate::{
         },
         lending_protocol::*,
         obligation_position::*,
-        shared::{ DeserializedAccount, Position, SolautoError },
+        shared::{ DeserializedAccount, LendingPlatform, Position, SolautoError },
     },
     utils::{ ix_utils::*, solauto_utils::* },
 };
@@ -248,6 +248,7 @@ impl<'a> SolendClient<'a> {
             max_loan_to_value_ratio,
             supply: supply_liquidity,
             debt: debt_liquidity,
+            lending_platform: LendingPlatform::Solend
         })
     }
 
@@ -373,6 +374,7 @@ impl<'a> LendingProtocolClient for SolendClient<'a> {
     }
 
     fn withdraw(&self, base_unit_amount: u64) -> ProgramResult {
+        // TODO
         Ok(())
     }
 
@@ -416,6 +418,7 @@ impl<'a> LendingProtocolClient for SolendClient<'a> {
     }
 
     fn repay(&self, base_unit_amount: u64) -> ProgramResult {
+        // TODO
         Ok(())
     }
 }

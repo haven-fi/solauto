@@ -7,6 +7,8 @@ use crate::{
     utils::math_utils::{ base_unit_to_usd_value, decimal_to_f64_div_wad, to_base_unit },
 };
 
+use super::shared::LendingPlatform;
+
 #[derive(Debug)]
 pub struct TokenAmount {
     pub base_unit: u64,
@@ -68,6 +70,7 @@ pub struct LendingProtocolObligationPosition {
     pub max_loan_to_value_ratio: f64,
     pub supply: Option<PositionTokenUsage>,
     pub debt: Option<PositionTokenUsage>,
+    pub lending_platform: LendingPlatform,
 }
 
 impl LendingProtocolObligationPosition {
@@ -117,7 +120,10 @@ impl LendingProtocolObligationPosition {
                 supply.amount_can_be_used.base_unit -= base_unit_supply_update as u64;
             } else {
                 supply.amount_used.base_unit -= (base_unit_supply_update * -1) as u64;
-                supply.amount_can_be_used.base_unit += (base_unit_supply_update * -1) as u64;
+
+                if self.lending_platform != LendingPlatform::Solend {
+                    supply.amount_can_be_used.base_unit += (base_unit_supply_update * -1) as u64;
+                }
             }
             supply.update_usd_values();
             Ok(())
@@ -134,7 +140,10 @@ impl LendingProtocolObligationPosition {
                 debt.amount_can_be_used.base_unit -= base_unit_debt_amount_update as u64;
             } else {
                 debt.amount_used.base_unit -= (base_unit_debt_amount_update * -1) as u64;
-                debt.amount_can_be_used.base_unit += (base_unit_debt_amount_update * -1) as u64;
+
+                if self.lending_platform != LendingPlatform::Solend {
+                    debt.amount_can_be_used.base_unit += (base_unit_debt_amount_update * -1) as u64;
+                }
             }
             debt.update_usd_values();
             Ok(())

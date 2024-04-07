@@ -11,7 +11,7 @@ use crate::types::shared::{
     DeserializedAccount, LendingPlatform, Position, ProtocolAction, SolautoError, SolautoSettingsParameters
 };
 
-use crate::constants::{ FEE_RECEIVER, MARGINFI_PROGRAM, SOLEND_PROGRAM };
+use crate::constants::{ FEE_RECEIVER, KAMINO_PROGRAM, MARGINFI_PROGRAM, SOLEND_PROGRAM };
 
 pub fn validate_signer(
     signer: &AccountInfo,
@@ -107,8 +107,14 @@ pub fn validate_program_account(program: &AccountInfo, lending_platform: Lending
                 return Err(ProgramError::InvalidAccountData.into());
             }
         }
+        LendingPlatform::Kamino => {
+            if *program.key != KAMINO_PROGRAM {
+                msg!("Incorrect Kamino program account");
+                return Err(ProgramError::InvalidAccountData.into());
+            }
+        }
     }
-    // We don't need to check more than this, as lending protocols have their own account checks and will fail during CPI if there is an issue
+    // We don't need to check more than this, as lending protocols have their own account checks and will fail during CPI if there is an issue with the provided accounts
     Ok(())
 }
 

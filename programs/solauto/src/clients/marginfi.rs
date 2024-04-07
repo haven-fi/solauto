@@ -13,6 +13,7 @@ use crate::types::{
 };
 
 pub struct MarginfiDataAccounts<'a> {
+    // TODO: remove me
     pub temp: &'a AccountInfo<'a>,
     // pub supply_bank: Option<DeserializedAccount<'a, Bank>>,
     // pub debt_bank: Option<DeserializedAccount<'a, Bank>>,
@@ -34,6 +35,7 @@ impl<'a> MarginfiClient<'a> {
     }
 
     pub fn from<'b>() -> Result<(Self, LendingProtocolObligationPosition), ProgramError> {
+        // TODO
         return Err(ProgramError::Custom(0));
     }
 
@@ -42,32 +44,39 @@ impl<'a> MarginfiClient<'a> {
         debt_bank: Option<&'a AccountInfo<'a>>,
         marginfi_account: &'a AccountInfo<'a>
     ) -> Result<MarginfiDataAccounts<'a>, ProgramError> {
+        // TODO
         return Err(ProgramError::Custom(0));
     }
 
     pub fn get_obligation_position() -> Result<LendingProtocolObligationPosition, ProgramError> {
+        // TODO
         return Err(ProgramError::Custom(0));
     }
 }
 
 impl<'a> LendingProtocolClient for MarginfiClient<'a> {
     fn validate(&self) -> ProgramResult {
+        // TODO
         Ok(())
     }
 
     fn deposit(&self, base_unit_amount: u64) -> ProgramResult {
+        // TODO
         Ok(())
     }
 
     fn withdraw(&self, base_unit_amount: u64) -> ProgramResult {
+        // TODO
         Ok(())
     }
 
     fn borrow(&self, base_unit_amount: u64) -> ProgramResult {
+        // TODO
         Ok(())
     }
 
     fn repay(&self, base_unit_amount: u64) -> ProgramResult {
+        // TODO
         Ok(())
     }
 }

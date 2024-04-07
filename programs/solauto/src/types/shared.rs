@@ -26,12 +26,12 @@ pub struct ProtocolActionDetails {
     pub rebalance_utilization_rate_bps: Option<u16>,
 }
 
-#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType)]
+#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, PartialEq)]
 #[borsh(use_discriminant = true)]
 pub enum LendingPlatform {
     Marginfi = 0,
     Solend = 1,
-    // Kamino = 2,
+    Kamino = 2,
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType)]
