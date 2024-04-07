@@ -2,9 +2,13 @@ use solana_program::{ account_info::AccountInfo, entrypoint::ProgramResult, prog
 use solend_sdk::state::Obligation;
 
 use crate::{
-    clients::{marginfi::MarginfiClient, solend::SolendClient},
+    clients::{ marginfi::MarginfiClient, solend::SolendClient },
     types::{
-        instruction::accounts::{ Context, MarginfiOpenPositionAccounts, SolendOpenPositionAccounts },
+        instruction::accounts::{
+            Context,
+            MarginfiOpenPositionAccounts,
+            SolendOpenPositionAccounts,
+        },
         shared::{ DeserializedAccount, Position, POSITION_ACCOUNT_SPACE },
     },
     utils::*,
@@ -33,10 +37,7 @@ pub fn marginfi_open_position<'a, 'b>(
             ctx.accounts.marginfi_program.key.as_ref()
         ]
     } else {
-        vec![
-            ctx.accounts.signer.key.as_ref(),
-            ctx.accounts.marginfi_program.key.as_ref()
-        ]
+        vec![ctx.accounts.signer.key.as_ref(), ctx.accounts.marginfi_program.key.as_ref()]
     };
     solana_utils::init_new_account(
         ctx.accounts.system_program,
@@ -117,10 +118,7 @@ fn initialize_solauto_position<'a, 'b>(
         )?;
     }
 
-    let obligation_owner = solauto_utils::get_owner(
-        &Some(solauto_position.as_ref().unwrap().account_info),
-        signer
-    );
+    let obligation_owner = solauto_utils::get_owner(solauto_position, signer);
 
     solana_utils::init_ata_if_needed(
         token_program,

@@ -1,5 +1,6 @@
 {
   "scripts": {
+    "push": "git add . && git commit -m 'wip' && git push",
     "test": "cd typescript/solauto-sdk && pnpm test",
     "format:rust": "find ./programs/solauto-sdk -name '*.rs' -exec rustfmt {} +",
     "generate": "cargo build-sbf && pnpm generate:idl && pnpm generate:clients",

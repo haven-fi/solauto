@@ -68,10 +68,10 @@ pub struct SolendClient<'a> {
 
 impl<'a> SolendClient<'a> {
     pub fn initialize<'b>(
-        ctx: &'b Context<'a, SolendOpenPositionAccounts>,
-        solauto_position: &Option<DeserializedAccount<Position>>
+        ctx: &'b Context<'a, SolendOpenPositionAccounts<'a>>,
+        solauto_position: &'b Option<DeserializedAccount<'a, Position>>
     ) -> ProgramResult {
-        let obligation_owner = get_owner(&ctx.accounts.solauto_position, ctx.accounts.signer);
+        let obligation_owner = get_owner(solauto_position, ctx.accounts.signer);
 
         invoke_instruction(
             init_obligation(
@@ -326,15 +326,9 @@ impl<'a> LendingProtocolClient for SolendClient<'a> {
     }
 
     fn deposit(&self, base_unit_amount: u64) -> ProgramResult {
+        let obligation_owner = get_owner(&self.solauto_position, self.signer);
         let supply_liquidity = self.supply_liquidity.as_ref().unwrap();
         let supply_collateral = self.supply_collateral.as_ref().unwrap();
-
-        let obligation_owner = if !self.solauto_position.is_none() {
-            self.solauto_position.as_ref().unwrap().account_info
-        } else {
-            self.signer
-        };
-
         let supply_reserve = self.data.supply_reserve.as_ref().unwrap().account_info;
         let reserve_oracles = self.supply_reserve_oracles.as_ref().unwrap();
 
@@ -379,14 +373,8 @@ impl<'a> LendingProtocolClient for SolendClient<'a> {
     }
 
     fn borrow(&self, base_unit_amount: u64) -> ProgramResult {
+        let obligation_owner = get_owner(&self.solauto_position, self.signer);
         let debt_liquidity = self.debt_liquidity.as_ref().unwrap();
-
-        let obligation_owner = if !self.solauto_position.is_none() {
-            self.solauto_position.as_ref().unwrap().account_info
-        } else {
-            self.signer
-        };
-
         let debt_reserve = self.data.debt_reserve.as_ref().unwrap().account_info;
 
         let borrow_instruction = borrow_obligation_liquidity(

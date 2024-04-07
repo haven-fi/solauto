@@ -25,6 +25,8 @@ impl<'a> SolautoManager<'a> {
     }
 
     pub fn protocol_interaction(&mut self, args: ProtocolInteractionArgs) -> ProgramResult {
+        // TODO: in the case where position is solauto-managed but user calls deposit or repay with a rebalance, we need to ensure the user's debt token account is created before calling this. Should we do it on open position? 
+
         match args.action {
             ProtocolAction::Deposit(details) => {
                 if !details.amount.is_none() {
@@ -71,11 +73,18 @@ impl<'a> SolautoManager<'a> {
                 self.withdraw(base_unit_amount)?;
             }
             ProtocolAction::ClosePosition => {
-                // TODO
+                self.rebalance(0)?;
+                self.withdraw(self.obligation_position.supply.as_ref().unwrap().amount_used.base_unit)?;
             }
         }
 
+        // TODO: inside each client's implementation of the 4 basic function, should we check if the token account has sufficient balance? Solana would error out if we pulled more than we should anyway
+
         // TODO: if we are unable to rebalance to desired position due to borrow / withdraw caps, client should initiate flash loan
+
+        if self.obligation_position.current_utilization_rate_bps() > 10000 {
+            return Err(SolautoError::ExceededValidUtilizationRate.into());
+        }
 
         Ok(())
     }

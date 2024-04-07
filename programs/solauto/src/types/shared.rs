@@ -131,7 +131,9 @@ pub enum SolautoError {
     #[error("Missing required accounts for the given instruction")]
     MissingRequiredAccounts,
     #[error("Unable to adjust position to the desired utilization rate")]
-    UnableToReposition
+    UnableToReposition,
+    #[error("Desired action brought the utilization rate to an unsafe amount")]
+    ExceededValidUtilizationRate
 }
 
 impl From<SolautoError> for ProgramError {
