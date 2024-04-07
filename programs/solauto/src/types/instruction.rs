@@ -7,6 +7,21 @@ use super::shared::*;
 #[rustfmt::skip]
 pub enum Instruction {
     #[account(signer, writable, name = "signer")]
+    #[account(name = "marginfi_program")]
+    #[account(name = "system_program")]
+    #[account(name = "token_program")]
+    #[account(name = "ata_program")]
+    #[account(name = "rent")]
+    #[account(name = "marginfi_group")]
+    #[account(mut, name = "marginfi_account")]
+    #[account(mut, optional, name = "solauto_position")]
+    #[account(mut, name = "supply_token_account")]
+    #[account(name = "supply_token_mint")]
+    #[account(mut, name = "debt_token_account")]
+    #[account(name = "debt_token_mint")]
+    MarginfiOpenPosition(OpenPositionArgs),
+
+    #[account(signer, writable, name = "signer")]
     #[account(name = "solend_program")]
     #[account(name = "system_program")]
     #[account(name = "token_program")]
@@ -23,6 +38,9 @@ pub enum Instruction {
 
     // UpdatePosition, TODO
 
+    // TODO
+    // MarginfiRefreshData,
+
     #[account(signer, name = "signer")]
     #[account(name = "solend_program")]
     #[account(name = "clock")]
@@ -36,6 +54,9 @@ pub enum Instruction {
     #[account(mut, optional, name = "obligation")]
     #[account(mut, optional, name = "solauto_position")]
     SolendRefreshData,
+
+    // TODO
+    // MarginfiProtocolInteraction(ProtocolInteractionArgs),
 
     #[account(signer, writable, name = "signer")]
     #[account(name = "solend_program")]
@@ -65,7 +86,11 @@ pub enum Instruction {
     #[account(mut, optional, name = "reserve_debt_liquidity")]
     SolendProtocolInteraction(ProtocolInteractionArgs),
 
-    // RebalancePing TODO
+    // TODO
+    // MarginfiRebalancePing,
+    
+    // TODO
+    // SolendRebalancePing,
 }
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug)]

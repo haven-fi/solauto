@@ -64,3 +64,30 @@ export async function getSolendObligationAccount(
 
   return obligationAccount;
 }
+
+export async function getMarginfiAccount(
+  solautoPositionAccount: PublicKey | undefined,
+  signer: PublicKey,
+  marginfiProgram: PublicKey,
+  reuse?: boolean
+) {
+  if (reuse) {
+    // return new PublicKey("");
+  }
+
+  const seeds = [
+    signer.toBuffer(),
+    marginfiProgram.toBuffer(),
+  ];
+
+  if (solautoPositionAccount !== undefined) {
+    seeds.unshift(solautoPositionAccount.toBuffer());
+  }
+
+  const [marginfiAccount, _] = await PublicKey.findProgramAddress(
+    seeds,
+    new PublicKey(SOLAUTO_PROGRAM_ID)
+  );
+
+  return marginfiAccount;
+}

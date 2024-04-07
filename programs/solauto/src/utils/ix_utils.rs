@@ -9,8 +9,9 @@ use solana_program::{
 use crate::types::shared::{ DeserializedAccount, Position };
 use super::solana_utils::invoke_signed_with_seed;
 
-
-pub fn update_data<T: BorshSerialize>(account: &mut Option<DeserializedAccount<T>>) -> ProgramResult {
+pub fn update_data<T: BorshSerialize>(
+    account: &mut Option<DeserializedAccount<T>>
+) -> ProgramResult {
     if account.is_none() {
         return Ok(());
     }

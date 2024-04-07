@@ -33,16 +33,16 @@ impl<'a> SolautoManager<'a> {
         solauto_position.data.general_data.utilization_rate_bps =
             obligation_position.current_utilization_rate_bps();
         solauto_position.data.general_data.base_amount_supplied = if
-            !obligation_position.supply_liquidity.is_none()
+            !obligation_position.supply.is_none()
         {
-            obligation_position.supply_liquidity.as_ref().unwrap().amount_used.base_unit
+            obligation_position.supply.as_ref().unwrap().amount_used.base_unit
         } else {
             0
         };
         solauto_position.data.general_data.base_amount_supplied = if
-            !obligation_position.debt_liquidity.is_none()
+            !obligation_position.debt.is_none()
         {
-            obligation_position.debt_liquidity.as_ref().unwrap().amount_used.base_unit
+            obligation_position.debt.as_ref().unwrap().amount_used.base_unit
         } else {
             0
         };

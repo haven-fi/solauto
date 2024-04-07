@@ -29,9 +29,9 @@ pub struct ProtocolActionDetails {
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType)]
 #[borsh(use_discriminant = true)]
 pub enum LendingPlatform {
-    Solend = 0,
-    Kamino = 1,
-    Marginfi = 2,
+    Marginfi = 0,
+    Solend = 1,
+    // Kamino = 2,
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType)]
@@ -58,7 +58,7 @@ pub struct GeneralPositionData {
     pub base_amount_borrowed: u64,
 }
 
-pub const POSITION_LEN: usize = 500;
+pub const POSITION_ACCOUNT_SPACE: usize = 500;
 #[derive(ShankAccount, BorshDeserialize, BorshSerialize, Clone, Debug)]
 pub struct Position {
     pub position_id: u8,

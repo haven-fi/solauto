@@ -8,8 +8,6 @@
 
 import {
   Context,
-  Option,
-  OptionOrNullable,
   Pda,
   PublicKey,
   Signer,
@@ -20,7 +18,6 @@ import {
 import {
   Serializer,
   mapSerializer,
-  option,
   struct,
   u8,
 } from '@metaplex-foundation/umi/serializers';
@@ -30,9 +27,9 @@ import {
   getAccountMetasAndSigners,
 } from '../shared';
 import {
-  NewPositionData,
-  NewPositionDataArgs,
-  getNewPositionDataSerializer,
+  OpenPositionArgs,
+  OpenPositionArgsArgs,
+  getOpenPositionArgsSerializer,
 } from '../types';
 
 // Accounts.
@@ -55,11 +52,11 @@ export type SolendOpenPositionInstructionAccounts = {
 // Data.
 export type SolendOpenPositionInstructionData = {
   discriminator: number;
-  positionData: Option<NewPositionData>;
+  openPositionArgs: OpenPositionArgs;
 };
 
 export type SolendOpenPositionInstructionDataArgs = {
-  positionData: OptionOrNullable<NewPositionDataArgs>;
+  openPositionArgs: OpenPositionArgsArgs;
 };
 
 export function getSolendOpenPositionInstructionDataSerializer(): Serializer<
@@ -74,11 +71,11 @@ export function getSolendOpenPositionInstructionDataSerializer(): Serializer<
     struct<SolendOpenPositionInstructionData>(
       [
         ['discriminator', u8()],
-        ['positionData', option(getNewPositionDataSerializer())],
+        ['openPositionArgs', getOpenPositionArgsSerializer()],
       ],
       { description: 'SolendOpenPositionInstructionData' }
     ),
-    (value) => ({ ...value, discriminator: 0 })
+    (value) => ({ ...value, discriminator: 1 })
   ) as Serializer<
     SolendOpenPositionInstructionDataArgs,
     SolendOpenPositionInstructionData

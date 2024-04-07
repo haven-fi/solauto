@@ -30,7 +30,7 @@ use crate::{
         obligation_position::*,
         shared::{ DeserializedAccount, Position, SolautoError },
     },
-    utils::{ ix_utils::*, solana_utils::* },
+    utils::{ ix_utils::*, solauto_utils::* },
 };
 
 pub struct SystemAccounts<'a> {
@@ -67,35 +67,11 @@ pub struct SolendClient<'a> {
 }
 
 impl<'a> SolendClient<'a> {
-    pub fn init_new<'b>(
+    pub fn initialize<'b>(
         ctx: &'b Context<'a, SolendOpenPositionAccounts>,
         solauto_position: &Option<DeserializedAccount<Position>>
     ) -> ProgramResult {
-        let obligation_owner = if !ctx.accounts.solauto_position.is_none() {
-            ctx.accounts.solauto_position.unwrap()
-        } else {
-            ctx.accounts.signer
-        };
-
-        init_ata_if_needed(
-            ctx.accounts.token_program,
-            ctx.accounts.system_program,
-            ctx.accounts.rent,
-            ctx.accounts.signer,
-            obligation_owner,
-            ctx.accounts.supply_collateral_token_account,
-            ctx.accounts.supply_collateral_token_mint
-        )?;
-
-        init_ata_if_needed(
-            ctx.accounts.token_program,
-            ctx.accounts.system_program,
-            ctx.accounts.rent,
-            ctx.accounts.signer,
-            obligation_owner,
-            ctx.accounts.debt_liquidity_token_account,
-            ctx.accounts.debt_liquidity_token_mint
-        )?;
+        let obligation_owner = get_owner(&ctx.accounts.solauto_position, ctx.accounts.signer);
 
         invoke_instruction(
             init_obligation(
@@ -270,8 +246,8 @@ impl<'a> SolendClient<'a> {
 
         Ok(LendingProtocolObligationPosition {
             max_loan_to_value_ratio,
-            supply_liquidity,
-            debt_liquidity,
+            supply: supply_liquidity,
+            debt: debt_liquidity,
         })
     }
 

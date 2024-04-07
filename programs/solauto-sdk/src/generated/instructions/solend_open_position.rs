@@ -5,7 +5,7 @@
 //! [https://github.com/metaplex-foundation/kinobi]
 //!
 
-use crate::generated::types::NewPositionData;
+use crate::generated::types::OpenPositionArgs;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 
@@ -132,14 +132,14 @@ struct SolendOpenPositionInstructionData {
 
 impl SolendOpenPositionInstructionData {
     fn new() -> Self {
-        Self { discriminator: 0 }
+        Self { discriminator: 1 }
     }
 }
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SolendOpenPositionInstructionArgs {
-    pub position_data: Option<NewPositionData>,
+    pub open_position_args: OpenPositionArgs,
 }
 
 /// Instruction builder for `SolendOpenPosition`.
@@ -174,7 +174,7 @@ pub struct SolendOpenPositionBuilder {
     supply_collateral_token_mint: Option<solana_program::pubkey::Pubkey>,
     debt_liquidity_token_account: Option<solana_program::pubkey::Pubkey>,
     debt_liquidity_token_mint: Option<solana_program::pubkey::Pubkey>,
-    position_data: Option<NewPositionData>,
+    open_position_args: Option<OpenPositionArgs>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
 
@@ -267,10 +267,9 @@ impl SolendOpenPositionBuilder {
         self.debt_liquidity_token_mint = Some(debt_liquidity_token_mint);
         self
     }
-    /// `[optional argument]`
     #[inline(always)]
-    pub fn position_data(&mut self, position_data: NewPositionData) -> &mut Self {
-        self.position_data = Some(position_data);
+    pub fn open_position_args(&mut self, open_position_args: OpenPositionArgs) -> &mut Self {
+        self.open_position_args = Some(open_position_args);
         self
     }
     /// Add an aditional account to the instruction.
@@ -325,7 +324,10 @@ impl SolendOpenPositionBuilder {
                 .expect("debt_liquidity_token_mint is not set"),
         };
         let args = SolendOpenPositionInstructionArgs {
-            position_data: self.position_data.clone(),
+            open_position_args: self
+                .open_position_args
+                .clone()
+                .expect("open_position_args is not set"),
         };
 
         accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
@@ -597,7 +599,7 @@ impl<'a, 'b> SolendOpenPositionCpiBuilder<'a, 'b> {
             supply_collateral_token_mint: None,
             debt_liquidity_token_account: None,
             debt_liquidity_token_mint: None,
-            position_data: None,
+            open_position_args: None,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
@@ -704,10 +706,9 @@ impl<'a, 'b> SolendOpenPositionCpiBuilder<'a, 'b> {
         self.instruction.debt_liquidity_token_mint = Some(debt_liquidity_token_mint);
         self
     }
-    /// `[optional argument]`
     #[inline(always)]
-    pub fn position_data(&mut self, position_data: NewPositionData) -> &mut Self {
-        self.instruction.position_data = Some(position_data);
+    pub fn open_position_args(&mut self, open_position_args: OpenPositionArgs) -> &mut Self {
+        self.instruction.open_position_args = Some(open_position_args);
         self
     }
     /// Add an additional account to the instruction.
@@ -752,7 +753,11 @@ impl<'a, 'b> SolendOpenPositionCpiBuilder<'a, 'b> {
         signers_seeds: &[&[&[u8]]],
     ) -> solana_program::entrypoint::ProgramResult {
         let args = SolendOpenPositionInstructionArgs {
-            position_data: self.instruction.position_data.clone(),
+            open_position_args: self
+                .instruction
+                .open_position_args
+                .clone()
+                .expect("open_position_args is not set"),
         };
         let instruction = SolendOpenPositionCpi {
             __program: self.instruction.__program,
@@ -833,7 +838,7 @@ struct SolendOpenPositionCpiBuilderInstruction<'a, 'b> {
     supply_collateral_token_mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     debt_liquidity_token_account: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     debt_liquidity_token_mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    position_data: Option<NewPositionData>,
+    open_position_args: Option<OpenPositionArgs>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(
         &'b solana_program::account_info::AccountInfo<'a>,

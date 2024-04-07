@@ -1,7 +1,7 @@
 use solana_program::entrypoint::ProgramResult;
 
 use crate::{
-    solend::client::SolendClient,
+    clients::solend::SolendClient,
     types::{
         instruction::accounts::{ Context, SolendRefreshDataAccounts },
         shared::{ DeserializedAccount, Position },

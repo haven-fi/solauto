@@ -9,9 +9,8 @@
 import { Serializer, scalarEnum } from '@metaplex-foundation/umi/serializers';
 
 export enum LendingPlatform {
-  Solend,
-  Kamino,
   Marginfi,
+  Solend,
 }
 
 export type LendingPlatformArgs = LendingPlatform;

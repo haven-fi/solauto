@@ -115,7 +115,8 @@ describe("Solauto tests", async () => {
       debtLiquidityTokenMint: publicKey(
         solendAccounts.usdcReserve.liquidityTokenMint
       ),
-      positionData: solautoManaged
+      openPositionArgs: {
+        positionData: solautoManaged
         ? {
             __option: "Some",
             value: {
@@ -130,7 +131,8 @@ describe("Solauto tests", async () => {
           }
         : {
             __option: "None",
-          },
+          }
+      }
     });
     
     const transaction = await builder.buildWithLatestBlockhash(umi);

@@ -3,7 +3,7 @@
     "test": "cd typescript/solauto-sdk && pnpm test",
     "format:rust": "find ./programs/solauto-sdk -name '*.rs' -exec rustfmt {} +",
     "generate": "cargo build-sbf && pnpm generate:idl && pnpm generate:clients",
-    "generate:idl": "shank idl --crate-root programs/solauto --out-dir idl --out-filename idl.json",
+    "generate:idl": "shank idl --crate-root programs/solauto --out-dir idls --out-filename solauto.json",
     "generate:clients": "node ./generateClients.cjs && pnpm format:rust"
   },
   "dependencies": {

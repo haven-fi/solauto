@@ -9,6 +9,7 @@
 export * from './generalPositionData';
 export * from './lendingPlatform';
 export * from './newPositionData';
+export * from './openPositionArgs';
 export * from './protocolAction';
 export * from './protocolActionDetails';
 export * from './solautoSettingsParameters';

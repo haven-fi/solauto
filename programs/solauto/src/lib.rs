@@ -1,6 +1,6 @@
 pub mod instructions;
 pub mod processors;
-pub mod solend;
+pub mod clients;
 pub mod types;
 pub mod utils;
 pub mod constants;
