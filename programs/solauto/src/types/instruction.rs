@@ -13,7 +13,6 @@ pub enum Instruction {
     #[account(name = "ata_program")]
     #[account(name = "rent")]
     #[account(name = "marginfi_group")]
-    #[account(name = "lending_pool")]
     #[account(mut, name = "marginfi_account")]
     #[account(mut, optional, name = "solauto_position")]
     #[account(mut, name = "supply_token_account")]

@@ -3,7 +3,7 @@ use solana_program::{
     entrypoint::ProgramResult,
     program_error::ProgramError,
 };
-use solend_sdk::state::Obligation;
+// use marginfi_sdk::generated::accounts::{ Bank, MarginfiAccount };
 
 use crate::types::{
     instruction::accounts::{ Context, MarginfiOpenPositionAccounts },
@@ -13,10 +13,10 @@ use crate::types::{
 };
 
 pub struct MarginfiDataAccounts<'a> {
-    pub lending_pool: DeserializedAccount<'a, Obligation>,  // TODO replace with lending pool type
-    pub supply_bank: Option<DeserializedAccount<'a, Obligation>>, // TODO replace with bank type
-    pub debt_bank: Option<DeserializedAccount<'a, Obligation>>, // TODO replace with bank type
-    pub marginfi_account: DeserializedAccount<'a, Obligation>, // TODO replace with marginfi account type
+    pub temp: &'a AccountInfo<'a>,
+    // pub supply_bank: Option<DeserializedAccount<'a, Bank>>,
+    // pub debt_bank: Option<DeserializedAccount<'a, Bank>>,
+    // pub marginfi_account: DeserializedAccount<'a, MarginfiAccount>,
 }
 
 pub struct MarginfiClient<'a> {

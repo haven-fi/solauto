@@ -30,13 +30,11 @@ pub fn marginfi_open_position<'a, 'b>(
         vec![
             ctx.accounts.solauto_position.unwrap().key.as_ref(),
             ctx.accounts.signer.key.as_ref(),
-            ctx.accounts.lending_pool.key.as_ref(),
             ctx.accounts.marginfi_program.key.as_ref()
         ]
     } else {
         vec![
             ctx.accounts.signer.key.as_ref(),
-            ctx.accounts.lending_pool.key.as_ref(),
             ctx.accounts.marginfi_program.key.as_ref()
         ]
     };
