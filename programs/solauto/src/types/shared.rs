@@ -12,16 +12,16 @@ use solana_program::{
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType)]
 pub enum ProtocolAction {
     Deposit(ProtocolActionDetails),
-    Borrow(ProtocolActionDetails),
+    Withdraw(u64),
+    Borrow(u64),
     Repay(ProtocolActionDetails),
-    Withdraw(ProtocolActionDetails),
     ClosePosition,
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType)]
 pub struct ProtocolActionDetails {
-    /// Amount of liquidity to use when taking the action
-    pub action_amount: u64,
+    /// Amount of liquidity to use from source token account when taking the action
+    pub amount: Option<u64>,
     /// Whether to rebalance to a specific utilization after taking the action
     pub rebalance_utilization_rate_bps: Option<u16>,
 }
@@ -129,7 +129,9 @@ pub enum SolautoError {
     #[error("Incorrect fee receiver account provided")]
     IncorrectFeeReceiver,
     #[error("Missing required accounts for the given instruction")]
-    MissingRequiredAccounts
+    MissingRequiredAccounts,
+    #[error("Unable to adjust position to the desired utilization rate")]
+    UnableToReposition
 }
 
 impl From<SolautoError> for ProgramError {

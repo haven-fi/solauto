@@ -1,10 +1,10 @@
-use solana_program::{ entrypoint::ProgramResult, program_error::ProgramError };
+use solana_program::{ entrypoint::ProgramResult, msg, program_error::ProgramError };
 
 use super::{
     instruction::ProtocolInteractionArgs,
     lending_protocol::LendingProtocolClient,
     obligation_position::LendingProtocolObligationPosition,
-    shared::{ DeserializedAccount, Position, ProtocolAction },
+    shared::{ DeserializedAccount, Position, ProtocolAction, SolautoError },
 };
 
 pub struct SolautoManager<'a> {
@@ -27,28 +27,51 @@ impl<'a> SolautoManager<'a> {
     pub fn protocol_interaction(&mut self, args: ProtocolInteractionArgs) -> ProgramResult {
         match args.action {
             ProtocolAction::Deposit(details) => {
-                self.deposit(details.action_amount)?;
-                if !details.rebalance_utilization_rate_bps.is_none() {
+                if !details.amount.is_none() {
+                    self.deposit(details.amount.unwrap())?;
+                }
 
+                if !details.rebalance_utilization_rate_bps.is_none() {
+                    if
+                        self.obligation_position.current_utilization_rate_bps() >
+                        details.rebalance_utilization_rate_bps.unwrap()
+                    {
+                        msg!(
+                            "Target utilization rate is too low. Cannot reach this rate without depositing additional supply or repaying debt"
+                        );
+                        return Err(SolautoError::UnableToReposition.into());
+                    } else {
+                        self.rebalance(details.rebalance_utilization_rate_bps.unwrap())?;
+                    }
                 }
             }
-            ProtocolAction::Borrow(details) => {
-                if !details.rebalance_utilization_rate_bps.is_none() {
-
-                }
+            ProtocolAction::Borrow(base_unit_amount) => {
+                self.borrow(base_unit_amount)?;
             }
             ProtocolAction::Repay(details) => {
-                if !details.rebalance_utilization_rate_bps.is_none() {
+                if !details.amount.is_none() {
+                    self.repay(details.amount.unwrap())?;
+                }
 
+                if !details.rebalance_utilization_rate_bps.is_none() {
+                    if
+                        self.obligation_position.current_utilization_rate_bps() >
+                        details.rebalance_utilization_rate_bps.unwrap()
+                    {
+                        msg!(
+                            "Target utilization rate is too low. Cannot reach this rate without repaying additional debt or depositing supply"
+                        );
+                        return Err(SolautoError::UnableToReposition.into());
+                    } else {
+                        self.rebalance(details.rebalance_utilization_rate_bps.unwrap())?;
+                    }
                 }
             }
-            ProtocolAction::Withdraw(details) => {
-                if !details.rebalance_utilization_rate_bps.is_none() {
-
-                }
+            ProtocolAction::Withdraw(base_unit_amount) => {
+                self.withdraw(base_unit_amount)?;
             }
             ProtocolAction::ClosePosition => {
-
+                // TODO
             }
         }
 
@@ -69,12 +92,17 @@ impl<'a> SolautoManager<'a> {
 
     fn withdraw(&mut self, base_unit_amount: u64) -> ProgramResult {
         self.client.withdraw(base_unit_amount)?;
-        self.obligation_position.supply_update(base_unit_amount as i64 * -1)
+        self.obligation_position.supply_update((base_unit_amount as i64) * -1)
     }
 
     fn repay(&mut self, base_unit_amount: u64) -> ProgramResult {
         self.client.repay(base_unit_amount)?;
-        self.obligation_position.debt_update(base_unit_amount as i64 * -1)
+        self.obligation_position.debt_update((base_unit_amount as i64) * -1)
+    }
+
+    fn rebalance(&mut self, target_utilization_rate_bps: u16) -> ProgramResult {
+        // TODO: rebalance to target utilization rate
+        Ok(())
     }
 
     pub fn refresh_position(
