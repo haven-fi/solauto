@@ -1,3 +1,3 @@
-pub mod generated;
+// pub mod generated;
 
-pub use generated::programs::MARGINFI_ID;
+// pub use generated::programs::MARGINFI_ID;

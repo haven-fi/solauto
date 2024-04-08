@@ -1,5 +1,7 @@
 use solana_program::{ entrypoint::ProgramResult, msg, program_error::ProgramError };
 
+use crate::{ constants::SOLAUTO_BOOST_FEE_BPS, utils::math_utils::calculate_debt_adjustment_usd };
+
 use super::{
     instruction::ProtocolInteractionArgs,
     lending_protocol::LendingProtocolClient,
@@ -110,14 +112,22 @@ impl<'a> SolautoManager<'a> {
     }
 
     pub fn rebalance(&mut self, target_utilization_rate_bps: u16) -> ProgramResult {
-        let increase_leverage = self.obligation_position.current_utilization_rate_bps() < target_utilization_rate_bps;
+        let increase_leverage =
+            self.obligation_position.current_utilization_rate_bps() < target_utilization_rate_bps;
 
         if increase_leverage {
+            let (debt_adjustment_usd, solauto_fees_usd) = calculate_debt_adjustment_usd(
+                self.obligation_position.open_ltv,
+                self.obligation_position.supply.as_ref().unwrap().amount_used.usd_value as f64,
+                self.obligation_position.debt.as_ref().unwrap().amount_used.usd_value as f64,
+                target_utilization_rate_bps,
+                Some(SOLAUTO_BOOST_FEE_BPS)
+            );
             // TODO: increase leverage
         } else {
             // TODO: decrease leverage
         }
-        
+
         Ok(())
     }
 

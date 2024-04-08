@@ -25,3 +25,5 @@ pub const FEE_RECEIVER: Pubkey = Pubkey::new_from_array([
 ]);
 
 pub const USD_DECIMALS: u32 = 6;
+
+pub const SOLAUTO_BOOST_FEE_BPS: u16 = 85; // 0.85%

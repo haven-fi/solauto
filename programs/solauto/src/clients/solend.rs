@@ -189,8 +189,14 @@ impl<'a> SolendClient<'a> {
         debt_reserve: Option<&Box<Reserve>>,
         obligation: &Box<Obligation>
     ) -> Result<LendingProtocolObligationPosition, ProgramError> {
-        let max_loan_to_value_ratio = if let Some(supply) = supply_reserve {
+        let open_ltv = if let Some(supply) = supply_reserve {
             (supply.config.loan_to_value_ratio as f64).div(100 as f64)
+        } else {
+            0.0
+        };
+
+        let close_ltv = if let Some(supply) = supply_reserve {
+            (supply.config.liquidation_threshold as f64).div(100 as f64)
         } else {
             0.0
         };
@@ -245,7 +251,8 @@ impl<'a> SolendClient<'a> {
         };
 
         Ok(LendingProtocolObligationPosition {
-            max_loan_to_value_ratio,
+            open_ltv,
+            close_ltv,
             supply: supply_liquidity,
             debt: debt_liquidity,
             lending_platform: LendingPlatform::Solend

@@ -67,7 +67,8 @@ impl PositionTokenUsage {
 }
 
 pub struct LendingProtocolObligationPosition {
-    pub max_loan_to_value_ratio: f64,
+    pub open_ltv: f64,
+    pub close_ltv: f64,
     pub supply: Option<PositionTokenUsage>,
     pub debt: Option<PositionTokenUsage>,
     pub lending_platform: LendingPlatform,
@@ -78,7 +79,7 @@ impl LendingProtocolObligationPosition {
         match (&self.debt, &self.supply) {
             (Some(debt), Some(supply)) =>
                 debt.amount_used.usd_value
-                    .div(supply.amount_used.usd_value.mul(self.max_loan_to_value_ratio as f32))
+                    .div(supply.amount_used.usd_value.mul(self.open_ltv as f32))
                     .mul(10000.0) as u16,
             _ => 0,
         }
