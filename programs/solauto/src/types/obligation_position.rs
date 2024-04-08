@@ -113,7 +113,7 @@ impl LendingProtocolObligationPosition {
         )
     }
 
-    pub fn supply_update(&mut self, base_unit_supply_update: i64) -> ProgramResult {
+    pub fn supply_lent_update(&mut self, base_unit_supply_update: i64) -> ProgramResult {
         if let Some(supply) = self.supply.as_mut() {
             if base_unit_supply_update.is_positive() {
                 supply.amount_used.base_unit += base_unit_supply_update as u64;
@@ -133,7 +133,7 @@ impl LendingProtocolObligationPosition {
         }
     }
 
-    pub fn debt_update(&mut self, base_unit_debt_amount_update: i64) -> ProgramResult {
+    pub fn debt_borrowed_update(&mut self, base_unit_debt_amount_update: i64) -> ProgramResult {
         if let Some(debt) = self.debt.as_mut() {
             if base_unit_debt_amount_update.is_positive() {
                 debt.amount_used.base_unit += base_unit_debt_amount_update as u64;

@@ -25,7 +25,7 @@ impl<'a> SolautoManager<'a> {
     }
 
     pub fn protocol_interaction(&mut self, args: ProtocolInteractionArgs) -> ProgramResult {
-        // TODO: in the case where position is solauto-managed but user calls deposit or repay with a rebalance, we need to ensure the user's debt token account is created before calling this. Should we do it on open position? 
+        // TODO: in the case where position is solauto-managed but user calls deposit or repay with a rebalance, we need to ensure the user's debt token account is created before calling this. Should we do it on open position?
 
         match args.action {
             ProtocolAction::Deposit(details) => {
@@ -39,7 +39,7 @@ impl<'a> SolautoManager<'a> {
                         details.rebalance_utilization_rate_bps.unwrap()
                     {
                         msg!(
-                            "Target utilization rate is too low. Cannot reach this rate without depositing additional supply or repaying debt"
+                            "Target utilization rate too low. Cannot reach this rate without deleveraging."
                         );
                         return Err(SolautoError::UnableToReposition.into());
                     } else {
@@ -57,11 +57,11 @@ impl<'a> SolautoManager<'a> {
 
                 if !details.rebalance_utilization_rate_bps.is_none() {
                     if
-                        self.obligation_position.current_utilization_rate_bps() >
+                        self.obligation_position.current_utilization_rate_bps() <
                         details.rebalance_utilization_rate_bps.unwrap()
                     {
                         msg!(
-                            "Target utilization rate is too low. Cannot reach this rate without repaying additional debt or depositing supply"
+                            "Target utilization rate too high. Cannot reach this rate without increasing leverage."
                         );
                         return Err(SolautoError::UnableToReposition.into());
                     } else {
@@ -74,11 +74,11 @@ impl<'a> SolautoManager<'a> {
             }
             ProtocolAction::ClosePosition => {
                 self.rebalance(0)?;
-                self.withdraw(self.obligation_position.supply.as_ref().unwrap().amount_used.base_unit)?;
+                self.withdraw(
+                    self.obligation_position.supply.as_ref().unwrap().amount_used.base_unit
+                )?;
             }
         }
-
-        // TODO: inside each client's implementation of the 4 basic function, should we check if the token account has sufficient balance? Solana would error out if we pulled more than we should anyway
 
         // TODO: if we are unable to rebalance to desired position due to borrow / withdraw caps, client should initiate flash loan
 
@@ -91,26 +91,33 @@ impl<'a> SolautoManager<'a> {
 
     fn deposit(&mut self, base_unit_amount: u64) -> ProgramResult {
         self.client.deposit(base_unit_amount)?;
-        self.obligation_position.supply_update(base_unit_amount as i64)
+        self.obligation_position.supply_lent_update(base_unit_amount as i64)
     }
 
     fn borrow(&mut self, base_unit_amount: u64) -> ProgramResult {
         self.client.borrow(base_unit_amount)?;
-        self.obligation_position.debt_update(base_unit_amount as i64)
+        self.obligation_position.debt_borrowed_update(base_unit_amount as i64)
     }
 
     fn withdraw(&mut self, base_unit_amount: u64) -> ProgramResult {
         self.client.withdraw(base_unit_amount)?;
-        self.obligation_position.supply_update((base_unit_amount as i64) * -1)
+        self.obligation_position.supply_lent_update((base_unit_amount as i64) * -1)
     }
 
     fn repay(&mut self, base_unit_amount: u64) -> ProgramResult {
         self.client.repay(base_unit_amount)?;
-        self.obligation_position.debt_update((base_unit_amount as i64) * -1)
+        self.obligation_position.debt_borrowed_update((base_unit_amount as i64) * -1)
     }
 
-    fn rebalance(&mut self, target_utilization_rate_bps: u16) -> ProgramResult {
-        // TODO: rebalance to target utilization rate
+    pub fn rebalance(&mut self, target_utilization_rate_bps: u16) -> ProgramResult {
+        let increase_leverage = self.obligation_position.current_utilization_rate_bps() < target_utilization_rate_bps;
+
+        if increase_leverage {
+            // TODO: increase leverage
+        } else {
+            // TODO: decrease leverage
+        }
+        
         Ok(())
     }
 
@@ -138,7 +145,6 @@ impl<'a> SolautoManager<'a> {
         } else {
             0
         };
-
         Ok(())
     }
 }
