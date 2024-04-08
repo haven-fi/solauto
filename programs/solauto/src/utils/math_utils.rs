@@ -1,9 +1,6 @@
 use std::ops::{ Add, Div, Mul, Sub };
-use solana_program::program_error::ProgramError;
 use solend_sdk::math::{ Decimal, WAD };
-use num_traits::{ FromPrimitive, Signed, ToPrimitive };
-
-use crate::constants::SOLAUTO_BOOST_FEE_BPS;
+use num_traits::{ FromPrimitive, ToPrimitive };
 
 pub fn decimal_to_f64(decimal: Decimal) -> f64 {
     u128::try_from(decimal.0).unwrap() as f64
@@ -33,6 +30,19 @@ pub fn base_unit_to_usd_value(base_unit: u64, decimals: u8, market_price: f64) -
     (base_unit as f32).div((10u64).pow(decimals as u32) as f32).mul(market_price as f32)
 }
 
+/// Calculates the debt adjustment in USD in order to reach the target_utilization_rate
+/// 
+/// # Parameters
+/// * `open_ltv` - The open loan-to-value ratio of the supplied asset
+/// * `total_supply_usd` - Total USD value of supplied asset
+/// * `total_debt_usd` - Total USD value of debt asset
+/// * `target_utilization_rate_bps` - Target utilization rate
+/// * `adjustment_fee_bps` - Adjustment fee. On boosts this would be the Solauto fee. If deleveraging and using a flash loan, this would be the flash loan fee
+/// 
+/// # Returns
+/// * `debt_adjustment_usd` - The USD value of the debt adjustment. Positive if debt needs to increase, negative if debt needs to decrease. This amount is inclusive of the adjustment fee
+/// * `adjustment_fee_usd` - the USD value of the adjustment fee. Always positive
+/// 
 pub fn calculate_debt_adjustment_usd(
     open_ltv: f64,
     total_supply_usd: f64,
@@ -58,7 +68,7 @@ pub fn calculate_debt_adjustment_usd(
                     .mul(target_utilization_rate)
                     .mul(adjustment_fee)
                     .add(open_ltv.mul(target_utilization_rate).add(adjustment_fee).sub(1.0))
-            )
+            ).mul(-1.0)
     } else {
         total_debt_usd
             .mul(-1.0)
@@ -71,7 +81,7 @@ pub fn calculate_debt_adjustment_usd(
             )
     };
 
-    let adjustment_fee_usd = debt_adjustment_usd.mul(adjustment_fee);
+    let adjustment_fee_usd = debt_adjustment_usd.mul(adjustment_fee).abs();
 
     (debt_adjustment_usd, adjustment_fee_usd)
 }

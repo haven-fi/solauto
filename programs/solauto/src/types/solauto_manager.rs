@@ -112,22 +112,32 @@ impl<'a> SolautoManager<'a> {
     }
 
     pub fn rebalance(&mut self, target_utilization_rate_bps: u16) -> ProgramResult {
-        let increase_leverage =
-            self.obligation_position.current_utilization_rate_bps() < target_utilization_rate_bps;
-
-        if increase_leverage {
-            let (debt_adjustment_usd, solauto_fees_usd) = calculate_debt_adjustment_usd(
-                self.obligation_position.open_ltv,
-                self.obligation_position.supply.as_ref().unwrap().amount_used.usd_value as f64,
-                self.obligation_position.debt.as_ref().unwrap().amount_used.usd_value as f64,
-                target_utilization_rate_bps,
-                Some(SOLAUTO_BOOST_FEE_BPS)
-            );
-            // TODO: increase leverage
+        if self.obligation_position.current_utilization_rate_bps() < target_utilization_rate_bps {
+            self.increase_leverage(target_utilization_rate_bps)
         } else {
-            // TODO: decrease leverage
+            self.decrease_leverage(target_utilization_rate_bps)
         }
+    }
 
+    fn increase_leverage(&mut self, target_utilization_rate_bps: u16) -> ProgramResult {
+        let (debt_adjustment_usd, solauto_fee_usd) = calculate_debt_adjustment_usd(
+            self.obligation_position.open_ltv,
+            self.obligation_position.supply.as_ref().unwrap().amount_used.usd_value as f64,
+            self.obligation_position.debt.as_ref().unwrap().amount_used.usd_value as f64,
+            target_utilization_rate_bps,
+            Some(SOLAUTO_BOOST_FEE_BPS)
+        );
+        // borrow_value = min(debt_adjustment_usd, available debt token to borrow * 0.9)
+        // msg! if borrow_value < debt_adjustment_usd 
+        // solauto_fee_value = min(solauto_fee_usd, borrow_value * (SOLAUTO_BOOST_FEE_BPS / 10000))
+        // Swap borrow_value - solauto_fee_value to supply token
+        // Deposit supply token
+        // send solauto fee value to solauto fee receiver. Should we convert this to SOL? Or receive fees in USDC? Have a setting?
+        Ok(())
+    }
+
+    fn decrease_leverage(&mut self, target_utilization_rate_bps: u16) -> ProgramResult {
+        // TODO
         Ok(())
     }
 
