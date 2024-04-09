@@ -29,7 +29,10 @@ pub fn process_solend_open_position_instruction<'a>(
         LendingPlatform::Solend
     )?;
     validation_utils::validate_signer(ctx.accounts.signer, &solauto_position, true)?;
-    validation_utils::validate_program_account(&ctx.accounts.solend_program, LendingPlatform::Solend)?;
+    validation_utils::validate_program_account(
+        &ctx.accounts.solend_program,
+        LendingPlatform::Solend
+    )?;
     open_position::solend_open_position(ctx, &mut solauto_position)?;
     ix_utils::update_data(&mut solauto_position)
 }
@@ -39,7 +42,10 @@ pub fn process_solend_refresh_accounts<'a>(accounts: &'a [AccountInfo<'a>]) -> P
     let mut solauto_position = DeserializedAccount::<Position>::deserialize(
         ctx.accounts.solauto_position
     )?;
-    validation_utils::validate_program_account(&ctx.accounts.solend_program, LendingPlatform::Solend)?;
+    validation_utils::validate_program_account(
+        &ctx.accounts.solend_program,
+        LendingPlatform::Solend
+    )?;
     refresh::solend_refresh_accounts(ctx, &mut solauto_position)?;
     ix_utils::update_data(&mut solauto_position)
 }
@@ -53,8 +59,14 @@ pub fn process_solend_interaction_instruction<'a>(
         ctx.accounts.solauto_position
     )?;
     validation_utils::validate_signer(ctx.accounts.signer, &solauto_position, true)?;
-    validation_utils::validate_program_account(ctx.accounts.solend_program, LendingPlatform::Solend)?;
-    validation_utils::validate_fee_receiver(ctx.accounts.solauto_fee_receiver)?;
+    validation_utils::validate_program_account(
+        ctx.accounts.solend_program,
+        LendingPlatform::Solend
+    )?;
+    validation_utils::validate_fees_receiver(
+        ctx.accounts.solauto_admin_settings,
+        ctx.accounts.solauto_fees_receiver
+    )?;
     validation_utils::validate_solend_protocol_interaction_accounts(&ctx, &args)?;
     protocol_interaction::solend_interaction(ctx, &mut solauto_position, args)?;
     ix_utils::update_data(&mut solauto_position)

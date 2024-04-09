@@ -6,7 +6,17 @@ use super::shared::*;
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankContext, ShankInstruction)]
 #[rustfmt::skip]
 pub enum Instruction {
-    #[account(signer, writable, name = "signer")]
+    #[account(signer, mut, name = "solauto_admin")]
+    #[account(name = "system_program")]
+    #[account(name = "token_program")]
+    #[account(name = "rent")]
+    #[account(mut, name = "solauto_admin_settings")]
+    #[account(name = "fees_wallet")]
+    #[account(mut, name = "fees_token_account")]
+    #[account(name = "fees_token_mint")]
+    SolautoAdminUpdateSettings,
+
+    #[account(signer, mut, name = "signer")]
     #[account(name = "marginfi_program")]
     #[account(name = "system_program")]
     #[account(name = "token_program")]
@@ -21,7 +31,7 @@ pub enum Instruction {
     #[account(name = "debt_token_mint")]
     MarginfiOpenPosition(Option<PositionData>),
 
-    #[account(signer, writable, name = "signer")]
+    #[account(signer, mut, name = "signer")]
     #[account(name = "solend_program")]
     #[account(name = "system_program")]
     #[account(name = "token_program")]
@@ -36,7 +46,7 @@ pub enum Instruction {
     #[account(name = "debt_liquidity_token_mint")]
     SolendOpenPosition(Option<PositionData>),
 
-    #[account(signer, writable, name = "signer")]
+    #[account(signer, mut, name = "signer")]
     #[account(mut, name = "solauto_position")]
     UpdatePosition(SolautoSettingsParameters),
 
@@ -60,16 +70,16 @@ pub enum Instruction {
     // TODO
     // MarginfiProtocolInteraction(ProtocolInteractionArgs),
 
-    #[account(signer, writable, name = "signer")]
+    #[account(signer, mut, name = "signer")]
     #[account(name = "solend_program")]
     #[account(name = "system_program")]
     #[account(name = "token_program")]
     #[account(name = "ata_program")]
     #[account(name = "clock")]
     #[account(name = "rent")]
-    #[account(mut, optional, name = "positions_manager")]
+    #[account(name = "solauto_admin_settings")]
+    #[account(mut, name = "solauto_fees_receiver")]
     #[account(mut, optional, name = "solauto_position")]
-    #[account(mut, name = "solauto_fee_receiver")]
     #[account(name = "lending_market")]
     #[account(mut, name = "obligation")]
     #[account(mut, optional, name = "supply_reserve")]

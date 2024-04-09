@@ -14,10 +14,10 @@ use crate::{
 
 pub fn solend_interaction<'a>(
     mut ctx: Context<'a, SolendProtocolInteractionAccounts<'a>>,
-    solauto_position: &mut Option<DeserializedAccount<Position>>,
+    solauto_position: &mut Option<DeserializedAccount<'a, Position>>,
     args: ProtocolInteractionArgs
 ) -> ProgramResult {
-    let (solend_client, mut obligation_position) = SolendClient::from(&mut ctx)?;
+    let (solend_client, mut obligation_position) = SolendClient::from(&mut ctx, solauto_position)?;
     let mut solauto_manager = SolautoManager::from(&solend_client, &mut obligation_position)?;
 
     solauto_manager.protocol_interaction(args)?;

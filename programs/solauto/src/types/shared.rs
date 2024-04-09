@@ -83,9 +83,11 @@ pub struct Position {
     pub kamino_data: Option<KaminoPositionData>,
 }
 
+pub const SOLAUTO_SETTINGS_ACCOUNT_SPACE: usize = 100;
 #[derive(ShankAccount, BorshDeserialize, BorshSerialize, Clone, Debug)]
-pub struct PositionsManager {
-    pub  open_positions: Vec<Pubkey>,
+pub struct SolautoAdminSettings {
+    pub fees_wallet: Pubkey,
+    pub fees_token_mint: Pubkey,
 }
 
 #[derive(Clone)]
@@ -134,16 +136,18 @@ impl<'a, T: Pack + IsInitialized> DeserializedAccount<'a, T> {
 
 #[derive(Error, Debug)]
 pub enum SolautoError {
-    #[error("Invalid position data given")]
-    InvalidPositionSettings,
-    #[error("Failed to deserialize account data, incorrect account was likely given")]
-    FailedAccountDeserialization,
-    #[error("Stale protocol data. Refresh instruction must be invoked before taking a protocol action")]
-    StaleProtocolData,
+    #[error("Incorrect Solauto admin settings account")]
+    IncorrectSolautoSettingsAccount,
     #[error("Incorrect fee receiver account provided")]
-    IncorrectFeeReceiver,
+    IncorrectFeesReceiverAccount,
     #[error("Missing required accounts for the given instruction")]
     MissingRequiredAccounts,
+    #[error("Failed to deserialize account data, incorrect account was likely given")]
+    FailedAccountDeserialization,
+    #[error("Invalid position data given")]
+    InvalidPositionSettings,
+    #[error("Stale protocol data. Refresh instruction must be invoked before taking a protocol action")]
+    StaleProtocolData,
     #[error("Unable to adjust position to the desired utilization rate")]
     UnableToReposition,
     #[error("Desired action brought the utilization rate to an unsafe amount")]

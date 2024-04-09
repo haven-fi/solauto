@@ -5,13 +5,26 @@ use solana_program::{
     program_error::ProgramError,
     pubkey::Pubkey,
 };
+use spl_associated_token_account::get_associated_token_address;
 use crate::types::instruction::accounts::{ Context, SolendProtocolInteractionAccounts };
 use crate::types::instruction::ProtocolInteractionArgs;
 use crate::types::shared::{
-    DeserializedAccount, LendingPlatform, Position, ProtocolAction, SolautoError, SolautoSettingsParameters
+    DeserializedAccount,
+    LendingPlatform,
+    Position,
+    ProtocolAction,
+    SolautoError,
+    SolautoAdminSettings,
+    SolautoSettingsParameters,
 };
 
-use crate::constants::{ FEE_RECEIVER, KAMINO_PROGRAM, MARGINFI_PROGRAM, SOLEND_PROGRAM };
+use crate::constants::{
+    KAMINO_PROGRAM,
+    MARGINFI_PROGRAM,
+    SOLAUTO_ADMIN,
+    SOLAUTO_ADMIN_SETTINGS_ACCOUNT_SEEDS,
+    SOLEND_PROGRAM,
+};
 
 pub fn validate_signer(
     signer: &AccountInfo,
@@ -44,6 +57,13 @@ pub fn validate_signer(
         }
     }
 
+    Ok(())
+}
+
+pub fn validate_solauto_admin_signer(solauto_admin: &AccountInfo) -> ProgramResult {
+    if !solauto_admin.is_signer || *solauto_admin.key != SOLAUTO_ADMIN {
+        return Err(ProgramError::MissingRequiredSignature.into());
+    }
     Ok(())
 }
 
@@ -93,7 +113,10 @@ pub fn validate_position_settings(settings: &SolautoSettingsParameters) -> Progr
     Ok(())
 }
 
-pub fn validate_program_account(program: &AccountInfo, lending_platform: LendingPlatform) -> ProgramResult {
+pub fn validate_program_account(
+    program: &AccountInfo,
+    lending_platform: LendingPlatform
+) -> ProgramResult {
     match lending_platform {
         LendingPlatform::Solend => {
             if *program.key != SOLEND_PROGRAM {
@@ -118,12 +141,31 @@ pub fn validate_program_account(program: &AccountInfo, lending_platform: Lending
     Ok(())
 }
 
-pub fn validate_fee_receiver(fee_receiver: &AccountInfo) -> ProgramResult {
-    if fee_receiver.key != &FEE_RECEIVER {
-        msg!("Fee receiver account must be {}", FEE_RECEIVER);
-        return Err(SolautoError::IncorrectFeeReceiver.into());
+pub fn validate_fees_receiver<'a>(
+    solauto_admin_settings: &'a AccountInfo<'a>,
+    fee_receiver_ata: &'a AccountInfo<'a>
+) -> ProgramResult {
+    // Validate solauto_admin_settings pubkey using the settings seed
+    let seeds = &[SOLAUTO_ADMIN_SETTINGS_ACCOUNT_SEEDS];
+    let (pda, _bump) = Pubkey::find_program_address(seeds, &crate::ID);
+    if &pda != solauto_admin_settings.key {
+        return Err(SolautoError::IncorrectSolautoSettingsAccount.into());
     }
-    Ok(())
+
+    let solauto_admin_settings = DeserializedAccount::<SolautoAdminSettings>
+        ::deserialize(Some(solauto_admin_settings))?
+        .unwrap();
+
+    let associated_token_account = get_associated_token_address(
+        &solauto_admin_settings.data.fees_wallet,
+        &solauto_admin_settings.data.fees_token_mint
+    );
+
+    if &associated_token_account != fee_receiver_ata.key {
+        Err(SolautoError::IncorrectFeesReceiverAccount.into())
+    } else {
+        Ok(())
+    }
 }
 
 pub fn require_accounts(accounts: &[Option<&AccountInfo>]) -> ProgramResult {
@@ -198,7 +240,6 @@ pub fn validate_solend_protocol_interaction_accounts(
         }
         ProtocolAction::ClosePosition => {
             require_all_solend_accounts()?;
-            require_accounts(&[ctx.accounts.positions_manager])?;
         }
     }
     Ok(())

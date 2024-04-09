@@ -9,7 +9,7 @@ use solana_program::{
 };
 
 use crate::{
-    processors::{ marginfi::*, shared::* },
+    processors::{ marginfi::*, general::* },
     types::instruction::Instruction,
 };
 
@@ -22,17 +22,18 @@ fn process_instruction<'a>(
 ) -> ProgramResult {
     let wip_instruction = || {
         msg!("Instruction is currently a WIP");
-        Err(ProgramError::InvalidInstructionData)
+        Ok(())
     };
 
     let instruction = Instruction::try_from_slice(data)?;
     match instruction {
-        Instruction::SolendOpenPosition(_args) => wip_instruction()?,
+        Instruction::SolautoAdminUpdateSettings => process_solauto_admin_update_settings_instruction(accounts),
+        Instruction::SolendOpenPosition(_args) => wip_instruction(),
         Instruction::MarginfiOpenPosition(args) =>
             process_marginfi_open_position_instruction(accounts, args),
         Instruction::UpdatePosition(_settings) => process_update_position_instruction(),
-        Instruction::SolendRefreshData => wip_instruction()?,
-        Instruction::SolendProtocolInteraction(_args) => wip_instruction()?,
+        Instruction::SolendRefreshData => wip_instruction(),
+        Instruction::SolendProtocolInteraction(_args) => wip_instruction(),
         // TODO: refresh ping
     }
 }

@@ -1,6 +1,16 @@
-use solana_program::{ entrypoint::ProgramResult, msg, program_error::ProgramError };
+use std::{ cmp::min, ops::{ Div, Mul, Sub } };
 
-use crate::{ constants::SOLAUTO_BOOST_FEE_BPS, utils::math_utils::calculate_debt_adjustment_usd };
+use solana_program::{
+    account_info::AccountInfo,
+    entrypoint::ProgramResult,
+    msg,
+    program_error::ProgramError,
+};
+
+use crate::{
+    constants::SOLAUTO_BOOST_FEE_BPS,
+    utils::math_utils::{ calculate_debt_adjustment_usd, to_base_unit },
+};
 
 use super::{
     instruction::ProtocolInteractionArgs,
@@ -9,15 +19,24 @@ use super::{
     shared::{ DeserializedAccount, Position, ProtocolAction, SolautoError },
 };
 
-pub struct SolautoManager<'a> {
-    client: &'a dyn LendingProtocolClient,
-    obligation_position: &'a mut LendingProtocolObligationPosition,
+pub struct SolautoManagerAccounts<'a, 'b> {
+    pub debt_token_mint: Option<&'a AccountInfo<'a>>,
+    pub debt_token_account: Option<&'a AccountInfo<'a>>,
+    pub solauto_fee_receiver: &'a AccountInfo<'a>,
+    pub solauto_position: &'b DeserializedAccount<'a, Position>,
 }
 
-impl<'a> SolautoManager<'a> {
+pub struct SolautoManager<'b> {
+    client: &'b dyn LendingProtocolClient,
+    obligation_position: &'b mut LendingProtocolObligationPosition,
+    // TODO
+    // accounts: SolautoManagerAccounts<'a>,
+}
+
+impl<'b> SolautoManager<'b> {
     pub fn from(
-        client: &'a dyn LendingProtocolClient,
-        obligation_position: &'a mut LendingProtocolObligationPosition
+        client: &'b dyn LendingProtocolClient,
+        obligation_position: &'b mut LendingProtocolObligationPosition
     ) -> Result<Self, ProgramError> {
         client.validate()?;
         Ok(Self {
@@ -118,27 +137,43 @@ impl<'a> SolautoManager<'a> {
     }
 
     fn increase_leverage(&mut self, target_utilization_rate_bps: u16) -> ProgramResult {
-        let (debt_adjustment_usd, solauto_fee_usd) = calculate_debt_adjustment_usd(
+        // TODO: we should prepare for if borrow value is so high that it brings utilization rate above a value where the lending protocol will reject the borrow
+        // in which case we need to do this over multiple borrows and deposits in a row
+
+        let debt = self.obligation_position.debt.as_ref().unwrap();
+
+        let debt_adjustment_usd = calculate_debt_adjustment_usd(
             self.obligation_position.open_ltv,
             self.obligation_position.supply.as_ref().unwrap().amount_used.usd_value as f64,
             self.obligation_position.debt.as_ref().unwrap().amount_used.usd_value as f64,
             target_utilization_rate_bps,
             Some(SOLAUTO_BOOST_FEE_BPS)
         );
-        // borrow_value_usd = min(debt_adjustment_usd, available debt token to borrow * 0.9)
 
-        // TODO: we should prepare for if borrow value is so high that it brings utilization rate above a value where the lending protocol will reject the borrow
-        // in which case we need to do this over multiple borrows and deposits in a row
+        let buffer_room_from_cap = 0.9;
+        let borrow_cap_usd = debt.amount_can_be_used.usd_value * buffer_room_from_cap;
+        let borrow_value_usd = if debt_adjustment_usd < borrow_cap_usd {
+            debt_adjustment_usd
+        } else {
+            msg!("Capped at borrowing only {} USD value of debt during leverage increase", borrow_cap_usd);
+            borrow_cap_usd
+        };
+        let solauto_fee_usd = borrow_cap_usd.mul((SOLAUTO_BOOST_FEE_BPS as f64).div(10000.0));
 
-        // msg! if borrow_value_usd < debt_adjustment_usd 
-        // solauto_fee_value_usd = min(solauto_fee_usd, borrow_value_usd * (SOLAUTO_BOOST_FEE_BPS / 10000))
-        // Borrow borrowed_value = (borrow_value_usd - solauto_fee_value_usd) * debt_market_price
-        // Swap borrowed_value to supply token
-        // Deposit supply token
-        // TODO create setting to manage the token in which to receive fees 
-        // swap solauto_fee = solauto_fee_value_usd * debt_market_price to the fee_receiver_token
-        // send solauto fee to solauto fee receiver address
-        Ok(())
+        let borrow_value_base_unit = to_base_unit::<f64, u8, u64>(
+            borrow_value_usd.div(debt.market_price),
+            debt.decimals
+        );
+        let solauto_value_base_unit = to_base_unit::<f64, u8, u64>(
+            solauto_fee_usd.div(debt.market_price),
+            debt.decimals
+        );
+        self.borrow(borrow_value_base_unit + solauto_value_base_unit)?;
+
+        // TODO Swap borrow_value_base_unit to supply token mint
+        // TODO Deposit supply token
+
+        self.payout_solauto_fee()
     }
 
     fn decrease_leverage(&mut self, target_utilization_rate_bps: u16) -> ProgramResult {
@@ -171,6 +206,13 @@ impl<'a> SolautoManager<'a> {
         } else {
             0
         };
+        Ok(())
+    }
+
+    fn payout_solauto_fee(&self) -> ProgramResult {
+        // TODO create setting to manage the token in which to receive fees
+        // swap solauto_fee = solauto_fee_value_usd * debt_market_price to the fee_receiver_token
+        // send solauto fee to solauto fee receiver address
         Ok(())
     }
 }

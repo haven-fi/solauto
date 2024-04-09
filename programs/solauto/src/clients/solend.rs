@@ -53,7 +53,7 @@ pub struct SolendDataAccounts<'a> {
     pub obligation: DeserializedAccount<'a, Obligation>,
 }
 
-pub struct SolendClient<'a> {
+pub struct SolendClient<'a, 'b> {
     signer: &'a AccountInfo<'a>,
     system_accounts: SystemAccounts<'a>,
     data: SolendDataAccounts<'a>,
@@ -62,12 +62,12 @@ pub struct SolendClient<'a> {
     supply_collateral: Option<LendingProtocolTokenAccounts<'a>>,
     debt_liquidity: Option<LendingProtocolTokenAccounts<'a>>,
     debt_reserve_fee_receiver: Option<&'a AccountInfo<'a>>,
-    solauto_position: Option<DeserializedAccount<'a, Position>>,
+    solauto_position: &'b Option<DeserializedAccount<'a, Position>>,
     solauto_fee_receiver: &'a AccountInfo<'a>,
 }
 
-impl<'a> SolendClient<'a> {
-    pub fn initialize<'b>(
+impl<'a, 'b> SolendClient<'a, 'b> {
+    pub fn initialize(
         ctx: &'b Context<'a, SolendOpenPositionAccounts<'a>>,
         solauto_position: &'b Option<DeserializedAccount<'a, Position>>
     ) -> ProgramResult {
@@ -91,8 +91,9 @@ impl<'a> SolendClient<'a> {
         )
     }
 
-    pub fn from<'b>(
-        ctx: &'b Context<'a, SolendProtocolInteractionAccounts<'a>>
+    pub fn from(
+        ctx: &'b Context<'a, SolendProtocolInteractionAccounts<'a>>,
+        solauto_position: &'b Option<DeserializedAccount<'a, Position>>
     ) -> Result<(Self, LendingProtocolObligationPosition), ProgramError> {
         let mut data_accounts = SolendClient::deserialize_solend_accounts(
             ctx.accounts.lending_market,
@@ -136,10 +137,6 @@ impl<'a> SolendClient<'a> {
             &data_accounts.obligation.data
         )?;
 
-        let solauto_position = DeserializedAccount::<Position>::deserialize(
-            ctx.accounts.solauto_position
-        )?;
-
         let solend_client = Self {
             signer: ctx.accounts.signer,
             system_accounts: SystemAccounts {
@@ -156,7 +153,7 @@ impl<'a> SolendClient<'a> {
             debt_liquidity,
             debt_reserve_fee_receiver: ctx.accounts.debt_reserve_fee_receiver,
             solauto_position,
-            solauto_fee_receiver: ctx.accounts.solauto_fee_receiver,
+            solauto_fee_receiver: ctx.accounts.solauto_fees_receiver,
         };
 
         Ok((solend_client, obligation_position))
@@ -302,7 +299,7 @@ impl<'a> SolendClient<'a> {
     }
 }
 
-impl<'a> LendingProtocolClient for SolendClient<'a> {
+impl<'a, 'b> LendingProtocolClient for SolendClient<'a, 'b> {
     fn validate(&self) -> ProgramResult {
         let curr_slot = Clock::get()?.slot;
         if self.data.obligation.data.last_update.is_stale(curr_slot)? {

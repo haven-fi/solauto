@@ -26,8 +26,8 @@ pub fn to_base_unit<T, U, V>(value: T, decimals: U) -> V
     V::from_f64(base_units).unwrap()
 }
 
-pub fn base_unit_to_usd_value(base_unit: u64, decimals: u8, market_price: f64) -> f32 {
-    (base_unit as f32).div((10u64).pow(decimals as u32) as f32).mul(market_price as f32)
+pub fn base_unit_to_usd_value(base_unit: u64, decimals: u8, market_price: f64) -> f64 {
+    (base_unit as f64).div((10u64).pow(decimals as u32) as f64).mul(market_price)
 }
 
 /// Calculates the debt adjustment in USD in order to reach the target_utilization_rate
@@ -40,16 +40,15 @@ pub fn base_unit_to_usd_value(base_unit: u64, decimals: u8, market_price: f64) -
 /// * `adjustment_fee_bps` - Adjustment fee. On boosts this would be the Solauto fee. If deleveraging and using a flash loan, this would be the flash loan fee
 /// 
 /// # Returns
-/// * `debt_adjustment_usd` - The USD value of the debt adjustment. Positive if debt needs to increase, negative if debt needs to decrease. This amount is inclusive of the adjustment fee
-/// * `adjustment_fee_usd` - the USD value of the adjustment fee. Always positive
+/// The USD value of the debt adjustment. Positive if debt needs to increase, negative if debt needs to decrease. This amount is inclusive of the adjustment fee
 /// 
 pub fn calculate_debt_adjustment_usd(
     open_ltv: f64,
     total_supply_usd: f64,
     total_debt_usd: f64,
     target_utilization_rate_bps: u16,
-    adjustment_fee_bps: Option<u16>
-) -> (f64, f64) {
+    adjustment_fee_bps: Option<u16>,
+) -> f64 {
     let adjustment_fee = if !adjustment_fee_bps.is_none() {
         (adjustment_fee_bps.unwrap() as f64).div(10000.0)
     } else {
@@ -59,7 +58,7 @@ pub fn calculate_debt_adjustment_usd(
     let current_utilization_rate = total_debt_usd.div(total_supply_usd.mul(open_ltv));
     let target_utilization_rate = (target_utilization_rate_bps as f64).div(10000.0);
 
-    let debt_adjustment_usd = if current_utilization_rate > target_utilization_rate {
+    if current_utilization_rate > target_utilization_rate {
         total_debt_usd
             .mul(-1.0)
             .add(open_ltv.mul(total_supply_usd).mul(target_utilization_rate))
@@ -79,9 +78,5 @@ pub fn calculate_debt_adjustment_usd(
                     .mul(adjustment_fee)
                     .sub(open_ltv.mul(target_utilization_rate).add(adjustment_fee).add(1.0))
             )
-    };
-
-    let adjustment_fee_usd = debt_adjustment_usd.mul(adjustment_fee).abs();
-
-    (debt_adjustment_usd, adjustment_fee_usd)
+    }
 }

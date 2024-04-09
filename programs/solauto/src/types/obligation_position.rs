@@ -12,7 +12,7 @@ use super::shared::LendingPlatform;
 #[derive(Debug)]
 pub struct TokenAmount {
     pub base_unit: u64,
-    pub usd_value: f32,
+    pub usd_value: f64,
 }
 
 #[derive(Debug)]
@@ -79,7 +79,7 @@ impl LendingProtocolObligationPosition {
         match (&self.debt, &self.supply) {
             (Some(debt), Some(supply)) =>
                 debt.amount_used.usd_value
-                    .div(supply.amount_used.usd_value.mul(self.open_ltv as f32))
+                    .div(supply.amount_used.usd_value.mul(self.open_ltv as f64))
                     .mul(10000.0) as u16,
             _ => 0,
         }
@@ -97,7 +97,7 @@ impl LendingProtocolObligationPosition {
             supply_usd
         };
 
-        to_base_unit::<f32, u32, u64>(net_worth_usd, USD_DECIMALS)
+        to_base_unit::<f64, u32, u64>(net_worth_usd, USD_DECIMALS)
     }
 
     pub fn net_worth_base_amount(&self) -> u64 {
@@ -137,7 +137,8 @@ impl LendingProtocolObligationPosition {
     pub fn debt_borrowed_update(&mut self, base_unit_debt_amount_update: i64) -> ProgramResult {
         if let Some(debt) = self.debt.as_mut() {
             if base_unit_debt_amount_update.is_positive() {
-                debt.amount_used.base_unit += base_unit_debt_amount_update as u64;
+                let borrow_fee = (base_unit_debt_amount_update as f64).mul((debt.borrow_fee_bps as f64).div(10000.0));
+                debt.amount_used.base_unit += base_unit_debt_amount_update as u64 + (borrow_fee as u64);
                 debt.amount_can_be_used.base_unit -= base_unit_debt_amount_update as u64;
             } else {
                 debt.amount_used.base_unit -= (base_unit_debt_amount_update * -1) as u64;
