@@ -3,16 +3,16 @@ use solana_program::{ account_info::AccountInfo, entrypoint::ProgramResult };
 use crate::{
     constants::SOLAUTO_ADMIN_SETTINGS_ACCOUNT_SEEDS,
     types::{
-        instruction::accounts::SolautoAdminUpdateSettingsAccounts,
+        instruction::accounts::UpdateSolautoAdminSettingsAccounts,
         shared::{ DeserializedAccount, SolautoAdminSettings, SOLAUTO_SETTINGS_ACCOUNT_SPACE },
     },
     utils::*,
 };
 
-pub fn process_solauto_admin_update_settings_instruction<'a>(
+pub fn process_update_solauto_admin_settings_instruction<'a>(
     accounts: &'a [AccountInfo<'a>]
 ) -> ProgramResult {
-    let ctx = SolautoAdminUpdateSettingsAccounts::context(accounts)?;
+    let ctx = UpdateSolautoAdminSettingsAccounts::context(accounts)?;
     validation_utils::validate_solauto_admin_signer(ctx.accounts.solauto_admin)?;
 
     let mut solauto_admin_settings = if

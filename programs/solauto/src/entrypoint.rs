@@ -27,7 +27,7 @@ fn process_instruction<'a>(
 
     let instruction = Instruction::try_from_slice(data)?;
     match instruction {
-        Instruction::SolautoAdminUpdateSettings => process_solauto_admin_update_settings_instruction(accounts),
+        Instruction::UpdateSolautoAdminSettings => process_update_solauto_admin_settings_instruction(accounts),
         Instruction::SolendOpenPosition(_args) => wip_instruction(),
         Instruction::MarginfiOpenPosition(args) =>
             process_marginfi_open_position_instruction(accounts, args),

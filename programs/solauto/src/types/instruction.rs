@@ -14,7 +14,7 @@ pub enum Instruction {
     #[account(name = "fees_wallet")]
     #[account(mut, name = "fees_token_account")]
     #[account(name = "fees_token_mint")]
-    SolautoAdminUpdateSettings,
+    UpdateSolautoAdminSettings,
 
     #[account(signer, mut, name = "signer")]
     #[account(name = "marginfi_program")]
