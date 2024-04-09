@@ -6,16 +6,18 @@ use solana_program::{
     pubkey::Pubkey,
 };
 use spl_associated_token_account::get_associated_token_address;
-use crate::types::instruction::accounts::{ Context, SolendProtocolInteractionAccounts };
-use crate::types::instruction::ProtocolInteractionArgs;
-use crate::types::shared::{
-    DeserializedAccount,
-    LendingPlatform,
-    Position,
-    ProtocolAction,
-    SolautoError,
-    SolautoAdminSettings,
-    SolautoSettingsParameters,
+
+use crate::types::{
+    instruction::accounts::{ Context, SolendProtocolInteractionAccounts },
+    shared::{
+        DeserializedAccount,
+        LendingPlatform,
+        Position,
+        SolautoAction,
+        SolautoAdminSettings,
+        SolautoError,
+        SolautoSettingsParameters,
+    },
 };
 
 use crate::constants::{
@@ -178,9 +180,9 @@ pub fn require_accounts(accounts: &[Option<&AccountInfo>]) -> ProgramResult {
     Ok(())
 }
 
-pub fn validate_solend_protocol_interaction_accounts(
+pub fn validate_solend_protocol_interaction_ix(
     ctx: &Context<SolendProtocolInteractionAccounts>,
-    args: &ProtocolInteractionArgs
+    action: &SolautoAction
 ) -> ProgramResult {
     let require_supply_accounts = || {
         return require_accounts(
@@ -217,29 +219,25 @@ pub fn validate_solend_protocol_interaction_accounts(
         Ok(())
     };
 
-    match &args.action {
-        ProtocolAction::Deposit(action_details) => {
-            if !action_details.rebalance_utilization_rate_bps.is_none() {
-                require_all_solend_accounts()?;
-            } else {
-                require_supply_accounts()?;
+    match action {
+        SolautoAction::Rebalance(utilization_rate_bps) => {
+            if utilization_rate_bps > &10000 {
+                msg!("Rebalance utilization rate bps must be from 0 - 10000");
+                return Err(SolautoError::UnableToReposition.into());
             }
+            require_all_solend_accounts()?;
         }
-        ProtocolAction::Withdraw(_) => {
+        SolautoAction::Deposit(_) => {
             require_supply_accounts()?;
         }
-        ProtocolAction::Borrow(_) => {
+        SolautoAction::Withdraw(_) => {
+            require_supply_accounts()?;
+        }
+        SolautoAction::Borrow(_) => {
             require_debt_accounts()?;
         }
-        ProtocolAction::Repay(action_details) => {
-            if !action_details.rebalance_utilization_rate_bps.is_none() {
-                require_all_solend_accounts()?;
-            } else {
-                require_debt_accounts()?;
-            }
-        }
-        ProtocolAction::ClosePosition => {
-            require_all_solend_accounts()?;
+        SolautoAction::Repay(_) => {
+            require_debt_accounts()?;
         }
     }
     Ok(())

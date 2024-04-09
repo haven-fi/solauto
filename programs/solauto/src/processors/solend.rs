@@ -10,9 +10,8 @@ use crate::{
                 SolendRefreshDataAccounts,
             },
             PositionData,
-            ProtocolInteractionArgs,
         },
-        shared::{ DeserializedAccount, LendingPlatform, Position },
+        shared::{ DeserializedAccount, LendingPlatform, Position, SolautoAction },
     },
     utils::*,
 };
@@ -52,7 +51,7 @@ pub fn process_solend_refresh_accounts<'a>(accounts: &'a [AccountInfo<'a>]) -> P
 
 pub fn process_solend_interaction_instruction<'a>(
     accounts: &'a [AccountInfo<'a>],
-    args: ProtocolInteractionArgs
+    action: SolautoAction
 ) -> ProgramResult {
     let ctx = SolendProtocolInteractionAccounts::context(accounts)?;
     let mut solauto_position = DeserializedAccount::<Position>::deserialize(
@@ -67,8 +66,8 @@ pub fn process_solend_interaction_instruction<'a>(
         ctx.accounts.solauto_admin_settings,
         ctx.accounts.solauto_fees_receiver
     )?;
-    validation_utils::validate_solend_protocol_interaction_accounts(&ctx, &args)?;
-    protocol_interaction::solend_interaction(ctx, &mut solauto_position, args)?;
+    validation_utils::validate_solend_protocol_interaction_ix(&ctx, &action)?;
+    protocol_interaction::solend_interaction(ctx, &mut solauto_position, action)?;
     ix_utils::update_data(&mut solauto_position)
 }
 

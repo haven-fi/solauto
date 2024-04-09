@@ -96,7 +96,7 @@ pub enum Instruction {
     #[account(optional, name = "debt_liquidity_token_mint")]
     #[account(mut, optional, name = "source_debt_liquidity")]
     #[account(mut, optional, name = "reserve_debt_liquidity")]
-    SolendProtocolInteraction(ProtocolInteractionArgs),
+    SolendProtocolInteraction(SolautoAction),
 
     // TODO
     // MarginfiRebalancePing,
@@ -117,10 +117,4 @@ pub struct PositionData {
     pub solend_data: Option<SolendPositionData>,
     /// Kamino-specific data for the position
     pub kamino_data: Option<KaminoPositionData>,
-}
-
-#[derive(BorshSerialize, BorshDeserialize, Clone, Debug)]
-pub struct ProtocolInteractionArgs {
-    /// Action to take with the protocol
-    pub action: ProtocolAction,
 }

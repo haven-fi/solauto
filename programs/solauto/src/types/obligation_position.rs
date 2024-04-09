@@ -4,7 +4,12 @@ use solend_sdk::{ math::BPS_SCALER, state::Reserve };
 
 use crate::{
     constants::USD_DECIMALS,
-    utils::math_utils::{ base_unit_to_usd_value, decimal_to_f64_div_wad, to_base_unit },
+    utils::math_utils::{
+        base_unit_to_usd_value,
+        decimal_to_f64_div_wad,
+        from_base_unit,
+        to_base_unit,
+    },
 };
 
 use super::shared::LendingPlatform;
@@ -91,10 +96,12 @@ impl LendingProtocolObligationPosition {
         }
 
         let supply_usd = self.supply.as_ref().unwrap().amount_used.usd_value;
-        let net_worth_usd = if let Some(debt_lquidity) = self.debt.as_ref() {
-            supply_usd - debt_lquidity.amount_used.usd_value
-        } else {
+        let debt_usd = self.debt.as_ref().unwrap().amount_used.usd_value;
+
+        let net_worth_usd = if self.debt.is_none() || debt_usd == 0.0 {
             supply_usd
+        } else {
+            supply_usd - debt_usd
         };
 
         to_base_unit::<f64, u32, u64>(net_worth_usd, USD_DECIMALS)
@@ -106,12 +113,16 @@ impl LendingProtocolObligationPosition {
         }
 
         let supply = self.supply.as_ref().unwrap();
-        to_base_unit::<f64, u8, u64>(
-            (self.net_worth_usd_base_amount() as f64)
-                .div((10u64).pow(USD_DECIMALS) as f64)
-                .div(supply.market_price as f64),
-            supply.decimals
-        )
+
+        if self.debt.is_none() || self.debt.as_ref().unwrap().amount_used.base_unit == 0 {
+            return supply.amount_used.base_unit;
+        }
+
+        let supply_net_worth = from_base_unit::<u64, u32, f64>(
+            self.net_worth_usd_base_amount(),
+            USD_DECIMALS
+        ).div(supply.market_price as f64);
+        to_base_unit::<f64, u8, u64>(supply_net_worth, supply.decimals)
     }
 
     pub fn supply_lent_update(&mut self, base_unit_supply_update: i64) -> ProgramResult {
@@ -137,8 +148,11 @@ impl LendingProtocolObligationPosition {
     pub fn debt_borrowed_update(&mut self, base_unit_debt_amount_update: i64) -> ProgramResult {
         if let Some(debt) = self.debt.as_mut() {
             if base_unit_debt_amount_update.is_positive() {
-                let borrow_fee = (base_unit_debt_amount_update as f64).mul((debt.borrow_fee_bps as f64).div(10000.0));
-                debt.amount_used.base_unit += base_unit_debt_amount_update as u64 + (borrow_fee as u64);
+                let borrow_fee = (base_unit_debt_amount_update as f64).mul(
+                    (debt.borrow_fee_bps as f64).div(10000.0)
+                );
+                debt.amount_used.base_unit +=
+                    (base_unit_debt_amount_update as u64) + (borrow_fee as u64);
                 debt.amount_can_be_used.base_unit -= base_unit_debt_amount_update as u64;
             } else {
                 debt.amount_used.base_unit -= (base_unit_debt_amount_update * -1) as u64;

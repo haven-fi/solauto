@@ -10,20 +10,24 @@ use solana_program::{
 };
 
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType)]
-pub enum ProtocolAction {
-    Deposit(ProtocolActionDetails),
-    Withdraw(u64),
+pub enum SolautoAction {
+    /// Provide the target utilization rate bps. Must be 0 - 10000
+    Rebalance(u16),
+    /// Provide the base unit amount to deposit
+    Deposit(u64),
+    /// Provide the amount to withdraw. Can be a withdraw partial or entirety
+    Withdraw(WithdrawParams),
+    /// Provide the base unit amount to borrow
     Borrow(u64),
-    Repay(ProtocolActionDetails),
-    ClosePosition,
+    /// Provide the base unit amount to repay
+    Repay(u64),
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType)]
-pub struct ProtocolActionDetails {
-    /// Amount of liquidity to use from source token account when taking the action
-    pub amount: Option<u64>,
-    /// Whether to rebalance to a specific utilization after taking the action
-    pub rebalance_utilization_rate_bps: Option<u16>,
+pub enum WithdrawParams {
+    All,
+    /// Provide the amount to withdraw in the base unit
+    Partial(u64),
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, PartialEq)]
@@ -57,7 +61,7 @@ pub struct MarginfiPositionData {
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType)]
-pub struct KaminoPositionData{
+pub struct KaminoPositionData {
     // TODO
 }
 
@@ -146,12 +150,14 @@ pub enum SolautoError {
     FailedAccountDeserialization,
     #[error("Invalid position data given")]
     InvalidPositionSettings,
-    #[error("Stale protocol data. Refresh instruction must be invoked before taking a protocol action")]
+    #[error(
+        "Stale protocol data. Refresh instruction must be invoked before taking a protocol action"
+    )]
     StaleProtocolData,
     #[error("Unable to adjust position to the desired utilization rate")]
     UnableToReposition,
     #[error("Desired action brought the utilization rate to an unsafe amount")]
-    ExceededValidUtilizationRate
+    ExceededValidUtilizationRate,
 }
 
 impl From<SolautoError> for ProgramError {

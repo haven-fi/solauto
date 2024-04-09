@@ -13,10 +13,9 @@ use crate::{
 };
 
 use super::{
-    instruction::ProtocolInteractionArgs,
     lending_protocol::LendingProtocolClient,
     obligation_position::LendingProtocolObligationPosition,
-    shared::{ DeserializedAccount, Position, ProtocolAction, SolautoError },
+    shared::{ DeserializedAccount, Position, SolautoAction, SolautoError, WithdrawParams },
 };
 
 pub struct SolautoManagerAccounts<'a, 'b> {
@@ -45,59 +44,28 @@ impl<'b> SolautoManager<'b> {
         })
     }
 
-    pub fn protocol_interaction(&mut self, args: ProtocolInteractionArgs) -> ProgramResult {
+    pub fn protocol_interaction(&mut self, action: SolautoAction) -> ProgramResult {
         // TODO: in the case where position is solauto-managed but user calls deposit or repay with a rebalance, we need to ensure the user's debt token account is created before calling this. Should we do it on open position?
 
-        match args.action {
-            ProtocolAction::Deposit(details) => {
-                if !details.amount.is_none() {
-                    self.deposit(details.amount.unwrap())?;
-                }
-
-                if !details.rebalance_utilization_rate_bps.is_none() {
-                    if
-                        self.obligation_position.current_utilization_rate_bps() >
-                        details.rebalance_utilization_rate_bps.unwrap()
-                    {
-                        msg!(
-                            "Target utilization rate too low. Cannot reach this rate without deleveraging."
-                        );
-                        return Err(SolautoError::UnableToReposition.into());
-                    } else {
-                        self.rebalance(details.rebalance_utilization_rate_bps.unwrap())?;
-                    }
-                }
+        match action {
+            SolautoAction::Rebalance(utilization_rate_bps) => {
+                self.rebalance(utilization_rate_bps)?;
             }
-            ProtocolAction::Borrow(base_unit_amount) => {
+            SolautoAction::Deposit(base_unit_amount) => {
+                self.deposit(base_unit_amount)?;
+            }
+            SolautoAction::Borrow(base_unit_amount) => {
                 self.borrow(base_unit_amount)?;
             }
-            ProtocolAction::Repay(details) => {
-                if !details.amount.is_none() {
-                    self.repay(details.amount.unwrap())?;
-                }
-
-                if !details.rebalance_utilization_rate_bps.is_none() {
-                    if
-                        self.obligation_position.current_utilization_rate_bps() <
-                        details.rebalance_utilization_rate_bps.unwrap()
-                    {
-                        msg!(
-                            "Target utilization rate too high. Cannot reach this rate without increasing leverage."
-                        );
-                        return Err(SolautoError::UnableToReposition.into());
-                    } else {
-                        self.rebalance(details.rebalance_utilization_rate_bps.unwrap())?;
-                    }
-                }
+            SolautoAction::Repay(base_unit_amount) => {
+                self.repay(base_unit_amount)?;
             }
-            ProtocolAction::Withdraw(base_unit_amount) => {
-                self.withdraw(base_unit_amount)?;
-            }
-            ProtocolAction::ClosePosition => {
-                self.rebalance(0)?;
-                self.withdraw(
-                    self.obligation_position.supply.as_ref().unwrap().amount_used.base_unit
-                )?;
+            SolautoAction::Withdraw(params) => {
+                match params {
+                    WithdrawParams::All =>
+                        self.withdraw(self.obligation_position.net_worth_base_amount())?,
+                    WithdrawParams::Partial(base_unit_amount) => self.withdraw(base_unit_amount)?,
+                }
             }
         }
 
