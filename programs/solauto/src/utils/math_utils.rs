@@ -55,28 +55,15 @@ pub fn calculate_debt_adjustment_usd(
         0.0
     };
 
-    let current_utilization_rate = total_debt_usd.div(total_supply_usd.mul(open_ltv));
     let target_utilization_rate = (target_utilization_rate_bps as f64).div(10000.0);
 
-    if current_utilization_rate > target_utilization_rate {
-        total_debt_usd
-            .mul(-1.0)
-            .add(open_ltv.mul(total_supply_usd).mul(target_utilization_rate))
-            .div(
-                open_ltv
-                    .mul(target_utilization_rate)
-                    .mul(adjustment_fee)
-                    .add(open_ltv.mul(target_utilization_rate).add(adjustment_fee).sub(1.0))
-            ).mul(-1.0)
-    } else {
-        total_debt_usd
-            .mul(-1.0)
-            .add(open_ltv.mul(total_supply_usd).mul(target_utilization_rate))
-            .div(
-                open_ltv
-                    .mul(target_utilization_rate)
-                    .mul(adjustment_fee)
-                    .sub(open_ltv.mul(target_utilization_rate).add(adjustment_fee).add(1.0))
-            )
-    }
+    total_debt_usd
+        .mul(-1.0)
+        .add(open_ltv.mul(total_supply_usd).mul(target_utilization_rate))
+        .div(
+            open_ltv
+                .mul(target_utilization_rate)
+                .mul(adjustment_fee)
+                .add(open_ltv.mul(target_utilization_rate).add(adjustment_fee).sub(1.0))
+        ).mul(-1.0)
 }
