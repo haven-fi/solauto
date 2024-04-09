@@ -15,12 +15,12 @@ pub enum SolautoAction {
     Rebalance(u16),
     /// Provide the base unit amount to deposit
     Deposit(u64),
-    /// Provide the amount to withdraw. Can be a withdraw partial or entirety
-    Withdraw(WithdrawParams),
     /// Provide the base unit amount to borrow
     Borrow(u64),
     /// Provide the base unit amount to repay
     Repay(u64),
+    /// Provide the amount to withdraw. Can withdraw partial or all
+    Withdraw(WithdrawParams),
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType)]
