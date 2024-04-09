@@ -19,7 +19,7 @@ pub enum Instruction {
     #[account(name = "supply_token_mint")]
     #[account(mut, name = "debt_token_account")]
     #[account(name = "debt_token_mint")]
-    MarginfiOpenPosition(OpenPositionArgs),
+    MarginfiOpenPosition(Option<PositionData>),
 
     #[account(signer, writable, name = "signer")]
     #[account(name = "solend_program")]
@@ -34,9 +34,11 @@ pub enum Instruction {
     #[account(name = "supply_collateral_token_mint")]
     #[account(mut, name = "debt_liquidity_token_account")]
     #[account(name = "debt_liquidity_token_mint")]
-    SolendOpenPosition(OpenPositionArgs),
+    SolendOpenPosition(Option<PositionData>),
 
-    // UpdatePosition, TODO
+    #[account(signer, writable, name = "signer")]
+    #[account(mut, name = "solauto_position")]
+    UpdatePosition(SolautoSettingsParameters),
 
     // TODO
     // MarginfiRefreshData,
@@ -94,19 +96,17 @@ pub enum Instruction {
 }
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug)]
-pub struct NewPositionData {
+pub struct PositionData {
     /// ID of the Solauto position
     pub position_id: u8,
     /// Setting parameters for the position
     pub setting_params: SolautoSettingsParameters,
+    /// Marginfi-specific data for the position
+    pub marginfi_data: Option<MarginfiPositionData>,
     /// Solend-specific data for the position
     pub solend_data: Option<SolendPositionData>,
-}
-
-#[derive(BorshSerialize, BorshDeserialize, Clone, Debug)]
-pub struct OpenPositionArgs {
-    /// Position data if this is a solauto-managed position
-    pub position_data: Option<NewPositionData>
+    /// Kamino-specific data for the position
+    pub kamino_data: Option<KaminoPositionData>,
 }
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug)]

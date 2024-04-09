@@ -82,8 +82,6 @@ impl<'a> SolautoManager<'a> {
             }
         }
 
-        // TODO: if we are unable to rebalance to desired position due to borrow / withdraw caps, client should initiate flash loan
-
         if self.obligation_position.current_utilization_rate_bps() > 10000 {
             return Err(SolautoError::ExceededValidUtilizationRate.into());
         }
@@ -127,16 +125,24 @@ impl<'a> SolautoManager<'a> {
             target_utilization_rate_bps,
             Some(SOLAUTO_BOOST_FEE_BPS)
         );
-        // borrow_value = min(debt_adjustment_usd, available debt token to borrow * 0.9)
-        // msg! if borrow_value < debt_adjustment_usd 
-        // solauto_fee_value = min(solauto_fee_usd, borrow_value * (SOLAUTO_BOOST_FEE_BPS / 10000))
-        // Swap borrow_value - solauto_fee_value to supply token
+        // borrow_value_usd = min(debt_adjustment_usd, available debt token to borrow * 0.9)
+
+        // TODO: we should prepare for if borrow value is so high that it brings utilization rate above a value where the lending protocol will reject the borrow
+        // in which case we need to do this over multiple borrows and deposits in a row
+
+        // msg! if borrow_value_usd < debt_adjustment_usd 
+        // solauto_fee_value_usd = min(solauto_fee_usd, borrow_value_usd * (SOLAUTO_BOOST_FEE_BPS / 10000))
+        // Borrow borrowed_value = (borrow_value_usd - solauto_fee_value_usd) * debt_market_price
+        // Swap borrowed_value to supply token
         // Deposit supply token
-        // send solauto fee value to solauto fee receiver. Should we convert this to SOL? Or receive fees in USDC? Have a setting?
+        // TODO create setting to manage the token in which to receive fees 
+        // swap solauto_fee = solauto_fee_value_usd * debt_market_price to the fee_receiver_token
+        // send solauto fee to solauto fee receiver address
         Ok(())
     }
 
     fn decrease_leverage(&mut self, target_utilization_rate_bps: u16) -> ProgramResult {
+        // TODO: if we are unable to rebalance to desired position due to borrow / withdraw caps, we should expect a flash loan to have filled required amount
         // TODO
         Ok(())
     }

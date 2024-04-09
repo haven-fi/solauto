@@ -44,9 +44,21 @@ pub struct SolautoSettingsParameters {
 
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType)]
 pub struct SolendPositionData {
+    pub obligation: Pubkey,
     pub supply_reserve: Pubkey,
     pub debt_reserve: Option<Pubkey>,
-    pub obligation: Pubkey,
+}
+
+#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType)]
+pub struct MarginfiPositionData {
+    pub marginfi_account: Pubkey,
+    pub supply_bank: Pubkey,
+    pub debt_bank: Option<Pubkey>,
+}
+
+#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType)]
+pub struct KaminoPositionData{
+    // TODO
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, Default)]
@@ -66,7 +78,9 @@ pub struct Position {
     pub lending_platform: LendingPlatform,
     pub setting_params: SolautoSettingsParameters,
     pub general_data: GeneralPositionData,
+    pub marginfi_data: Option<MarginfiPositionData>,
     pub solend_data: Option<SolendPositionData>,
+    pub kamino_data: Option<KaminoPositionData>,
 }
 
 #[derive(ShankAccount, BorshDeserialize, BorshSerialize, Clone, Debug)]

@@ -1,11 +1,10 @@
 use solana_program::{
     account_info::AccountInfo,
-    entrypoint::ProgramResult,
     program_error::ProgramError,
 };
 
 use crate::types::{
-    instruction::NewPositionData,
+    instruction::PositionData,
     shared::{ DeserializedAccount, GeneralPositionData, LendingPlatform, Position },
 };
 use super::validation_utils;
@@ -13,19 +12,22 @@ use super::validation_utils;
 pub fn create_new_solauto_position<'a>(
     signer: &AccountInfo<'a>,
     solauto_position: Option<&'a AccountInfo<'a>>,
-    new_position_data: Option<NewPositionData>,
+    new_position_data: Option<PositionData>,
     lending_platform: LendingPlatform
 ) -> Result<Option<DeserializedAccount<'a, Position>>, ProgramError> {
     let data = if !new_position_data.is_none() {
         let data = new_position_data.as_ref().unwrap();
         validation_utils::validate_position_settings(&data.setting_params)?;
+
         Some(Position {
             position_id: data.position_id,
             authority: *signer.key,
             lending_platform,
             setting_params: data.setting_params.clone(),
             general_data: GeneralPositionData::default(),
+            marginfi_data: data.marginfi_data.clone(),
             solend_data: data.solend_data.clone(),
+            kamino_data: data.kamino_data.clone()
         })
     } else {
         None
@@ -47,5 +49,9 @@ pub fn get_owner<'a, 'b>(
     solauto_position: &'b Option<DeserializedAccount<'a, Position>>,
     signer: &'a AccountInfo<'a>
 ) -> &'a AccountInfo<'a> {
-    if !solauto_position.is_none() { solauto_position.as_ref().unwrap().account_info } else { signer }
+    if !solauto_position.is_none() {
+        solauto_position.as_ref().unwrap().account_info
+    } else {
+        signer
+    }
 }

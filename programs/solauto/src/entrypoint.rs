@@ -27,7 +27,7 @@ fn process_instruction<'a>(
         Instruction::SolendOpenPosition(_args) => wip_instruction()?,
         Instruction::MarginfiOpenPosition(args) =>
             process_marginfi_open_position_instruction(accounts, args),
-        // TODO: update position
+        Instruction::UpdatePosition(_settings) => wip_instruction()?,
         Instruction::SolendRefreshData => wip_instruction()?,
         Instruction::SolendProtocolInteraction(_args) => wip_instruction()?,
         // TODO: refresh ping

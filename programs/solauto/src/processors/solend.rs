@@ -9,7 +9,7 @@ use crate::{
                 SolendProtocolInteractionAccounts,
                 SolendRefreshDataAccounts,
             },
-            OpenPositionArgs,
+            PositionData,
             ProtocolInteractionArgs,
         },
         shared::{ DeserializedAccount, LendingPlatform, Position },
@@ -19,13 +19,13 @@ use crate::{
 
 pub fn process_solend_open_position_instruction<'a>(
     accounts: &'a [AccountInfo<'a>],
-    args: OpenPositionArgs
+    position_data: Option<PositionData>
 ) -> ProgramResult {
     let ctx = SolendOpenPositionAccounts::context(accounts)?;
     let mut solauto_position = solauto_utils::create_new_solauto_position(
         ctx.accounts.signer,
         ctx.accounts.solauto_position,
-        args.position_data,
+        position_data,
         LendingPlatform::Solend
     )?;
     validation_utils::validate_signer(ctx.accounts.signer, &solauto_position, true)?;

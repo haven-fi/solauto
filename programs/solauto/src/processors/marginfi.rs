@@ -3,7 +3,7 @@ use solana_program::{ account_info::AccountInfo, entrypoint::ProgramResult };
 use crate::{
     instructions::open_position,
     types::{
-        instruction::{ accounts::MarginfiOpenPositionAccounts, OpenPositionArgs },
+        instruction::{ accounts::MarginfiOpenPositionAccounts, PositionData },
         shared::LendingPlatform,
     },
     utils::*,
@@ -11,13 +11,13 @@ use crate::{
 
 pub fn process_marginfi_open_position_instruction<'a>(
     accounts: &'a [AccountInfo<'a>],
-    args: OpenPositionArgs
+    position_data: Option<PositionData>
 ) -> ProgramResult {
     let ctx = MarginfiOpenPositionAccounts::context(accounts)?;
     let mut solauto_position = solauto_utils::create_new_solauto_position(
         ctx.accounts.signer,
         ctx.accounts.solauto_position,
-        args.position_data,
+        position_data,
         LendingPlatform::Marginfi
     )?;
     validation_utils::validate_signer(ctx.accounts.signer, &solauto_position, true)?;
