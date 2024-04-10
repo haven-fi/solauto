@@ -31,23 +31,23 @@ pub fn base_unit_to_usd_value(base_unit: u64, decimals: u8, market_price: f64) -
 }
 
 /// Calculates the debt adjustment in USD in order to reach the target_utilization_rate
-/// 
+///
 /// # Parameters
 /// * `open_ltv` - The open loan-to-value ratio of the supplied asset
 /// * `total_supply_usd` - Total USD value of supplied asset
 /// * `total_debt_usd` - Total USD value of debt asset
 /// * `target_utilization_rate_bps` - Target utilization rate
 /// * `adjustment_fee_bps` - Adjustment fee. On boosts this would be the Solauto fee. If deleveraging and using a flash loan, this would be the flash loan fee
-/// 
+///
 /// # Returns
 /// The USD value of the debt adjustment. Positive if debt needs to increase, negative if debt needs to decrease. This amount is inclusive of the adjustment fee
-/// 
+///
 pub fn calculate_debt_adjustment_usd(
     open_ltv: f64,
     total_supply_usd: f64,
     total_debt_usd: f64,
     target_utilization_rate_bps: u16,
-    adjustment_fee_bps: Option<u16>,
+    adjustment_fee_bps: Option<u16>
 ) -> f64 {
     let adjustment_fee = if !adjustment_fee_bps.is_none() {
         (adjustment_fee_bps.unwrap() as f64).div(10000.0)
@@ -57,13 +57,6 @@ pub fn calculate_debt_adjustment_usd(
 
     let target_utilization_rate = (target_utilization_rate_bps as f64).div(10000.0);
 
-    total_debt_usd
-        .mul(-1.0)
-        .add(open_ltv.mul(total_supply_usd).mul(target_utilization_rate))
-        .div(
-            open_ltv
-                .mul(target_utilization_rate)
-                .mul(adjustment_fee)
-                .add(open_ltv.mul(target_utilization_rate).add(adjustment_fee).sub(1.0))
-        ).mul(-1.0)
+    (target_utilization_rate * total_supply_usd * open_ltv - total_debt_usd) /
+        (1.0 - target_utilization_rate * (1.0 - adjustment_fee) * open_ltv)
 }
