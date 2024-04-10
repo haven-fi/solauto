@@ -8,7 +8,11 @@ use solana_program::{
 use spl_associated_token_account::get_associated_token_address;
 
 use crate::types::{
-    instruction::accounts::{ Context, SolendProtocolInteractionAccounts },
+    instruction::accounts::{
+        Context,
+        MarginfiProtocolInteractionAccounts,
+        SolendProtocolInteractionAccounts,
+    },
     shared::{
         DeserializedAccount,
         LendingPlatform,
@@ -21,12 +25,31 @@ use crate::types::{
 };
 
 use crate::constants::{
-    KAMINO_PROGRAM,
     MARGINFI_PROGRAM,
+    SOLEND_PROGRAM,
+    KAMINO_PROGRAM,
     SOLAUTO_ADMIN,
     SOLAUTO_ADMIN_SETTINGS_ACCOUNT_SEEDS,
-    SOLEND_PROGRAM,
 };
+
+pub struct GenericInstructionValidation<'a, 'b> {
+    pub signer: &'a AccountInfo<'a>,
+    pub authority_only_ix: bool,
+    pub solauto_position: &'b Option<DeserializedAccount<'a, Position>>,
+    pub protocol_program: &'a AccountInfo<'a>,
+    pub lending_platform: LendingPlatform,
+    pub solauto_admin_settings: Option<&'a AccountInfo<'a>>,
+    pub fees_receiver_ata: Option<&'a AccountInfo<'a>>
+}
+
+pub fn generic_instruction_validation(data: GenericInstructionValidation) -> ProgramResult {
+    validate_signer(data.signer, data.solauto_position, data.authority_only_ix)?;
+    validate_program_account(data.protocol_program, data.lending_platform)?;
+    if !data.solauto_admin_settings.is_none() && !data.fees_receiver_ata.is_none() {
+        validate_fees_receiver(data.solauto_admin_settings.unwrap(), data.fees_receiver_ata.unwrap())?;
+    }
+    Ok(())
+}
 
 pub fn validate_signer(
     signer: &AccountInfo,
@@ -176,6 +199,47 @@ pub fn require_accounts(accounts: &[Option<&AccountInfo>]) -> ProgramResult {
             return Err(SolautoError::MissingRequiredAccounts.into());
         }
     }
+    Ok(())
+}
+
+pub fn validate_marginfi_protocol_interaction_ix(
+    ctx: &Context<MarginfiProtocolInteractionAccounts>,
+    action: &SolautoAction
+) -> ProgramResult {
+    let require_supply_accounts = || {
+        return require_accounts(
+            &(
+                [
+                    // TODO
+                ]
+            )
+        );
+    };
+
+    let require_debt_accounts = || {
+        return require_accounts(
+            &(
+                [
+                    // TODO
+                ]
+            )
+        );
+    };
+
+    match action {
+        SolautoAction::Deposit(_) => {
+            require_supply_accounts()?;
+        }
+        SolautoAction::Withdraw(_) => {
+            require_supply_accounts()?;
+        }
+        SolautoAction::Borrow(_) => {
+            require_debt_accounts()?;
+        }
+        SolautoAction::Repay(_) => {
+            require_debt_accounts()?;
+        }
+    }
 
     Ok(())
 }
@@ -213,20 +277,7 @@ pub fn validate_solend_protocol_interaction_ix(
         );
     };
 
-    let require_all_solend_accounts = || -> ProgramResult {
-        require_supply_accounts()?;
-        require_debt_accounts()?;
-        Ok(())
-    };
-
     match action {
-        SolautoAction::Rebalance(utilization_rate_bps) => {
-            if utilization_rate_bps > &10000 {
-                msg!("Rebalance utilization rate bps must be from 0 - 10000");
-                return Err(SolautoError::UnableToReposition.into());
-            }
-            require_all_solend_accounts()?;
-        }
         SolautoAction::Deposit(_) => {
             require_supply_accounts()?;
         }
@@ -240,5 +291,6 @@ pub fn validate_solend_protocol_interaction_ix(
             require_debt_accounts()?;
         }
     }
+
     Ok(())
 }

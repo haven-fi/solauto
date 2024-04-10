@@ -3,11 +3,19 @@ use solana_program::entrypoint::ProgramResult;
 use crate::{
     clients::solend::SolendClient,
     types::{
-        instruction::accounts::{ Context, SolendRefreshDataAccounts },
+        instruction::accounts::{ Context, MarginfiRefreshDataAccounts, SolendRefreshDataAccounts },
         shared::{ DeserializedAccount, Position },
         solauto_manager::SolautoManager,
     },
 };
+
+pub fn marginfi_refresh_accounts(
+    ctx: Context<MarginfiRefreshDataAccounts>,
+    solauto_position: &mut Option<DeserializedAccount<Position>>
+) -> ProgramResult {
+    // TODO
+    Ok(())
+}
 
 pub fn solend_refresh_accounts(
     ctx: Context<SolendRefreshDataAccounts>,

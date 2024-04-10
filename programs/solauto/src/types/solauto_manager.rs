@@ -48,9 +48,6 @@ impl<'b> SolautoManager<'b> {
         // TODO: in the case where position is solauto-managed but user calls deposit or repay with a rebalance, we need to ensure the user's debt token account is created before calling this. Should we do it on open position?
 
         match action {
-            SolautoAction::Rebalance(utilization_rate_bps) => {
-                self.rebalance(utilization_rate_bps)?;
-            }
             SolautoAction::Deposit(base_unit_amount) => {
                 self.deposit(base_unit_amount)?;
             }

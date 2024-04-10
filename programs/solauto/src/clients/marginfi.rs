@@ -6,7 +6,7 @@ use solana_program::{
 // use marginfi_sdk::generated::accounts::{ Bank, MarginfiAccount };
 
 use crate::types::{
-    instruction::accounts::{ Context, MarginfiOpenPositionAccounts },
+    instruction::accounts::{ Context, MarginfiOpenPositionAccounts, MarginfiProtocolInteractionAccounts },
     lending_protocol::LendingProtocolClient,
     obligation_position::LendingProtocolObligationPosition,
     shared::{ DeserializedAccount, Position },
@@ -20,13 +20,14 @@ pub struct MarginfiDataAccounts<'a> {
     // pub marginfi_account: DeserializedAccount<'a, MarginfiAccount>,
 }
 
-pub struct MarginfiClient<'a> {
+pub struct MarginfiClient<'a, 'b> {
     signer: &'a AccountInfo<'a>,
     data_accounts: MarginfiDataAccounts<'a>,
+    solauto_position: &'b Option<DeserializedAccount<'a, Position>>,
 }
 
-impl<'a> MarginfiClient<'a> {
-    pub fn initialize<'b>(
+impl<'a, 'b> MarginfiClient<'a, 'b> {
+    pub fn initialize(
         ctx: &'b Context<'a, MarginfiOpenPositionAccounts>,
         solauto_position: &Option<DeserializedAccount<Position>>
     ) -> ProgramResult {
@@ -34,7 +35,10 @@ impl<'a> MarginfiClient<'a> {
         Ok(())
     }
 
-    pub fn from<'b>() -> Result<(Self, LendingProtocolObligationPosition), ProgramError> {
+    pub fn from(
+        ctx: &'b Context<'a, MarginfiProtocolInteractionAccounts<'a>>,
+        solauto_position: &'b Option<DeserializedAccount<'a, Position>>
+    ) -> Result<(Self, LendingProtocolObligationPosition), ProgramError> {
         // TODO
         return Err(ProgramError::Custom(0));
     }
@@ -54,7 +58,7 @@ impl<'a> MarginfiClient<'a> {
     }
 }
 
-impl<'a> LendingProtocolClient for MarginfiClient<'a> {
+impl<'a, 'b> LendingProtocolClient for MarginfiClient<'a, 'b> {
     fn validate(&self) -> ProgramResult {
         // TODO
         Ok(())

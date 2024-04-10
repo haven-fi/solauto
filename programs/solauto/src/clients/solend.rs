@@ -63,7 +63,7 @@ pub struct SolendClient<'a, 'b> {
     debt_liquidity: Option<LendingProtocolTokenAccounts<'a>>,
     debt_reserve_fee_receiver: Option<&'a AccountInfo<'a>>,
     solauto_position: &'b Option<DeserializedAccount<'a, Position>>,
-    solauto_fee_receiver: &'a AccountInfo<'a>,
+    solauto_fees_receiver: &'a AccountInfo<'a>,
 }
 
 impl<'a, 'b> SolendClient<'a, 'b> {
@@ -153,7 +153,7 @@ impl<'a, 'b> SolendClient<'a, 'b> {
             debt_liquidity,
             debt_reserve_fee_receiver: ctx.accounts.debt_reserve_fee_receiver,
             solauto_position,
-            solauto_fee_receiver: ctx.accounts.solauto_fees_receiver,
+            solauto_fees_receiver: ctx.accounts.solauto_fees_receiver,
         };
 
         Ok((solend_client, obligation_position))
@@ -381,6 +381,8 @@ impl<'a, 'b> LendingProtocolClient for SolendClient<'a, 'b> {
         let debt_liquidity = self.debt_liquidity.as_ref().unwrap();
         let debt_reserve = self.data.debt_reserve.as_ref().unwrap().account_info;
 
+        // TODO solauto_fees_receiver token account may not match the token mint of the debt for this position
+        // need to fix this
         let borrow_instruction = borrow_obligation_liquidity(
             SOLEND_PROGRAM.clone(),
             base_unit_amount,
@@ -391,7 +393,7 @@ impl<'a, 'b> LendingProtocolClient for SolendClient<'a, 'b> {
             *self.data.obligation.account_info.key,
             *self.data.lending_market.account_info.key,
             *obligation_owner.key,
-            Some(*self.solauto_fee_receiver.key)
+            Some(*self.solauto_fees_receiver.key)
         );
 
         let account_infos = &[
@@ -402,7 +404,7 @@ impl<'a, 'b> LendingProtocolClient for SolendClient<'a, 'b> {
             self.data.obligation.account_info.clone(),
             self.data.lending_market.account_info.clone(),
             obligation_owner.clone(),
-            self.solauto_fee_receiver.clone(),
+            self.solauto_fees_receiver.clone(),
             self.system_accounts.token_program.clone(),
         ];
 

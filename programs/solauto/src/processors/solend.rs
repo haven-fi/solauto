@@ -1,14 +1,13 @@
-use solana_program::{ account_info::AccountInfo, entrypoint::ProgramResult };
+use solana_program::{ msg, account_info::AccountInfo, entrypoint::ProgramResult };
 
 use crate::{
     instructions::*,
     types::{
         instruction::{
             accounts::{
-                SolendOpenPositionAccounts,
-                SolendProtocolInteractionAccounts,
-                SolendRefreshDataAccounts,
+                SolendOpenPositionAccounts, SolendProtocolInteractionAccounts, SolendRebalanceAccounts, SolendRefreshDataAccounts
             },
+            OptionalUtilizationRateBps,
             PositionData,
         },
         shared::{ DeserializedAccount, LendingPlatform, Position, SolautoAction },
@@ -16,10 +15,15 @@ use crate::{
     utils::*,
 };
 
+use self::validation_utils::GenericInstructionValidation;
+
 pub fn process_solend_open_position_instruction<'a>(
     accounts: &'a [AccountInfo<'a>],
     position_data: Option<PositionData>
 ) -> ProgramResult {
+    // TODO
+    msg!("Instruction is currently a WIP");
+
     let ctx = SolendOpenPositionAccounts::context(accounts)?;
     let mut solauto_position = solauto_utils::create_new_solauto_position(
         ctx.accounts.signer,
@@ -27,16 +31,23 @@ pub fn process_solend_open_position_instruction<'a>(
         position_data,
         LendingPlatform::Solend
     )?;
-    validation_utils::validate_signer(ctx.accounts.signer, &solauto_position, true)?;
-    validation_utils::validate_program_account(
-        &ctx.accounts.solend_program,
-        LendingPlatform::Solend
-    )?;
+    validation_utils::generic_instruction_validation(GenericInstructionValidation {
+        signer: ctx.accounts.signer,
+        authority_only_ix: true,
+        solauto_position: &solauto_position,
+        protocol_program: ctx.accounts.solend_program,
+        lending_platform: LendingPlatform::Solend,
+        solauto_admin_settings: None,
+        fees_receiver_ata: None,
+    })?;
     open_position::solend_open_position(ctx, &mut solauto_position)?;
     ix_utils::update_data(&mut solauto_position)
 }
 
-pub fn process_solend_refresh_accounts<'a>(accounts: &'a [AccountInfo<'a>]) -> ProgramResult {
+pub fn process_solend_refresh_data<'a>(accounts: &'a [AccountInfo<'a>]) -> ProgramResult {
+    // TODO
+    msg!("Instruction is currently a WIP");
+
     let ctx = SolendRefreshDataAccounts::context(accounts)?;
     let mut solauto_position = DeserializedAccount::<Position>::deserialize(
         ctx.accounts.solauto_position
@@ -53,26 +64,35 @@ pub fn process_solend_interaction_instruction<'a>(
     accounts: &'a [AccountInfo<'a>],
     action: SolautoAction
 ) -> ProgramResult {
+    // TODO
+    msg!("Instruction is currently a WIP");
+
     let ctx = SolendProtocolInteractionAccounts::context(accounts)?;
     let mut solauto_position = DeserializedAccount::<Position>::deserialize(
         ctx.accounts.solauto_position
     )?;
-    validation_utils::validate_signer(ctx.accounts.signer, &solauto_position, true)?;
-    validation_utils::validate_program_account(
-        ctx.accounts.solend_program,
-        LendingPlatform::Solend
-    )?;
-    validation_utils::validate_fees_receiver(
-        ctx.accounts.solauto_admin_settings,
-        ctx.accounts.solauto_fees_receiver
-    )?;
+    validation_utils::generic_instruction_validation(GenericInstructionValidation {
+        signer: ctx.accounts.signer,
+        authority_only_ix: true,
+        solauto_position: &solauto_position,
+        protocol_program: ctx.accounts.solend_program,
+        lending_platform: LendingPlatform::Solend,
+        solauto_admin_settings: Some(ctx.accounts.solauto_admin_settings),
+        fees_receiver_ata: Some(ctx.accounts.solauto_fees_receiver),
+    })?;
     validation_utils::validate_solend_protocol_interaction_ix(&ctx, &action)?;
     protocol_interaction::solend_interaction(ctx, &mut solauto_position, action)?;
     ix_utils::update_data(&mut solauto_position)
 }
 
-pub fn process_solend_rebalance_ping() -> ProgramResult {
+pub fn process_solend_rebalance<'a>(
+    accounts: &'a [AccountInfo<'a>],
+    target_utilization_rate_bps: OptionalUtilizationRateBps
+) -> ProgramResult {
     // TODO
-    // TODO if current utilization rate is above 100%, ensure we have enough debt liquidity in our source token account to repay. If not, throw an error mentioning we need to perform a flash loan
+    msg!("Instruction is currently a WIP");
+    
+    let ctx = SolendRebalanceAccounts::context(accounts)?;
+    // TODO
     Ok(())
 }
