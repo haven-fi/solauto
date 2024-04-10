@@ -150,4 +150,6 @@ describe("Solauto tests", async () => {
       expect(position.settingParams).to.deep.equal(settingParams);
     }
   });
+
+  // TODO refresh test
 });
