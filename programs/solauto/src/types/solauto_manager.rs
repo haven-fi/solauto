@@ -45,8 +45,6 @@ impl<'b> SolautoManager<'b> {
     }
 
     pub fn protocol_interaction(&mut self, action: SolautoAction) -> ProgramResult {
-        // TODO: in the case where position is solauto-managed but user calls deposit or repay with a rebalance, we need to ensure the user's debt token account is created before calling this. Should we do it on open position?
-
         match action {
             SolautoAction::Deposit(base_unit_amount) => {
                 self.deposit(base_unit_amount)?;

@@ -19,6 +19,7 @@ import { generateRandomU8, getSecretKey } from "./testUtils";
 import {
   Connection,
   Keypair,
+  PublicKey,
   SYSVAR_RENT_PUBKEY,
   SystemProgram,
   clusterApiUrl,
@@ -66,7 +67,7 @@ describe("Solauto tests", async () => {
 
   const solautoManaged = true;
   const positionId = generateRandomU8();
-  
+
   const solendAccounts = getSolendAccounts("main");
   const solautoPosition = solautoManaged
     ? await getPositionAccount(signerPublicKey, positionId, reuseAccounts)
@@ -134,7 +135,7 @@ describe("Solauto tests", async () => {
           }
       }
     });
-    
+
     const transaction = await builder.buildWithLatestBlockhash(umi);
     await simulateTransaction(transaction);
 
@@ -149,6 +150,4 @@ describe("Solauto tests", async () => {
       expect(position.settingParams).to.deep.equal(settingParams);
     }
   });
-
-  // TODO refresh test
 });
