@@ -65,7 +65,7 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
             }
         }
 
-        if self.obligation_position.current_utilization_rate_bps() > 10000 {
+        if self.obligation_position.current_liq_utilization_rate_bps() > 10000 {
             return Err(SolautoError::ExceededValidUtilizationRate.into());
         }
 
@@ -92,25 +92,25 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
         self.obligation_position.debt_borrowed_update((base_unit_amount as i64) * -1)
     }
 
-    pub fn rebalance(&mut self, target_utilization_rate_bps: u16) -> ProgramResult {
-        if self.obligation_position.current_utilization_rate_bps() < target_utilization_rate_bps {
-            self.increase_leverage(target_utilization_rate_bps)
+    pub fn rebalance(&mut self, target_liq_utilization_rate_bps: u16) -> ProgramResult {
+        if self.obligation_position.current_liq_utilization_rate_bps() < target_liq_utilization_rate_bps {
+            self.increase_leverage(target_liq_utilization_rate_bps)
         } else {
-            self.decrease_leverage(target_utilization_rate_bps)
+            self.decrease_leverage(target_liq_utilization_rate_bps)
         }
     }
 
-    fn increase_leverage(&mut self, target_utilization_rate_bps: u16) -> ProgramResult {
+    fn increase_leverage(&mut self, target_liq_utilization_rate_bps: u16) -> ProgramResult {
         // TODO: we should prepare for if borrow value is so high that it brings utilization rate above a value where the lending protocol will reject the borrow
         // in which case we need to do this over multiple borrows and deposits in a row
 
         let debt = self.obligation_position.debt.as_ref().unwrap();
 
         let debt_adjustment_usd = calculate_debt_adjustment_usd(
-            self.obligation_position.open_ltv,
+            self.obligation_position.liq_threshold,
             self.obligation_position.supply.as_ref().unwrap().amount_used.usd_value as f64,
             self.obligation_position.debt.as_ref().unwrap().amount_used.usd_value as f64,
-            target_utilization_rate_bps,
+            target_liq_utilization_rate_bps,
             Some(SOLAUTO_BOOST_FEE_BPS)
         );
 
@@ -140,7 +140,7 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
         self.payout_solauto_fee()
     }
 
-    fn decrease_leverage(&mut self, target_utilization_rate_bps: u16) -> ProgramResult {
+    fn decrease_leverage(&mut self, target_liq_utilization_rate_bps: u16) -> ProgramResult {
         // TODO: if we are unable to rebalance to desired position due to borrow / withdraw caps, we should expect a flash loan to have filled required amount
         // TODO
         Ok(())
@@ -160,8 +160,8 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
             obligation_position.net_worth_usd_base_amount();
         position.data.general_data.base_amount_liquidity_net_worth =
             obligation_position.net_worth_base_amount();
-        position.data.general_data.utilization_rate_bps =
-            obligation_position.current_utilization_rate_bps();
+        position.data.general_data.liq_utilization_rate_bps =
+            obligation_position.current_liq_utilization_rate_bps();
         position.data.general_data.base_amount_supplied = if
             !obligation_position.supply.is_none()
         {

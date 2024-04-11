@@ -7,7 +7,7 @@ use crate::{
             accounts::{
                 MarginfiOpenPositionAccounts, MarginfiProtocolInteractionAccounts, MarginfiRebalanceAccounts, MarginfiRefreshDataAccounts
             },
-            OptionalUtilizationRateBps,
+            OptionalLiqUtilizationRateBps,
             PositionData,
         },
         shared::{ DeserializedAccount, LendingPlatform, Position, SolautoAction },
@@ -75,7 +75,7 @@ pub fn process_marginfi_interaction_instruction<'a>(
 
 pub fn process_marginfi_rebalance<'a>(
     accounts: &'a [AccountInfo<'a>],
-    target_utilization_rate_bps: OptionalUtilizationRateBps
+    target_liq_utilization_rate_bps: OptionalLiqUtilizationRateBps
 ) -> ProgramResult {
     let ctx = MarginfiRebalanceAccounts::context(accounts)?;
     let solauto_position = DeserializedAccount::<Position>::deserialize(
@@ -91,5 +91,5 @@ pub fn process_marginfi_rebalance<'a>(
         fees_receiver_ata: Some(ctx.accounts.solauto_fees_receiver),
     })?;
     validation_utils::validate_rebalance_instruction(ctx.accounts.ix_sysvar)?;
-    rebalance::marginfi_rebalance(ctx, solauto_position, target_utilization_rate_bps)
+    rebalance::marginfi_rebalance(ctx, solauto_position, target_liq_utilization_rate_bps)
 }

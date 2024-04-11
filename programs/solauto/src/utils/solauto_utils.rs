@@ -7,7 +7,6 @@ use crate::types::{
     instruction::PositionData,
     shared::{ DeserializedAccount, GeneralPositionData, LendingPlatform, Position },
 };
-use super::validation_utils;
 
 pub fn create_new_solauto_position<'a>(
     signer: &AccountInfo<'a>,
@@ -17,8 +16,6 @@ pub fn create_new_solauto_position<'a>(
 ) -> Result<Option<DeserializedAccount<'a, Position>>, ProgramError> {
     let data = if !new_position_data.is_none() {
         let data = new_position_data.as_ref().unwrap();
-        validation_utils::validate_position_settings(&data.setting_params)?;
-
         Some(Position {
             position_id: data.position_id,
             authority: *signer.key,

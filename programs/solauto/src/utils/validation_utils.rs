@@ -1,9 +1,13 @@
+use std::ops::{ Div, Mul };
+
 use solana_program::{
     account_info::AccountInfo,
     entrypoint::ProgramResult,
+    instruction::{ get_stack_height, TRANSACTION_LEVEL_STACK_HEIGHT },
     msg,
     program_error::ProgramError,
     pubkey::Pubkey,
+    sysvar::instructions::{ load_current_index_checked, load_instruction_at_checked },
 };
 use spl_associated_token_account::get_associated_token_address;
 
@@ -39,14 +43,17 @@ pub struct GenericInstructionValidation<'a, 'b> {
     pub protocol_program: &'a AccountInfo<'a>,
     pub lending_platform: LendingPlatform,
     pub solauto_admin_settings: Option<&'a AccountInfo<'a>>,
-    pub fees_receiver_ata: Option<&'a AccountInfo<'a>>
+    pub fees_receiver_ata: Option<&'a AccountInfo<'a>>,
 }
 
 pub fn generic_instruction_validation(data: GenericInstructionValidation) -> ProgramResult {
     validate_signer(data.signer, data.solauto_position, data.authority_only_ix)?;
     validate_program_account(data.protocol_program, data.lending_platform)?;
     if !data.solauto_admin_settings.is_none() && !data.fees_receiver_ata.is_none() {
-        validate_fees_receiver(data.solauto_admin_settings.unwrap(), data.fees_receiver_ata.unwrap())?;
+        validate_fees_receiver(
+            data.solauto_admin_settings.unwrap(),
+            data.fees_receiver_ata.unwrap()
+        )?;
     }
     Ok(())
 }
@@ -92,7 +99,11 @@ pub fn validate_solauto_admin_signer(solauto_admin: &AccountInfo) -> ProgramResu
     Ok(())
 }
 
-pub fn validate_position_settings(settings: &SolautoSettingsParameters) -> ProgramResult {
+pub fn validate_position_settings(
+    settings: &SolautoSettingsParameters,
+    max_ltv: f64,
+    liq_threshold: f64
+) -> ProgramResult {
     let invalid_params = |error_msg| {
         msg!(error_msg);
         Err(SolautoError::InvalidPositionSettings.into())
@@ -120,8 +131,17 @@ pub fn validate_position_settings(settings: &SolautoSettingsParameters) -> Progr
                 "Minimum difference between boost_to_bps to boost_from_bps must be 50 or greater"
             );
         }
-        if settings.repay_from_bps > 10000 {
-            return invalid_params("repay_from_bps Must be lower or equal to 10000");
+        if settings.repay_from_bps > 9500 {
+            return invalid_params("repay_from_bps must be lower or equal to 9500");
+        }
+
+        // 3% buffer to account for any unexpected slippage when swapping tokens to repay debt
+        let buffer_room = 3.0;
+        let maximum_repay_to = (max_ltv - buffer_room).div(liq_threshold).mul(10000.0) as u16;
+        if settings.repay_to_bps > maximum_repay_to {
+            return invalid_params(
+                format!("For the given max_ltv and liq_threshold of the supplied asset, repay_to_bps must be lower or equal to {} in order to bring the utilization rate to an allowed position", maximum_repay_to).as_str()
+            );
         }
     } else {
         let params = vec![
@@ -296,6 +316,12 @@ pub fn validate_solend_protocol_interaction_ix(
 }
 
 pub fn validate_rebalance_instruction(ix_sysvar: &AccountInfo) -> ProgramResult {
+    let current_ix_idx = load_current_index_checked(ix_sysvar)?;
+    let current_ix = load_instruction_at_checked(current_ix_idx as usize, ix_sysvar)?;
+    if current_ix.program_id != crate::ID || get_stack_height() > TRANSACTION_LEVEL_STACK_HEIGHT {
+        return Err(SolautoError::InstructionIsCPI.into());
+    }
+
     // TODO
     Ok(())
 }

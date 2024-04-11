@@ -5,14 +5,14 @@ use solana_program::{
 };
 // use marginfi_sdk::generated::accounts::{ Bank, MarginfiAccount };
 
-use crate::types::{
-    instruction::accounts::{
-        Context,
-        MarginfiOpenPositionAccounts,
+use crate::{
+    types::{
+        instruction::accounts::{ Context, MarginfiOpenPositionAccounts },
+        lending_protocol::LendingProtocolClient,
+        obligation_position::LendingProtocolObligationPosition,
+        shared::{ DeserializedAccount, Position },
     },
-    lending_protocol::LendingProtocolClient,
-    obligation_position::LendingProtocolObligationPosition,
-    shared::{ DeserializedAccount, Position },
+    utils::validation_utils::validate_position_settings,
 };
 
 pub struct MarginfiDataAccounts<'a> {
@@ -32,6 +32,7 @@ impl<'a> MarginfiClient<'a> {
         ctx: &'b Context<'a, MarginfiOpenPositionAccounts>,
         solauto_position: &Option<DeserializedAccount<Position>>
     ) -> ProgramResult {
+        // validate_position_settings(solauto_position.as_ref().unwrap().data.setting_params, max_ltv, liq_threshold)
         // TODO
         Ok(())
     }

@@ -10,7 +10,7 @@ use crate::{
                 SolendRebalanceAccounts,
                 SolendRefreshDataAccounts,
             },
-            OptionalUtilizationRateBps,
+            OptionalLiqUtilizationRateBps,
             PositionData,
         },
         shared::{ DeserializedAccount, LendingPlatform, Position, SolautoAction },
@@ -87,7 +87,7 @@ pub fn process_solend_interaction_instruction<'a>(
 
 pub fn process_solend_rebalance<'a>(
     accounts: &'a [AccountInfo<'a>],
-    target_utilization_rate_bps: OptionalUtilizationRateBps
+    target_liq_utilization_rate_bps: OptionalLiqUtilizationRateBps
 ) -> ProgramResult {
     // TODO
     msg!("Instruction is currently a WIP");
@@ -106,5 +106,5 @@ pub fn process_solend_rebalance<'a>(
         fees_receiver_ata: Some(ctx.accounts.solauto_fees_receiver),
     })?;
     validation_utils::validate_rebalance_instruction(ctx.accounts.ix_sysvar)?;
-    rebalance::solend_rebalance(ctx, solauto_position, target_utilization_rate_bps)
+    rebalance::solend_rebalance(ctx, solauto_position, target_liq_utilization_rate_bps)
 }

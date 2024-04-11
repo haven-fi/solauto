@@ -47,9 +47,9 @@ fn process_instruction<'a>(
         Instruction::SolendProtocolInteraction(action) =>
             process_solend_interaction_instruction(accounts, action),
 
-        Instruction::MarginfiRebalance(target_utilization_rate_bps) =>
-            process_marginfi_rebalance(accounts, target_utilization_rate_bps),
-        Instruction::SolendRebalance(target_utilization_rate_bps) =>
-            process_solend_rebalance(accounts, target_utilization_rate_bps),
+        Instruction::MarginfiRebalance(target_liq_utilization_rate_bps) =>
+            process_marginfi_rebalance(accounts, target_liq_utilization_rate_bps),
+        Instruction::SolendRebalance(target_liq_utilization_rate_bps) =>
+            process_solend_rebalance(accounts, target_liq_utilization_rate_bps),
     }
 }

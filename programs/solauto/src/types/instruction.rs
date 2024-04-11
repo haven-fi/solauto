@@ -43,6 +43,7 @@ pub enum Instruction {
     #[account(mut, optional, name = "solauto_position")]
     #[account(name = "lending_market")]
     #[account(mut, name = "obligation")]
+    #[account(name = "supply_reserve")]
     #[account(mut, name = "supply_collateral_token_account")]
     #[account(name = "supply_collateral_token_mint")]
     #[account(mut, name = "debt_liquidity_token_account")]
@@ -122,7 +123,7 @@ pub enum Instruction {
     #[account(mut, name = "solauto_fees_receiver")]
     #[account(mut, optional, name = "solauto_position")]
     // TODO missing accounts
-    MarginfiRebalance(OptionalUtilizationRateBps),
+    MarginfiRebalance(OptionalLiqUtilizationRateBps),
     
     /// Rebalance position.
     /// Takes an optional target utilization rate bps. Only allowed if the signer is the position authority - otherwise the instruction will look at the solauto position settings
@@ -153,7 +154,7 @@ pub enum Instruction {
     #[account(optional, name = "debt_liquidity_token_mint")]
     #[account(mut, optional, name = "source_debt_liquidity")]
     #[account(mut, optional, name = "reserve_debt_liquidity")]
-    SolendRebalance(OptionalUtilizationRateBps),
+    SolendRebalance(OptionalLiqUtilizationRateBps),
 }
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug)]
@@ -170,4 +171,4 @@ pub struct PositionData {
     pub kamino_data: Option<KaminoPositionData>,
 }
 
-pub type OptionalUtilizationRateBps = Option<u16>;
+pub type OptionalLiqUtilizationRateBps = Option<u16>;

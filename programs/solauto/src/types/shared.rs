@@ -38,9 +38,13 @@ pub enum LendingPlatform {
 
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType)]
 pub struct SolautoSettingsParameters {
+    /// At which liquidation utilization rate or higher to begin a rebalance
     pub repay_from_bps: u16,
+    /// At which liquidation utilization rate to finish a rebalance
     pub repay_to_bps: u16,
+    /// At which liquidation utilization rate or lower to begin boosting leverage
     pub boost_from_bps: u16,
+    /// At which liquidation utilization rate to boost leverage to
     pub boost_to_bps: u16,
 }
 
@@ -65,7 +69,7 @@ pub struct KaminoPositionData {
 
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, Default)]
 pub struct GeneralPositionData {
-    pub utilization_rate_bps: u16,
+    pub liq_utilization_rate_bps: u16,
     pub net_worth_usd_base_amount: u64,
     pub base_amount_liquidity_net_worth: u64,
     pub base_amount_supplied: u64,
@@ -158,6 +162,8 @@ pub enum SolautoError {
     ExceededValidUtilizationRate,
     #[error("Invalid position condition to rebalance")]
     InvalidRebalanceCondition,
+    #[error("Unable to invoke instruciton through a CPI")]
+    InstructionIsCPI,
 }
 
 impl From<SolautoError> for ProgramError {

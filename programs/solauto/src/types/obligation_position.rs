@@ -72,19 +72,19 @@ impl PositionTokenUsage {
 }
 
 pub struct LendingProtocolObligationPosition {
-    pub open_ltv: f64,
-    pub close_ltv: f64,
+    pub max_ltv: f64,
+    pub liq_threshold: f64,
     pub supply: Option<PositionTokenUsage>,
     pub debt: Option<PositionTokenUsage>,
     pub lending_platform: LendingPlatform,
 }
 
 impl LendingProtocolObligationPosition {
-    pub fn current_utilization_rate_bps(&self) -> u16 {
+    pub fn current_liq_utilization_rate_bps(&self) -> u16 {
         match (&self.debt, &self.supply) {
             (Some(debt), Some(supply)) =>
                 debt.amount_used.usd_value
-                    .div(supply.amount_used.usd_value.mul(self.open_ltv as f64))
+                    .div(supply.amount_used.usd_value.mul(self.liq_threshold as f64))
                     .mul(10000.0) as u16,
             _ => 0,
         }
