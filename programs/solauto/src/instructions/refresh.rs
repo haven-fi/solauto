@@ -11,7 +11,7 @@ use crate::{
 
 pub fn marginfi_refresh_accounts(
     ctx: Context<MarginfiRefreshDataAccounts>,
-    solauto_position: &mut Option<DeserializedAccount<Position>>
+    solauto_position: Option<DeserializedAccount<Position>>
 ) -> ProgramResult {
     // TODO
     Ok(())
@@ -19,7 +19,7 @@ pub fn marginfi_refresh_accounts(
 
 pub fn solend_refresh_accounts(
     ctx: Context<SolendRefreshDataAccounts>,
-    solauto_position: &mut Option<DeserializedAccount<Position>>
+    mut solauto_position: Option<DeserializedAccount<Position>>
 ) -> ProgramResult {
     SolendClient::refresh_reserve(
         ctx.accounts.supply_reserve,
@@ -57,10 +57,7 @@ pub fn solend_refresh_accounts(
                 &data_accounts.obligation.data
             )?;
 
-            SolautoManager::refresh_position(
-                &obligation_position,
-                solauto_position.as_mut().unwrap()
-            )?;
+            SolautoManager::refresh_position(&obligation_position, &mut solauto_position);
         }
     }
 

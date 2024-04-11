@@ -5,7 +5,10 @@ use crate::{
     types::{
         instruction::{
             accounts::{
-                SolendOpenPositionAccounts, SolendProtocolInteractionAccounts, SolendRebalanceAccounts, SolendRefreshDataAccounts
+                SolendOpenPositionAccounts,
+                SolendProtocolInteractionAccounts,
+                SolendRebalanceAccounts,
+                SolendRefreshDataAccounts,
             },
             OptionalUtilizationRateBps,
             PositionData,
@@ -25,7 +28,7 @@ pub fn process_solend_open_position_instruction<'a>(
     msg!("Instruction is currently a WIP");
 
     let ctx = SolendOpenPositionAccounts::context(accounts)?;
-    let mut solauto_position = solauto_utils::create_new_solauto_position(
+    let solauto_position = solauto_utils::create_new_solauto_position(
         ctx.accounts.signer,
         ctx.accounts.solauto_position,
         position_data,
@@ -40,8 +43,7 @@ pub fn process_solend_open_position_instruction<'a>(
         solauto_admin_settings: None,
         fees_receiver_ata: None,
     })?;
-    open_position::solend_open_position(ctx, &mut solauto_position)?;
-    ix_utils::update_data(&mut solauto_position)
+    open_position::solend_open_position(ctx, solauto_position)
 }
 
 pub fn process_solend_refresh_data<'a>(accounts: &'a [AccountInfo<'a>]) -> ProgramResult {
@@ -49,15 +51,14 @@ pub fn process_solend_refresh_data<'a>(accounts: &'a [AccountInfo<'a>]) -> Progr
     msg!("Instruction is currently a WIP");
 
     let ctx = SolendRefreshDataAccounts::context(accounts)?;
-    let mut solauto_position = DeserializedAccount::<Position>::deserialize(
+    let solauto_position = DeserializedAccount::<Position>::deserialize(
         ctx.accounts.solauto_position
     )?;
     validation_utils::validate_program_account(
         &ctx.accounts.solend_program,
         LendingPlatform::Solend
     )?;
-    refresh::solend_refresh_accounts(ctx, &mut solauto_position)?;
-    ix_utils::update_data(&mut solauto_position)
+    refresh::solend_refresh_accounts(ctx, solauto_position)
 }
 
 pub fn process_solend_interaction_instruction<'a>(
@@ -68,7 +69,7 @@ pub fn process_solend_interaction_instruction<'a>(
     msg!("Instruction is currently a WIP");
 
     let ctx = SolendProtocolInteractionAccounts::context(accounts)?;
-    let mut solauto_position = DeserializedAccount::<Position>::deserialize(
+    let solauto_position = DeserializedAccount::<Position>::deserialize(
         ctx.accounts.solauto_position
     )?;
     validation_utils::generic_instruction_validation(GenericInstructionValidation {
@@ -81,8 +82,7 @@ pub fn process_solend_interaction_instruction<'a>(
         fees_receiver_ata: Some(ctx.accounts.solauto_fees_receiver),
     })?;
     validation_utils::validate_solend_protocol_interaction_ix(&ctx, &action)?;
-    protocol_interaction::solend_interaction(ctx, &mut solauto_position, action)?;
-    ix_utils::update_data(&mut solauto_position)
+    protocol_interaction::solend_interaction(ctx, solauto_position, action)
 }
 
 pub fn process_solend_rebalance<'a>(
@@ -91,8 +91,20 @@ pub fn process_solend_rebalance<'a>(
 ) -> ProgramResult {
     // TODO
     msg!("Instruction is currently a WIP");
-    
+
     let ctx = SolendRebalanceAccounts::context(accounts)?;
-    // TODO
-    Ok(())
+    let solauto_position = DeserializedAccount::<Position>::deserialize(
+        ctx.accounts.solauto_position
+    )?;
+    validation_utils::generic_instruction_validation(GenericInstructionValidation {
+        signer: ctx.accounts.signer,
+        authority_only_ix: false,
+        solauto_position: &solauto_position,
+        protocol_program: ctx.accounts.solend_program,
+        lending_platform: LendingPlatform::Solend,
+        solauto_admin_settings: Some(ctx.accounts.solauto_admin_settings),
+        fees_receiver_ata: Some(ctx.accounts.solauto_fees_receiver),
+    })?;
+    validation_utils::validate_rebalance_instruction(ctx.accounts.ix_sysvar)?;
+    rebalance::solend_rebalance(ctx, solauto_position, target_utilization_rate_bps)
 }

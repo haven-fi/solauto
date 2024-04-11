@@ -14,12 +14,12 @@ use crate::{
     utils::*,
 };
 
-pub fn marginfi_open_position<'a, 'b>(
+pub fn marginfi_open_position<'a>(
     ctx: Context<'a, MarginfiOpenPositionAccounts<'a>>,
-    solauto_position: &'b mut Option<DeserializedAccount<'a, Position>>
+    mut solauto_position: Option<DeserializedAccount<'a, Position>>
 ) -> ProgramResult {
     initialize_solauto_position(
-        solauto_position,
+        &mut solauto_position,
         ctx.accounts.system_program,
         ctx.accounts.token_program,
         ctx.accounts.rent,
@@ -49,15 +49,16 @@ pub fn marginfi_open_position<'a, 'b>(
         Obligation::LEN // TODO: get marginfi account space from MarginfiAccount::LEN from generated code
     )?;
 
-    MarginfiClient::initialize(&ctx, solauto_position)
+    MarginfiClient::initialize(&ctx, &solauto_position)?;
+    ix_utils::update_data(&mut solauto_position)
 }
 
-pub fn solend_open_position<'a, 'b>(
+pub fn solend_open_position<'a>(
     ctx: Context<'a, SolendOpenPositionAccounts<'a>>,
-    solauto_position: &'b mut Option<DeserializedAccount<'a, Position>>
+    mut solauto_position: Option<DeserializedAccount<'a, Position>>
 ) -> ProgramResult {
     initialize_solauto_position(
-        solauto_position,
+        &mut solauto_position,
         ctx.accounts.system_program,
         ctx.accounts.token_program,
         ctx.accounts.rent,
@@ -92,7 +93,8 @@ pub fn solend_open_position<'a, 'b>(
         Obligation::LEN
     )?;
 
-    SolendClient::initialize(&ctx, solauto_position)
+    SolendClient::initialize(&ctx, &solauto_position)?;
+    ix_utils::update_data(&mut solauto_position)
 }
 
 fn initialize_solauto_position<'a, 'b>(

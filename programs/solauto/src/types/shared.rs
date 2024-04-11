@@ -156,6 +156,8 @@ pub enum SolautoError {
     UnableToReposition,
     #[error("Desired action brought the utilization rate to an unsafe amount")]
     ExceededValidUtilizationRate,
+    #[error("Invalid position condition to rebalance")]
+    InvalidRebalanceCondition,
 }
 
 impl From<SolautoError> for ProgramError {

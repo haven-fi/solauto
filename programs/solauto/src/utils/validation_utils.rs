@@ -294,3 +294,38 @@ pub fn validate_solend_protocol_interaction_ix(
 
     Ok(())
 }
+
+pub fn validate_rebalance_instruction(ix_sysvar: &AccountInfo) -> ProgramResult {
+    // TODO
+    Ok(())
+}
+
+// increasing leverage:
+// -
+// if debt + debt adjustment keeps utilization rate under 97%, instructions are:
+// solauto rebalance - borrows more debt (figure out what to do with solauto fee after borrow)
+// jup swap - swap debt token to supply token
+// solauto rebalance - deposit supply token
+// -
+// if debt + debt adjustment brings utilization rate above 97%, instructions are:
+// take out flash loan in debt token
+// jup swap - swap debt token to supply token
+// solauto rebalance - deposit supply token, borrow equivalent debt token amount from flash borrow ix + flash loan fee
+// repay flash loan in debt token
+
+// deleveraging:
+// -
+// if supply - debt adjustment keeps utilization rate under 90%, instructions are:
+// solauto rebalance - withdraw supply worth debt_adjustment_usd
+// jup swap - swap supply token to debt token
+// solauto rebalance - repay debt with debt token
+// -
+// if supply - debt adjustment brings utilization rate over 90%, instructions are:
+// take out flash loan in supply token
+// jup swap - swap supply token to debt token
+// solauto rebalance - repay debt token, & withdraw equivalent supply token amount from flash borrow ix + flash loan fee
+// repay flash loan in supply token
+
+// 1. figure out what the state will look like in each rebalance instruction
+// 2. figure out what validations we need for each case
+// 3. figure out where and when we create intermediary token accounts. Should we create and close on the fly?

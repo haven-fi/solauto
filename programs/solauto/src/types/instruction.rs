@@ -79,6 +79,7 @@ pub enum Instruction {
     /// Marginfi protocol interaction. Can only be invoked by the authority of the position
     #[account(signer, mut, name = "signer")]
     #[account(name = "marginfi_program")]
+    #[account(name = "ix_sysvar")]
     #[account(mut, optional, name = "solauto_position")]
     // TODO missing accounts
     MarginfiProtocolInteraction(SolautoAction),
@@ -115,17 +116,43 @@ pub enum Instruction {
     /// Rebalance position.
     /// Takes an optional target utilization rate bps. Only allowed if the signer is the position authority - otherwise the instruction will look at the solauto position settings
     #[account(signer, mut, name = "signer")]
+    #[account(name = "marginfi_program")]
+    #[account(name = "ix_sysvar")]
     #[account(name = "solauto_admin_settings")]
     #[account(mut, name = "solauto_fees_receiver")]
+    #[account(mut, optional, name = "solauto_position")]
     // TODO missing accounts
     MarginfiRebalance(OptionalUtilizationRateBps),
     
     /// Rebalance position.
     /// Takes an optional target utilization rate bps. Only allowed if the signer is the position authority - otherwise the instruction will look at the solauto position settings
     #[account(signer, mut, name = "signer")]
+    #[account(name = "solend_program")]
+    #[account(name = "system_program")]
+    #[account(name = "token_program")]
+    #[account(name = "ata_program")]
+    #[account(name = "clock")]
+    #[account(name = "rent")]
+    #[account(name = "ix_sysvar")]
     #[account(name = "solauto_admin_settings")]
     #[account(mut, name = "solauto_fees_receiver")]
-    // TODO missing accounts
+    #[account(mut, optional, name = "solauto_position")]
+    #[account(name = "lending_market")]
+    #[account(mut, name = "obligation")]
+    #[account(mut, optional, name = "supply_reserve")]
+    #[account(optional, name = "supply_reserve_pyth_price_oracle")]
+    #[account(optional, name = "supply_reserve_switchboard_oracle")]
+    #[account(optional, name = "supply_liquidity_token_mint")]
+    #[account(mut, optional, name = "source_supply_liquidity")]
+    #[account(mut, optional, name = "reserve_supply_liquidity")]
+    #[account(optional, name = "supply_collateral_token_mint")]
+    #[account(mut, optional, name = "source_supply_collateral")]
+    #[account(mut, optional, name = "reserve_supply_collateral")]
+    #[account(mut, optional, name = "debt_reserve")]
+    #[account(mut, optional, name = "debt_reserve_fee_receiver")]
+    #[account(optional, name = "debt_liquidity_token_mint")]
+    #[account(mut, optional, name = "source_debt_liquidity")]
+    #[account(mut, optional, name = "reserve_debt_liquidity")]
     SolendRebalance(OptionalUtilizationRateBps),
 }
 
