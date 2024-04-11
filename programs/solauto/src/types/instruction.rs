@@ -6,6 +6,7 @@ use super::shared::*;
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankContext, ShankInstruction)]
 #[rustfmt::skip]
 pub enum Instruction {
+    /// Update Solauto admin settings (i.e. fees token mint)
     #[account(signer, mut, name = "solauto_admin")]
     #[account(name = "system_program")]
     #[account(name = "token_program")]
@@ -16,6 +17,7 @@ pub enum Instruction {
     #[account(name = "fees_token_mint")]
     UpdateSolautoAdminSettings,
 
+    /// Open a new Solauto position with Marginfi
     #[account(signer, mut, name = "signer")]
     #[account(name = "marginfi_program")]
     #[account(name = "system_program")]
@@ -31,6 +33,7 @@ pub enum Instruction {
     #[account(name = "debt_token_mint")]
     MarginfiOpenPosition(Option<PositionData>),
 
+    /// Open a new Solauto position with Solend
     #[account(signer, mut, name = "signer")]
     #[account(name = "solend_program")]
     #[account(name = "system_program")]
@@ -46,13 +49,19 @@ pub enum Instruction {
     #[account(name = "debt_liquidity_token_mint")]
     SolendOpenPosition(Option<PositionData>),
 
+    /// Update solauto position settings. Can only be invoked by position authority
     #[account(signer, mut, name = "signer")]
     #[account(mut, name = "solauto_position")]
     UpdatePosition(SolautoSettingsParameters),
 
-    // TODO
-    // MarginfiRefreshData,
+    /// Refresh Marginfi accounts & position data
+    #[account(signer, name = "signer")]
+    #[account(name = "marginfi_program")]
+    #[account(mut, optional, name = "solauto_position")]
+    // TODO missing accounts
+    MarginfiRefreshData,
 
+    /// Refresh Solend accounts & position data
     #[account(signer, name = "signer")]
     #[account(name = "solend_program")]
     #[account(name = "clock")]
@@ -67,9 +76,15 @@ pub enum Instruction {
     #[account(mut, optional, name = "solauto_position")]
     SolendRefreshData,
 
-    // TODO
-    // MarginfiProtocolInteraction(ProtocolInteractionArgs),
+    /// Marginfi protocol interaction. Can only be invoked by the authority of the position
+    #[account(signer, mut, name = "signer")]
+    #[account(name = "marginfi_program")]
+    #[account(name = "ix_sysvar")]
+    #[account(mut, optional, name = "solauto_position")]
+    // TODO missing accounts
+    MarginfiProtocolInteraction(SolautoAction),
 
+    /// Solend protocol interaction. Can only be invoked by the authority of the position
     #[account(signer, mut, name = "signer")]
     #[account(name = "solend_program")]
     #[account(name = "system_program")]
@@ -98,11 +113,47 @@ pub enum Instruction {
     #[account(mut, optional, name = "reserve_debt_liquidity")]
     SolendProtocolInteraction(SolautoAction),
 
-    // TODO
-    // MarginfiRebalancePing,
+    /// Rebalance position.
+    /// Takes an optional target utilization rate bps. Only allowed if the signer is the position authority - otherwise the instruction will look at the solauto position settings
+    #[account(signer, mut, name = "signer")]
+    #[account(name = "marginfi_program")]
+    #[account(name = "ix_sysvar")]
+    #[account(name = "solauto_admin_settings")]
+    #[account(mut, name = "solauto_fees_receiver")]
+    #[account(mut, optional, name = "solauto_position")]
+    // TODO missing accounts
+    MarginfiRebalance(OptionalUtilizationRateBps),
     
-    // TODO
-    // SolendRebalancePing,
+    /// Rebalance position.
+    /// Takes an optional target utilization rate bps. Only allowed if the signer is the position authority - otherwise the instruction will look at the solauto position settings
+    #[account(signer, mut, name = "signer")]
+    #[account(name = "solend_program")]
+    #[account(name = "system_program")]
+    #[account(name = "token_program")]
+    #[account(name = "ata_program")]
+    #[account(name = "clock")]
+    #[account(name = "rent")]
+    #[account(name = "ix_sysvar")]
+    #[account(name = "solauto_admin_settings")]
+    #[account(mut, name = "solauto_fees_receiver")]
+    #[account(mut, optional, name = "solauto_position")]
+    #[account(name = "lending_market")]
+    #[account(mut, name = "obligation")]
+    #[account(mut, optional, name = "supply_reserve")]
+    #[account(optional, name = "supply_reserve_pyth_price_oracle")]
+    #[account(optional, name = "supply_reserve_switchboard_oracle")]
+    #[account(optional, name = "supply_liquidity_token_mint")]
+    #[account(mut, optional, name = "source_supply_liquidity")]
+    #[account(mut, optional, name = "reserve_supply_liquidity")]
+    #[account(optional, name = "supply_collateral_token_mint")]
+    #[account(mut, optional, name = "source_supply_collateral")]
+    #[account(mut, optional, name = "reserve_supply_collateral")]
+    #[account(mut, optional, name = "debt_reserve")]
+    #[account(mut, optional, name = "debt_reserve_fee_receiver")]
+    #[account(optional, name = "debt_liquidity_token_mint")]
+    #[account(mut, optional, name = "source_debt_liquidity")]
+    #[account(mut, optional, name = "reserve_debt_liquidity")]
+    SolendRebalance(OptionalUtilizationRateBps),
 }
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug)]
@@ -118,3 +169,5 @@ pub struct PositionData {
     /// Kamino-specific data for the position
     pub kamino_data: Option<KaminoPositionData>,
 }
+
+pub type OptionalUtilizationRateBps = Option<u16>;

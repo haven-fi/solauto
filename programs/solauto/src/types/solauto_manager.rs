@@ -1,4 +1,4 @@
-use std::{ cmp::min, ops::{ Div, Mul, Sub } };
+use std::ops::{ Div, Mul };
 
 use solana_program::{
     account_info::AccountInfo,
@@ -18,39 +18,35 @@ use super::{
     shared::{ DeserializedAccount, Position, SolautoAction, SolautoError, WithdrawParams },
 };
 
-pub struct SolautoManagerAccounts<'a, 'b> {
-    pub debt_token_mint: Option<&'a AccountInfo<'a>>,
-    pub debt_token_account: Option<&'a AccountInfo<'a>>,
-    pub solauto_fee_receiver: &'a AccountInfo<'a>,
-    pub solauto_position: &'b DeserializedAccount<'a, Position>,
+pub struct SolautoManagerAccounts<'a> {
+    // pub debt_token_mint: Option<&'a AccountInfo<'a>>,
+    // pub debt_token_account: Option<&'a AccountInfo<'a>>,
+    // pub solauto_fee_receiver: &'a AccountInfo<'a>,
+    pub solauto_position: Option<DeserializedAccount<'a, Position>>,
 }
 
-pub struct SolautoManager<'b> {
-    client: &'b dyn LendingProtocolClient,
-    obligation_position: &'b mut LendingProtocolObligationPosition,
-    // TODO
-    // accounts: SolautoManagerAccounts<'a>,
+pub struct SolautoManager<'a, 'b> {
+    pub client: &'b dyn LendingProtocolClient<'a>,
+    pub obligation_position: &'b mut LendingProtocolObligationPosition,
+    pub accounts: SolautoManagerAccounts<'a>,
 }
 
-impl<'b> SolautoManager<'b> {
+impl<'a, 'b> SolautoManager<'a, 'b> {
     pub fn from(
-        client: &'b dyn LendingProtocolClient,
-        obligation_position: &'b mut LendingProtocolObligationPosition
+        client: &'b dyn LendingProtocolClient<'a>,
+        obligation_position: &'b mut LendingProtocolObligationPosition,
+        accounts: SolautoManagerAccounts<'a>
     ) -> Result<Self, ProgramError> {
         client.validate()?;
         Ok(Self {
             client,
             obligation_position,
+            accounts
         })
     }
 
     pub fn protocol_interaction(&mut self, action: SolautoAction) -> ProgramResult {
-        // TODO: in the case where position is solauto-managed but user calls deposit or repay with a rebalance, we need to ensure the user's debt token account is created before calling this. Should we do it on open position?
-
         match action {
-            SolautoAction::Rebalance(utilization_rate_bps) => {
-                self.rebalance(utilization_rate_bps)?;
-            }
             SolautoAction::Deposit(base_unit_amount) => {
                 self.deposit(base_unit_amount)?;
             }
@@ -77,22 +73,22 @@ impl<'b> SolautoManager<'b> {
     }
 
     fn deposit(&mut self, base_unit_amount: u64) -> ProgramResult {
-        self.client.deposit(base_unit_amount)?;
+        self.client.deposit(base_unit_amount, &self.accounts.solauto_position)?;
         self.obligation_position.supply_lent_update(base_unit_amount as i64)
     }
 
     fn borrow(&mut self, base_unit_amount: u64) -> ProgramResult {
-        self.client.borrow(base_unit_amount)?;
+        self.client.borrow(base_unit_amount, &self.accounts.solauto_position)?;
         self.obligation_position.debt_borrowed_update(base_unit_amount as i64)
     }
 
     fn withdraw(&mut self, base_unit_amount: u64) -> ProgramResult {
-        self.client.withdraw(base_unit_amount)?;
+        self.client.withdraw(base_unit_amount, &self.accounts.solauto_position)?;
         self.obligation_position.supply_lent_update((base_unit_amount as i64) * -1)
     }
 
     fn repay(&mut self, base_unit_amount: u64) -> ProgramResult {
-        self.client.repay(base_unit_amount)?;
+        self.client.repay(base_unit_amount, &self.accounts.solauto_position)?;
         self.obligation_position.debt_borrowed_update((base_unit_amount as i64) * -1)
     }
 
@@ -152,29 +148,34 @@ impl<'b> SolautoManager<'b> {
 
     pub fn refresh_position(
         obligation_position: &LendingProtocolObligationPosition,
-        solauto_position: &mut DeserializedAccount<Position>
-    ) -> ProgramResult {
-        solauto_position.data.general_data.net_worth_usd_base_amount =
+        solauto_position: &mut Option<DeserializedAccount<Position>>
+    ) {
+        if solauto_position.is_none() {
+            return;
+        }
+
+        let position = solauto_position.as_mut().unwrap();
+
+        position.data.general_data.net_worth_usd_base_amount =
             obligation_position.net_worth_usd_base_amount();
-        solauto_position.data.general_data.base_amount_liquidity_net_worth =
+        position.data.general_data.base_amount_liquidity_net_worth =
             obligation_position.net_worth_base_amount();
-        solauto_position.data.general_data.utilization_rate_bps =
+        position.data.general_data.utilization_rate_bps =
             obligation_position.current_utilization_rate_bps();
-        solauto_position.data.general_data.base_amount_supplied = if
+        position.data.general_data.base_amount_supplied = if
             !obligation_position.supply.is_none()
         {
             obligation_position.supply.as_ref().unwrap().amount_used.base_unit
         } else {
             0
         };
-        solauto_position.data.general_data.base_amount_supplied = if
+        position.data.general_data.base_amount_supplied = if
             !obligation_position.debt.is_none()
         {
             obligation_position.debt.as_ref().unwrap().amount_used.base_unit
         } else {
             0
         };
-        Ok(())
     }
 
     fn payout_solauto_fee(&self) -> ProgramResult {

@@ -11,8 +11,6 @@ use solana_program::{
 
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType)]
 pub enum SolautoAction {
-    /// Provide the target utilization rate bps. Must be 0 - 10000
-    Rebalance(u16),
     /// Provide the base unit amount to deposit
     Deposit(u64),
     /// Provide the base unit amount to borrow
@@ -158,6 +156,8 @@ pub enum SolautoError {
     UnableToReposition,
     #[error("Desired action brought the utilization rate to an unsafe amount")]
     ExceededValidUtilizationRate,
+    #[error("Invalid position condition to rebalance")]
+    InvalidRebalanceCondition,
 }
 
 impl From<SolautoError> for ProgramError {

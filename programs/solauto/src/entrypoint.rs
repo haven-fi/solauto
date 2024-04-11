@@ -3,13 +3,20 @@ use solana_program::{
     account_info::AccountInfo,
     entrypoint,
     entrypoint::ProgramResult,
-    msg,
-    program_error::ProgramError,
     pubkey::Pubkey,
 };
 
 use crate::{
-    processors::{ marginfi::*, general::* },
+    processors::{
+        general::*,
+        marginfi::*,
+        solend::{
+            process_solend_interaction_instruction,
+            process_solend_open_position_instruction,
+            process_solend_rebalance,
+            process_solend_refresh_data,
+        },
+    },
     types::instruction::Instruction,
 };
 
@@ -20,20 +27,29 @@ fn process_instruction<'a>(
     accounts: &'a [AccountInfo<'a>],
     data: &[u8]
 ) -> ProgramResult {
-    let wip_instruction = || {
-        msg!("Instruction is currently a WIP");
-        Ok(())
-    };
-
     let instruction = Instruction::try_from_slice(data)?;
     match instruction {
-        Instruction::UpdateSolautoAdminSettings => process_update_solauto_admin_settings_instruction(accounts),
-        Instruction::SolendOpenPosition(_args) => wip_instruction(),
+        Instruction::UpdateSolautoAdminSettings =>
+            process_update_solauto_admin_settings_instruction(accounts),
+
         Instruction::MarginfiOpenPosition(args) =>
             process_marginfi_open_position_instruction(accounts, args),
+        Instruction::SolendOpenPosition(args) =>
+            process_solend_open_position_instruction(accounts, args),
+
         Instruction::UpdatePosition(_settings) => process_update_position_instruction(),
-        Instruction::SolendRefreshData => wip_instruction(),
-        Instruction::SolendProtocolInteraction(_args) => wip_instruction(),
-        // TODO: refresh ping
+
+        Instruction::MarginfiRefreshData => process_marginfi_refresh_data(accounts),
+        Instruction::SolendRefreshData => process_solend_refresh_data(accounts),
+
+        Instruction::MarginfiProtocolInteraction(action) =>
+            process_marginfi_interaction_instruction(accounts, action),
+        Instruction::SolendProtocolInteraction(action) =>
+            process_solend_interaction_instruction(accounts, action),
+
+        Instruction::MarginfiRebalance(target_utilization_rate_bps) =>
+            process_marginfi_rebalance(accounts, target_utilization_rate_bps),
+        Instruction::SolendRebalance(target_utilization_rate_bps) =>
+            process_solend_rebalance(accounts, target_utilization_rate_bps),
     }
 }

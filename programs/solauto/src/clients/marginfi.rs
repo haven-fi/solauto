@@ -6,15 +6,17 @@ use solana_program::{
 // use marginfi_sdk::generated::accounts::{ Bank, MarginfiAccount };
 
 use crate::types::{
-    instruction::accounts::{ Context, MarginfiOpenPositionAccounts },
+    instruction::accounts::{
+        Context,
+        MarginfiOpenPositionAccounts,
+    },
     lending_protocol::LendingProtocolClient,
     obligation_position::LendingProtocolObligationPosition,
     shared::{ DeserializedAccount, Position },
 };
 
 pub struct MarginfiDataAccounts<'a> {
-    // TODO: remove me
-    pub temp: &'a AccountInfo<'a>,
+    pub temp: &'a AccountInfo<'a>, // TODO remove me
     // pub supply_bank: Option<DeserializedAccount<'a, Bank>>,
     // pub debt_bank: Option<DeserializedAccount<'a, Bank>>,
     // pub marginfi_account: DeserializedAccount<'a, MarginfiAccount>,
@@ -22,7 +24,7 @@ pub struct MarginfiDataAccounts<'a> {
 
 pub struct MarginfiClient<'a> {
     signer: &'a AccountInfo<'a>,
-    data_accounts: MarginfiDataAccounts<'a>,
+    // data_accounts: MarginfiDataAccounts<'a>,
 }
 
 impl<'a> MarginfiClient<'a> {
@@ -34,9 +36,16 @@ impl<'a> MarginfiClient<'a> {
         Ok(())
     }
 
-    pub fn from<'b>() -> Result<(Self, LendingProtocolObligationPosition), ProgramError> {
-        // TODO
-        return Err(ProgramError::Custom(0));
+    pub fn from(
+        signer: &'a AccountInfo<'a>
+    ) -> Result<(Self, LendingProtocolObligationPosition), ProgramError> {
+        let client = Self {
+            signer,
+        };
+
+        let obligation_position = MarginfiClient::get_obligation_position()?;
+
+        return Ok((client, obligation_position));
     }
 
     pub fn deserialize_margfinfi_accounts(
@@ -54,28 +63,44 @@ impl<'a> MarginfiClient<'a> {
     }
 }
 
-impl<'a> LendingProtocolClient for MarginfiClient<'a> {
+impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
     fn validate(&self) -> ProgramResult {
         // TODO
         Ok(())
     }
 
-    fn deposit(&self, base_unit_amount: u64) -> ProgramResult {
+    fn deposit<'b>(
+        &self,
+        base_unit_amount: u64,
+        solauto_position: &'b Option<DeserializedAccount<'a, Position>>
+    ) -> ProgramResult {
         // TODO
         Ok(())
     }
 
-    fn withdraw(&self, base_unit_amount: u64) -> ProgramResult {
+    fn withdraw<'b>(
+        &self,
+        base_unit_amount: u64,
+        solauto_position: &'b Option<DeserializedAccount<'a, Position>>
+    ) -> ProgramResult {
         // TODO
         Ok(())
     }
 
-    fn borrow(&self, base_unit_amount: u64) -> ProgramResult {
+    fn borrow<'b>(
+        &self,
+        base_unit_amount: u64,
+        solauto_position: &'b Option<DeserializedAccount<'a, Position>>
+    ) -> ProgramResult {
         // TODO
         Ok(())
     }
 
-    fn repay(&self, base_unit_amount: u64) -> ProgramResult {
+    fn repay<'b>(
+        &self,
+        base_unit_amount: u64,
+        solauto_position: &'b Option<DeserializedAccount<'a, Position>>
+    ) -> ProgramResult {
         // TODO
         Ok(())
     }
