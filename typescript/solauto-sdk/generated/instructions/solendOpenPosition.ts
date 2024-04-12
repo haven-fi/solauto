@@ -47,10 +47,12 @@ export type SolendOpenPositionInstructionAccounts = {
   lendingMarket: PublicKey | Pda;
   obligation: PublicKey | Pda;
   supplyReserve: PublicKey | Pda;
-  supplyCollateralTokenAccount: PublicKey | Pda;
-  supplyCollateralTokenMint: PublicKey | Pda;
-  debtLiquidityTokenAccount: PublicKey | Pda;
-  debtLiquidityTokenMint: PublicKey | Pda;
+  supplyLiquidityTa: PublicKey | Pda;
+  supplyLiquidityMint: PublicKey | Pda;
+  supplyCollateralTa: PublicKey | Pda;
+  supplyCollateralMint: PublicKey | Pda;
+  debtLiquidityTa: PublicKey | Pda;
+  debtLiquidityMint: PublicKey | Pda;
 };
 
 // Data.
@@ -150,25 +152,35 @@ export function solendOpenPosition(
       isWritable: false as boolean,
       value: input.supplyReserve ?? null,
     },
-    supplyCollateralTokenAccount: {
+    supplyLiquidityTa: {
       index: 10,
       isWritable: true as boolean,
-      value: input.supplyCollateralTokenAccount ?? null,
+      value: input.supplyLiquidityTa ?? null,
     },
-    supplyCollateralTokenMint: {
+    supplyLiquidityMint: {
       index: 11,
       isWritable: false as boolean,
-      value: input.supplyCollateralTokenMint ?? null,
+      value: input.supplyLiquidityMint ?? null,
     },
-    debtLiquidityTokenAccount: {
+    supplyCollateralTa: {
       index: 12,
       isWritable: true as boolean,
-      value: input.debtLiquidityTokenAccount ?? null,
+      value: input.supplyCollateralTa ?? null,
     },
-    debtLiquidityTokenMint: {
+    supplyCollateralMint: {
       index: 13,
       isWritable: false as boolean,
-      value: input.debtLiquidityTokenMint ?? null,
+      value: input.supplyCollateralMint ?? null,
+    },
+    debtLiquidityTa: {
+      index: 14,
+      isWritable: true as boolean,
+      value: input.debtLiquidityTa ?? null,
+    },
+    debtLiquidityMint: {
+      index: 15,
+      isWritable: false as boolean,
+      value: input.debtLiquidityMint ?? null,
     },
   } satisfies ResolvedAccountsWithIndices;
 

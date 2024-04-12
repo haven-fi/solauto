@@ -34,9 +34,9 @@ export type UpdateSolautoAdminSettingsInstructionAccounts = {
   tokenProgram?: PublicKey | Pda;
   rent?: PublicKey | Pda;
   solautoAdminSettings: PublicKey | Pda;
-  feesWallet: PublicKey | Pda;
-  feesTokenAccount: PublicKey | Pda;
-  feesTokenMint: PublicKey | Pda;
+  solautoFeesWallet: PublicKey | Pda;
+  solautoFeesReceiverTa: PublicKey | Pda;
+  solautoFeesMint: PublicKey | Pda;
 };
 
 // Data.
@@ -100,20 +100,20 @@ export function updateSolautoAdminSettings(
       isWritable: true as boolean,
       value: input.solautoAdminSettings ?? null,
     },
-    feesWallet: {
+    solautoFeesWallet: {
       index: 5,
       isWritable: false as boolean,
-      value: input.feesWallet ?? null,
+      value: input.solautoFeesWallet ?? null,
     },
-    feesTokenAccount: {
+    solautoFeesReceiverTa: {
       index: 6,
       isWritable: true as boolean,
-      value: input.feesTokenAccount ?? null,
+      value: input.solautoFeesReceiverTa ?? null,
     },
-    feesTokenMint: {
+    solautoFeesMint: {
       index: 7,
       isWritable: false as boolean,
-      value: input.feesTokenMint ?? null,
+      value: input.solautoFeesMint ?? null,
     },
   } satisfies ResolvedAccountsWithIndices;
 

@@ -34,9 +34,12 @@ import {
 export type MarginfiRebalanceInstructionAccounts = {
   signer: Signer;
   marginfiProgram: PublicKey | Pda;
+  systemProgram?: PublicKey | Pda;
+  tokenProgram?: PublicKey | Pda;
+  ataProgram?: PublicKey | Pda;
   ixSysvar: PublicKey | Pda;
   solautoAdminSettings: PublicKey | Pda;
-  solautoFeesReceiver: PublicKey | Pda;
+  solautoFeesReceiverTa: PublicKey | Pda;
   solautoPosition?: PublicKey | Pda;
 };
 
@@ -66,7 +69,7 @@ export function getMarginfiRebalanceInstructionDataSerializer(): Serializer<
       ],
       { description: 'MarginfiRebalanceInstructionData' }
     ),
-    (value) => ({ ...value, discriminator: 8 })
+    (value) => ({ ...value, discriminator: 9 })
   ) as Serializer<
     MarginfiRebalanceInstructionDataArgs,
     MarginfiRebalanceInstructionData
@@ -100,23 +103,38 @@ export function marginfiRebalance(
       isWritable: false as boolean,
       value: input.marginfiProgram ?? null,
     },
-    ixSysvar: {
+    systemProgram: {
       index: 2,
+      isWritable: false as boolean,
+      value: input.systemProgram ?? null,
+    },
+    tokenProgram: {
+      index: 3,
+      isWritable: false as boolean,
+      value: input.tokenProgram ?? null,
+    },
+    ataProgram: {
+      index: 4,
+      isWritable: false as boolean,
+      value: input.ataProgram ?? null,
+    },
+    ixSysvar: {
+      index: 5,
       isWritable: false as boolean,
       value: input.ixSysvar ?? null,
     },
     solautoAdminSettings: {
-      index: 3,
+      index: 6,
       isWritable: false as boolean,
       value: input.solautoAdminSettings ?? null,
     },
-    solautoFeesReceiver: {
-      index: 4,
+    solautoFeesReceiverTa: {
+      index: 7,
       isWritable: true as boolean,
-      value: input.solautoFeesReceiver ?? null,
+      value: input.solautoFeesReceiverTa ?? null,
     },
     solautoPosition: {
-      index: 5,
+      index: 8,
       isWritable: true as boolean,
       value: input.solautoPosition ?? null,
     },
@@ -124,6 +142,29 @@ export function marginfiRebalance(
 
   // Arguments.
   const resolvedArgs: MarginfiRebalanceInstructionArgs = { ...input };
+
+  // Default values.
+  if (!resolvedAccounts.systemProgram.value) {
+    resolvedAccounts.systemProgram.value = context.programs.getPublicKey(
+      'splSystem',
+      '11111111111111111111111111111111'
+    );
+    resolvedAccounts.systemProgram.isWritable = false;
+  }
+  if (!resolvedAccounts.tokenProgram.value) {
+    resolvedAccounts.tokenProgram.value = context.programs.getPublicKey(
+      'splToken',
+      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'
+    );
+    resolvedAccounts.tokenProgram.isWritable = false;
+  }
+  if (!resolvedAccounts.ataProgram.value) {
+    resolvedAccounts.ataProgram.value = context.programs.getPublicKey(
+      'splAssociatedToken',
+      'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'
+    );
+    resolvedAccounts.ataProgram.isWritable = false;
+  }
 
   // Accounts in order.
   const orderedAccounts: ResolvedAccount[] = Object.values(

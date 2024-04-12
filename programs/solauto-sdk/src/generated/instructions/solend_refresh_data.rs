@@ -146,7 +146,7 @@ struct SolendRefreshDataInstructionData {
 
 impl SolendRefreshDataInstructionData {
     fn new() -> Self {
-        Self { discriminator: 5 }
+        Self { discriminator: 6 }
     }
 }
 

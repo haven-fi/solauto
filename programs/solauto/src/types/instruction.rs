@@ -61,8 +61,9 @@ pub enum Instruction {
     /// Close the Solauto position and return the rent for the various accounts
     #[account(signer, mut, name = "signer")]
     #[account(mut, name = "solauto_position")]
-    #[account(mut, name = "supply_ta")]
-    #[account(mut, name = "debt_ta")]
+    #[account(mut, name = "supply_liquidity_ta")]
+    #[account(optional, mut, name = "supply_collateral_ta")]
+    #[account(mut, name = "debt_liquidity_ta")]
     ClosePosition,
 
     /// Refresh Marginfi accounts & position data

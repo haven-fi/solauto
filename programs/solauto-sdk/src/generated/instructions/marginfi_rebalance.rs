@@ -14,11 +14,17 @@ pub struct MarginfiRebalance {
 
     pub marginfi_program: solana_program::pubkey::Pubkey,
 
+    pub system_program: solana_program::pubkey::Pubkey,
+
+    pub token_program: solana_program::pubkey::Pubkey,
+
+    pub ata_program: solana_program::pubkey::Pubkey,
+
     pub ix_sysvar: solana_program::pubkey::Pubkey,
 
     pub solauto_admin_settings: solana_program::pubkey::Pubkey,
 
-    pub solauto_fees_receiver: solana_program::pubkey::Pubkey,
+    pub solauto_fees_receiver_ta: solana_program::pubkey::Pubkey,
 
     pub solauto_position: Option<solana_program::pubkey::Pubkey>,
 }
@@ -36,13 +42,25 @@ impl MarginfiRebalance {
         args: MarginfiRebalanceInstructionArgs,
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
-        let mut accounts = Vec::with_capacity(6 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(9 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.signer,
             true,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.marginfi_program,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            self.system_program,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            self.token_program,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            self.ata_program,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
@@ -54,7 +72,7 @@ impl MarginfiRebalance {
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
-            self.solauto_fees_receiver,
+            self.solauto_fees_receiver_ta,
             false,
         ));
         if let Some(solauto_position) = self.solauto_position {
@@ -90,7 +108,7 @@ struct MarginfiRebalanceInstructionData {
 
 impl MarginfiRebalanceInstructionData {
     fn new() -> Self {
-        Self { discriminator: 8 }
+        Self { discriminator: 9 }
     }
 }
 
@@ -106,17 +124,23 @@ pub struct MarginfiRebalanceInstructionArgs {
 ///
 ///   0. `[writable, signer]` signer
 ///   1. `[]` marginfi_program
-///   2. `[]` ix_sysvar
-///   3. `[]` solauto_admin_settings
-///   4. `[writable]` solauto_fees_receiver
-///   5. `[writable, optional]` solauto_position
+///   2. `[optional]` system_program (default to `11111111111111111111111111111111`)
+///   3. `[optional]` token_program (default to `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA`)
+///   4. `[optional]` ata_program (default to `ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL`)
+///   5. `[]` ix_sysvar
+///   6. `[]` solauto_admin_settings
+///   7. `[writable]` solauto_fees_receiver_ta
+///   8. `[writable, optional]` solauto_position
 #[derive(Default)]
 pub struct MarginfiRebalanceBuilder {
     signer: Option<solana_program::pubkey::Pubkey>,
     marginfi_program: Option<solana_program::pubkey::Pubkey>,
+    system_program: Option<solana_program::pubkey::Pubkey>,
+    token_program: Option<solana_program::pubkey::Pubkey>,
+    ata_program: Option<solana_program::pubkey::Pubkey>,
     ix_sysvar: Option<solana_program::pubkey::Pubkey>,
     solauto_admin_settings: Option<solana_program::pubkey::Pubkey>,
-    solauto_fees_receiver: Option<solana_program::pubkey::Pubkey>,
+    solauto_fees_receiver_ta: Option<solana_program::pubkey::Pubkey>,
     solauto_position: Option<solana_program::pubkey::Pubkey>,
     args: Option<u16>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
@@ -139,6 +163,24 @@ impl MarginfiRebalanceBuilder {
         self.marginfi_program = Some(marginfi_program);
         self
     }
+    /// `[optional account, default to '11111111111111111111111111111111']`
+    #[inline(always)]
+    pub fn system_program(&mut self, system_program: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.system_program = Some(system_program);
+        self
+    }
+    /// `[optional account, default to 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA']`
+    #[inline(always)]
+    pub fn token_program(&mut self, token_program: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.token_program = Some(token_program);
+        self
+    }
+    /// `[optional account, default to 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL']`
+    #[inline(always)]
+    pub fn ata_program(&mut self, ata_program: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.ata_program = Some(ata_program);
+        self
+    }
     #[inline(always)]
     pub fn ix_sysvar(&mut self, ix_sysvar: solana_program::pubkey::Pubkey) -> &mut Self {
         self.ix_sysvar = Some(ix_sysvar);
@@ -153,11 +195,11 @@ impl MarginfiRebalanceBuilder {
         self
     }
     #[inline(always)]
-    pub fn solauto_fees_receiver(
+    pub fn solauto_fees_receiver_ta(
         &mut self,
-        solauto_fees_receiver: solana_program::pubkey::Pubkey,
+        solauto_fees_receiver_ta: solana_program::pubkey::Pubkey,
     ) -> &mut Self {
-        self.solauto_fees_receiver = Some(solauto_fees_receiver);
+        self.solauto_fees_receiver_ta = Some(solauto_fees_receiver_ta);
         self
     }
     /// `[optional account]`
@@ -198,13 +240,22 @@ impl MarginfiRebalanceBuilder {
         let accounts = MarginfiRebalance {
             signer: self.signer.expect("signer is not set"),
             marginfi_program: self.marginfi_program.expect("marginfi_program is not set"),
+            system_program: self
+                .system_program
+                .unwrap_or(solana_program::pubkey!("11111111111111111111111111111111")),
+            token_program: self.token_program.unwrap_or(solana_program::pubkey!(
+                "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+            )),
+            ata_program: self.ata_program.unwrap_or(solana_program::pubkey!(
+                "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+            )),
             ix_sysvar: self.ix_sysvar.expect("ix_sysvar is not set"),
             solauto_admin_settings: self
                 .solauto_admin_settings
                 .expect("solauto_admin_settings is not set"),
-            solauto_fees_receiver: self
-                .solauto_fees_receiver
-                .expect("solauto_fees_receiver is not set"),
+            solauto_fees_receiver_ta: self
+                .solauto_fees_receiver_ta
+                .expect("solauto_fees_receiver_ta is not set"),
             solauto_position: self.solauto_position,
         };
         let args = MarginfiRebalanceInstructionArgs {
@@ -221,11 +272,17 @@ pub struct MarginfiRebalanceCpiAccounts<'a, 'b> {
 
     pub marginfi_program: &'b solana_program::account_info::AccountInfo<'a>,
 
+    pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub token_program: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub ata_program: &'b solana_program::account_info::AccountInfo<'a>,
+
     pub ix_sysvar: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub solauto_admin_settings: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub solauto_fees_receiver: &'b solana_program::account_info::AccountInfo<'a>,
+    pub solauto_fees_receiver_ta: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub solauto_position: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 }
@@ -239,11 +296,17 @@ pub struct MarginfiRebalanceCpi<'a, 'b> {
 
     pub marginfi_program: &'b solana_program::account_info::AccountInfo<'a>,
 
+    pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub token_program: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub ata_program: &'b solana_program::account_info::AccountInfo<'a>,
+
     pub ix_sysvar: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub solauto_admin_settings: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub solauto_fees_receiver: &'b solana_program::account_info::AccountInfo<'a>,
+    pub solauto_fees_receiver_ta: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub solauto_position: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The arguments for the instruction.
@@ -260,9 +323,12 @@ impl<'a, 'b> MarginfiRebalanceCpi<'a, 'b> {
             __program: program,
             signer: accounts.signer,
             marginfi_program: accounts.marginfi_program,
+            system_program: accounts.system_program,
+            token_program: accounts.token_program,
+            ata_program: accounts.ata_program,
             ix_sysvar: accounts.ix_sysvar,
             solauto_admin_settings: accounts.solauto_admin_settings,
-            solauto_fees_receiver: accounts.solauto_fees_receiver,
+            solauto_fees_receiver_ta: accounts.solauto_fees_receiver_ta,
             solauto_position: accounts.solauto_position,
             __args: args,
         }
@@ -300,13 +366,25 @@ impl<'a, 'b> MarginfiRebalanceCpi<'a, 'b> {
             bool,
         )],
     ) -> solana_program::entrypoint::ProgramResult {
-        let mut accounts = Vec::with_capacity(6 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(9 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             *self.signer.key,
             true,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             *self.marginfi_program.key,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            *self.system_program.key,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            *self.token_program.key,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            *self.ata_program.key,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
@@ -318,7 +396,7 @@ impl<'a, 'b> MarginfiRebalanceCpi<'a, 'b> {
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.solauto_fees_receiver.key,
+            *self.solauto_fees_receiver_ta.key,
             false,
         ));
         if let Some(solauto_position) = self.solauto_position {
@@ -350,13 +428,16 @@ impl<'a, 'b> MarginfiRebalanceCpi<'a, 'b> {
             accounts,
             data,
         };
-        let mut account_infos = Vec::with_capacity(6 + 1 + remaining_accounts.len());
+        let mut account_infos = Vec::with_capacity(9 + 1 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
         account_infos.push(self.signer.clone());
         account_infos.push(self.marginfi_program.clone());
+        account_infos.push(self.system_program.clone());
+        account_infos.push(self.token_program.clone());
+        account_infos.push(self.ata_program.clone());
         account_infos.push(self.ix_sysvar.clone());
         account_infos.push(self.solauto_admin_settings.clone());
-        account_infos.push(self.solauto_fees_receiver.clone());
+        account_infos.push(self.solauto_fees_receiver_ta.clone());
         if let Some(solauto_position) = self.solauto_position {
             account_infos.push(solauto_position.clone());
         }
@@ -378,10 +459,13 @@ impl<'a, 'b> MarginfiRebalanceCpi<'a, 'b> {
 ///
 ///   0. `[writable, signer]` signer
 ///   1. `[]` marginfi_program
-///   2. `[]` ix_sysvar
-///   3. `[]` solauto_admin_settings
-///   4. `[writable]` solauto_fees_receiver
-///   5. `[writable, optional]` solauto_position
+///   2. `[]` system_program
+///   3. `[]` token_program
+///   4. `[]` ata_program
+///   5. `[]` ix_sysvar
+///   6. `[]` solauto_admin_settings
+///   7. `[writable]` solauto_fees_receiver_ta
+///   8. `[writable, optional]` solauto_position
 pub struct MarginfiRebalanceCpiBuilder<'a, 'b> {
     instruction: Box<MarginfiRebalanceCpiBuilderInstruction<'a, 'b>>,
 }
@@ -392,9 +476,12 @@ impl<'a, 'b> MarginfiRebalanceCpiBuilder<'a, 'b> {
             __program: program,
             signer: None,
             marginfi_program: None,
+            system_program: None,
+            token_program: None,
+            ata_program: None,
             ix_sysvar: None,
             solauto_admin_settings: None,
-            solauto_fees_receiver: None,
+            solauto_fees_receiver_ta: None,
             solauto_position: None,
             args: None,
             __remaining_accounts: Vec::new(),
@@ -418,6 +505,30 @@ impl<'a, 'b> MarginfiRebalanceCpiBuilder<'a, 'b> {
         self
     }
     #[inline(always)]
+    pub fn system_program(
+        &mut self,
+        system_program: &'b solana_program::account_info::AccountInfo<'a>,
+    ) -> &mut Self {
+        self.instruction.system_program = Some(system_program);
+        self
+    }
+    #[inline(always)]
+    pub fn token_program(
+        &mut self,
+        token_program: &'b solana_program::account_info::AccountInfo<'a>,
+    ) -> &mut Self {
+        self.instruction.token_program = Some(token_program);
+        self
+    }
+    #[inline(always)]
+    pub fn ata_program(
+        &mut self,
+        ata_program: &'b solana_program::account_info::AccountInfo<'a>,
+    ) -> &mut Self {
+        self.instruction.ata_program = Some(ata_program);
+        self
+    }
+    #[inline(always)]
     pub fn ix_sysvar(
         &mut self,
         ix_sysvar: &'b solana_program::account_info::AccountInfo<'a>,
@@ -434,11 +545,11 @@ impl<'a, 'b> MarginfiRebalanceCpiBuilder<'a, 'b> {
         self
     }
     #[inline(always)]
-    pub fn solauto_fees_receiver(
+    pub fn solauto_fees_receiver_ta(
         &mut self,
-        solauto_fees_receiver: &'b solana_program::account_info::AccountInfo<'a>,
+        solauto_fees_receiver_ta: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
-        self.instruction.solauto_fees_receiver = Some(solauto_fees_receiver);
+        self.instruction.solauto_fees_receiver_ta = Some(solauto_fees_receiver_ta);
         self
     }
     /// `[optional account]`
@@ -510,6 +621,21 @@ impl<'a, 'b> MarginfiRebalanceCpiBuilder<'a, 'b> {
                 .marginfi_program
                 .expect("marginfi_program is not set"),
 
+            system_program: self
+                .instruction
+                .system_program
+                .expect("system_program is not set"),
+
+            token_program: self
+                .instruction
+                .token_program
+                .expect("token_program is not set"),
+
+            ata_program: self
+                .instruction
+                .ata_program
+                .expect("ata_program is not set"),
+
             ix_sysvar: self.instruction.ix_sysvar.expect("ix_sysvar is not set"),
 
             solauto_admin_settings: self
@@ -517,10 +643,10 @@ impl<'a, 'b> MarginfiRebalanceCpiBuilder<'a, 'b> {
                 .solauto_admin_settings
                 .expect("solauto_admin_settings is not set"),
 
-            solauto_fees_receiver: self
+            solauto_fees_receiver_ta: self
                 .instruction
-                .solauto_fees_receiver
-                .expect("solauto_fees_receiver is not set"),
+                .solauto_fees_receiver_ta
+                .expect("solauto_fees_receiver_ta is not set"),
 
             solauto_position: self.instruction.solauto_position,
             __args: args,
@@ -536,9 +662,12 @@ struct MarginfiRebalanceCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_program::account_info::AccountInfo<'a>,
     signer: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     marginfi_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    system_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    token_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    ata_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     ix_sysvar: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     solauto_admin_settings: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    solauto_fees_receiver: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    solauto_fees_receiver_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     solauto_position: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     args: Option<u16>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.

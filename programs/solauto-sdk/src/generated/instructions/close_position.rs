@@ -9,15 +9,19 @@ use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 
 /// Accounts.
-pub struct MarginfiRefreshData {
+pub struct ClosePosition {
     pub signer: solana_program::pubkey::Pubkey,
 
-    pub marginfi_program: solana_program::pubkey::Pubkey,
+    pub solauto_position: solana_program::pubkey::Pubkey,
 
-    pub solauto_position: Option<solana_program::pubkey::Pubkey>,
+    pub supply_liquidity_ta: solana_program::pubkey::Pubkey,
+
+    pub supply_collateral_ta: Option<solana_program::pubkey::Pubkey>,
+
+    pub debt_liquidity_ta: solana_program::pubkey::Pubkey,
 }
 
-impl MarginfiRefreshData {
+impl ClosePosition {
     pub fn instruction(&self) -> solana_program::instruction::Instruction {
         self.instruction_with_remaining_accounts(&[])
     }
@@ -26,18 +30,22 @@ impl MarginfiRefreshData {
         &self,
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
-        let mut accounts = Vec::with_capacity(3 + remaining_accounts.len());
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+        let mut accounts = Vec::with_capacity(5 + remaining_accounts.len());
+        accounts.push(solana_program::instruction::AccountMeta::new(
             self.signer,
             true,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.marginfi_program,
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            self.solauto_position,
             false,
         ));
-        if let Some(solauto_position) = self.solauto_position {
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            self.supply_liquidity_ta,
+            false,
+        ));
+        if let Some(supply_collateral_ta) = self.supply_collateral_ta {
             accounts.push(solana_program::instruction::AccountMeta::new(
-                solauto_position,
+                supply_collateral_ta,
                 false,
             ));
         } else {
@@ -46,10 +54,12 @@ impl MarginfiRefreshData {
                 false,
             ));
         }
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            self.debt_liquidity_ta,
+            false,
+        ));
         accounts.extend_from_slice(remaining_accounts);
-        let data = MarginfiRefreshDataInstructionData::new()
-            .try_to_vec()
-            .unwrap();
+        let data = ClosePositionInstructionData::new().try_to_vec().unwrap();
 
         solana_program::instruction::Instruction {
             program_id: crate::SOLAUTO_ID,
@@ -60,32 +70,36 @@ impl MarginfiRefreshData {
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
-struct MarginfiRefreshDataInstructionData {
+struct ClosePositionInstructionData {
     discriminator: u8,
 }
 
-impl MarginfiRefreshDataInstructionData {
+impl ClosePositionInstructionData {
     fn new() -> Self {
-        Self { discriminator: 5 }
+        Self { discriminator: 4 }
     }
 }
 
-/// Instruction builder for `MarginfiRefreshData`.
+/// Instruction builder for `ClosePosition`.
 ///
 /// ### Accounts:
 ///
-///   0. `[signer]` signer
-///   1. `[]` marginfi_program
-///   2. `[writable, optional]` solauto_position
+///   0. `[writable, signer]` signer
+///   1. `[writable]` solauto_position
+///   2. `[writable]` supply_liquidity_ta
+///   3. `[writable, optional]` supply_collateral_ta
+///   4. `[writable]` debt_liquidity_ta
 #[derive(Default)]
-pub struct MarginfiRefreshDataBuilder {
+pub struct ClosePositionBuilder {
     signer: Option<solana_program::pubkey::Pubkey>,
-    marginfi_program: Option<solana_program::pubkey::Pubkey>,
     solauto_position: Option<solana_program::pubkey::Pubkey>,
+    supply_liquidity_ta: Option<solana_program::pubkey::Pubkey>,
+    supply_collateral_ta: Option<solana_program::pubkey::Pubkey>,
+    debt_liquidity_ta: Option<solana_program::pubkey::Pubkey>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
 
-impl MarginfiRefreshDataBuilder {
+impl ClosePositionBuilder {
     pub fn new() -> Self {
         Self::default()
     }
@@ -95,20 +109,36 @@ impl MarginfiRefreshDataBuilder {
         self
     }
     #[inline(always)]
-    pub fn marginfi_program(
+    pub fn solauto_position(
         &mut self,
-        marginfi_program: solana_program::pubkey::Pubkey,
+        solauto_position: solana_program::pubkey::Pubkey,
     ) -> &mut Self {
-        self.marginfi_program = Some(marginfi_program);
+        self.solauto_position = Some(solauto_position);
+        self
+    }
+    #[inline(always)]
+    pub fn supply_liquidity_ta(
+        &mut self,
+        supply_liquidity_ta: solana_program::pubkey::Pubkey,
+    ) -> &mut Self {
+        self.supply_liquidity_ta = Some(supply_liquidity_ta);
         self
     }
     /// `[optional account]`
     #[inline(always)]
-    pub fn solauto_position(
+    pub fn supply_collateral_ta(
         &mut self,
-        solauto_position: Option<solana_program::pubkey::Pubkey>,
+        supply_collateral_ta: Option<solana_program::pubkey::Pubkey>,
     ) -> &mut Self {
-        self.solauto_position = solauto_position;
+        self.supply_collateral_ta = supply_collateral_ta;
+        self
+    }
+    #[inline(always)]
+    pub fn debt_liquidity_ta(
+        &mut self,
+        debt_liquidity_ta: solana_program::pubkey::Pubkey,
+    ) -> &mut Self {
+        self.debt_liquidity_ta = Some(debt_liquidity_ta);
         self
     }
     /// Add an aditional account to the instruction.
@@ -131,47 +161,63 @@ impl MarginfiRefreshDataBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_program::instruction::Instruction {
-        let accounts = MarginfiRefreshData {
+        let accounts = ClosePosition {
             signer: self.signer.expect("signer is not set"),
-            marginfi_program: self.marginfi_program.expect("marginfi_program is not set"),
-            solauto_position: self.solauto_position,
+            solauto_position: self.solauto_position.expect("solauto_position is not set"),
+            supply_liquidity_ta: self
+                .supply_liquidity_ta
+                .expect("supply_liquidity_ta is not set"),
+            supply_collateral_ta: self.supply_collateral_ta,
+            debt_liquidity_ta: self
+                .debt_liquidity_ta
+                .expect("debt_liquidity_ta is not set"),
         };
 
         accounts.instruction_with_remaining_accounts(&self.__remaining_accounts)
     }
 }
 
-/// `marginfi_refresh_data` CPI accounts.
-pub struct MarginfiRefreshDataCpiAccounts<'a, 'b> {
+/// `close_position` CPI accounts.
+pub struct ClosePositionCpiAccounts<'a, 'b> {
     pub signer: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub marginfi_program: &'b solana_program::account_info::AccountInfo<'a>,
+    pub solauto_position: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub solauto_position: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    pub supply_liquidity_ta: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub supply_collateral_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+
+    pub debt_liquidity_ta: &'b solana_program::account_info::AccountInfo<'a>,
 }
 
-/// `marginfi_refresh_data` CPI instruction.
-pub struct MarginfiRefreshDataCpi<'a, 'b> {
+/// `close_position` CPI instruction.
+pub struct ClosePositionCpi<'a, 'b> {
     /// The program to invoke.
     pub __program: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub signer: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub marginfi_program: &'b solana_program::account_info::AccountInfo<'a>,
+    pub solauto_position: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub solauto_position: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    pub supply_liquidity_ta: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub supply_collateral_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+
+    pub debt_liquidity_ta: &'b solana_program::account_info::AccountInfo<'a>,
 }
 
-impl<'a, 'b> MarginfiRefreshDataCpi<'a, 'b> {
+impl<'a, 'b> ClosePositionCpi<'a, 'b> {
     pub fn new(
         program: &'b solana_program::account_info::AccountInfo<'a>,
-        accounts: MarginfiRefreshDataCpiAccounts<'a, 'b>,
+        accounts: ClosePositionCpiAccounts<'a, 'b>,
     ) -> Self {
         Self {
             __program: program,
             signer: accounts.signer,
-            marginfi_program: accounts.marginfi_program,
             solauto_position: accounts.solauto_position,
+            supply_liquidity_ta: accounts.supply_liquidity_ta,
+            supply_collateral_ta: accounts.supply_collateral_ta,
+            debt_liquidity_ta: accounts.debt_liquidity_ta,
         }
     }
     #[inline(always)]
@@ -207,18 +253,22 @@ impl<'a, 'b> MarginfiRefreshDataCpi<'a, 'b> {
             bool,
         )],
     ) -> solana_program::entrypoint::ProgramResult {
-        let mut accounts = Vec::with_capacity(3 + remaining_accounts.len());
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+        let mut accounts = Vec::with_capacity(5 + remaining_accounts.len());
+        accounts.push(solana_program::instruction::AccountMeta::new(
             *self.signer.key,
             true,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.marginfi_program.key,
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            *self.solauto_position.key,
             false,
         ));
-        if let Some(solauto_position) = self.solauto_position {
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            *self.supply_liquidity_ta.key,
+            false,
+        ));
+        if let Some(supply_collateral_ta) = self.supply_collateral_ta {
             accounts.push(solana_program::instruction::AccountMeta::new(
-                *solauto_position.key,
+                *supply_collateral_ta.key,
                 false,
             ));
         } else {
@@ -227,6 +277,10 @@ impl<'a, 'b> MarginfiRefreshDataCpi<'a, 'b> {
                 false,
             ));
         }
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            *self.debt_liquidity_ta.key,
+            false,
+        ));
         remaining_accounts.iter().for_each(|remaining_account| {
             accounts.push(solana_program::instruction::AccountMeta {
                 pubkey: *remaining_account.0.key,
@@ -234,22 +288,22 @@ impl<'a, 'b> MarginfiRefreshDataCpi<'a, 'b> {
                 is_writable: remaining_account.2,
             })
         });
-        let data = MarginfiRefreshDataInstructionData::new()
-            .try_to_vec()
-            .unwrap();
+        let data = ClosePositionInstructionData::new().try_to_vec().unwrap();
 
         let instruction = solana_program::instruction::Instruction {
             program_id: crate::SOLAUTO_ID,
             accounts,
             data,
         };
-        let mut account_infos = Vec::with_capacity(3 + 1 + remaining_accounts.len());
+        let mut account_infos = Vec::with_capacity(5 + 1 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
         account_infos.push(self.signer.clone());
-        account_infos.push(self.marginfi_program.clone());
-        if let Some(solauto_position) = self.solauto_position {
-            account_infos.push(solauto_position.clone());
+        account_infos.push(self.solauto_position.clone());
+        account_infos.push(self.supply_liquidity_ta.clone());
+        if let Some(supply_collateral_ta) = self.supply_collateral_ta {
+            account_infos.push(supply_collateral_ta.clone());
         }
+        account_infos.push(self.debt_liquidity_ta.clone());
         remaining_accounts
             .iter()
             .for_each(|remaining_account| account_infos.push(remaining_account.0.clone()));
@@ -262,24 +316,28 @@ impl<'a, 'b> MarginfiRefreshDataCpi<'a, 'b> {
     }
 }
 
-/// Instruction builder for `MarginfiRefreshData` via CPI.
+/// Instruction builder for `ClosePosition` via CPI.
 ///
 /// ### Accounts:
 ///
-///   0. `[signer]` signer
-///   1. `[]` marginfi_program
-///   2. `[writable, optional]` solauto_position
-pub struct MarginfiRefreshDataCpiBuilder<'a, 'b> {
-    instruction: Box<MarginfiRefreshDataCpiBuilderInstruction<'a, 'b>>,
+///   0. `[writable, signer]` signer
+///   1. `[writable]` solauto_position
+///   2. `[writable]` supply_liquidity_ta
+///   3. `[writable, optional]` supply_collateral_ta
+///   4. `[writable]` debt_liquidity_ta
+pub struct ClosePositionCpiBuilder<'a, 'b> {
+    instruction: Box<ClosePositionCpiBuilderInstruction<'a, 'b>>,
 }
 
-impl<'a, 'b> MarginfiRefreshDataCpiBuilder<'a, 'b> {
+impl<'a, 'b> ClosePositionCpiBuilder<'a, 'b> {
     pub fn new(program: &'b solana_program::account_info::AccountInfo<'a>) -> Self {
-        let instruction = Box::new(MarginfiRefreshDataCpiBuilderInstruction {
+        let instruction = Box::new(ClosePositionCpiBuilderInstruction {
             __program: program,
             signer: None,
-            marginfi_program: None,
             solauto_position: None,
+            supply_liquidity_ta: None,
+            supply_collateral_ta: None,
+            debt_liquidity_ta: None,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
@@ -293,20 +351,36 @@ impl<'a, 'b> MarginfiRefreshDataCpiBuilder<'a, 'b> {
         self
     }
     #[inline(always)]
-    pub fn marginfi_program(
+    pub fn solauto_position(
         &mut self,
-        marginfi_program: &'b solana_program::account_info::AccountInfo<'a>,
+        solauto_position: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
-        self.instruction.marginfi_program = Some(marginfi_program);
+        self.instruction.solauto_position = Some(solauto_position);
+        self
+    }
+    #[inline(always)]
+    pub fn supply_liquidity_ta(
+        &mut self,
+        supply_liquidity_ta: &'b solana_program::account_info::AccountInfo<'a>,
+    ) -> &mut Self {
+        self.instruction.supply_liquidity_ta = Some(supply_liquidity_ta);
         self
     }
     /// `[optional account]`
     #[inline(always)]
-    pub fn solauto_position(
+    pub fn supply_collateral_ta(
         &mut self,
-        solauto_position: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+        supply_collateral_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     ) -> &mut Self {
-        self.instruction.solauto_position = solauto_position;
+        self.instruction.supply_collateral_ta = supply_collateral_ta;
+        self
+    }
+    #[inline(always)]
+    pub fn debt_liquidity_ta(
+        &mut self,
+        debt_liquidity_ta: &'b solana_program::account_info::AccountInfo<'a>,
+    ) -> &mut Self {
+        self.instruction.debt_liquidity_ta = Some(debt_liquidity_ta);
         self
     }
     /// Add an additional account to the instruction.
@@ -350,17 +424,27 @@ impl<'a, 'b> MarginfiRefreshDataCpiBuilder<'a, 'b> {
         &self,
         signers_seeds: &[&[&[u8]]],
     ) -> solana_program::entrypoint::ProgramResult {
-        let instruction = MarginfiRefreshDataCpi {
+        let instruction = ClosePositionCpi {
             __program: self.instruction.__program,
 
             signer: self.instruction.signer.expect("signer is not set"),
 
-            marginfi_program: self
+            solauto_position: self
                 .instruction
-                .marginfi_program
-                .expect("marginfi_program is not set"),
+                .solauto_position
+                .expect("solauto_position is not set"),
 
-            solauto_position: self.instruction.solauto_position,
+            supply_liquidity_ta: self
+                .instruction
+                .supply_liquidity_ta
+                .expect("supply_liquidity_ta is not set"),
+
+            supply_collateral_ta: self.instruction.supply_collateral_ta,
+
+            debt_liquidity_ta: self
+                .instruction
+                .debt_liquidity_ta
+                .expect("debt_liquidity_ta is not set"),
         };
         instruction.invoke_signed_with_remaining_accounts(
             signers_seeds,
@@ -369,11 +453,13 @@ impl<'a, 'b> MarginfiRefreshDataCpiBuilder<'a, 'b> {
     }
 }
 
-struct MarginfiRefreshDataCpiBuilderInstruction<'a, 'b> {
+struct ClosePositionCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_program::account_info::AccountInfo<'a>,
     signer: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    marginfi_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     solauto_position: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    supply_liquidity_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    supply_collateral_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    debt_liquidity_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(
         &'b solana_program::account_info::AccountInfo<'a>,

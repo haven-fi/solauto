@@ -59,7 +59,7 @@ export function getSolendRefreshDataInstructionDataSerializer(): Serializer<
     struct<SolendRefreshDataInstructionData>([['discriminator', u8()]], {
       description: 'SolendRefreshDataInstructionData',
     }),
-    (value) => ({ ...value, discriminator: 5 })
+    (value) => ({ ...value, discriminator: 6 })
   ) as Serializer<
     SolendRefreshDataInstructionDataArgs,
     SolendRefreshDataInstructionData

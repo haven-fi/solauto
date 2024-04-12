@@ -16,7 +16,7 @@ use crate::types::{
         Context,
         MarginfiProtocolInteractionAccounts,
         SolendProtocolInteractionAccounts,
-    }, SolautoStandardAccounts}, obligation_position::{self, LendingProtocolObligationPosition}, shared::{
+    }, SolautoStandardAccounts}, obligation_position::LendingProtocolObligationPosition, shared::{
         DeserializedAccount,
         LendingPlatform,
         Position,

@@ -20,11 +20,11 @@ pub struct UpdateSolautoAdminSettings {
 
     pub solauto_admin_settings: solana_program::pubkey::Pubkey,
 
-    pub fees_wallet: solana_program::pubkey::Pubkey,
+    pub solauto_fees_wallet: solana_program::pubkey::Pubkey,
 
-    pub fees_token_account: solana_program::pubkey::Pubkey,
+    pub solauto_fees_receiver_ta: solana_program::pubkey::Pubkey,
 
-    pub fees_token_mint: solana_program::pubkey::Pubkey,
+    pub solauto_fees_mint: solana_program::pubkey::Pubkey,
 }
 
 impl UpdateSolautoAdminSettings {
@@ -57,15 +57,15 @@ impl UpdateSolautoAdminSettings {
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.fees_wallet,
+            self.solauto_fees_wallet,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
-            self.fees_token_account,
+            self.solauto_fees_receiver_ta,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.fees_token_mint,
+            self.solauto_fees_mint,
             false,
         ));
         accounts.extend_from_slice(remaining_accounts);
@@ -101,9 +101,9 @@ impl UpdateSolautoAdminSettingsInstructionData {
 ///   2. `[optional]` token_program (default to `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA`)
 ///   3. `[optional]` rent (default to `SysvarRent111111111111111111111111111111111`)
 ///   4. `[writable]` solauto_admin_settings
-///   5. `[]` fees_wallet
-///   6. `[writable]` fees_token_account
-///   7. `[]` fees_token_mint
+///   5. `[]` solauto_fees_wallet
+///   6. `[writable]` solauto_fees_receiver_ta
+///   7. `[]` solauto_fees_mint
 #[derive(Default)]
 pub struct UpdateSolautoAdminSettingsBuilder {
     solauto_admin: Option<solana_program::pubkey::Pubkey>,
@@ -111,9 +111,9 @@ pub struct UpdateSolautoAdminSettingsBuilder {
     token_program: Option<solana_program::pubkey::Pubkey>,
     rent: Option<solana_program::pubkey::Pubkey>,
     solauto_admin_settings: Option<solana_program::pubkey::Pubkey>,
-    fees_wallet: Option<solana_program::pubkey::Pubkey>,
-    fees_token_account: Option<solana_program::pubkey::Pubkey>,
-    fees_token_mint: Option<solana_program::pubkey::Pubkey>,
+    solauto_fees_wallet: Option<solana_program::pubkey::Pubkey>,
+    solauto_fees_receiver_ta: Option<solana_program::pubkey::Pubkey>,
+    solauto_fees_mint: Option<solana_program::pubkey::Pubkey>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
 
@@ -153,24 +153,27 @@ impl UpdateSolautoAdminSettingsBuilder {
         self
     }
     #[inline(always)]
-    pub fn fees_wallet(&mut self, fees_wallet: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.fees_wallet = Some(fees_wallet);
+    pub fn solauto_fees_wallet(
+        &mut self,
+        solauto_fees_wallet: solana_program::pubkey::Pubkey,
+    ) -> &mut Self {
+        self.solauto_fees_wallet = Some(solauto_fees_wallet);
         self
     }
     #[inline(always)]
-    pub fn fees_token_account(
+    pub fn solauto_fees_receiver_ta(
         &mut self,
-        fees_token_account: solana_program::pubkey::Pubkey,
+        solauto_fees_receiver_ta: solana_program::pubkey::Pubkey,
     ) -> &mut Self {
-        self.fees_token_account = Some(fees_token_account);
+        self.solauto_fees_receiver_ta = Some(solauto_fees_receiver_ta);
         self
     }
     #[inline(always)]
-    pub fn fees_token_mint(
+    pub fn solauto_fees_mint(
         &mut self,
-        fees_token_mint: solana_program::pubkey::Pubkey,
+        solauto_fees_mint: solana_program::pubkey::Pubkey,
     ) -> &mut Self {
-        self.fees_token_mint = Some(fees_token_mint);
+        self.solauto_fees_mint = Some(solauto_fees_mint);
         self
     }
     /// Add an aditional account to the instruction.
@@ -207,11 +210,15 @@ impl UpdateSolautoAdminSettingsBuilder {
             solauto_admin_settings: self
                 .solauto_admin_settings
                 .expect("solauto_admin_settings is not set"),
-            fees_wallet: self.fees_wallet.expect("fees_wallet is not set"),
-            fees_token_account: self
-                .fees_token_account
-                .expect("fees_token_account is not set"),
-            fees_token_mint: self.fees_token_mint.expect("fees_token_mint is not set"),
+            solauto_fees_wallet: self
+                .solauto_fees_wallet
+                .expect("solauto_fees_wallet is not set"),
+            solauto_fees_receiver_ta: self
+                .solauto_fees_receiver_ta
+                .expect("solauto_fees_receiver_ta is not set"),
+            solauto_fees_mint: self
+                .solauto_fees_mint
+                .expect("solauto_fees_mint is not set"),
         };
 
         accounts.instruction_with_remaining_accounts(&self.__remaining_accounts)
@@ -230,11 +237,11 @@ pub struct UpdateSolautoAdminSettingsCpiAccounts<'a, 'b> {
 
     pub solauto_admin_settings: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub fees_wallet: &'b solana_program::account_info::AccountInfo<'a>,
+    pub solauto_fees_wallet: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub fees_token_account: &'b solana_program::account_info::AccountInfo<'a>,
+    pub solauto_fees_receiver_ta: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub fees_token_mint: &'b solana_program::account_info::AccountInfo<'a>,
+    pub solauto_fees_mint: &'b solana_program::account_info::AccountInfo<'a>,
 }
 
 /// `update_solauto_admin_settings` CPI instruction.
@@ -252,11 +259,11 @@ pub struct UpdateSolautoAdminSettingsCpi<'a, 'b> {
 
     pub solauto_admin_settings: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub fees_wallet: &'b solana_program::account_info::AccountInfo<'a>,
+    pub solauto_fees_wallet: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub fees_token_account: &'b solana_program::account_info::AccountInfo<'a>,
+    pub solauto_fees_receiver_ta: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub fees_token_mint: &'b solana_program::account_info::AccountInfo<'a>,
+    pub solauto_fees_mint: &'b solana_program::account_info::AccountInfo<'a>,
 }
 
 impl<'a, 'b> UpdateSolautoAdminSettingsCpi<'a, 'b> {
@@ -271,9 +278,9 @@ impl<'a, 'b> UpdateSolautoAdminSettingsCpi<'a, 'b> {
             token_program: accounts.token_program,
             rent: accounts.rent,
             solauto_admin_settings: accounts.solauto_admin_settings,
-            fees_wallet: accounts.fees_wallet,
-            fees_token_account: accounts.fees_token_account,
-            fees_token_mint: accounts.fees_token_mint,
+            solauto_fees_wallet: accounts.solauto_fees_wallet,
+            solauto_fees_receiver_ta: accounts.solauto_fees_receiver_ta,
+            solauto_fees_mint: accounts.solauto_fees_mint,
         }
     }
     #[inline(always)]
@@ -331,15 +338,15 @@ impl<'a, 'b> UpdateSolautoAdminSettingsCpi<'a, 'b> {
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.fees_wallet.key,
+            *self.solauto_fees_wallet.key,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.fees_token_account.key,
+            *self.solauto_fees_receiver_ta.key,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.fees_token_mint.key,
+            *self.solauto_fees_mint.key,
             false,
         ));
         remaining_accounts.iter().for_each(|remaining_account| {
@@ -365,9 +372,9 @@ impl<'a, 'b> UpdateSolautoAdminSettingsCpi<'a, 'b> {
         account_infos.push(self.token_program.clone());
         account_infos.push(self.rent.clone());
         account_infos.push(self.solauto_admin_settings.clone());
-        account_infos.push(self.fees_wallet.clone());
-        account_infos.push(self.fees_token_account.clone());
-        account_infos.push(self.fees_token_mint.clone());
+        account_infos.push(self.solauto_fees_wallet.clone());
+        account_infos.push(self.solauto_fees_receiver_ta.clone());
+        account_infos.push(self.solauto_fees_mint.clone());
         remaining_accounts
             .iter()
             .for_each(|remaining_account| account_infos.push(remaining_account.0.clone()));
@@ -389,9 +396,9 @@ impl<'a, 'b> UpdateSolautoAdminSettingsCpi<'a, 'b> {
 ///   2. `[]` token_program
 ///   3. `[]` rent
 ///   4. `[writable]` solauto_admin_settings
-///   5. `[]` fees_wallet
-///   6. `[writable]` fees_token_account
-///   7. `[]` fees_token_mint
+///   5. `[]` solauto_fees_wallet
+///   6. `[writable]` solauto_fees_receiver_ta
+///   7. `[]` solauto_fees_mint
 pub struct UpdateSolautoAdminSettingsCpiBuilder<'a, 'b> {
     instruction: Box<UpdateSolautoAdminSettingsCpiBuilderInstruction<'a, 'b>>,
 }
@@ -405,9 +412,9 @@ impl<'a, 'b> UpdateSolautoAdminSettingsCpiBuilder<'a, 'b> {
             token_program: None,
             rent: None,
             solauto_admin_settings: None,
-            fees_wallet: None,
-            fees_token_account: None,
-            fees_token_mint: None,
+            solauto_fees_wallet: None,
+            solauto_fees_receiver_ta: None,
+            solauto_fees_mint: None,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
@@ -450,27 +457,27 @@ impl<'a, 'b> UpdateSolautoAdminSettingsCpiBuilder<'a, 'b> {
         self
     }
     #[inline(always)]
-    pub fn fees_wallet(
+    pub fn solauto_fees_wallet(
         &mut self,
-        fees_wallet: &'b solana_program::account_info::AccountInfo<'a>,
+        solauto_fees_wallet: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
-        self.instruction.fees_wallet = Some(fees_wallet);
+        self.instruction.solauto_fees_wallet = Some(solauto_fees_wallet);
         self
     }
     #[inline(always)]
-    pub fn fees_token_account(
+    pub fn solauto_fees_receiver_ta(
         &mut self,
-        fees_token_account: &'b solana_program::account_info::AccountInfo<'a>,
+        solauto_fees_receiver_ta: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
-        self.instruction.fees_token_account = Some(fees_token_account);
+        self.instruction.solauto_fees_receiver_ta = Some(solauto_fees_receiver_ta);
         self
     }
     #[inline(always)]
-    pub fn fees_token_mint(
+    pub fn solauto_fees_mint(
         &mut self,
-        fees_token_mint: &'b solana_program::account_info::AccountInfo<'a>,
+        solauto_fees_mint: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
-        self.instruction.fees_token_mint = Some(fees_token_mint);
+        self.instruction.solauto_fees_mint = Some(solauto_fees_mint);
         self
     }
     /// Add an additional account to the instruction.
@@ -539,20 +546,20 @@ impl<'a, 'b> UpdateSolautoAdminSettingsCpiBuilder<'a, 'b> {
                 .solauto_admin_settings
                 .expect("solauto_admin_settings is not set"),
 
-            fees_wallet: self
+            solauto_fees_wallet: self
                 .instruction
-                .fees_wallet
-                .expect("fees_wallet is not set"),
+                .solauto_fees_wallet
+                .expect("solauto_fees_wallet is not set"),
 
-            fees_token_account: self
+            solauto_fees_receiver_ta: self
                 .instruction
-                .fees_token_account
-                .expect("fees_token_account is not set"),
+                .solauto_fees_receiver_ta
+                .expect("solauto_fees_receiver_ta is not set"),
 
-            fees_token_mint: self
+            solauto_fees_mint: self
                 .instruction
-                .fees_token_mint
-                .expect("fees_token_mint is not set"),
+                .solauto_fees_mint
+                .expect("solauto_fees_mint is not set"),
         };
         instruction.invoke_signed_with_remaining_accounts(
             signers_seeds,
@@ -568,9 +575,9 @@ struct UpdateSolautoAdminSettingsCpiBuilderInstruction<'a, 'b> {
     token_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     rent: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     solauto_admin_settings: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    fees_wallet: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    fees_token_account: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    fees_token_mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    solauto_fees_wallet: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    solauto_fees_receiver_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    solauto_fees_mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(
         &'b solana_program::account_info::AccountInfo<'a>,

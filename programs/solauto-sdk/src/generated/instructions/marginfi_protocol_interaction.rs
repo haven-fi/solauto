@@ -15,7 +15,11 @@ pub struct MarginfiProtocolInteraction {
 
     pub marginfi_program: solana_program::pubkey::Pubkey,
 
-    pub ix_sysvar: solana_program::pubkey::Pubkey,
+    pub system_program: solana_program::pubkey::Pubkey,
+
+    pub token_program: solana_program::pubkey::Pubkey,
+
+    pub ata_program: solana_program::pubkey::Pubkey,
 
     pub solauto_position: Option<solana_program::pubkey::Pubkey>,
 }
@@ -33,7 +37,7 @@ impl MarginfiProtocolInteraction {
         args: MarginfiProtocolInteractionInstructionArgs,
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
-        let mut accounts = Vec::with_capacity(4 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(6 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.signer,
             true,
@@ -43,7 +47,15 @@ impl MarginfiProtocolInteraction {
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.ix_sysvar,
+            self.system_program,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            self.token_program,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            self.ata_program,
             false,
         ));
         if let Some(solauto_position) = self.solauto_position {
@@ -79,7 +91,7 @@ struct MarginfiProtocolInteractionInstructionData {
 
 impl MarginfiProtocolInteractionInstructionData {
     fn new() -> Self {
-        Self { discriminator: 6 }
+        Self { discriminator: 7 }
     }
 }
 
@@ -95,13 +107,17 @@ pub struct MarginfiProtocolInteractionInstructionArgs {
 ///
 ///   0. `[writable, signer]` signer
 ///   1. `[]` marginfi_program
-///   2. `[]` ix_sysvar
-///   3. `[writable, optional]` solauto_position
+///   2. `[optional]` system_program (default to `11111111111111111111111111111111`)
+///   3. `[optional]` token_program (default to `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA`)
+///   4. `[optional]` ata_program (default to `ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL`)
+///   5. `[writable, optional]` solauto_position
 #[derive(Default)]
 pub struct MarginfiProtocolInteractionBuilder {
     signer: Option<solana_program::pubkey::Pubkey>,
     marginfi_program: Option<solana_program::pubkey::Pubkey>,
-    ix_sysvar: Option<solana_program::pubkey::Pubkey>,
+    system_program: Option<solana_program::pubkey::Pubkey>,
+    token_program: Option<solana_program::pubkey::Pubkey>,
+    ata_program: Option<solana_program::pubkey::Pubkey>,
     solauto_position: Option<solana_program::pubkey::Pubkey>,
     solauto_action: Option<SolautoAction>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
@@ -124,9 +140,22 @@ impl MarginfiProtocolInteractionBuilder {
         self.marginfi_program = Some(marginfi_program);
         self
     }
+    /// `[optional account, default to '11111111111111111111111111111111']`
     #[inline(always)]
-    pub fn ix_sysvar(&mut self, ix_sysvar: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.ix_sysvar = Some(ix_sysvar);
+    pub fn system_program(&mut self, system_program: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.system_program = Some(system_program);
+        self
+    }
+    /// `[optional account, default to 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA']`
+    #[inline(always)]
+    pub fn token_program(&mut self, token_program: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.token_program = Some(token_program);
+        self
+    }
+    /// `[optional account, default to 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL']`
+    #[inline(always)]
+    pub fn ata_program(&mut self, ata_program: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.ata_program = Some(ata_program);
         self
     }
     /// `[optional account]`
@@ -166,7 +195,15 @@ impl MarginfiProtocolInteractionBuilder {
         let accounts = MarginfiProtocolInteraction {
             signer: self.signer.expect("signer is not set"),
             marginfi_program: self.marginfi_program.expect("marginfi_program is not set"),
-            ix_sysvar: self.ix_sysvar.expect("ix_sysvar is not set"),
+            system_program: self
+                .system_program
+                .unwrap_or(solana_program::pubkey!("11111111111111111111111111111111")),
+            token_program: self.token_program.unwrap_or(solana_program::pubkey!(
+                "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+            )),
+            ata_program: self.ata_program.unwrap_or(solana_program::pubkey!(
+                "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+            )),
             solauto_position: self.solauto_position,
         };
         let args = MarginfiProtocolInteractionInstructionArgs {
@@ -186,7 +223,11 @@ pub struct MarginfiProtocolInteractionCpiAccounts<'a, 'b> {
 
     pub marginfi_program: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub ix_sysvar: &'b solana_program::account_info::AccountInfo<'a>,
+    pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub token_program: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub ata_program: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub solauto_position: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 }
@@ -200,7 +241,11 @@ pub struct MarginfiProtocolInteractionCpi<'a, 'b> {
 
     pub marginfi_program: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub ix_sysvar: &'b solana_program::account_info::AccountInfo<'a>,
+    pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub token_program: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub ata_program: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub solauto_position: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The arguments for the instruction.
@@ -217,7 +262,9 @@ impl<'a, 'b> MarginfiProtocolInteractionCpi<'a, 'b> {
             __program: program,
             signer: accounts.signer,
             marginfi_program: accounts.marginfi_program,
-            ix_sysvar: accounts.ix_sysvar,
+            system_program: accounts.system_program,
+            token_program: accounts.token_program,
+            ata_program: accounts.ata_program,
             solauto_position: accounts.solauto_position,
             __args: args,
         }
@@ -255,7 +302,7 @@ impl<'a, 'b> MarginfiProtocolInteractionCpi<'a, 'b> {
             bool,
         )],
     ) -> solana_program::entrypoint::ProgramResult {
-        let mut accounts = Vec::with_capacity(4 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(6 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             *self.signer.key,
             true,
@@ -265,7 +312,15 @@ impl<'a, 'b> MarginfiProtocolInteractionCpi<'a, 'b> {
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.ix_sysvar.key,
+            *self.system_program.key,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            *self.token_program.key,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            *self.ata_program.key,
             false,
         ));
         if let Some(solauto_position) = self.solauto_position {
@@ -297,11 +352,13 @@ impl<'a, 'b> MarginfiProtocolInteractionCpi<'a, 'b> {
             accounts,
             data,
         };
-        let mut account_infos = Vec::with_capacity(4 + 1 + remaining_accounts.len());
+        let mut account_infos = Vec::with_capacity(6 + 1 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
         account_infos.push(self.signer.clone());
         account_infos.push(self.marginfi_program.clone());
-        account_infos.push(self.ix_sysvar.clone());
+        account_infos.push(self.system_program.clone());
+        account_infos.push(self.token_program.clone());
+        account_infos.push(self.ata_program.clone());
         if let Some(solauto_position) = self.solauto_position {
             account_infos.push(solauto_position.clone());
         }
@@ -323,8 +380,10 @@ impl<'a, 'b> MarginfiProtocolInteractionCpi<'a, 'b> {
 ///
 ///   0. `[writable, signer]` signer
 ///   1. `[]` marginfi_program
-///   2. `[]` ix_sysvar
-///   3. `[writable, optional]` solauto_position
+///   2. `[]` system_program
+///   3. `[]` token_program
+///   4. `[]` ata_program
+///   5. `[writable, optional]` solauto_position
 pub struct MarginfiProtocolInteractionCpiBuilder<'a, 'b> {
     instruction: Box<MarginfiProtocolInteractionCpiBuilderInstruction<'a, 'b>>,
 }
@@ -335,7 +394,9 @@ impl<'a, 'b> MarginfiProtocolInteractionCpiBuilder<'a, 'b> {
             __program: program,
             signer: None,
             marginfi_program: None,
-            ix_sysvar: None,
+            system_program: None,
+            token_program: None,
+            ata_program: None,
             solauto_position: None,
             solauto_action: None,
             __remaining_accounts: Vec::new(),
@@ -359,11 +420,27 @@ impl<'a, 'b> MarginfiProtocolInteractionCpiBuilder<'a, 'b> {
         self
     }
     #[inline(always)]
-    pub fn ix_sysvar(
+    pub fn system_program(
         &mut self,
-        ix_sysvar: &'b solana_program::account_info::AccountInfo<'a>,
+        system_program: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
-        self.instruction.ix_sysvar = Some(ix_sysvar);
+        self.instruction.system_program = Some(system_program);
+        self
+    }
+    #[inline(always)]
+    pub fn token_program(
+        &mut self,
+        token_program: &'b solana_program::account_info::AccountInfo<'a>,
+    ) -> &mut Self {
+        self.instruction.token_program = Some(token_program);
+        self
+    }
+    #[inline(always)]
+    pub fn ata_program(
+        &mut self,
+        ata_program: &'b solana_program::account_info::AccountInfo<'a>,
+    ) -> &mut Self {
+        self.instruction.ata_program = Some(ata_program);
         self
     }
     /// `[optional account]`
@@ -438,7 +515,20 @@ impl<'a, 'b> MarginfiProtocolInteractionCpiBuilder<'a, 'b> {
                 .marginfi_program
                 .expect("marginfi_program is not set"),
 
-            ix_sysvar: self.instruction.ix_sysvar.expect("ix_sysvar is not set"),
+            system_program: self
+                .instruction
+                .system_program
+                .expect("system_program is not set"),
+
+            token_program: self
+                .instruction
+                .token_program
+                .expect("token_program is not set"),
+
+            ata_program: self
+                .instruction
+                .ata_program
+                .expect("ata_program is not set"),
 
             solauto_position: self.instruction.solauto_position,
             __args: args,
@@ -454,7 +544,9 @@ struct MarginfiProtocolInteractionCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_program::account_info::AccountInfo<'a>,
     signer: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     marginfi_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    ix_sysvar: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    system_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    token_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    ata_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     solauto_position: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     solauto_action: Option<SolautoAction>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.

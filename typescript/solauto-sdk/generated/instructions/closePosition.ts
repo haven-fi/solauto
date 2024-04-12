@@ -27,40 +27,42 @@ import {
 } from '../shared';
 
 // Accounts.
-export type MarginfiRefreshDataInstructionAccounts = {
+export type ClosePositionInstructionAccounts = {
   signer: Signer;
-  marginfiProgram: PublicKey | Pda;
-  solautoPosition?: PublicKey | Pda;
+  solautoPosition: PublicKey | Pda;
+  supplyLiquidityTa: PublicKey | Pda;
+  supplyCollateralTa?: PublicKey | Pda;
+  debtLiquidityTa: PublicKey | Pda;
 };
 
 // Data.
-export type MarginfiRefreshDataInstructionData = { discriminator: number };
+export type ClosePositionInstructionData = { discriminator: number };
 
-export type MarginfiRefreshDataInstructionDataArgs = {};
+export type ClosePositionInstructionDataArgs = {};
 
-export function getMarginfiRefreshDataInstructionDataSerializer(): Serializer<
-  MarginfiRefreshDataInstructionDataArgs,
-  MarginfiRefreshDataInstructionData
+export function getClosePositionInstructionDataSerializer(): Serializer<
+  ClosePositionInstructionDataArgs,
+  ClosePositionInstructionData
 > {
   return mapSerializer<
-    MarginfiRefreshDataInstructionDataArgs,
+    ClosePositionInstructionDataArgs,
     any,
-    MarginfiRefreshDataInstructionData
+    ClosePositionInstructionData
   >(
-    struct<MarginfiRefreshDataInstructionData>([['discriminator', u8()]], {
-      description: 'MarginfiRefreshDataInstructionData',
+    struct<ClosePositionInstructionData>([['discriminator', u8()]], {
+      description: 'ClosePositionInstructionData',
     }),
-    (value) => ({ ...value, discriminator: 5 })
+    (value) => ({ ...value, discriminator: 4 })
   ) as Serializer<
-    MarginfiRefreshDataInstructionDataArgs,
-    MarginfiRefreshDataInstructionData
+    ClosePositionInstructionDataArgs,
+    ClosePositionInstructionData
   >;
 }
 
 // Instruction.
-export function marginfiRefreshData(
+export function closePosition(
   context: Pick<Context, 'programs'>,
-  input: MarginfiRefreshDataInstructionAccounts
+  input: ClosePositionInstructionAccounts
 ): TransactionBuilder {
   // Program ID.
   const programId = context.programs.getPublicKey(
@@ -72,18 +74,28 @@ export function marginfiRefreshData(
   const resolvedAccounts = {
     signer: {
       index: 0,
-      isWritable: false as boolean,
+      isWritable: true as boolean,
       value: input.signer ?? null,
     },
-    marginfiProgram: {
-      index: 1,
-      isWritable: false as boolean,
-      value: input.marginfiProgram ?? null,
-    },
     solautoPosition: {
-      index: 2,
+      index: 1,
       isWritable: true as boolean,
       value: input.solautoPosition ?? null,
+    },
+    supplyLiquidityTa: {
+      index: 2,
+      isWritable: true as boolean,
+      value: input.supplyLiquidityTa ?? null,
+    },
+    supplyCollateralTa: {
+      index: 3,
+      isWritable: true as boolean,
+      value: input.supplyCollateralTa ?? null,
+    },
+    debtLiquidityTa: {
+      index: 4,
+      isWritable: true as boolean,
+      value: input.debtLiquidityTa ?? null,
     },
   } satisfies ResolvedAccountsWithIndices;
 
@@ -100,7 +112,7 @@ export function marginfiRefreshData(
   );
 
   // Data.
-  const data = getMarginfiRefreshDataInstructionDataSerializer().serialize({});
+  const data = getClosePositionInstructionDataSerializer().serialize({});
 
   // Bytes Created On Chain.
   const bytesCreatedOnChain = 0;

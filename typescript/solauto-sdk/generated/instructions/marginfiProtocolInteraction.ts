@@ -35,7 +35,9 @@ import {
 export type MarginfiProtocolInteractionInstructionAccounts = {
   signer: Signer;
   marginfiProgram: PublicKey | Pda;
-  ixSysvar: PublicKey | Pda;
+  systemProgram?: PublicKey | Pda;
+  tokenProgram?: PublicKey | Pda;
+  ataProgram?: PublicKey | Pda;
   solautoPosition?: PublicKey | Pda;
 };
 
@@ -65,7 +67,7 @@ export function getMarginfiProtocolInteractionInstructionDataSerializer(): Seria
       ],
       { description: 'MarginfiProtocolInteractionInstructionData' }
     ),
-    (value) => ({ ...value, discriminator: 6 })
+    (value) => ({ ...value, discriminator: 7 })
   ) as Serializer<
     MarginfiProtocolInteractionInstructionDataArgs,
     MarginfiProtocolInteractionInstructionData
@@ -100,13 +102,23 @@ export function marginfiProtocolInteraction(
       isWritable: false as boolean,
       value: input.marginfiProgram ?? null,
     },
-    ixSysvar: {
+    systemProgram: {
       index: 2,
       isWritable: false as boolean,
-      value: input.ixSysvar ?? null,
+      value: input.systemProgram ?? null,
+    },
+    tokenProgram: {
+      index: 3,
+      isWritable: false as boolean,
+      value: input.tokenProgram ?? null,
+    },
+    ataProgram: {
+      index: 4,
+      isWritable: false as boolean,
+      value: input.ataProgram ?? null,
     },
     solautoPosition: {
-      index: 3,
+      index: 5,
       isWritable: true as boolean,
       value: input.solautoPosition ?? null,
     },
@@ -114,6 +126,29 @@ export function marginfiProtocolInteraction(
 
   // Arguments.
   const resolvedArgs: MarginfiProtocolInteractionInstructionArgs = { ...input };
+
+  // Default values.
+  if (!resolvedAccounts.systemProgram.value) {
+    resolvedAccounts.systemProgram.value = context.programs.getPublicKey(
+      'splSystem',
+      '11111111111111111111111111111111'
+    );
+    resolvedAccounts.systemProgram.isWritable = false;
+  }
+  if (!resolvedAccounts.tokenProgram.value) {
+    resolvedAccounts.tokenProgram.value = context.programs.getPublicKey(
+      'splToken',
+      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'
+    );
+    resolvedAccounts.tokenProgram.isWritable = false;
+  }
+  if (!resolvedAccounts.ataProgram.value) {
+    resolvedAccounts.ataProgram.value = context.programs.getPublicKey(
+      'splAssociatedToken',
+      'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'
+    );
+    resolvedAccounts.ataProgram.isWritable = false;
+  }
 
   // Accounts in order.
   const orderedAccounts: ResolvedAccount[] = Object.values(

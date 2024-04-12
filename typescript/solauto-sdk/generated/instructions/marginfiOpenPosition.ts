@@ -46,9 +46,9 @@ export type MarginfiOpenPositionInstructionAccounts = {
   marginfiGroup: PublicKey | Pda;
   marginfiAccount: PublicKey | Pda;
   solautoPosition?: PublicKey | Pda;
-  supplyTokenAccount: PublicKey | Pda;
+  supplyTa: PublicKey | Pda;
   supplyTokenMint: PublicKey | Pda;
-  debtTokenAccount: PublicKey | Pda;
+  debtTa: PublicKey | Pda;
   debtTokenMint: PublicKey | Pda;
 };
 
@@ -144,20 +144,20 @@ export function marginfiOpenPosition(
       isWritable: true as boolean,
       value: input.solautoPosition ?? null,
     },
-    supplyTokenAccount: {
+    supplyTa: {
       index: 9,
       isWritable: true as boolean,
-      value: input.supplyTokenAccount ?? null,
+      value: input.supplyTa ?? null,
     },
     supplyTokenMint: {
       index: 10,
       isWritable: false as boolean,
       value: input.supplyTokenMint ?? null,
     },
-    debtTokenAccount: {
+    debtTa: {
       index: 11,
       isWritable: true as boolean,
-      value: input.debtTokenAccount ?? null,
+      value: input.debtTa ?? null,
     },
     debtTokenMint: {
       index: 12,

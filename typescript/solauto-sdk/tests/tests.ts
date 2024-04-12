@@ -79,6 +79,11 @@ describe("Solauto tests", async () => {
     solendAccounts.solendProgram,
     reuseAccounts
   );
+  const supplyLiquidityTokenAccount = await getAssociatedTokenAddress(
+    solendAccounts.solReserve.liquidityTokenMint,
+    solautoPosition ?? signerPublicKey,
+    solautoManaged
+  );
   const supplyCollateralTokenAccount = await getAssociatedTokenAddress(
     solendAccounts.solReserve.collateralTokenMint,
     solautoPosition ?? signerPublicKey,
@@ -108,32 +113,36 @@ describe("Solauto tests", async () => {
       obligation: publicKey(obligation),
       lendingMarket: publicKey(solendAccounts.lendingMarket),
       supplyReserve: publicKey(solendAccounts.solReserve.reserve),
-      supplyCollateralTokenAccount: publicKey(supplyCollateralTokenAccount),
-      supplyCollateralTokenMint: publicKey(
+      supplyLiquidityTa: publicKey(supplyLiquidityTokenAccount),
+      supplyLiquidityMint: publicKey(
+        solendAccounts.solReserve.liquidityTokenMint
+      ),
+      supplyCollateralTa: publicKey(supplyCollateralTokenAccount),
+      supplyCollateralMint: publicKey(
         solendAccounts.solReserve.collateralTokenMint
       ),
-      debtLiquidityTokenAccount: publicKey(debtLiquidityTokenAccount),
-      debtLiquidityTokenMint: publicKey(
+      debtLiquidityTa: publicKey(debtLiquidityTokenAccount),
+      debtLiquidityMint: publicKey(
         solendAccounts.usdcReserve.liquidityTokenMint
       ),
       args: solautoManaged
-      ? {
-          __option: "Some",
-          value: {
-            positionId,
-            settingParams,
-            solendData: {
-              supplyReserve: publicKey(solendAccounts.solReserve.reserve),
-              debtReserve: publicKey(solendAccounts.usdcReserve.reserve),
-              obligation: publicKey(obligation),
+        ? {
+            __option: "Some",
+            value: {
+              positionId,
+              settingParams,
+              solendData: {
+                supplyReserve: publicKey(solendAccounts.solReserve.reserve),
+                debtReserve: publicKey(solendAccounts.usdcReserve.reserve),
+                obligation: publicKey(obligation),
+              },
+              kaminoData: { __option: "None" },
+              marginfiData: { __option: "None" },
             },
-            kaminoData: { __option: "None" },
-            marginfiData: { __option: "None" },
+          }
+        : {
+            __option: "None",
           },
-        }
-      : {
-          __option: "None",
-        }
     });
 
     const transaction = await builder.buildWithLatestBlockhash(umi);

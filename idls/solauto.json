@@ -31,17 +31,17 @@
           "isSigner": false
         },
         {
-          "name": "feesWallet",
+          "name": "solautoFeesWallet",
           "isMut": false,
           "isSigner": false
         },
         {
-          "name": "feesTokenAccount",
+          "name": "solautoFeesReceiverTa",
           "isMut": true,
           "isSigner": false
         },
         {
-          "name": "feesTokenMint",
+          "name": "solautoFeesMint",
           "isMut": false,
           "isSigner": false
         }
@@ -102,7 +102,7 @@
           "isOptional": true
         },
         {
-          "name": "supplyTokenAccount",
+          "name": "supplyTa",
           "isMut": true,
           "isSigner": false
         },
@@ -112,7 +112,7 @@
           "isSigner": false
         },
         {
-          "name": "debtTokenAccount",
+          "name": "debtTa",
           "isMut": true,
           "isSigner": false
         },
@@ -192,22 +192,32 @@
           "isSigner": false
         },
         {
-          "name": "supplyCollateralTokenAccount",
+          "name": "supplyLiquidityTa",
           "isMut": true,
           "isSigner": false
         },
         {
-          "name": "supplyCollateralTokenMint",
+          "name": "supplyLiquidityMint",
           "isMut": false,
           "isSigner": false
         },
         {
-          "name": "debtLiquidityTokenAccount",
+          "name": "supplyCollateralTa",
           "isMut": true,
           "isSigner": false
         },
         {
-          "name": "debtLiquidityTokenMint",
+          "name": "supplyCollateralMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "debtLiquidityTa",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "debtLiquidityMint",
           "isMut": false,
           "isSigner": false
         }
@@ -255,6 +265,42 @@
       }
     },
     {
+      "name": "ClosePosition",
+      "accounts": [
+        {
+          "name": "signer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "solautoPosition",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "supplyLiquidityTa",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "supplyCollateralTa",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "debtLiquidityTa",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": [],
+      "discriminant": {
+        "type": "u8",
+        "value": 4
+      }
+    },
+    {
       "name": "MarginfiRefreshData",
       "accounts": [
         {
@@ -277,7 +323,7 @@
       "args": [],
       "discriminant": {
         "type": "u8",
-        "value": 4
+        "value": 5
       }
     },
     {
@@ -352,7 +398,7 @@
       "args": [],
       "discriminant": {
         "type": "u8",
-        "value": 5
+        "value": 6
       }
     },
     {
@@ -369,7 +415,17 @@
           "isSigner": false
         },
         {
-          "name": "ixSysvar",
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "ataProgram",
           "isMut": false,
           "isSigner": false
         },
@@ -390,7 +446,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 6
+        "value": 7
       }
     },
     {
@@ -437,7 +493,7 @@
           "isSigner": false
         },
         {
-          "name": "solautoFeesReceiver",
+          "name": "solautoFeesReceiverTa",
           "isMut": true,
           "isSigner": false
         },
@@ -476,37 +532,37 @@
           "isOptional": true
         },
         {
-          "name": "supplyLiquidityTokenMint",
+          "name": "supplyLiquidityMint",
           "isMut": false,
           "isSigner": false,
           "isOptional": true
         },
         {
-          "name": "sourceSupplyLiquidity",
+          "name": "sourceSupplyLiquidityTa",
           "isMut": true,
           "isSigner": false,
           "isOptional": true
         },
         {
-          "name": "reserveSupplyLiquidity",
+          "name": "reserveSupplyLiquidityTa",
           "isMut": true,
           "isSigner": false,
           "isOptional": true
         },
         {
-          "name": "supplyCollateralTokenMint",
+          "name": "supplyCollateralMint",
           "isMut": false,
           "isSigner": false,
           "isOptional": true
         },
         {
-          "name": "sourceSupplyCollateral",
+          "name": "sourceSupplyCollateralTa",
           "isMut": true,
           "isSigner": false,
           "isOptional": true
         },
         {
-          "name": "reserveSupplyCollateral",
+          "name": "reserveSupplyCollateralTa",
           "isMut": true,
           "isSigner": false,
           "isOptional": true
@@ -518,25 +574,25 @@
           "isOptional": true
         },
         {
-          "name": "debtReserveFeeReceiver",
+          "name": "debtReserveFeeReceiverTa",
           "isMut": true,
           "isSigner": false,
           "isOptional": true
         },
         {
-          "name": "debtLiquidityTokenMint",
+          "name": "debtLiquidityMint",
           "isMut": false,
           "isSigner": false,
           "isOptional": true
         },
         {
-          "name": "sourceDebtLiquidity",
+          "name": "sourceDebtLiquidityTa",
           "isMut": true,
           "isSigner": false,
           "isOptional": true
         },
         {
-          "name": "reserveDebtLiquidity",
+          "name": "reserveDebtLiquidityTa",
           "isMut": true,
           "isSigner": false,
           "isOptional": true
@@ -552,7 +608,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 7
+        "value": 8
       }
     },
     {
@@ -569,6 +625,21 @@
           "isSigner": false
         },
         {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "ataProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
           "name": "ixSysvar",
           "isMut": false,
           "isSigner": false
@@ -579,7 +650,7 @@
           "isSigner": false
         },
         {
-          "name": "solautoFeesReceiver",
+          "name": "solautoFeesReceiverTa",
           "isMut": true,
           "isSigner": false
         },
@@ -600,7 +671,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 8
+        "value": 9
       }
     },
     {
@@ -652,7 +723,7 @@
           "isSigner": false
         },
         {
-          "name": "solautoFeesReceiver",
+          "name": "solautoFeesReceiverTa",
           "isMut": true,
           "isSigner": false
         },
@@ -675,86 +746,72 @@
         {
           "name": "supplyReserve",
           "isMut": true,
-          "isSigner": false,
-          "isOptional": true
+          "isSigner": false
         },
         {
           "name": "supplyReservePythPriceOracle",
           "isMut": false,
-          "isSigner": false,
-          "isOptional": true
+          "isSigner": false
         },
         {
           "name": "supplyReserveSwitchboardOracle",
           "isMut": false,
-          "isSigner": false,
-          "isOptional": true
+          "isSigner": false
         },
         {
-          "name": "supplyLiquidityTokenMint",
+          "name": "supplyLiquidityMint",
           "isMut": false,
-          "isSigner": false,
-          "isOptional": true
+          "isSigner": false
         },
         {
-          "name": "sourceSupplyLiquidity",
+          "name": "sourceSupplyLiquidityTa",
           "isMut": true,
-          "isSigner": false,
-          "isOptional": true
+          "isSigner": false
         },
         {
-          "name": "reserveSupplyLiquidity",
+          "name": "reserveSupplyLiquidityTa",
           "isMut": true,
-          "isSigner": false,
-          "isOptional": true
+          "isSigner": false
         },
         {
-          "name": "supplyCollateralTokenMint",
+          "name": "supplyCollateralMint",
           "isMut": false,
-          "isSigner": false,
-          "isOptional": true
+          "isSigner": false
         },
         {
-          "name": "sourceSupplyCollateral",
+          "name": "sourceSupplyCollateralTa",
           "isMut": true,
-          "isSigner": false,
-          "isOptional": true
+          "isSigner": false
         },
         {
-          "name": "reserveSupplyCollateral",
+          "name": "reserveSupplyCollateralTa",
           "isMut": true,
-          "isSigner": false,
-          "isOptional": true
+          "isSigner": false
         },
         {
           "name": "debtReserve",
           "isMut": true,
-          "isSigner": false,
-          "isOptional": true
+          "isSigner": false
         },
         {
-          "name": "debtReserveFeeReceiver",
+          "name": "debtReserveFeeReceiverTa",
           "isMut": true,
-          "isSigner": false,
-          "isOptional": true
+          "isSigner": false
         },
         {
-          "name": "debtLiquidityTokenMint",
+          "name": "debtLiquidityMint",
           "isMut": false,
-          "isSigner": false,
-          "isOptional": true
+          "isSigner": false
         },
         {
-          "name": "sourceDebtLiquidity",
+          "name": "sourceDebtLiquidityTa",
           "isMut": true,
-          "isSigner": false,
-          "isOptional": true
+          "isSigner": false
         },
         {
-          "name": "reserveDebtLiquidity",
+          "name": "reserveDebtLiquidityTa",
           "isMut": true,
-          "isSigner": false,
-          "isOptional": true
+          "isSigner": false
         }
       ],
       "args": [
@@ -767,7 +824,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 9
+        "value": 10
       }
     }
   ],

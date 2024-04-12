@@ -6,6 +6,7 @@
  * @see https://github.com/metaplex-foundation/kinobi
  */
 
+export * from './closePosition';
 export * from './marginfiOpenPosition';
 export * from './marginfiProtocolInteraction';
 export * from './marginfiRebalance';
