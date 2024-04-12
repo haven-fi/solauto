@@ -7,7 +7,7 @@ use solana_program::{
 
 use crate::{
     types::{
-        instruction::accounts::{ Context, MarginfiOpenPositionAccounts },
+        instruction::{accounts::{ Context, MarginfiOpenPositionAccounts }, SolautoStandardAccounts},
         lending_protocol::LendingProtocolClient,
         obligation_position::LendingProtocolObligationPosition,
         shared::{ DeserializedAccount, Position },
@@ -73,7 +73,7 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
     fn deposit<'b>(
         &self,
         base_unit_amount: u64,
-        solauto_position: &'b Option<DeserializedAccount<'a, Position>>
+        accounts: &'b SolautoStandardAccounts<'a>
     ) -> ProgramResult {
         // TODO
         Ok(())
@@ -82,7 +82,7 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
     fn withdraw<'b>(
         &self,
         base_unit_amount: u64,
-        solauto_position: &'b Option<DeserializedAccount<'a, Position>>
+        accounts: &'b SolautoStandardAccounts<'a>
     ) -> ProgramResult {
         // TODO
         Ok(())
@@ -91,7 +91,7 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
     fn borrow<'b>(
         &self,
         base_unit_amount: u64,
-        solauto_position: &'b Option<DeserializedAccount<'a, Position>>
+        accounts: &'b SolautoStandardAccounts<'a>
     ) -> ProgramResult {
         // TODO
         Ok(())
@@ -100,7 +100,7 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
     fn repay<'b>(
         &self,
         base_unit_amount: u64,
-        solauto_position: &'b Option<DeserializedAccount<'a, Position>>
+        accounts: &'b SolautoStandardAccounts<'a>
     ) -> ProgramResult {
         // TODO
         Ok(())

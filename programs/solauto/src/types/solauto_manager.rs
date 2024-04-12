@@ -13,35 +13,31 @@ use crate::{
 };
 
 use super::{
-    lending_protocol::LendingProtocolClient,
-    obligation_position::LendingProtocolObligationPosition,
-    shared::{ DeserializedAccount, Position, SolautoAction, SolautoError, WithdrawParams },
+    instruction::SolautoStandardAccounts, lending_protocol::LendingProtocolClient, obligation_position::LendingProtocolObligationPosition, shared::{ DeserializedAccount, Position, SolautoAction, SolautoError, WithdrawParams }
 };
 
-pub struct SolautoManagerAccounts<'a> {
+// pub struct SolautoManagerAccounts<'a> {
     // pub debt_token_mint: Option<&'a AccountInfo<'a>>,
     // pub debt_token_account: Option<&'a AccountInfo<'a>>,
-    // pub solauto_fee_receiver: &'a AccountInfo<'a>,
-    pub solauto_position: Option<DeserializedAccount<'a, Position>>,
-}
+// }
 
 pub struct SolautoManager<'a, 'b> {
     pub client: &'b dyn LendingProtocolClient<'a>,
     pub obligation_position: &'b mut LendingProtocolObligationPosition,
-    pub accounts: SolautoManagerAccounts<'a>,
+    pub std_accounts: SolautoStandardAccounts<'a>,
 }
 
 impl<'a, 'b> SolautoManager<'a, 'b> {
     pub fn from(
         client: &'b dyn LendingProtocolClient<'a>,
         obligation_position: &'b mut LendingProtocolObligationPosition,
-        accounts: SolautoManagerAccounts<'a>
+        std_accounts: SolautoStandardAccounts<'a>
     ) -> Result<Self, ProgramError> {
         client.validate()?;
         Ok(Self {
             client,
             obligation_position,
-            accounts
+            std_accounts
         })
     }
 
@@ -73,22 +69,22 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
     }
 
     fn deposit(&mut self, base_unit_amount: u64) -> ProgramResult {
-        self.client.deposit(base_unit_amount, &self.accounts.solauto_position)?;
+        self.client.deposit(base_unit_amount, &self.std_accounts)?;
         self.obligation_position.supply_lent_update(base_unit_amount as i64)
     }
 
     fn borrow(&mut self, base_unit_amount: u64) -> ProgramResult {
-        self.client.borrow(base_unit_amount, &self.accounts.solauto_position)?;
+        self.client.borrow(base_unit_amount, &self.std_accounts)?;
         self.obligation_position.debt_borrowed_update(base_unit_amount as i64)
     }
 
     fn withdraw(&mut self, base_unit_amount: u64) -> ProgramResult {
-        self.client.withdraw(base_unit_amount, &self.accounts.solauto_position)?;
+        self.client.withdraw(base_unit_amount, &self.std_accounts)?;
         self.obligation_position.supply_lent_update((base_unit_amount as i64) * -1)
     }
 
     fn repay(&mut self, base_unit_amount: u64) -> ProgramResult {
-        self.client.repay(base_unit_amount, &self.accounts.solauto_position)?;
+        self.client.repay(base_unit_amount, &self.std_accounts)?;
         self.obligation_position.debt_borrowed_update((base_unit_amount as i64) * -1)
     }
 

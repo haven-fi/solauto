@@ -21,21 +21,13 @@ use solend_sdk::{
 use crate::{
     constants::SOLEND_PROGRAM,
     types::{
-        instruction::accounts::{ Context, SolendOpenPositionAccounts },
+        instruction::{ accounts::{ Context, SolendOpenPositionAccounts }, SolautoStandardAccounts },
         lending_protocol::*,
         obligation_position::*,
         shared::{ DeserializedAccount, LendingPlatform, Position, SolautoError },
     },
     utils::{ ix_utils::*, solauto_utils::*, validation_utils::validate_position_settings },
 };
-
-pub struct SystemAccounts<'a> {
-    pub system_program: &'a AccountInfo<'a>,
-    pub token_program: &'a AccountInfo<'a>,
-    pub ata_program: &'a AccountInfo<'a>,
-    pub clock: &'a AccountInfo<'a>,
-    pub rent: &'a AccountInfo<'a>,
-}
 
 pub struct ReserveOracleAccounts<'a> {
     pub pyth_price: &'a AccountInfo<'a>,
@@ -50,15 +42,12 @@ pub struct SolendDataAccounts<'a> {
 }
 
 pub struct SolendClient<'a> {
-    signer: &'a AccountInfo<'a>,
-    system_accounts: SystemAccounts<'a>,
     data: SolendDataAccounts<'a>,
     supply_reserve_oracles: Option<ReserveOracleAccounts<'a>>,
     supply_liquidity: Option<LendingProtocolTokenAccounts<'a>>,
     supply_collateral: Option<LendingProtocolTokenAccounts<'a>>,
     debt_liquidity: Option<LendingProtocolTokenAccounts<'a>>,
     debt_reserve_fee_receiver: Option<&'a AccountInfo<'a>>,
-    solauto_fees_receiver: &'a AccountInfo<'a>,
 }
 
 impl<'a> SolendClient<'a> {
@@ -108,13 +97,6 @@ impl<'a> SolendClient<'a> {
     }
 
     pub fn from(
-        signer: &'a AccountInfo<'a>,
-        system_program: &'a AccountInfo<'a>,
-        token_program: &'a AccountInfo<'a>,
-        ata_program: &'a AccountInfo<'a>,
-        clock: &'a AccountInfo<'a>,
-        rent: &'a AccountInfo<'a>,
-        solauto_fees_receiver: &'a AccountInfo<'a>,
         lending_market: &'a AccountInfo<'a>,
         obligation: &'a AccountInfo<'a>,
         supply_reserve: Option<&'a AccountInfo<'a>>,
@@ -175,21 +157,12 @@ impl<'a> SolendClient<'a> {
         )?;
 
         let solend_client = Self {
-            signer: signer,
-            system_accounts: SystemAccounts {
-                system_program: system_program,
-                token_program: token_program,
-                ata_program: ata_program,
-                clock: clock,
-                rent: rent,
-            },
             data: data_accounts,
             supply_reserve_oracles,
             supply_liquidity,
             supply_collateral,
             debt_liquidity,
             debt_reserve_fee_receiver: debt_reserve_fee_receiver,
-            solauto_fees_receiver: solauto_fees_receiver,
         };
 
         Ok((solend_client, obligation_position))
@@ -369,9 +342,9 @@ impl<'a> LendingProtocolClient<'a> for SolendClient<'a> {
     fn deposit<'b>(
         &self,
         base_unit_amount: u64,
-        solauto_position: &'b Option<DeserializedAccount<'a, Position>>
+        accounts: &'b SolautoStandardAccounts<'a>
     ) -> ProgramResult {
-        let obligation_owner = get_owner(solauto_position, self.signer);
+        let obligation_owner = get_owner(&accounts.solauto_position, accounts.signer);
         let supply_liquidity = self.supply_liquidity.as_ref().unwrap();
         let supply_collateral = self.supply_collateral.as_ref().unwrap();
         let supply_reserve = self.data.supply_reserve.as_ref().unwrap().account_info;
@@ -406,16 +379,16 @@ impl<'a> LendingProtocolClient<'a> for SolendClient<'a> {
             obligation_owner.clone(),
             reserve_oracles.pyth_price.clone(),
             reserve_oracles.switchboard.clone(),
-            self.system_accounts.token_program.clone(),
+            accounts.token_program.clone(),
         ];
 
-        invoke_instruction(deposit_instruction, account_infos, solauto_position)
+        invoke_instruction(deposit_instruction, account_infos, &accounts.solauto_position)
     }
 
     fn withdraw<'b>(
         &self,
         base_unit_amount: u64,
-        solauto_position: &'b Option<DeserializedAccount<'a, Position>>
+        accounts: &'b SolautoStandardAccounts<'a>
     ) -> ProgramResult {
         // TODO
         Ok(())
@@ -424,9 +397,9 @@ impl<'a> LendingProtocolClient<'a> for SolendClient<'a> {
     fn borrow<'b>(
         &self,
         base_unit_amount: u64,
-        solauto_position: &'b Option<DeserializedAccount<'a, Position>>
+        accounts: &'b SolautoStandardAccounts<'a>
     ) -> ProgramResult {
-        let obligation_owner = get_owner(solauto_position, self.signer);
+        let obligation_owner = get_owner(&accounts.solauto_position, accounts.signer);
         let debt_liquidity = self.debt_liquidity.as_ref().unwrap();
         let debt_reserve = self.data.debt_reserve.as_ref().unwrap().account_info;
 
@@ -442,7 +415,7 @@ impl<'a> LendingProtocolClient<'a> for SolendClient<'a> {
             *self.data.obligation.account_info.key,
             *self.data.lending_market.account_info.key,
             *obligation_owner.key,
-            Some(*self.solauto_fees_receiver.key)
+            Some(*accounts.solauto_fees_receiver_ata.unwrap().key)
         );
 
         let account_infos = &[
@@ -453,17 +426,17 @@ impl<'a> LendingProtocolClient<'a> for SolendClient<'a> {
             self.data.obligation.account_info.clone(),
             self.data.lending_market.account_info.clone(),
             obligation_owner.clone(),
-            self.solauto_fees_receiver.clone(),
-            self.system_accounts.token_program.clone(),
+            accounts.solauto_fees_receiver_ata.unwrap().clone(),
+            accounts.token_program.clone(),
         ];
 
-        invoke_instruction(borrow_instruction, account_infos, solauto_position)
+        invoke_instruction(borrow_instruction, account_infos, &accounts.solauto_position)
     }
 
     fn repay<'b>(
         &self,
         base_unit_amount: u64,
-        solauto_position: &'b Option<DeserializedAccount<'a, Position>>
+        accounts: &'b SolautoStandardAccounts<'a>
     ) -> ProgramResult {
         // TODO
         Ok(())

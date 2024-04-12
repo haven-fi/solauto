@@ -12,12 +12,11 @@ use solana_program::{
 use spl_associated_token_account::get_associated_token_address;
 
 use crate::types::{
-    instruction::accounts::{
+    instruction::{accounts::{
         Context,
         MarginfiProtocolInteractionAccounts,
         SolendProtocolInteractionAccounts,
-    },
-    shared::{
+    }, SolautoStandardAccounts}, obligation_position::{self, LendingProtocolObligationPosition}, shared::{
         DeserializedAccount,
         LendingPlatform,
         Position,
@@ -25,7 +24,7 @@ use crate::types::{
         SolautoAdminSettings,
         SolautoError,
         SolautoSettingsParameters,
-    },
+    }
 };
 
 use crate::constants::{
@@ -36,23 +35,13 @@ use crate::constants::{
     SOLAUTO_ADMIN_SETTINGS_ACCOUNT_SEEDS,
 };
 
-pub struct GenericInstructionValidation<'a, 'b> {
-    pub signer: &'a AccountInfo<'a>,
-    pub authority_only_ix: bool,
-    pub solauto_position: &'b Option<DeserializedAccount<'a, Position>>,
-    pub protocol_program: &'a AccountInfo<'a>,
-    pub lending_platform: LendingPlatform,
-    pub solauto_admin_settings: Option<&'a AccountInfo<'a>>,
-    pub fees_receiver_ata: Option<&'a AccountInfo<'a>>,
-}
-
-pub fn generic_instruction_validation(data: GenericInstructionValidation) -> ProgramResult {
-    validate_signer(data.signer, data.solauto_position, data.authority_only_ix)?;
-    validate_program_account(data.protocol_program, data.lending_platform)?;
-    if !data.solauto_admin_settings.is_none() && !data.fees_receiver_ata.is_none() {
+pub fn generic_instruction_validation(accounts: &SolautoStandardAccounts, authority_only_ix: bool, lending_platform: LendingPlatform) -> ProgramResult {
+    validate_signer(accounts.signer, &accounts.solauto_position, authority_only_ix)?;
+    validate_program_account(accounts.lending_protocol, lending_platform)?;
+    if !accounts.solauto_admin_settings.is_none() && !accounts.solauto_fees_receiver_ata.is_none() {
         validate_fees_receiver(
-            data.solauto_admin_settings.unwrap(),
-            data.fees_receiver_ata.unwrap()
+            accounts.solauto_admin_settings.unwrap(),
+            accounts.solauto_fees_receiver_ata.unwrap()
         )?;
     }
     Ok(())
@@ -315,12 +304,15 @@ pub fn validate_solend_protocol_interaction_ix(
     Ok(())
 }
 
-pub fn validate_rebalance_instruction(ix_sysvar: &AccountInfo) -> ProgramResult {
+pub fn validate_rebalance_instruction(ix_sysvar: &AccountInfo, obligation_position: &LendingProtocolObligationPosition) -> ProgramResult {
     let current_ix_idx = load_current_index_checked(ix_sysvar)?;
     let current_ix = load_instruction_at_checked(current_ix_idx as usize, ix_sysvar)?;
     if current_ix.program_id != crate::ID || get_stack_height() > TRANSACTION_LEVEL_STACK_HEIGHT {
         return Err(SolautoError::InstructionIsCPI.into());
     }
+
+    let current_utilization_rate_bps = obligation_position.current_utilization_rate_bps();
+
 
     // TODO
     Ok(())
@@ -334,7 +326,7 @@ pub fn validate_rebalance_instruction(ix_sysvar: &AccountInfo) -> ProgramResult 
 // increasing leverage:
 // -
 // if debt + debt adjustment keeps utilization rate under buffer_room, instructions are:
-// solauto rebalance - borrows more debt (figure out what to do with solauto fee after borrow)
+// solauto rebalance - borrows more debt worth debt_adjustment_usd (figure out what to do with solauto fee after borrow)
 // jup swap - swap debt token to supply token
 // solauto rebalance - deposit supply token
 // -

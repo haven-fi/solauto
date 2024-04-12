@@ -23,12 +23,12 @@ pub fn update_data<T: BorshSerialize>(
 pub fn invoke_instruction(
     instruction: Instruction,
     account_infos: &[AccountInfo],
-    position_account: &Option<DeserializedAccount<Position>>
+    solauto_position: &Option<DeserializedAccount<Position>>
 ) -> ProgramResult {
-    if position_account.is_none() {
+    if solauto_position.is_none() {
         invoke(&instruction, account_infos)?;
     } else {
-        let position = position_account.as_ref().unwrap();
+        let position = solauto_position.as_ref().unwrap();
         invoke_signed_with_seed(
             &instruction,
             account_infos,

@@ -5,17 +5,19 @@ use crate::{
     types::{
         instruction::{
             accounts::{
-                MarginfiOpenPositionAccounts, MarginfiProtocolInteractionAccounts, MarginfiRebalanceAccounts, MarginfiRefreshDataAccounts
+                MarginfiOpenPositionAccounts,
+                MarginfiProtocolInteractionAccounts,
+                MarginfiRebalanceAccounts,
+                MarginfiRefreshDataAccounts,
             },
             OptionalLiqUtilizationRateBps,
             PositionData,
+            SolautoStandardAccounts,
         },
         shared::{ DeserializedAccount, LendingPlatform, Position, SolautoAction },
     },
     utils::*,
 };
-
-use self::validation_utils::GenericInstructionValidation;
 
 pub fn process_marginfi_open_position_instruction<'a>(
     accounts: &'a [AccountInfo<'a>],
@@ -28,16 +30,19 @@ pub fn process_marginfi_open_position_instruction<'a>(
         position_data,
         LendingPlatform::Marginfi
     )?;
-    validation_utils::generic_instruction_validation(GenericInstructionValidation {
+    let std_accounts = SolautoStandardAccounts {
         signer: ctx.accounts.signer,
-        authority_only_ix: true,
-        solauto_position: &solauto_position,
-        protocol_program: ctx.accounts.marginfi_program,
-        lending_platform: LendingPlatform::Marginfi,
+        lending_protocol: ctx.accounts.marginfi_program,
+        system_program: ctx.accounts.system_program,
+        token_program: ctx.accounts.token_program,
+        ata_program: ctx.accounts.ata_program,
+        ix_sysvar: None,
+        solauto_position,
         solauto_admin_settings: None,
-        fees_receiver_ata: None,
-    })?;
-    open_position::marginfi_open_position(ctx, solauto_position)
+        solauto_fees_receiver_ata: None,
+    };
+    validation_utils::generic_instruction_validation(&std_accounts, true, LendingPlatform::Marginfi)?;
+    open_position::marginfi_open_position(ctx, std_accounts.solauto_position)
 }
 
 pub fn process_marginfi_refresh_data<'a>(accounts: &'a [AccountInfo<'a>]) -> ProgramResult {
@@ -60,17 +65,24 @@ pub fn process_marginfi_interaction_instruction<'a>(
     let solauto_position = DeserializedAccount::<Position>::deserialize(
         ctx.accounts.solauto_position
     )?;
-    validation_utils::generic_instruction_validation(GenericInstructionValidation {
+    let std_accounts = SolautoStandardAccounts {
         signer: ctx.accounts.signer,
-        authority_only_ix: true,
-        solauto_position: &solauto_position,
-        protocol_program: ctx.accounts.marginfi_program,
-        lending_platform: LendingPlatform::Marginfi,
+        lending_protocol: ctx.accounts.marginfi_program,
+        system_program: ctx.accounts.system_program,
+        token_program: ctx.accounts.token_program,
+        ata_program: ctx.accounts.ata_program,
+        ix_sysvar: None,
+        solauto_position,
         solauto_admin_settings: None,
-        fees_receiver_ata: None,
-    })?;
+        solauto_fees_receiver_ata: None,
+    };
+    validation_utils::generic_instruction_validation(
+        &std_accounts,
+        true,
+        LendingPlatform::Marginfi
+    )?;
     validation_utils::validate_marginfi_protocol_interaction_ix(&ctx, &action)?;
-    protocol_interaction::marginfi_interaction(ctx, solauto_position, action)
+    protocol_interaction::marginfi_interaction(ctx, std_accounts, action)
 }
 
 pub fn process_marginfi_rebalance<'a>(
@@ -81,15 +93,21 @@ pub fn process_marginfi_rebalance<'a>(
     let solauto_position = DeserializedAccount::<Position>::deserialize(
         ctx.accounts.solauto_position
     )?;
-    validation_utils::generic_instruction_validation(GenericInstructionValidation {
+    let std_accounts = SolautoStandardAccounts {
         signer: ctx.accounts.signer,
-        authority_only_ix: false,
-        solauto_position: &solauto_position,
-        protocol_program: ctx.accounts.marginfi_program,
-        lending_platform: LendingPlatform::Marginfi,
+        lending_protocol: ctx.accounts.marginfi_program,
+        system_program: ctx.accounts.system_program,
+        token_program: ctx.accounts.token_program,
+        ata_program: ctx.accounts.ata_program,
+        ix_sysvar: Some(ctx.accounts.ix_sysvar),
+        solauto_position,
         solauto_admin_settings: Some(ctx.accounts.solauto_admin_settings),
-        fees_receiver_ata: Some(ctx.accounts.solauto_fees_receiver),
-    })?;
-    validation_utils::validate_rebalance_instruction(ctx.accounts.ix_sysvar)?;
-    rebalance::marginfi_rebalance(ctx, solauto_position, target_liq_utilization_rate_bps)
+        solauto_fees_receiver_ata: Some(ctx.accounts.solauto_fees_receiver_ata),
+    };
+    validation_utils::generic_instruction_validation(
+        &std_accounts,
+        false,
+        LendingPlatform::Marginfi
+    )?;
+    rebalance::marginfi_rebalance(ctx, std_accounts, target_liq_utilization_rate_bps)
 }

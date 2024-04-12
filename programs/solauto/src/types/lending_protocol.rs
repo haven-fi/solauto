@@ -1,6 +1,6 @@
 use solana_program::{ account_info::AccountInfo, entrypoint::ProgramResult };
 
-use super::shared::{ DeserializedAccount, Position };
+use super::instruction::SolautoStandardAccounts;
 
 pub struct LendingProtocolTokenAccounts<'a> {
     pub token_mint: &'a AccountInfo<'a>,
@@ -35,21 +35,21 @@ pub trait LendingProtocolClient<'a> {
     fn deposit<'b>(
         &self,
         base_unit_amount: u64,
-        solauto_position: &'b Option<DeserializedAccount<'a, Position>>
+        accounts: &'b SolautoStandardAccounts<'a>
     ) -> ProgramResult;
     fn borrow<'b>(
         &self,
         base_unit_amount: u64,
-        solauto_position: &'b Option<DeserializedAccount<'a, Position>>
+        accounts: &'b SolautoStandardAccounts<'a>
     ) -> ProgramResult;
     fn withdraw<'b>(
         &self,
         base_unit_amount: u64,
-        solauto_position: &'b Option<DeserializedAccount<'a, Position>>
+        accounts: &'b SolautoStandardAccounts<'a>
     ) -> ProgramResult;
     fn repay<'b>(
         &self,
         base_unit_amount: u64,
-        solauto_position: &'b Option<DeserializedAccount<'a, Position>>
+        accounts: &'b SolautoStandardAccounts<'a>
     ) -> ProgramResult;
 }
