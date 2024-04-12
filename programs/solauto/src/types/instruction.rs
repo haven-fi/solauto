@@ -134,7 +134,7 @@ pub enum Instruction {
     #[account(name = "system_program")]
     #[account(name = "token_program")]
     #[account(name = "ata_program")]
-    #[account(name = "ix_sysvar")]
+    #[account(name = "ixs_sysvar")]
     #[account(name = "solauto_admin_settings")]
     #[account(mut, name = "solauto_fees_receiver_ta")]
     #[account(mut, optional, name = "solauto_position")]
@@ -150,7 +150,7 @@ pub enum Instruction {
     #[account(name = "ata_program")]
     #[account(name = "clock")]
     #[account(name = "rent")]
-    #[account(name = "ix_sysvar")]
+    #[account(name = "ixs_sysvar")]
     #[account(name = "solauto_admin_settings")]
     #[account(mut, name = "solauto_fees_receiver_ta")]
     #[account(mut, optional, name = "solauto_position")]
@@ -195,7 +195,7 @@ pub struct SolautoStandardAccounts<'a> {
     pub system_program: &'a AccountInfo<'a>,
     pub token_program: &'a AccountInfo<'a>,
     pub ata_program: &'a AccountInfo<'a>,
-    pub ix_sysvar: Option<&'a AccountInfo<'a>>,
+    pub ixs_sysvar: Option<&'a AccountInfo<'a>>,
     pub solauto_admin_settings: Option<&'a AccountInfo<'a>>,
     pub solauto_fees_receiver_ta: Option<&'a AccountInfo<'a>>,
     pub solauto_position: Option<DeserializedAccount<'a, Position>>,

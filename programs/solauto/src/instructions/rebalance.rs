@@ -20,7 +20,7 @@ pub fn marginfi_rebalance<'a, 'b>(
     target_liq_utilization_rate_bps: OptionalLiqUtilizationRateBps
 ) -> ProgramResult {
     let (marginfi_client, obligation_position) = MarginfiClient::from(ctx.accounts.signer)?;
-    validation_utils::validate_rebalance_instruction(ctx.accounts.ix_sysvar, &obligation_position)?;
+    validation_utils::validate_rebalance_instruction(&std_accounts, target_liq_utilization_rate_bps, &obligation_position)?;
     rebalance(std_accounts, marginfi_client, obligation_position, target_liq_utilization_rate_bps)
 }
 
@@ -47,7 +47,7 @@ pub fn solend_rebalance<'a, 'b>(
         Some(ctx.accounts.source_debt_liquidity_ta),
         Some(ctx.accounts.reserve_debt_liquidity_ta)
     )?;
-    validation_utils::validate_rebalance_instruction(ctx.accounts.ix_sysvar, &obligation_position)?;
+    validation_utils::validate_rebalance_instruction(&std_accounts, target_liq_utilization_rate_bps, &obligation_position)?;
     rebalance(std_accounts, solend_client, obligation_position, target_liq_utilization_rate_bps)
 }
 

@@ -7,16 +7,22 @@ use solana_program::{
     msg,
     program_error::ProgramError,
     pubkey::Pubkey,
-    sysvar::instructions::{ load_current_index_checked, load_instruction_at_checked },
+    sysvar::instructions::{ ID as ixs_sysvar_id, load_current_index_checked, load_instruction_at_checked },
 };
 use spl_associated_token_account::get_associated_token_address;
 
 use crate::types::{
-    instruction::{accounts::{
-        Context,
-        MarginfiProtocolInteractionAccounts,
-        SolendProtocolInteractionAccounts,
-    }, SolautoStandardAccounts}, obligation_position::LendingProtocolObligationPosition, shared::{
+    instruction::{
+        accounts::{
+            Context,
+            MarginfiProtocolInteractionAccounts,
+            SolendProtocolInteractionAccounts,
+        },
+        OptionalLiqUtilizationRateBps,
+        SolautoStandardAccounts,
+    },
+    obligation_position::LendingProtocolObligationPosition,
+    shared::{
         DeserializedAccount,
         LendingPlatform,
         Position,
@@ -24,7 +30,7 @@ use crate::types::{
         SolautoAdminSettings,
         SolautoError,
         SolautoSettingsParameters,
-    }
+    },
 };
 
 use crate::constants::{
@@ -35,7 +41,11 @@ use crate::constants::{
     SOLAUTO_ADMIN_SETTINGS_ACCOUNT_SEEDS,
 };
 
-pub fn generic_instruction_validation(accounts: &SolautoStandardAccounts, authority_only_ix: bool, lending_platform: LendingPlatform) -> ProgramResult {
+pub fn generic_instruction_validation(
+    accounts: &SolautoStandardAccounts,
+    authority_only_ix: bool,
+    lending_platform: LendingPlatform
+) -> ProgramResult {
     validate_signer(accounts.signer, &accounts.solauto_position, authority_only_ix)?;
     validate_program_account(accounts.lending_protocol, lending_platform)?;
     if !accounts.solauto_admin_settings.is_none() && !accounts.solauto_fees_receiver_ta.is_none() {
@@ -44,6 +54,14 @@ pub fn generic_instruction_validation(accounts: &SolautoStandardAccounts, author
             accounts.solauto_fees_receiver_ta.unwrap()
         )?;
     }
+
+    if !accounts.ixs_sysvar.is_none() && accounts.ixs_sysvar.unwrap().key != &ixs_sysvar_id {
+        msg!("Incorrect ixs sysvar account provided");
+        return Err(ProgramError::InvalidAccountData.into());
+    }
+    // We don't need to check other standard variables as shank handles system_program, token_program, ata_program, & rent
+    // TODO verify this with a test by providing a different account in place of rent account
+
     Ok(())
 }
 
@@ -124,9 +142,11 @@ pub fn validate_position_settings(
             return invalid_params("repay_from_bps must be lower or equal to 9500");
         }
 
-        // 3% buffer to account for any unexpected slippage when swapping tokens to repay debt
-        let buffer_room = 3.0;
-        let maximum_repay_to = (max_ltv - buffer_room).div(liq_threshold).mul(10000.0) as u16;
+        // 3% buffer room to account for any unexpected price slippage when swapping tokens to repay debt
+        let price_slippage_buffer_room = 3.0;
+        let maximum_repay_to = (max_ltv - price_slippage_buffer_room)
+            .div(liq_threshold)
+            .mul(10000.0) as u16;
         if settings.repay_to_bps > maximum_repay_to {
             return invalid_params(
                 format!("For the given max_ltv and liq_threshold of the supplied asset, repay_to_bps must be lower or equal to {} in order to bring the utilization rate to an allowed position", maximum_repay_to).as_str()
@@ -304,24 +324,53 @@ pub fn validate_solend_protocol_interaction_ix(
     Ok(())
 }
 
-pub fn validate_rebalance_instruction(ix_sysvar: &AccountInfo, obligation_position: &LendingProtocolObligationPosition) -> ProgramResult {
-    let current_ix_idx = load_current_index_checked(ix_sysvar)?;
-    let current_ix = load_instruction_at_checked(current_ix_idx as usize, ix_sysvar)?;
+pub fn validate_rebalance_instruction(
+    std_accounts: &SolautoStandardAccounts,
+    target_liq_utilization_rate_bps: OptionalLiqUtilizationRateBps,
+    obligation_position: &LendingProtocolObligationPosition
+) -> ProgramResult {
+    let ixs_sysvar = std_accounts.ixs_sysvar.unwrap();
+    if !target_liq_utilization_rate_bps.is_none() && !std_accounts.solauto_position.is_none() {
+        msg!(
+            "Cannot provide a target liquidation utilization rate if the position is solauto-managed"
+        );
+        return Err(ProgramError::InvalidInstructionData.into());
+    }
+
+    let current_ix_idx = load_current_index_checked(ixs_sysvar)?;
+    let current_ix = load_instruction_at_checked(current_ix_idx as usize, ixs_sysvar)?;
     if current_ix.program_id != crate::ID || get_stack_height() > TRANSACTION_LEVEL_STACK_HEIGHT {
         return Err(SolautoError::InstructionIsCPI.into());
     }
 
-    let current_utilization_rate_bps = obligation_position.current_utilization_rate_bps();
+    let mut index = current_ix_idx + 1;
+    loop {
+        if let Ok(ix) = load_instruction_at_checked(index as usize, ixs_sysvar) {
+            if ix.program_id == crate::id() {
+                // TODO check this. Should I use first index only? Or 8?
+                // let ix_discriminator: [u8; 8] = ix.data[0..8].try_into()?;
+                // if ix_discriminator == self::instruction::Repay::discriminator() {
+                // }
+            }
+        } else {
+            break;
+        }
 
+        index += 1;
+    }
+
+    let current_utilization_rate_bps = obligation_position.current_utilization_rate_bps();
+    // Validate that it is being rebalanced at a correct time (only if this is the first rebalance instruction of the transaction)
+    // if there is two rebalance instructions, and this instruction is the 2nd rebalance, skip the above check, and ensure there is no more rebalance instructions in the tx)
 
     // TODO
     Ok(())
 }
 
-// fee = 0.0085 (0.85%)
-// max_slippage = 0.03 (3%)
-// random_price_volatility = 0.03 (3%)
-// 1 - fee - max_slippage - random_price_volatility = buffer_room = 93.15%
+// max_price_slippage = 0.03 (300bps) (3%)
+// random_price_volatility = 0.03 (300bps) (3%)
+// 1 - max_price_slippage - random_price_volatility = buffer_room = 93.15%
+// if transaction fails default to flash loan instruction route and increase max slippage if needed
 
 // increasing leverage:
 // -

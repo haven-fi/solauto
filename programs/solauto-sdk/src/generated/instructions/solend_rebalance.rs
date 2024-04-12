@@ -24,7 +24,7 @@ pub struct SolendRebalance {
 
     pub rent: solana_program::pubkey::Pubkey,
 
-    pub ix_sysvar: solana_program::pubkey::Pubkey,
+    pub ixs_sysvar: solana_program::pubkey::Pubkey,
 
     pub solauto_admin_settings: solana_program::pubkey::Pubkey,
 
@@ -106,7 +106,7 @@ impl SolendRebalance {
             self.rent, false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.ix_sysvar,
+            self.ixs_sysvar,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
@@ -233,7 +233,7 @@ pub struct SolendRebalanceInstructionArgs {
 ///   4. `[optional]` ata_program (default to `ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL`)
 ///   5. `[]` clock
 ///   6. `[optional]` rent (default to `SysvarRent111111111111111111111111111111111`)
-///   7. `[]` ix_sysvar
+///   7. `[]` ixs_sysvar
 ///   8. `[]` solauto_admin_settings
 ///   9. `[writable]` solauto_fees_receiver_ta
 ///   10. `[writable, optional]` solauto_position
@@ -262,7 +262,7 @@ pub struct SolendRebalanceBuilder {
     ata_program: Option<solana_program::pubkey::Pubkey>,
     clock: Option<solana_program::pubkey::Pubkey>,
     rent: Option<solana_program::pubkey::Pubkey>,
-    ix_sysvar: Option<solana_program::pubkey::Pubkey>,
+    ixs_sysvar: Option<solana_program::pubkey::Pubkey>,
     solauto_admin_settings: Option<solana_program::pubkey::Pubkey>,
     solauto_fees_receiver_ta: Option<solana_program::pubkey::Pubkey>,
     solauto_position: Option<solana_program::pubkey::Pubkey>,
@@ -330,8 +330,8 @@ impl SolendRebalanceBuilder {
         self
     }
     #[inline(always)]
-    pub fn ix_sysvar(&mut self, ix_sysvar: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.ix_sysvar = Some(ix_sysvar);
+    pub fn ixs_sysvar(&mut self, ixs_sysvar: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.ixs_sysvar = Some(ixs_sysvar);
         self
     }
     #[inline(always)]
@@ -517,7 +517,7 @@ impl SolendRebalanceBuilder {
             rent: self.rent.unwrap_or(solana_program::pubkey!(
                 "SysvarRent111111111111111111111111111111111"
             )),
-            ix_sysvar: self.ix_sysvar.expect("ix_sysvar is not set"),
+            ixs_sysvar: self.ixs_sysvar.expect("ixs_sysvar is not set"),
             solauto_admin_settings: self
                 .solauto_admin_settings
                 .expect("solauto_admin_settings is not set"),
@@ -590,7 +590,7 @@ pub struct SolendRebalanceCpiAccounts<'a, 'b> {
 
     pub rent: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub ix_sysvar: &'b solana_program::account_info::AccountInfo<'a>,
+    pub ixs_sysvar: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub solauto_admin_settings: &'b solana_program::account_info::AccountInfo<'a>,
 
@@ -650,7 +650,7 @@ pub struct SolendRebalanceCpi<'a, 'b> {
 
     pub rent: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub ix_sysvar: &'b solana_program::account_info::AccountInfo<'a>,
+    pub ixs_sysvar: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub solauto_admin_settings: &'b solana_program::account_info::AccountInfo<'a>,
 
@@ -708,7 +708,7 @@ impl<'a, 'b> SolendRebalanceCpi<'a, 'b> {
             ata_program: accounts.ata_program,
             clock: accounts.clock,
             rent: accounts.rent,
-            ix_sysvar: accounts.ix_sysvar,
+            ixs_sysvar: accounts.ixs_sysvar,
             solauto_admin_settings: accounts.solauto_admin_settings,
             solauto_fees_receiver_ta: accounts.solauto_fees_receiver_ta,
             solauto_position: accounts.solauto_position,
@@ -794,7 +794,7 @@ impl<'a, 'b> SolendRebalanceCpi<'a, 'b> {
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.ix_sysvar.key,
+            *self.ixs_sysvar.key,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
@@ -905,7 +905,7 @@ impl<'a, 'b> SolendRebalanceCpi<'a, 'b> {
         account_infos.push(self.ata_program.clone());
         account_infos.push(self.clock.clone());
         account_infos.push(self.rent.clone());
-        account_infos.push(self.ix_sysvar.clone());
+        account_infos.push(self.ixs_sysvar.clone());
         account_infos.push(self.solauto_admin_settings.clone());
         account_infos.push(self.solauto_fees_receiver_ta.clone());
         if let Some(solauto_position) = self.solauto_position {
@@ -950,7 +950,7 @@ impl<'a, 'b> SolendRebalanceCpi<'a, 'b> {
 ///   4. `[]` ata_program
 ///   5. `[]` clock
 ///   6. `[]` rent
-///   7. `[]` ix_sysvar
+///   7. `[]` ixs_sysvar
 ///   8. `[]` solauto_admin_settings
 ///   9. `[writable]` solauto_fees_receiver_ta
 ///   10. `[writable, optional]` solauto_position
@@ -985,7 +985,7 @@ impl<'a, 'b> SolendRebalanceCpiBuilder<'a, 'b> {
             ata_program: None,
             clock: None,
             rent: None,
-            ix_sysvar: None,
+            ixs_sysvar: None,
             solauto_admin_settings: None,
             solauto_fees_receiver_ta: None,
             solauto_position: None,
@@ -1061,11 +1061,11 @@ impl<'a, 'b> SolendRebalanceCpiBuilder<'a, 'b> {
         self
     }
     #[inline(always)]
-    pub fn ix_sysvar(
+    pub fn ixs_sysvar(
         &mut self,
-        ix_sysvar: &'b solana_program::account_info::AccountInfo<'a>,
+        ixs_sysvar: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
-        self.instruction.ix_sysvar = Some(ix_sysvar);
+        self.instruction.ixs_sysvar = Some(ixs_sysvar);
         self
     }
     #[inline(always)]
@@ -1301,7 +1301,7 @@ impl<'a, 'b> SolendRebalanceCpiBuilder<'a, 'b> {
 
             rent: self.instruction.rent.expect("rent is not set"),
 
-            ix_sysvar: self.instruction.ix_sysvar.expect("ix_sysvar is not set"),
+            ixs_sysvar: self.instruction.ixs_sysvar.expect("ixs_sysvar is not set"),
 
             solauto_admin_settings: self
                 .instruction
@@ -1409,7 +1409,7 @@ struct SolendRebalanceCpiBuilderInstruction<'a, 'b> {
     ata_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     clock: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     rent: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    ix_sysvar: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    ixs_sysvar: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     solauto_admin_settings: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     solauto_fees_receiver_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     solauto_position: Option<&'b solana_program::account_info::AccountInfo<'a>>,

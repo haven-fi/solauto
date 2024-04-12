@@ -40,7 +40,7 @@ export type SolendRebalanceInstructionAccounts = {
   ataProgram?: PublicKey | Pda;
   clock: PublicKey | Pda;
   rent?: PublicKey | Pda;
-  ixSysvar: PublicKey | Pda;
+  ixsSysvar: PublicKey | Pda;
   solautoAdminSettings: PublicKey | Pda;
   solautoFeesReceiverTa: PublicKey | Pda;
   solautoPosition?: PublicKey | Pda;
@@ -142,10 +142,10 @@ export function solendRebalance(
       value: input.clock ?? null,
     },
     rent: { index: 6, isWritable: false as boolean, value: input.rent ?? null },
-    ixSysvar: {
+    ixsSysvar: {
       index: 7,
       isWritable: false as boolean,
-      value: input.ixSysvar ?? null,
+      value: input.ixsSysvar ?? null,
     },
     solautoAdminSettings: {
       index: 8,

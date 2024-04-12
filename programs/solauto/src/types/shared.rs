@@ -96,6 +96,11 @@ pub struct SolautoAdminSettings {
     pub fees_token_mint: Pubkey,
 }
 
+pub enum RebalanceInstructionSetType {
+    SolautoRebalanceSandwich,
+    FlashloanSandwich
+}
+
 #[derive(Clone)]
 pub struct DeserializedAccount<'a, T> {
     pub account_info: &'a AccountInfo<'a>,

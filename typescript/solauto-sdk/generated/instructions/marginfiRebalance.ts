@@ -37,7 +37,7 @@ export type MarginfiRebalanceInstructionAccounts = {
   systemProgram?: PublicKey | Pda;
   tokenProgram?: PublicKey | Pda;
   ataProgram?: PublicKey | Pda;
-  ixSysvar: PublicKey | Pda;
+  ixsSysvar: PublicKey | Pda;
   solautoAdminSettings: PublicKey | Pda;
   solautoFeesReceiverTa: PublicKey | Pda;
   solautoPosition?: PublicKey | Pda;
@@ -118,10 +118,10 @@ export function marginfiRebalance(
       isWritable: false as boolean,
       value: input.ataProgram ?? null,
     },
-    ixSysvar: {
+    ixsSysvar: {
       index: 5,
       isWritable: false as boolean,
-      value: input.ixSysvar ?? null,
+      value: input.ixsSysvar ?? null,
     },
     solautoAdminSettings: {
       index: 6,

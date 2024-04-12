@@ -640,7 +640,7 @@
           "isSigner": false
         },
         {
-          "name": "ixSysvar",
+          "name": "ixsSysvar",
           "isMut": false,
           "isSigner": false
         },
@@ -713,7 +713,7 @@
           "isSigner": false
         },
         {
-          "name": "ixSysvar",
+          "name": "ixsSysvar",
           "isMut": false,
           "isSigner": false
         },

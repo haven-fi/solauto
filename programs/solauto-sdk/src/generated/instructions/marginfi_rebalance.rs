@@ -20,7 +20,7 @@ pub struct MarginfiRebalance {
 
     pub ata_program: solana_program::pubkey::Pubkey,
 
-    pub ix_sysvar: solana_program::pubkey::Pubkey,
+    pub ixs_sysvar: solana_program::pubkey::Pubkey,
 
     pub solauto_admin_settings: solana_program::pubkey::Pubkey,
 
@@ -64,7 +64,7 @@ impl MarginfiRebalance {
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.ix_sysvar,
+            self.ixs_sysvar,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
@@ -127,7 +127,7 @@ pub struct MarginfiRebalanceInstructionArgs {
 ///   2. `[optional]` system_program (default to `11111111111111111111111111111111`)
 ///   3. `[optional]` token_program (default to `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA`)
 ///   4. `[optional]` ata_program (default to `ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL`)
-///   5. `[]` ix_sysvar
+///   5. `[]` ixs_sysvar
 ///   6. `[]` solauto_admin_settings
 ///   7. `[writable]` solauto_fees_receiver_ta
 ///   8. `[writable, optional]` solauto_position
@@ -138,7 +138,7 @@ pub struct MarginfiRebalanceBuilder {
     system_program: Option<solana_program::pubkey::Pubkey>,
     token_program: Option<solana_program::pubkey::Pubkey>,
     ata_program: Option<solana_program::pubkey::Pubkey>,
-    ix_sysvar: Option<solana_program::pubkey::Pubkey>,
+    ixs_sysvar: Option<solana_program::pubkey::Pubkey>,
     solauto_admin_settings: Option<solana_program::pubkey::Pubkey>,
     solauto_fees_receiver_ta: Option<solana_program::pubkey::Pubkey>,
     solauto_position: Option<solana_program::pubkey::Pubkey>,
@@ -182,8 +182,8 @@ impl MarginfiRebalanceBuilder {
         self
     }
     #[inline(always)]
-    pub fn ix_sysvar(&mut self, ix_sysvar: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.ix_sysvar = Some(ix_sysvar);
+    pub fn ixs_sysvar(&mut self, ixs_sysvar: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.ixs_sysvar = Some(ixs_sysvar);
         self
     }
     #[inline(always)]
@@ -249,7 +249,7 @@ impl MarginfiRebalanceBuilder {
             ata_program: self.ata_program.unwrap_or(solana_program::pubkey!(
                 "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
             )),
-            ix_sysvar: self.ix_sysvar.expect("ix_sysvar is not set"),
+            ixs_sysvar: self.ixs_sysvar.expect("ixs_sysvar is not set"),
             solauto_admin_settings: self
                 .solauto_admin_settings
                 .expect("solauto_admin_settings is not set"),
@@ -278,7 +278,7 @@ pub struct MarginfiRebalanceCpiAccounts<'a, 'b> {
 
     pub ata_program: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub ix_sysvar: &'b solana_program::account_info::AccountInfo<'a>,
+    pub ixs_sysvar: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub solauto_admin_settings: &'b solana_program::account_info::AccountInfo<'a>,
 
@@ -302,7 +302,7 @@ pub struct MarginfiRebalanceCpi<'a, 'b> {
 
     pub ata_program: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub ix_sysvar: &'b solana_program::account_info::AccountInfo<'a>,
+    pub ixs_sysvar: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub solauto_admin_settings: &'b solana_program::account_info::AccountInfo<'a>,
 
@@ -326,7 +326,7 @@ impl<'a, 'b> MarginfiRebalanceCpi<'a, 'b> {
             system_program: accounts.system_program,
             token_program: accounts.token_program,
             ata_program: accounts.ata_program,
-            ix_sysvar: accounts.ix_sysvar,
+            ixs_sysvar: accounts.ixs_sysvar,
             solauto_admin_settings: accounts.solauto_admin_settings,
             solauto_fees_receiver_ta: accounts.solauto_fees_receiver_ta,
             solauto_position: accounts.solauto_position,
@@ -388,7 +388,7 @@ impl<'a, 'b> MarginfiRebalanceCpi<'a, 'b> {
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.ix_sysvar.key,
+            *self.ixs_sysvar.key,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
@@ -435,7 +435,7 @@ impl<'a, 'b> MarginfiRebalanceCpi<'a, 'b> {
         account_infos.push(self.system_program.clone());
         account_infos.push(self.token_program.clone());
         account_infos.push(self.ata_program.clone());
-        account_infos.push(self.ix_sysvar.clone());
+        account_infos.push(self.ixs_sysvar.clone());
         account_infos.push(self.solauto_admin_settings.clone());
         account_infos.push(self.solauto_fees_receiver_ta.clone());
         if let Some(solauto_position) = self.solauto_position {
@@ -462,7 +462,7 @@ impl<'a, 'b> MarginfiRebalanceCpi<'a, 'b> {
 ///   2. `[]` system_program
 ///   3. `[]` token_program
 ///   4. `[]` ata_program
-///   5. `[]` ix_sysvar
+///   5. `[]` ixs_sysvar
 ///   6. `[]` solauto_admin_settings
 ///   7. `[writable]` solauto_fees_receiver_ta
 ///   8. `[writable, optional]` solauto_position
@@ -479,7 +479,7 @@ impl<'a, 'b> MarginfiRebalanceCpiBuilder<'a, 'b> {
             system_program: None,
             token_program: None,
             ata_program: None,
-            ix_sysvar: None,
+            ixs_sysvar: None,
             solauto_admin_settings: None,
             solauto_fees_receiver_ta: None,
             solauto_position: None,
@@ -529,11 +529,11 @@ impl<'a, 'b> MarginfiRebalanceCpiBuilder<'a, 'b> {
         self
     }
     #[inline(always)]
-    pub fn ix_sysvar(
+    pub fn ixs_sysvar(
         &mut self,
-        ix_sysvar: &'b solana_program::account_info::AccountInfo<'a>,
+        ixs_sysvar: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
-        self.instruction.ix_sysvar = Some(ix_sysvar);
+        self.instruction.ixs_sysvar = Some(ixs_sysvar);
         self
     }
     #[inline(always)]
@@ -636,7 +636,7 @@ impl<'a, 'b> MarginfiRebalanceCpiBuilder<'a, 'b> {
                 .ata_program
                 .expect("ata_program is not set"),
 
-            ix_sysvar: self.instruction.ix_sysvar.expect("ix_sysvar is not set"),
+            ixs_sysvar: self.instruction.ixs_sysvar.expect("ixs_sysvar is not set"),
 
             solauto_admin_settings: self
                 .instruction
@@ -665,7 +665,7 @@ struct MarginfiRebalanceCpiBuilderInstruction<'a, 'b> {
     system_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     token_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     ata_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    ix_sysvar: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    ixs_sysvar: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     solauto_admin_settings: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     solauto_fees_receiver_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     solauto_position: Option<&'b solana_program::account_info::AccountInfo<'a>>,
