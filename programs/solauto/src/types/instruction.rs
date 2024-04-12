@@ -13,9 +13,9 @@ pub enum Instruction {
     #[account(name = "token_program")]
     #[account(name = "rent")]
     #[account(mut, name = "solauto_admin_settings")]
-    #[account(name = "fees_wallet")]
-    #[account(mut, name = "fees_token_account")]
-    #[account(name = "fees_token_mint")]
+    #[account(name = "solauto_fees_wallet")]
+    #[account(mut, name = "solauto_fees_receiver_ta")]
+    #[account(name = "solauto_fees_mint")]
     UpdateSolautoAdminSettings,
 
     /// Open a new Solauto position with Marginfi
@@ -28,9 +28,9 @@ pub enum Instruction {
     #[account(name = "marginfi_group")]
     #[account(mut, name = "marginfi_account")]
     #[account(mut, optional, name = "solauto_position")]
-    #[account(mut, name = "supply_token_account")]
+    #[account(mut, name = "supply_ta")]
     #[account(name = "supply_token_mint")]
-    #[account(mut, name = "debt_token_account")]
+    #[account(mut, name = "debt_ta")]
     #[account(name = "debt_token_mint")]
     MarginfiOpenPosition(Option<PositionData>),
 
@@ -45,16 +45,25 @@ pub enum Instruction {
     #[account(name = "lending_market")]
     #[account(mut, name = "obligation")]
     #[account(name = "supply_reserve")]
-    #[account(mut, name = "supply_collateral_token_account")]
-    #[account(name = "supply_collateral_token_mint")]
-    #[account(mut, name = "debt_liquidity_token_account")]
-    #[account(name = "debt_liquidity_token_mint")]
+    #[account(mut, name = "supply_liquidity_ta")]
+    #[account(name = "supply_liquidity_mint")]
+    #[account(mut, name = "supply_collateral_ta")]
+    #[account(name = "supply_collateral_mint")]
+    #[account(mut, name = "debt_liquidity_ta")]
+    #[account(name = "debt_liquidity_mint")]
     SolendOpenPosition(Option<PositionData>),
 
     /// Update solauto position settings. Can only be invoked by position authority
     #[account(signer, mut, name = "signer")]
     #[account(mut, name = "solauto_position")]
     UpdatePosition(SolautoSettingsParameters),
+    
+    /// Close the Solauto position and return the rent for the various accounts
+    #[account(signer, mut, name = "signer")]
+    #[account(mut, name = "solauto_position")]
+    #[account(mut, name = "supply_ta")]
+    #[account(mut, name = "debt_ta")]
+    ClosePosition,
 
     /// Refresh Marginfi accounts & position data
     #[account(signer, name = "signer")]
@@ -97,24 +106,24 @@ pub enum Instruction {
     #[account(name = "clock")]
     #[account(name = "rent")]
     #[account(name = "solauto_admin_settings")]
-    #[account(mut, name = "solauto_fees_receiver_ata")]
+    #[account(mut, name = "solauto_fees_receiver_ta")]
     #[account(mut, optional, name = "solauto_position")]
     #[account(name = "lending_market")]
     #[account(mut, name = "obligation")]
     #[account(mut, optional, name = "supply_reserve")]
     #[account(optional, name = "supply_reserve_pyth_price_oracle")]
     #[account(optional, name = "supply_reserve_switchboard_oracle")]
-    #[account(optional, name = "supply_liquidity_token_mint")]
-    #[account(mut, optional, name = "source_supply_liquidity")]
-    #[account(mut, optional, name = "reserve_supply_liquidity")]
-    #[account(optional, name = "supply_collateral_token_mint")]
-    #[account(mut, optional, name = "source_supply_collateral")]
-    #[account(mut, optional, name = "reserve_supply_collateral")]
+    #[account(optional, name = "supply_liquidity_mint")]
+    #[account(mut, optional, name = "source_supply_liquidity_ta")]
+    #[account(mut, optional, name = "reserve_supply_liquidity_ta")]
+    #[account(optional, name = "supply_collateral_mint")]
+    #[account(mut, optional, name = "source_supply_collateral_ta")]
+    #[account(mut, optional, name = "reserve_supply_collateral_ta")]
     #[account(mut, optional, name = "debt_reserve")]
-    #[account(mut, optional, name = "debt_reserve_fee_receiver")]
-    #[account(optional, name = "debt_liquidity_token_mint")]
-    #[account(mut, optional, name = "source_debt_liquidity")]
-    #[account(mut, optional, name = "reserve_debt_liquidity")]
+    #[account(mut, optional, name = "debt_reserve_fee_receiver_ta")]
+    #[account(optional, name = "debt_liquidity_mint")]
+    #[account(mut, optional, name = "source_debt_liquidity_ta")]
+    #[account(mut, optional, name = "reserve_debt_liquidity_ta")]
     SolendProtocolInteraction(SolautoAction),
 
     /// Rebalance position.
@@ -126,7 +135,7 @@ pub enum Instruction {
     #[account(name = "ata_program")]
     #[account(name = "ix_sysvar")]
     #[account(name = "solauto_admin_settings")]
-    #[account(mut, name = "solauto_fees_receiver_ata")]
+    #[account(mut, name = "solauto_fees_receiver_ta")]
     #[account(mut, optional, name = "solauto_position")]
     // TODO missing accounts
     MarginfiRebalance(Option<u16>),
@@ -142,24 +151,24 @@ pub enum Instruction {
     #[account(name = "rent")]
     #[account(name = "ix_sysvar")]
     #[account(name = "solauto_admin_settings")]
-    #[account(mut, name = "solauto_fees_receiver_ata")]
+    #[account(mut, name = "solauto_fees_receiver_ta")]
     #[account(mut, optional, name = "solauto_position")]
     #[account(name = "lending_market")]
     #[account(mut, name = "obligation")]
     #[account(mut, name = "supply_reserve")]
     #[account(name = "supply_reserve_pyth_price_oracle")]
     #[account(name = "supply_reserve_switchboard_oracle")]
-    #[account(name = "supply_liquidity_token_mint")]
-    #[account(mut, name = "source_supply_liquidity")]
-    #[account(mut, name = "reserve_supply_liquidity")]
-    #[account(name = "supply_collateral_token_mint")]
-    #[account(mut, name = "source_supply_collateral")]
-    #[account(mut, name = "reserve_supply_collateral")]
+    #[account(name = "supply_liquidity_mint")]
+    #[account(mut, name = "source_supply_liquidity_ta")]
+    #[account(mut, name = "reserve_supply_liquidity_ta")]
+    #[account(name = "supply_collateral_mint")]
+    #[account(mut, name = "source_supply_collateral_ta")]
+    #[account(mut, name = "reserve_supply_collateral_ta")]
     #[account(mut, name = "debt_reserve")]
-    #[account(mut, name = "debt_reserve_fee_receiver")]
-    #[account(name = "debt_liquidity_token_mint")]
-    #[account(mut, name = "source_debt_liquidity")]
-    #[account(mut, name = "reserve_debt_liquidity")]
+    #[account(mut, name = "debt_reserve_fee_receiver_ta")]
+    #[account(name = "debt_liquidity_mint")]
+    #[account(mut, name = "source_debt_liquidity_ta")]
+    #[account(mut, name = "reserve_debt_liquidity_ta")]
     SolendRebalance(Option<u16>),
 }
 
@@ -187,6 +196,6 @@ pub struct SolautoStandardAccounts<'a> {
     pub ata_program: &'a AccountInfo<'a>,
     pub ix_sysvar: Option<&'a AccountInfo<'a>>,
     pub solauto_admin_settings: Option<&'a AccountInfo<'a>>,
-    pub solauto_fees_receiver_ata: Option<&'a AccountInfo<'a>>,
+    pub solauto_fees_receiver_ta: Option<&'a AccountInfo<'a>>,
     pub solauto_position: Option<DeserializedAccount<'a, Position>>,
 }

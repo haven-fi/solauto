@@ -34,8 +34,8 @@ pub fn process_update_solauto_admin_settings_instruction<'a>(
         Some(DeserializedAccount {
             account_info: ctx.accounts.solauto_admin_settings,
             data: Box::new(SolautoAdminSettings {
-                fees_wallet: ctx.accounts.fees_wallet.key.clone(),
-                fees_token_mint: ctx.accounts.fees_token_mint.key.clone(),
+                fees_wallet: ctx.accounts.solauto_fees_wallet.key.clone(),
+                fees_token_mint: ctx.accounts.solauto_fees_mint.key.clone(),
             }),
         })
     } else {
@@ -44,15 +44,15 @@ pub fn process_update_solauto_admin_settings_instruction<'a>(
         )?;
 
         let settings = solauto_settings.as_mut().unwrap();
-        settings.data.fees_wallet = ctx.accounts.fees_wallet.key.clone();
-        settings.data.fees_token_mint = ctx.accounts.fees_token_mint.key.clone();
+        settings.data.fees_wallet = ctx.accounts.solauto_fees_wallet.key.clone();
+        settings.data.fees_token_mint = ctx.accounts.solauto_fees_mint.key.clone();
 
         solauto_settings
     };
 
     validation_utils::validate_fees_receiver(
         ctx.accounts.solauto_admin_settings,
-        ctx.accounts.fees_token_account
+        ctx.accounts.solauto_fees_receiver_ta
     )?;
 
     solana_utils::init_ata_if_needed(
@@ -60,15 +60,20 @@ pub fn process_update_solauto_admin_settings_instruction<'a>(
         ctx.accounts.system_program,
         ctx.accounts.rent,
         ctx.accounts.solauto_admin,
-        ctx.accounts.fees_wallet,
-        ctx.accounts.fees_token_account,
-        ctx.accounts.fees_token_mint
+        ctx.accounts.solauto_fees_wallet,
+        ctx.accounts.solauto_fees_receiver_ta,
+        ctx.accounts.solauto_fees_mint
     )?;
 
     ix_utils::update_data(&mut solauto_admin_settings)
 }
 
 pub fn process_update_position_instruction() -> ProgramResult {
+    // TODO
+    Ok(())
+}
+
+pub fn process_close_position_instruction() -> ProgramResult {
     // TODO
     Ok(())
 }

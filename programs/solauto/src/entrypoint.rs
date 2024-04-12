@@ -38,6 +38,7 @@ fn process_instruction<'a>(
             process_solend_open_position_instruction(accounts, args),
 
         Instruction::UpdatePosition(_settings) => process_update_position_instruction(),
+        Instruction::ClosePosition => process_close_position_instruction(),
 
         Instruction::MarginfiRefreshData => process_marginfi_refresh_data(accounts),
         Instruction::SolendRefreshData => process_solend_refresh_data(accounts),

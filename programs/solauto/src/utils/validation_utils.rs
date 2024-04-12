@@ -38,10 +38,10 @@ use crate::constants::{
 pub fn generic_instruction_validation(accounts: &SolautoStandardAccounts, authority_only_ix: bool, lending_platform: LendingPlatform) -> ProgramResult {
     validate_signer(accounts.signer, &accounts.solauto_position, authority_only_ix)?;
     validate_program_account(accounts.lending_protocol, lending_platform)?;
-    if !accounts.solauto_admin_settings.is_none() && !accounts.solauto_fees_receiver_ata.is_none() {
+    if !accounts.solauto_admin_settings.is_none() && !accounts.solauto_fees_receiver_ta.is_none() {
         validate_fees_receiver(
             accounts.solauto_admin_settings.unwrap(),
-            accounts.solauto_fees_receiver_ata.unwrap()
+            accounts.solauto_fees_receiver_ta.unwrap()
         )?;
     }
     Ok(())
@@ -263,13 +263,13 @@ pub fn validate_solend_protocol_interaction_ix(
                 ctx.accounts.supply_reserve,
                 ctx.accounts.supply_reserve_pyth_price_oracle,
                 ctx.accounts.supply_reserve_switchboard_oracle,
-                ctx.accounts.supply_liquidity_token_mint,
-                ctx.accounts.source_supply_liquidity,
-                ctx.accounts.reserve_supply_liquidity,
-                ctx.accounts.supply_collateral_token_mint,
-                ctx.accounts.supply_collateral_token_mint,
-                ctx.accounts.source_supply_collateral,
-                ctx.accounts.reserve_supply_collateral,
+                ctx.accounts.supply_liquidity_mint,
+                ctx.accounts.source_supply_liquidity_ta,
+                ctx.accounts.reserve_supply_liquidity_ta,
+                ctx.accounts.supply_collateral_mint,
+                ctx.accounts.supply_collateral_mint,
+                ctx.accounts.source_supply_collateral_ta,
+                ctx.accounts.reserve_supply_collateral_ta,
             ]
         );
     };
@@ -278,10 +278,10 @@ pub fn validate_solend_protocol_interaction_ix(
         return require_accounts(
             &[
                 ctx.accounts.debt_reserve,
-                ctx.accounts.debt_reserve_fee_receiver,
-                ctx.accounts.debt_liquidity_token_mint,
-                ctx.accounts.source_debt_liquidity,
-                ctx.accounts.reserve_debt_liquidity,
+                ctx.accounts.debt_reserve_fee_receiver_ta,
+                ctx.accounts.debt_liquidity_mint,
+                ctx.accounts.source_debt_liquidity_ta,
+                ctx.accounts.reserve_debt_liquidity_ta,
             ]
         );
     };

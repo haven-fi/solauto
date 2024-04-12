@@ -35,17 +35,17 @@ pub fn solend_rebalance<'a, 'b>(
         Some(ctx.accounts.supply_reserve),
         Some(ctx.accounts.supply_reserve_pyth_price_oracle),
         Some(ctx.accounts.supply_reserve_switchboard_oracle),
-        Some(ctx.accounts.supply_liquidity_token_mint),
-        Some(ctx.accounts.source_supply_liquidity),
-        Some(ctx.accounts.reserve_supply_liquidity),
-        Some(ctx.accounts.supply_collateral_token_mint),
-        Some(ctx.accounts.source_supply_collateral),
-        Some(ctx.accounts.reserve_supply_collateral),
+        Some(ctx.accounts.supply_liquidity_mint),
+        Some(ctx.accounts.source_supply_liquidity_ta),
+        Some(ctx.accounts.reserve_supply_liquidity_ta),
+        Some(ctx.accounts.supply_collateral_mint),
+        Some(ctx.accounts.source_supply_collateral_ta),
+        Some(ctx.accounts.reserve_supply_collateral_ta),
         Some(ctx.accounts.debt_reserve),
-        Some(ctx.accounts.debt_reserve_fee_receiver),
-        Some(ctx.accounts.debt_liquidity_token_mint),
-        Some(ctx.accounts.source_debt_liquidity),
-        Some(ctx.accounts.reserve_debt_liquidity)
+        Some(ctx.accounts.debt_reserve_fee_receiver_ta),
+        Some(ctx.accounts.debt_liquidity_mint),
+        Some(ctx.accounts.source_debt_liquidity_ta),
+        Some(ctx.accounts.reserve_debt_liquidity_ta)
     )?;
     validation_utils::validate_rebalance_instruction(ctx.accounts.ix_sysvar, &obligation_position)?;
     rebalance(std_accounts, solend_client, obligation_position, target_liq_utilization_rate_bps)

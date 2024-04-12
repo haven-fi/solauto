@@ -7,14 +7,15 @@ use crate::{
         shared::{ DeserializedAccount, Position },
         solauto_manager::SolautoManager,
     },
+    utils::ix_utils,
 };
 
 pub fn marginfi_refresh_accounts(
     ctx: Context<MarginfiRefreshDataAccounts>,
-    solauto_position: Option<DeserializedAccount<Position>>
+    mut solauto_position: Option<DeserializedAccount<Position>>
 ) -> ProgramResult {
     // TODO
-    Ok(())
+    ix_utils::update_data(&mut solauto_position)
 }
 
 pub fn solend_refresh_accounts(
@@ -61,5 +62,5 @@ pub fn solend_refresh_accounts(
         }
     }
 
-    Ok(())
+    ix_utils::update_data(&mut solauto_position)
 }

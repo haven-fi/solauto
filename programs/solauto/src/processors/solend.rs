@@ -42,7 +42,7 @@ pub fn process_solend_open_position_instruction<'a>(
         ix_sysvar: None,
         solauto_position,
         solauto_admin_settings: None,
-        solauto_fees_receiver_ata: None,
+        solauto_fees_receiver_ta: None,
     };
     validation_utils::generic_instruction_validation(&std_accounts, true, LendingPlatform::Solend)?;
     open_position::solend_open_position(ctx, std_accounts.solauto_position)
@@ -83,7 +83,7 @@ pub fn process_solend_interaction_instruction<'a>(
         ix_sysvar: None,
         solauto_position,
         solauto_admin_settings: Some(ctx.accounts.solauto_admin_settings),
-        solauto_fees_receiver_ata: Some(ctx.accounts.solauto_fees_receiver_ata),
+        solauto_fees_receiver_ta: Some(ctx.accounts.solauto_fees_receiver_ta),
     };
     validation_utils::generic_instruction_validation(&std_accounts, true, LendingPlatform::Solend)?;
     validation_utils::validate_solend_protocol_interaction_ix(&ctx, &action)?;
@@ -110,7 +110,7 @@ pub fn process_solend_rebalance<'a>(
         ix_sysvar: Some(ctx.accounts.ix_sysvar),
         solauto_position,
         solauto_admin_settings: Some(ctx.accounts.solauto_admin_settings),
-        solauto_fees_receiver_ata: Some(ctx.accounts.solauto_fees_receiver_ata),
+        solauto_fees_receiver_ta: Some(ctx.accounts.solauto_fees_receiver_ta),
     };
     validation_utils::generic_instruction_validation(&std_accounts, false, LendingPlatform::Solend)?;
     rebalance::solend_rebalance(ctx, std_accounts, target_liq_utilization_rate_bps)

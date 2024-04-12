@@ -1,4 +1,7 @@
-use solana_program::{ account_info::AccountInfo, entrypoint::ProgramResult };
+use solana_program::{
+    account_info::AccountInfo,
+    entrypoint::ProgramResult,
+};
 
 use crate::{
     instructions::{ open_position, protocol_interaction, rebalance, refresh },
@@ -39,9 +42,13 @@ pub fn process_marginfi_open_position_instruction<'a>(
         ix_sysvar: None,
         solauto_position,
         solauto_admin_settings: None,
-        solauto_fees_receiver_ata: None,
+        solauto_fees_receiver_ta: None,
     };
-    validation_utils::generic_instruction_validation(&std_accounts, true, LendingPlatform::Marginfi)?;
+    validation_utils::generic_instruction_validation(
+        &std_accounts,
+        true,
+        LendingPlatform::Marginfi
+    )?;
     open_position::marginfi_open_position(ctx, std_accounts.solauto_position)
 }
 
@@ -74,7 +81,7 @@ pub fn process_marginfi_interaction_instruction<'a>(
         ix_sysvar: None,
         solauto_position,
         solauto_admin_settings: None,
-        solauto_fees_receiver_ata: None,
+        solauto_fees_receiver_ta: None,
     };
     validation_utils::generic_instruction_validation(
         &std_accounts,
@@ -102,7 +109,7 @@ pub fn process_marginfi_rebalance<'a>(
         ix_sysvar: Some(ctx.accounts.ix_sysvar),
         solauto_position,
         solauto_admin_settings: Some(ctx.accounts.solauto_admin_settings),
-        solauto_fees_receiver_ata: Some(ctx.accounts.solauto_fees_receiver_ata),
+        solauto_fees_receiver_ta: Some(ctx.accounts.solauto_fees_receiver_ta),
     };
     validation_utils::generic_instruction_validation(
         &std_accounts,

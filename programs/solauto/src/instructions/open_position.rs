@@ -1,4 +1,10 @@
-use solana_program::{ account_info::AccountInfo, entrypoint::ProgramResult, program_pack::Pack };
+use solana_program::{
+    account_info::AccountInfo,
+    entrypoint::ProgramResult,
+    msg,
+    program_error::ProgramError,
+    program_pack::Pack,
+};
 use solend_sdk::state::Obligation;
 
 use crate::{
@@ -9,10 +15,12 @@ use crate::{
             MarginfiOpenPositionAccounts,
             SolendOpenPositionAccounts,
         },
-        shared::{ DeserializedAccount, Position, POSITION_ACCOUNT_SPACE },
+        shared::{ DeserializedAccount, Position, SolautoError, POSITION_ACCOUNT_SPACE },
     },
     utils::*,
 };
+
+use self::{ solana_utils::account_is_rent_exempt, solauto_utils::get_owner };
 
 pub fn marginfi_open_position<'a>(
     ctx: Context<'a, MarginfiOpenPositionAccounts<'a>>,
@@ -24,9 +32,9 @@ pub fn marginfi_open_position<'a>(
         ctx.accounts.token_program,
         ctx.accounts.rent,
         ctx.accounts.signer,
-        ctx.accounts.supply_token_account,
+        ctx.accounts.supply_ta,
         ctx.accounts.supply_token_mint,
-        ctx.accounts.debt_token_account,
+        ctx.accounts.debt_ta,
         ctx.accounts.debt_token_mint
     )?;
 
@@ -39,15 +47,25 @@ pub fn marginfi_open_position<'a>(
     } else {
         vec![ctx.accounts.signer.key.as_ref(), ctx.accounts.marginfi_program.key.as_ref()]
     };
-    solana_utils::init_new_account(
-        ctx.accounts.system_program,
-        ctx.accounts.rent,
-        ctx.accounts.signer,
-        ctx.accounts.marginfi_account,
-        ctx.accounts.marginfi_program.key,
-        marginfi_account_seeds,
-        Obligation::LEN // TODO: get marginfi account space from MarginfiAccount::LEN from generated code
-    )?;
+
+    if !account_is_rent_exempt(ctx.accounts.rent, ctx.accounts.marginfi_account)? {
+        solana_utils::init_new_account(
+            ctx.accounts.system_program,
+            ctx.accounts.rent,
+            ctx.accounts.signer,
+            ctx.accounts.marginfi_account,
+            ctx.accounts.marginfi_program.key,
+            marginfi_account_seeds,
+            Obligation::LEN // TODO: get marginfi account space from MarginfiAccount::LEN from generated code
+        )?;
+    } else {
+        let owner = get_owner(&solauto_position, ctx.accounts.signer);
+        // TODO deserialize marginfi account to check to make sure the account owner is correct
+        // if owner.key != &marginfi_account.owner {
+        //     msg!("Provided incorrect marginfi account for the given signer & solauto_position");
+        //     return Err(ProgramError::InvalidAccountData.into());
+        // }
+    }
 
     MarginfiClient::initialize(&ctx, &solauto_position)?;
     ix_utils::update_data(&mut solauto_position)
@@ -63,10 +81,20 @@ pub fn solend_open_position<'a>(
         ctx.accounts.token_program,
         ctx.accounts.rent,
         ctx.accounts.signer,
-        ctx.accounts.supply_collateral_token_account,
-        ctx.accounts.supply_collateral_token_mint,
-        ctx.accounts.debt_liquidity_token_account,
-        ctx.accounts.debt_liquidity_token_mint
+        ctx.accounts.supply_liquidity_ta,
+        ctx.accounts.supply_liquidity_mint,
+        ctx.accounts.debt_liquidity_ta,
+        ctx.accounts.debt_liquidity_mint
+    )?;
+
+    solana_utils::init_ata_if_needed(
+        ctx.accounts.token_program,
+        ctx.accounts.system_program,
+        ctx.accounts.rent,
+        ctx.accounts.signer,
+        get_owner(&solauto_position, ctx.accounts.signer),
+        ctx.accounts.supply_collateral_ta,
+        ctx.accounts.supply_collateral_mint
     )?;
 
     let obligation_seeds = if !solauto_position.is_none() {
@@ -83,15 +111,27 @@ pub fn solend_open_position<'a>(
             ctx.accounts.solend_program.key.as_ref()
         ]
     };
-    solana_utils::init_new_account(
-        ctx.accounts.system_program,
-        ctx.accounts.rent,
-        ctx.accounts.signer,
-        ctx.accounts.obligation,
-        ctx.accounts.solend_program.key,
-        obligation_seeds,
-        Obligation::LEN
-    )?;
+
+    if !account_is_rent_exempt(ctx.accounts.rent, ctx.accounts.obligation)? {
+        solana_utils::init_new_account(
+            ctx.accounts.system_program,
+            ctx.accounts.rent,
+            ctx.accounts.signer,
+            ctx.accounts.obligation,
+            ctx.accounts.solend_program.key,
+            obligation_seeds,
+            Obligation::LEN
+        )?;
+    } else {
+        let owner = get_owner(&solauto_position, ctx.accounts.signer);
+        let obligation = Obligation::unpack(&ctx.accounts.obligation.data.borrow()).map_err(
+            |_| SolautoError::FailedAccountDeserialization
+        )?;
+        if owner.key != &obligation.owner {
+            msg!("Provided incorrect obligation account for the given signer & solauto_position");
+            return Err(ProgramError::InvalidAccountData.into());
+        }
+    }
 
     SolendClient::initialize(&ctx, &solauto_position)?;
     ix_utils::update_data(&mut solauto_position)
@@ -103,10 +143,10 @@ fn initialize_solauto_position<'a, 'b>(
     token_program: &'a AccountInfo<'a>,
     rent: &'a AccountInfo<'a>,
     signer: &'a AccountInfo<'a>,
-    supply_token_account: &'a AccountInfo<'a>,
-    supply_token_mint: &'a AccountInfo<'a>,
-    debt_token_account: &'a AccountInfo<'a>,
-    debt_token_mint: &'a AccountInfo<'a>
+    supply_ta: &'a AccountInfo<'a>,
+    supply_mint: &'a AccountInfo<'a>,
+    debt_ta: &'a AccountInfo<'a>,
+    debt_mint: &'a AccountInfo<'a>
 ) -> ProgramResult {
     if !solauto_position.is_none() {
         solana_utils::init_new_account(
@@ -128,8 +168,8 @@ fn initialize_solauto_position<'a, 'b>(
         rent,
         signer,
         obligation_owner,
-        supply_token_account,
-        supply_token_mint
+        supply_ta,
+        supply_mint
     )?;
 
     solana_utils::init_ata_if_needed(
@@ -138,8 +178,8 @@ fn initialize_solauto_position<'a, 'b>(
         rent,
         signer,
         obligation_owner,
-        debt_token_account,
-        debt_token_mint
+        debt_ta,
+        debt_mint
     )?;
 
     Ok(())
