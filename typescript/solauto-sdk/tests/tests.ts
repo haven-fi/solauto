@@ -90,11 +90,10 @@ describe("Solauto tests", async () => {
     solautoManaged
   );
 
-  console.log(solautoPosition);
   it("should open position", async () => {
     const settingParams = {
-      repayFromBps: 9800,
-      repayToBps: 9500,
+      repayFromBps: 9500,
+      repayToBps: 9000,
       boostFromBps: 4000,
       boostToBps: 5000,
     };

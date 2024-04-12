@@ -5,7 +5,6 @@
 //! [https://github.com/metaplex-foundation/kinobi]
 //!
 
-use crate::generated::types::OptionalLiqUtilizationRateBps;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 
@@ -318,7 +317,7 @@ impl SolendRebalanceInstructionData {
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SolendRebalanceInstructionArgs {
-    pub optional_liq_utilization_rate_bps: OptionalLiqUtilizationRateBps,
+    pub args: Option<u16>,
 }
 
 /// Instruction builder for `SolendRebalance`.
@@ -381,7 +380,7 @@ pub struct SolendRebalanceBuilder {
     debt_liquidity_token_mint: Option<solana_program::pubkey::Pubkey>,
     source_debt_liquidity: Option<solana_program::pubkey::Pubkey>,
     reserve_debt_liquidity: Option<solana_program::pubkey::Pubkey>,
-    optional_liq_utilization_rate_bps: Option<OptionalLiqUtilizationRateBps>,
+    args: Option<u16>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
 
@@ -594,12 +593,10 @@ impl SolendRebalanceBuilder {
         self.reserve_debt_liquidity = reserve_debt_liquidity;
         self
     }
+    /// `[optional argument]`
     #[inline(always)]
-    pub fn optional_liq_utilization_rate_bps(
-        &mut self,
-        optional_liq_utilization_rate_bps: OptionalLiqUtilizationRateBps,
-    ) -> &mut Self {
-        self.optional_liq_utilization_rate_bps = Some(optional_liq_utilization_rate_bps);
+    pub fn args(&mut self, args: u16) -> &mut Self {
+        self.args = Some(args);
         self
     }
     /// Add an aditional account to the instruction.
@@ -664,10 +661,7 @@ impl SolendRebalanceBuilder {
             reserve_debt_liquidity: self.reserve_debt_liquidity,
         };
         let args = SolendRebalanceInstructionArgs {
-            optional_liq_utilization_rate_bps: self
-                .optional_liq_utilization_rate_bps
-                .clone()
-                .expect("optional_liq_utilization_rate_bps is not set"),
+            args: self.args.clone(),
         };
 
         accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
@@ -1233,7 +1227,7 @@ impl<'a, 'b> SolendRebalanceCpiBuilder<'a, 'b> {
             debt_liquidity_token_mint: None,
             source_debt_liquidity: None,
             reserve_debt_liquidity: None,
-            optional_liq_utilization_rate_bps: None,
+            args: None,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
@@ -1465,13 +1459,10 @@ impl<'a, 'b> SolendRebalanceCpiBuilder<'a, 'b> {
         self.instruction.reserve_debt_liquidity = reserve_debt_liquidity;
         self
     }
+    /// `[optional argument]`
     #[inline(always)]
-    pub fn optional_liq_utilization_rate_bps(
-        &mut self,
-        optional_liq_utilization_rate_bps: OptionalLiqUtilizationRateBps,
-    ) -> &mut Self {
-        self.instruction.optional_liq_utilization_rate_bps =
-            Some(optional_liq_utilization_rate_bps);
+    pub fn args(&mut self, args: u16) -> &mut Self {
+        self.instruction.args = Some(args);
         self
     }
     /// Add an additional account to the instruction.
@@ -1516,11 +1507,7 @@ impl<'a, 'b> SolendRebalanceCpiBuilder<'a, 'b> {
         signers_seeds: &[&[&[u8]]],
     ) -> solana_program::entrypoint::ProgramResult {
         let args = SolendRebalanceInstructionArgs {
-            optional_liq_utilization_rate_bps: self
-                .instruction
-                .optional_liq_utilization_rate_bps
-                .clone()
-                .expect("optional_liq_utilization_rate_bps is not set"),
+            args: self.instruction.args.clone(),
         };
         let instruction = SolendRebalanceCpi {
             __program: self.instruction.__program,
@@ -1637,7 +1624,7 @@ struct SolendRebalanceCpiBuilderInstruction<'a, 'b> {
     debt_liquidity_token_mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     source_debt_liquidity: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     reserve_debt_liquidity: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    optional_liq_utilization_rate_bps: Option<OptionalLiqUtilizationRateBps>,
+    args: Option<u16>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(
         &'b solana_program::account_info::AccountInfo<'a>,

@@ -8,6 +8,8 @@
 
 import {
   Context,
+  Option,
+  OptionOrNullable,
   Pda,
   PublicKey,
   Signer,
@@ -17,7 +19,9 @@ import {
 import {
   Serializer,
   mapSerializer,
+  option,
   struct,
+  u16,
   u8,
 } from '@metaplex-foundation/umi/serializers';
 import {
@@ -25,11 +29,6 @@ import {
   ResolvedAccountsWithIndices,
   getAccountMetasAndSigners,
 } from '../shared';
-import {
-  OptionalLiqUtilizationRateBps,
-  OptionalLiqUtilizationRateBpsArgs,
-  getOptionalLiqUtilizationRateBpsSerializer,
-} from '../types';
 
 // Accounts.
 export type MarginfiRebalanceInstructionAccounts = {
@@ -44,11 +43,11 @@ export type MarginfiRebalanceInstructionAccounts = {
 // Data.
 export type MarginfiRebalanceInstructionData = {
   discriminator: number;
-  optionalLiqUtilizationRateBps: OptionalLiqUtilizationRateBps;
+  args: Option<number>;
 };
 
 export type MarginfiRebalanceInstructionDataArgs = {
-  optionalLiqUtilizationRateBps: OptionalLiqUtilizationRateBpsArgs;
+  args: OptionOrNullable<number>;
 };
 
 export function getMarginfiRebalanceInstructionDataSerializer(): Serializer<
@@ -63,10 +62,7 @@ export function getMarginfiRebalanceInstructionDataSerializer(): Serializer<
     struct<MarginfiRebalanceInstructionData>(
       [
         ['discriminator', u8()],
-        [
-          'optionalLiqUtilizationRateBps',
-          getOptionalLiqUtilizationRateBpsSerializer(),
-        ],
+        ['args', option(u16())],
       ],
       { description: 'MarginfiRebalanceInstructionData' }
     ),

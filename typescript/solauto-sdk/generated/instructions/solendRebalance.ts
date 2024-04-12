@@ -8,6 +8,8 @@
 
 import {
   Context,
+  Option,
+  OptionOrNullable,
   Pda,
   PublicKey,
   Signer,
@@ -18,7 +20,9 @@ import {
 import {
   Serializer,
   mapSerializer,
+  option,
   struct,
+  u16,
   u8,
 } from '@metaplex-foundation/umi/serializers';
 import {
@@ -26,11 +30,6 @@ import {
   ResolvedAccountsWithIndices,
   getAccountMetasAndSigners,
 } from '../shared';
-import {
-  OptionalLiqUtilizationRateBps,
-  OptionalLiqUtilizationRateBpsArgs,
-  getOptionalLiqUtilizationRateBpsSerializer,
-} from '../types';
 
 // Accounts.
 export type SolendRebalanceInstructionAccounts = {
@@ -66,11 +65,11 @@ export type SolendRebalanceInstructionAccounts = {
 // Data.
 export type SolendRebalanceInstructionData = {
   discriminator: number;
-  optionalLiqUtilizationRateBps: OptionalLiqUtilizationRateBps;
+  args: Option<number>;
 };
 
 export type SolendRebalanceInstructionDataArgs = {
-  optionalLiqUtilizationRateBps: OptionalLiqUtilizationRateBpsArgs;
+  args: OptionOrNullable<number>;
 };
 
 export function getSolendRebalanceInstructionDataSerializer(): Serializer<
@@ -85,10 +84,7 @@ export function getSolendRebalanceInstructionDataSerializer(): Serializer<
     struct<SolendRebalanceInstructionData>(
       [
         ['discriminator', u8()],
-        [
-          'optionalLiqUtilizationRateBps',
-          getOptionalLiqUtilizationRateBpsSerializer(),
-        ],
+        ['args', option(u16())],
       ],
       { description: 'SolendRebalanceInstructionData' }
     ),

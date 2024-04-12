@@ -5,7 +5,6 @@
 //! [https://github.com/metaplex-foundation/kinobi]
 //!
 
-use crate::generated::types::OptionalLiqUtilizationRateBps;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 
@@ -98,7 +97,7 @@ impl MarginfiRebalanceInstructionData {
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct MarginfiRebalanceInstructionArgs {
-    pub optional_liq_utilization_rate_bps: OptionalLiqUtilizationRateBps,
+    pub args: Option<u16>,
 }
 
 /// Instruction builder for `MarginfiRebalance`.
@@ -119,7 +118,7 @@ pub struct MarginfiRebalanceBuilder {
     solauto_admin_settings: Option<solana_program::pubkey::Pubkey>,
     solauto_fees_receiver: Option<solana_program::pubkey::Pubkey>,
     solauto_position: Option<solana_program::pubkey::Pubkey>,
-    optional_liq_utilization_rate_bps: Option<OptionalLiqUtilizationRateBps>,
+    args: Option<u16>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
 
@@ -170,12 +169,10 @@ impl MarginfiRebalanceBuilder {
         self.solauto_position = solauto_position;
         self
     }
+    /// `[optional argument]`
     #[inline(always)]
-    pub fn optional_liq_utilization_rate_bps(
-        &mut self,
-        optional_liq_utilization_rate_bps: OptionalLiqUtilizationRateBps,
-    ) -> &mut Self {
-        self.optional_liq_utilization_rate_bps = Some(optional_liq_utilization_rate_bps);
+    pub fn args(&mut self, args: u16) -> &mut Self {
+        self.args = Some(args);
         self
     }
     /// Add an aditional account to the instruction.
@@ -211,10 +208,7 @@ impl MarginfiRebalanceBuilder {
             solauto_position: self.solauto_position,
         };
         let args = MarginfiRebalanceInstructionArgs {
-            optional_liq_utilization_rate_bps: self
-                .optional_liq_utilization_rate_bps
-                .clone()
-                .expect("optional_liq_utilization_rate_bps is not set"),
+            args: self.args.clone(),
         };
 
         accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
@@ -402,7 +396,7 @@ impl<'a, 'b> MarginfiRebalanceCpiBuilder<'a, 'b> {
             solauto_admin_settings: None,
             solauto_fees_receiver: None,
             solauto_position: None,
-            optional_liq_utilization_rate_bps: None,
+            args: None,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
@@ -456,13 +450,10 @@ impl<'a, 'b> MarginfiRebalanceCpiBuilder<'a, 'b> {
         self.instruction.solauto_position = solauto_position;
         self
     }
+    /// `[optional argument]`
     #[inline(always)]
-    pub fn optional_liq_utilization_rate_bps(
-        &mut self,
-        optional_liq_utilization_rate_bps: OptionalLiqUtilizationRateBps,
-    ) -> &mut Self {
-        self.instruction.optional_liq_utilization_rate_bps =
-            Some(optional_liq_utilization_rate_bps);
+    pub fn args(&mut self, args: u16) -> &mut Self {
+        self.instruction.args = Some(args);
         self
     }
     /// Add an additional account to the instruction.
@@ -507,11 +498,7 @@ impl<'a, 'b> MarginfiRebalanceCpiBuilder<'a, 'b> {
         signers_seeds: &[&[&[u8]]],
     ) -> solana_program::entrypoint::ProgramResult {
         let args = MarginfiRebalanceInstructionArgs {
-            optional_liq_utilization_rate_bps: self
-                .instruction
-                .optional_liq_utilization_rate_bps
-                .clone()
-                .expect("optional_liq_utilization_rate_bps is not set"),
+            args: self.instruction.args.clone(),
         };
         let instruction = MarginfiRebalanceCpi {
             __program: self.instruction.__program,
@@ -553,7 +540,7 @@ struct MarginfiRebalanceCpiBuilderInstruction<'a, 'b> {
     solauto_admin_settings: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     solauto_fees_receiver: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     solauto_position: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    optional_liq_utilization_rate_bps: Option<OptionalLiqUtilizationRateBps>,
+    args: Option<u16>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(
         &'b solana_program::account_info::AccountInfo<'a>,

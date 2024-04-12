@@ -592,9 +592,9 @@
       ],
       "args": [
         {
-          "name": "optionalLiqUtilizationRateBps",
+          "name": "args",
           "type": {
-            "defined": "OptionalLiqUtilizationRateBps"
+            "option": "u16"
           }
         }
       ],
@@ -759,9 +759,9 @@
       ],
       "args": [
         {
-          "name": "optionalLiqUtilizationRateBps",
+          "name": "args",
           "type": {
-            "defined": "OptionalLiqUtilizationRateBps"
+            "option": "u16"
           }
         }
       ],
