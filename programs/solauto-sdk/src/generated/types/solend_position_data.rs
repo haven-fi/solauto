@@ -16,11 +16,11 @@ pub struct SolendPositionData {
         feature = "serde",
         serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
     )]
-    pub supply_reserve: Pubkey,
-    pub debt_reserve: Option<Pubkey>,
+    pub obligation: Pubkey,
     #[cfg_attr(
         feature = "serde",
         serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
     )]
-    pub obligation: Pubkey,
+    pub supply_reserve: Pubkey,
+    pub debt_reserve: Option<Pubkey>,
 }

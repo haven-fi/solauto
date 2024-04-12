@@ -80,6 +80,16 @@ pub struct LendingProtocolObligationPosition {
 }
 
 impl LendingProtocolObligationPosition {
+    pub fn current_utilization_rate_bps(&self) -> u16 {
+        match (&self.debt, &self.supply) {
+            (Some(debt), Some(supply)) =>
+                debt.amount_used.usd_value
+                    .div(supply.amount_used.usd_value.mul(self.max_ltv as f64))
+                    .mul(10000.0) as u16,
+            _ => 0,
+        }
+    }
+
     pub fn current_liq_utilization_rate_bps(&self) -> u16 {
         match (&self.debt, &self.supply) {
             (Some(debt), Some(supply)) =>

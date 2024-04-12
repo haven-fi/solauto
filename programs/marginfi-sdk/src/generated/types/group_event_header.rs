@@ -5,15 +5,16 @@
 //! [https://github.com/metaplex-foundation/kinobi]
 //!
 
-use crate::generated::types::SolautoSettingsParameters;
-use crate::generated::types::SolendPositionData;
-use borsh::BorshDeserialize;
+use solana_program::pubkey::Pubkey;
 use borsh::BorshSerialize;
+use borsh::BorshDeserialize;
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct NewPositionData {
-    pub position_id: u8,
-    pub setting_params: SolautoSettingsParameters,
-    pub solend_data: Option<SolendPositionData>,
+pub struct GroupEventHeader {
+pub signer: Option<Pubkey>,
+#[cfg_attr(feature = "serde", serde(with = "serde_with::As::<serde_with::DisplayFromStr>"))]
+pub marginfi_group: Pubkey,
 }
+
+

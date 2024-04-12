@@ -6,7 +6,9 @@
 //!
 
 use crate::generated::types::GeneralPositionData;
+use crate::generated::types::KaminoPositionData;
 use crate::generated::types::LendingPlatform;
+use crate::generated::types::MarginfiPositionData;
 use crate::generated::types::SolautoSettingsParameters;
 use crate::generated::types::SolendPositionData;
 use borsh::BorshDeserialize;
@@ -25,7 +27,9 @@ pub struct Position {
     pub lending_platform: LendingPlatform,
     pub setting_params: SolautoSettingsParameters,
     pub general_data: GeneralPositionData,
+    pub marginfi_data: Option<MarginfiPositionData>,
     pub solend_data: Option<SolendPositionData>,
+    pub kamino_data: Option<KaminoPositionData>,
 }
 
 impl Position {

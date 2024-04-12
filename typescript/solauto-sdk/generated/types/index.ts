@@ -7,10 +7,11 @@
  */
 
 export * from './generalPositionData';
+export * from './kaminoPositionData';
 export * from './lendingPlatform';
-export * from './newPositionData';
-export * from './openPositionArgs';
-export * from './protocolAction';
-export * from './protocolActionDetails';
+export * from './marginfiPositionData';
+export * from './positionData';
+export * from './solautoAction';
 export * from './solautoSettingsParameters';
 export * from './solendPositionData';
+export * from './withdrawParams';

@@ -13,4 +13,5 @@ use borsh::BorshSerialize;
 pub enum LendingPlatform {
     Marginfi,
     Solend,
+    Kamino,
 }

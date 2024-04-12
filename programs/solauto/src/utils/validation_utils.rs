@@ -326,14 +326,19 @@ pub fn validate_rebalance_instruction(ix_sysvar: &AccountInfo) -> ProgramResult 
     Ok(())
 }
 
+// fee = 0.0085 (0.85%)
+// max_slippage = 0.03 (3%)
+// random_price_volatility = 0.03 (3%)
+// 1 - fee - max_slippage - random_price_volatility = buffer_room = 93.15%
+
 // increasing leverage:
 // -
-// if debt + debt adjustment keeps utilization rate under 97%, instructions are:
+// if debt + debt adjustment keeps utilization rate under buffer_room, instructions are:
 // solauto rebalance - borrows more debt (figure out what to do with solauto fee after borrow)
 // jup swap - swap debt token to supply token
 // solauto rebalance - deposit supply token
 // -
-// if debt + debt adjustment brings utilization rate above 97%, instructions are:
+// if debt + debt adjustment brings utilization rate above buffer_room, instructions are:
 // take out flash loan in debt token
 // jup swap - swap debt token to supply token
 // solauto rebalance - deposit supply token, borrow equivalent debt token amount from flash borrow ix + flash loan fee
@@ -341,12 +346,12 @@ pub fn validate_rebalance_instruction(ix_sysvar: &AccountInfo) -> ProgramResult 
 
 // deleveraging:
 // -
-// if supply - debt adjustment keeps utilization rate under 90%, instructions are:
+// if supply - debt adjustment keeps utilization rate under buffer_room, instructions are:
 // solauto rebalance - withdraw supply worth debt_adjustment_usd
 // jup swap - swap supply token to debt token
 // solauto rebalance - repay debt with debt token
 // -
-// if supply - debt adjustment brings utilization rate over 90%, instructions are:
+// if supply - debt adjustment brings utilization rate over buffer_room, instructions are:
 // take out flash loan in supply token
 // jup swap - swap supply token to debt token
 // solauto rebalance - repay debt token, & withdraw equivalent supply token amount from flash borrow ix + flash loan fee

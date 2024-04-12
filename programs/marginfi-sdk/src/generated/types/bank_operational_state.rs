@@ -5,12 +5,15 @@
 //! [https://github.com/metaplex-foundation/kinobi]
 //!
 
-use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
+use borsh::BorshDeserialize;
 
-#[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
+#[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq, PartialOrd, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct ProtocolActionDetails {
-    pub action_amount: u64,
-    pub rebalance_utilization_rate_bps: Option<u16>,
+pub enum BankOperationalState {
+Paused,
+Operational,
+ReduceOnly,
 }
+
+

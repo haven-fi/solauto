@@ -3,6 +3,56 @@
   "name": "solauto",
   "instructions": [
     {
+      "name": "UpdateSolautoAdminSettings",
+      "accounts": [
+        {
+          "name": "solautoAdmin",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "solautoAdminSettings",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "feesWallet",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "feesTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "feesTokenMint",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [],
+      "discriminant": {
+        "type": "u8",
+        "value": 0
+      }
+    },
+    {
       "name": "MarginfiOpenPosition",
       "accounts": [
         {
@@ -74,15 +124,17 @@
       ],
       "args": [
         {
-          "name": "openPositionArgs",
+          "name": "args",
           "type": {
-            "defined": "OpenPositionArgs"
+            "option": {
+              "defined": "PositionData"
+            }
           }
         }
       ],
       "discriminant": {
         "type": "u8",
-        "value": 0
+        "value": 1
       }
     },
     {
@@ -135,6 +187,11 @@
           "isSigner": false
         },
         {
+          "name": "supplyReserve",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
           "name": "supplyCollateralTokenAccount",
           "isMut": true,
           "isSigner": false
@@ -157,15 +214,70 @@
       ],
       "args": [
         {
-          "name": "openPositionArgs",
+          "name": "args",
           "type": {
-            "defined": "OpenPositionArgs"
+            "option": {
+              "defined": "PositionData"
+            }
           }
         }
       ],
       "discriminant": {
         "type": "u8",
-        "value": 1
+        "value": 2
+      }
+    },
+    {
+      "name": "UpdatePosition",
+      "accounts": [
+        {
+          "name": "signer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "solautoPosition",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "solautoSettingsParameters",
+          "type": {
+            "defined": "SolautoSettingsParameters"
+          }
+        }
+      ],
+      "discriminant": {
+        "type": "u8",
+        "value": 3
+      }
+    },
+    {
+      "name": "MarginfiRefreshData",
+      "accounts": [
+        {
+          "name": "signer",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "marginfiProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "solautoPosition",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        }
+      ],
+      "args": [],
+      "discriminant": {
+        "type": "u8",
+        "value": 4
       }
     },
     {
@@ -240,7 +352,45 @@
       "args": [],
       "discriminant": {
         "type": "u8",
-        "value": 2
+        "value": 5
+      }
+    },
+    {
+      "name": "MarginfiProtocolInteraction",
+      "accounts": [
+        {
+          "name": "signer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "marginfiProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "ixSysvar",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "solautoPosition",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        }
+      ],
+      "args": [
+        {
+          "name": "solautoAction",
+          "type": {
+            "defined": "SolautoAction"
+          }
+        }
+      ],
+      "discriminant": {
+        "type": "u8",
+        "value": 6
       }
     },
     {
@@ -282,21 +432,20 @@
           "isSigner": false
         },
         {
-          "name": "positionsManager",
+          "name": "solautoAdminSettings",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "solautoFeesReceiver",
           "isMut": true,
-          "isSigner": false,
-          "isOptional": true
+          "isSigner": false
         },
         {
           "name": "solautoPosition",
           "isMut": true,
           "isSigner": false,
           "isOptional": true
-        },
-        {
-          "name": "solautoFeeReceiver",
-          "isMut": true,
-          "isSigner": false
         },
         {
           "name": "lendingMarket",
@@ -395,15 +544,230 @@
       ],
       "args": [
         {
-          "name": "protocolInteractionArgs",
+          "name": "solautoAction",
           "type": {
-            "defined": "ProtocolInteractionArgs"
+            "defined": "SolautoAction"
           }
         }
       ],
       "discriminant": {
         "type": "u8",
-        "value": 3
+        "value": 7
+      }
+    },
+    {
+      "name": "MarginfiRebalance",
+      "accounts": [
+        {
+          "name": "signer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "marginfiProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "ixSysvar",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "solautoAdminSettings",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "solautoFeesReceiver",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "solautoPosition",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        }
+      ],
+      "args": [
+        {
+          "name": "optionalLiqUtilizationRateBps",
+          "type": {
+            "defined": "OptionalLiqUtilizationRateBps"
+          }
+        }
+      ],
+      "discriminant": {
+        "type": "u8",
+        "value": 8
+      }
+    },
+    {
+      "name": "SolendRebalance",
+      "accounts": [
+        {
+          "name": "signer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "solendProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "ataProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "clock",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "ixSysvar",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "solautoAdminSettings",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "solautoFeesReceiver",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "solautoPosition",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "lendingMarket",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "obligation",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "supplyReserve",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "supplyReservePythPriceOracle",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "supplyReserveSwitchboardOracle",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "supplyLiquidityTokenMint",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "sourceSupplyLiquidity",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "reserveSupplyLiquidity",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "supplyCollateralTokenMint",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "sourceSupplyCollateral",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "reserveSupplyCollateral",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "debtReserve",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "debtReserveFeeReceiver",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "debtLiquidityTokenMint",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "sourceDebtLiquidity",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "reserveDebtLiquidity",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        }
+      ],
+      "args": [
+        {
+          "name": "optionalLiqUtilizationRateBps",
+          "type": {
+            "defined": "OptionalLiqUtilizationRateBps"
+          }
+        }
+      ],
+      "discriminant": {
+        "type": "u8",
+        "value": 9
       }
     }
   ],
@@ -440,10 +804,26 @@
             }
           },
           {
+            "name": "marginfiData",
+            "type": {
+              "option": {
+                "defined": "MarginfiPositionData"
+              }
+            }
+          },
+          {
             "name": "solendData",
             "type": {
               "option": {
                 "defined": "SolendPositionData"
+              }
+            }
+          },
+          {
+            "name": "kaminoData",
+            "type": {
+              "option": {
+                "defined": "KaminoPositionData"
               }
             }
           }
@@ -451,15 +831,17 @@
       }
     },
     {
-      "name": "PositionsManager",
+      "name": "SolautoAdminSettings",
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "openPositions",
-            "type": {
-              "vec": "publicKey"
-            }
+            "name": "feesWallet",
+            "type": "publicKey"
+          },
+          {
+            "name": "feesTokenMint",
+            "type": "publicKey"
           }
         ]
       }
@@ -467,7 +849,7 @@
   ],
   "types": [
     {
-      "name": "NewPositionData",
+      "name": "PositionData",
       "type": {
         "kind": "struct",
         "fields": [
@@ -482,59 +864,27 @@
             }
           },
           {
+            "name": "marginfiData",
+            "type": {
+              "option": {
+                "defined": "MarginfiPositionData"
+              }
+            }
+          },
+          {
             "name": "solendData",
             "type": {
               "option": {
                 "defined": "SolendPositionData"
               }
             }
-          }
-        ]
-      }
-    },
-    {
-      "name": "OpenPositionArgs",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "positionData",
-            "type": {
-              "option": {
-                "defined": "NewPositionData"
-              }
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "ProtocolInteractionArgs",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "action",
-            "type": {
-              "defined": "ProtocolAction"
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "ProtocolActionDetails",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "actionAmount",
-            "type": "u64"
           },
           {
-            "name": "rebalanceUtilizationRateBps",
+            "name": "kaminoData",
             "type": {
-              "option": "u16"
+              "option": {
+                "defined": "KaminoPositionData"
+              }
             }
           }
         ]
@@ -570,6 +920,10 @@
         "kind": "struct",
         "fields": [
           {
+            "name": "obligation",
+            "type": "publicKey"
+          },
+          {
             "name": "supplyReserve",
             "type": "publicKey"
           },
@@ -578,12 +932,37 @@
             "type": {
               "option": "publicKey"
             }
-          },
-          {
-            "name": "obligation",
-            "type": "publicKey"
           }
         ]
+      }
+    },
+    {
+      "name": "MarginfiPositionData",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "marginfiAccount",
+            "type": "publicKey"
+          },
+          {
+            "name": "supplyBank",
+            "type": "publicKey"
+          },
+          {
+            "name": "debtBank",
+            "type": {
+              "option": "publicKey"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "KaminoPositionData",
+      "type": {
+        "kind": "struct",
+        "fields": []
       }
     },
     {
@@ -592,7 +971,7 @@
         "kind": "struct",
         "fields": [
           {
-            "name": "utilizationRateBps",
+            "name": "liqUtilizationRateBps",
             "type": "u16"
           },
           {
@@ -615,44 +994,52 @@
       }
     },
     {
-      "name": "ProtocolAction",
+      "name": "SolautoAction",
       "type": {
         "kind": "enum",
         "variants": [
           {
             "name": "Deposit",
             "fields": [
-              {
-                "defined": "ProtocolActionDetails"
-              }
+              "u64"
             ]
           },
           {
             "name": "Borrow",
             "fields": [
-              {
-                "defined": "ProtocolActionDetails"
-              }
+              "u64"
             ]
           },
           {
             "name": "Repay",
             "fields": [
-              {
-                "defined": "ProtocolActionDetails"
-              }
+              "u64"
             ]
           },
           {
             "name": "Withdraw",
             "fields": [
               {
-                "defined": "ProtocolActionDetails"
+                "defined": "WithdrawParams"
               }
             ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "WithdrawParams",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "All"
           },
           {
-            "name": "ClosePosition"
+            "name": "Partial",
+            "fields": [
+              "u64"
+            ]
           }
         ]
       }
@@ -667,6 +1054,9 @@
           },
           {
             "name": "Solend"
+          },
+          {
+            "name": "Kamino"
           }
         ]
       }
@@ -675,28 +1065,53 @@
   "errors": [
     {
       "code": 0,
-      "name": "InvalidPositionSettings",
-      "msg": "Invalid position data given"
+      "name": "IncorrectSolautoSettingsAccount",
+      "msg": "Incorrect Solauto admin settings account"
     },
     {
       "code": 1,
+      "name": "IncorrectFeesReceiverAccount",
+      "msg": "Incorrect fee receiver account provided"
+    },
+    {
+      "code": 2,
+      "name": "MissingRequiredAccounts",
+      "msg": "Missing required accounts for the given instruction"
+    },
+    {
+      "code": 3,
       "name": "FailedAccountDeserialization",
       "msg": "Failed to deserialize account data, incorrect account was likely given"
     },
     {
-      "code": 2,
+      "code": 4,
+      "name": "InvalidPositionSettings",
+      "msg": "Invalid position data given"
+    },
+    {
+      "code": 5,
       "name": "StaleProtocolData",
       "msg": "Stale protocol data. Refresh instruction must be invoked before taking a protocol action"
     },
     {
-      "code": 3,
-      "name": "IncorrectFeeReceiver",
-      "msg": "Incorrect fee receiver account provided"
+      "code": 6,
+      "name": "UnableToReposition",
+      "msg": "Unable to adjust position to the desired utilization rate"
     },
     {
-      "code": 4,
-      "name": "MissingRequiredAccounts",
-      "msg": "Missing required accounts for the given instruction"
+      "code": 7,
+      "name": "ExceededValidUtilizationRate",
+      "msg": "Desired action brought the utilization rate to an unsafe amount"
+    },
+    {
+      "code": 8,
+      "name": "InvalidRebalanceCondition",
+      "msg": "Invalid position condition to rebalance"
+    },
+    {
+      "code": 9,
+      "name": "InstructionIsCPI",
+      "msg": "Unable to invoke instruciton through a CPI"
     }
   ],
   "metadata": {

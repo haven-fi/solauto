@@ -6,7 +6,7 @@
 //!
 
 pub(crate) mod r#position;
-pub(crate) mod r#positions_manager;
+pub(crate) mod r#solauto_admin_settings;
 
 pub use self::r#position::*;
-pub use self::r#positions_manager::*;
+pub use self::r#solauto_admin_settings::*;

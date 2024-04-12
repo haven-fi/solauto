@@ -11,7 +11,7 @@ use borsh::BorshSerialize;
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct GeneralPositionData {
-    pub utilization_rate_bps: u16,
+    pub liq_utilization_rate_bps: u16,
     pub net_worth_usd_base_amount: u64,
     pub base_amount_liquidity_net_worth: u64,
     pub base_amount_supplied: u64,

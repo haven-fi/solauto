@@ -15,15 +15,15 @@ import {
 } from '@metaplex-foundation/umi/serializers';
 
 export type SolendPositionData = {
+  obligation: PublicKey;
   supplyReserve: PublicKey;
   debtReserve: Option<PublicKey>;
-  obligation: PublicKey;
 };
 
 export type SolendPositionDataArgs = {
+  obligation: PublicKey;
   supplyReserve: PublicKey;
   debtReserve: OptionOrNullable<PublicKey>;
-  obligation: PublicKey;
 };
 
 export function getSolendPositionDataSerializer(): Serializer<
@@ -32,9 +32,9 @@ export function getSolendPositionDataSerializer(): Serializer<
 > {
   return struct<SolendPositionData>(
     [
+      ['obligation', publicKeySerializer()],
       ['supplyReserve', publicKeySerializer()],
       ['debtReserve', option(publicKeySerializer())],
-      ['obligation', publicKeySerializer()],
     ],
     { description: 'SolendPositionData' }
   ) as Serializer<SolendPositionDataArgs, SolendPositionData>;

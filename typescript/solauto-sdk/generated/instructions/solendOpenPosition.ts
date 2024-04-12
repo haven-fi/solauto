@@ -8,6 +8,8 @@
 
 import {
   Context,
+  Option,
+  OptionOrNullable,
   Pda,
   PublicKey,
   Signer,
@@ -18,6 +20,7 @@ import {
 import {
   Serializer,
   mapSerializer,
+  option,
   struct,
   u8,
 } from '@metaplex-foundation/umi/serializers';
@@ -27,9 +30,9 @@ import {
   getAccountMetasAndSigners,
 } from '../shared';
 import {
-  OpenPositionArgs,
-  OpenPositionArgsArgs,
-  getOpenPositionArgsSerializer,
+  PositionData,
+  PositionDataArgs,
+  getPositionDataSerializer,
 } from '../types';
 
 // Accounts.
@@ -43,6 +46,7 @@ export type SolendOpenPositionInstructionAccounts = {
   solautoPosition?: PublicKey | Pda;
   lendingMarket: PublicKey | Pda;
   obligation: PublicKey | Pda;
+  supplyReserve: PublicKey | Pda;
   supplyCollateralTokenAccount: PublicKey | Pda;
   supplyCollateralTokenMint: PublicKey | Pda;
   debtLiquidityTokenAccount: PublicKey | Pda;
@@ -52,11 +56,11 @@ export type SolendOpenPositionInstructionAccounts = {
 // Data.
 export type SolendOpenPositionInstructionData = {
   discriminator: number;
-  openPositionArgs: OpenPositionArgs;
+  args: Option<PositionData>;
 };
 
 export type SolendOpenPositionInstructionDataArgs = {
-  openPositionArgs: OpenPositionArgsArgs;
+  args: OptionOrNullable<PositionDataArgs>;
 };
 
 export function getSolendOpenPositionInstructionDataSerializer(): Serializer<
@@ -71,11 +75,11 @@ export function getSolendOpenPositionInstructionDataSerializer(): Serializer<
     struct<SolendOpenPositionInstructionData>(
       [
         ['discriminator', u8()],
-        ['openPositionArgs', getOpenPositionArgsSerializer()],
+        ['args', option(getPositionDataSerializer())],
       ],
       { description: 'SolendOpenPositionInstructionData' }
     ),
-    (value) => ({ ...value, discriminator: 1 })
+    (value) => ({ ...value, discriminator: 2 })
   ) as Serializer<
     SolendOpenPositionInstructionDataArgs,
     SolendOpenPositionInstructionData
@@ -141,23 +145,28 @@ export function solendOpenPosition(
       isWritable: true as boolean,
       value: input.obligation ?? null,
     },
-    supplyCollateralTokenAccount: {
+    supplyReserve: {
       index: 9,
+      isWritable: false as boolean,
+      value: input.supplyReserve ?? null,
+    },
+    supplyCollateralTokenAccount: {
+      index: 10,
       isWritable: true as boolean,
       value: input.supplyCollateralTokenAccount ?? null,
     },
     supplyCollateralTokenMint: {
-      index: 10,
+      index: 11,
       isWritable: false as boolean,
       value: input.supplyCollateralTokenMint ?? null,
     },
     debtLiquidityTokenAccount: {
-      index: 11,
+      index: 12,
       isWritable: true as boolean,
       value: input.debtLiquidityTokenAccount ?? null,
     },
     debtLiquidityTokenMint: {
-      index: 12,
+      index: 13,
       isWritable: false as boolean,
       value: input.debtLiquidityTokenMint ?? null,
     },

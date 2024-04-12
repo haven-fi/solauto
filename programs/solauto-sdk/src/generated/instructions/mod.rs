@@ -6,11 +6,23 @@
 //!
 
 pub(crate) mod r#marginfi_open_position;
+pub(crate) mod r#marginfi_protocol_interaction;
+pub(crate) mod r#marginfi_rebalance;
+pub(crate) mod r#marginfi_refresh_data;
 pub(crate) mod r#solend_open_position;
 pub(crate) mod r#solend_protocol_interaction;
+pub(crate) mod r#solend_rebalance;
 pub(crate) mod r#solend_refresh_data;
+pub(crate) mod r#update_position;
+pub(crate) mod r#update_solauto_admin_settings;
 
 pub use self::r#marginfi_open_position::*;
+pub use self::r#marginfi_protocol_interaction::*;
+pub use self::r#marginfi_rebalance::*;
+pub use self::r#marginfi_refresh_data::*;
 pub use self::r#solend_open_position::*;
 pub use self::r#solend_protocol_interaction::*;
+pub use self::r#solend_rebalance::*;
 pub use self::r#solend_refresh_data::*;
+pub use self::r#update_position::*;
+pub use self::r#update_solauto_admin_settings::*;

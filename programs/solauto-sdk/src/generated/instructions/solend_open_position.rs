@@ -5,7 +5,7 @@
 //! [https://github.com/metaplex-foundation/kinobi]
 //!
 
-use crate::generated::types::OpenPositionArgs;
+use crate::generated::types::PositionData;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 
@@ -29,6 +29,8 @@ pub struct SolendOpenPosition {
 
     pub obligation: solana_program::pubkey::Pubkey,
 
+    pub supply_reserve: solana_program::pubkey::Pubkey,
+
     pub supply_collateral_token_account: solana_program::pubkey::Pubkey,
 
     pub supply_collateral_token_mint: solana_program::pubkey::Pubkey,
@@ -51,7 +53,7 @@ impl SolendOpenPosition {
         args: SolendOpenPositionInstructionArgs,
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
-        let mut accounts = Vec::with_capacity(13 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(14 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.signer,
             true,
@@ -94,6 +96,10 @@ impl SolendOpenPosition {
             self.obligation,
             false,
         ));
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            self.supply_reserve,
+            false,
+        ));
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.supply_collateral_token_account,
             false,
@@ -132,14 +138,14 @@ struct SolendOpenPositionInstructionData {
 
 impl SolendOpenPositionInstructionData {
     fn new() -> Self {
-        Self { discriminator: 1 }
+        Self { discriminator: 2 }
     }
 }
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SolendOpenPositionInstructionArgs {
-    pub open_position_args: OpenPositionArgs,
+    pub args: Option<PositionData>,
 }
 
 /// Instruction builder for `SolendOpenPosition`.
@@ -155,10 +161,11 @@ pub struct SolendOpenPositionInstructionArgs {
 ///   6. `[writable, optional]` solauto_position
 ///   7. `[]` lending_market
 ///   8. `[writable]` obligation
-///   9. `[writable]` supply_collateral_token_account
-///   10. `[]` supply_collateral_token_mint
-///   11. `[writable]` debt_liquidity_token_account
-///   12. `[]` debt_liquidity_token_mint
+///   9. `[]` supply_reserve
+///   10. `[writable]` supply_collateral_token_account
+///   11. `[]` supply_collateral_token_mint
+///   12. `[writable]` debt_liquidity_token_account
+///   13. `[]` debt_liquidity_token_mint
 #[derive(Default)]
 pub struct SolendOpenPositionBuilder {
     signer: Option<solana_program::pubkey::Pubkey>,
@@ -170,11 +177,12 @@ pub struct SolendOpenPositionBuilder {
     solauto_position: Option<solana_program::pubkey::Pubkey>,
     lending_market: Option<solana_program::pubkey::Pubkey>,
     obligation: Option<solana_program::pubkey::Pubkey>,
+    supply_reserve: Option<solana_program::pubkey::Pubkey>,
     supply_collateral_token_account: Option<solana_program::pubkey::Pubkey>,
     supply_collateral_token_mint: Option<solana_program::pubkey::Pubkey>,
     debt_liquidity_token_account: Option<solana_program::pubkey::Pubkey>,
     debt_liquidity_token_mint: Option<solana_program::pubkey::Pubkey>,
-    open_position_args: Option<OpenPositionArgs>,
+    args: Option<PositionData>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
 
@@ -236,6 +244,11 @@ impl SolendOpenPositionBuilder {
         self
     }
     #[inline(always)]
+    pub fn supply_reserve(&mut self, supply_reserve: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.supply_reserve = Some(supply_reserve);
+        self
+    }
+    #[inline(always)]
     pub fn supply_collateral_token_account(
         &mut self,
         supply_collateral_token_account: solana_program::pubkey::Pubkey,
@@ -267,9 +280,10 @@ impl SolendOpenPositionBuilder {
         self.debt_liquidity_token_mint = Some(debt_liquidity_token_mint);
         self
     }
+    /// `[optional argument]`
     #[inline(always)]
-    pub fn open_position_args(&mut self, open_position_args: OpenPositionArgs) -> &mut Self {
-        self.open_position_args = Some(open_position_args);
+    pub fn args(&mut self, args: PositionData) -> &mut Self {
+        self.args = Some(args);
         self
     }
     /// Add an aditional account to the instruction.
@@ -310,6 +324,7 @@ impl SolendOpenPositionBuilder {
             solauto_position: self.solauto_position,
             lending_market: self.lending_market.expect("lending_market is not set"),
             obligation: self.obligation.expect("obligation is not set"),
+            supply_reserve: self.supply_reserve.expect("supply_reserve is not set"),
             supply_collateral_token_account: self
                 .supply_collateral_token_account
                 .expect("supply_collateral_token_account is not set"),
@@ -324,10 +339,7 @@ impl SolendOpenPositionBuilder {
                 .expect("debt_liquidity_token_mint is not set"),
         };
         let args = SolendOpenPositionInstructionArgs {
-            open_position_args: self
-                .open_position_args
-                .clone()
-                .expect("open_position_args is not set"),
+            args: self.args.clone(),
         };
 
         accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
@@ -353,6 +365,8 @@ pub struct SolendOpenPositionCpiAccounts<'a, 'b> {
     pub lending_market: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub obligation: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub supply_reserve: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub supply_collateral_token_account: &'b solana_program::account_info::AccountInfo<'a>,
 
@@ -386,6 +400,8 @@ pub struct SolendOpenPositionCpi<'a, 'b> {
 
     pub obligation: &'b solana_program::account_info::AccountInfo<'a>,
 
+    pub supply_reserve: &'b solana_program::account_info::AccountInfo<'a>,
+
     pub supply_collateral_token_account: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub supply_collateral_token_mint: &'b solana_program::account_info::AccountInfo<'a>,
@@ -414,6 +430,7 @@ impl<'a, 'b> SolendOpenPositionCpi<'a, 'b> {
             solauto_position: accounts.solauto_position,
             lending_market: accounts.lending_market,
             obligation: accounts.obligation,
+            supply_reserve: accounts.supply_reserve,
             supply_collateral_token_account: accounts.supply_collateral_token_account,
             supply_collateral_token_mint: accounts.supply_collateral_token_mint,
             debt_liquidity_token_account: accounts.debt_liquidity_token_account,
@@ -454,7 +471,7 @@ impl<'a, 'b> SolendOpenPositionCpi<'a, 'b> {
             bool,
         )],
     ) -> solana_program::entrypoint::ProgramResult {
-        let mut accounts = Vec::with_capacity(13 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(14 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             *self.signer.key,
             true,
@@ -498,6 +515,10 @@ impl<'a, 'b> SolendOpenPositionCpi<'a, 'b> {
             *self.obligation.key,
             false,
         ));
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            *self.supply_reserve.key,
+            false,
+        ));
         accounts.push(solana_program::instruction::AccountMeta::new(
             *self.supply_collateral_token_account.key,
             false,
@@ -532,7 +553,7 @@ impl<'a, 'b> SolendOpenPositionCpi<'a, 'b> {
             accounts,
             data,
         };
-        let mut account_infos = Vec::with_capacity(13 + 1 + remaining_accounts.len());
+        let mut account_infos = Vec::with_capacity(14 + 1 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
         account_infos.push(self.signer.clone());
         account_infos.push(self.solend_program.clone());
@@ -545,6 +566,7 @@ impl<'a, 'b> SolendOpenPositionCpi<'a, 'b> {
         }
         account_infos.push(self.lending_market.clone());
         account_infos.push(self.obligation.clone());
+        account_infos.push(self.supply_reserve.clone());
         account_infos.push(self.supply_collateral_token_account.clone());
         account_infos.push(self.supply_collateral_token_mint.clone());
         account_infos.push(self.debt_liquidity_token_account.clone());
@@ -574,10 +596,11 @@ impl<'a, 'b> SolendOpenPositionCpi<'a, 'b> {
 ///   6. `[writable, optional]` solauto_position
 ///   7. `[]` lending_market
 ///   8. `[writable]` obligation
-///   9. `[writable]` supply_collateral_token_account
-///   10. `[]` supply_collateral_token_mint
-///   11. `[writable]` debt_liquidity_token_account
-///   12. `[]` debt_liquidity_token_mint
+///   9. `[]` supply_reserve
+///   10. `[writable]` supply_collateral_token_account
+///   11. `[]` supply_collateral_token_mint
+///   12. `[writable]` debt_liquidity_token_account
+///   13. `[]` debt_liquidity_token_mint
 pub struct SolendOpenPositionCpiBuilder<'a, 'b> {
     instruction: Box<SolendOpenPositionCpiBuilderInstruction<'a, 'b>>,
 }
@@ -595,11 +618,12 @@ impl<'a, 'b> SolendOpenPositionCpiBuilder<'a, 'b> {
             solauto_position: None,
             lending_market: None,
             obligation: None,
+            supply_reserve: None,
             supply_collateral_token_account: None,
             supply_collateral_token_mint: None,
             debt_liquidity_token_account: None,
             debt_liquidity_token_mint: None,
-            open_position_args: None,
+            args: None,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
@@ -675,6 +699,14 @@ impl<'a, 'b> SolendOpenPositionCpiBuilder<'a, 'b> {
         self
     }
     #[inline(always)]
+    pub fn supply_reserve(
+        &mut self,
+        supply_reserve: &'b solana_program::account_info::AccountInfo<'a>,
+    ) -> &mut Self {
+        self.instruction.supply_reserve = Some(supply_reserve);
+        self
+    }
+    #[inline(always)]
     pub fn supply_collateral_token_account(
         &mut self,
         supply_collateral_token_account: &'b solana_program::account_info::AccountInfo<'a>,
@@ -706,9 +738,10 @@ impl<'a, 'b> SolendOpenPositionCpiBuilder<'a, 'b> {
         self.instruction.debt_liquidity_token_mint = Some(debt_liquidity_token_mint);
         self
     }
+    /// `[optional argument]`
     #[inline(always)]
-    pub fn open_position_args(&mut self, open_position_args: OpenPositionArgs) -> &mut Self {
-        self.instruction.open_position_args = Some(open_position_args);
+    pub fn args(&mut self, args: PositionData) -> &mut Self {
+        self.instruction.args = Some(args);
         self
     }
     /// Add an additional account to the instruction.
@@ -753,11 +786,7 @@ impl<'a, 'b> SolendOpenPositionCpiBuilder<'a, 'b> {
         signers_seeds: &[&[&[u8]]],
     ) -> solana_program::entrypoint::ProgramResult {
         let args = SolendOpenPositionInstructionArgs {
-            open_position_args: self
-                .instruction
-                .open_position_args
-                .clone()
-                .expect("open_position_args is not set"),
+            args: self.instruction.args.clone(),
         };
         let instruction = SolendOpenPositionCpi {
             __program: self.instruction.__program,
@@ -794,6 +823,11 @@ impl<'a, 'b> SolendOpenPositionCpiBuilder<'a, 'b> {
                 .expect("lending_market is not set"),
 
             obligation: self.instruction.obligation.expect("obligation is not set"),
+
+            supply_reserve: self
+                .instruction
+                .supply_reserve
+                .expect("supply_reserve is not set"),
 
             supply_collateral_token_account: self
                 .instruction
@@ -834,11 +868,12 @@ struct SolendOpenPositionCpiBuilderInstruction<'a, 'b> {
     solauto_position: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     lending_market: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     obligation: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    supply_reserve: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     supply_collateral_token_account: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     supply_collateral_token_mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     debt_liquidity_token_account: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     debt_liquidity_token_mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    open_position_args: Option<OpenPositionArgs>,
+    args: Option<PositionData>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(
         &'b solana_program::account_info::AccountInfo<'a>,

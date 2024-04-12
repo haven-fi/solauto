@@ -11,11 +11,22 @@ use solana_program::pubkey::Pubkey;
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct PositionsManager {
-    pub open_positions: Vec<Pubkey>,
+pub struct SolautoAdminSettings {
+    #[cfg_attr(
+        feature = "serde",
+        serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
+    )]
+    pub fees_wallet: Pubkey,
+    #[cfg_attr(
+        feature = "serde",
+        serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
+    )]
+    pub fees_token_mint: Pubkey,
 }
 
-impl PositionsManager {
+impl SolautoAdminSettings {
+    pub const LEN: usize = 64;
+
     #[inline(always)]
     pub fn from_bytes(data: &[u8]) -> Result<Self, std::io::Error> {
         let mut data = data;
@@ -23,7 +34,7 @@ impl PositionsManager {
     }
 }
 
-impl<'a> TryFrom<&solana_program::account_info::AccountInfo<'a>> for PositionsManager {
+impl<'a> TryFrom<&solana_program::account_info::AccountInfo<'a>> for SolautoAdminSettings {
     type Error = std::io::Error;
 
     fn try_from(

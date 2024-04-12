@@ -10,23 +10,38 @@ use thiserror::Error;
 
 #[derive(Clone, Debug, Eq, Error, FromPrimitive, PartialEq)]
 pub enum SolautoError {
-    /// 0 (0x0) - Invalid position data given
-    #[error("Invalid position data given")]
-    InvalidPositionSettings,
-    /// 1 (0x1) - Failed to deserialize account data, incorrect account was likely given
+    /// 0 (0x0) - Incorrect Solauto admin settings account
+    #[error("Incorrect Solauto admin settings account")]
+    IncorrectSolautoSettingsAccount,
+    /// 1 (0x1) - Incorrect fee receiver account provided
+    #[error("Incorrect fee receiver account provided")]
+    IncorrectFeesReceiverAccount,
+    /// 2 (0x2) - Missing required accounts for the given instruction
+    #[error("Missing required accounts for the given instruction")]
+    MissingRequiredAccounts,
+    /// 3 (0x3) - Failed to deserialize account data, incorrect account was likely given
     #[error("Failed to deserialize account data, incorrect account was likely given")]
     FailedAccountDeserialization,
-    /// 2 (0x2) - Stale protocol data. Refresh instruction must be invoked before taking a protocol action
+    /// 4 (0x4) - Invalid position data given
+    #[error("Invalid position data given")]
+    InvalidPositionSettings,
+    /// 5 (0x5) - Stale protocol data. Refresh instruction must be invoked before taking a protocol action
     #[error(
         "Stale protocol data. Refresh instruction must be invoked before taking a protocol action"
     )]
     StaleProtocolData,
-    /// 3 (0x3) - Incorrect fee receiver account provided
-    #[error("Incorrect fee receiver account provided")]
-    IncorrectFeeReceiver,
-    /// 4 (0x4) - Missing required accounts for the given instruction
-    #[error("Missing required accounts for the given instruction")]
-    MissingRequiredAccounts,
+    /// 6 (0x6) - Unable to adjust position to the desired utilization rate
+    #[error("Unable to adjust position to the desired utilization rate")]
+    UnableToReposition,
+    /// 7 (0x7) - Desired action brought the utilization rate to an unsafe amount
+    #[error("Desired action brought the utilization rate to an unsafe amount")]
+    ExceededValidUtilizationRate,
+    /// 8 (0x8) - Invalid position condition to rebalance
+    #[error("Invalid position condition to rebalance")]
+    InvalidRebalanceCondition,
+    /// 9 (0x9) - Unable to invoke instruciton through a CPI
+    #[error("Unable to invoke instruciton through a CPI")]
+    InstructionIsCPI,
 }
 
 impl solana_program::program_error::PrintProgramError for SolautoError {

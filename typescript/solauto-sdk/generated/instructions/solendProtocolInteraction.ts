@@ -27,9 +27,9 @@ import {
   getAccountMetasAndSigners,
 } from '../shared';
 import {
-  ProtocolAction,
-  ProtocolActionArgs,
-  getProtocolActionSerializer,
+  SolautoAction,
+  SolautoActionArgs,
+  getSolautoActionSerializer,
 } from '../types';
 
 // Accounts.
@@ -41,9 +41,9 @@ export type SolendProtocolInteractionInstructionAccounts = {
   ataProgram?: PublicKey | Pda;
   clock: PublicKey | Pda;
   rent?: PublicKey | Pda;
-  positionsManager?: PublicKey | Pda;
+  solautoAdminSettings: PublicKey | Pda;
+  solautoFeesReceiver: PublicKey | Pda;
   solautoPosition?: PublicKey | Pda;
-  solautoFeeReceiver: PublicKey | Pda;
   lendingMarket: PublicKey | Pda;
   obligation: PublicKey | Pda;
   supplyReserve?: PublicKey | Pda;
@@ -65,11 +65,11 @@ export type SolendProtocolInteractionInstructionAccounts = {
 // Data.
 export type SolendProtocolInteractionInstructionData = {
   discriminator: number;
-  action: ProtocolAction;
+  solautoAction: SolautoAction;
 };
 
 export type SolendProtocolInteractionInstructionDataArgs = {
-  action: ProtocolActionArgs;
+  solautoAction: SolautoActionArgs;
 };
 
 export function getSolendProtocolInteractionInstructionDataSerializer(): Serializer<
@@ -84,11 +84,11 @@ export function getSolendProtocolInteractionInstructionDataSerializer(): Seriali
     struct<SolendProtocolInteractionInstructionData>(
       [
         ['discriminator', u8()],
-        ['action', getProtocolActionSerializer()],
+        ['solautoAction', getSolautoActionSerializer()],
       ],
       { description: 'SolendProtocolInteractionInstructionData' }
     ),
-    (value) => ({ ...value, discriminator: 3 })
+    (value) => ({ ...value, discriminator: 7 })
   ) as Serializer<
     SolendProtocolInteractionInstructionDataArgs,
     SolendProtocolInteractionInstructionData
@@ -144,20 +144,20 @@ export function solendProtocolInteraction(
       value: input.clock ?? null,
     },
     rent: { index: 6, isWritable: false as boolean, value: input.rent ?? null },
-    positionsManager: {
+    solautoAdminSettings: {
       index: 7,
-      isWritable: true as boolean,
-      value: input.positionsManager ?? null,
+      isWritable: false as boolean,
+      value: input.solautoAdminSettings ?? null,
     },
-    solautoPosition: {
+    solautoFeesReceiver: {
       index: 8,
       isWritable: true as boolean,
-      value: input.solautoPosition ?? null,
+      value: input.solautoFeesReceiver ?? null,
     },
-    solautoFeeReceiver: {
+    solautoPosition: {
       index: 9,
       isWritable: true as boolean,
-      value: input.solautoFeeReceiver ?? null,
+      value: input.solautoPosition ?? null,
     },
     lendingMarket: {
       index: 10,

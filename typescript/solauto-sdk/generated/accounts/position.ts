@@ -31,14 +31,20 @@ import {
 import {
   GeneralPositionData,
   GeneralPositionDataArgs,
+  KaminoPositionData,
+  KaminoPositionDataArgs,
   LendingPlatform,
   LendingPlatformArgs,
+  MarginfiPositionData,
+  MarginfiPositionDataArgs,
   SolautoSettingsParameters,
   SolautoSettingsParametersArgs,
   SolendPositionData,
   SolendPositionDataArgs,
   getGeneralPositionDataSerializer,
+  getKaminoPositionDataSerializer,
   getLendingPlatformSerializer,
+  getMarginfiPositionDataSerializer,
   getSolautoSettingsParametersSerializer,
   getSolendPositionDataSerializer,
 } from '../types';
@@ -51,7 +57,9 @@ export type PositionAccountData = {
   lendingPlatform: LendingPlatform;
   settingParams: SolautoSettingsParameters;
   generalData: GeneralPositionData;
+  marginfiData: Option<MarginfiPositionData>;
   solendData: Option<SolendPositionData>;
+  kaminoData: Option<KaminoPositionData>;
 };
 
 export type PositionAccountDataArgs = {
@@ -60,7 +68,9 @@ export type PositionAccountDataArgs = {
   lendingPlatform: LendingPlatformArgs;
   settingParams: SolautoSettingsParametersArgs;
   generalData: GeneralPositionDataArgs;
+  marginfiData: OptionOrNullable<MarginfiPositionDataArgs>;
   solendData: OptionOrNullable<SolendPositionDataArgs>;
+  kaminoData: OptionOrNullable<KaminoPositionDataArgs>;
 };
 
 export function getPositionAccountDataSerializer(): Serializer<
@@ -74,7 +84,9 @@ export function getPositionAccountDataSerializer(): Serializer<
       ['lendingPlatform', getLendingPlatformSerializer()],
       ['settingParams', getSolautoSettingsParametersSerializer()],
       ['generalData', getGeneralPositionDataSerializer()],
+      ['marginfiData', option(getMarginfiPositionDataSerializer())],
       ['solendData', option(getSolendPositionDataSerializer())],
+      ['kaminoData', option(getKaminoPositionDataSerializer())],
     ],
     { description: 'PositionAccountData' }
   ) as Serializer<PositionAccountDataArgs, PositionAccountData>;
@@ -152,14 +164,18 @@ export function getPositionGpaBuilder(
       lendingPlatform: LendingPlatformArgs;
       settingParams: SolautoSettingsParametersArgs;
       generalData: GeneralPositionDataArgs;
+      marginfiData: OptionOrNullable<MarginfiPositionDataArgs>;
       solendData: OptionOrNullable<SolendPositionDataArgs>;
+      kaminoData: OptionOrNullable<KaminoPositionDataArgs>;
     }>({
       positionId: [0, u8()],
       authority: [1, publicKeySerializer()],
       lendingPlatform: [33, getLendingPlatformSerializer()],
       settingParams: [34, getSolautoSettingsParametersSerializer()],
       generalData: [42, getGeneralPositionDataSerializer()],
-      solendData: [76, option(getSolendPositionDataSerializer())],
+      marginfiData: [76, option(getMarginfiPositionDataSerializer())],
+      solendData: [null, option(getSolendPositionDataSerializer())],
+      kaminoData: [null, option(getKaminoPositionDataSerializer())],
     })
     .deserializeUsing<Position>((account) => deserializePosition(account));
 }

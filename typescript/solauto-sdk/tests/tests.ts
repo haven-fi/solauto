@@ -108,6 +108,7 @@ describe("Solauto tests", async () => {
       solautoPosition: solautoManaged ? publicKey(solautoPosition) : undefined,
       obligation: publicKey(obligation),
       lendingMarket: publicKey(solendAccounts.lendingMarket),
+      supplyReserve: publicKey(solendAccounts.solReserve.reserve),
       supplyCollateralTokenAccount: publicKey(supplyCollateralTokenAccount),
       supplyCollateralTokenMint: publicKey(
         solendAccounts.solReserve.collateralTokenMint
@@ -116,24 +117,24 @@ describe("Solauto tests", async () => {
       debtLiquidityTokenMint: publicKey(
         solendAccounts.usdcReserve.liquidityTokenMint
       ),
-      openPositionArgs: {
-        positionData: solautoManaged
-        ? {
-            __option: "Some",
-            value: {
-              positionId,
-              settingParams,
-              solendData: {
-                supplyReserve: publicKey(solendAccounts.solReserve.reserve),
-                debtReserve: publicKey(solendAccounts.usdcReserve.reserve),
-                obligation: publicKey(obligation),
-              },
+      args: solautoManaged
+      ? {
+          __option: "Some",
+          value: {
+            positionId,
+            settingParams,
+            solendData: {
+              supplyReserve: publicKey(solendAccounts.solReserve.reserve),
+              debtReserve: publicKey(solendAccounts.usdcReserve.reserve),
+              obligation: publicKey(obligation),
             },
-          }
-        : {
-            __option: "None",
-          }
-      }
+            kaminoData: { __option: "None" },
+            marginfiData: { __option: "None" },
+          },
+        }
+      : {
+          __option: "None",
+        }
     });
 
     const transaction = await builder.buildWithLatestBlockhash(umi);

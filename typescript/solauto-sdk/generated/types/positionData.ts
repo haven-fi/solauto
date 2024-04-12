@@ -14,36 +14,48 @@ import {
   u8,
 } from '@metaplex-foundation/umi/serializers';
 import {
+  KaminoPositionData,
+  KaminoPositionDataArgs,
+  MarginfiPositionData,
+  MarginfiPositionDataArgs,
   SolautoSettingsParameters,
   SolautoSettingsParametersArgs,
   SolendPositionData,
   SolendPositionDataArgs,
+  getKaminoPositionDataSerializer,
+  getMarginfiPositionDataSerializer,
   getSolautoSettingsParametersSerializer,
   getSolendPositionDataSerializer,
 } from '.';
 
-export type NewPositionData = {
+export type PositionData = {
   positionId: number;
   settingParams: SolautoSettingsParameters;
+  marginfiData: Option<MarginfiPositionData>;
   solendData: Option<SolendPositionData>;
+  kaminoData: Option<KaminoPositionData>;
 };
 
-export type NewPositionDataArgs = {
+export type PositionDataArgs = {
   positionId: number;
   settingParams: SolautoSettingsParametersArgs;
+  marginfiData: OptionOrNullable<MarginfiPositionDataArgs>;
   solendData: OptionOrNullable<SolendPositionDataArgs>;
+  kaminoData: OptionOrNullable<KaminoPositionDataArgs>;
 };
 
-export function getNewPositionDataSerializer(): Serializer<
-  NewPositionDataArgs,
-  NewPositionData
+export function getPositionDataSerializer(): Serializer<
+  PositionDataArgs,
+  PositionData
 > {
-  return struct<NewPositionData>(
+  return struct<PositionData>(
     [
       ['positionId', u8()],
       ['settingParams', getSolautoSettingsParametersSerializer()],
+      ['marginfiData', option(getMarginfiPositionDataSerializer())],
       ['solendData', option(getSolendPositionDataSerializer())],
+      ['kaminoData', option(getKaminoPositionDataSerializer())],
     ],
-    { description: 'NewPositionData' }
-  ) as Serializer<NewPositionDataArgs, NewPositionData>;
+    { description: 'PositionData' }
+  ) as Serializer<PositionDataArgs, PositionData>;
 }

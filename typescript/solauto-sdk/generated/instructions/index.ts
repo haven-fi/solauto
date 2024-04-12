@@ -7,6 +7,12 @@
  */
 
 export * from './marginfiOpenPosition';
+export * from './marginfiProtocolInteraction';
+export * from './marginfiRebalance';
+export * from './marginfiRefreshData';
 export * from './solendOpenPosition';
 export * from './solendProtocolInteraction';
+export * from './solendRebalance';
 export * from './solendRefreshData';
+export * from './updatePosition';
+export * from './updateSolautoAdminSettings';

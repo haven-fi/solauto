@@ -7,4 +7,4 @@
  */
 
 export * from './position';
-export * from './positionsManager';
+export * from './solautoAdminSettings';
