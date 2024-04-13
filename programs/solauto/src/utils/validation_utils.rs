@@ -433,14 +433,14 @@ pub fn validate_referral_accounts(std_accounts: &SolautoStandardAccounts) -> Pro
         std_accounts.signer.key
     };
 
-    let referral_position_seeds = &[authority.as_ref(), b"referrals"];
-    let (referral_position_pda, _bump) = Pubkey::find_program_address(referral_position_seeds, &crate::ID);
-    if &referral_position_pda != std_accounts.authority_referral_position.as_ref().unwrap().account_info.key {
+    let referral_state_seeds = &[authority.as_ref(), b"referrals"];
+    let (referral_state_pda, _bump) = Pubkey::find_program_address(referral_state_seeds, &crate::ID);
+    if &referral_state_pda != std_accounts.authority_referral_state.as_ref().unwrap().account_info.key {
         msg!("Invalid referral position account given for the provided authority");
         return Err(ProgramError::InvalidAccountData.into());
     }
 
-    let authority_referred_by_ta = std_accounts.authority_referral_position.as_ref().unwrap().data.referred_by_ta;
+    let authority_referred_by_ta = std_accounts.authority_referral_state.as_ref().unwrap().data.referred_by_ta;
     if !authority_referred_by_ta.is_none() && std_accounts.referred_by_ta.is_none() {
         msg!("Missing referred_by token account when this authority account has been referred");
         return Err(ProgramError::InvalidAccountData.into());

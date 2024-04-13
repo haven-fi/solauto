@@ -17,7 +17,7 @@ use crate::{
             PositionData,
             SolautoStandardAccounts,
         },
-        shared::{ DeserializedAccount, LendingPlatform, Position, ReferralAccount, SolautoAction },
+        shared::{ DeserializedAccount, LendingPlatform, Position, RefferalState, SolautoAction },
     },
     utils::*,
 };
@@ -34,27 +34,27 @@ pub fn process_marginfi_open_position_instruction<'a>(
         LendingPlatform::Marginfi
     )?;
 
-    let authority_referral_position = solauto_utils::get_or_create_referral_position(
+    let authority_referral_state = solauto_utils::get_or_create_referral_state(
         ctx.accounts.system_program,
         ctx.accounts.token_program,
         ctx.accounts.rent,
         ctx.accounts.signer,
         ctx.accounts.signer,
-        ctx.accounts.signer_referral_position,
+        ctx.accounts.signer_referral_state,
         ctx.accounts.referral_fees_mint,
         ctx.accounts.signer_referral_fees_ta,
-        ctx.accounts.referred_by_position,
+        ctx.accounts.referred_by_state,
         ctx.accounts.referred_by_ta
     )?;
 
-    if !ctx.accounts.referred_by_position.is_none() {
-        solauto_utils::get_or_create_referral_position(
+    if !ctx.accounts.referred_by_state.is_none() {
+        solauto_utils::get_or_create_referral_state(
             ctx.accounts.system_program,
             ctx.accounts.token_program,
             ctx.accounts.rent,
             ctx.accounts.signer,
             ctx.accounts.referred_by_authority.unwrap(),
-            ctx.accounts.referred_by_position.unwrap(),
+            ctx.accounts.referred_by_state.unwrap(),
             ctx.accounts.referral_fees_mint,
             ctx.accounts.referred_by_ta.unwrap(),
             None,
@@ -72,7 +72,7 @@ pub fn process_marginfi_open_position_instruction<'a>(
         solauto_position,
         solauto_admin_settings: None,
         solauto_fees_receiver_ta: None,
-        authority_referral_position: None,
+        authority_referral_state: None,
         referred_by_ta: None,
     };
     validation_utils::generic_instruction_validation(
@@ -113,7 +113,7 @@ pub fn process_marginfi_interaction_instruction<'a>(
         solauto_position,
         solauto_admin_settings: None,
         solauto_fees_receiver_ta: None,
-        authority_referral_position: None,
+        authority_referral_state: None,
         referred_by_ta: None,
     };
     validation_utils::generic_instruction_validation(
@@ -143,7 +143,7 @@ pub fn process_marginfi_rebalance<'a>(
         solauto_position,
         solauto_admin_settings: Some(ctx.accounts.solauto_admin_settings),
         solauto_fees_receiver_ta: Some(ctx.accounts.solauto_fees_receiver_ta),
-        authority_referral_position: DeserializedAccount::<ReferralAccount>::deserialize(Some(ctx.accounts.authority_referral_position))?,
+        authority_referral_state: DeserializedAccount::<RefferalState>::deserialize(Some(ctx.accounts.authority_referral_state))?,
         referred_by_ta: ctx.accounts.referred_by_ta,
     };
     validation_utils::generic_instruction_validation(

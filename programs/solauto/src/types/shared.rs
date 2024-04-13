@@ -91,7 +91,7 @@ pub struct Position {
 
 pub const REFERRAL_ACCOUNT_SPACE: usize = 300;
 #[derive(ShankAccount, BorshDeserialize, BorshSerialize, Clone, Debug)]
-pub struct ReferralAccount {
+pub struct RefferalState {
     pub authority: Pubkey,
     pub referred_by_ta: Option<Pubkey>,
     pub fees_mint: Pubkey,

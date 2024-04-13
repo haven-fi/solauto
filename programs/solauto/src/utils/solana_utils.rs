@@ -14,6 +14,7 @@ use spl_associated_token_account::{
     get_associated_token_address,
     instruction::create_associated_token_account,
 };
+use spl_token::instruction::close_account;
 
 pub fn account_is_rent_exempt(
     rent_sysvar: &AccountInfo,
@@ -87,12 +88,7 @@ pub fn init_ata_if_needed<'a>(
     }
 
     invoke(
-        &create_associated_token_account(
-            payer.key,
-            wallet.key,
-            token_mint.key,
-            token_program.key
-        ),
+        &create_associated_token_account(payer.key, wallet.key, token_mint.key, token_program.key),
         &[
             payer.clone(),
             token_account.clone(),
@@ -100,6 +96,29 @@ pub fn init_ata_if_needed<'a>(
             token_mint.clone(),
             system_program.clone(),
             token_program.clone(),
+        ]
+    )
+}
+
+pub fn close_token_account<'a>(
+    token_program: &'a AccountInfo<'a>,
+    account: &'a AccountInfo<'a>,
+    sol_destination: &'a AccountInfo<'a>,
+    account_owner: &'a AccountInfo<'a>
+) -> ProgramResult {
+    invoke(
+        &close_account(
+            token_program.key,
+            account.key,
+            sol_destination.key,
+            account_owner.key,
+            &[]
+        )?,
+        &[
+            account.clone(),
+            sol_destination.clone(),
+            account_owner.clone(),
+            token_program.clone()
         ]
     )
 }

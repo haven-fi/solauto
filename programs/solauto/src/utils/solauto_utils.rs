@@ -12,7 +12,7 @@ use crate::{
             GeneralPositionData,
             LendingPlatform,
             Position,
-            ReferralAccount,
+            RefferalState,
             REFERRAL_ACCOUNT_SPACE,
         },
     },
@@ -68,18 +68,18 @@ pub fn create_new_solauto_position<'a>(
     }
 }
 
-pub fn get_or_create_referral_position<'a>(
+pub fn get_or_create_referral_state<'a>(
     system_program: &'a AccountInfo<'a>,
     token_program: &'a AccountInfo<'a>,
     rent: &'a AccountInfo<'a>,
     signer: &'a AccountInfo<'a>,
     authority: &'a AccountInfo<'a>,
-    referral_position: &'a AccountInfo<'a>,
+    referral_state: &'a AccountInfo<'a>,
     referral_fees_mint: &'a AccountInfo<'a>,
-    referral_position_ta: &'a AccountInfo<'a>,
-    referred_by_position: Option<&'a AccountInfo<'a>>,
+    referral_state_ta: &'a AccountInfo<'a>,
+    referred_by_state: Option<&'a AccountInfo<'a>>,
     referred_by_ta: Option<&'a AccountInfo<'a>>
-) -> Result<DeserializedAccount<'a, ReferralAccount>, ProgramError> {
+) -> Result<DeserializedAccount<'a, RefferalState>, ProgramError> {
     let wsol_mint = Pubkey::from_str(WSOL_MINT_ADDRESS).expect(
         "Failed to create pubkey from WSOL mint address"
     );
@@ -92,49 +92,49 @@ pub fn get_or_create_referral_position<'a>(
         Ok(())
     };
 
-    let referral_position_seeds = get_referral_account_seeds(authority);
-    let (referral_position_pda, _bump) = Pubkey::find_program_address(
-        referral_position_seeds.as_slice(),
+    let referral_state_seeds = get_referral_account_seeds(authority);
+    let (referral_state_pda, _bump) = Pubkey::find_program_address(
+        referral_state_seeds.as_slice(),
         &crate::ID
     );
-    if &referral_position_pda != referral_position.key {
+    if &referral_state_pda != referral_state.key {
         msg!("Invalid referral position account given for the provided authority");
         return Err(ProgramError::InvalidAccountData.into());
     }
 
-    validate_correct_token_account(referral_position, referral_position_ta)?;
-    if !referred_by_position.is_none() && !referred_by_ta.is_none() {
-        validate_correct_token_account(referral_position, referral_position_ta)?;
-        if referred_by_position.unwrap().owner != &crate::ID {
+    validate_correct_token_account(referral_state, referral_state_ta)?;
+    if !referred_by_state.is_none() && !referred_by_ta.is_none() {
+        validate_correct_token_account(referral_state, referral_state_ta)?;
+        if referred_by_state.unwrap().owner != &crate::ID {
             msg!("Referred by position account is not owned by Solauto");
             return Err(ProgramError::InvalidAccountData.into());
         }
     }
 
-    if account_is_rent_exempt(rent, referral_position)? {
-        let mut referral_position_account = Some(
-            DeserializedAccount::<ReferralAccount>::deserialize(Some(referral_position))?.unwrap()
+    if account_is_rent_exempt(rent, referral_state)? {
+        let mut referral_state_account = Some(
+            DeserializedAccount::<RefferalState>::deserialize(Some(referral_state))?.unwrap()
         );
 
         if
-            referral_position_account.as_ref().unwrap().data.referred_by_ta.is_none() &&
+            referral_state_account.as_ref().unwrap().data.referred_by_ta.is_none() &&
             !referred_by_ta.is_none()
         {
-            referral_position_account.as_mut().unwrap().data.referred_by_ta = Some(
+            referral_state_account.as_mut().unwrap().data.referred_by_ta = Some(
                 referred_by_ta.unwrap().key.clone()
             );
         }
 
-        ix_utils::update_data(&mut referral_position_account)?;
-        Ok(referral_position_account.unwrap())
+        ix_utils::update_data(&mut referral_state_account)?;
+        Ok(referral_state_account.unwrap())
     } else {
         init_new_account(
             system_program,
             rent,
             signer,
-            referral_position,
+            referral_state,
             &crate::ID,
-            referral_position_seeds[..].to_vec(),
+            referral_state_seeds[..].to_vec(),
             REFERRAL_ACCOUNT_SPACE
         )?;
 
@@ -149,32 +149,32 @@ pub fn get_or_create_referral_position<'a>(
             system_program,
             rent,
             signer,
-            referral_position_ta,
-            referral_position_ta,
+            referral_state_ta,
+            referral_state_ta,
             referral_fees_mint
         )?;
 
-        if !referred_by_position.is_none() && !referred_by_ta.is_none() {
+        if !referred_by_state.is_none() && !referred_by_ta.is_none() {
             init_ata_if_needed(
                 token_program,
                 system_program,
                 rent,
                 signer,
-                referred_by_position.unwrap(),
+                referred_by_state.unwrap(),
                 referred_by_ta.unwrap(),
                 referral_fees_mint
             )?;
         }
 
-        let data = Box::new(ReferralAccount {
+        let data = Box::new(RefferalState {
             authority: authority.key.clone(),
             referred_by_ta: referred_by_ta.map_or(None, |r| Some(r.key.clone())),
-            fees_ta: referral_position_ta.key.clone(),
+            fees_ta: referral_state_ta.key.clone(),
             fees_mint: wsol_mint.clone(),
         });
 
         let deserialized_account = DeserializedAccount {
-            account_info: referral_position,
+            account_info: referral_state,
             data,
         };
 

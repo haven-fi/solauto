@@ -8,7 +8,7 @@ use super::shared::*;
 #[rustfmt::skip]
 pub enum Instruction {
     /// Update Solauto admin settings (i.e. fees token mint)
-    #[account(signer, mut, name = "solauto_admin")]
+    #[account(signer, name = "solauto_admin")]
     #[account(name = "system_program")]
     #[account(name = "token_program")]
     #[account(name = "rent")]
@@ -18,6 +18,15 @@ pub enum Instruction {
     #[account(name = "solauto_fees_mint")]
     UpdateSolautoAdminSettings,
 
+    #[account(signer, mut, name = "signer")]
+    #[account(name = "system_program")]
+    #[account(name = "token_program")]
+    #[account(name = "rent")]
+    #[account(name = "referral_state")]
+    #[account(mut, name = "referral_fees_ta")]
+    #[account(mut, name = "referral_fees_mint")]
+    ClaimReferralFees,
+
     /// Open a new Solauto position with Marginfi
     #[account(signer, mut, name = "signer")]
     #[account(name = "marginfi_program")]
@@ -25,10 +34,10 @@ pub enum Instruction {
     #[account(name = "token_program")]
     #[account(name = "ata_program")]
     #[account(name = "rent")]
-    #[account(mut, name = "signer_referral_position")]
+    #[account(mut, name = "signer_referral_state")]
     #[account(mut, name = "referral_fees_mint")]
     #[account(mut, name = "signer_referral_fees_ta")]
-    #[account(mut, optional, name = "referred_by_position")]
+    #[account(mut, optional, name = "referred_by_state")]
     #[account(mut, optional, name = "referred_by_authority")]
     #[account(mut, optional, name = "referred_by_ta")]
     #[account(mut, optional, name = "solauto_position")]
@@ -47,10 +56,10 @@ pub enum Instruction {
     #[account(name = "token_program")]
     #[account(name = "ata_program")]
     #[account(name = "rent")]
-    #[account(mut, name = "signer_referral_position")]
+    #[account(mut, name = "signer_referral_state")]
     #[account(mut, name = "referral_fees_mint")]
     #[account(mut, name = "signer_referral_fees_ta")]
-    #[account(mut, optional, name = "referred_by_position")]
+    #[account(mut, optional, name = "referred_by_state")]
     #[account(mut, optional, name = "referred_by_authority")]
     #[account(mut, optional, name = "referred_by_ta")]
     #[account(mut, optional, name = "solauto_position")]
@@ -147,7 +156,7 @@ pub enum Instruction {
     #[account(name = "ixs_sysvar")]
     #[account(name = "solauto_admin_settings")]
     #[account(mut, name = "solauto_fees_receiver_ta")]
-    #[account(name = "authority_referral_position")]
+    #[account(name = "authority_referral_state")]
     #[account(mut, optional, name = "referred_by_ta")]
     #[account(mut, optional, name = "solauto_position")]
     // TODO missing accounts
@@ -165,7 +174,7 @@ pub enum Instruction {
     #[account(name = "ixs_sysvar")]
     #[account(name = "solauto_admin_settings")]
     #[account(mut, name = "solauto_fees_receiver_ta")]
-    #[account(name = "authority_referral_position")]
+    #[account(name = "authority_referral_state")]
     #[account(mut, optional, name = "referred_by_ta")]
     #[account(mut, optional, name = "solauto_position")]
     #[account(name = "lending_market")]
@@ -215,6 +224,6 @@ pub struct SolautoStandardAccounts<'a> {
     pub solauto_admin_settings: Option<&'a AccountInfo<'a>>,
     pub solauto_fees_receiver_ta: Option<&'a AccountInfo<'a>>,
     pub solauto_position: Option<DeserializedAccount<'a, Position>>,
-    pub authority_referral_position: Option<DeserializedAccount<'a, ReferralAccount>>,
+    pub authority_referral_state: Option<DeserializedAccount<'a, RefferalState>>,
     pub referred_by_ta: Option<&'a AccountInfo<'a>>,
 }

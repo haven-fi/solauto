@@ -31,6 +31,7 @@ fn process_instruction<'a>(
     match instruction {
         Instruction::UpdateSolautoAdminSettings =>
             process_update_solauto_admin_settings_instruction(accounts),
+        Instruction::ClaimReferralFees => process_claim_referral_fees(accounts),
 
         Instruction::MarginfiOpenPosition(args) =>
             process_marginfi_open_position_instruction(accounts, args),
