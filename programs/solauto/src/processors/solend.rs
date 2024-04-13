@@ -157,5 +157,6 @@ pub fn process_solend_rebalance<'a>(
         false,
         LendingPlatform::Solend
     )?;
+    
     rebalance::solend_rebalance(ctx, std_accounts, args)
 }

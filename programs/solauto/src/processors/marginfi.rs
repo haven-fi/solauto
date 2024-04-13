@@ -155,5 +155,6 @@ pub fn process_marginfi_rebalance<'a>(
         false,
         LendingPlatform::Marginfi
     )?;
+    
     rebalance::marginfi_rebalance(ctx, std_accounts, args)
 }
