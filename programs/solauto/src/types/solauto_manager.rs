@@ -110,6 +110,7 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
             target_liq_utilization_rate_bps,
             Some(SOLAUTO_BOOST_FEE_BPS)
         );
+        // TODO: get complete_debt_adjustment_usd based on the max_slippage_bps (TOD we need to add)
 
         let buffer_room_from_cap = 0.9;
         let borrow_cap_usd = debt.amount_can_be_used.usd_value * buffer_room_from_cap;

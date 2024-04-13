@@ -5,7 +5,7 @@ use crate::{
     types::{
         instruction::{
             accounts::{ Context, MarginfiRebalanceAccounts, SolendRebalanceAccounts },
-            OptionalLiqUtilizationRateBps,
+            RebalanceArgs,
             SolautoStandardAccounts,
         },
         lending_protocol::LendingProtocolClient,
@@ -19,21 +19,17 @@ use crate::{
 pub fn marginfi_rebalance<'a, 'b>(
     ctx: Context<'a, MarginfiRebalanceAccounts<'a>>,
     std_accounts: SolautoStandardAccounts<'a>,
-    target_liq_utilization_rate_bps: OptionalLiqUtilizationRateBps
+    args: RebalanceArgs
 ) -> ProgramResult {
     let (marginfi_client, obligation_position) = MarginfiClient::from(ctx.accounts.signer)?;
-    validation_utils::validate_rebalance_instruction(
-        &std_accounts,
-        target_liq_utilization_rate_bps,
-        &obligation_position
-    )?;
-    rebalance(std_accounts, marginfi_client, obligation_position, target_liq_utilization_rate_bps)
+    validation_utils::validate_rebalance_instruction(&std_accounts, &args, &obligation_position)?;
+    rebalance(std_accounts, marginfi_client, obligation_position, args)
 }
 
 pub fn solend_rebalance<'a, 'b>(
     ctx: Context<'a, SolendRebalanceAccounts<'a>>,
     std_accounts: SolautoStandardAccounts<'a>,
-    target_liq_utilization_rate_bps: OptionalLiqUtilizationRateBps
+    args: RebalanceArgs
 ) -> ProgramResult {
     let (solend_client, obligation_position) = SolendClient::from(
         ctx.accounts.lending_market,
@@ -53,24 +49,20 @@ pub fn solend_rebalance<'a, 'b>(
         Some(ctx.accounts.source_debt_liquidity_ta),
         Some(ctx.accounts.reserve_debt_liquidity_ta)
     )?;
-    validation_utils::validate_rebalance_instruction(
-        &std_accounts,
-        target_liq_utilization_rate_bps,
-        &obligation_position
-    )?;
-    rebalance(std_accounts, solend_client, obligation_position, target_liq_utilization_rate_bps)
+    validation_utils::validate_rebalance_instruction(&std_accounts, &args, &obligation_position)?;
+    rebalance(std_accounts, solend_client, obligation_position, args)
 }
 
 fn rebalance<'a, T: LendingProtocolClient<'a>>(
     std_accounts: SolautoStandardAccounts<'a>,
     client: T,
     mut obligation_position: LendingProtocolObligationPosition,
-    target_liq_utilization_rate_bps: OptionalLiqUtilizationRateBps
+    args: RebalanceArgs
 ) -> ProgramResult {
     let target_liq_utilization_rate: Result<u16, SolautoError> = if
-        !target_liq_utilization_rate_bps.is_none()
+        !args.target_liq_utilization_rate_bps.is_none()
     {
-        Ok(target_liq_utilization_rate_bps.unwrap())
+        Ok(args.target_liq_utilization_rate_bps.unwrap())
     } else {
         let setting_params = &std_accounts.solauto_position.as_ref().unwrap().data.setting_params;
         let current_utilization_rate = obligation_position.current_liq_utilization_rate_bps();

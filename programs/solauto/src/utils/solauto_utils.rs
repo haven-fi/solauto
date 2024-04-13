@@ -5,8 +5,8 @@ use spl_associated_token_account::get_associated_token_address;
 use crate::{
     constants::WSOL_MINT_ADDRESS,
     types::{
-        instruction::{ OptionalLiqUtilizationRateBps, PositionData, SolautoStandardAccounts },
-        obligation_position::{ self, LendingProtocolObligationPosition },
+        instruction::{ PositionData, SolautoStandardAccounts },
+        obligation_position::LendingProtocolObligationPosition,
         shared::{
             DeserializedAccount,
             GeneralPositionData,
@@ -190,7 +190,7 @@ pub fn get_referral_account_seeds<'a>(authority: &'a AccountInfo<'a>) -> Vec<&[u
 pub fn get_target_liq_utilization_rate(
     std_accounts: &SolautoStandardAccounts,
     obligation_position: &LendingProtocolObligationPosition,
-    target_liq_utilization_rate_bps: OptionalLiqUtilizationRateBps
+    target_liq_utilization_rate_bps: Option<u16>
 ) -> Result<u16, SolautoError> {
     let current_liq_utilization_rate_bps = obligation_position.current_utilization_rate_bps();
     let result: Result<u16, SolautoError> = if target_liq_utilization_rate_bps.is_none() {

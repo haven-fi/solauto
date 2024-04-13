@@ -10,8 +10,8 @@ use crate::{
                 SolendRebalanceAccounts,
                 SolendRefreshDataAccounts,
             },
-            OptionalLiqUtilizationRateBps,
             PositionData,
+            RebalanceArgs,
             SolautoStandardAccounts,
         },
         shared::{ DeserializedAccount, LendingPlatform, Position, RefferalState, SolautoAction },
@@ -126,7 +126,7 @@ pub fn process_solend_interaction_instruction<'a>(
 
 pub fn process_solend_rebalance<'a>(
     accounts: &'a [AccountInfo<'a>],
-    target_liq_utilization_rate_bps: OptionalLiqUtilizationRateBps
+    args: RebalanceArgs
 ) -> ProgramResult {
     // TODO
     msg!("Instruction is currently a WIP");
@@ -145,7 +145,9 @@ pub fn process_solend_rebalance<'a>(
         solauto_position,
         solauto_admin_settings: Some(ctx.accounts.solauto_admin_settings),
         solauto_fees_receiver_ta: Some(ctx.accounts.solauto_fees_receiver_ta),
-        authority_referral_state: DeserializedAccount::<RefferalState>::deserialize(Some(ctx.accounts.authority_referral_state))?,
+        authority_referral_state: DeserializedAccount::<RefferalState>::deserialize(
+            Some(ctx.accounts.authority_referral_state)
+        )?,
         referred_by_ta: ctx.accounts.referred_by_ta,
     };
     validation_utils::generic_instruction_validation(
@@ -153,5 +155,5 @@ pub fn process_solend_rebalance<'a>(
         false,
         LendingPlatform::Solend
     )?;
-    rebalance::solend_rebalance(ctx, std_accounts, target_liq_utilization_rate_bps)
+    rebalance::solend_rebalance(ctx, std_accounts, args)
 }

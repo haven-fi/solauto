@@ -160,7 +160,7 @@ pub enum Instruction {
     #[account(mut, optional, name = "referred_by_ta")]
     #[account(mut, optional, name = "solauto_position")]
     // TODO missing accounts
-    MarginfiRebalance(Option<u16>),
+    MarginfiRebalance(RebalanceArgs),
     
     /// Rebalance position.
     /// Takes an optional target utilization rate bps. Only allowed if the signer is the position authority - otherwise the instruction will look at the solauto position settings
@@ -193,7 +193,7 @@ pub enum Instruction {
     #[account(name = "debt_liquidity_mint")]
     #[account(mut, name = "source_debt_liquidity_ta")]
     #[account(mut, name = "reserve_debt_liquidity_ta")]
-    SolendRebalance(Option<u16>),
+    SolendRebalance(RebalanceArgs),
 }
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug)]
@@ -212,7 +212,13 @@ pub struct PositionData {
     pub kamino_data: Option<KaminoPositionData>,
 }
 
-pub type OptionalLiqUtilizationRateBps = Option<u16>;
+#[derive(BorshSerialize, BorshDeserialize, Clone, Debug)]
+pub struct RebalanceArgs {
+    /// Target liq utilization rate. Only used/allowed if rebalancing a self-managed position
+    pub target_liq_utilization_rate_bps: Option<u16>,
+    /// Max price slippage bps. Only used/allowed by the Solauto rebalancer account
+    pub max_price_slippage_bps: Option<u16>,
+}
 
 pub struct SolautoStandardAccounts<'a> {
     pub signer: &'a AccountInfo<'a>,

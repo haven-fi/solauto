@@ -47,7 +47,7 @@ pub fn calculate_debt_adjustment_usd(
     total_supply_usd: f64,
     total_debt_usd: f64,
     target_liq_utilization_rate_bps: u16,
-    adjustment_fee_bps: Option<u16>
+    adjustment_fee_bps: Option<u16>,
 ) -> f64 {
     let adjustment_fee = if !adjustment_fee_bps.is_none() {
         (adjustment_fee_bps.unwrap() as f64).div(10000.0)

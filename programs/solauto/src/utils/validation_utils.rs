@@ -14,25 +14,28 @@ use solana_program::{
 };
 use spl_associated_token_account::get_associated_token_address;
 
-use crate::types::{
-    instruction::{
-        accounts::{
-            Context,
-            MarginfiProtocolInteractionAccounts,
-            SolendProtocolInteractionAccounts,
+use crate::{
+    constants::SOLAUTO_REBALANCER,
+    types::{
+        instruction::{
+            accounts::{
+                Context,
+                MarginfiProtocolInteractionAccounts,
+                SolendProtocolInteractionAccounts,
+            },
+            RebalanceArgs,
+            SolautoStandardAccounts,
         },
-        OptionalLiqUtilizationRateBps,
-        SolautoStandardAccounts,
-    },
-    obligation_position::LendingProtocolObligationPosition,
-    shared::{
-        DeserializedAccount,
-        LendingPlatform,
-        Position,
-        SolautoAction,
-        SolautoAdminSettings,
-        SolautoError,
-        SolautoSettingsParameters,
+        obligation_position::LendingProtocolObligationPosition,
+        shared::{
+            DeserializedAccount,
+            LendingPlatform,
+            Position,
+            SolautoAction,
+            SolautoAdminSettings,
+            SolautoError,
+            SolautoSettingsParameters,
+        },
     },
 };
 
@@ -332,7 +335,7 @@ pub fn validate_solend_protocol_interaction_ix(
 
 pub fn validate_rebalance_instruction(
     std_accounts: &SolautoStandardAccounts,
-    target_liq_utilization_rate_bps: OptionalLiqUtilizationRateBps,
+    args: &RebalanceArgs,
     obligation_position: &LendingProtocolObligationPosition
 ) -> ProgramResult {
     // max_price_slippage = 0.03 (300bps) (3%)
@@ -367,9 +370,16 @@ pub fn validate_rebalance_instruction(
     // repay flash loan in supply token
 
     let ixs_sysvar = std_accounts.ixs_sysvar.unwrap();
-    if !target_liq_utilization_rate_bps.is_none() && !std_accounts.solauto_position.is_none() {
+    if !args.target_liq_utilization_rate_bps.is_none() && !std_accounts.solauto_position.is_none() {
         msg!(
             "Cannot provide a target liquidation utilization rate if the position is solauto-managed"
+        );
+        return Err(ProgramError::InvalidInstructionData.into());
+    }
+
+    if std_accounts.signer.key != &SOLAUTO_REBALANCER {
+        msg!(
+            "If the signer is not the position authority or Solauto rebalancer accouunts, max_price_slippage_bps cannot be provided"
         );
         return Err(ProgramError::InvalidInstructionData.into());
     }
@@ -427,14 +437,14 @@ pub fn validate_rebalance_instruction(
     let current_liq_utilization_rate_bps = if first_or_only_rebalance_ix {
         obligation_position.current_utilization_rate_bps()
     } else {
-        // TODO sim_position supply or debt update (based on the source_[supply|debt]_token_account) and calculate new utilization rate using that
+        // TODO pretend modify supply or debt (based on the source_[supply|debt]_token_account) and calculate new utilization rate using that
         0
     };
 
     let target_rate_bps = solauto_utils::get_target_liq_utilization_rate(
         &std_accounts,
         &obligation_position,
-        target_liq_utilization_rate_bps
+        args.target_liq_utilization_rate_bps
     )?;
 
     if
