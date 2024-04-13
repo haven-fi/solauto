@@ -1,11 +1,6 @@
 use std::ops::{ Div, Mul };
 
-use solana_program::{
-    account_info::AccountInfo,
-    entrypoint::ProgramResult,
-    msg,
-    program_error::ProgramError,
-};
+use solana_program::{ entrypoint::ProgramResult, msg, program_error::ProgramError };
 
 use crate::{
     constants::SOLAUTO_BOOST_FEE_BPS,
@@ -13,12 +8,15 @@ use crate::{
 };
 
 use super::{
-    instruction::SolautoStandardAccounts, lending_protocol::LendingProtocolClient, obligation_position::LendingProtocolObligationPosition, shared::{ DeserializedAccount, Position, SolautoAction, SolautoError, WithdrawParams }
+    instruction::SolautoStandardAccounts,
+    lending_protocol::LendingProtocolClient,
+    obligation_position::LendingProtocolObligationPosition,
+    shared::{ DeserializedAccount, Position, SolautoAction, SolautoError, WithdrawParams },
 };
 
 // pub struct SolautoManagerAccounts<'a> {
-    // pub debt_token_mint: Option<&'a AccountInfo<'a>>,
-    // pub debt_token_account: Option<&'a AccountInfo<'a>>,
+// pub debt_token_mint: Option<&'a AccountInfo<'a>>,
+// pub debt_token_account: Option<&'a AccountInfo<'a>>,
 // }
 
 pub struct SolautoManager<'a, 'b> {
@@ -37,7 +35,7 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
         Ok(Self {
             client,
             obligation_position,
-            std_accounts
+            std_accounts,
         })
     }
 
@@ -89,7 +87,10 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
     }
 
     pub fn rebalance(&mut self, target_liq_utilization_rate_bps: u16) -> ProgramResult {
-        if self.obligation_position.current_liq_utilization_rate_bps() < target_liq_utilization_rate_bps {
+        if
+            self.obligation_position.current_liq_utilization_rate_bps() <
+            target_liq_utilization_rate_bps
+        {
             self.increase_leverage(target_liq_utilization_rate_bps)
         } else {
             self.decrease_leverage(target_liq_utilization_rate_bps)
@@ -158,16 +159,12 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
             obligation_position.net_worth_base_amount();
         position.data.general_data.liq_utilization_rate_bps =
             obligation_position.current_liq_utilization_rate_bps();
-        position.data.general_data.base_amount_supplied = if
-            !obligation_position.supply.is_none()
-        {
+        position.data.general_data.base_amount_supplied = if !obligation_position.supply.is_none() {
             obligation_position.supply.as_ref().unwrap().amount_used.base_unit
         } else {
             0
         };
-        position.data.general_data.base_amount_supplied = if
-            !obligation_position.debt.is_none()
-        {
+        position.data.general_data.base_amount_supplied = if !obligation_position.debt.is_none() {
             obligation_position.debt.as_ref().unwrap().amount_used.base_unit
         } else {
             0

@@ -1,13 +1,16 @@
+use std::str::FromStr;
 
 use solana_program::{
     account_info::AccountInfo,
     entrypoint::ProgramResult,
     msg,
     program_error::ProgramError,
+    pubkey::Pubkey,
 };
+use spl_associated_token_account::get_associated_token_address;
 
 use crate::{
-    constants::SOLAUTO_ADMIN_SETTINGS_ACCOUNT_SEEDS,
+    constants::{ SOLAUTO_ADMIN_SETTINGS_ACCOUNT_SEEDS, WSOL_MINT_ADDRESS },
     types::{
         instruction::accounts::{ ClaimReferralFeesAccounts, UpdateSolautoAdminSettingsAccounts },
         shared::{
@@ -25,6 +28,25 @@ pub fn process_update_solauto_admin_settings_instruction<'a>(
 ) -> ProgramResult {
     let ctx = UpdateSolautoAdminSettingsAccounts::context(accounts)?;
     validation_utils::validate_solauto_admin_signer(ctx.accounts.solauto_admin)?;
+
+    let wsol_mint = Pubkey::from_str(WSOL_MINT_ADDRESS).expect(
+        "Failed to create pubkey from WSOL mint address"
+    );
+    if ctx.accounts.solauto_fees_mint.key != &wsol_mint {
+        msg!("Only wSOL fee mint is accepted at the moment");
+        return Err(ProgramError::InvalidAccountData.into());
+    }
+
+    if
+        ctx.accounts.solauto_fees_receiver_ta.key !=
+        &get_associated_token_address(
+            ctx.accounts.solauto_fees_mint.key,
+            ctx.accounts.solauto_fees_mint.key
+        )
+    {
+        msg!("Incorrect token account for the given token mint");
+        return Err(ProgramError::InvalidAccountData.into());
+    }
 
     let mut solauto_admin_settings = if
         !solana_utils::account_is_rent_exempt(

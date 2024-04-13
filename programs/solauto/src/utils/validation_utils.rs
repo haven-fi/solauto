@@ -1,5 +1,4 @@
 use std::ops::{ Div, Mul };
-
 use solana_program::{
     account_info::AccountInfo,
     entrypoint::ProgramResult,
@@ -44,8 +43,6 @@ use crate::constants::{
     SOLAUTO_ADMIN,
     SOLAUTO_ADMIN_SETTINGS_ACCOUNT_SEEDS,
 };
-
-use super::solauto_utils::get_owner;
 
 pub fn generic_instruction_validation(
     accounts: &SolautoStandardAccounts,
