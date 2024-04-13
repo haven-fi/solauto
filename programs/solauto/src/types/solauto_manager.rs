@@ -31,7 +31,7 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
         obligation_position: &'b mut LendingProtocolObligationPosition,
         std_accounts: SolautoStandardAccounts<'a>
     ) -> Result<Self, ProgramError> {
-        client.validate()?;
+        client.validate(&std_accounts)?;
         Ok(Self {
             client,
             obligation_position,

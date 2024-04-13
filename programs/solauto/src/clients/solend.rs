@@ -17,6 +17,7 @@ use solend_sdk::{
     },
     state::{ LendingMarket, Obligation, Reserve },
 };
+use spl_associated_token_account::get_associated_token_address;
 
 use crate::{
     constants::SOLEND_PROGRAM,
@@ -26,7 +27,7 @@ use crate::{
         obligation_position::*,
         shared::{ DeserializedAccount, LendingPlatform, Position, SolautoError },
     },
-    utils::{ ix_utils::*, solauto_utils::*, validation_utils::validate_position_settings },
+    utils::{ ix_utils::*, solauto_utils::*, validation_utils::* },
 };
 
 pub struct ReserveOracleAccounts<'a> {
@@ -58,13 +59,8 @@ impl<'a> SolendClient<'a> {
         let supply_reserve = DeserializedAccount::<Reserve>
             ::unpack(Some(ctx.accounts.supply_reserve))?
             .unwrap();
-        if
-            &supply_reserve.data.collateral.mint_pubkey !=
-            ctx.accounts.supply_collateral_mint.key
-        {
-            msg!(
-                "Supply reserve account provided is not for the supply_collateral_mint account"
-            );
+        if &supply_reserve.data.collateral.mint_pubkey != ctx.accounts.supply_collateral_mint.key {
+            msg!("Supply reserve account provided is not for the supply_collateral_mint account");
             return Err(ProgramError::InvalidAccountData.into());
         }
 
@@ -310,7 +306,7 @@ impl<'a> SolendClient<'a> {
 }
 
 impl<'a> LendingProtocolClient<'a> for SolendClient<'a> {
-    fn validate(&self) -> ProgramResult {
+    fn validate(&self, std_accounts: &SolautoStandardAccounts) -> ProgramResult {
         let curr_slot = Clock::get()?.slot;
         if self.data.obligation.data.last_update.is_stale(curr_slot)? {
             msg!(
@@ -335,6 +331,14 @@ impl<'a> LendingProtocolClient<'a> for SolendClient<'a> {
                 "Debt reserve account data is stale. Ensure you refresh everything before interacting"
             );
             return Err(SolautoError::StaleProtocolData.into());
+        }
+        if !self.supply_liquidity.is_none() {
+            let supply_liquidity = self.supply_liquidity.as_ref().unwrap();
+            validate_source_token_account(std_accounts, supply_liquidity.source_token_account, supply_liquidity.token_mint)?;
+        }
+        if !self.debt_liquidity.is_none() {
+            let debt_liquidity = self.debt_liquidity.as_ref().unwrap();
+            validate_source_token_account(std_accounts, debt_liquidity.source_token_account, debt_liquidity.token_mint)?;
         }
         Ok(())
     }

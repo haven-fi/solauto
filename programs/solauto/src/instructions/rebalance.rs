@@ -10,27 +10,25 @@ use crate::{
         },
         lending_protocol::LendingProtocolClient,
         obligation_position::LendingProtocolObligationPosition,
-        shared::{ SolautoError, SolautoRebalanceStep },
+        shared::SolautoError,
         solauto_manager::SolautoManager,
     },
-    utils::{ ix_utils, solauto_utils },
+    utils::{ ix_utils, solauto_utils, validation_utils },
 };
 
 pub fn marginfi_rebalance<'a, 'b>(
     ctx: Context<'a, MarginfiRebalanceAccounts<'a>>,
     std_accounts: SolautoStandardAccounts<'a>,
     args: RebalanceArgs,
-    rebalance_step: SolautoRebalanceStep
 ) -> ProgramResult {
     let (marginfi_client, obligation_position) = MarginfiClient::from(ctx.accounts.signer)?;
-    rebalance(std_accounts, marginfi_client, obligation_position, args, rebalance_step)
+    rebalance(std_accounts, marginfi_client, obligation_position, args)
 }
 
 pub fn solend_rebalance<'a, 'b>(
     ctx: Context<'a, SolendRebalanceAccounts<'a>>,
     std_accounts: SolautoStandardAccounts<'a>,
     args: RebalanceArgs,
-    rebalance_step: SolautoRebalanceStep
 ) -> ProgramResult {
     let (solend_client, obligation_position) = SolendClient::from(
         ctx.accounts.lending_market,
@@ -50,7 +48,7 @@ pub fn solend_rebalance<'a, 'b>(
         Some(ctx.accounts.source_debt_liquidity_ta),
         Some(ctx.accounts.reserve_debt_liquidity_ta)
     )?;
-    rebalance(std_accounts, solend_client, obligation_position, args, rebalance_step)
+    rebalance(std_accounts, solend_client, obligation_position, args)
 }
 
 fn rebalance<'a, T: LendingProtocolClient<'a>>(
@@ -58,13 +56,17 @@ fn rebalance<'a, T: LendingProtocolClient<'a>>(
     client: T,
     mut obligation_position: LendingProtocolObligationPosition,
     args: RebalanceArgs,
-    rebalance_step: SolautoRebalanceStep
 ) -> ProgramResult {
+    let solauto_rebalance_step = validation_utils::validate_rebalance_instruction(
+        &std_accounts,
+        &args
+    )?;
+
     solauto_utils::should_proceed_with_rebalance(
         &std_accounts,
         &obligation_position,
         &args,
-        &rebalance_step
+        &solauto_rebalance_step
     )?;
 
     let target_liq_utilization_rate: Result<u16, SolautoError> = if

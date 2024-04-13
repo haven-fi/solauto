@@ -194,11 +194,11 @@ pub fn should_proceed_with_rebalance(
     std_accounts: &SolautoStandardAccounts,
     obligation_position: &LendingProtocolObligationPosition,
     rebalance_args: &RebalanceArgs,
-    rebalance_instruction_stage: &SolautoRebalanceStep
+    rebalance_step: &SolautoRebalanceStep
 ) -> ProgramResult {
     let first_or_only_rebalance_ix =
-        rebalance_instruction_stage == &SolautoRebalanceStep::BeginSolautoRebalanceSandwich ||
-        rebalance_instruction_stage == &SolautoRebalanceStep::FinishFlashLoanSandwich;
+        rebalance_step == &SolautoRebalanceStep::BeginSolautoRebalanceSandwich ||
+        rebalance_step == &SolautoRebalanceStep::FinishFlashLoanSandwich;
 
     let current_liq_utilization_rate_bps = if first_or_only_rebalance_ix {
         obligation_position.current_utilization_rate_bps()

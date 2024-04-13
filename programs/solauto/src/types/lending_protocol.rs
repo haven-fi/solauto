@@ -31,7 +31,7 @@ impl<'a> LendingProtocolTokenAccounts<'a> {
 }
 
 pub trait LendingProtocolClient<'a> {
-    fn validate(&self) -> ProgramResult;
+    fn validate(&self, std_accounts: &SolautoStandardAccounts) -> ProgramResult;
     fn deposit<'b>(
         &self,
         base_unit_amount: u64,

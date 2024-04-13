@@ -23,7 +23,10 @@ use crate::{
                 Context,
                 MarginfiProtocolInteractionAccounts,
                 SolendProtocolInteractionAccounts,
-            }, RebalanceArgs, SolautoAction, SolautoStandardAccounts
+            },
+            RebalanceArgs,
+            SolautoAction,
+            SolautoStandardAccounts,
         },
         shared::{
             DeserializedAccount,
@@ -44,6 +47,8 @@ use crate::constants::{
     SOLAUTO_ADMIN,
     SOLAUTO_ADMIN_SETTINGS_ACCOUNT_SEEDS,
 };
+
+use super::solauto_utils::get_owner;
 
 pub fn generic_instruction_validation(
     accounts: &SolautoStandardAccounts,
@@ -393,7 +398,7 @@ pub fn validate_rebalance_instruction(
     let mut index = current_ix_idx + 1;
     loop {
         if let Ok(ix) = load_instruction_at_checked(index as usize, ixs_sysvar) {
-            if instruction_match(ix, crate::ID, SOLAUTO_REBALANCE_IX_DISCRIMINATORS.to_vec()) {
+            if is_solauto_rebalance_ix(ix) {
                 rebalance_instructions += 1;
             }
         } else {
@@ -438,6 +443,10 @@ pub fn validate_rebalance_instruction(
     // Otherwise error out since we are using an invalid set of instructions
 
     Ok(SolautoRebalanceStep::FinishSolautoRebalanceSandwich) // TODO remove me
+}
+
+fn is_solauto_rebalance_ix(ix: Instruction) -> bool {
+    instruction_match(ix, crate::ID, SOLAUTO_REBALANCE_IX_DISCRIMINATORS.to_vec())
 }
 
 fn instruction_match(ix: Instruction, program_id: Pubkey, ix_discriminators: Vec<u64>) -> bool {
@@ -494,5 +503,21 @@ pub fn validate_referral_accounts(std_accounts: &SolautoStandardAccounts) -> Pro
         return Err(ProgramError::InvalidAccountData.into());
     }
 
+    Ok(())
+}
+
+pub fn validate_source_token_account(
+    std_accounts: &SolautoStandardAccounts,
+    source_token_account: &AccountInfo,
+    token_mint: &AccountInfo
+) -> ProgramResult {
+    let obligation_owner = get_owner(&std_accounts.solauto_position, std_accounts.signer);
+    if
+        source_token_account.key !=
+        &get_associated_token_address(obligation_owner.key, token_mint.key)
+    {
+        msg!("Invalid source token account provided for the given obligation owner & token mint");
+        return Err(ProgramError::InvalidAccountData.into());
+    }
     Ok(())
 }

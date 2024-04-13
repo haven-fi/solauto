@@ -155,10 +155,5 @@ pub fn process_marginfi_rebalance<'a>(
         false,
         LendingPlatform::Marginfi
     )?;
-
-    let solauto_rebalance_step = validation_utils::validate_rebalance_instruction(
-        &std_accounts,
-        &args
-    )?;
-    rebalance::marginfi_rebalance(ctx, std_accounts, args, solauto_rebalance_step)
+    rebalance::marginfi_rebalance(ctx, std_accounts, args)
 }
