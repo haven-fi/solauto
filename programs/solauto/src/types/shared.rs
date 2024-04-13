@@ -90,7 +90,8 @@ pub struct SolautoAdminSettings {
 pub enum SolautoRebalanceStep {
     BeginSolautoRebalanceSandwich,
     FinishSolautoRebalanceSandwich,
-    FinishFlashLoanSandwich,
+    /// Includes the base unit amount which was borrowed
+    FinishFlashLoanSandwich(u64),
 }
 
 #[derive(Clone)]

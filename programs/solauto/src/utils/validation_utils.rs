@@ -442,7 +442,9 @@ pub fn validate_rebalance_instruction(
     } else if is_jup_token_ledger_swap_ix(&prev_ix) && is_solauto_rebalance_ix(&ix_2_before) && rebalance_instructions == 2 {
         Ok(SolautoRebalanceStep::FinishSolautoRebalanceSandwich)
     } else if is_flash_repay_ix(&next_ix) && is_jup_token_ledger_swap_ix(&prev_ix) && is_flash_borrow_ix(&ix_2_before) && rebalance_instructions == 1 {
-        Ok(SolautoRebalanceStep::FinishFlashLoanSandwich)
+        // TODO determine the borrow amount from the instruction
+        let borrow_amount_base_unit = 0;
+        Ok(SolautoRebalanceStep::FinishFlashLoanSandwich(borrow_amount_base_unit))
     } else {
         Err(SolautoError::IncorrectRebalanceInstructions.into())
     }

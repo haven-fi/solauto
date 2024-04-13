@@ -24,7 +24,6 @@ use crate::{
         },
     },
 };
-
 use super::{
     ix_utils,
     solana_utils::{ account_is_rent_exempt, init_ata_if_needed, init_new_account },
@@ -196,9 +195,11 @@ pub fn should_proceed_with_rebalance(
     rebalance_args: &RebalanceArgs,
     rebalance_step: &SolautoRebalanceStep
 ) -> ProgramResult {
-    let first_or_only_rebalance_ix =
-        rebalance_step == &SolautoRebalanceStep::BeginSolautoRebalanceSandwich ||
-        rebalance_step == &SolautoRebalanceStep::FinishFlashLoanSandwich;
+    let first_or_only_rebalance_ix = match rebalance_step {
+        SolautoRebalanceStep::BeginSolautoRebalanceSandwich => true,
+        SolautoRebalanceStep::FinishFlashLoanSandwich{..} => true,
+        _ => false
+    };
 
     let current_liq_utilization_rate_bps = if first_or_only_rebalance_ix {
         obligation_position.current_utilization_rate_bps()
