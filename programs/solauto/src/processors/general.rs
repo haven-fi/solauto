@@ -10,7 +10,7 @@ use solana_program::{
 use spl_associated_token_account::get_associated_token_address;
 
 use crate::{
-    constants::{ SOLAUTO_ADMIN_SETTINGS_ACCOUNT_SEEDS, WSOL_MINT_ADDRESS },
+    constants::{ SOLAUTO_ADMIN_SETTINGS_ACCOUNT_SEEDS, WSOL_MINT },
     types::{
         instruction::accounts::{ ClaimReferralFeesAccounts, UpdateSolautoAdminSettingsAccounts },
         shared::{
@@ -29,10 +29,7 @@ pub fn process_update_solauto_admin_settings_instruction<'a>(
     let ctx = UpdateSolautoAdminSettingsAccounts::context(accounts)?;
     validation_utils::validate_solauto_admin_signer(ctx.accounts.solauto_admin)?;
 
-    let wsol_mint = Pubkey::from_str(WSOL_MINT_ADDRESS).expect(
-        "Failed to create pubkey from WSOL mint address"
-    );
-    if ctx.accounts.solauto_fees_mint.key != &wsol_mint {
+    if ctx.accounts.solauto_fees_mint.key != &WSOL_MINT {
         msg!("Only wSOL fee mint is accepted at the moment");
         return Err(ProgramError::InvalidAccountData.into());
     }

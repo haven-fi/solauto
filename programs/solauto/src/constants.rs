@@ -18,6 +18,12 @@ pub const KAMINO_PROGRAM: Pubkey = Pubkey::new_from_array([
     175, 18, 182, 190, 105, 179, 67, 91, 0, 8,
 ]);
 
+// JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4
+pub const JUP_PROGRAM: Pubkey = Pubkey::new_from_array([
+    4, 121, 213, 91, 242, 49, 192, 110, 238, 116, 197, 110, 206, 104, 21, 7, 253, 177, 178, 222,
+    163, 244, 142, 81, 2, 177, 205, 162, 86, 188, 19, 143,
+]);
+
 // TODO
 // AprYCPiVeKMCgjQ2ZufwChMzvQ5kFjJo2ekTLSkXsQDm
 pub const SOLAUTO_ADMIN: Pubkey = Pubkey::new_from_array([
@@ -32,8 +38,11 @@ pub const SOLAUTO_REBALANCER: Pubkey = Pubkey::new_from_array([
     35, 228, 216, 122, 54, 147, 76, 46, 180, 66, 110, 112,
 ]);
 
-// TODO
-pub const WSOL_MINT_ADDRESS: &str = "So11111111111111111111111111111111111111112";
+// So11111111111111111111111111111111111111112
+pub const WSOL_MINT: Pubkey = Pubkey::new_from_array([
+    6, 155, 136, 87, 254, 171, 129, 132, 251, 104, 127, 99, 70, 24, 192, 53, 218, 196, 57, 220, 26, 235,
+    59, 85, 152, 160, 240, 0, 0, 0, 0, 1,
+]);
 
 pub const SOLAUTO_ADMIN_SETTINGS_ACCOUNT_SEEDS: &[u8] = b"settings";
 

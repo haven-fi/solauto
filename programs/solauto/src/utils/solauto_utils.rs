@@ -1,4 +1,3 @@
-use std::str::FromStr;
 use solana_program::{
     account_info::AccountInfo,
     entrypoint::ProgramResult,
@@ -9,7 +8,7 @@ use solana_program::{
 use spl_associated_token_account::get_associated_token_address;
 
 use crate::{
-    constants::WSOL_MINT_ADDRESS,
+    constants::WSOL_MINT,
     types::{
         instruction::{ PositionData, RebalanceArgs, SolautoStandardAccounts },
         obligation_position::LendingProtocolObligationPosition,
@@ -88,11 +87,8 @@ pub fn get_or_create_referral_state<'a>(
     referred_by_state: Option<&'a AccountInfo<'a>>,
     referred_by_ta: Option<&'a AccountInfo<'a>>
 ) -> Result<DeserializedAccount<'a, RefferalState>, ProgramError> {
-    let wsol_mint = Pubkey::from_str(WSOL_MINT_ADDRESS).expect(
-        "Failed to create pubkey from WSOL mint address"
-    );
     let validate_correct_token_account = |wallet: &AccountInfo, token_account: &AccountInfo| {
-        let token_account_pubkey = get_associated_token_address(wallet.key, &wsol_mint);
+        let token_account_pubkey = get_associated_token_address(wallet.key, &WSOL_MINT);
         if &token_account_pubkey != token_account.key {
             msg!("Token account is not correct for the given token mint & wallet");
             return Err(ProgramError::InvalidAccountData);
@@ -147,8 +143,8 @@ pub fn get_or_create_referral_state<'a>(
         )?;
 
         let fees_mint = referral_fees_mint.key;
-        if fees_mint != &wsol_mint {
-            msg!(format!("Referral fees mint must be wSOL {}", WSOL_MINT_ADDRESS).as_str());
+        if fees_mint != &WSOL_MINT {
+            msg!(format!("Referral fees mint must be wSOL {}", WSOL_MINT).as_str());
             return Err(ProgramError::InvalidAccountData.into());
         }
 
@@ -178,7 +174,7 @@ pub fn get_or_create_referral_state<'a>(
             authority: authority.key.clone(),
             referred_by_ta: referred_by_ta.map_or(None, |r| Some(r.key.clone())),
             fees_ta: referral_state_ta.key.clone(),
-            fees_mint: wsol_mint.clone(),
+            fees_mint: WSOL_MINT.clone(),
         });
 
         let deserialized_account = DeserializedAccount {

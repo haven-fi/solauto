@@ -26,7 +26,6 @@ use crate::{
             RebalanceArgs,
             SolautoStandardAccounts,
         },
-        obligation_position::LendingProtocolObligationPosition,
         shared::{
             DeserializedAccount,
             LendingPlatform,
@@ -47,8 +46,6 @@ use crate::constants::{
     SOLAUTO_ADMIN,
     SOLAUTO_ADMIN_SETTINGS_ACCOUNT_SEEDS,
 };
-
-use super::solauto_utils;
 
 pub fn generic_instruction_validation(
     accounts: &SolautoStandardAccounts,
