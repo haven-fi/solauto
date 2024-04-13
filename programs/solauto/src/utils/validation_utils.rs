@@ -2,7 +2,7 @@ use std::ops::{ Div, Mul };
 use solana_program::{
     account_info::AccountInfo,
     entrypoint::ProgramResult,
-    instruction::{ get_stack_height, TRANSACTION_LEVEL_STACK_HEIGHT },
+    instruction::{ get_stack_height, Instruction, TRANSACTION_LEVEL_STACK_HEIGHT },
     msg,
     program_error::ProgramError,
     pubkey::Pubkey,
@@ -18,19 +18,17 @@ use crate::{
     constants::SOLAUTO_REBALANCER,
     types::{
         instruction::{
+            SOLAUTO_REBALANCE_IX_DISCRIMINATORS,
             accounts::{
                 Context,
                 MarginfiProtocolInteractionAccounts,
                 SolendProtocolInteractionAccounts,
-            },
-            RebalanceArgs,
-            SolautoStandardAccounts,
+            }, RebalanceArgs, SolautoAction, SolautoStandardAccounts
         },
         shared::{
             DeserializedAccount,
             LendingPlatform,
             Position,
-            SolautoAction,
             SolautoAdminSettings,
             SolautoError,
             SolautoRebalanceStep,
@@ -335,9 +333,9 @@ pub fn validate_rebalance_instruction(
     std_accounts: &SolautoStandardAccounts,
     args: &RebalanceArgs
 ) -> Result<SolautoRebalanceStep, ProgramError> {
-    // max_price_slippage = 0.03 (300bps) (3%)
+    // max_price_slippage = 0.05 (500bps) (5%)
     // random_price_volatility = 0.03 (300bps) (3%)
-    // 1 - max_price_slippage - random_price_volatility = buffer_room = 93.15%
+    // 1 - max_price_slippage - random_price_volatility = buffer_room = 92%
     // if transaction fails default to flash loan instruction route and increase max slippage if needed
 
     // increasing leverage:
@@ -391,35 +389,12 @@ pub fn validate_rebalance_instruction(
         return Err(SolautoError::InstructionIsCPI.into());
     }
 
-    // TODO:
-    // define next_ix
-    // define ix_2_after
-    // define prev_ix
-    // define ix_2_before
-
-    // 3 possible conditions:
-    // RebalanceInstructionStage::BeginSolautoRebalanceSandwich - next_ix is jup swap and ix_2_after is solauto rebalance. Only 2 solauto rebalance ixs exist in transaction
-    // RebalanceInstructionStage::FinishSolautoRebalanceSandwich - prev_ix is jup swap, ix_2_before is solauto rebalance. Only 2 solauto rebalance ixs exist in transaction
-    // RebalanceInstructionStage::FlashLoanSandwich - next_ix is flash loan repay, prev ix is jup swap, ix_2_before is flash borrow. Only 1 solauto rebalance ix exists in transaction
-
-    // We do need to check this, as someone could run a rebalance and just take some cash out instead of swapping and re-depositing
-
-    let mut other_rebalance_ix_idx: Option<u16> = None;
-    let mut rebalance_ix_count = 1;
+    let mut rebalance_instructions = 0;
     let mut index = current_ix_idx + 1;
     loop {
         if let Ok(ix) = load_instruction_at_checked(index as usize, ixs_sysvar) {
-            if ix.program_id == crate::id() {
-                // TODO check this. Should I use first index only? Or 8?
-                // let ix_discriminator: [u8; 8] = ix.data[0..8].try_into()?;
-
-                // TODO get rebalance instruction discriminator and compare
-                // if ix_discriminator == rebalance_ix_discriminator {
-                if !other_rebalance_ix_idx.is_none() {
-                    return Err(SolautoError::RebalanceAbuse.into());
-                }
-                other_rebalance_ix_idx = Some(index);
-                // }
+            if instruction_match(ix, crate::ID, SOLAUTO_REBALANCE_IX_DISCRIMINATORS.to_vec()) {
+                rebalance_instructions += 1;
             }
         } else {
             break;
@@ -428,17 +403,57 @@ pub fn validate_rebalance_instruction(
         index += 1;
     }
 
-    if rebalance_ix_count > 2 {
+    if rebalance_instructions > 2 {
         return Err(SolautoError::RebalanceAbuse.into());
     }
 
-    if rebalance_ix_count == 1 {
-        Ok(SolautoRebalanceStep::FinishFlashLoanSandwich)
-    } else if other_rebalance_ix_idx.unwrap() > current_ix_idx {
-        Ok(SolautoRebalanceStep::FinishSolautoRebalanceSandwich)
+    let next_ix = if current_ix_idx < index {
+        Some(load_instruction_at_checked((current_ix_idx + 1) as usize, ixs_sysvar))
     } else {
-        Ok(SolautoRebalanceStep::BeginSolautoRebalanceSandwich)
+        None
+    };
+
+    let ix_2_after = if current_ix_idx + 1 < index {
+        Some(load_instruction_at_checked((current_ix_idx + 2) as usize, ixs_sysvar))
+    } else {
+        None
+    };
+
+    let prev_ix = if current_ix_idx > 0 {
+        Some(load_instruction_at_checked((current_ix_idx - 1) as usize, ixs_sysvar))
+    } else {
+        None
+    };
+
+    let ix_2_before = if current_ix_idx > 1 {
+        Some(load_instruction_at_checked((current_ix_idx - 2) as usize, ixs_sysvar))
+    } else {
+        None
+    };
+
+    // 3 possible conditions:
+    // RebalanceInstructionStage::BeginSolautoRebalanceSandwich - next_ix is jup swap and ix_2_after is solauto rebalance. Only 2 solauto rebalance ixs exist in transaction
+    // RebalanceInstructionStage::FinishSolautoRebalanceSandwich - prev_ix is jup swap, ix_2_before is solauto rebalance. Only 2 solauto rebalance ixs exist in transaction
+    // RebalanceInstructionStage::FlashLoanSandwich - next_ix is flash loan repay, prev ix is jup swap, ix_2_before is flash borrow. Only 1 solauto rebalance ix exists in transaction
+    // Otherwise error out since we are using an invalid set of instructions
+
+    Ok(SolautoRebalanceStep::FinishSolautoRebalanceSandwich) // TODO remove me
+}
+
+fn instruction_match(ix: Instruction, program_id: Pubkey, ix_discriminators: Vec<u64>) -> bool {
+    if ix.program_id == program_id {
+        if ix.data.len() >= 8 {
+            let discriminator: [u8; 8] = ix.data[0..8]
+                .try_into()
+                .expect("Slice with incorrect length");
+
+            if ix_discriminators.iter().any(|&x| x == u64::from_le_bytes(discriminator)) {
+                return true;
+            }
+        }
     }
+
+    false
 }
 
 pub fn validate_referral_accounts(std_accounts: &SolautoStandardAccounts) -> ProgramResult {

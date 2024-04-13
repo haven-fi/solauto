@@ -58,7 +58,7 @@ struct UpdatePositionInstructionData {
 
 impl UpdatePositionInstructionData {
     fn new() -> Self {
-        Self { discriminator: 3 }
+        Self { discriminator: 4 }
     }
 }
 

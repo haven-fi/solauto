@@ -63,7 +63,7 @@ export function getUpdatePositionInstructionDataSerializer(): Serializer<
       ],
       { description: 'UpdatePositionInstructionData' }
     ),
-    (value) => ({ ...value, discriminator: 3 })
+    (value) => ({ ...value, discriminator: 4 })
   ) as Serializer<
     UpdatePositionInstructionDataArgs,
     UpdatePositionInstructionData

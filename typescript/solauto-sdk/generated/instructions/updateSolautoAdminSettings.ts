@@ -81,7 +81,7 @@ export function updateSolautoAdminSettings(
   const resolvedAccounts = {
     solautoAdmin: {
       index: 0,
-      isWritable: true as boolean,
+      isWritable: false as boolean,
       value: input.solautoAdmin ?? null,
     },
     systemProgram: {

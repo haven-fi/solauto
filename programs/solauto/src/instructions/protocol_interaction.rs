@@ -3,14 +3,17 @@ use solana_program::entrypoint::ProgramResult;
 use crate::{
     clients::{ marginfi::MarginfiClient, solend::SolendClient },
     types::{
-        instruction::{accounts::{
-            Context,
-            MarginfiProtocolInteractionAccounts,
-            SolendProtocolInteractionAccounts,
-        }, SolautoStandardAccounts},
+        instruction::{
+            accounts::{
+                Context,
+                MarginfiProtocolInteractionAccounts,
+                SolendProtocolInteractionAccounts,
+            },
+            SolautoAction,
+            SolautoStandardAccounts,
+        },
         lending_protocol::LendingProtocolClient,
         obligation_position::LendingProtocolObligationPosition,
-        shared::SolautoAction,
         solauto_manager::SolautoManager,
     },
     utils::ix_utils,
@@ -63,6 +66,9 @@ fn protocol_interaction<'a, T: LendingProtocolClient<'a>>(
         std_accounts
     )?;
     solauto_manager.protocol_interaction(action)?;
-    SolautoManager::refresh_position(&solauto_manager.obligation_position, &mut solauto_manager.std_accounts.solauto_position);
+    SolautoManager::refresh_position(
+        &solauto_manager.obligation_position,
+        &mut solauto_manager.std_accounts.solauto_position
+    );
     ix_utils::update_data(&mut solauto_manager.std_accounts.solauto_position)
 }

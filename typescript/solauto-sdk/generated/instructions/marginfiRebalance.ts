@@ -8,8 +8,6 @@
 
 import {
   Context,
-  Option,
-  OptionOrNullable,
   Pda,
   PublicKey,
   Signer,
@@ -19,9 +17,7 @@ import {
 import {
   Serializer,
   mapSerializer,
-  option,
   struct,
-  u16,
   u8,
 } from '@metaplex-foundation/umi/serializers';
 import {
@@ -29,6 +25,11 @@ import {
   ResolvedAccountsWithIndices,
   getAccountMetasAndSigners,
 } from '../shared';
+import {
+  RebalanceArgs,
+  RebalanceArgsArgs,
+  getRebalanceArgsSerializer,
+} from '../types';
 
 // Accounts.
 export type MarginfiRebalanceInstructionAccounts = {
@@ -40,17 +41,19 @@ export type MarginfiRebalanceInstructionAccounts = {
   ixsSysvar: PublicKey | Pda;
   solautoAdminSettings: PublicKey | Pda;
   solautoFeesReceiverTa: PublicKey | Pda;
+  authorityReferralState: PublicKey | Pda;
+  referredByTa?: PublicKey | Pda;
   solautoPosition?: PublicKey | Pda;
 };
 
 // Data.
 export type MarginfiRebalanceInstructionData = {
   discriminator: number;
-  args: Option<number>;
+  rebalanceArgs: RebalanceArgs;
 };
 
 export type MarginfiRebalanceInstructionDataArgs = {
-  args: OptionOrNullable<number>;
+  rebalanceArgs: RebalanceArgsArgs;
 };
 
 export function getMarginfiRebalanceInstructionDataSerializer(): Serializer<
@@ -65,11 +68,11 @@ export function getMarginfiRebalanceInstructionDataSerializer(): Serializer<
     struct<MarginfiRebalanceInstructionData>(
       [
         ['discriminator', u8()],
-        ['args', option(u16())],
+        ['rebalanceArgs', getRebalanceArgsSerializer()],
       ],
       { description: 'MarginfiRebalanceInstructionData' }
     ),
-    (value) => ({ ...value, discriminator: 9 })
+    (value) => ({ ...value, discriminator: 10 })
   ) as Serializer<
     MarginfiRebalanceInstructionDataArgs,
     MarginfiRebalanceInstructionData
@@ -133,8 +136,18 @@ export function marginfiRebalance(
       isWritable: true as boolean,
       value: input.solautoFeesReceiverTa ?? null,
     },
-    solautoPosition: {
+    authorityReferralState: {
       index: 8,
+      isWritable: false as boolean,
+      value: input.authorityReferralState ?? null,
+    },
+    referredByTa: {
+      index: 9,
+      isWritable: true as boolean,
+      value: input.referredByTa ?? null,
+    },
+    solautoPosition: {
+      index: 10,
       isWritable: true as boolean,
       value: input.solautoPosition ?? null,
     },

@@ -43,6 +43,12 @@ export type SolendOpenPositionInstructionAccounts = {
   tokenProgram?: PublicKey | Pda;
   ataProgram?: PublicKey | Pda;
   rent?: PublicKey | Pda;
+  signerReferralState: PublicKey | Pda;
+  referralFeesMint: PublicKey | Pda;
+  signerReferralFeesTa: PublicKey | Pda;
+  referredByState?: PublicKey | Pda;
+  referredByAuthority?: PublicKey | Pda;
+  referredByTa?: PublicKey | Pda;
   solautoPosition?: PublicKey | Pda;
   lendingMarket: PublicKey | Pda;
   obligation: PublicKey | Pda;
@@ -81,7 +87,7 @@ export function getSolendOpenPositionInstructionDataSerializer(): Serializer<
       ],
       { description: 'SolendOpenPositionInstructionData' }
     ),
-    (value) => ({ ...value, discriminator: 2 })
+    (value) => ({ ...value, discriminator: 3 })
   ) as Serializer<
     SolendOpenPositionInstructionDataArgs,
     SolendOpenPositionInstructionData
@@ -132,53 +138,83 @@ export function solendOpenPosition(
       value: input.ataProgram ?? null,
     },
     rent: { index: 5, isWritable: false as boolean, value: input.rent ?? null },
-    solautoPosition: {
+    signerReferralState: {
       index: 6,
+      isWritable: true as boolean,
+      value: input.signerReferralState ?? null,
+    },
+    referralFeesMint: {
+      index: 7,
+      isWritable: true as boolean,
+      value: input.referralFeesMint ?? null,
+    },
+    signerReferralFeesTa: {
+      index: 8,
+      isWritable: true as boolean,
+      value: input.signerReferralFeesTa ?? null,
+    },
+    referredByState: {
+      index: 9,
+      isWritable: true as boolean,
+      value: input.referredByState ?? null,
+    },
+    referredByAuthority: {
+      index: 10,
+      isWritable: true as boolean,
+      value: input.referredByAuthority ?? null,
+    },
+    referredByTa: {
+      index: 11,
+      isWritable: true as boolean,
+      value: input.referredByTa ?? null,
+    },
+    solautoPosition: {
+      index: 12,
       isWritable: true as boolean,
       value: input.solautoPosition ?? null,
     },
     lendingMarket: {
-      index: 7,
+      index: 13,
       isWritable: false as boolean,
       value: input.lendingMarket ?? null,
     },
     obligation: {
-      index: 8,
+      index: 14,
       isWritable: true as boolean,
       value: input.obligation ?? null,
     },
     supplyReserve: {
-      index: 9,
+      index: 15,
       isWritable: false as boolean,
       value: input.supplyReserve ?? null,
     },
     supplyLiquidityTa: {
-      index: 10,
+      index: 16,
       isWritable: true as boolean,
       value: input.supplyLiquidityTa ?? null,
     },
     supplyLiquidityMint: {
-      index: 11,
+      index: 17,
       isWritable: false as boolean,
       value: input.supplyLiquidityMint ?? null,
     },
     supplyCollateralTa: {
-      index: 12,
+      index: 18,
       isWritable: true as boolean,
       value: input.supplyCollateralTa ?? null,
     },
     supplyCollateralMint: {
-      index: 13,
+      index: 19,
       isWritable: false as boolean,
       value: input.supplyCollateralMint ?? null,
     },
     debtLiquidityTa: {
-      index: 14,
+      index: 20,
       isWritable: true as boolean,
       value: input.debtLiquidityTa ?? null,
     },
     debtLiquidityMint: {
-      index: 15,
+      index: 21,
       isWritable: false as boolean,
       value: input.debtLiquidityMint ?? null,
     },

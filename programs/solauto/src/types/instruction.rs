@@ -146,8 +146,7 @@ pub enum Instruction {
     #[account(mut, optional, name = "reserve_debt_liquidity_ta")]
     SolendProtocolInteraction(SolautoAction),
 
-    /// Rebalance position.
-    /// Takes an optional target utilization rate bps. Only allowed if the signer is the position authority - otherwise the instruction will look at the solauto position settings
+    /// Rebalance the leverage position
     #[account(signer, mut, name = "signer")]
     #[account(name = "marginfi_program")]
     #[account(name = "system_program")]
@@ -162,8 +161,7 @@ pub enum Instruction {
     // TODO missing accounts
     MarginfiRebalance(RebalanceArgs),
     
-    /// Rebalance position.
-    /// Takes an optional target utilization rate bps. Only allowed if the signer is the position authority - otherwise the instruction will look at the solauto position settings
+    /// Rebalance the leverage position
     #[account(signer, mut, name = "signer")]
     #[account(name = "solend_program")]
     #[account(name = "system_program")]
@@ -196,6 +194,8 @@ pub enum Instruction {
     SolendRebalance(RebalanceArgs),
 }
 
+pub const SOLAUTO_REBALANCE_IX_DISCRIMINATORS: [u64; 2] = [10, 11];
+
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug)]
 pub struct PositionData {
     /// ID of the Solauto position
@@ -212,11 +212,30 @@ pub struct PositionData {
     pub kamino_data: Option<KaminoPositionData>,
 }
 
+#[derive(BorshDeserialize, BorshSerialize, Clone, Debug)]
+pub enum SolautoAction {
+    /// Provide the base unit amount to deposit
+    Deposit(u64),
+    /// Provide the base unit amount to borrow
+    Borrow(u64),
+    /// Provide the base unit amount to repay
+    Repay(u64),
+    /// Provide the amount to withdraw. Can withdraw partial or all
+    Withdraw(WithdrawParams),
+}
+
+#[derive(BorshDeserialize, BorshSerialize, Clone, Debug)]
+pub enum WithdrawParams {
+    All,
+    /// Provide the amount to withdraw in the base unit
+    Partial(u64),
+}
+
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug)]
 pub struct RebalanceArgs {
     /// Target liq utilization rate. Only used/allowed if rebalancing a self-managed position
     pub target_liq_utilization_rate_bps: Option<u16>,
-    /// Max price slippage bps. Only used/allowed by the Solauto rebalancer account
+    /// Max price slippage bps. Only used/allowed by the Solauto rebalancer account or position authority
     pub max_price_slippage_bps: Option<u16>,
 }
 

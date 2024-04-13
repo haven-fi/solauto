@@ -67,7 +67,7 @@ export function getMarginfiProtocolInteractionInstructionDataSerializer(): Seria
       ],
       { description: 'MarginfiProtocolInteractionInstructionData' }
     ),
-    (value) => ({ ...value, discriminator: 7 })
+    (value) => ({ ...value, discriminator: 8 })
   ) as Serializer<
     MarginfiProtocolInteractionInstructionDataArgs,
     MarginfiProtocolInteractionInstructionData

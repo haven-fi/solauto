@@ -66,7 +66,7 @@ struct MarginfiRefreshDataInstructionData {
 
 impl MarginfiRefreshDataInstructionData {
     fn new() -> Self {
-        Self { discriminator: 5 }
+        Self { discriminator: 6 }
     }
 }
 

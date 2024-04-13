@@ -11,11 +11,13 @@ use crate::generated::types::SolautoSettingsParameters;
 use crate::generated::types::SolendPositionData;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
+use solana_program::pubkey::Pubkey;
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct PositionData {
     pub position_id: u8,
+    pub referred_by_authority: Option<Pubkey>,
     pub setting_params: SolautoSettingsParameters,
     pub marginfi_data: Option<MarginfiPositionData>,
     pub solend_data: Option<SolendPositionData>,

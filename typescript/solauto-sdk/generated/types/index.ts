@@ -11,6 +11,7 @@ export * from './kaminoPositionData';
 export * from './lendingPlatform';
 export * from './marginfiPositionData';
 export * from './positionData';
+export * from './rebalanceArgs';
 export * from './solautoAction';
 export * from './solautoSettingsParameters';
 export * from './solendPositionData';

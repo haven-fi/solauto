@@ -5,6 +5,7 @@
 //! [https://github.com/metaplex-foundation/kinobi]
 //!
 
+use crate::generated::types::RebalanceArgs;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 
@@ -26,6 +27,10 @@ pub struct MarginfiRebalance {
 
     pub solauto_fees_receiver_ta: solana_program::pubkey::Pubkey,
 
+    pub authority_referral_state: solana_program::pubkey::Pubkey,
+
+    pub referred_by_ta: Option<solana_program::pubkey::Pubkey>,
+
     pub solauto_position: Option<solana_program::pubkey::Pubkey>,
 }
 
@@ -42,7 +47,7 @@ impl MarginfiRebalance {
         args: MarginfiRebalanceInstructionArgs,
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
-        let mut accounts = Vec::with_capacity(9 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(11 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.signer,
             true,
@@ -75,6 +80,21 @@ impl MarginfiRebalance {
             self.solauto_fees_receiver_ta,
             false,
         ));
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            self.authority_referral_state,
+            false,
+        ));
+        if let Some(referred_by_ta) = self.referred_by_ta {
+            accounts.push(solana_program::instruction::AccountMeta::new(
+                referred_by_ta,
+                false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::SOLAUTO_ID,
+                false,
+            ));
+        }
         if let Some(solauto_position) = self.solauto_position {
             accounts.push(solana_program::instruction::AccountMeta::new(
                 solauto_position,
@@ -108,14 +128,14 @@ struct MarginfiRebalanceInstructionData {
 
 impl MarginfiRebalanceInstructionData {
     fn new() -> Self {
-        Self { discriminator: 9 }
+        Self { discriminator: 10 }
     }
 }
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct MarginfiRebalanceInstructionArgs {
-    pub args: Option<u16>,
+    pub rebalance_args: RebalanceArgs,
 }
 
 /// Instruction builder for `MarginfiRebalance`.
@@ -130,7 +150,9 @@ pub struct MarginfiRebalanceInstructionArgs {
 ///   5. `[]` ixs_sysvar
 ///   6. `[]` solauto_admin_settings
 ///   7. `[writable]` solauto_fees_receiver_ta
-///   8. `[writable, optional]` solauto_position
+///   8. `[]` authority_referral_state
+///   9. `[writable, optional]` referred_by_ta
+///   10. `[writable, optional]` solauto_position
 #[derive(Default)]
 pub struct MarginfiRebalanceBuilder {
     signer: Option<solana_program::pubkey::Pubkey>,
@@ -141,8 +163,10 @@ pub struct MarginfiRebalanceBuilder {
     ixs_sysvar: Option<solana_program::pubkey::Pubkey>,
     solauto_admin_settings: Option<solana_program::pubkey::Pubkey>,
     solauto_fees_receiver_ta: Option<solana_program::pubkey::Pubkey>,
+    authority_referral_state: Option<solana_program::pubkey::Pubkey>,
+    referred_by_ta: Option<solana_program::pubkey::Pubkey>,
     solauto_position: Option<solana_program::pubkey::Pubkey>,
-    args: Option<u16>,
+    rebalance_args: Option<RebalanceArgs>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
 
@@ -202,6 +226,23 @@ impl MarginfiRebalanceBuilder {
         self.solauto_fees_receiver_ta = Some(solauto_fees_receiver_ta);
         self
     }
+    #[inline(always)]
+    pub fn authority_referral_state(
+        &mut self,
+        authority_referral_state: solana_program::pubkey::Pubkey,
+    ) -> &mut Self {
+        self.authority_referral_state = Some(authority_referral_state);
+        self
+    }
+    /// `[optional account]`
+    #[inline(always)]
+    pub fn referred_by_ta(
+        &mut self,
+        referred_by_ta: Option<solana_program::pubkey::Pubkey>,
+    ) -> &mut Self {
+        self.referred_by_ta = referred_by_ta;
+        self
+    }
     /// `[optional account]`
     #[inline(always)]
     pub fn solauto_position(
@@ -211,10 +252,9 @@ impl MarginfiRebalanceBuilder {
         self.solauto_position = solauto_position;
         self
     }
-    /// `[optional argument]`
     #[inline(always)]
-    pub fn args(&mut self, args: u16) -> &mut Self {
-        self.args = Some(args);
+    pub fn rebalance_args(&mut self, rebalance_args: RebalanceArgs) -> &mut Self {
+        self.rebalance_args = Some(rebalance_args);
         self
     }
     /// Add an aditional account to the instruction.
@@ -256,10 +296,17 @@ impl MarginfiRebalanceBuilder {
             solauto_fees_receiver_ta: self
                 .solauto_fees_receiver_ta
                 .expect("solauto_fees_receiver_ta is not set"),
+            authority_referral_state: self
+                .authority_referral_state
+                .expect("authority_referral_state is not set"),
+            referred_by_ta: self.referred_by_ta,
             solauto_position: self.solauto_position,
         };
         let args = MarginfiRebalanceInstructionArgs {
-            args: self.args.clone(),
+            rebalance_args: self
+                .rebalance_args
+                .clone()
+                .expect("rebalance_args is not set"),
         };
 
         accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
@@ -283,6 +330,10 @@ pub struct MarginfiRebalanceCpiAccounts<'a, 'b> {
     pub solauto_admin_settings: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub solauto_fees_receiver_ta: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub authority_referral_state: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub referred_by_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
     pub solauto_position: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 }
@@ -308,6 +359,10 @@ pub struct MarginfiRebalanceCpi<'a, 'b> {
 
     pub solauto_fees_receiver_ta: &'b solana_program::account_info::AccountInfo<'a>,
 
+    pub authority_referral_state: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub referred_by_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+
     pub solauto_position: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The arguments for the instruction.
     pub __args: MarginfiRebalanceInstructionArgs,
@@ -329,6 +384,8 @@ impl<'a, 'b> MarginfiRebalanceCpi<'a, 'b> {
             ixs_sysvar: accounts.ixs_sysvar,
             solauto_admin_settings: accounts.solauto_admin_settings,
             solauto_fees_receiver_ta: accounts.solauto_fees_receiver_ta,
+            authority_referral_state: accounts.authority_referral_state,
+            referred_by_ta: accounts.referred_by_ta,
             solauto_position: accounts.solauto_position,
             __args: args,
         }
@@ -366,7 +423,7 @@ impl<'a, 'b> MarginfiRebalanceCpi<'a, 'b> {
             bool,
         )],
     ) -> solana_program::entrypoint::ProgramResult {
-        let mut accounts = Vec::with_capacity(9 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(11 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             *self.signer.key,
             true,
@@ -399,6 +456,21 @@ impl<'a, 'b> MarginfiRebalanceCpi<'a, 'b> {
             *self.solauto_fees_receiver_ta.key,
             false,
         ));
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            *self.authority_referral_state.key,
+            false,
+        ));
+        if let Some(referred_by_ta) = self.referred_by_ta {
+            accounts.push(solana_program::instruction::AccountMeta::new(
+                *referred_by_ta.key,
+                false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::SOLAUTO_ID,
+                false,
+            ));
+        }
         if let Some(solauto_position) = self.solauto_position {
             accounts.push(solana_program::instruction::AccountMeta::new(
                 *solauto_position.key,
@@ -428,7 +500,7 @@ impl<'a, 'b> MarginfiRebalanceCpi<'a, 'b> {
             accounts,
             data,
         };
-        let mut account_infos = Vec::with_capacity(9 + 1 + remaining_accounts.len());
+        let mut account_infos = Vec::with_capacity(11 + 1 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
         account_infos.push(self.signer.clone());
         account_infos.push(self.marginfi_program.clone());
@@ -438,6 +510,10 @@ impl<'a, 'b> MarginfiRebalanceCpi<'a, 'b> {
         account_infos.push(self.ixs_sysvar.clone());
         account_infos.push(self.solauto_admin_settings.clone());
         account_infos.push(self.solauto_fees_receiver_ta.clone());
+        account_infos.push(self.authority_referral_state.clone());
+        if let Some(referred_by_ta) = self.referred_by_ta {
+            account_infos.push(referred_by_ta.clone());
+        }
         if let Some(solauto_position) = self.solauto_position {
             account_infos.push(solauto_position.clone());
         }
@@ -465,7 +541,9 @@ impl<'a, 'b> MarginfiRebalanceCpi<'a, 'b> {
 ///   5. `[]` ixs_sysvar
 ///   6. `[]` solauto_admin_settings
 ///   7. `[writable]` solauto_fees_receiver_ta
-///   8. `[writable, optional]` solauto_position
+///   8. `[]` authority_referral_state
+///   9. `[writable, optional]` referred_by_ta
+///   10. `[writable, optional]` solauto_position
 pub struct MarginfiRebalanceCpiBuilder<'a, 'b> {
     instruction: Box<MarginfiRebalanceCpiBuilderInstruction<'a, 'b>>,
 }
@@ -482,8 +560,10 @@ impl<'a, 'b> MarginfiRebalanceCpiBuilder<'a, 'b> {
             ixs_sysvar: None,
             solauto_admin_settings: None,
             solauto_fees_receiver_ta: None,
+            authority_referral_state: None,
+            referred_by_ta: None,
             solauto_position: None,
-            args: None,
+            rebalance_args: None,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
@@ -552,6 +632,23 @@ impl<'a, 'b> MarginfiRebalanceCpiBuilder<'a, 'b> {
         self.instruction.solauto_fees_receiver_ta = Some(solauto_fees_receiver_ta);
         self
     }
+    #[inline(always)]
+    pub fn authority_referral_state(
+        &mut self,
+        authority_referral_state: &'b solana_program::account_info::AccountInfo<'a>,
+    ) -> &mut Self {
+        self.instruction.authority_referral_state = Some(authority_referral_state);
+        self
+    }
+    /// `[optional account]`
+    #[inline(always)]
+    pub fn referred_by_ta(
+        &mut self,
+        referred_by_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    ) -> &mut Self {
+        self.instruction.referred_by_ta = referred_by_ta;
+        self
+    }
     /// `[optional account]`
     #[inline(always)]
     pub fn solauto_position(
@@ -561,10 +658,9 @@ impl<'a, 'b> MarginfiRebalanceCpiBuilder<'a, 'b> {
         self.instruction.solauto_position = solauto_position;
         self
     }
-    /// `[optional argument]`
     #[inline(always)]
-    pub fn args(&mut self, args: u16) -> &mut Self {
-        self.instruction.args = Some(args);
+    pub fn rebalance_args(&mut self, rebalance_args: RebalanceArgs) -> &mut Self {
+        self.instruction.rebalance_args = Some(rebalance_args);
         self
     }
     /// Add an additional account to the instruction.
@@ -609,7 +705,11 @@ impl<'a, 'b> MarginfiRebalanceCpiBuilder<'a, 'b> {
         signers_seeds: &[&[&[u8]]],
     ) -> solana_program::entrypoint::ProgramResult {
         let args = MarginfiRebalanceInstructionArgs {
-            args: self.instruction.args.clone(),
+            rebalance_args: self
+                .instruction
+                .rebalance_args
+                .clone()
+                .expect("rebalance_args is not set"),
         };
         let instruction = MarginfiRebalanceCpi {
             __program: self.instruction.__program,
@@ -648,6 +748,13 @@ impl<'a, 'b> MarginfiRebalanceCpiBuilder<'a, 'b> {
                 .solauto_fees_receiver_ta
                 .expect("solauto_fees_receiver_ta is not set"),
 
+            authority_referral_state: self
+                .instruction
+                .authority_referral_state
+                .expect("authority_referral_state is not set"),
+
+            referred_by_ta: self.instruction.referred_by_ta,
+
             solauto_position: self.instruction.solauto_position,
             __args: args,
         };
@@ -668,8 +775,10 @@ struct MarginfiRebalanceCpiBuilderInstruction<'a, 'b> {
     ixs_sysvar: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     solauto_admin_settings: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     solauto_fees_receiver_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    authority_referral_state: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    referred_by_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     solauto_position: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    args: Option<u16>,
+    rebalance_args: Option<RebalanceArgs>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(
         &'b solana_program::account_info::AccountInfo<'a>,

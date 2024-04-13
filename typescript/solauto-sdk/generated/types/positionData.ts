@@ -6,10 +6,11 @@
  * @see https://github.com/metaplex-foundation/kinobi
  */
 
-import { Option, OptionOrNullable } from '@metaplex-foundation/umi';
+import { Option, OptionOrNullable, PublicKey } from '@metaplex-foundation/umi';
 import {
   Serializer,
   option,
+  publicKey as publicKeySerializer,
   struct,
   u8,
 } from '@metaplex-foundation/umi/serializers';
@@ -30,6 +31,7 @@ import {
 
 export type PositionData = {
   positionId: number;
+  referredByAuthority: Option<PublicKey>;
   settingParams: SolautoSettingsParameters;
   marginfiData: Option<MarginfiPositionData>;
   solendData: Option<SolendPositionData>;
@@ -38,6 +40,7 @@ export type PositionData = {
 
 export type PositionDataArgs = {
   positionId: number;
+  referredByAuthority: OptionOrNullable<PublicKey>;
   settingParams: SolautoSettingsParametersArgs;
   marginfiData: OptionOrNullable<MarginfiPositionDataArgs>;
   solendData: OptionOrNullable<SolendPositionDataArgs>;
@@ -51,6 +54,7 @@ export function getPositionDataSerializer(): Serializer<
   return struct<PositionData>(
     [
       ['positionId', u8()],
+      ['referredByAuthority', option(publicKeySerializer())],
       ['settingParams', getSolautoSettingsParametersSerializer()],
       ['marginfiData', option(getMarginfiPositionDataSerializer())],
       ['solendData', option(getSolendPositionDataSerializer())],

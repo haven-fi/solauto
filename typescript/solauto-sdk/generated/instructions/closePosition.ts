@@ -52,7 +52,7 @@ export function getClosePositionInstructionDataSerializer(): Serializer<
     struct<ClosePositionInstructionData>([['discriminator', u8()]], {
       description: 'ClosePositionInstructionData',
     }),
-    (value) => ({ ...value, discriminator: 4 })
+    (value) => ({ ...value, discriminator: 5 })
   ) as Serializer<
     ClosePositionInstructionDataArgs,
     ClosePositionInstructionData

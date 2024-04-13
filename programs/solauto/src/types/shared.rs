@@ -9,25 +9,6 @@ use solana_program::{
     pubkey::Pubkey,
 };
 
-#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType)]
-pub enum SolautoAction {
-    /// Provide the base unit amount to deposit
-    Deposit(u64),
-    /// Provide the base unit amount to borrow
-    Borrow(u64),
-    /// Provide the base unit amount to repay
-    Repay(u64),
-    /// Provide the amount to withdraw. Can withdraw partial or all
-    Withdraw(WithdrawParams),
-}
-
-#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType)]
-pub enum WithdrawParams {
-    All,
-    /// Provide the amount to withdraw in the base unit
-    Partial(u64),
-}
-
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, PartialEq)]
 #[borsh(use_discriminant = true)]
 pub enum LendingPlatform {

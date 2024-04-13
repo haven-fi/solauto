@@ -91,7 +91,7 @@ struct MarginfiProtocolInteractionInstructionData {
 
 impl MarginfiProtocolInteractionInstructionData {
     fn new() -> Self {
-        Self { discriminator: 7 }
+        Self { discriminator: 8 }
     }
 }
 

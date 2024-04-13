@@ -42,6 +42,9 @@ pub enum SolautoError {
     /// 9 (0x9) - Unable to invoke instruciton through a CPI
     #[error("Unable to invoke instruciton through a CPI")]
     InstructionIsCPI,
+    /// 10 (0xA) - Too many rebalance instruction invocations in the same transaction
+    #[error("Too many rebalance instruction invocations in the same transaction")]
+    RebalanceAbuse,
 }
 
 impl solana_program::program_error::PrintProgramError for SolautoError {

@@ -8,15 +8,15 @@ use crate::{
 };
 
 use super::{
-    instruction::SolautoStandardAccounts,
+    instruction::{SolautoAction, SolautoStandardAccounts, WithdrawParams},
     lending_protocol::LendingProtocolClient,
     obligation_position::LendingProtocolObligationPosition,
-    shared::{ DeserializedAccount, Position, SolautoAction, SolautoError, WithdrawParams },
+    shared::{ DeserializedAccount, Position, SolautoError },
 };
 
 // pub struct SolautoManagerAccounts<'a> {
-// pub debt_token_mint: Option<&'a AccountInfo<'a>>,
-// pub debt_token_account: Option<&'a AccountInfo<'a>>,
+//  pub debt_token_mint: Option<&'a AccountInfo<'a>>,
+//  pub debt_token_account: Option<&'a AccountInfo<'a>>,
 // }
 
 pub struct SolautoManager<'a, 'b> {

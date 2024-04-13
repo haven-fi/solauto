@@ -177,6 +177,23 @@ export class InstructionIsCPIError extends ProgramError {
 codeToErrorMap.set(0x9, InstructionIsCPIError);
 nameToErrorMap.set('InstructionIsCPI', InstructionIsCPIError);
 
+/** RebalanceAbuse: Too many rebalance instruction invocations in the same transaction */
+export class RebalanceAbuseError extends ProgramError {
+  override readonly name: string = 'RebalanceAbuse';
+
+  readonly code: number = 0xa; // 10
+
+  constructor(program: Program, cause?: Error) {
+    super(
+      'Too many rebalance instruction invocations in the same transaction',
+      program,
+      cause
+    );
+  }
+}
+codeToErrorMap.set(0xa, RebalanceAbuseError);
+nameToErrorMap.set('RebalanceAbuse', RebalanceAbuseError);
+
 /**
  * Attempts to resolve a custom program error from the provided error code.
  * @category Errors

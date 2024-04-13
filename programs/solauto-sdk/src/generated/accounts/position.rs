@@ -24,9 +24,9 @@ pub struct Position {
         serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
     )]
     pub authority: Pubkey,
-    pub lending_platform: LendingPlatform,
     pub setting_params: SolautoSettingsParameters,
     pub general_data: GeneralPositionData,
+    pub lending_platform: LendingPlatform,
     pub marginfi_data: Option<MarginfiPositionData>,
     pub solend_data: Option<SolendPositionData>,
     pub kamino_data: Option<KaminoPositionData>,

@@ -37,7 +37,7 @@ impl UpdateSolautoAdminSettings {
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
         let mut accounts = Vec::with_capacity(8 + remaining_accounts.len());
-        accounts.push(solana_program::instruction::AccountMeta::new(
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.solauto_admin,
             true,
         ));
@@ -96,7 +96,7 @@ impl UpdateSolautoAdminSettingsInstructionData {
 ///
 /// ### Accounts:
 ///
-///   0. `[writable, signer]` solauto_admin
+///   0. `[signer]` solauto_admin
 ///   1. `[optional]` system_program (default to `11111111111111111111111111111111`)
 ///   2. `[optional]` token_program (default to `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA`)
 ///   3. `[optional]` rent (default to `SysvarRent111111111111111111111111111111111`)
@@ -317,7 +317,7 @@ impl<'a, 'b> UpdateSolautoAdminSettingsCpi<'a, 'b> {
         )],
     ) -> solana_program::entrypoint::ProgramResult {
         let mut accounts = Vec::with_capacity(8 + remaining_accounts.len());
-        accounts.push(solana_program::instruction::AccountMeta::new(
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             *self.solauto_admin.key,
             true,
         ));
@@ -391,7 +391,7 @@ impl<'a, 'b> UpdateSolautoAdminSettingsCpi<'a, 'b> {
 ///
 /// ### Accounts:
 ///
-///   0. `[writable, signer]` solauto_admin
+///   0. `[signer]` solauto_admin
 ///   1. `[]` system_program
 ///   2. `[]` token_program
 ///   3. `[]` rent

@@ -7,4 +7,5 @@
  */
 
 export * from './position';
+export * from './refferalState';
 export * from './solautoAdminSettings';

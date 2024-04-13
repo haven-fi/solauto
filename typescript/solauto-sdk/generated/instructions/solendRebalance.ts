@@ -8,8 +8,6 @@
 
 import {
   Context,
-  Option,
-  OptionOrNullable,
   Pda,
   PublicKey,
   Signer,
@@ -20,9 +18,7 @@ import {
 import {
   Serializer,
   mapSerializer,
-  option,
   struct,
-  u16,
   u8,
 } from '@metaplex-foundation/umi/serializers';
 import {
@@ -30,6 +26,11 @@ import {
   ResolvedAccountsWithIndices,
   getAccountMetasAndSigners,
 } from '../shared';
+import {
+  RebalanceArgs,
+  RebalanceArgsArgs,
+  getRebalanceArgsSerializer,
+} from '../types';
 
 // Accounts.
 export type SolendRebalanceInstructionAccounts = {
@@ -43,6 +44,8 @@ export type SolendRebalanceInstructionAccounts = {
   ixsSysvar: PublicKey | Pda;
   solautoAdminSettings: PublicKey | Pda;
   solautoFeesReceiverTa: PublicKey | Pda;
+  authorityReferralState: PublicKey | Pda;
+  referredByTa?: PublicKey | Pda;
   solautoPosition?: PublicKey | Pda;
   lendingMarket: PublicKey | Pda;
   obligation: PublicKey | Pda;
@@ -65,11 +68,11 @@ export type SolendRebalanceInstructionAccounts = {
 // Data.
 export type SolendRebalanceInstructionData = {
   discriminator: number;
-  args: Option<number>;
+  rebalanceArgs: RebalanceArgs;
 };
 
 export type SolendRebalanceInstructionDataArgs = {
-  args: OptionOrNullable<number>;
+  rebalanceArgs: RebalanceArgsArgs;
 };
 
 export function getSolendRebalanceInstructionDataSerializer(): Serializer<
@@ -84,11 +87,11 @@ export function getSolendRebalanceInstructionDataSerializer(): Serializer<
     struct<SolendRebalanceInstructionData>(
       [
         ['discriminator', u8()],
-        ['args', option(u16())],
+        ['rebalanceArgs', getRebalanceArgsSerializer()],
       ],
       { description: 'SolendRebalanceInstructionData' }
     ),
-    (value) => ({ ...value, discriminator: 10 })
+    (value) => ({ ...value, discriminator: 11 })
   ) as Serializer<
     SolendRebalanceInstructionDataArgs,
     SolendRebalanceInstructionData
@@ -157,88 +160,98 @@ export function solendRebalance(
       isWritable: true as boolean,
       value: input.solautoFeesReceiverTa ?? null,
     },
-    solautoPosition: {
+    authorityReferralState: {
       index: 10,
+      isWritable: false as boolean,
+      value: input.authorityReferralState ?? null,
+    },
+    referredByTa: {
+      index: 11,
+      isWritable: true as boolean,
+      value: input.referredByTa ?? null,
+    },
+    solautoPosition: {
+      index: 12,
       isWritable: true as boolean,
       value: input.solautoPosition ?? null,
     },
     lendingMarket: {
-      index: 11,
+      index: 13,
       isWritable: false as boolean,
       value: input.lendingMarket ?? null,
     },
     obligation: {
-      index: 12,
+      index: 14,
       isWritable: true as boolean,
       value: input.obligation ?? null,
     },
     supplyReserve: {
-      index: 13,
+      index: 15,
       isWritable: true as boolean,
       value: input.supplyReserve ?? null,
     },
     supplyReservePythPriceOracle: {
-      index: 14,
+      index: 16,
       isWritable: false as boolean,
       value: input.supplyReservePythPriceOracle ?? null,
     },
     supplyReserveSwitchboardOracle: {
-      index: 15,
+      index: 17,
       isWritable: false as boolean,
       value: input.supplyReserveSwitchboardOracle ?? null,
     },
     supplyLiquidityMint: {
-      index: 16,
+      index: 18,
       isWritable: false as boolean,
       value: input.supplyLiquidityMint ?? null,
     },
     sourceSupplyLiquidityTa: {
-      index: 17,
+      index: 19,
       isWritable: true as boolean,
       value: input.sourceSupplyLiquidityTa ?? null,
     },
     reserveSupplyLiquidityTa: {
-      index: 18,
+      index: 20,
       isWritable: true as boolean,
       value: input.reserveSupplyLiquidityTa ?? null,
     },
     supplyCollateralMint: {
-      index: 19,
+      index: 21,
       isWritable: false as boolean,
       value: input.supplyCollateralMint ?? null,
     },
     sourceSupplyCollateralTa: {
-      index: 20,
+      index: 22,
       isWritable: true as boolean,
       value: input.sourceSupplyCollateralTa ?? null,
     },
     reserveSupplyCollateralTa: {
-      index: 21,
+      index: 23,
       isWritable: true as boolean,
       value: input.reserveSupplyCollateralTa ?? null,
     },
     debtReserve: {
-      index: 22,
+      index: 24,
       isWritable: true as boolean,
       value: input.debtReserve ?? null,
     },
     debtReserveFeeReceiverTa: {
-      index: 23,
+      index: 25,
       isWritable: true as boolean,
       value: input.debtReserveFeeReceiverTa ?? null,
     },
     debtLiquidityMint: {
-      index: 24,
+      index: 26,
       isWritable: false as boolean,
       value: input.debtLiquidityMint ?? null,
     },
     sourceDebtLiquidityTa: {
-      index: 25,
+      index: 27,
       isWritable: true as boolean,
       value: input.sourceDebtLiquidityTa ?? null,
     },
     reserveDebtLiquidityTa: {
-      index: 26,
+      index: 28,
       isWritable: true as boolean,
       value: input.reserveDebtLiquidityTa ?? null,
     },

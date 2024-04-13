@@ -12,9 +12,10 @@ use crate::{
             },
             PositionData,
             RebalanceArgs,
+            SolautoAction,
             SolautoStandardAccounts,
         },
-        shared::{ DeserializedAccount, LendingPlatform, Position, RefferalState, SolautoAction },
+        shared::{ DeserializedAccount, LendingPlatform, Position, RefferalState },
     },
     utils::*,
 };
@@ -133,7 +134,7 @@ pub fn process_marginfi_rebalance<'a>(
     let solauto_position = DeserializedAccount::<Position>::deserialize(
         ctx.accounts.solauto_position
     )?;
-    
+
     let std_accounts = SolautoStandardAccounts {
         signer: ctx.accounts.signer,
         lending_protocol: ctx.accounts.marginfi_program,

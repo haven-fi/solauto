@@ -7,7 +7,7 @@
       "accounts": [
         {
           "name": "solautoAdmin",
-          "isMut": true,
+          "isMut": false,
           "isSigner": true
         },
         {
@@ -53,6 +53,51 @@
       }
     },
     {
+      "name": "ClaimReferralFees",
+      "accounts": [
+        {
+          "name": "signer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "referralState",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "referralFeesTa",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "referralFeesMint",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": [],
+      "discriminant": {
+        "type": "u8",
+        "value": 1
+      }
+    },
+    {
       "name": "MarginfiOpenPosition",
       "accounts": [
         {
@@ -86,6 +131,45 @@
           "isSigner": false
         },
         {
+          "name": "signerReferralState",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "referralFeesMint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "signerReferralFeesTa",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "referredByState",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "referredByAuthority",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "referredByTa",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "solautoPosition",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
           "name": "marginfiGroup",
           "isMut": false,
           "isSigner": false
@@ -94,12 +178,6 @@
           "name": "marginfiAccount",
           "isMut": true,
           "isSigner": false
-        },
-        {
-          "name": "solautoPosition",
-          "isMut": true,
-          "isSigner": false,
-          "isOptional": true
         },
         {
           "name": "supplyTa",
@@ -134,7 +212,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 1
+        "value": 2
       }
     },
     {
@@ -169,6 +247,39 @@
           "name": "rent",
           "isMut": false,
           "isSigner": false
+        },
+        {
+          "name": "signerReferralState",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "referralFeesMint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "signerReferralFeesTa",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "referredByState",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "referredByAuthority",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "referredByTa",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
         },
         {
           "name": "solautoPosition",
@@ -234,7 +345,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 2
+        "value": 3
       }
     },
     {
@@ -261,7 +372,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 3
+        "value": 4
       }
     },
     {
@@ -297,7 +408,7 @@
       "args": [],
       "discriminant": {
         "type": "u8",
-        "value": 4
+        "value": 5
       }
     },
     {
@@ -323,7 +434,7 @@
       "args": [],
       "discriminant": {
         "type": "u8",
-        "value": 5
+        "value": 6
       }
     },
     {
@@ -398,7 +509,7 @@
       "args": [],
       "discriminant": {
         "type": "u8",
-        "value": 6
+        "value": 7
       }
     },
     {
@@ -446,7 +557,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 7
+        "value": 8
       }
     },
     {
@@ -485,16 +596,6 @@
         {
           "name": "rent",
           "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "solautoAdminSettings",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "solautoFeesReceiverTa",
-          "isMut": true,
           "isSigner": false
         },
         {
@@ -608,7 +709,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 8
+        "value": 9
       }
     },
     {
@@ -655,6 +756,17 @@
           "isSigner": false
         },
         {
+          "name": "authorityReferralState",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "referredByTa",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
           "name": "solautoPosition",
           "isMut": true,
           "isSigner": false,
@@ -663,15 +775,15 @@
       ],
       "args": [
         {
-          "name": "args",
+          "name": "rebalanceArgs",
           "type": {
-            "option": "u16"
+            "defined": "RebalanceArgs"
           }
         }
       ],
       "discriminant": {
         "type": "u8",
-        "value": 9
+        "value": 10
       }
     },
     {
@@ -728,6 +840,17 @@
           "isSigner": false
         },
         {
+          "name": "authorityReferralState",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "referredByTa",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
           "name": "solautoPosition",
           "isMut": true,
           "isSigner": false,
@@ -816,15 +939,15 @@
       ],
       "args": [
         {
-          "name": "args",
+          "name": "rebalanceArgs",
           "type": {
-            "option": "u16"
+            "defined": "RebalanceArgs"
           }
         }
       ],
       "discriminant": {
         "type": "u8",
-        "value": 10
+        "value": 11
       }
     }
   ],
@@ -843,12 +966,6 @@
             "type": "publicKey"
           },
           {
-            "name": "lendingPlatform",
-            "type": {
-              "defined": "LendingPlatform"
-            }
-          },
-          {
             "name": "settingParams",
             "type": {
               "defined": "SolautoSettingsParameters"
@@ -858,6 +975,12 @@
             "name": "generalData",
             "type": {
               "defined": "GeneralPositionData"
+            }
+          },
+          {
+            "name": "lendingPlatform",
+            "type": {
+              "defined": "LendingPlatform"
             }
           },
           {
@@ -883,6 +1006,32 @@
                 "defined": "KaminoPositionData"
               }
             }
+          }
+        ]
+      }
+    },
+    {
+      "name": "RefferalState",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "publicKey"
+          },
+          {
+            "name": "referredByTa",
+            "type": {
+              "option": "publicKey"
+            }
+          },
+          {
+            "name": "feesMint",
+            "type": "publicKey"
+          },
+          {
+            "name": "feesTa",
+            "type": "publicKey"
           }
         ]
       }
@@ -915,6 +1064,12 @@
             "type": "u8"
           },
           {
+            "name": "referredByAuthority",
+            "type": {
+              "option": "publicKey"
+            }
+          },
+          {
             "name": "settingParams",
             "type": {
               "defined": "SolautoSettingsParameters"
@@ -942,6 +1097,26 @@
               "option": {
                 "defined": "KaminoPositionData"
               }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "RebalanceArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "targetLiqUtilizationRateBps",
+            "type": {
+              "option": "u16"
+            }
+          },
+          {
+            "name": "maxPriceSlippageBps",
+            "type": {
+              "option": "u16"
             }
           }
         ]
@@ -1169,6 +1344,11 @@
       "code": 9,
       "name": "InstructionIsCPI",
       "msg": "Unable to invoke instruciton through a CPI"
+    },
+    {
+      "code": 10,
+      "name": "RebalanceAbuse",
+      "msg": "Too many rebalance instruction invocations in the same transaction"
     }
   ],
   "metadata": {

@@ -76,7 +76,7 @@ struct ClosePositionInstructionData {
 
 impl ClosePositionInstructionData {
     fn new() -> Self {
-        Self { discriminator: 4 }
+        Self { discriminator: 5 }
     }
 }
 

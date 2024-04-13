@@ -5,6 +5,7 @@
 //! [https://github.com/metaplex-foundation/kinobi]
 //!
 
+pub(crate) mod r#claim_referral_fees;
 pub(crate) mod r#close_position;
 pub(crate) mod r#marginfi_open_position;
 pub(crate) mod r#marginfi_protocol_interaction;
@@ -17,6 +18,7 @@ pub(crate) mod r#solend_refresh_data;
 pub(crate) mod r#update_position;
 pub(crate) mod r#update_solauto_admin_settings;
 
+pub use self::r#claim_referral_fees::*;
 pub use self::r#close_position::*;
 pub use self::r#marginfi_open_position::*;
 pub use self::r#marginfi_protocol_interaction::*;
