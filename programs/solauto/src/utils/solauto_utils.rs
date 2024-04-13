@@ -5,13 +5,15 @@ use spl_associated_token_account::get_associated_token_address;
 use crate::{
     constants::WSOL_MINT_ADDRESS,
     types::{
-        instruction::PositionData,
+        instruction::{ OptionalLiqUtilizationRateBps, PositionData, SolautoStandardAccounts },
+        obligation_position::{ self, LendingProtocolObligationPosition },
         shared::{
             DeserializedAccount,
             GeneralPositionData,
             LendingPlatform,
             Position,
             RefferalState,
+            SolautoError,
             REFERRAL_ACCOUNT_SPACE,
         },
     },
@@ -183,4 +185,27 @@ pub fn get_or_create_referral_state<'a>(
 
 pub fn get_referral_account_seeds<'a>(authority: &'a AccountInfo<'a>) -> Vec<&[u8]> {
     vec![authority.key.as_ref(), b"referrals"]
+}
+
+pub fn get_target_liq_utilization_rate(
+    std_accounts: &SolautoStandardAccounts,
+    obligation_position: &LendingProtocolObligationPosition,
+    target_liq_utilization_rate_bps: OptionalLiqUtilizationRateBps
+) -> Result<u16, SolautoError> {
+    let current_liq_utilization_rate_bps = obligation_position.current_utilization_rate_bps();
+    let result: Result<u16, SolautoError> = if target_liq_utilization_rate_bps.is_none() {
+        let setting_params = &std_accounts.solauto_position.as_ref().unwrap().data.setting_params;
+        if current_liq_utilization_rate_bps > setting_params.repay_from_bps {
+            Ok(setting_params.repay_to_bps)
+        } else if current_liq_utilization_rate_bps < setting_params.boost_from_bps {
+            Ok(setting_params.boost_from_bps)
+        } else {
+            return Err(SolautoError::InvalidRebalanceCondition.into());
+        }
+    } else {
+        Ok(target_liq_utilization_rate_bps.unwrap())
+    };
+
+    let target_rate_bps = result.unwrap();
+    Ok(target_rate_bps)
 }

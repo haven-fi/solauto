@@ -44,6 +44,8 @@ use crate::constants::{
     SOLAUTO_ADMIN_SETTINGS_ACCOUNT_SEEDS,
 };
 
+use super::solauto_utils;
+
 pub fn generic_instruction_validation(
     accounts: &SolautoStandardAccounts,
     authority_only_ix: bool,
@@ -333,6 +335,37 @@ pub fn validate_rebalance_instruction(
     target_liq_utilization_rate_bps: OptionalLiqUtilizationRateBps,
     obligation_position: &LendingProtocolObligationPosition
 ) -> ProgramResult {
+    // max_price_slippage = 0.03 (300bps) (3%)
+    // random_price_volatility = 0.03 (300bps) (3%)
+    // 1 - max_price_slippage - random_price_volatility = buffer_room = 93.15%
+    // if transaction fails default to flash loan instruction route and increase max slippage if needed
+
+    // increasing leverage:
+    // -
+    // if debt + debt adjustment keeps utilization rate under buffer_room, instructions are:
+    // solauto rebalance - borrows more debt worth debt_adjustment_usd (figure out what to do with solauto fee after borrow)
+    // jup swap - swap debt token to supply token
+    // solauto rebalance - deposit supply token
+    // -
+    // if debt + debt adjustment brings utilization rate above buffer_room, instructions are:
+    // take out flash loan in debt token
+    // jup swap - swap debt token to supply token
+    // solauto rebalance - deposit supply token, borrow equivalent debt token amount from flash borrow ix + flash loan fee
+    // repay flash loan in debt token
+
+    // deleveraging:
+    // -
+    // if supply - debt adjustment keeps utilization rate under buffer_room, instructions are:
+    // solauto rebalance - withdraw supply worth debt_adjustment_usd
+    // jup swap - swap supply token to debt token
+    // solauto rebalance - repay debt with debt token
+    // -
+    // if supply - debt adjustment brings utilization rate over buffer_room, instructions are:
+    // take out flash loan in supply token
+    // jup swap - swap supply token to debt token
+    // solauto rebalance - repay debt token, & withdraw equivalent supply token amount from flash borrow ix + flash loan fee
+    // repay flash loan in supply token
+
     let ixs_sysvar = std_accounts.ixs_sysvar.unwrap();
     if !target_liq_utilization_rate_bps.is_none() && !std_accounts.solauto_position.is_none() {
         msg!(
@@ -358,9 +391,10 @@ pub fn validate_rebalance_instruction(
     // RebalanceInstructionStage::FinishSolautoRebalanceSandwich - prev_ix is jup swap, ix_2_before is solauto rebalance. Only 2 solauto rebalance ixs exist in transaction
     // RebalanceInstructionStage::FlashLoanSandwich - next_ix is flash loan repay, prev ix is jup swap, ix_2_before is flash borrow. Only 1 solauto rebalance ix exists in transaction
 
-    // Do I really need to check this? Can't I just infer the stage by how many rebalance instructions there are, and if this is the first or last one?
+    // We do need to check this, as someone could run a rebalance and just take some cash out instead of swapping and re-depositing
 
     let mut other_rebalance_ix_idx: Option<u16> = None;
+    let mut rebalance_ix_count = 1;
     let mut index = current_ix_idx + 1;
     loop {
         if let Ok(ix) = load_instruction_at_checked(index as usize, ixs_sysvar) {
@@ -383,48 +417,39 @@ pub fn validate_rebalance_instruction(
         index += 1;
     }
 
-    let current_liq_utilization_rate_bps = obligation_position.current_utilization_rate_bps();
-    // Validate that it is being rebalanced at a correct time (only if this is the first rebalance instruction of the transaction)
-    // if there is two rebalance instructions, and this instruction is the 2nd rebalance, skip the above check, and ensure there is no more rebalance instructions in the tx)
-    // if we are checking the current_liq_utilization_rate_bps, we need to ensure that the authority_referral_state when we are increasing leverage (current_liq_utilization_rate_bps < target_liq_utilization_rate_bps)
+    if rebalance_ix_count > 2 {
+        return Err(SolautoError::RebalanceAbuse.into());
+    }
+
+    let first_or_only_rebalance_ix =
+        other_rebalance_ix_idx.is_none() || other_rebalance_ix_idx.unwrap() > current_ix_idx;
+
+    let current_liq_utilization_rate_bps = if first_or_only_rebalance_ix {
+        obligation_position.current_utilization_rate_bps()
+    } else {
+        // TODO sim_position supply or debt update (based on the source_[supply|debt]_token_account) and calculate new utilization rate using that
+        0
+    };
+
+    let target_rate_bps = solauto_utils::get_target_liq_utilization_rate(
+        &std_accounts,
+        &obligation_position,
+        target_liq_utilization_rate_bps
+    )?;
+
+    if
+        first_or_only_rebalance_ix &&
+        current_liq_utilization_rate_bps < target_rate_bps &&
+        (std_accounts.authority_referral_state.is_none() || std_accounts.referred_by_ta.is_none())
+    {
+        msg!(
+            "Missing referral account(s) when we are boosting leverage. Referral accounts required."
+        );
+        return Err(ProgramError::InvalidAccountData.into());
+    }
 
     Ok(())
 }
-
-// max_price_slippage = 0.03 (300bps) (3%)
-// random_price_volatility = 0.03 (300bps) (3%)
-// 1 - max_price_slippage - random_price_volatility = buffer_room = 93.15%
-// if transaction fails default to flash loan instruction route and increase max slippage if needed
-
-// increasing leverage:
-// -
-// if debt + debt adjustment keeps utilization rate under buffer_room, instructions are:
-// solauto rebalance - borrows more debt worth debt_adjustment_usd (figure out what to do with solauto fee after borrow)
-// jup swap - swap debt token to supply token
-// solauto rebalance - deposit supply token
-// -
-// if debt + debt adjustment brings utilization rate above buffer_room, instructions are:
-// take out flash loan in debt token
-// jup swap - swap debt token to supply token
-// solauto rebalance - deposit supply token, borrow equivalent debt token amount from flash borrow ix + flash loan fee
-// repay flash loan in debt token
-
-// deleveraging:
-// -
-// if supply - debt adjustment keeps utilization rate under buffer_room, instructions are:
-// solauto rebalance - withdraw supply worth debt_adjustment_usd
-// jup swap - swap supply token to debt token
-// solauto rebalance - repay debt with debt token
-// -
-// if supply - debt adjustment brings utilization rate over buffer_room, instructions are:
-// take out flash loan in supply token
-// jup swap - swap supply token to debt token
-// solauto rebalance - repay debt token, & withdraw equivalent supply token amount from flash borrow ix + flash loan fee
-// repay flash loan in supply token
-
-// 1. figure out what the state will look like in each rebalance instruction
-// 2. figure out what validations we need for each case
-// 3. figure out where and when we create intermediary token accounts. Should we create and close on the fly?
 
 pub fn validate_referral_accounts(std_accounts: &SolautoStandardAccounts) -> ProgramResult {
     if std_accounts.authority_referral_state.is_none() {
