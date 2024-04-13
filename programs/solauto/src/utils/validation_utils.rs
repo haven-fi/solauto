@@ -338,6 +338,7 @@ pub fn validate_rebalance_instruction(
     std_accounts: &SolautoStandardAccounts,
     args: &RebalanceArgs
 ) -> Result<SolautoRebalanceStep, ProgramError> {
+    // TODO notes for typescript client
     // max_price_slippage = 0.05 (500bps) (5%)
     // random_price_volatility = 0.03 (300bps) (3%)
     // 1 - max_price_slippage - random_price_volatility = buffer_room = 92%
@@ -398,7 +399,7 @@ pub fn validate_rebalance_instruction(
     let mut index = current_ix_idx + 1;
     loop {
         if let Ok(ix) = load_instruction_at_checked(index as usize, ixs_sysvar) {
-            if is_solauto_rebalance_ix(ix) {
+            if is_solauto_rebalance_ix(&Some(ix)) {
                 rebalance_instructions += 1;
             }
         } else {
@@ -413,46 +414,69 @@ pub fn validate_rebalance_instruction(
     }
 
     let next_ix = if current_ix_idx < index {
-        Some(load_instruction_at_checked((current_ix_idx + 1) as usize, ixs_sysvar))
+        Some(load_instruction_at_checked((current_ix_idx + 1) as usize, ixs_sysvar)?)
     } else {
         None
     };
 
     let ix_2_after = if current_ix_idx + 1 < index {
-        Some(load_instruction_at_checked((current_ix_idx + 2) as usize, ixs_sysvar))
+        Some(load_instruction_at_checked((current_ix_idx + 2) as usize, ixs_sysvar)?)
     } else {
         None
     };
 
     let prev_ix = if current_ix_idx > 0 {
-        Some(load_instruction_at_checked((current_ix_idx - 1) as usize, ixs_sysvar))
+        Some(load_instruction_at_checked((current_ix_idx - 1) as usize, ixs_sysvar)?)
     } else {
         None
     };
 
     let ix_2_before = if current_ix_idx > 1 {
-        Some(load_instruction_at_checked((current_ix_idx - 2) as usize, ixs_sysvar))
+        Some(load_instruction_at_checked((current_ix_idx - 2) as usize, ixs_sysvar)?)
     } else {
         None
     };
+    
+    if is_jup_token_ledger_swap_ix(&next_ix) && is_solauto_rebalance_ix(&ix_2_after) && rebalance_instructions == 2 {
+        Ok(SolautoRebalanceStep::BeginSolautoRebalanceSandwich)
+    } else if is_jup_token_ledger_swap_ix(&prev_ix) && is_solauto_rebalance_ix(&ix_2_before) && rebalance_instructions == 2 {
+        Ok(SolautoRebalanceStep::FinishSolautoRebalanceSandwich)
+    } else if is_flash_repay_ix(&next_ix) && is_jup_token_ledger_swap_ix(&prev_ix) && is_flash_borrow_ix(&ix_2_before) && rebalance_instructions == 1 {
+        Ok(SolautoRebalanceStep::FinishFlashLoanSandwich)
+    } else {
+        Err(SolautoError::IncorrectRebalanceInstructions.into())
+    }
 
-    // 3 possible conditions:
-    // RebalanceInstructionStage::BeginSolautoRebalanceSandwich - next_ix is jup swap and ix_2_after is solauto rebalance. Only 2 solauto rebalance ixs exist in transaction
-    // RebalanceInstructionStage::FinishSolautoRebalanceSandwich - prev_ix is jup swap, ix_2_before is solauto rebalance. Only 2 solauto rebalance ixs exist in transaction
-    // RebalanceInstructionStage::FlashLoanSandwich - next_ix is flash loan repay, prev ix is jup swap, ix_2_before is flash borrow. Only 1 solauto rebalance ix exists in transaction
-    // Otherwise error out since we are using an invalid set of instructions
-
-    Ok(SolautoRebalanceStep::FinishSolautoRebalanceSandwich) // TODO remove me
 }
 
-fn is_solauto_rebalance_ix(ix: Instruction) -> bool {
+fn is_solauto_rebalance_ix(ix: &Option<Instruction>) -> bool {
     instruction_match(ix, crate::ID, SOLAUTO_REBALANCE_IX_DISCRIMINATORS.to_vec())
 }
 
-fn instruction_match(ix: Instruction, program_id: Pubkey, ix_discriminators: Vec<u64>) -> bool {
-    if ix.program_id == program_id {
-        if ix.data.len() >= 8 {
-            let discriminator: [u8; 8] = ix.data[0..8]
+fn is_jup_token_ledger_swap_ix(ix: &Option<Instruction>) -> bool {
+    // TODO
+    true
+}
+
+fn is_flash_borrow_ix(ix: &Option<Instruction>) -> bool {
+    // TODO
+    true
+}
+
+fn is_flash_repay_ix(ix: &Option<Instruction>) -> bool {
+    // TODO
+    true
+}
+
+fn instruction_match(ix: &Option<Instruction>, program_id: Pubkey, ix_discriminators: Vec<u64>) -> bool {
+    if ix.is_none() {
+        return false;
+    }
+
+    let instruction = ix.as_ref().unwrap();
+    if instruction.program_id == program_id {
+        if instruction.data.len() >= 8 {
+            let discriminator: [u8; 8] = instruction.data[0..8]
                 .try_into()
                 .expect("Slice with incorrect length");
 
