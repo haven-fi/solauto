@@ -8,7 +8,9 @@ use solana_program::{
     program_error::ProgramError,
     pubkey::Pubkey,
     sysvar::instructions::{
-        load_current_index_checked, load_instruction_at_checked, ID as ixs_sysvar_id
+        load_current_index_checked,
+        load_instruction_at_checked,
+        ID as ixs_sysvar_id,
     },
 };
 use spl_associated_token_account::get_associated_token_address;
@@ -332,7 +334,7 @@ pub fn validate_solend_protocol_interaction_ix(
 pub fn validate_rebalance_instruction(
     std_accounts: &SolautoStandardAccounts,
     target_liq_utilization_rate_bps: OptionalLiqUtilizationRateBps,
-    obligation_position: &LendingProtocolObligationPosition,
+    obligation_position: &LendingProtocolObligationPosition
 ) -> ProgramResult {
     let ixs_sysvar = std_accounts.ixs_sysvar.unwrap();
     if !target_liq_utilization_rate_bps.is_none() && !std_accounts.solauto_position.is_none() {
@@ -371,10 +373,10 @@ pub fn validate_rebalance_instruction(
 
                 // TODO get rebalance instruction discriminator and compare
                 // if ix_discriminator == rebalance_ix_discriminator {
-                    if !other_rebalance_ix_idx.is_none() {
-                        return Err(SolautoError::RebalanceAbuse.into());
-                    }
-                    other_rebalance_ix_idx = Some(index);
+                if !other_rebalance_ix_idx.is_none() {
+                    return Err(SolautoError::RebalanceAbuse.into());
+                }
+                other_rebalance_ix_idx = Some(index);
                 // }
             }
         } else {
@@ -384,9 +386,10 @@ pub fn validate_rebalance_instruction(
         index += 1;
     }
 
-    let current_utilization_rate_bps = obligation_position.current_utilization_rate_bps();
+    let current_liq_utilization_rate_bps = obligation_position.current_utilization_rate_bps();
     // Validate that it is being rebalanced at a correct time (only if this is the first rebalance instruction of the transaction)
     // if there is two rebalance instructions, and this instruction is the 2nd rebalance, skip the above check, and ensure there is no more rebalance instructions in the tx)
+    // if we are checking the current_liq_utilization_rate_bps, we need to ensure that the authority_referral_state when we are increasing leverage (current_liq_utilization_rate_bps < target_liq_utilization_rate_bps)
 
     Ok(())
 }
@@ -427,6 +430,10 @@ pub fn validate_rebalance_instruction(
 // 3. figure out where and when we create intermediary token accounts. Should we create and close on the fly?
 
 pub fn validate_referral_accounts(std_accounts: &SolautoStandardAccounts) -> ProgramResult {
+    if std_accounts.authority_referral_state.is_none() {
+        Ok(())
+    }
+    
     let authority = if !std_accounts.solauto_position.is_none() {
         &std_accounts.solauto_position.as_ref().unwrap().data.authority
     } else {
@@ -434,19 +441,29 @@ pub fn validate_referral_accounts(std_accounts: &SolautoStandardAccounts) -> Pro
     };
 
     let referral_state_seeds = &[authority.as_ref(), b"referrals"];
-    let (referral_state_pda, _bump) = Pubkey::find_program_address(referral_state_seeds, &crate::ID);
-    if &referral_state_pda != std_accounts.authority_referral_state.as_ref().unwrap().account_info.key {
+    let (referral_state_pda, _bump) = Pubkey::find_program_address(
+        referral_state_seeds,
+        &crate::ID
+    );
+    if
+        &referral_state_pda !=
+        std_accounts.authority_referral_state.as_ref().unwrap().account_info.key
+    {
         msg!("Invalid referral position account given for the provided authority");
         return Err(ProgramError::InvalidAccountData.into());
     }
 
-    let authority_referred_by_ta = std_accounts.authority_referral_state.as_ref().unwrap().data.referred_by_ta;
+    let authority_referred_by_ta = std_accounts.authority_referral_state
+        .as_ref()
+        .unwrap().data.referred_by_ta;
     if !authority_referred_by_ta.is_none() && std_accounts.referred_by_ta.is_none() {
         msg!("Missing referred_by token account when this authority account has been referred");
         return Err(ProgramError::InvalidAccountData.into());
     }
     if &authority_referred_by_ta.unwrap() != std_accounts.referred_by_ta.unwrap().key {
-        msg!("Provided incorrect referred_by_ta according to the given authority referral position");
+        msg!(
+            "Provided incorrect referred_by_ta according to the given authority referral position"
+        );
         return Err(ProgramError::InvalidAccountData.into());
     }
 
