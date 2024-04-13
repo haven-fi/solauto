@@ -5,13 +5,15 @@ use crate::{
     types::{
         instruction::{
             accounts::{ Context, MarginfiRebalanceAccounts, SolendRebalanceAccounts },
-            OptionalLiqUtilizationRateBps, SolautoStandardAccounts,
+            OptionalLiqUtilizationRateBps,
+            SolautoStandardAccounts,
         },
         lending_protocol::LendingProtocolClient,
         obligation_position::LendingProtocolObligationPosition,
         shared::SolautoError,
         solauto_manager::SolautoManager,
-    }, utils::{ix_utils, validation_utils},
+    },
+    utils::{ ix_utils, validation_utils },
 };
 
 pub fn marginfi_rebalance<'a, 'b>(
@@ -20,7 +22,11 @@ pub fn marginfi_rebalance<'a, 'b>(
     target_liq_utilization_rate_bps: OptionalLiqUtilizationRateBps
 ) -> ProgramResult {
     let (marginfi_client, obligation_position) = MarginfiClient::from(ctx.accounts.signer)?;
-    validation_utils::validate_rebalance_instruction(&std_accounts, target_liq_utilization_rate_bps, &obligation_position)?;
+    validation_utils::validate_rebalance_instruction(
+        &std_accounts,
+        target_liq_utilization_rate_bps,
+        &obligation_position
+    )?;
     rebalance(std_accounts, marginfi_client, obligation_position, target_liq_utilization_rate_bps)
 }
 
@@ -47,7 +53,11 @@ pub fn solend_rebalance<'a, 'b>(
         Some(ctx.accounts.source_debt_liquidity_ta),
         Some(ctx.accounts.reserve_debt_liquidity_ta)
     )?;
-    validation_utils::validate_rebalance_instruction(&std_accounts, target_liq_utilization_rate_bps, &obligation_position)?;
+    validation_utils::validate_rebalance_instruction(
+        &std_accounts,
+        target_liq_utilization_rate_bps,
+        &obligation_position
+    )?;
     rebalance(std_accounts, solend_client, obligation_position, target_liq_utilization_rate_bps)
 }
 
@@ -57,7 +67,9 @@ fn rebalance<'a, T: LendingProtocolClient<'a>>(
     mut obligation_position: LendingProtocolObligationPosition,
     target_liq_utilization_rate_bps: OptionalLiqUtilizationRateBps
 ) -> ProgramResult {
-    let target_liq_utilization_rate: Result<u16, SolautoError> = if !target_liq_utilization_rate_bps.is_none() {
+    let target_liq_utilization_rate: Result<u16, SolautoError> = if
+        !target_liq_utilization_rate_bps.is_none()
+    {
         Ok(target_liq_utilization_rate_bps.unwrap())
     } else {
         let setting_params = &std_accounts.solauto_position.as_ref().unwrap().data.setting_params;
@@ -70,11 +82,18 @@ fn rebalance<'a, T: LendingProtocolClient<'a>>(
             return Err(SolautoError::InvalidRebalanceCondition.into());
         }
     };
-    
-    let mut solauto_manager = SolautoManager::from(&client, &mut obligation_position, std_accounts)?;
-    
+
+    let mut solauto_manager = SolautoManager::from(
+        &client,
+        &mut obligation_position,
+        std_accounts
+    )?;
+
     solauto_manager.rebalance(target_liq_utilization_rate.unwrap())?;
-    
-    SolautoManager::refresh_position(&solauto_manager.obligation_position, &mut solauto_manager.std_accounts.solauto_position);
+
+    SolautoManager::refresh_position(
+        &solauto_manager.obligation_position,
+        &mut solauto_manager.std_accounts.solauto_position
+    );
     ix_utils::update_data(&mut solauto_manager.std_accounts.solauto_position)
 }

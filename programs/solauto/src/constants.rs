@@ -25,6 +25,9 @@ pub const SOLAUTO_ADMIN: Pubkey = Pubkey::new_from_array([
     35, 228, 216, 122, 54, 147, 76, 46, 180, 66, 110, 112,
 ]);
 
+// TODO
+pub const WSOL_MINT_ADDRESS: &str = "So11111111111111111111111111111111111111112";
+
 pub const SOLAUTO_ADMIN_SETTINGS_ACCOUNT_SEEDS: &[u8] = b"settings";
 
 pub const USD_DECIMALS: u32 = 6;

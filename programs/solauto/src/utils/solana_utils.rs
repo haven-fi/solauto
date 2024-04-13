@@ -69,7 +69,7 @@ pub fn invoke_signed_with_seed(
 }
 
 pub fn init_ata_if_needed<'a>(
-    spl_token_program: &'a AccountInfo<'a>,
+    token_program: &'a AccountInfo<'a>,
     system_program: &'a AccountInfo<'a>,
     rent_sysvar: &'a AccountInfo<'a>,
     payer: &'a AccountInfo<'a>,
@@ -77,13 +77,13 @@ pub fn init_ata_if_needed<'a>(
     token_account: &'a AccountInfo<'a>,
     token_mint: &'a AccountInfo<'a>
 ) -> Result<(), ProgramError> {
-    if account_is_rent_exempt(rent_sysvar, token_account)? {
-        return Ok(());
-    }
-
     if &get_associated_token_address(wallet.key, token_mint.key) != token_account.key {
         msg!("Token account is not correct for the given token mint & wallet");
         return Err(ProgramError::InvalidAccountData.into());
+    }
+
+    if account_is_rent_exempt(rent_sysvar, token_account)? {
+        return Ok(());
     }
 
     invoke(
@@ -91,7 +91,7 @@ pub fn init_ata_if_needed<'a>(
             payer.key,
             wallet.key,
             token_mint.key,
-            spl_token_program.key
+            token_program.key
         ),
         &[
             payer.clone(),
@@ -99,7 +99,7 @@ pub fn init_ata_if_needed<'a>(
             wallet.clone(),
             token_mint.clone(),
             system_program.clone(),
-            spl_token_program.clone(),
+            token_program.clone(),
         ]
     )
 }

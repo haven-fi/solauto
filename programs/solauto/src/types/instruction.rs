@@ -1,6 +1,6 @@
 use borsh::{ BorshDeserialize, BorshSerialize };
 use shank::{ ShankContext, ShankInstruction };
-use solana_program::account_info::AccountInfo;
+use solana_program::{account_info::AccountInfo, pubkey::Pubkey};
 
 use super::shared::*;
 
@@ -25,9 +25,15 @@ pub enum Instruction {
     #[account(name = "token_program")]
     #[account(name = "ata_program")]
     #[account(name = "rent")]
+    #[account(mut, name = "signer_referral_position")]
+    #[account(mut, name = "referral_fees_mint")]
+    #[account(mut, name = "signer_referral_fees_ta")]
+    #[account(mut, optional, name = "referred_by_position")]
+    #[account(mut, optional, name = "referred_by_authority")]
+    #[account(mut, optional, name = "referred_by_ta")]
+    #[account(mut, optional, name = "solauto_position")]
     #[account(name = "marginfi_group")]
     #[account(mut, name = "marginfi_account")]
-    #[account(mut, optional, name = "solauto_position")]
     #[account(mut, name = "supply_ta")]
     #[account(name = "supply_token_mint")]
     #[account(mut, name = "debt_ta")]
@@ -41,6 +47,12 @@ pub enum Instruction {
     #[account(name = "token_program")]
     #[account(name = "ata_program")]
     #[account(name = "rent")]
+    #[account(mut, name = "signer_referral_position")]
+    #[account(mut, name = "referral_fees_mint")]
+    #[account(mut, name = "signer_referral_fees_ta")]
+    #[account(mut, optional, name = "referred_by_position")]
+    #[account(mut, optional, name = "referred_by_authority")]
+    #[account(mut, optional, name = "referred_by_ta")]
     #[account(mut, optional, name = "solauto_position")]
     #[account(name = "lending_market")]
     #[account(mut, name = "obligation")]
@@ -106,8 +118,6 @@ pub enum Instruction {
     #[account(name = "ata_program")]
     #[account(name = "clock")]
     #[account(name = "rent")]
-    #[account(name = "solauto_admin_settings")]
-    #[account(mut, name = "solauto_fees_receiver_ta")]
     #[account(mut, optional, name = "solauto_position")]
     #[account(name = "lending_market")]
     #[account(mut, name = "obligation")]
@@ -137,6 +147,8 @@ pub enum Instruction {
     #[account(name = "ixs_sysvar")]
     #[account(name = "solauto_admin_settings")]
     #[account(mut, name = "solauto_fees_receiver_ta")]
+    #[account(name = "authority_referral_position")]
+    #[account(mut, optional, name = "referred_by_ta")]
     #[account(mut, optional, name = "solauto_position")]
     // TODO missing accounts
     MarginfiRebalance(Option<u16>),
@@ -153,6 +165,8 @@ pub enum Instruction {
     #[account(name = "ixs_sysvar")]
     #[account(name = "solauto_admin_settings")]
     #[account(mut, name = "solauto_fees_receiver_ta")]
+    #[account(name = "authority_referral_position")]
+    #[account(mut, optional, name = "referred_by_ta")]
     #[account(mut, optional, name = "solauto_position")]
     #[account(name = "lending_market")]
     #[account(mut, name = "obligation")]
@@ -177,6 +191,8 @@ pub enum Instruction {
 pub struct PositionData {
     /// ID of the Solauto position
     pub position_id: u8,
+    /// the authority of the referred_by
+    pub referred_by_authority: Option<Pubkey>,
     /// Setting parameters for the position
     pub setting_params: SolautoSettingsParameters,
     /// Marginfi-specific data for the position
@@ -199,4 +215,6 @@ pub struct SolautoStandardAccounts<'a> {
     pub solauto_admin_settings: Option<&'a AccountInfo<'a>>,
     pub solauto_fees_receiver_ta: Option<&'a AccountInfo<'a>>,
     pub solauto_position: Option<DeserializedAccount<'a, Position>>,
+    pub authority_referral_position: Option<DeserializedAccount<'a, ReferralAccount>>,
+    pub referred_by_ta: Option<&'a AccountInfo<'a>>,
 }

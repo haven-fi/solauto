@@ -403,8 +403,6 @@ impl<'a> LendingProtocolClient<'a> for SolendClient<'a> {
         let debt_liquidity = self.debt_liquidity.as_ref().unwrap();
         let debt_reserve = self.data.debt_reserve.as_ref().unwrap().account_info;
 
-        // TODO solauto_fees_receiver token account may not match the token mint of the debt for this position
-        // need to fix this
         let borrow_instruction = borrow_obligation_liquidity(
             SOLEND_PROGRAM.clone(),
             base_unit_amount,
@@ -415,7 +413,7 @@ impl<'a> LendingProtocolClient<'a> for SolendClient<'a> {
             *self.data.obligation.account_info.key,
             *self.data.lending_market.account_info.key,
             *obligation_owner.key,
-            Some(*accounts.solauto_fees_receiver_ta.unwrap().key)
+            Some(*debt_liquidity.source_token_account.key)
         );
 
         let account_infos = &[
@@ -426,7 +424,7 @@ impl<'a> LendingProtocolClient<'a> for SolendClient<'a> {
             self.data.obligation.account_info.clone(),
             self.data.lending_market.account_info.clone(),
             obligation_owner.clone(),
-            accounts.solauto_fees_receiver_ta.unwrap().clone(),
+            debt_liquidity.source_token_account.clone(),
             accounts.token_program.clone(),
         ];
 

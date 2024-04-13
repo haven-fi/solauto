@@ -81,12 +81,21 @@ pub const POSITION_ACCOUNT_SPACE: usize = 500;
 pub struct Position {
     pub position_id: u8,
     pub authority: Pubkey,
-    pub lending_platform: LendingPlatform,
     pub setting_params: SolautoSettingsParameters,
     pub general_data: GeneralPositionData,
+    pub lending_platform: LendingPlatform,
     pub marginfi_data: Option<MarginfiPositionData>,
     pub solend_data: Option<SolendPositionData>,
     pub kamino_data: Option<KaminoPositionData>,
+}
+
+pub const REFERRAL_ACCOUNT_SPACE: usize = 300;
+#[derive(ShankAccount, BorshDeserialize, BorshSerialize, Clone, Debug)]
+pub struct ReferralAccount {
+    pub authority: Pubkey,
+    pub referred_by_ta: Option<Pubkey>,
+    pub fees_mint: Pubkey,
+    pub fees_ta: Pubkey,
 }
 
 pub const SOLAUTO_SETTINGS_ACCOUNT_SPACE: usize = 100;
@@ -96,9 +105,10 @@ pub struct SolautoAdminSettings {
     pub fees_token_mint: Pubkey,
 }
 
-pub enum RebalanceInstructionSetType {
-    SolautoRebalanceSandwich,
-    FlashloanSandwich
+pub enum RebalanceInstructionStage {
+    BeginSolautoRebalanceSandwich,
+    FinishSolautoRebalanceSandwich,
+    FlashLoanSandwich,
 }
 
 #[derive(Clone)]
@@ -169,6 +179,8 @@ pub enum SolautoError {
     InvalidRebalanceCondition,
     #[error("Unable to invoke instruciton through a CPI")]
     InstructionIsCPI,
+    #[error("Too many rebalance instruction invocations in the same transaction")]
+    RebalanceAbuse,
 }
 
 impl From<SolautoError> for ProgramError {

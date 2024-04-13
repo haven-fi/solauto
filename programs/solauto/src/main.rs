@@ -3,6 +3,7 @@
 // use serde_json::json;
 // use solauto::types::shared::{ DeserializedAccount, Position };
 // use solend_sdk::math::{ TryDiv, BPS_SCALER, U192, WAD };
+// use std::ops::{Div, Mul};
 // use std::result::Result;
 // use std::str::FromStr;
 // use std::mem;
@@ -127,19 +128,15 @@
 //     println!("{:?}", reserve);
 //     println!("{:?}", obligation);
 
-//     Ok(())
-// }
+//     let mut borrow_fee_bps = reserve.config.fees.borrow_fee_wad.div(BPS_SCALER) as u16;
+//     let host_fee_pct = (reserve.config.fees.host_fee_percentage as f64) / 100.0;
+    
+//     // We reallocate the host fee to the user, so we will deduct the borrow_fee_bps by host_fee_pct
+//     borrow_fee_bps = ((borrow_fee_bps as f64) - (borrow_fee_bps as f64).mul(host_fee_pct)) as u16;
 
-// #[tokio::main]
-// async fn main() -> Result<(), MyError> {
-//     let position_data = get_account(
-//         Pubkey::from_str("AwgtJe3D9bhBHLB3T3gmxTtcpd2F3tytTmyNY29ZqcwS").unwrap()
-//     ).await?;
-
-//     test(position_data.as_slice());
+//     println!("{}", borrow_fee_bps);
 
 //     Ok(())
 // }
-
 
 fn main() {}

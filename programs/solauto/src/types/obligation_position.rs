@@ -50,6 +50,12 @@ impl PositionTokenUsage {
     ) -> Self {
         let decimals = reserve.liquidity.mint_decimals;
         let market_price = decimal_to_f64_div_wad(reserve.liquidity.market_price);
+        let mut borrow_fee_bps = reserve.config.fees.borrow_fee_wad.div(BPS_SCALER) as u16;
+        let host_fee_pct = (reserve.config.fees.host_fee_percentage as f64) / 100.0;
+        
+        // We reallocate the host fee to the user, so we will deduct the borrow_fee_bps by host_fee_pct
+        borrow_fee_bps = ((borrow_fee_bps as f64) - (borrow_fee_bps as f64).mul(host_fee_pct)) as u16;
+
         Self {
             amount_used: TokenAmount {
                 base_unit: base_unit_amount_used,
@@ -66,7 +72,7 @@ impl PositionTokenUsage {
             market_price,
             decimals,
             flash_loan_fee_bps: reserve.config.fees.flash_loan_fee_wad.div(BPS_SCALER) as u16,
-            borrow_fee_bps: reserve.config.fees.borrow_fee_wad.div(BPS_SCALER) as u16,
+            borrow_fee_bps,
         }
     }
 }

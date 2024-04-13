@@ -7,7 +7,9 @@ use solana_program::{
     msg,
     program_error::ProgramError,
     pubkey::Pubkey,
-    sysvar::instructions::{ ID as ixs_sysvar_id, load_current_index_checked, load_instruction_at_checked },
+    sysvar::instructions::{
+        load_current_index_checked, load_instruction_at_checked, ID as ixs_sysvar_id
+    },
 };
 use spl_associated_token_account::get_associated_token_address;
 
@@ -41,6 +43,8 @@ use crate::constants::{
     SOLAUTO_ADMIN_SETTINGS_ACCOUNT_SEEDS,
 };
 
+use super::solauto_utils::get_owner;
+
 pub fn generic_instruction_validation(
     accounts: &SolautoStandardAccounts,
     authority_only_ix: bool,
@@ -54,6 +58,7 @@ pub fn generic_instruction_validation(
             accounts.solauto_fees_receiver_ta.unwrap()
         )?;
     }
+    validate_referral_accounts(accounts)?;
 
     if !accounts.ixs_sysvar.is_none() && accounts.ixs_sysvar.unwrap().key != &ixs_sysvar_id {
         msg!("Incorrect ixs sysvar account provided");
@@ -327,7 +332,7 @@ pub fn validate_solend_protocol_interaction_ix(
 pub fn validate_rebalance_instruction(
     std_accounts: &SolautoStandardAccounts,
     target_liq_utilization_rate_bps: OptionalLiqUtilizationRateBps,
-    obligation_position: &LendingProtocolObligationPosition
+    obligation_position: &LendingProtocolObligationPosition,
 ) -> ProgramResult {
     let ixs_sysvar = std_accounts.ixs_sysvar.unwrap();
     if !target_liq_utilization_rate_bps.is_none() && !std_accounts.solauto_position.is_none() {
@@ -343,13 +348,33 @@ pub fn validate_rebalance_instruction(
         return Err(SolautoError::InstructionIsCPI.into());
     }
 
+    // TODO:
+    // define next_ix
+    // define ix_2_after
+    // define prev_ix
+    // define ix_2_before
+
+    // 3 possible conditions:
+    // RebalanceInstructionStage::BeginSolautoRebalanceSandwich - next_ix is jup swap and ix_2_after is solauto rebalance. Only 2 solauto rebalance ixs exist in transaction
+    // RebalanceInstructionStage::FinishSolautoRebalanceSandwich - prev_ix is jup swap, ix_2_before is solauto rebalance. Only 2 solauto rebalance ixs exist in transaction
+    // RebalanceInstructionStage::FlashLoanSandwich - next_ix is flash loan repay, prev ix is jup swap, ix_2_before is flash borrow. Only 1 solauto rebalance ix exists in transaction
+
+    // Do I really need to check this? Can't I just infer the stage by how many rebalance instructions there are, and if this is the first or last one?
+
+    let mut other_rebalance_ix_idx: Option<u16> = None;
     let mut index = current_ix_idx + 1;
     loop {
         if let Ok(ix) = load_instruction_at_checked(index as usize, ixs_sysvar) {
             if ix.program_id == crate::id() {
                 // TODO check this. Should I use first index only? Or 8?
                 // let ix_discriminator: [u8; 8] = ix.data[0..8].try_into()?;
-                // if ix_discriminator == self::instruction::Repay::discriminator() {
+
+                // TODO get rebalance instruction discriminator and compare
+                // if ix_discriminator == rebalance_ix_discriminator {
+                    if !other_rebalance_ix_idx.is_none() {
+                        return Err(SolautoError::RebalanceAbuse.into());
+                    }
+                    other_rebalance_ix_idx = Some(index);
                 // }
             }
         } else {
@@ -363,7 +388,6 @@ pub fn validate_rebalance_instruction(
     // Validate that it is being rebalanced at a correct time (only if this is the first rebalance instruction of the transaction)
     // if there is two rebalance instructions, and this instruction is the 2nd rebalance, skip the above check, and ensure there is no more rebalance instructions in the tx)
 
-    // TODO
     Ok(())
 }
 
@@ -401,3 +425,30 @@ pub fn validate_rebalance_instruction(
 // 1. figure out what the state will look like in each rebalance instruction
 // 2. figure out what validations we need for each case
 // 3. figure out where and when we create intermediary token accounts. Should we create and close on the fly?
+
+pub fn validate_referral_accounts(std_accounts: &SolautoStandardAccounts) -> ProgramResult {
+    let authority = if !std_accounts.solauto_position.is_none() {
+        &std_accounts.solauto_position.as_ref().unwrap().data.authority
+    } else {
+        std_accounts.signer.key
+    };
+
+    let referral_position_seeds = &[authority.as_ref(), b"referrals"];
+    let (referral_position_pda, _bump) = Pubkey::find_program_address(referral_position_seeds, &crate::ID);
+    if &referral_position_pda != std_accounts.authority_referral_position.as_ref().unwrap().account_info.key {
+        msg!("Invalid referral position account given for the provided authority");
+        return Err(ProgramError::InvalidAccountData.into());
+    }
+
+    let authority_referred_by_ta = std_accounts.authority_referral_position.as_ref().unwrap().data.referred_by_ta;
+    if !authority_referred_by_ta.is_none() && std_accounts.referred_by_ta.is_none() {
+        msg!("Missing referred_by token account when this authority account has been referred");
+        return Err(ProgramError::InvalidAccountData.into());
+    }
+    if &authority_referred_by_ta.unwrap() != std_accounts.referred_by_ta.unwrap().key {
+        msg!("Provided incorrect referred_by_ta according to the given authority referral position");
+        return Err(ProgramError::InvalidAccountData.into());
+    }
+
+    Ok(())
+}
