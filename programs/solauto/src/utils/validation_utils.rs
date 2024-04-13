@@ -34,6 +34,7 @@ use crate::{
             SolautoAction,
             SolautoAdminSettings,
             SolautoError,
+            SolautoRebalanceStep,
             SolautoSettingsParameters,
         },
     },
@@ -335,9 +336,8 @@ pub fn validate_solend_protocol_interaction_ix(
 
 pub fn validate_rebalance_instruction(
     std_accounts: &SolautoStandardAccounts,
-    args: &RebalanceArgs,
-    obligation_position: &LendingProtocolObligationPosition
-) -> ProgramResult {
+    args: &RebalanceArgs
+) -> Result<SolautoRebalanceStep, ProgramError> {
     // max_price_slippage = 0.03 (300bps) (3%)
     // random_price_volatility = 0.03 (300bps) (3%)
     // 1 - max_price_slippage - random_price_volatility = buffer_room = 93.15%
@@ -377,7 +377,11 @@ pub fn validate_rebalance_instruction(
         return Err(ProgramError::InvalidInstructionData.into());
     }
 
-    if std_accounts.signer.key != &SOLAUTO_REBALANCER {
+    if
+        !args.max_price_slippage_bps.is_none() &&
+        std_accounts.signer.key != &SOLAUTO_REBALANCER &&
+        std_accounts.signer.key != &std_accounts.solauto_position.as_ref().unwrap().data.authority
+    {
         msg!(
             "If the signer is not the position authority or Solauto rebalancer accouunts, max_price_slippage_bps cannot be provided"
         );
@@ -431,34 +435,13 @@ pub fn validate_rebalance_instruction(
         return Err(SolautoError::RebalanceAbuse.into());
     }
 
-    let first_or_only_rebalance_ix =
-        other_rebalance_ix_idx.is_none() || other_rebalance_ix_idx.unwrap() > current_ix_idx;
-
-    let current_liq_utilization_rate_bps = if first_or_only_rebalance_ix {
-        obligation_position.current_utilization_rate_bps()
+    if rebalance_ix_count == 1 {
+        Ok(SolautoRebalanceStep::FinishFlashLoanSandwich)
+    } else if other_rebalance_ix_idx.unwrap() > current_ix_idx {
+        Ok(SolautoRebalanceStep::FinishSolautoRebalanceSandwich)
     } else {
-        // TODO pretend modify supply or debt (based on the source_[supply|debt]_token_account) and calculate new utilization rate using that
-        0
-    };
-
-    let target_rate_bps = solauto_utils::get_target_liq_utilization_rate(
-        &std_accounts,
-        &obligation_position,
-        args.target_liq_utilization_rate_bps
-    )?;
-
-    if
-        first_or_only_rebalance_ix &&
-        current_liq_utilization_rate_bps < target_rate_bps &&
-        (std_accounts.authority_referral_state.is_none() || std_accounts.referred_by_ta.is_none())
-    {
-        msg!(
-            "Missing referral account(s) when we are boosting leverage. Referral accounts required."
-        );
-        return Err(ProgramError::InvalidAccountData.into());
+        Ok(SolautoRebalanceStep::BeginSolautoRebalanceSandwich)
     }
-
-    Ok(())
 }
 
 pub fn validate_referral_accounts(std_accounts: &SolautoStandardAccounts) -> ProgramResult {

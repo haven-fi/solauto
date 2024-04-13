@@ -1,17 +1,24 @@
 use std::str::FromStr;
-use solana_program::{ account_info::AccountInfo, msg, program_error::ProgramError, pubkey::Pubkey };
+use solana_program::{
+    account_info::AccountInfo,
+    entrypoint::ProgramResult,
+    msg,
+    program_error::ProgramError,
+    pubkey::Pubkey,
+};
 use spl_associated_token_account::get_associated_token_address;
 
 use crate::{
     constants::WSOL_MINT_ADDRESS,
     types::{
-        instruction::{ PositionData, SolautoStandardAccounts },
+        instruction::{ PositionData, RebalanceArgs, SolautoStandardAccounts },
         obligation_position::LendingProtocolObligationPosition,
         shared::{
             DeserializedAccount,
             GeneralPositionData,
             LendingPlatform,
             Position,
+            SolautoRebalanceStep,
             RefferalState,
             SolautoError,
             REFERRAL_ACCOUNT_SPACE,
@@ -185,6 +192,43 @@ pub fn get_or_create_referral_state<'a>(
 
 pub fn get_referral_account_seeds<'a>(authority: &'a AccountInfo<'a>) -> Vec<&[u8]> {
     vec![authority.key.as_ref(), b"referrals"]
+}
+
+pub fn should_proceed_with_rebalance(
+    std_accounts: &SolautoStandardAccounts,
+    obligation_position: &LendingProtocolObligationPosition,
+    rebalance_args: &RebalanceArgs,
+    rebalance_instruction_stage: &SolautoRebalanceStep
+) -> ProgramResult {
+    let first_or_only_rebalance_ix =
+        rebalance_instruction_stage == &SolautoRebalanceStep::BeginSolautoRebalanceSandwich ||
+        rebalance_instruction_stage == &SolautoRebalanceStep::FinishFlashLoanSandwich;
+
+    let current_liq_utilization_rate_bps = if first_or_only_rebalance_ix {
+        obligation_position.current_utilization_rate_bps()
+    } else {
+        // TODO pretend modify supply or debt (based on the source_[supply|debt]_token_account) and calculate new utilization rate using that
+        0
+    };
+
+    let target_rate_bps = get_target_liq_utilization_rate(
+        &std_accounts,
+        &obligation_position,
+        rebalance_args.target_liq_utilization_rate_bps
+    )?;
+
+    if
+        first_or_only_rebalance_ix &&
+        current_liq_utilization_rate_bps < target_rate_bps &&
+        (std_accounts.authority_referral_state.is_none() || std_accounts.referred_by_ta.is_none())
+    {
+        msg!(
+            "Missing referral account(s) when we are boosting leverage. Referral accounts required."
+        );
+        return Err(ProgramError::InvalidAccountData.into());
+    }
+
+    Ok(())
 }
 
 pub fn get_target_liq_utilization_rate(

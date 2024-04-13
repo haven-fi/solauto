@@ -69,14 +69,15 @@ pub fn process_marginfi_open_position_instruction<'a>(
         solauto_position,
         solauto_admin_settings: None,
         solauto_fees_receiver_ta: None,
-        authority_referral_state: None,
-        referred_by_ta: None,
+        authority_referral_state: Some(authority_referral_state),
+        referred_by_ta: ctx.accounts.referred_by_ta,
     };
     validation_utils::generic_instruction_validation(
         &std_accounts,
         true,
         LendingPlatform::Marginfi
     )?;
+
     open_position::marginfi_open_position(ctx, std_accounts.solauto_position)
 }
 
@@ -100,6 +101,7 @@ pub fn process_marginfi_interaction_instruction<'a>(
     let solauto_position = DeserializedAccount::<Position>::deserialize(
         ctx.accounts.solauto_position
     )?;
+
     let std_accounts = SolautoStandardAccounts {
         signer: ctx.accounts.signer,
         lending_protocol: ctx.accounts.marginfi_program,
@@ -118,6 +120,7 @@ pub fn process_marginfi_interaction_instruction<'a>(
         true,
         LendingPlatform::Marginfi
     )?;
+
     validation_utils::validate_marginfi_protocol_interaction_ix(&ctx, &action)?;
     protocol_interaction::marginfi_interaction(ctx, std_accounts, action)
 }
@@ -130,6 +133,7 @@ pub fn process_marginfi_rebalance<'a>(
     let solauto_position = DeserializedAccount::<Position>::deserialize(
         ctx.accounts.solauto_position
     )?;
+    
     let std_accounts = SolautoStandardAccounts {
         signer: ctx.accounts.signer,
         lending_protocol: ctx.accounts.marginfi_program,
@@ -150,5 +154,10 @@ pub fn process_marginfi_rebalance<'a>(
         false,
         LendingPlatform::Marginfi
     )?;
-    rebalance::marginfi_rebalance(ctx, std_accounts, args)
+
+    let solauto_rebalance_step = validation_utils::validate_rebalance_instruction(
+        &std_accounts,
+        &args
+    )?;
+    rebalance::marginfi_rebalance(ctx, std_accounts, args, solauto_rebalance_step)
 }

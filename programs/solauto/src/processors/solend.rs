@@ -75,8 +75,8 @@ pub fn process_solend_open_position_instruction<'a>(
         authority_referral_state: Some(authority_referral_state),
         referred_by_ta: ctx.accounts.referred_by_ta,
     };
-
     validation_utils::generic_instruction_validation(&std_accounts, true, LendingPlatform::Solend)?;
+
     open_position::solend_open_position(ctx, std_accounts.solauto_position)
 }
 
@@ -106,6 +106,7 @@ pub fn process_solend_interaction_instruction<'a>(
     let solauto_position = DeserializedAccount::<Position>::deserialize(
         ctx.accounts.solauto_position
     )?;
+
     let std_accounts = SolautoStandardAccounts {
         signer: ctx.accounts.signer,
         lending_protocol: ctx.accounts.solend_program,
@@ -120,6 +121,7 @@ pub fn process_solend_interaction_instruction<'a>(
         referred_by_ta: None,
     };
     validation_utils::generic_instruction_validation(&std_accounts, true, LendingPlatform::Solend)?;
+
     validation_utils::validate_solend_protocol_interaction_ix(&ctx, &action)?;
     protocol_interaction::solend_interaction(ctx, std_accounts, action)
 }
@@ -135,6 +137,7 @@ pub fn process_solend_rebalance<'a>(
     let solauto_position = DeserializedAccount::<Position>::deserialize(
         ctx.accounts.solauto_position
     )?;
+
     let std_accounts = SolautoStandardAccounts {
         signer: ctx.accounts.signer,
         lending_protocol: ctx.accounts.solend_program,
@@ -155,5 +158,10 @@ pub fn process_solend_rebalance<'a>(
         false,
         LendingPlatform::Solend
     )?;
-    rebalance::solend_rebalance(ctx, std_accounts, args)
+
+    let solauto_rebalance_step = validation_utils::validate_rebalance_instruction(
+        &std_accounts,
+        &args
+    )?;
+    rebalance::solend_rebalance(ctx, std_accounts, args, solauto_rebalance_step)
 }

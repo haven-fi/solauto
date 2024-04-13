@@ -105,10 +105,11 @@ pub struct SolautoAdminSettings {
     pub fees_token_mint: Pubkey,
 }
 
-pub enum RebalanceInstructionStage {
+#[derive(PartialEq)]
+pub enum SolautoRebalanceStep {
     BeginSolautoRebalanceSandwich,
     FinishSolautoRebalanceSandwich,
-    FlashLoanSandwich,
+    FinishFlashLoanSandwich,
 }
 
 #[derive(Clone)]
