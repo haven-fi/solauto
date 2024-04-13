@@ -431,9 +431,9 @@ pub fn validate_rebalance_instruction(
 
 pub fn validate_referral_accounts(std_accounts: &SolautoStandardAccounts) -> ProgramResult {
     if std_accounts.authority_referral_state.is_none() {
-        Ok(())
+        return Ok(());
     }
-    
+
     let authority = if !std_accounts.solauto_position.is_none() {
         &std_accounts.solauto_position.as_ref().unwrap().data.authority
     } else {
