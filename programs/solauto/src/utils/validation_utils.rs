@@ -198,7 +198,6 @@ pub fn validate_fees_receiver<'a>(
     solauto_admin_settings: &'a AccountInfo<'a>,
     fee_receiver_ata: &'a AccountInfo<'a>
 ) -> ProgramResult {
-    // Validate solauto_admin_settings pubkey using the settings seed
     let seeds = &[SOLAUTO_ADMIN_SETTINGS_ACCOUNT_SEEDS];
     let (pda, _bump) = Pubkey::find_program_address(seeds, &crate::ID);
     if &pda != solauto_admin_settings.key {

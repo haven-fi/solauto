@@ -139,14 +139,4 @@
 //     Ok(())
 // }
 
-use borsh::BorshDeserialize;
-use marginfi_sdk;
-
-fn main() {
-    // let ix_data = &[];
-    // let data = marginfi_sdk::generated::instructions::LendingAccountDepositInstructionArgs::(
-    //     &mut ix_data
-    // )?;
-
-    // marginfi_sdk::marginfi::lending_account_deposit(ctx, amount)
-}
+fn main() {}
