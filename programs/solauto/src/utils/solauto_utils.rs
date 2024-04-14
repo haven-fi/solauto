@@ -383,18 +383,6 @@ pub fn get_rebalance_step(
     let ix_3_before = get_relative_instruction(ixs_sysvar, current_ix_idx, -3, index)?;
 
     if
-        jup_swap.matches(&next_ix) &&
-        solauto_rebalance.matches(&ix_2_after) &&
-        rebalance_instructions == 2
-    {
-        Ok(SolautoRebalanceStep::StartSolautoRebalanceSandwich)
-    } else if
-        jup_swap.matches(&prev_ix) &&
-        solauto_rebalance.matches(&ix_2_before) &&
-        rebalance_instructions == 2
-    {
-        Ok(SolautoRebalanceStep::FinishSolautoRebalanceSandwich)
-    } else if
         marginfi_start_fl.matches(&prev_ix) &&
         jup_swap.matches(&next_ix) &&
         solauto_rebalance.matches(&ix_2_after) &&
@@ -410,6 +398,18 @@ pub fn get_rebalance_step(
         rebalance_instructions == 2
     {
         Ok(SolautoRebalanceStep::FinishMarginfiFlashLoanSandwich)
+    } else if
+        jup_swap.matches(&next_ix) &&
+        solauto_rebalance.matches(&ix_2_after) &&
+        rebalance_instructions == 2
+    {
+        Ok(SolautoRebalanceStep::StartSolautoRebalanceSandwich)
+    } else if
+        jup_swap.matches(&prev_ix) &&
+        solauto_rebalance.matches(&ix_2_before) &&
+        rebalance_instructions == 2
+    {
+        Ok(SolautoRebalanceStep::FinishSolautoRebalanceSandwich)
     } else {
         Err(SolautoError::IncorrectRebalanceInstructions.into())
     }
