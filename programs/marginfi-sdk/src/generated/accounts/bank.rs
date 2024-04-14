@@ -5,79 +5,94 @@
 //! [https://github.com/metaplex-foundation/kinobi]
 //!
 
-use solana_program::pubkey::Pubkey;
-use crate::generated::types::WrappedI80F48;
 use crate::generated::types::BankConfig;
-use borsh::BorshSerialize;
+use crate::generated::types::WrappedI80F48;
 use borsh::BorshDeserialize;
-
+use borsh::BorshSerialize;
+use solana_program::pubkey::Pubkey;
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Bank {
-#[cfg_attr(feature = "serde", serde(with = "serde_with::As::<serde_with::DisplayFromStr>"))]
-pub mint: Pubkey,
-pub mint_decimals: u8,
-#[cfg_attr(feature = "serde", serde(with = "serde_with::As::<serde_with::DisplayFromStr>"))]
-pub group: Pubkey,
-pub auto_padding0: [u8; 7],
-pub asset_share_value: WrappedI80F48,
-pub liability_share_value: WrappedI80F48,
-#[cfg_attr(feature = "serde", serde(with = "serde_with::As::<serde_with::DisplayFromStr>"))]
-pub liquidity_vault: Pubkey,
-pub liquidity_vault_bump: u8,
-pub liquidity_vault_authority_bump: u8,
-#[cfg_attr(feature = "serde", serde(with = "serde_with::As::<serde_with::DisplayFromStr>"))]
-pub insurance_vault: Pubkey,
-pub insurance_vault_bump: u8,
-pub insurance_vault_authority_bump: u8,
-pub auto_padding1: [u8; 4],
-pub collected_insurance_fees_outstanding: WrappedI80F48,
-#[cfg_attr(feature = "serde", serde(with = "serde_with::As::<serde_with::DisplayFromStr>"))]
-pub fee_vault: Pubkey,
-pub fee_vault_bump: u8,
-pub fee_vault_authority_bump: u8,
-pub auto_padding2: [u8; 6],
-pub collected_group_fees_outstanding: WrappedI80F48,
-pub total_liability_shares: WrappedI80F48,
-pub total_asset_shares: WrappedI80F48,
-pub last_update: i64,
-pub config: BankConfig,
-/// Emissions Config Flags
-/// 
-/// - EMISSIONS_FLAG_BORROW_ACTIVE: 1
-/// - EMISSIONS_FLAG_LENDING_ACTIVE: 2
-/// 
-pub emissions_flags: u64,
-/// Emissions APR.
-/// Number of emitted tokens (emissions_mint) per 1e(bank.mint_decimal) tokens (bank mint) (native amount) per 1 YEAR.
-pub emissions_rate: u64,
-pub emissions_remaining: WrappedI80F48,
-#[cfg_attr(feature = "serde", serde(with = "serde_with::As::<serde_with::DisplayFromStr>"))]
-pub emissions_mint: Pubkey,
-pub padding0: [u128; 28],
-pub padding1: [u128; 32],
+    #[cfg_attr(
+        feature = "serde",
+        serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
+    )]
+    pub mint: Pubkey,
+    pub mint_decimals: u8,
+    #[cfg_attr(
+        feature = "serde",
+        serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
+    )]
+    pub group: Pubkey,
+    pub auto_padding0: [u8; 7],
+    pub asset_share_value: WrappedI80F48,
+    pub liability_share_value: WrappedI80F48,
+    #[cfg_attr(
+        feature = "serde",
+        serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
+    )]
+    pub liquidity_vault: Pubkey,
+    pub liquidity_vault_bump: u8,
+    pub liquidity_vault_authority_bump: u8,
+    #[cfg_attr(
+        feature = "serde",
+        serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
+    )]
+    pub insurance_vault: Pubkey,
+    pub insurance_vault_bump: u8,
+    pub insurance_vault_authority_bump: u8,
+    pub auto_padding1: [u8; 4],
+    pub collected_insurance_fees_outstanding: WrappedI80F48,
+    #[cfg_attr(
+        feature = "serde",
+        serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
+    )]
+    pub fee_vault: Pubkey,
+    pub fee_vault_bump: u8,
+    pub fee_vault_authority_bump: u8,
+    pub auto_padding2: [u8; 6],
+    pub collected_group_fees_outstanding: WrappedI80F48,
+    pub total_liability_shares: WrappedI80F48,
+    pub total_asset_shares: WrappedI80F48,
+    pub last_update: i64,
+    pub config: BankConfig,
+    /// Emissions Config Flags
+    ///
+    /// - EMISSIONS_FLAG_BORROW_ACTIVE: 1
+    /// - EMISSIONS_FLAG_LENDING_ACTIVE: 2
+    ///
+    pub emissions_flags: u64,
+    /// Emissions APR.
+    /// Number of emitted tokens (emissions_mint) per 1e(bank.mint_decimal) tokens (bank mint) (native amount) per 1 YEAR.
+    pub emissions_rate: u64,
+    pub emissions_remaining: WrappedI80F48,
+    #[cfg_attr(
+        feature = "serde",
+        serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
+    )]
+    pub emissions_mint: Pubkey,
+    pub padding0: [u128; 28],
+    pub padding1: [u128; 32],
 }
 
-
 impl Bank {
-      pub const LEN: usize = 1856;
-  
-  
-  
-  #[inline(always)]
-  pub fn from_bytes(data: &[u8]) -> Result<Self, std::io::Error> {
-    let mut data = data;
-    Self::deserialize(&mut data)
-  }
+    pub const LEN: usize = 1856;
+
+    #[inline(always)]
+    pub fn from_bytes(data: &[u8]) -> Result<Self, std::io::Error> {
+        let mut data = data;
+        Self::deserialize(&mut data)
+    }
 }
 
 impl<'a> TryFrom<&solana_program::account_info::AccountInfo<'a>> for Bank {
-  type Error = std::io::Error;
+    type Error = std::io::Error;
 
-  fn try_from(account_info: &solana_program::account_info::AccountInfo<'a>) -> Result<Self, Self::Error> {
-      let mut data: &[u8] = &(*account_info.data).borrow();
-      Self::deserialize(&mut data)
-  }
+    fn try_from(
+        account_info: &solana_program::account_info::AccountInfo<'a>,
+    ) -> Result<Self, Self::Error> {
+        let mut data: &[u8] = &(*account_info.data).borrow();
+        Self::deserialize(&mut data)
+    }
 }
-

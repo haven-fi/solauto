@@ -1,3 +1,3 @@
-pub mod solend;
-pub mod marginfi;
 pub mod general;
+pub mod marginfi;
+pub mod solend;

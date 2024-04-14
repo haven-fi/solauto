@@ -5,7 +5,6 @@
 //! [https://github.com/metaplex-foundation/kinobi]
 //!
 
-      pub(crate) mod marginfi;
-  
-      pub use self::marginfi::MarginfiError;
-  
+pub(crate) mod marginfi;
+
+pub use self::marginfi::MarginfiError;

@@ -1,33 +1,29 @@
-use std::ops::{ Div, Sub };
 use solana_program::{
-    account_info::AccountInfo,
-    clock::Clock,
-    entrypoint::ProgramResult,
-    msg,
-    program_error::ProgramError,
-    sysvar::Sysvar,
+    account_info::AccountInfo, clock::Clock, entrypoint::ProgramResult, msg,
+    program_error::ProgramError, sysvar::Sysvar,
 };
 use solend_sdk::{
     instruction::{
-        init_obligation,
-        refresh_reserve,
-        refresh_obligation,
-        deposit_reserve_liquidity_and_obligation_collateral,
-        borrow_obligation_liquidity,
+        borrow_obligation_liquidity, deposit_reserve_liquidity_and_obligation_collateral,
+        init_obligation, refresh_obligation, refresh_reserve,
     },
-    state::{ LendingMarket, Obligation, Reserve },
+    state::{LendingMarket, Obligation, Reserve},
 };
 use spl_associated_token_account::get_associated_token_address;
+use std::ops::{Div, Sub};
 
 use crate::{
     constants::SOLEND_PROGRAM,
     types::{
-        instruction::{ accounts::{ Context, SolendOpenPositionAccounts }, SolautoStandardAccounts },
+        instruction::{
+            accounts::{Context, SolendOpenPositionAccounts},
+            SolautoStandardAccounts,
+        },
         lending_protocol::*,
         obligation_position::*,
-        shared::{ DeserializedAccount, LendingPlatform, Position, SolautoError },
+        shared::{DeserializedAccount, LendingPlatform, Position, SolautoError},
     },
-    utils::{ ix_utils::*, solauto_utils::*, validation_utils::* },
+    utils::{ix_utils::*, solauto_utils::*, validation_utils::*},
 };
 
 pub struct ReserveOracleAccounts<'a> {
@@ -54,23 +50,21 @@ pub struct SolendClient<'a> {
 impl<'a> SolendClient<'a> {
     pub fn initialize<'b>(
         ctx: &'b Context<'a, SolendOpenPositionAccounts<'a>>,
-        solauto_position: &'b Option<DeserializedAccount<'a, Position>>
+        solauto_position: &'b Option<DeserializedAccount<'a, Position>>,
     ) -> ProgramResult {
-        let supply_reserve = DeserializedAccount::<Reserve>
-            ::unpack(Some(ctx.accounts.supply_reserve))?
-            .unwrap();
+        let supply_reserve =
+            DeserializedAccount::<Reserve>::unpack(Some(ctx.accounts.supply_reserve))?.unwrap();
         if &supply_reserve.data.collateral.mint_pubkey != ctx.accounts.supply_collateral_mint.key {
             msg!("Supply reserve account provided is not for the supply_collateral_mint account");
             return Err(ProgramError::InvalidAccountData.into());
         }
 
-        let (max_ltv, liq_threshold) = SolendClient::get_max_ltv_and_liq_threshold(
-            &supply_reserve.data
-        );
+        let (max_ltv, liq_threshold) =
+            SolendClient::get_max_ltv_and_liq_threshold(&supply_reserve.data);
         validate_position_settings(
             &solauto_position.as_ref().unwrap().data.setting_params,
             max_ltv,
-            liq_threshold
+            liq_threshold,
         )?;
 
         let obligation_owner = get_owner(solauto_position, ctx.accounts.signer);
@@ -79,7 +73,7 @@ impl<'a> SolendClient<'a> {
                 SOLEND_PROGRAM,
                 *ctx.accounts.obligation.key,
                 *ctx.accounts.lending_market.key,
-                *obligation_owner.key
+                *obligation_owner.key,
             ),
             &[
                 ctx.accounts.obligation.clone(),
@@ -88,7 +82,7 @@ impl<'a> SolendClient<'a> {
                 ctx.accounts.rent.clone(),
                 ctx.accounts.token_program.clone(),
             ],
-            &solauto_position
+            &solauto_position,
         )
     }
 
@@ -108,34 +102,33 @@ impl<'a> SolendClient<'a> {
         debt_reserve_fee_receiver: Option<&'a AccountInfo<'a>>,
         debt_liquidity_mint: Option<&'a AccountInfo<'a>>,
         source_debt_liquidity: Option<&'a AccountInfo<'a>>,
-        reserve_debt_liquidity: Option<&'a AccountInfo<'a>>
+        reserve_debt_liquidity: Option<&'a AccountInfo<'a>>,
     ) -> Result<(Self, LendingProtocolObligationPosition), ProgramError> {
         let mut data_accounts = SolendClient::deserialize_solend_accounts(
             lending_market,
             supply_reserve,
             debt_reserve,
-            obligation
+            obligation,
         )?;
 
         let supply_liquidity = LendingProtocolTokenAccounts::from(
             supply_liquidity_mint,
             source_supply_liquidity,
-            reserve_supply_liquidity
+            reserve_supply_liquidity,
         );
         let supply_collateral = LendingProtocolTokenAccounts::from(
             supply_collateral_mint,
             source_supply_collateral,
-            reserve_supply_collateral
+            reserve_supply_collateral,
         );
         let debt_liquidity = LendingProtocolTokenAccounts::from(
             debt_liquidity_mint,
             source_debt_liquidity,
-            reserve_debt_liquidity
+            reserve_debt_liquidity,
         );
 
-        let supply_reserve_oracles = if
-            !supply_reserve_pyth_price_oracle.is_none() &&
-            !supply_reserve_switchboard_oracle.is_none()
+        let supply_reserve_oracles = if !supply_reserve_pyth_price_oracle.is_none()
+            && !supply_reserve_switchboard_oracle.is_none()
         {
             Some(ReserveOracleAccounts {
                 pyth_price: supply_reserve_pyth_price_oracle.unwrap(),
@@ -149,7 +142,7 @@ impl<'a> SolendClient<'a> {
             &mut data_accounts.lending_market.data,
             data_accounts.supply_reserve.as_ref().map(|sr| &sr.data),
             data_accounts.debt_reserve.as_ref().map(|dr| &dr.data),
-            &data_accounts.obligation.data
+            &data_accounts.obligation.data,
         )?;
 
         let solend_client = Self {
@@ -168,11 +161,10 @@ impl<'a> SolendClient<'a> {
         lending_market: &'a AccountInfo<'a>,
         supply_reserve: Option<&'a AccountInfo<'a>>,
         debt_reserve: Option<&'a AccountInfo<'a>>,
-        obligation: &'a AccountInfo<'a>
+        obligation: &'a AccountInfo<'a>,
     ) -> Result<SolendDataAccounts<'a>, ProgramError> {
-        let lending_market = DeserializedAccount::<LendingMarket>
-            ::unpack(Some(lending_market))?
-            .unwrap();
+        let lending_market =
+            DeserializedAccount::<LendingMarket>::unpack(Some(lending_market))?.unwrap();
         let supply_reserve = DeserializedAccount::<Reserve>::unpack(supply_reserve)?;
         let debt_reserve = DeserializedAccount::<Reserve>::unpack(debt_reserve)?;
         let obligation = DeserializedAccount::<Obligation>::unpack(Some(obligation))?.unwrap();
@@ -189,7 +181,7 @@ impl<'a> SolendClient<'a> {
         lending_market: &mut LendingMarket,
         supply_reserve: Option<&Box<Reserve>>,
         debt_reserve: Option<&Box<Reserve>>,
-        obligation: &Box<Obligation>
+        obligation: &Box<Obligation>,
     ) -> Result<LendingProtocolObligationPosition, ProgramError> {
         let (max_ltv, liq_threshold) = if let Some(supply) = supply_reserve {
             SolendClient::get_max_ltv_and_liq_threshold(supply)
@@ -199,49 +191,47 @@ impl<'a> SolendClient<'a> {
 
         let supply_liquidity = if let Some(supply) = supply_reserve {
             let supply_exchange_rate = supply.collateral_exchange_rate().unwrap();
-            let deposited_liquidity = supply_exchange_rate.collateral_to_liquidity(
-                supply.collateral.mint_total_supply
-            )?;
+            let deposited_liquidity = supply_exchange_rate
+                .collateral_to_liquidity(supply.collateral.mint_total_supply)?;
             let base_unit_max_depositable = supply.config.deposit_limit.sub(deposited_liquidity);
             let base_unit_deposited_amount = if obligation.deposits.len() > 0 {
-                supply_exchange_rate.collateral_to_liquidity(
-                    obligation.deposits[0].deposited_amount
-                )?
+                supply_exchange_rate
+                    .collateral_to_liquidity(obligation.deposits[0].deposited_amount)?
             } else {
                 0
             };
-            Some(
-                PositionTokenUsage::from_solend_data(
-                    base_unit_deposited_amount,
-                    base_unit_max_depositable,
-                    supply
-                )
-            )
+            Some(PositionTokenUsage::from_solend_data(
+                base_unit_deposited_amount,
+                base_unit_max_depositable,
+                supply,
+            ))
         } else {
             None
         };
 
         let debt_liquidity = if let Some(debt) = debt_reserve {
             let reserve_borrow_limit = debt.liquidity.available_amount;
-            let lending_market_borrow_limit = lending_market.rate_limiter
+            let lending_market_borrow_limit = lending_market
+                .rate_limiter
                 .remaining_outflow(Clock::get()?.slot)
                 .unwrap()
                 .try_round_u64()?;
             let base_unit_max_borrowable = lending_market_borrow_limit.min(reserve_borrow_limit);
 
             let base_amount_used = if obligation.borrows.len() > 0 {
-                obligation.borrows[0].borrowed_amount_wads.try_round_u64().unwrap()
+                obligation.borrows[0]
+                    .borrowed_amount_wads
+                    .try_round_u64()
+                    .unwrap()
             } else {
                 0
             };
 
-            Some(
-                PositionTokenUsage::from_solend_data(
-                    base_amount_used,
-                    base_unit_max_borrowable,
-                    debt
-                )
-            )
+            Some(PositionTokenUsage::from_solend_data(
+                base_amount_used,
+                base_unit_max_borrowable,
+                debt,
+            ))
         } else {
             None
         };
@@ -265,24 +255,28 @@ impl<'a> SolendClient<'a> {
     pub fn refresh_reserve(
         reserve: &'a AccountInfo<'a>,
         pyth_price_oracle: &'a AccountInfo<'a>,
-        switchboard_oracle: &'a AccountInfo<'a>
+        switchboard_oracle: &'a AccountInfo<'a>,
     ) -> ProgramResult {
         invoke_instruction(
             refresh_reserve(
                 SOLEND_PROGRAM.clone(),
                 *reserve.key,
                 *pyth_price_oracle.key,
-                *switchboard_oracle.key
+                *switchboard_oracle.key,
             ),
-            &[reserve.clone(), pyth_price_oracle.clone(), switchboard_oracle.clone()],
-            &None
+            &[
+                reserve.clone(),
+                pyth_price_oracle.clone(),
+                switchboard_oracle.clone(),
+            ],
+            &None,
         )
     }
 
     pub fn refresh_obligation(
         obligation: &'a AccountInfo<'a>,
         supply_reserve: &'a AccountInfo<'a>,
-        debt_reserve: Option<&'a AccountInfo<'a>>
+        debt_reserve: Option<&'a AccountInfo<'a>>,
     ) -> ProgramResult {
         let mut reserve_pubkeys = Vec::new();
         reserve_pubkeys.push(*supply_reserve.key);
@@ -300,7 +294,7 @@ impl<'a> SolendClient<'a> {
         invoke_instruction(
             refresh_obligation(SOLEND_PROGRAM.clone(), *obligation.key, reserve_pubkeys),
             &account_infos,
-            &None
+            &None,
         )
     }
 }
@@ -314,18 +308,30 @@ impl<'a> LendingProtocolClient<'a> for SolendClient<'a> {
             );
             return Err(SolautoError::StaleProtocolData.into());
         }
-        if
-            !self.data.supply_reserve.is_none() &&
-            self.data.supply_reserve.as_ref().unwrap().data.last_update.is_stale(curr_slot)?
+        if !self.data.supply_reserve.is_none()
+            && self
+                .data
+                .supply_reserve
+                .as_ref()
+                .unwrap()
+                .data
+                .last_update
+                .is_stale(curr_slot)?
         {
             msg!(
                 "Supply reserve account data is stale. Ensure you refresh everything before interacting"
             );
             return Err(SolautoError::StaleProtocolData.into());
         }
-        if
-            !self.data.debt_reserve.is_none() &&
-            self.data.debt_reserve.as_ref().unwrap().data.last_update.is_stale(curr_slot)?
+        if !self.data.debt_reserve.is_none()
+            && self
+                .data
+                .debt_reserve
+                .as_ref()
+                .unwrap()
+                .data
+                .last_update
+                .is_stale(curr_slot)?
         {
             msg!(
                 "Debt reserve account data is stale. Ensure you refresh everything before interacting"
@@ -334,11 +340,19 @@ impl<'a> LendingProtocolClient<'a> for SolendClient<'a> {
         }
         if !self.supply_liquidity.is_none() {
             let supply_liquidity = self.supply_liquidity.as_ref().unwrap();
-            validate_source_token_account(std_accounts, supply_liquidity.source_token_account, supply_liquidity.token_mint)?;
+            validate_source_token_account(
+                std_accounts,
+                supply_liquidity.source_token_account,
+                supply_liquidity.token_mint,
+            )?;
         }
         if !self.debt_liquidity.is_none() {
             let debt_liquidity = self.debt_liquidity.as_ref().unwrap();
-            validate_source_token_account(std_accounts, debt_liquidity.source_token_account, debt_liquidity.token_mint)?;
+            validate_source_token_account(
+                std_accounts,
+                debt_liquidity.source_token_account,
+                debt_liquidity.token_mint,
+            )?;
         }
         Ok(())
     }
@@ -346,7 +360,7 @@ impl<'a> LendingProtocolClient<'a> for SolendClient<'a> {
     fn deposit<'b>(
         &self,
         base_unit_amount: u64,
-        accounts: &'b SolautoStandardAccounts<'a>
+        accounts: &'b SolautoStandardAccounts<'a>,
     ) -> ProgramResult {
         let obligation_owner = get_owner(&accounts.solauto_position, accounts.signer);
         let supply_liquidity = self.supply_liquidity.as_ref().unwrap();
@@ -368,7 +382,7 @@ impl<'a> LendingProtocolClient<'a> for SolendClient<'a> {
             *obligation_owner.key,
             *reserve_oracles.pyth_price.key,
             *reserve_oracles.switchboard.key,
-            *obligation_owner.key
+            *obligation_owner.key,
         );
 
         let account_infos = &[
@@ -386,13 +400,17 @@ impl<'a> LendingProtocolClient<'a> for SolendClient<'a> {
             accounts.token_program.clone(),
         ];
 
-        invoke_instruction(deposit_instruction, account_infos, &accounts.solauto_position)
+        invoke_instruction(
+            deposit_instruction,
+            account_infos,
+            &accounts.solauto_position,
+        )
     }
 
     fn withdraw<'b>(
         &self,
         base_unit_amount: u64,
-        accounts: &'b SolautoStandardAccounts<'a>
+        accounts: &'b SolautoStandardAccounts<'a>,
     ) -> ProgramResult {
         // TODO
         Ok(())
@@ -401,7 +419,7 @@ impl<'a> LendingProtocolClient<'a> for SolendClient<'a> {
     fn borrow<'b>(
         &self,
         base_unit_amount: u64,
-        accounts: &'b SolautoStandardAccounts<'a>
+        accounts: &'b SolautoStandardAccounts<'a>,
     ) -> ProgramResult {
         let obligation_owner = get_owner(&accounts.solauto_position, accounts.signer);
         let debt_liquidity = self.debt_liquidity.as_ref().unwrap();
@@ -417,7 +435,7 @@ impl<'a> LendingProtocolClient<'a> for SolendClient<'a> {
             *self.data.obligation.account_info.key,
             *self.data.lending_market.account_info.key,
             *obligation_owner.key,
-            Some(*debt_liquidity.source_token_account.key)
+            Some(*debt_liquidity.source_token_account.key),
         );
 
         let account_infos = &[
@@ -432,13 +450,17 @@ impl<'a> LendingProtocolClient<'a> for SolendClient<'a> {
             accounts.token_program.clone(),
         ];
 
-        invoke_instruction(borrow_instruction, account_infos, &accounts.solauto_position)
+        invoke_instruction(
+            borrow_instruction,
+            account_infos,
+            &accounts.solauto_position,
+        )
     }
 
     fn repay<'b>(
         &self,
         base_unit_amount: u64,
-        accounts: &'b SolautoStandardAccounts<'a>
+        accounts: &'b SolautoStandardAccounts<'a>,
     ) -> ProgramResult {
         // TODO
         Ok(())

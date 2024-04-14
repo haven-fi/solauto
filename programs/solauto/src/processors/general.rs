@@ -1,19 +1,14 @@
 use solana_program::{
-    account_info::AccountInfo,
-    entrypoint::ProgramResult,
-    msg,
-    program_error::ProgramError,
+    account_info::AccountInfo, entrypoint::ProgramResult, msg, program_error::ProgramError,
 };
 use spl_associated_token_account::get_associated_token_address;
 
 use crate::{
-    constants::{ SOLAUTO_ADMIN_SETTINGS_ACCOUNT_SEEDS, WSOL_MINT },
+    constants::{SOLAUTO_ADMIN_SETTINGS_ACCOUNT_SEEDS, WSOL_MINT},
     types::{
-        instruction::accounts::{ ClaimReferralFeesAccounts, UpdateSolautoAdminSettingsAccounts },
+        instruction::accounts::{ClaimReferralFeesAccounts, UpdateSolautoAdminSettingsAccounts},
         shared::{
-            DeserializedAccount,
-            RefferalState,
-            SolautoAdminSettings,
+            DeserializedAccount, RefferalState, SolautoAdminSettings,
             SOLAUTO_SETTINGS_ACCOUNT_SPACE,
         },
     },
@@ -21,7 +16,7 @@ use crate::{
 };
 
 pub fn process_update_solauto_admin_settings_instruction<'a>(
-    accounts: &'a [AccountInfo<'a>]
+    accounts: &'a [AccountInfo<'a>],
 ) -> ProgramResult {
     let ctx = UpdateSolautoAdminSettingsAccounts::context(accounts)?;
     validation_utils::validate_solauto_admin_signer(ctx.accounts.solauto_admin)?;
@@ -31,23 +26,20 @@ pub fn process_update_solauto_admin_settings_instruction<'a>(
         return Err(ProgramError::InvalidAccountData.into());
     }
 
-    if
-        ctx.accounts.solauto_fees_receiver_ta.key !=
-        &get_associated_token_address(
+    if ctx.accounts.solauto_fees_receiver_ta.key
+        != &get_associated_token_address(
             ctx.accounts.solauto_fees_mint.key,
-            ctx.accounts.solauto_fees_mint.key
+            ctx.accounts.solauto_fees_mint.key,
         )
     {
         msg!("Incorrect token account for the given token mint");
         return Err(ProgramError::InvalidAccountData.into());
     }
 
-    let mut solauto_admin_settings = if
-        !solana_utils::account_is_rent_exempt(
-            ctx.accounts.rent,
-            ctx.accounts.solauto_admin_settings
-        )?
-    {
+    let mut solauto_admin_settings = if !solana_utils::account_is_rent_exempt(
+        ctx.accounts.rent,
+        ctx.accounts.solauto_admin_settings,
+    )? {
         solana_utils::init_new_account(
             ctx.accounts.system_program,
             ctx.accounts.rent,
@@ -55,7 +47,7 @@ pub fn process_update_solauto_admin_settings_instruction<'a>(
             ctx.accounts.solauto_admin_settings,
             &crate::ID,
             vec![SOLAUTO_ADMIN_SETTINGS_ACCOUNT_SEEDS],
-            SOLAUTO_SETTINGS_ACCOUNT_SPACE
+            SOLAUTO_SETTINGS_ACCOUNT_SPACE,
         )?;
 
         Some(DeserializedAccount {
@@ -66,9 +58,9 @@ pub fn process_update_solauto_admin_settings_instruction<'a>(
             }),
         })
     } else {
-        let mut solauto_settings = DeserializedAccount::<SolautoAdminSettings>::deserialize(
-            Some(ctx.accounts.solauto_admin_settings)
-        )?;
+        let mut solauto_settings = DeserializedAccount::<SolautoAdminSettings>::deserialize(Some(
+            ctx.accounts.solauto_admin_settings,
+        ))?;
 
         let settings = solauto_settings.as_mut().unwrap();
         settings.data.fees_wallet = ctx.accounts.solauto_fees_wallet.key.clone();
@@ -79,7 +71,7 @@ pub fn process_update_solauto_admin_settings_instruction<'a>(
 
     validation_utils::validate_fees_receiver(
         ctx.accounts.solauto_admin_settings,
-        ctx.accounts.solauto_fees_receiver_ta
+        ctx.accounts.solauto_fees_receiver_ta,
     )?;
 
     solana_utils::init_ata_if_needed(
@@ -89,7 +81,7 @@ pub fn process_update_solauto_admin_settings_instruction<'a>(
         ctx.accounts.solauto_admin,
         ctx.accounts.solauto_fees_wallet,
         ctx.accounts.solauto_fees_receiver_ta,
-        ctx.accounts.solauto_fees_mint
+        ctx.accounts.solauto_fees_mint,
     )?;
 
     ix_utils::update_data(&mut solauto_admin_settings)
@@ -107,9 +99,9 @@ pub fn process_close_position_instruction() -> ProgramResult {
 
 pub fn process_claim_referral_fees<'a>(accounts: &'a [AccountInfo<'a>]) -> ProgramResult {
     let ctx = ClaimReferralFeesAccounts::context(accounts)?;
-    let referral_state = DeserializedAccount::<RefferalState>
-        ::deserialize(Some(ctx.accounts.referral_state))?
-        .unwrap();
+    let referral_state =
+        DeserializedAccount::<RefferalState>::deserialize(Some(ctx.accounts.referral_state))?
+            .unwrap();
 
     if !ctx.accounts.signer.is_signer {
         return Err(ProgramError::MissingRequiredSignature.into());
@@ -124,7 +116,7 @@ pub fn process_claim_referral_fees<'a>(accounts: &'a [AccountInfo<'a>]) -> Progr
         ctx.accounts.token_program,
         ctx.accounts.referral_fees_ta,
         ctx.accounts.signer,
-        ctx.accounts.referral_state
+        ctx.accounts.referral_state,
     )?;
 
     solana_utils::init_ata_if_needed(
@@ -134,7 +126,7 @@ pub fn process_claim_referral_fees<'a>(accounts: &'a [AccountInfo<'a>]) -> Progr
         ctx.accounts.signer,
         ctx.accounts.referral_state,
         ctx.accounts.referral_fees_ta,
-        ctx.accounts.referral_fees_mint
+        ctx.accounts.referral_fees_mint,
     )?;
 
     Ok(())

@@ -1,4 +1,4 @@
-use solana_program::{ account_info::AccountInfo, entrypoint::ProgramResult };
+use solana_program::{account_info::AccountInfo, entrypoint::ProgramResult};
 
 use super::instruction::SolautoStandardAccounts;
 
@@ -12,12 +12,11 @@ impl<'a> LendingProtocolTokenAccounts<'a> {
     pub fn from(
         token_mint: Option<&'a AccountInfo<'a>>,
         source_token_account: Option<&'a AccountInfo<'a>>,
-        reserve_token_account: Option<&'a AccountInfo<'a>>
+        reserve_token_account: Option<&'a AccountInfo<'a>>,
     ) -> Option<Self> {
-        if
-            !token_mint.is_none() &&
-            !source_token_account.is_none() &&
-            !reserve_token_account.is_none()
+        if !token_mint.is_none()
+            && !source_token_account.is_none()
+            && !reserve_token_account.is_none()
         {
             Some(Self {
                 token_mint: token_mint.unwrap(),
@@ -35,21 +34,21 @@ pub trait LendingProtocolClient<'a> {
     fn deposit<'b>(
         &self,
         base_unit_amount: u64,
-        accounts: &'b SolautoStandardAccounts<'a>
+        accounts: &'b SolautoStandardAccounts<'a>,
     ) -> ProgramResult;
     fn borrow<'b>(
         &self,
         base_unit_amount: u64,
-        accounts: &'b SolautoStandardAccounts<'a>
+        accounts: &'b SolautoStandardAccounts<'a>,
     ) -> ProgramResult;
     fn withdraw<'b>(
         &self,
         base_unit_amount: u64,
-        accounts: &'b SolautoStandardAccounts<'a>
+        accounts: &'b SolautoStandardAccounts<'a>,
     ) -> ProgramResult;
     fn repay<'b>(
         &self,
         base_unit_amount: u64,
-        accounts: &'b SolautoStandardAccounts<'a>
+        accounts: &'b SolautoStandardAccounts<'a>,
     ) -> ProgramResult;
 }

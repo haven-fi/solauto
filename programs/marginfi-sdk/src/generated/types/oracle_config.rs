@@ -6,15 +6,13 @@
 //!
 
 use crate::generated::types::OracleSetup;
-use solana_program::pubkey::Pubkey;
-use borsh::BorshSerialize;
 use borsh::BorshDeserialize;
+use borsh::BorshSerialize;
+use solana_program::pubkey::Pubkey;
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct OracleConfig {
-pub setup: OracleSetup,
-pub keys: [Pubkey; 5],
+    pub setup: OracleSetup,
+    pub keys: [Pubkey; 5],
 }
-
-

@@ -5,23 +5,24 @@
 //! [https://github.com/metaplex-foundation/kinobi]
 //!
 
-use solana_program::pubkey::Pubkey;
 use crate::generated::types::WrappedI80F48;
-use borsh::BorshSerialize;
 use borsh::BorshDeserialize;
+use borsh::BorshSerialize;
+use solana_program::pubkey::Pubkey;
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Balance {
-pub active: bool,
-#[cfg_attr(feature = "serde", serde(with = "serde_with::As::<serde_with::DisplayFromStr>"))]
-pub bank_pk: Pubkey,
-pub auto_padding0: [u8; 7],
-pub asset_shares: WrappedI80F48,
-pub liability_shares: WrappedI80F48,
-pub emissions_outstanding: WrappedI80F48,
-pub last_update: u64,
-pub padding: [u64; 1],
+    pub active: bool,
+    #[cfg_attr(
+        feature = "serde",
+        serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
+    )]
+    pub bank_pk: Pubkey,
+    pub auto_padding0: [u8; 7],
+    pub asset_shares: WrappedI80F48,
+    pub liability_shares: WrappedI80F48,
+    pub emissions_outstanding: WrappedI80F48,
+    pub last_update: u64,
+    pub padding: [u64; 1],
 }
-
-

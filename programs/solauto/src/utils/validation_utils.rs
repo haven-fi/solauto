@@ -1,51 +1,40 @@
-use std::ops::{ Div, Mul };
 use solana_program::{
     account_info::AccountInfo,
     entrypoint::ProgramResult,
-    instruction::{ get_stack_height, Instruction, TRANSACTION_LEVEL_STACK_HEIGHT },
     msg,
     program_error::ProgramError,
     pubkey::Pubkey,
-    sysvar::instructions::{
-        load_current_index_checked,
-        load_instruction_at_checked,
-        ID as ixs_sysvar_id,
-    },
+    sysvar::instructions::ID as ixs_sysvar_id,
 };
 use spl_associated_token_account::get_associated_token_address;
+use std::ops::{ Div, Mul };
 
-use crate::{
-    constants::SOLAUTO_REBALANCER,
-    types::{
-        instruction::{
-            SOLAUTO_REBALANCE_IX_DISCRIMINATORS,
-            accounts::{
-                Context,
-                MarginfiProtocolInteractionAccounts,
-                SolendProtocolInteractionAccounts,
-            },
-            RebalanceArgs,
-            SolautoAction,
-            SolautoStandardAccounts,
+use crate::types::{
+    instruction::{
+        accounts::{
+            Context,
+            MarginfiProtocolInteractionAccounts,
+            SolendProtocolInteractionAccounts,
         },
-        shared::{
-            DeserializedAccount,
-            LendingPlatform,
-            Position,
-            SolautoAdminSettings,
-            SolautoError,
-            SolautoRebalanceStep,
-            SolautoSettingsParameters,
-        },
+        SolautoAction,
+        SolautoStandardAccounts,
+    },
+    shared::{
+        DeserializedAccount,
+        LendingPlatform,
+        Position,
+        SolautoAdminSettings,
+        SolautoError,
+        SolautoSettingsParameters,
     },
 };
 
 use crate::constants::{
-    MARGINFI_PROGRAM,
-    SOLEND_PROGRAM,
     KAMINO_PROGRAM,
+    MARGINFI_PROGRAM,
     SOLAUTO_ADMIN,
     SOLAUTO_ADMIN_SETTINGS_ACCOUNT_SEEDS,
+    SOLEND_PROGRAM,
 };
 
 use super::solauto_utils::get_owner;
@@ -332,163 +321,6 @@ pub fn validate_solend_protocol_interaction_ix(
     }
 
     Ok(())
-}
-
-pub fn validate_rebalance_instruction(
-    std_accounts: &SolautoStandardAccounts,
-    args: &RebalanceArgs
-) -> Result<SolautoRebalanceStep, ProgramError> {
-    // TODO notes for typescript client
-    // max_price_slippage = 0.05 (500bps) (5%)
-    // random_price_volatility = 0.03 (300bps) (3%)
-    // 1 - max_price_slippage - random_price_volatility = buffer_room = 92%
-    // if transaction fails default to flash loan instruction route and increase max slippage if needed
-
-    // increasing leverage:
-    // -
-    // if debt + debt adjustment keeps utilization rate under buffer_room, instructions are:
-    // solauto rebalance - borrows more debt worth debt_adjustment_usd (figure out what to do with solauto fee after borrow)
-    // jup swap - swap debt token to supply token
-    // solauto rebalance - deposit supply token
-    // -
-    // if debt + debt adjustment brings utilization rate above buffer_room, instructions are:
-    // take out flash loan in debt token
-    // jup swap - swap debt token to supply token
-    // solauto rebalance - deposit supply token, borrow equivalent debt token amount from flash borrow ix + flash loan fee
-    // repay flash loan in debt token
-
-    // deleveraging:
-    // -
-    // if supply - debt adjustment keeps utilization rate under buffer_room, instructions are:
-    // solauto rebalance - withdraw supply worth debt_adjustment_usd
-    // jup swap - swap supply token to debt token
-    // solauto rebalance - repay debt with debt token
-    // -
-    // if supply - debt adjustment brings utilization rate over buffer_room, instructions are:
-    // take out flash loan in supply token
-    // jup swap - swap supply token to debt token
-    // solauto rebalance - repay debt token, & withdraw equivalent supply token amount from flash borrow ix + flash loan fee
-    // repay flash loan in supply token
-
-    let ixs_sysvar = std_accounts.ixs_sysvar.unwrap();
-    if !args.target_liq_utilization_rate_bps.is_none() && !std_accounts.solauto_position.is_none() {
-        msg!(
-            "Cannot provide a target liquidation utilization rate if the position is solauto-managed"
-        );
-        return Err(ProgramError::InvalidInstructionData.into());
-    }
-
-    if
-        !args.max_price_slippage_bps.is_none() &&
-        std_accounts.signer.key != &SOLAUTO_REBALANCER &&
-        std_accounts.signer.key != &std_accounts.solauto_position.as_ref().unwrap().data.authority
-    {
-        msg!(
-            "If the signer is not the position authority or Solauto rebalancer accouunts, max_price_slippage_bps cannot be provided"
-        );
-        return Err(ProgramError::InvalidInstructionData.into());
-    }
-
-    let current_ix_idx = load_current_index_checked(ixs_sysvar)?;
-    let current_ix = load_instruction_at_checked(current_ix_idx as usize, ixs_sysvar)?;
-    if current_ix.program_id != crate::ID || get_stack_height() > TRANSACTION_LEVEL_STACK_HEIGHT {
-        return Err(SolautoError::InstructionIsCPI.into());
-    }
-
-    let mut rebalance_instructions = 0;
-    let mut index = current_ix_idx + 1;
-    loop {
-        if let Ok(ix) = load_instruction_at_checked(index as usize, ixs_sysvar) {
-            if is_solauto_rebalance_ix(&Some(ix)) {
-                rebalance_instructions += 1;
-            }
-        } else {
-            break;
-        }
-
-        index += 1;
-    }
-
-    if rebalance_instructions > 2 {
-        return Err(SolautoError::RebalanceAbuse.into());
-    }
-
-    let next_ix = if current_ix_idx < index {
-        Some(load_instruction_at_checked((current_ix_idx + 1) as usize, ixs_sysvar)?)
-    } else {
-        None
-    };
-
-    let ix_2_after = if current_ix_idx + 1 < index {
-        Some(load_instruction_at_checked((current_ix_idx + 2) as usize, ixs_sysvar)?)
-    } else {
-        None
-    };
-
-    let prev_ix = if current_ix_idx > 0 {
-        Some(load_instruction_at_checked((current_ix_idx - 1) as usize, ixs_sysvar)?)
-    } else {
-        None
-    };
-
-    let ix_2_before = if current_ix_idx > 1 {
-        Some(load_instruction_at_checked((current_ix_idx - 2) as usize, ixs_sysvar)?)
-    } else {
-        None
-    };
-    
-    if is_jup_token_ledger_swap_ix(&next_ix) && is_solauto_rebalance_ix(&ix_2_after) && rebalance_instructions == 2 {
-        Ok(SolautoRebalanceStep::BeginSolautoRebalanceSandwich)
-    } else if is_jup_token_ledger_swap_ix(&prev_ix) && is_solauto_rebalance_ix(&ix_2_before) && rebalance_instructions == 2 {
-        Ok(SolautoRebalanceStep::FinishSolautoRebalanceSandwich)
-    } else if is_flash_repay_ix(&next_ix) && is_jup_token_ledger_swap_ix(&prev_ix) && is_flash_borrow_ix(&ix_2_before) && rebalance_instructions == 1 {
-        // TODO determine the borrow amount from the instruction
-        let borrow_amount_base_unit = 0;
-        Ok(SolautoRebalanceStep::FinishFlashLoanSandwich(borrow_amount_base_unit))
-    } else {
-        Err(SolautoError::IncorrectRebalanceInstructions.into())
-    }
-
-}
-
-fn is_solauto_rebalance_ix(ix: &Option<Instruction>) -> bool {
-    instruction_match(ix, crate::ID, SOLAUTO_REBALANCE_IX_DISCRIMINATORS.to_vec())
-}
-
-fn is_jup_token_ledger_swap_ix(ix: &Option<Instruction>) -> bool {
-    // TODO
-    true
-}
-
-fn is_flash_borrow_ix(ix: &Option<Instruction>) -> bool {
-    // TODO
-    true
-}
-
-fn is_flash_repay_ix(ix: &Option<Instruction>) -> bool {
-    // TODO
-    true
-}
-
-fn instruction_match(ix: &Option<Instruction>, program_id: Pubkey, ix_discriminators: Vec<u64>) -> bool {
-    if ix.is_none() {
-        return false;
-    }
-
-    let instruction = ix.as_ref().unwrap();
-    if instruction.program_id == program_id {
-        if instruction.data.len() >= 8 {
-            let discriminator: [u8; 8] = instruction.data[0..8]
-                .try_into()
-                .expect("Slice with incorrect length");
-
-            if ix_discriminators.iter().any(|&x| x == u64::from_le_bytes(discriminator)) {
-                return true;
-            }
-        }
-    }
-
-    false
 }
 
 pub fn validate_referral_accounts(std_accounts: &SolautoStandardAccounts) -> ProgramResult {

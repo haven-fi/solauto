@@ -26,30 +26,36 @@ function generateSolautoSDKs() {
   );
 }
 
-function generateMarginfiSDK() {
-  const idlFilePath = path.join(idlsDir, "marginfi.json");
+// function generateSDKForNonShankIDL(name, idlFilename, programId) {
+//   const idlFilePath = path.join(idlsDir, idlFilename);
 
-  const rawData = fs.readFileSync(idlFilePath, "utf8");
-  let data = JSON.parse(rawData);
-  data.metadata = {
-    address: "MFv2hWf31Z9kbCa1snEPYctwafyhdvnV7FZnsebVacA",
-  };
-  fs.writeFileSync(idlFilePath, JSON.stringify(data, null, 2), "utf8");
+//   const rawData = fs.readFileSync(idlFilePath, "utf8");
+//   let data = JSON.parse(rawData);
+//   data.metadata = {
+//     address: programId ,
+//   };
+//   // data.instructions.forEach((ix, i) => {
+//   //   ix.discriminant = {
+//   //     "type": "u8",
+//   //     "value": i
+//   //   }
+//   // });
 
-  const kinobi = k.createFromIdls([idlFilePath]);
+//   fs.writeFileSync(idlFilePath, JSON.stringify(data, null, 2), "utf8");
 
-  kinobi.update(
-    k.updateProgramsVisitor({
-      idl: { name: "solauto" },
-    })
-  );
+//   const kinobi = k.createFromIdls([idlFilePath]);
 
-  kinobi.accept(
-    new k.renderRustVisitor(
-      path.join(__dirname, "programs", "marginfi-sdk", "src", "generated")
-    )
-  );
-}
+//   kinobi.update(
+//     k.updateProgramsVisitor({
+//       idl: { name },
+//     })
+//   );
+
+//   kinobi.accept(
+//     new k.renderRustVisitor(
+//       path.join(__dirname, "programs", name, "src", "generated")
+//     )
+//   );
+// }
 
 generateSolautoSDKs();
-generateMarginfiSDK();

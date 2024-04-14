@@ -3,10 +3,10 @@ name = "marginfi-sdk"
 version = "0.1.0"
 edition = "2021"
 
+[features]
+no-entrypoint = []
+cpi = ["no-entrypoint"]
+
 [dependencies]
-solana-program = "=1.18.5"
-borsh = "^0.10"
-serde = { version = "^1.0", features = ["derive"], optional = true }
-thiserror = "1.0.58"
-num-derive = "0.4.2"
-num-traits = "0.2.18"
+anchor-gen = "0.3.1"
+anchor-lang = ">=0.20"

@@ -5,16 +5,14 @@
 //! [https://github.com/metaplex-foundation/kinobi]
 //!
 
-use borsh::BorshSerialize;
 use borsh::BorshDeserialize;
+use borsh::BorshSerialize;
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq, PartialOrd, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum BalanceDecreaseType {
-Any,
-WithdrawOnly,
-BorrowOnly,
-BypassBorrowLimit,
+    Any,
+    WithdrawOnly,
+    BorrowOnly,
+    BypassBorrowLimit,
 }
-
-

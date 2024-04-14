@@ -194,6 +194,26 @@ export class RebalanceAbuseError extends ProgramError {
 codeToErrorMap.set(0xa, RebalanceAbuseError);
 nameToErrorMap.set('RebalanceAbuse', RebalanceAbuseError);
 
+/** IncorrectRebalanceInstructions: Incorrect set of rebalance instructions in the transaction */
+export class IncorrectRebalanceInstructionsError extends ProgramError {
+  override readonly name: string = 'IncorrectRebalanceInstructions';
+
+  readonly code: number = 0xb; // 11
+
+  constructor(program: Program, cause?: Error) {
+    super(
+      'Incorrect set of rebalance instructions in the transaction',
+      program,
+      cause
+    );
+  }
+}
+codeToErrorMap.set(0xb, IncorrectRebalanceInstructionsError);
+nameToErrorMap.set(
+  'IncorrectRebalanceInstructions',
+  IncorrectRebalanceInstructionsError
+);
+
 /**
  * Attempts to resolve a custom program error from the provided error code.
  * @category Errors

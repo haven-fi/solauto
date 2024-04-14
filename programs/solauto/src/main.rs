@@ -130,7 +130,7 @@
 
 //     let mut borrow_fee_bps = reserve.config.fees.borrow_fee_wad.div(BPS_SCALER) as u16;
 //     let host_fee_pct = (reserve.config.fees.host_fee_percentage as f64) / 100.0;
-    
+
 //     // We reallocate the host fee to the user, so we will deduct the borrow_fee_bps by host_fee_pct
 //     borrow_fee_bps = ((borrow_fee_bps as f64) - (borrow_fee_bps as f64).mul(host_fee_pct)) as u16;
 
@@ -139,4 +139,14 @@
 //     Ok(())
 // }
 
-fn main() {}
+use borsh::BorshDeserialize;
+use marginfi_sdk;
+
+fn main() {
+    // let ix_data = &[];
+    // let data = marginfi_sdk::generated::instructions::LendingAccountDepositInstructionArgs::(
+    //     &mut ix_data
+    // )?;
+
+    // marginfi_sdk::marginfi::lending_account_deposit(ctx, amount)
+}

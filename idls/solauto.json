@@ -1349,6 +1349,11 @@
       "code": 10,
       "name": "RebalanceAbuse",
       "msg": "Too many rebalance instruction invocations in the same transaction"
+    },
+    {
+      "code": 11,
+      "name": "IncorrectRebalanceInstructions",
+      "msg": "Incorrect set of rebalance instructions in the transaction"
     }
   ],
   "metadata": {

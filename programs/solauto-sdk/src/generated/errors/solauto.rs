@@ -45,6 +45,9 @@ pub enum SolautoError {
     /// 10 (0xA) - Too many rebalance instruction invocations in the same transaction
     #[error("Too many rebalance instruction invocations in the same transaction")]
     RebalanceAbuse,
+    /// 11 (0xB) - Incorrect set of rebalance instructions in the transaction
+    #[error("Incorrect set of rebalance instructions in the transaction")]
+    IncorrectRebalanceInstructions,
 }
 
 impl solana_program::program_error::PrintProgramError for SolautoError {
