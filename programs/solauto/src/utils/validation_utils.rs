@@ -37,7 +37,7 @@ use crate::constants::{
     SOLEND_PROGRAM,
 };
 
-use super::solauto_utils::get_owner;
+use super::{math_utils::get_maximum_repay_to_bps_param, solauto_utils::get_owner};
 
 pub fn generic_instruction_validation(
     accounts: &SolautoStandardAccounts,
@@ -141,7 +141,7 @@ pub fn validate_position_settings(
             return invalid_params("repay_from_bps must be lower or equal to 9500");
         }
 
-        let maximum_repay_to_bps = get_maximum_repay_to_bps_param(max_ltv, liq_threshold, None);
+        let maximum_repay_to_bps = get_maximum_repay_to_bps_param(max_ltv, liq_threshold);
         if settings.repay_to_bps > maximum_repay_to_bps {
             return invalid_params(
                 format!("For the given max_ltv and liq_threshold of the supplied asset, repay_to_bps must be lower or equal to {} in order to bring the utilization rate to an allowed position", maximum_repay_to_bps).as_str()
@@ -162,20 +162,6 @@ pub fn validate_position_settings(
     Ok(())
 }
 
-pub fn get_maximum_repay_to_bps_param(
-    max_ltv: f64,
-    liq_threshold: f64,
-    max_price_slippage: Option<u16>
-) -> u16 {
-    // price slippage buffer room to account for any unexpected price slippage when swapping tokens
-    let price_slippage_buffer_room = if max_price_slippage.is_none() {
-        3.0
-    } else {
-        max_price_slippage.unwrap() as f64
-    };
-
-    (max_ltv - price_slippage_buffer_room).div(liq_threshold).mul(10000.0) as u16
-}
 
 pub fn validate_program_account(
     program: &AccountInfo,

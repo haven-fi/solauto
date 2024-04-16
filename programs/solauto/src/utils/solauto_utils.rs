@@ -5,19 +5,19 @@ use solana_program::{
     program_error::ProgramError,
     pubkey::Pubkey,
     sysvar::instructions::{ load_current_index_checked, load_instruction_at_checked },
-    account_info::AccountInfo
+    account_info::AccountInfo,
 };
 use spl_associated_token_account::get_associated_token_address;
 
 use super::{
     ix_utils,
+    math_utils::get_maximum_repay_to_bps_param,
     solana_utils::{
         account_is_rent_exempt,
         get_anchor_ix_discriminator,
         init_ata_if_needed,
         init_new_account,
     },
-    validation_utils::get_maximum_repay_to_bps_param,
 };
 use crate::{
     constants::{ JUP_PROGRAM, MARGINFI_PROGRAM, SOLAUTO_REBALANCER, WSOL_MINT },
@@ -253,8 +253,7 @@ pub fn get_target_liq_utilization_rate(
         if current_liq_utilization_rate_bps > setting_params.repay_from_bps {
             let maximum_repay_to_bps = get_maximum_repay_to_bps_param(
                 obligation_position.max_ltv,
-                obligation_position.liq_threshold,
-                rebalance_args.max_price_slippage_bps
+                obligation_position.liq_threshold
             );
             Ok(min(setting_params.repay_to_bps, maximum_repay_to_bps))
         } else if current_liq_utilization_rate_bps < setting_params.boost_from_bps {
