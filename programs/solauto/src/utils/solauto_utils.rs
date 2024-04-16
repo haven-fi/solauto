@@ -1,11 +1,11 @@
+use std::cmp::min;
 use solana_program::{
-    account_info::AccountInfo,
-    entrypoint::ProgramResult,
     instruction::{ get_stack_height, Instruction, TRANSACTION_LEVEL_STACK_HEIGHT },
     msg,
     program_error::ProgramError,
     pubkey::Pubkey,
     sysvar::instructions::{ load_current_index_checked, load_instruction_at_checked },
+    account_info::AccountInfo
 };
 use spl_associated_token_account::get_associated_token_address;
 
@@ -17,6 +17,7 @@ use super::{
         init_ata_if_needed,
         init_new_account,
     },
+    validation_utils::get_maximum_repay_to_bps_param,
 };
 use crate::{
     constants::{ JUP_PROGRAM, MARGINFI_PROGRAM, SOLAUTO_REBALANCER, WSOL_MINT },
@@ -222,7 +223,7 @@ pub fn should_proceed_with_rebalance(
     let target_rate_bps = get_target_liq_utilization_rate(
         &std_accounts,
         &obligation_position,
-        rebalance_args.target_liq_utilization_rate_bps
+        rebalance_args
     )?;
 
     if
@@ -242,20 +243,27 @@ pub fn should_proceed_with_rebalance(
 pub fn get_target_liq_utilization_rate(
     std_accounts: &SolautoStandardAccounts,
     obligation_position: &LendingProtocolObligationPosition,
-    target_liq_utilization_rate_bps: Option<u16>
+    rebalance_args: &RebalanceArgs
 ) -> Result<u16, SolautoError> {
     let current_liq_utilization_rate_bps = obligation_position.current_utilization_rate_bps();
-    let result: Result<u16, SolautoError> = if target_liq_utilization_rate_bps.is_none() {
+    let result: Result<u16, SolautoError> = if
+        rebalance_args.target_liq_utilization_rate_bps.is_none()
+    {
         let setting_params = &std_accounts.solauto_position.as_ref().unwrap().data.setting_params;
         if current_liq_utilization_rate_bps > setting_params.repay_from_bps {
-            Ok(setting_params.repay_to_bps)
+            let maximum_repay_to_bps = get_maximum_repay_to_bps_param(
+                obligation_position.max_ltv,
+                obligation_position.liq_threshold,
+                rebalance_args.max_price_slippage_bps
+            );
+            Ok(min(setting_params.repay_to_bps, maximum_repay_to_bps))
         } else if current_liq_utilization_rate_bps < setting_params.boost_from_bps {
             Ok(setting_params.boost_from_bps)
         } else {
             return Err(SolautoError::InvalidRebalanceCondition.into());
         }
     } else {
-        Ok(target_liq_utilization_rate_bps.unwrap())
+        Ok(rebalance_args.target_liq_utilization_rate_bps.unwrap())
     };
 
     let target_rate_bps = result.unwrap();

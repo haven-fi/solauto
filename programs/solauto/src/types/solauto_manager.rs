@@ -1,17 +1,17 @@
-use std::ops::{Div, Mul};
+use std::ops::{ Div, Mul };
 
-use solana_program::{entrypoint::ProgramResult, msg, program_error::ProgramError};
+use solana_program::{ entrypoint::ProgramResult, msg, program_error::ProgramError };
 
 use crate::{
     constants::SOLAUTO_BOOST_FEE_BPS,
-    utils::math_utils::{calculate_debt_adjustment_usd, to_base_unit},
+    utils::math_utils::{ calculate_debt_adjustment_usd, to_base_unit },
 };
 
 use super::{
-    instruction::{SolautoAction, SolautoStandardAccounts, WithdrawParams},
+    instruction::{ SolautoAction, SolautoStandardAccounts, WithdrawParams },
     lending_protocol::LendingProtocolClient,
     obligation_position::LendingProtocolObligationPosition,
-    shared::{DeserializedAccount, Position, SolautoError, SolautoRebalanceStep},
+    shared::{ DeserializedAccount, Position, SolautoError, SolautoRebalanceStep },
 };
 
 // pub struct SolautoManagerAccounts<'a> {
@@ -29,7 +29,7 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
     pub fn from(
         client: &'b dyn LendingProtocolClient<'a>,
         obligation_position: &'b mut LendingProtocolObligationPosition,
-        std_accounts: SolautoStandardAccounts<'a>,
+        std_accounts: SolautoStandardAccounts<'a>
     ) -> Result<Self, ProgramError> {
         client.validate(&std_accounts)?;
         Ok(Self {
@@ -50,15 +50,23 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
             SolautoAction::Repay(base_unit_amount) => {
                 self.repay(base_unit_amount)?;
             }
-            SolautoAction::Withdraw(params) => match params {
-                WithdrawParams::All => {
-                    self.withdraw(self.obligation_position.net_worth_base_amount())?
+            SolautoAction::Withdraw(params) =>
+                match params {
+                    WithdrawParams::All => {
+                        self.withdraw(self.obligation_position.net_worth_base_amount())?;
+                    }
+                    WithdrawParams::Partial(base_unit_amount) => self.withdraw(base_unit_amount)?,
                 }
-                WithdrawParams::Partial(base_unit_amount) => self.withdraw(base_unit_amount)?,
-            },
         }
 
-        if self.obligation_position.current_liq_utilization_rate_bps() > 10000 {
+        if !self.std_accounts.solauto_position.is_none() {
+            let repay_from_bps = self.std_accounts.solauto_position
+                .as_ref()
+                .unwrap().data.setting_params.repay_from_bps;
+            if self.obligation_position.current_liq_utilization_rate_bps() > repay_from_bps {
+                return Err(SolautoError::ExceededValidUtilizationRate.into());
+            }
+        } else if self.obligation_position.current_liq_utilization_rate_bps() > 9500 {
             return Err(SolautoError::ExceededValidUtilizationRate.into());
         }
 
@@ -67,29 +75,29 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
 
     fn deposit(&mut self, base_unit_amount: u64) -> ProgramResult {
         self.client.deposit(base_unit_amount, &self.std_accounts)?;
-        self.obligation_position
-            .supply_lent_update(base_unit_amount as i64)
+        self.obligation_position.supply_lent_update(base_unit_amount as i64)
     }
 
     fn borrow(&mut self, base_unit_amount: u64) -> ProgramResult {
         self.client.borrow(base_unit_amount, &self.std_accounts)?;
-        self.obligation_position
-            .debt_borrowed_update(base_unit_amount as i64)
+        self.obligation_position.debt_borrowed_update(base_unit_amount as i64)
     }
 
     fn withdraw(&mut self, base_unit_amount: u64) -> ProgramResult {
         self.client.withdraw(base_unit_amount, &self.std_accounts)?;
-        self.obligation_position
-            .supply_lent_update((base_unit_amount as i64) * -1)
+        self.obligation_position.supply_lent_update((base_unit_amount as i64) * -1)
     }
 
     fn repay(&mut self, base_unit_amount: u64) -> ProgramResult {
         self.client.repay(base_unit_amount, &self.std_accounts)?;
-        self.obligation_position
-            .debt_borrowed_update((base_unit_amount as i64) * -1)
+        self.obligation_position.debt_borrowed_update((base_unit_amount as i64) * -1)
     }
 
-    pub fn rebalance(&mut self, target_liq_utilization_rate_bops: u16, rebalance_step: SolautoRebalanceStep) -> ProgramResult {
+    pub fn rebalance(
+        &mut self,
+        target_liq_utilization_rate_bops: u16,
+        rebalance_step: SolautoRebalanceStep
+    ) -> ProgramResult {
         // TODO
         Ok(())
     }
@@ -155,7 +163,7 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
 
     pub fn refresh_position(
         obligation_position: &LendingProtocolObligationPosition,
-        solauto_position: &mut Option<DeserializedAccount<Position>>,
+        solauto_position: &mut Option<DeserializedAccount<Position>>
     ) {
         if solauto_position.is_none() {
             return;
@@ -170,22 +178,12 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
         position.data.general_data.liq_utilization_rate_bps =
             obligation_position.current_liq_utilization_rate_bps();
         position.data.general_data.base_amount_supplied = if !obligation_position.supply.is_none() {
-            obligation_position
-                .supply
-                .as_ref()
-                .unwrap()
-                .amount_used
-                .base_unit
+            obligation_position.supply.as_ref().unwrap().amount_used.base_unit
         } else {
             0
         };
         position.data.general_data.base_amount_supplied = if !obligation_position.debt.is_none() {
-            obligation_position
-                .debt
-                .as_ref()
-                .unwrap()
-                .amount_used
-                .base_unit
+            obligation_position.debt.as_ref().unwrap().amount_used.base_unit
         } else {
             0
         };

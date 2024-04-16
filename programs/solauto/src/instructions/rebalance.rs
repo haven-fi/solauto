@@ -1,19 +1,18 @@
-use solana_program::{
-    account_info::AccountInfo, entrypoint::ProgramResult, instruction::{get_stack_height, Instruction, TRANSACTION_LEVEL_STACK_HEIGHT}, msg, program_error::ProgramError, pubkey::Pubkey, sysvar::instructions::{load_current_index_checked, load_instruction_at_checked}
-};
+use solana_program::entrypoint::ProgramResult;
 
 use crate::{
-    clients::{ marginfi::MarginfiClient, solend::SolendClient }, constants::{JUP_PROGRAM, MARGINFI_PROGRAM, SOLAUTO_REBALANCER}, types::{
+    clients::{ marginfi::MarginfiClient, solend::SolendClient },
+    types::{
         instruction::{
             accounts::{ Context, MarginfiRebalanceAccounts, SolendRebalanceAccounts },
             RebalanceArgs,
-            SolautoStandardAccounts, SOLAUTO_REBALANCE_IX_DISCRIMINATORS,
+            SolautoStandardAccounts,
         },
         lending_protocol::LendingProtocolClient,
         obligation_position::LendingProtocolObligationPosition,
-        shared::{ SolautoError, SolautoRebalanceStep },
         solauto_manager::SolautoManager,
-    }, utils::{ ix_utils, solana_utils::get_anchor_ix_discriminator, solauto_utils }
+    },
+    utils::{ ix_utils, solauto_utils },
 };
 
 pub fn marginfi_rebalance<'a, 'b>(
@@ -57,10 +56,7 @@ fn rebalance<'a, T: LendingProtocolClient<'a>>(
     mut obligation_position: LendingProtocolObligationPosition,
     args: RebalanceArgs
 ) -> ProgramResult {
-    let solauto_rebalance_step = solauto_utils::get_rebalance_step(
-        &std_accounts,
-        &args
-    )?;
+    let solauto_rebalance_step = solauto_utils::get_rebalance_step(&std_accounts, &args)?;
 
     let target_liq_utilization_rate_bps = solauto_utils::should_proceed_with_rebalance(
         &std_accounts,
