@@ -1,12 +1,7 @@
 use std::ops::{ Div, Mul };
-
 use solana_program::{ entrypoint::ProgramResult, msg, program_error::ProgramError };
 
-use crate::{
-    constants::SOLAUTO_BOOST_FEE_BPS,
-    utils::math_utils::{ calculate_debt_adjustment_usd, to_base_unit },
-};
-
+use crate::utils::{ math_utils::calculate_debt_adjustment_usd, solauto_utils::SolautoFeesBps };
 use super::{
     instruction::{ SolautoAction, SolautoStandardAccounts, WithdrawParams },
     lending_protocol::LendingProtocolClient,
@@ -23,6 +18,7 @@ pub struct SolautoManager<'a, 'b> {
     pub client: &'b dyn LendingProtocolClient<'a>,
     pub obligation_position: &'b mut LendingProtocolObligationPosition,
     pub std_accounts: SolautoStandardAccounts<'a>,
+    pub solauto_fees_bps: SolautoFeesBps,
 }
 
 impl<'a, 'b> SolautoManager<'a, 'b> {
@@ -32,10 +28,12 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
         std_accounts: SolautoStandardAccounts<'a>
     ) -> Result<Self, ProgramError> {
         client.validate(&std_accounts)?;
+        let solauto_fees_bps = SolautoFeesBps::from(!&std_accounts.referred_by_ta.is_none());
         Ok(Self {
             client,
             obligation_position,
             std_accounts,
+            solauto_fees_bps,
         })
     }
 
@@ -95,10 +93,49 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
 
     pub fn rebalance(
         &mut self,
-        target_liq_utilization_rate_bops: u16,
+        target_liq_utilization_rate_bps: u16,
+        max_price_slippage_bps: u16,
         rebalance_step: SolautoRebalanceStep
     ) -> ProgramResult {
-        // TODO
+        if
+            rebalance_step == SolautoRebalanceStep::StartSolautoRebalanceSandwich ||
+            rebalance_step == SolautoRebalanceStep::StartMarginfiFlashLoanSandwich
+        {
+            let current_utilization_rate_bps =
+                self.obligation_position.current_utilization_rate_bps();
+            let flash_loan_fee_bps = if
+                rebalance_step == SolautoRebalanceStep::FinishStandardFlashLoanSandwich
+            {
+                // TODO
+                0
+            } else {
+                0
+            };
+            let adjustment_fee_bps = if
+                current_utilization_rate_bps < target_liq_utilization_rate_bps
+            {
+                self.solauto_fees_bps.total + flash_loan_fee_bps
+            } else {
+                flash_loan_fee_bps
+            };
+
+            let debt_adjustment_usd = calculate_debt_adjustment_usd(
+                self.obligation_position.liq_threshold,
+                self.obligation_position.supply.as_ref().unwrap().amount_used.usd_value as f64,
+                self.obligation_position.debt.as_ref().unwrap().amount_used.usd_value as f64,
+                target_liq_utilization_rate_bps,
+                Some(adjustment_fee_bps)
+            );
+        } else if
+            rebalance_step == SolautoRebalanceStep::FinishSolautoRebalanceSandwich ||
+            rebalance_step == SolautoRebalanceStep::FinishMarginfiFlashLoanSandwich
+        {
+        } else {
+            // TODO
+            msg!("Rebalance currently unsupported for this");
+            return Err(SolautoError::InvalidRebalanceCondition.into());
+        }
+
         Ok(())
     }
 
@@ -161,6 +198,12 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
     //     Ok(())
     // }
 
+    fn payout_fees(&self) -> ProgramResult {
+        // swap solauto_fee = solauto_fee_value_usd * debt_market_price to the fee_receiver_token
+        // send solauto fee to solauto fee receiver address
+        Ok(())
+    }
+
     pub fn refresh_position(
         obligation_position: &LendingProtocolObligationPosition,
         solauto_position: &mut Option<DeserializedAccount<Position>>
@@ -187,12 +230,5 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
         } else {
             0
         };
-    }
-
-    fn payout_solauto_fee(&self) -> ProgramResult {
-        // TODO create setting to manage the token in which to receive fees
-        // swap solauto_fee = solauto_fee_value_usd * debt_market_price to the fee_receiver_token
-        // send solauto fee to solauto fee receiver address
-        Ok(())
     }
 }

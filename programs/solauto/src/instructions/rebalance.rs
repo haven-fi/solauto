@@ -64,13 +64,18 @@ fn rebalance<'a, T: LendingProtocolClient<'a>>(
         &args,
         &solauto_rebalance_step
     )?;
+    let max_price_slippage_bps = if !args.max_price_slippage_bps.is_none() {
+        args.max_price_slippage_bps.unwrap()
+    } else {
+        300
+    };
 
     let mut solauto_manager = SolautoManager::from(
         &client,
         &mut obligation_position,
         std_accounts
     )?;
-    solauto_manager.rebalance(target_liq_utilization_rate_bps, solauto_rebalance_step)?;
+    solauto_manager.rebalance(target_liq_utilization_rate_bps, max_price_slippage_bps, solauto_rebalance_step)?;
 
     SolautoManager::refresh_position(
         &solauto_manager.obligation_position,

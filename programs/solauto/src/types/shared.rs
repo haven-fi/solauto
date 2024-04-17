@@ -92,7 +92,7 @@ pub enum SolautoRebalanceStep {
     FinishSolautoRebalanceSandwich,
     StartMarginfiFlashLoanSandwich,
     FinishMarginfiFlashLoanSandwich,
-    FinishSolendFlashLoanSandwich
+    FinishStandardFlashLoanSandwich
 }
 
 #[derive(Clone)]

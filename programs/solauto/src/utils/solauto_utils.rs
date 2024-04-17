@@ -1,4 +1,4 @@
-use std::cmp::min;
+use std::{cmp::min, collections::HashMap};
 use solana_program::{
     instruction::{ get_stack_height, Instruction, TRANSACTION_LEVEL_STACK_HEIGHT },
     msg,
@@ -211,7 +211,7 @@ pub fn should_proceed_with_rebalance(
     let first_or_only_rebalance_ix =
         rebalance_step == &SolautoRebalanceStep::StartSolautoRebalanceSandwich ||
         rebalance_step == &SolautoRebalanceStep::StartMarginfiFlashLoanSandwich ||
-        rebalance_step == &SolautoRebalanceStep::FinishSolendFlashLoanSandwich;
+        rebalance_step == &SolautoRebalanceStep::FinishStandardFlashLoanSandwich;
 
     let current_liq_utilization_rate_bps = if first_or_only_rebalance_ix {
         obligation_position.current_utilization_rate_bps()
@@ -294,7 +294,7 @@ pub fn get_rebalance_step(
     // -
     // IF MARGINFI:
     // start flash loan
-    // solauto rebalance - borrow debt token
+    // solauto rebalance - borrow debt token worth debt_adjustment_usd
     // jup swap - swap debt token to supply token
     // solauto rebalance - supply debt token
     // end flash loan
@@ -314,7 +314,7 @@ pub fn get_rebalance_step(
     // -
     // IF MARGINFI:
     // start flash loan
-    // solauto rebalance - withdraw supply token
+    // solauto rebalance - withdraw supply token worth debt_adjustment_usd
     // jup swap - swap supply token to debt token
     // solauto rebalance - repay debt token
     // end flash loan
@@ -449,7 +449,6 @@ struct InstructionChecker {
     program_id: Pubkey,
     ix_discriminators: Option<Vec<u64>>,
 }
-
 impl InstructionChecker {
     pub fn from(program_id: Pubkey, ix_discriminators: Option<Vec<u64>>) -> Self {
         Self {
@@ -493,5 +492,30 @@ impl InstructionChecker {
         }
 
         false
+    }
+}
+
+pub struct SolautoFeesBps {
+    pub founders: u16,
+    pub referrer: u16,
+    pub rewards_fund: u16,
+    pub total: u16,
+}
+impl SolautoFeesBps {
+    pub fn from(has_been_referred: bool) -> Self {
+        let founders = 15;
+        let referrer = if has_been_referred {
+            15
+        } else {
+            0
+        };
+        let rewards_fund = 70 - referrer;
+    
+        Self {
+            founders,
+            referrer,
+            rewards_fund,
+            total: founders + referrer + rewards_fund
+        }
     }
 }

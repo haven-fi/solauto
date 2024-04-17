@@ -47,5 +47,3 @@ pub const WSOL_MINT: Pubkey = Pubkey::new_from_array([
 pub const SOLAUTO_ADMIN_SETTINGS_ACCOUNT_SEEDS: &[u8] = b"settings";
 
 pub const USD_DECIMALS: u32 = 6;
-
-pub const SOLAUTO_BOOST_FEE_BPS: u16 = 85; // 0.85%
