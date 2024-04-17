@@ -12,7 +12,7 @@ use crate::{
             SolautoAction,
             SolautoStandardAccounts,
         },
-        lending_protocol::{ LendingProtocolClient, LendingProtocolTokenAccounts },
+        lending_protocol::LendingProtocolClient,
         obligation_position::LendingProtocolObligationPosition,
         solauto_manager::{ SolautoManager, SolautoManagerAccounts },
     },

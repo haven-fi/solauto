@@ -7,10 +7,9 @@ use solana_program::{
     sysvar::instructions::ID as ixs_sysvar_id,
 };
 use spl_associated_token_account::get_associated_token_address;
-use std::ops::{ Div, Mul };
 
 use crate::{
-    constants::WSOL_MINT,
+    constants::SOLAUTO_FEES_RECEIVER_WALLET,
     types::{
         instruction::{
             accounts::{
@@ -25,20 +24,13 @@ use crate::{
             DeserializedAccount,
             LendingPlatform,
             Position,
-            SolautoAdminSettings,
             SolautoError,
             SolautoSettingsParameters,
         },
     },
 };
 
-use crate::constants::{
-    KAMINO_PROGRAM,
-    MARGINFI_PROGRAM,
-    SOLAUTO_ADMIN,
-    SOLAUTO_ADMIN_SETTINGS_ACCOUNT_SEEDS,
-    SOLEND_PROGRAM,
-};
+use crate::constants::{ KAMINO_PROGRAM, MARGINFI_PROGRAM, SOLAUTO_ADMIN, SOLEND_PROGRAM };
 
 use super::{ math_utils::get_maximum_repay_to_bps_param, solauto_utils::get_owner };
 
@@ -50,14 +42,19 @@ pub fn generic_instruction_validation(
 ) -> ProgramResult {
     validate_signer(accounts.signer, &accounts.solauto_position, authority_only_ix)?;
     validate_program_account(accounts.lending_protocol, lending_platform)?;
-    if !accounts.solauto_admin_settings.is_none() && !accounts.solauto_fees_receiver_ta.is_none() {
-        validate_fees_receiver(
-            accounts.solauto_admin_settings.unwrap(),
-            accounts.solauto_fees_receiver_ta.unwrap()
-        )?;
-    }
     if !supply_token_mint.is_none() {
         validate_referral_accounts(accounts, supply_token_mint.unwrap())?;
+
+        if
+            !accounts.solauto_fees_receiver_ta.is_none() &&
+            accounts.solauto_fees_receiver_ta.unwrap().key !=
+                &get_associated_token_address(
+                    &SOLAUTO_FEES_RECEIVER_WALLET,
+                    supply_token_mint.unwrap().key
+                )
+        {
+            return Err(SolautoError::IncorrectFeesReceiverAccount.into());
+        }
     }
 
     if !accounts.ixs_sysvar.is_none() && accounts.ixs_sysvar.unwrap().key != &ixs_sysvar_id {
@@ -65,6 +62,7 @@ pub fn generic_instruction_validation(
         return Err(ProgramError::InvalidAccountData.into());
     }
     // We don't need to check other standard variables as shank handles system_program, token_program, ata_program, & rent
+
     // TODO verify this with a test by providing a different account in place of rent account
 
     Ok(())
@@ -194,32 +192,6 @@ pub fn validate_program_account(
     }
     // We don't need to check more than this, as lending protocols have their own account checks and will fail during CPI if there is an issue with the provided accounts
     Ok(())
-}
-
-pub fn validate_fees_receiver<'a>(
-    solauto_admin_settings: &'a AccountInfo<'a>,
-    fee_receiver_ata: &'a AccountInfo<'a>
-) -> ProgramResult {
-    let seeds = &[SOLAUTO_ADMIN_SETTINGS_ACCOUNT_SEEDS];
-    let (pda, _bump) = Pubkey::find_program_address(seeds, &crate::ID);
-    if &pda != solauto_admin_settings.key {
-        return Err(SolautoError::IncorrectSolautoSettingsAccount.into());
-    }
-
-    let solauto_admin_settings = DeserializedAccount::<SolautoAdminSettings>
-        ::deserialize(Some(solauto_admin_settings))?
-        .unwrap();
-
-    let associated_token_account = get_associated_token_address(
-        &solauto_admin_settings.data.fees_wallet,
-        &solauto_admin_settings.data.fees_token_mint
-    );
-
-    if &associated_token_account != fee_receiver_ata.key {
-        Err(SolautoError::IncorrectFeesReceiverAccount.into())
-    } else {
-        Ok(())
-    }
 }
 
 pub fn require_accounts(accounts: &[Option<&AccountInfo>]) -> ProgramResult {

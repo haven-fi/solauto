@@ -1,23 +1,13 @@
-use borsh::{BorshDeserialize, BorshSerialize};
-use shank::{ShankContext, ShankInstruction};
-use solana_program::{account_info::AccountInfo, pubkey::Pubkey};
+use borsh::{ BorshDeserialize, BorshSerialize };
+use shank::{ ShankContext, ShankInstruction };
+use solana_program::{ account_info::AccountInfo, pubkey::Pubkey };
 
 use super::shared::*;
 
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankContext, ShankInstruction)]
 #[rustfmt::skip]
 pub enum Instruction {
-    /// Update Solauto admin settings (i.e. fees token mint)
-    #[account(signer, name = "solauto_admin")]
-    #[account(name = "system_program")]
-    #[account(name = "token_program")]
-    #[account(name = "rent")]
-    #[account(mut, name = "solauto_admin_settings")]
-    #[account(name = "solauto_fees_wallet")]
-    #[account(mut, name = "solauto_fees_receiver_ta")]
-    #[account(name = "solauto_fees_mint")]
-    UpdateSolautoAdminSettings,
-
+    /// Claim the accumulated fees from referrals
     #[account(signer, mut, name = "signer")]
     #[account(name = "system_program")]
     #[account(name = "token_program")]
@@ -27,8 +17,6 @@ pub enum Instruction {
     #[account(mut, name = "referral_fees_mint")]
     ClaimReferralFees,
 
-    // TODO add solauto fees token account to open position instruction
-
     /// Open a new Solauto position with Marginfi
     #[account(signer, mut, name = "signer")]
     #[account(name = "marginfi_program")]
@@ -36,6 +24,8 @@ pub enum Instruction {
     #[account(name = "token_program")]
     #[account(name = "ata_program")]
     #[account(name = "rent")]
+    #[account(name = "solauto_fees_receiver")]
+    #[account(name = "solauto_fees_receiver_ta")]
     #[account(mut, name = "signer_referral_state")]
     #[account(mut, name = "referral_fees_mint")]
     #[account(mut, name = "signer_referral_dest_ta")]
@@ -47,9 +37,9 @@ pub enum Instruction {
     #[account(name = "marginfi_group")]
     #[account(mut, name = "marginfi_account")]
     #[account(mut, name = "supply_ta")]
-    #[account(name = "supply_token_mint")]
+    #[account(name = "supply_mint")]
     #[account(mut, name = "debt_ta")]
-    #[account(name = "debt_token_mint")]
+    #[account(name = "debt_mint")]
     MarginfiOpenPosition(Option<PositionData>),
 
     /// Open a new Solauto position with Solend
@@ -59,6 +49,8 @@ pub enum Instruction {
     #[account(name = "token_program")]
     #[account(name = "ata_program")]
     #[account(name = "rent")]
+    #[account(name = "solauto_fees_receiver")]
+    #[account(name = "solauto_fees_receiver_ta")]
     #[account(mut, name = "signer_referral_state")]
     #[account(mut, name = "referral_fees_mint")]
     #[account(mut, name = "signer_referral_dest_ta")]
@@ -165,7 +157,6 @@ pub enum Instruction {
     #[account(name = "ata_program")]
     #[account(name = "rent")]
     #[account(name = "ixs_sysvar")]
-    #[account(name = "solauto_admin_settings")]
     #[account(mut, name = "solauto_fees_receiver_ta")]
     #[account(name = "authority_referral_state")]
     #[account(optional, name = "referred_by_state")]
@@ -190,7 +181,6 @@ pub enum Instruction {
     #[account(name = "clock")]
     #[account(name = "rent")]
     #[account(name = "ixs_sysvar")]
-    #[account(name = "solauto_admin_settings")]
     #[account(mut, name = "solauto_fees_receiver_ta")]
     #[account(name = "authority_referral_state")]
     #[account(optional, name = "referred_by_state")]
@@ -216,7 +206,7 @@ pub enum Instruction {
     SolendRebalance(RebalanceArgs),
 }
 
-pub const SOLAUTO_REBALANCE_IX_DISCRIMINATORS: [u64; 2] = [10, 11];
+pub const SOLAUTO_REBALANCE_IX_DISCRIMINATORS: [u64; 2] = [9, 10];
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug)]
 pub struct PositionData {
@@ -269,7 +259,6 @@ pub struct SolautoStandardAccounts<'a> {
     pub ata_program: &'a AccountInfo<'a>,
     pub rent: &'a AccountInfo<'a>,
     pub ixs_sysvar: Option<&'a AccountInfo<'a>>,
-    pub solauto_admin_settings: Option<&'a AccountInfo<'a>>,
     pub solauto_fees_receiver_ta: Option<&'a AccountInfo<'a>>,
     pub solauto_position: Option<DeserializedAccount<'a, Position>>,
     pub authority_referral_state: Option<DeserializedAccount<'a, RefferalState>>,

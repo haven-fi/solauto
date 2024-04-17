@@ -28,9 +28,9 @@ pub fn marginfi_open_position<'a>(
         ctx.accounts.rent,
         ctx.accounts.signer,
         ctx.accounts.supply_ta,
-        ctx.accounts.supply_token_mint,
+        ctx.accounts.supply_mint,
         ctx.accounts.debt_ta,
-        ctx.accounts.debt_token_mint,
+        ctx.accounts.debt_mint,
     )?;
 
     let marginfi_account_seeds = if !solauto_position.is_none() {

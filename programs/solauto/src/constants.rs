@@ -24,16 +24,21 @@ pub const JUP_PROGRAM: Pubkey = Pubkey::new_from_array([
     163, 244, 142, 81, 2, 177, 205, 162, 86, 188, 19, 143,
 ]);
 
-// TODO
-// AprYCPiVeKMCgjQ2ZufwChMzvQ5kFjJo2ekTLSkXsQDm
+// AprYCPiVeKMCgjQ2ZufwChMzvQ5kFjJo2ekTLSkXsQDm (TODO)
 pub const SOLAUTO_ADMIN: Pubkey = Pubkey::new_from_array([
     145, 251, 126, 53, 245, 169, 146, 209, 147, 243, 95, 78, 165, 119, 126, 212, 48, 177, 204, 152,
     35, 228, 216, 122, 54, 147, 76, 46, 180, 66, 110, 112,
 ]);
 
-// TODO
-// AprYCPiVeKMCgjQ2ZufwChMzvQ5kFjJo2ekTLSkXsQDm
+// AprYCPiVeKMCgjQ2ZufwChMzvQ5kFjJo2ekTLSkXsQDm (TODO)
 pub const SOLAUTO_REBALANCER: Pubkey = Pubkey::new_from_array([
+    145, 251, 126, 53, 245, 169, 146, 209, 147, 243, 95, 78, 165, 119, 126, 212, 48, 177, 204, 152,
+    35, 228, 216, 122, 54, 147, 76, 46, 180, 66, 110, 112,
+]);
+
+// The Solauto fees receiver pubkey (NOT A TOKEN ACCOUNT)
+// AprYCPiVeKMCgjQ2ZufwChMzvQ5kFjJo2ekTLSkXsQDm (TODO)
+pub const SOLAUTO_FEES_RECEIVER_WALLET: Pubkey = Pubkey::new_from_array([
     145, 251, 126, 53, 245, 169, 146, 209, 147, 243, 95, 78, 165, 119, 126, 212, 48, 177, 204, 152,
     35, 228, 216, 122, 54, 147, 76, 46, 180, 66, 110, 112,
 ]);
@@ -43,8 +48,6 @@ pub const WSOL_MINT: Pubkey = Pubkey::new_from_array([
     6, 155, 136, 87, 254, 171, 129, 132, 251, 104, 127, 99, 70, 24, 192, 53, 218, 196, 57, 220, 26,
     235, 59, 85, 152, 160, 240, 0, 0, 0, 0, 1,
 ]);
-
-pub const SOLAUTO_ADMIN_SETTINGS_ACCOUNT_SEEDS: &[u8] = b"settings";
 
 pub const USD_DECIMALS: u32 = 6;
 

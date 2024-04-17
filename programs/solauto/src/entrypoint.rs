@@ -24,9 +24,6 @@ fn process_instruction<'a>(
 ) -> ProgramResult {
     let instruction = Instruction::try_from_slice(data)?;
     match instruction {
-        Instruction::UpdateSolautoAdminSettings => {
-            process_update_solauto_admin_settings_instruction(accounts)
-        }
         Instruction::ClaimReferralFees => process_claim_referral_fees(accounts),
 
         Instruction::MarginfiOpenPosition(args) => {

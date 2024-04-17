@@ -1,6 +1,7 @@
 use solana_program::{ account_info::AccountInfo, entrypoint::ProgramResult };
 
 use crate::{
+    constants::SOLAUTO_FEES_RECEIVER_WALLET,
     instructions::{ open_position, protocol_interaction, rebalance, refresh },
     types::{
         instruction::{
@@ -15,7 +16,7 @@ use crate::{
             SolautoAction,
             SolautoStandardAccounts,
         },
-        shared::{ DeserializedAccount, LendingPlatform, Position, RefferalState },
+        shared::{ DeserializedAccount, LendingPlatform, Position, RefferalState, SolautoError },
     },
     utils::*,
 };
@@ -32,6 +33,19 @@ pub fn process_marginfi_open_position_instruction<'a>(
         ctx.accounts.solauto_position,
         position_data,
         LendingPlatform::Marginfi
+    )?;
+
+    if ctx.accounts.solauto_fees_receiver.key != &SOLAUTO_FEES_RECEIVER_WALLET {
+        return Err(SolautoError::IncorrectFeesReceiverAccount.into());
+    }
+    init_ata_if_needed(
+        ctx.accounts.token_program,
+        ctx.accounts.system_program,
+        ctx.accounts.rent,
+        ctx.accounts.signer,
+        ctx.accounts.solauto_fees_receiver,
+        ctx.accounts.solauto_fees_receiver_ta,
+        ctx.accounts.supply_mint
     )?;
 
     let authority_referral_state = solauto_utils::get_or_create_referral_state(
@@ -81,8 +95,7 @@ pub fn process_marginfi_open_position_instruction<'a>(
         rent: ctx.accounts.rent,
         ixs_sysvar: None,
         solauto_position,
-        solauto_admin_settings: None,
-        solauto_fees_receiver_ta: None,
+        solauto_fees_receiver_ta: Some(ctx.accounts.solauto_fees_receiver_ta),
         authority_referral_state: Some(authority_referral_state),
         referred_by_state: ctx.accounts.referred_by_state,
         referred_by_ta: ctx.accounts.referred_by_ta,
@@ -91,7 +104,7 @@ pub fn process_marginfi_open_position_instruction<'a>(
         &std_accounts,
         true,
         LendingPlatform::Marginfi,
-        Some(ctx.accounts.supply_token_mint)
+        Some(ctx.accounts.supply_mint)
     )?;
 
     open_position::marginfi_open_position(ctx, std_accounts.solauto_position)
@@ -127,7 +140,6 @@ pub fn process_marginfi_interaction_instruction<'a>(
         rent: ctx.accounts.rent,
         ixs_sysvar: None,
         solauto_position,
-        solauto_admin_settings: None,
         solauto_fees_receiver_ta: None,
         authority_referral_state: None,
         referred_by_state: None,
@@ -162,7 +174,6 @@ pub fn process_marginfi_rebalance<'a>(
         rent: ctx.accounts.rent,
         ixs_sysvar: Some(ctx.accounts.ixs_sysvar),
         solauto_position,
-        solauto_admin_settings: Some(ctx.accounts.solauto_admin_settings),
         solauto_fees_receiver_ta: Some(ctx.accounts.solauto_fees_receiver_ta),
         authority_referral_state: DeserializedAccount::<RefferalState>::deserialize(
             Some(ctx.accounts.authority_referral_state)
