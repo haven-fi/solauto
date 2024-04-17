@@ -9,7 +9,7 @@ use solana_program::{
 use spl_associated_token_account::get_associated_token_address;
 
 use crate::{
-    constants::SOLAUTO_FEES_RECEIVER_WALLET,
+    constants::{SOLAUTO_FEES_RECEIVER_WALLET, SOLAUTO_REBALANCER},
     types::{
         instruction::{
             accounts::{
@@ -99,7 +99,10 @@ pub fn validate_signer(
         }
     }
 
-    // TODO NEXT Make sure the signer is the SOLAUTO_REBALANCER because we can't prevent user from plugging in a withdraw on the swap
+    if signer.key != &position_authority && signer.key != &SOLAUTO_REBALANCER {
+        msg!("Rebalance instruction can only be done by the position authority or Solauto rebalancer");
+        return Err(ProgramError::MissingRequiredSignature.into());
+    }
 
     Ok(())
 }
