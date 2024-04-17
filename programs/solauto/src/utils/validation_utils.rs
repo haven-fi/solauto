@@ -9,23 +9,26 @@ use solana_program::{
 use spl_associated_token_account::get_associated_token_address;
 use std::ops::{ Div, Mul };
 
-use crate::types::{
-    instruction::{
-        accounts::{
-            Context,
-            MarginfiProtocolInteractionAccounts,
-            SolendProtocolInteractionAccounts,
+use crate::{
+    constants::WSOL_MINT,
+    types::{
+        instruction::{
+            accounts::{
+                Context,
+                MarginfiProtocolInteractionAccounts,
+                SolendProtocolInteractionAccounts,
+            },
+            SolautoAction,
+            SolautoStandardAccounts,
         },
-        SolautoAction,
-        SolautoStandardAccounts,
-    },
-    shared::{
-        DeserializedAccount,
-        LendingPlatform,
-        Position,
-        SolautoAdminSettings,
-        SolautoError,
-        SolautoSettingsParameters,
+        shared::{
+            DeserializedAccount,
+            LendingPlatform,
+            Position,
+            SolautoAdminSettings,
+            SolautoError,
+            SolautoSettingsParameters,
+        },
     },
 };
 
@@ -37,12 +40,13 @@ use crate::constants::{
     SOLEND_PROGRAM,
 };
 
-use super::{math_utils::get_maximum_repay_to_bps_param, solauto_utils::get_owner};
+use super::{ math_utils::get_maximum_repay_to_bps_param, solauto_utils::get_owner };
 
 pub fn generic_instruction_validation(
     accounts: &SolautoStandardAccounts,
     authority_only_ix: bool,
-    lending_platform: LendingPlatform
+    lending_platform: LendingPlatform,
+    supply_token_mint: Option<&AccountInfo>
 ) -> ProgramResult {
     validate_signer(accounts.signer, &accounts.solauto_position, authority_only_ix)?;
     validate_program_account(accounts.lending_protocol, lending_platform)?;
@@ -52,7 +56,9 @@ pub fn generic_instruction_validation(
             accounts.solauto_fees_receiver_ta.unwrap()
         )?;
     }
-    validate_referral_accounts(accounts)?;
+    if !supply_token_mint.is_none() {
+        validate_referral_accounts(accounts, supply_token_mint.unwrap())?;
+    }
 
     if !accounts.ixs_sysvar.is_none() && accounts.ixs_sysvar.unwrap().key != &ixs_sysvar_id {
         msg!("Incorrect ixs sysvar account provided");
@@ -161,7 +167,6 @@ pub fn validate_position_settings(
 
     Ok(())
 }
-
 
 pub fn validate_program_account(
     program: &AccountInfo,
@@ -319,7 +324,10 @@ pub fn validate_solend_protocol_interaction_ix(
     Ok(())
 }
 
-pub fn validate_referral_accounts(std_accounts: &SolautoStandardAccounts) -> ProgramResult {
+pub fn validate_referral_accounts(
+    std_accounts: &SolautoStandardAccounts,
+    supply_token_mint: &AccountInfo
+) -> ProgramResult {
     if std_accounts.authority_referral_state.is_none() {
         return Ok(());
     }
@@ -330,7 +338,7 @@ pub fn validate_referral_accounts(std_accounts: &SolautoStandardAccounts) -> Pro
         std_accounts.signer.key
     };
 
-    let referral_state_seeds = &[authority.as_ref(), b"referrals"];
+    let referral_state_seeds = &[authority.as_ref(), b"referral_state"];
     let (referral_state_pda, _bump) = Pubkey::find_program_address(
         referral_state_seeds,
         &crate::ID
@@ -343,17 +351,23 @@ pub fn validate_referral_accounts(std_accounts: &SolautoStandardAccounts) -> Pro
         return Err(ProgramError::InvalidAccountData.into());
     }
 
-    let authority_referred_by_ta = std_accounts.authority_referral_state
+    let referred_by_state = std_accounts.authority_referral_state
         .as_ref()
-        .unwrap().data.referred_by_ta;
-    if !authority_referred_by_ta.is_none() && std_accounts.referred_by_ta.is_none() {
-        msg!("Missing referred_by token account when this authority account has been referred");
+        .unwrap().data.referred_by_state;
+
+    if !referred_by_state.is_none() && std_accounts.referred_by_state.is_none() {
+        msg!(
+            "Missing referred_by_state account when the authority referral state has been referred"
+        );
         return Err(ProgramError::InvalidAccountData.into());
     }
-    if &authority_referred_by_ta.unwrap() != std_accounts.referred_by_ta.unwrap().key {
-        msg!(
-            "Provided incorrect referred_by_ta according to the given authority referral position"
-        );
+
+    if
+        std_accounts.referred_by_ta.is_none() ||
+        std_accounts.referred_by_ta.unwrap().key !=
+            &get_associated_token_address(&referred_by_state.unwrap(), supply_token_mint.key)
+    {
+        msg!("Provided incorrect referred_by_ta according to the given authority and token mint");
         return Err(ProgramError::InvalidAccountData.into());
     }
 

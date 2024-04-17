@@ -1,4 +1,4 @@
-use std::{cmp::min, collections::HashMap};
+use std::{ cmp::min, collections::HashMap };
 use solana_program::{
     instruction::{ get_stack_height, Instruction, TRANSACTION_LEVEL_STACK_HEIGHT },
     msg,
@@ -95,9 +95,9 @@ pub fn get_or_create_referral_state<'a>(
     authority: &'a AccountInfo<'a>,
     referral_state: &'a AccountInfo<'a>,
     referral_fees_mint: &'a AccountInfo<'a>,
-    referral_state_ta: &'a AccountInfo<'a>,
+    referral_dest_ta: &'a AccountInfo<'a>,
     referred_by_state: Option<&'a AccountInfo<'a>>,
-    referred_by_ta: Option<&'a AccountInfo<'a>>
+    referred_by_dest_ta: Option<&'a AccountInfo<'a>>
 ) -> Result<DeserializedAccount<'a, RefferalState>, ProgramError> {
     let validate_correct_token_account = |wallet: &AccountInfo, token_account: &AccountInfo| {
         let token_account_pubkey = get_associated_token_address(wallet.key, &WSOL_MINT);
@@ -118,9 +118,9 @@ pub fn get_or_create_referral_state<'a>(
         return Err(ProgramError::InvalidAccountData.into());
     }
 
-    validate_correct_token_account(referral_state, referral_state_ta)?;
-    if !referred_by_state.is_none() && !referred_by_ta.is_none() {
-        validate_correct_token_account(referral_state, referral_state_ta)?;
+    validate_correct_token_account(referral_state, referral_dest_ta)?;
+    if !referred_by_state.is_none() && !referred_by_dest_ta.is_none() {
+        validate_correct_token_account(referral_state, referral_dest_ta)?;
         if referred_by_state.unwrap().owner != &crate::ID {
             msg!("Referred by position account is not owned by Solauto");
             return Err(ProgramError::InvalidAccountData.into());
@@ -132,12 +132,9 @@ pub fn get_or_create_referral_state<'a>(
             DeserializedAccount::<RefferalState>::deserialize(Some(referral_state))?.unwrap()
         );
 
-        if
-            referral_state_account.as_ref().unwrap().data.referred_by_ta.is_none() &&
-            !referred_by_ta.is_none()
-        {
-            referral_state_account.as_mut().unwrap().data.referred_by_ta = Some(
-                referred_by_ta.unwrap().key.clone()
+        if referral_state_account.as_ref().unwrap().data.referred_by_state.is_none() {
+            referral_state_account.as_mut().unwrap().data.referred_by_state = Some(
+                referred_by_dest_ta.unwrap().key.clone()
             );
         }
 
@@ -165,27 +162,27 @@ pub fn get_or_create_referral_state<'a>(
             system_program,
             rent,
             signer,
-            referral_state_ta,
-            referral_state_ta,
+            referral_state,
+            referral_dest_ta,
             referral_fees_mint
         )?;
 
-        if !referred_by_state.is_none() && !referred_by_ta.is_none() {
+        if !referred_by_state.is_none() && !referred_by_dest_ta.is_none() {
             init_ata_if_needed(
                 token_program,
                 system_program,
                 rent,
                 signer,
                 referred_by_state.unwrap(),
-                referred_by_ta.unwrap(),
+                referred_by_dest_ta.unwrap(),
                 referral_fees_mint
             )?;
         }
 
         let data = Box::new(RefferalState {
             authority: authority.key.clone(),
-            referred_by_ta: referred_by_ta.map_or(None, |r| Some(r.key.clone())),
-            fees_ta: referral_state_ta.key.clone(),
+            referred_by_state: referred_by_state.map_or(None, |r| Some(r.key.clone())),
+            dest_fees_ta: referral_dest_ta.key.clone(),
             fees_mint: WSOL_MINT.clone(),
         });
 
@@ -503,19 +500,15 @@ pub struct SolautoFeesBps {
 }
 impl SolautoFeesBps {
     pub fn from(has_been_referred: bool) -> Self {
-        let founders = 15;
-        let referrer = if has_been_referred {
-            15
-        } else {
-            0
-        };
-        let rewards_fund = 70 - referrer;
-    
+        let founders = 20;
+        let referrer = if has_been_referred { 20 } else { 0 };
+        let rewards_fund = 80 - referrer;
+
         Self {
             founders,
             referrer,
             rewards_fund,
-            total: founders + referrer + rewards_fund
+            total: founders + referrer + rewards_fund,
         }
     }
 }

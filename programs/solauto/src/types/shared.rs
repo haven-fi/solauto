@@ -74,9 +74,9 @@ pub const REFERRAL_ACCOUNT_SPACE: usize = 300;
 #[derive(ShankAccount, BorshDeserialize, BorshSerialize, Clone, Debug)]
 pub struct RefferalState {
     pub authority: Pubkey,
-    pub referred_by_ta: Option<Pubkey>,
+    pub referred_by_state: Option<Pubkey>,
     pub fees_mint: Pubkey,
-    pub fees_ta: Pubkey,
+    pub dest_fees_ta: Pubkey,
 }
 
 pub const SOLAUTO_SETTINGS_ACCOUNT_SPACE: usize = 100;

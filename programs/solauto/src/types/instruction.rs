@@ -36,9 +36,10 @@ pub enum Instruction {
     #[account(name = "rent")]
     #[account(mut, name = "signer_referral_state")]
     #[account(mut, name = "referral_fees_mint")]
-    #[account(mut, name = "signer_referral_fees_ta")]
+    #[account(mut, name = "signer_referral_dest_ta")]
     #[account(mut, optional, name = "referred_by_state")]
-    #[account(mut, optional, name = "referred_by_authority")]
+    #[account(optional, name = "referred_by_authority")]
+    #[account(mut, optional, name = "referred_by_dest_ta")]
     #[account(mut, optional, name = "referred_by_ta")]
     #[account(mut, optional, name = "solauto_position")]
     #[account(name = "marginfi_group")]
@@ -58,9 +59,10 @@ pub enum Instruction {
     #[account(name = "rent")]
     #[account(mut, name = "signer_referral_state")]
     #[account(mut, name = "referral_fees_mint")]
-    #[account(mut, name = "signer_referral_fees_ta")]
+    #[account(mut, name = "signer_referral_dest_ta")]
     #[account(mut, optional, name = "referred_by_state")]
-    #[account(mut, optional, name = "referred_by_authority")]
+    #[account(optional, name = "referred_by_authority")]
+    #[account(mut, optional, name = "referred_by_dest_ta")]
     #[account(mut, optional, name = "referred_by_ta")]
     #[account(mut, optional, name = "solauto_position")]
     #[account(name = "lending_market")]
@@ -156,8 +158,10 @@ pub enum Instruction {
     #[account(name = "solauto_admin_settings")]
     #[account(mut, name = "solauto_fees_receiver_ta")]
     #[account(name = "authority_referral_state")]
+    #[account(optional, name = "referred_by_state")]
     #[account(mut, optional, name = "referred_by_ta")]
     #[account(mut, optional, name = "solauto_position")]
+    #[account(name = "supply_mint")]
     // TODO missing accounts
     MarginfiRebalance(RebalanceArgs),
     
@@ -173,6 +177,7 @@ pub enum Instruction {
     #[account(name = "solauto_admin_settings")]
     #[account(mut, name = "solauto_fees_receiver_ta")]
     #[account(name = "authority_referral_state")]
+    #[account(optional, name = "referred_by_state")]
     #[account(mut, optional, name = "referred_by_ta")]
     #[account(mut, optional, name = "solauto_position")]
     #[account(name = "lending_market")]
@@ -250,5 +255,6 @@ pub struct SolautoStandardAccounts<'a> {
     pub solauto_fees_receiver_ta: Option<&'a AccountInfo<'a>>,
     pub solauto_position: Option<DeserializedAccount<'a, Position>>,
     pub authority_referral_state: Option<DeserializedAccount<'a, RefferalState>>,
+    pub referred_by_state: Option<&'a AccountInfo<'a>>,
     pub referred_by_ta: Option<&'a AccountInfo<'a>>,
 }
