@@ -27,6 +27,8 @@ pub enum Instruction {
     #[account(mut, name = "referral_fees_mint")]
     ClaimReferralFees,
 
+    // TODO add solauto fees token account to open position instruction
+
     /// Open a new Solauto position with Marginfi
     #[account(signer, mut, name = "signer")]
     #[account(name = "marginfi_program")]
@@ -161,6 +163,7 @@ pub enum Instruction {
     #[account(optional, name = "referred_by_state")]
     #[account(mut, optional, name = "referred_by_ta")]
     #[account(mut, optional, name = "solauto_position")]
+    #[account(mut, name = "intermediary_ta")]
     #[account(name = "supply_mint")]
     // TODO missing accounts
     MarginfiRebalance(RebalanceArgs),
@@ -180,6 +183,7 @@ pub enum Instruction {
     #[account(optional, name = "referred_by_state")]
     #[account(mut, optional, name = "referred_by_ta")]
     #[account(mut, optional, name = "solauto_position")]
+    #[account(mut, name = "intermediary_ta")]
     #[account(name = "lending_market")]
     #[account(mut, name = "obligation")]
     #[account(mut, name = "supply_reserve")]

@@ -1,7 +1,7 @@
 use std::ops::{ Div, Mul };
 use solana_program::{ entrypoint::ProgramResult, msg, program_error::ProgramError };
 
-use crate::utils::{ math_utils::calculate_debt_adjustment_usd, solauto_utils::SolautoFeesBps };
+use crate::utils::{ math_utils::calculate_debt_adjustment_usd, solana_utils::init_ata_if_needed, solauto_utils::SolautoFeesBps };
 use super::{
     instruction::{ SolautoAction, SolautoStandardAccounts, WithdrawParams },
     lending_protocol::LendingProtocolClient,
@@ -126,6 +126,17 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
                 target_liq_utilization_rate_bps,
                 Some(adjustment_fee_bps)
             );
+
+            // TODO add max_price_slippage_bps to debt_adjustment_usd
+
+            let token_mint = if current_utilization_rate_bps < self.obligation_position.current_liq_utilization_rate_bps() {
+                // TODO debt token mint
+            } else {
+                // TODO supply token mint
+            };
+            // TODO init_ata_if_needed(token_program, system_program, rent_sysvar, payer, wallet, token_account, token_mint)
+
+            // TODO borrow or withdraw to intermediary_ta
         } else if
             rebalance_step == SolautoRebalanceStep::FinishSolautoRebalanceSandwich ||
             rebalance_step == SolautoRebalanceStep::FinishMarginfiFlashLoanSandwich
