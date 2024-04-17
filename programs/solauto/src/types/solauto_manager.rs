@@ -148,11 +148,7 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
             rebalance_step == SolautoRebalanceStep::StartSolautoRebalanceSandwich ||
             rebalance_step == SolautoRebalanceStep::StartMarginfiFlashLoanSandwich
         {
-            self.begin_rebalance(
-                target_liq_utilization_rate_bps,
-                max_price_slippage_bps,
-                rebalance_step
-            )
+            self.begin_rebalance(target_liq_utilization_rate_bps, max_price_slippage_bps)
         } else if
             rebalance_step == SolautoRebalanceStep::FinishSolautoRebalanceSandwich ||
             rebalance_step == SolautoRebalanceStep::FinishMarginfiFlashLoanSandwich
@@ -169,8 +165,7 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
     fn begin_rebalance(
         &mut self,
         target_liq_utilization_rate_bps: u16,
-        max_price_slippage_bps: u16,
-        rebalance_step: SolautoRebalanceStep
+        max_price_slippage_bps: u16
     ) -> ProgramResult {
         let increasing_leverage =
             self.obligation_position.current_liq_utilization_rate_bps() <
