@@ -179,8 +179,11 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
         let flash_loan_fee_bps = if
             rebalance_step == SolautoRebalanceStep::FinishStandardFlashLoanSandwich
         {
-            // TODO
-            0
+            if increasing_leverage {
+                self.obligation_position.debt.as_ref().unwrap().flash_loan_fee_bps
+            } else {
+                self.obligation_position.supply.as_ref().unwrap().flash_loan_fee_bps
+            }
         } else {
             0
         };
