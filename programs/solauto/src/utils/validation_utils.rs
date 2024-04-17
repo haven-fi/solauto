@@ -30,7 +30,7 @@ use crate::{
     },
 };
 
-use crate::constants::{ KAMINO_PROGRAM, MARGINFI_PROGRAM, SOLAUTO_ADMIN, SOLEND_PROGRAM };
+use crate::constants::{ KAMINO_PROGRAM, MARGINFI_PROGRAM, SOLEND_PROGRAM };
 
 use super::{ math_utils::get_maximum_repay_to_bps_param, solauto_utils::get_owner };
 
@@ -99,13 +99,8 @@ pub fn validate_signer(
         }
     }
 
-    Ok(())
-}
+    // TODO NEXT Make sure the signer is the SOLAUTO_REBALANCER because we can't prevent user from plugging in a withdraw on the swap
 
-pub fn validate_solauto_admin_signer(solauto_admin: &AccountInfo) -> ProgramResult {
-    if !solauto_admin.is_signer || *solauto_admin.key != SOLAUTO_ADMIN {
-        return Err(ProgramError::MissingRequiredSignature.into());
-    }
     Ok(())
 }
 

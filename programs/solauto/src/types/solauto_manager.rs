@@ -1,4 +1,4 @@
-use std::ops::{ Div, Mul };
+use std::{ ops::{ Div, Mul }, cmp::min };
 use solana_program::{
     account_info::AccountInfo,
     entrypoint::ProgramResult,
@@ -182,8 +182,6 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
             (max_price_slippage_bps as f64).div(10000.0)
         );
 
-        // TODO flash loan fee currently not supported (SolautoRebalanceStep::FinishStandardFlashLoanSandwich)
-
         let (token_mint, market_price, decimals) = if increasing_leverage {
             (
                 self.accounts.debt.as_ref().unwrap().mint,
@@ -212,9 +210,29 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
             decimals
         );
         if increasing_leverage {
-            self.borrow(base_unit_amount, self.accounts.intermediary_ta.unwrap())
+            self.borrow(
+                min(
+                    base_unit_amount,
+                    ((
+                        self.obligation_position.debt
+                            .as_ref()
+                            .unwrap().amount_can_be_used.base_unit as f64
+                    ) * 0.9) as u64
+                ),
+                self.accounts.intermediary_ta.unwrap()
+            )
         } else {
-            self.withdraw(base_unit_amount, self.accounts.intermediary_ta.unwrap())
+            self.withdraw(
+                min(
+                    base_unit_amount,
+                    ((
+                        self.obligation_position.supply
+                            .as_ref()
+                            .unwrap().amount_can_be_used.base_unit as f64
+                    ) * 0.9) as u64
+                ),
+                self.accounts.intermediary_ta.unwrap()
+            )
         }
     }
 
