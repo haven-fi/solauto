@@ -1,22 +1,56 @@
 use std::ops::{ Div, Mul };
-use solana_program::{ entrypoint::ProgramResult, msg, program_error::ProgramError };
+use solana_program::{
+    account_info::AccountInfo,
+    entrypoint::ProgramResult,
+    msg,
+    program_error::ProgramError,
+};
 
-use crate::utils::{ math_utils::calculate_debt_adjustment_usd, solana_utils::init_ata_if_needed, solauto_utils::SolautoFeesBps };
+use crate::utils::{
+    math_utils::calculate_debt_adjustment_usd,
+    solana_utils::init_ata_if_needed,
+    solauto_utils::SolautoFeesBps,
+};
 use super::{
     instruction::{ SolautoAction, SolautoStandardAccounts, WithdrawParams },
-    lending_protocol::LendingProtocolClient,
+    lending_protocol::{ LendingProtocolClient, LendingProtocolTokenAccounts },
     obligation_position::LendingProtocolObligationPosition,
     shared::{ DeserializedAccount, Position, SolautoError, SolautoRebalanceStep },
 };
 
-// pub struct SolautoManagerAccounts<'a> {
-//  pub debt_token_mint: Option<&'a AccountInfo<'a>>,
-//  pub debt_token_account: Option<&'a AccountInfo<'a>>,
-// }
+pub struct SolautoManagerAccounts<'a> {
+    pub supply: Option<LendingProtocolTokenAccounts<'a>>,
+    pub debt: Option<LendingProtocolTokenAccounts<'a>>,
+    pub intermediary_ta: Option<&'a AccountInfo<'a>>,
+}
+impl<'a> SolautoManagerAccounts<'a> {
+    pub fn from(
+        supply_mint: Option<&'a AccountInfo<'a>>,
+        source_supply_ta: Option<&'a AccountInfo<'a>>,
+        bank_supply_ta: Option<&'a AccountInfo<'a>>,
+        debt_mint: Option<&'a AccountInfo<'a>>,
+        source_debt_ta: Option<&'a AccountInfo<'a>>,
+        bank_debt_ta: Option<&'a AccountInfo<'a>>,
+        intermediary_ta: Option<&'a AccountInfo<'a>>
+    ) -> Self {
+        let supply = LendingProtocolTokenAccounts::from(
+            supply_mint,
+            source_supply_ta,
+            bank_supply_ta
+        );
+        let debt = LendingProtocolTokenAccounts::from(debt_mint, source_debt_ta, bank_debt_ta);
+        Self {
+            supply,
+            debt,
+            intermediary_ta,
+        }
+    }
+}
 
 pub struct SolautoManager<'a, 'b> {
     pub client: &'b dyn LendingProtocolClient<'a>,
     pub obligation_position: &'b mut LendingProtocolObligationPosition,
+    pub accounts: SolautoManagerAccounts<'a>,
     pub std_accounts: SolautoStandardAccounts<'a>,
     pub solauto_fees_bps: SolautoFeesBps,
 }
@@ -25,6 +59,7 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
     pub fn from(
         client: &'b dyn LendingProtocolClient<'a>,
         obligation_position: &'b mut LendingProtocolObligationPosition,
+        accounts: SolautoManagerAccounts<'a>,
         std_accounts: SolautoStandardAccounts<'a>
     ) -> Result<Self, ProgramError> {
         client.validate(&std_accounts)?;
@@ -32,6 +67,7 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
         Ok(Self {
             client,
             obligation_position,
+            accounts,
             std_accounts,
             solauto_fees_bps,
         })
@@ -43,7 +79,7 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
                 self.deposit(base_unit_amount)?;
             }
             SolautoAction::Borrow(base_unit_amount) => {
-                self.borrow(base_unit_amount)?;
+                self.borrow(base_unit_amount, self.accounts.debt.as_ref().unwrap().source_ta)?;
             }
             SolautoAction::Repay(base_unit_amount) => {
                 self.repay(base_unit_amount)?;
@@ -51,9 +87,16 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
             SolautoAction::Withdraw(params) =>
                 match params {
                     WithdrawParams::All => {
-                        self.withdraw(self.obligation_position.net_worth_base_amount())?;
+                        self.withdraw(
+                            self.obligation_position.net_worth_base_amount(),
+                            self.accounts.supply.as_ref().unwrap().source_ta
+                        )?;
                     }
-                    WithdrawParams::Partial(base_unit_amount) => self.withdraw(base_unit_amount)?,
+                    WithdrawParams::Partial(base_unit_amount) =>
+                        self.withdraw(
+                            base_unit_amount,
+                            self.accounts.supply.as_ref().unwrap().source_ta
+                        )?,
                 }
         }
 
@@ -76,13 +119,17 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
         self.obligation_position.supply_lent_update(base_unit_amount as i64)
     }
 
-    fn borrow(&mut self, base_unit_amount: u64) -> ProgramResult {
-        self.client.borrow(base_unit_amount, &self.std_accounts)?;
+    fn borrow(&mut self, base_unit_amount: u64, destination: &'a AccountInfo<'a>) -> ProgramResult {
+        self.client.borrow(base_unit_amount, destination, &self.std_accounts)?;
         self.obligation_position.debt_borrowed_update(base_unit_amount as i64)
     }
 
-    fn withdraw(&mut self, base_unit_amount: u64) -> ProgramResult {
-        self.client.withdraw(base_unit_amount, &self.std_accounts)?;
+    fn withdraw(
+        &mut self,
+        base_unit_amount: u64,
+        destination: &'a AccountInfo<'a>
+    ) -> ProgramResult {
+        self.client.withdraw(base_unit_amount, destination, &self.std_accounts)?;
         self.obligation_position.supply_lent_update((base_unit_amount as i64) * -1)
     }
 
@@ -129,19 +176,30 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
 
             // TODO add max_price_slippage_bps to debt_adjustment_usd
 
-            let token_mint = if current_utilization_rate_bps < self.obligation_position.current_liq_utilization_rate_bps() {
-                // TODO debt token mint
+            let token_mint = if
+                current_utilization_rate_bps <
+                self.obligation_position.current_liq_utilization_rate_bps()
+            {
+                self.accounts.debt.as_ref().unwrap().mint
             } else {
-                // TODO supply token mint
+                self.accounts.supply.as_ref().unwrap().mint
             };
-            // TODO init_ata_if_needed(token_program, system_program, rent_sysvar, payer, wallet, token_account, token_mint)
+            init_ata_if_needed(
+                self.std_accounts.token_program,
+                self.std_accounts.system_program,
+                self.std_accounts.rent,
+                self.std_accounts.signer,
+                self.std_accounts.signer,
+                self.accounts.intermediary_ta.unwrap(),
+                token_mint
+            )?;
 
             // TODO borrow or withdraw to intermediary_ta
         } else if
             rebalance_step == SolautoRebalanceStep::FinishSolautoRebalanceSandwich ||
             rebalance_step == SolautoRebalanceStep::FinishMarginfiFlashLoanSandwich
         {
-            // payout solauto fees if increasing leverage 
+            // payout solauto fees if increasing leverage
         } else {
             // TODO
             msg!("Rebalance currently unsupported for this");

@@ -73,7 +73,7 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
     fn deposit<'b>(
         &self,
         base_unit_amount: u64,
-        accounts: &'b SolautoStandardAccounts<'a>,
+        std_accounts: &'b SolautoStandardAccounts<'a>,
     ) -> ProgramResult {
         // TODO
         Ok(())
@@ -82,7 +82,8 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
     fn withdraw<'b>(
         &self,
         base_unit_amount: u64,
-        accounts: &'b SolautoStandardAccounts<'a>,
+        destination: &'a AccountInfo<'a>,
+        std_accounts: &'b SolautoStandardAccounts<'a>
     ) -> ProgramResult {
         // TODO
         Ok(())
@@ -91,7 +92,8 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
     fn borrow<'b>(
         &self,
         base_unit_amount: u64,
-        accounts: &'b SolautoStandardAccounts<'a>,
+        destination: &'a AccountInfo<'a>,
+        std_accounts: &'b SolautoStandardAccounts<'a>
     ) -> ProgramResult {
         // TODO
         Ok(())
@@ -100,7 +102,7 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
     fn repay<'b>(
         &self,
         base_unit_amount: u64,
-        accounts: &'b SolautoStandardAccounts<'a>,
+        std_accounts: &'b SolautoStandardAccounts<'a>,
     ) -> ProgramResult {
         // TODO
         Ok(())

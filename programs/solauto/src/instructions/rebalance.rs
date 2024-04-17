@@ -8,9 +8,9 @@ use crate::{
             RebalanceArgs,
             SolautoStandardAccounts,
         },
-        lending_protocol::LendingProtocolClient,
+        lending_protocol::{ LendingProtocolClient, LendingProtocolTokenAccounts },
         obligation_position::LendingProtocolObligationPosition,
-        solauto_manager::SolautoManager,
+        solauto_manager::{ SolautoManager, SolautoManagerAccounts },
     },
     utils::{ ix_utils, solauto_utils },
 };
@@ -21,7 +21,16 @@ pub fn marginfi_rebalance<'a, 'b>(
     args: RebalanceArgs
 ) -> ProgramResult {
     let (marginfi_client, obligation_position) = MarginfiClient::from(ctx.accounts.signer)?;
-    rebalance(std_accounts, marginfi_client, obligation_position, args)
+    let solauto_manager_accounts = SolautoManagerAccounts::from(
+        Some(ctx.accounts.supply_mint),
+        Some(ctx.accounts.source_supply_ta),
+        Some(ctx.accounts.bank_supply_ta),
+        Some(ctx.accounts.debt_mint),
+        Some(ctx.accounts.source_debt_ta),
+        Some(ctx.accounts.bank_debt_ta),
+        Some(ctx.accounts.intermediary_ta)
+    );
+    rebalance(marginfi_client, obligation_position, solauto_manager_accounts, std_accounts, args)
 }
 
 pub fn solend_rebalance<'a, 'b>(
@@ -47,13 +56,23 @@ pub fn solend_rebalance<'a, 'b>(
         Some(ctx.accounts.source_debt_liquidity_ta),
         Some(ctx.accounts.reserve_debt_liquidity_ta)
     )?;
-    rebalance(std_accounts, solend_client, obligation_position, args)
+    let solauto_manager_accounts = SolautoManagerAccounts::from(
+        Some(ctx.accounts.supply_liquidity_mint),
+        Some(ctx.accounts.source_supply_liquidity_ta),
+        Some(ctx.accounts.reserve_supply_liquidity_ta),
+        Some(ctx.accounts.debt_liquidity_mint),
+        Some(ctx.accounts.source_debt_liquidity_ta),
+        Some(ctx.accounts.reserve_debt_liquidity_ta),
+        Some(ctx.accounts.intermediary_ta)
+    );
+    rebalance(solend_client, obligation_position, solauto_manager_accounts, std_accounts, args)
 }
 
 fn rebalance<'a, T: LendingProtocolClient<'a>>(
-    std_accounts: SolautoStandardAccounts<'a>,
     client: T,
     mut obligation_position: LendingProtocolObligationPosition,
+    solauto_manager_accounts: SolautoManagerAccounts<'a>,
+    std_accounts: SolautoStandardAccounts<'a>,
     args: RebalanceArgs
 ) -> ProgramResult {
     let solauto_rebalance_step = solauto_utils::get_rebalance_step(&std_accounts, &args)?;
@@ -73,9 +92,14 @@ fn rebalance<'a, T: LendingProtocolClient<'a>>(
     let mut solauto_manager = SolautoManager::from(
         &client,
         &mut obligation_position,
+        solauto_manager_accounts,
         std_accounts
     )?;
-    solauto_manager.rebalance(target_liq_utilization_rate_bps, max_price_slippage_bps, solauto_rebalance_step)?;
+    solauto_manager.rebalance(
+        target_liq_utilization_rate_bps,
+        max_price_slippage_bps,
+        solauto_rebalance_step
+    )?;
 
     SolautoManager::refresh_position(
         &solauto_manager.obligation_position,

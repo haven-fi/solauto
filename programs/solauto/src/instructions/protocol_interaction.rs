@@ -1,17 +1,20 @@
 use solana_program::entrypoint::ProgramResult;
 
 use crate::{
-    clients::{marginfi::MarginfiClient, solend::SolendClient},
+    clients::{ marginfi::MarginfiClient, solend::SolendClient },
     types::{
         instruction::{
             accounts::{
-                Context, MarginfiProtocolInteractionAccounts, SolendProtocolInteractionAccounts,
+                Context,
+                MarginfiProtocolInteractionAccounts,
+                SolendProtocolInteractionAccounts,
             },
-            SolautoAction, SolautoStandardAccounts,
+            SolautoAction,
+            SolautoStandardAccounts,
         },
-        lending_protocol::LendingProtocolClient,
+        lending_protocol::{ LendingProtocolClient, LendingProtocolTokenAccounts },
         obligation_position::LendingProtocolObligationPosition,
-        solauto_manager::SolautoManager,
+        solauto_manager::{ SolautoManager, SolautoManagerAccounts },
     },
     utils::ix_utils,
 };
@@ -19,16 +22,31 @@ use crate::{
 pub fn marginfi_interaction<'a, 'b>(
     ctx: Context<'a, MarginfiProtocolInteractionAccounts<'a>>,
     std_accounts: SolautoStandardAccounts<'a>,
-    action: SolautoAction,
+    action: SolautoAction
 ) -> ProgramResult {
     let (marginfi_client, obligation_position) = MarginfiClient::from(ctx.accounts.signer)?;
-    protocol_interaction(std_accounts, marginfi_client, obligation_position, action)
+    let solauto_manager_accounts = SolautoManagerAccounts::from(
+        ctx.accounts.supply_mint,
+        ctx.accounts.source_supply_ta,
+        ctx.accounts.bank_supply_ta,
+        ctx.accounts.debt_mint,
+        ctx.accounts.source_debt_ta,
+        ctx.accounts.bank_debt_ta,
+        None
+    );
+    protocol_interaction(
+        marginfi_client,
+        obligation_position,
+        solauto_manager_accounts,
+        std_accounts,
+        action
+    )
 }
 
 pub fn solend_interaction<'a, 'b>(
     ctx: Context<'a, SolendProtocolInteractionAccounts<'a>>,
     std_accounts: SolautoStandardAccounts<'a>,
-    action: SolautoAction,
+    action: SolautoAction
 ) -> ProgramResult {
     let (solend_client, obligation_position) = SolendClient::from(
         ctx.accounts.lending_market,
@@ -46,23 +64,44 @@ pub fn solend_interaction<'a, 'b>(
         ctx.accounts.debt_reserve_fee_receiver_ta,
         ctx.accounts.debt_liquidity_mint,
         ctx.accounts.source_debt_liquidity_ta,
-        ctx.accounts.reserve_debt_liquidity_ta,
+        ctx.accounts.reserve_debt_liquidity_ta
     )?;
-    protocol_interaction(std_accounts, solend_client, obligation_position, action)
+    let solauto_manager_accounts = SolautoManagerAccounts::from(
+        ctx.accounts.supply_liquidity_mint,
+        ctx.accounts.source_supply_liquidity_ta,
+        ctx.accounts.reserve_supply_liquidity_ta,
+        ctx.accounts.debt_liquidity_mint,
+        ctx.accounts.source_debt_liquidity_ta,
+        ctx.accounts.reserve_debt_liquidity_ta,
+        None
+    );
+    protocol_interaction(
+        solend_client,
+        obligation_position,
+        solauto_manager_accounts,
+        std_accounts,
+        action
+    )
 }
 
 fn protocol_interaction<'a, T: LendingProtocolClient<'a>>(
-    std_accounts: SolautoStandardAccounts<'a>,
     client: T,
     mut obligation_position: LendingProtocolObligationPosition,
-    action: SolautoAction,
+    solauto_manager_accounts: SolautoManagerAccounts<'a>,
+    std_accounts: SolautoStandardAccounts<'a>,
+    action: SolautoAction
 ) -> ProgramResult {
-    let mut solauto_manager =
-        SolautoManager::from(&client, &mut obligation_position, std_accounts)?;
+    let mut solauto_manager = SolautoManager::from(
+        &client,
+        &mut obligation_position,
+        solauto_manager_accounts,
+        std_accounts
+    )?;
     solauto_manager.protocol_interaction(action)?;
+
     SolautoManager::refresh_position(
         &solauto_manager.obligation_position,
-        &mut solauto_manager.std_accounts.solauto_position,
+        &mut solauto_manager.std_accounts.solauto_position
     );
     ix_utils::update_data(&mut solauto_manager.std_accounts.solauto_position)
 }

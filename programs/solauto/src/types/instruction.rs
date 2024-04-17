@@ -119,7 +119,14 @@ pub enum Instruction {
     #[account(name = "system_program")]
     #[account(name = "token_program")]
     #[account(name = "ata_program")]
+    #[account(name = "rent")]
     #[account(mut, optional, name = "solauto_position")]
+    #[account(optional, name = "supply_mint")]
+    #[account(mut, optional, name = "source_supply_ta")]
+    #[account(mut, optional, name = "bank_supply_ta")]
+    #[account(optional, name = "debt_mint")]
+    #[account(mut, optional, name = "source_debt_ta")]
+    #[account(mut, optional, name = "bank_debt_ta")]
     // TODO missing accounts
     MarginfiProtocolInteraction(SolautoAction),
 
@@ -156,6 +163,7 @@ pub enum Instruction {
     #[account(name = "system_program")]
     #[account(name = "token_program")]
     #[account(name = "ata_program")]
+    #[account(name = "rent")]
     #[account(name = "ixs_sysvar")]
     #[account(name = "solauto_admin_settings")]
     #[account(mut, name = "solauto_fees_receiver_ta")]
@@ -165,6 +173,11 @@ pub enum Instruction {
     #[account(mut, optional, name = "solauto_position")]
     #[account(mut, name = "intermediary_ta")]
     #[account(name = "supply_mint")]
+    #[account(mut, name = "source_supply_ta")]
+    #[account(mut, name = "bank_supply_ta")]
+    #[account(name = "debt_mint")]
+    #[account(mut, name = "source_debt_ta")]
+    #[account(mut, name = "bank_debt_ta")]
     // TODO missing accounts
     MarginfiRebalance(RebalanceArgs),
     
@@ -254,6 +267,7 @@ pub struct SolautoStandardAccounts<'a> {
     pub system_program: &'a AccountInfo<'a>,
     pub token_program: &'a AccountInfo<'a>,
     pub ata_program: &'a AccountInfo<'a>,
+    pub rent: &'a AccountInfo<'a>,
     pub ixs_sysvar: Option<&'a AccountInfo<'a>>,
     pub solauto_admin_settings: Option<&'a AccountInfo<'a>>,
     pub solauto_fees_receiver_ta: Option<&'a AccountInfo<'a>>,

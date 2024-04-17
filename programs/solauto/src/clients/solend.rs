@@ -342,16 +342,16 @@ impl<'a> LendingProtocolClient<'a> for SolendClient<'a> {
             let supply_liquidity = self.supply_liquidity.as_ref().unwrap();
             validate_source_token_account(
                 std_accounts,
-                supply_liquidity.source_token_account,
-                supply_liquidity.token_mint,
+                supply_liquidity.source_ta,
+                supply_liquidity.mint,
             )?;
         }
         if !self.debt_liquidity.is_none() {
             let debt_liquidity = self.debt_liquidity.as_ref().unwrap();
             validate_source_token_account(
                 std_accounts,
-                debt_liquidity.source_token_account,
-                debt_liquidity.token_mint,
+                debt_liquidity.source_ta,
+                debt_liquidity.mint,
             )?;
         }
         Ok(())
@@ -360,9 +360,9 @@ impl<'a> LendingProtocolClient<'a> for SolendClient<'a> {
     fn deposit<'b>(
         &self,
         base_unit_amount: u64,
-        accounts: &'b SolautoStandardAccounts<'a>,
+        std_accounts: &'b SolautoStandardAccounts<'a>
     ) -> ProgramResult {
-        let obligation_owner = get_owner(&accounts.solauto_position, accounts.signer);
+        let obligation_owner = get_owner(&std_accounts.solauto_position, std_accounts.signer);
         let supply_liquidity = self.supply_liquidity.as_ref().unwrap();
         let supply_collateral = self.supply_collateral.as_ref().unwrap();
         let supply_reserve = self.data.supply_reserve.as_ref().unwrap().account_info;
@@ -371,13 +371,13 @@ impl<'a> LendingProtocolClient<'a> for SolendClient<'a> {
         let deposit_instruction = deposit_reserve_liquidity_and_obligation_collateral(
             SOLEND_PROGRAM.clone(),
             base_unit_amount,
-            *supply_liquidity.source_token_account.key,
-            *supply_collateral.source_token_account.key,
+            *supply_liquidity.source_ta.key,
+            *supply_collateral.source_ta.key,
             *supply_reserve.key,
-            *supply_liquidity.reserve_token_account.key,
-            *supply_collateral.token_mint.key,
+            *supply_liquidity.reserve_ta.key,
+            *supply_collateral.mint.key,
             *self.data.lending_market.account_info.key,
-            *supply_collateral.reserve_token_account.key,
+            *supply_collateral.reserve_ta.key,
             *self.data.obligation.account_info.key,
             *obligation_owner.key,
             *reserve_oracles.pyth_price.key,
@@ -386,31 +386,32 @@ impl<'a> LendingProtocolClient<'a> for SolendClient<'a> {
         );
 
         let account_infos = &[
-            supply_liquidity.source_token_account.clone(),
-            supply_collateral.source_token_account.clone(),
+            supply_liquidity.source_ta.clone(),
+            supply_collateral.source_ta.clone(),
             supply_reserve.clone(),
-            supply_liquidity.reserve_token_account.clone(),
-            supply_collateral.token_mint.clone(),
+            supply_liquidity.reserve_ta.clone(),
+            supply_collateral.mint.clone(),
             self.data.lending_market.account_info.clone(),
-            supply_collateral.reserve_token_account.clone(),
+            supply_collateral.reserve_ta.clone(),
             self.data.obligation.account_info.clone(),
             obligation_owner.clone(),
             reserve_oracles.pyth_price.clone(),
             reserve_oracles.switchboard.clone(),
-            accounts.token_program.clone(),
+            std_accounts.token_program.clone(),
         ];
 
         invoke_instruction(
             deposit_instruction,
             account_infos,
-            &accounts.solauto_position,
+            &std_accounts.solauto_position,
         )
     }
 
     fn withdraw<'b>(
         &self,
         base_unit_amount: u64,
-        accounts: &'b SolautoStandardAccounts<'a>,
+        destination: &'a AccountInfo<'a>,
+        std_accounts: &'b SolautoStandardAccounts<'a>
     ) -> ProgramResult {
         // TODO
         Ok(())
@@ -419,48 +420,49 @@ impl<'a> LendingProtocolClient<'a> for SolendClient<'a> {
     fn borrow<'b>(
         &self,
         base_unit_amount: u64,
-        accounts: &'b SolautoStandardAccounts<'a>,
+        destination: &'a AccountInfo<'a>,
+        std_accounts: &'b SolautoStandardAccounts<'a>
     ) -> ProgramResult {
-        let obligation_owner = get_owner(&accounts.solauto_position, accounts.signer);
+        let obligation_owner = get_owner(&std_accounts.solauto_position, std_accounts.signer);
         let debt_liquidity = self.debt_liquidity.as_ref().unwrap();
         let debt_reserve = self.data.debt_reserve.as_ref().unwrap().account_info;
 
         let borrow_instruction = borrow_obligation_liquidity(
             SOLEND_PROGRAM.clone(),
             base_unit_amount,
-            *debt_liquidity.reserve_token_account.key,
-            *debt_liquidity.source_token_account.key,
+            *debt_liquidity.reserve_ta.key,
+            *destination.key,
             *debt_reserve.key,
             *self.debt_reserve_fee_receiver.unwrap().key,
             *self.data.obligation.account_info.key,
             *self.data.lending_market.account_info.key,
             *obligation_owner.key,
-            Some(*debt_liquidity.source_token_account.key),
+            Some(*destination.key),
         );
 
         let account_infos = &[
-            debt_liquidity.reserve_token_account.clone(),
-            debt_liquidity.source_token_account.clone(),
+            debt_liquidity.reserve_ta.clone(),
+            destination.clone(),
             debt_reserve.clone(),
             self.debt_reserve_fee_receiver.unwrap().clone(),
             self.data.obligation.account_info.clone(),
             self.data.lending_market.account_info.clone(),
             obligation_owner.clone(),
-            debt_liquidity.source_token_account.clone(),
-            accounts.token_program.clone(),
+            destination.clone(),
+            std_accounts.token_program.clone(),
         ];
 
         invoke_instruction(
             borrow_instruction,
             account_infos,
-            &accounts.solauto_position,
+            &std_accounts.solauto_position,
         )
     }
 
     fn repay<'b>(
         &self,
         base_unit_amount: u64,
-        accounts: &'b SolautoStandardAccounts<'a>,
+        std_accounts: &'b SolautoStandardAccounts<'a>,
     ) -> ProgramResult {
         // TODO
         Ok(())
