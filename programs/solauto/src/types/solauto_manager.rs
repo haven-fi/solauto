@@ -176,33 +176,18 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
             self.obligation_position.current_liq_utilization_rate_bps() <
             target_liq_utilization_rate_bps;
 
-        let flash_loan_fee_bps = if
-            rebalance_step == SolautoRebalanceStep::FinishStandardFlashLoanSandwich
-        {
-            if increasing_leverage {
-                self.obligation_position.debt.as_ref().unwrap().flash_loan_fee_bps
-            } else {
-                self.obligation_position.supply.as_ref().unwrap().flash_loan_fee_bps
-            }
-        } else {
-            0
-        };
-        let adjustment_fee_bps = if increasing_leverage {
-            self.solauto_fees_bps.total + flash_loan_fee_bps
-        } else {
-            flash_loan_fee_bps
-        };
-
-        let debt_adjustment_usd = calculate_debt_adjustment_usd(
+        let mut debt_adjustment_usd = calculate_debt_adjustment_usd(
             self.obligation_position.liq_threshold,
             self.obligation_position.supply.as_ref().unwrap().amount_used.usd_value as f64,
             self.obligation_position.debt.as_ref().unwrap().amount_used.usd_value as f64,
             target_liq_utilization_rate_bps,
-            Some(adjustment_fee_bps)
+            Some(self.solauto_fees_bps.total)
         );
-        let full_debt_adjustment_usd =
-            debt_adjustment_usd +
-            debt_adjustment_usd.mul((max_price_slippage_bps as f64).div(10000.0));
+        debt_adjustment_usd += debt_adjustment_usd.mul(
+            (max_price_slippage_bps as f64).div(10000.0)
+        );
+
+        // TODO flash loan fee currently not supported (SolautoRebalanceStep::FinishStandardFlashLoanSandwich)
 
         let (token_mint, market_price, decimals) = if increasing_leverage {
             (
@@ -228,7 +213,7 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
         )?;
 
         let base_unit_amount = to_base_unit::<f64, u8, u64>(
-            full_debt_adjustment_usd.div(market_price),
+            debt_adjustment_usd.div(market_price),
             decimals
         );
         if increasing_leverage {

@@ -45,7 +45,7 @@ pub fn base_unit_to_usd_value(base_unit: u64, decimals: u8, market_price: f64) -
 /// * `total_supply_usd` - Total USD value of supplied asset
 /// * `total_debt_usd` - Total USD value of debt asset
 /// * `target_liq_utilization_rate_bps` - Target utilization rate
-/// * `adjustment_fee_bps` - Adjustment fee. On boosts this would be the Solauto fee. If deleveraging and using a flash loan, this would be the flash loan fee
+/// * `adjustment_fee_bps` - Adjustment fee. On boosts this would be the Solauto fee. If deleveraging this would be None
 ///
 /// # Returns
 /// The USD value of the debt adjustment. Positive if debt needs to increase, negative if debt needs to decrease. This amount is inclusive of the adjustment fee
