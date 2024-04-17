@@ -130,6 +130,7 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
             rebalance_step == SolautoRebalanceStep::FinishSolautoRebalanceSandwich ||
             rebalance_step == SolautoRebalanceStep::FinishMarginfiFlashLoanSandwich
         {
+            // payout solauto fees if increasing leverage 
         } else {
             // TODO
             msg!("Rebalance currently unsupported for this");

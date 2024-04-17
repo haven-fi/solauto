@@ -20,7 +20,7 @@ use super::{
     },
 };
 use crate::{
-    constants::{ JUP_PROGRAM, MARGINFI_PROGRAM, SOLAUTO_REBALANCER, WSOL_MINT },
+    constants::{ JUP_PROGRAM, MARGINFI_PROGRAM, REFERRER_FEE_SPLIT, SOLAUTO_REBALANCER, WSOL_MINT },
     types::{
         instruction::{
             PositionData,
@@ -279,21 +279,21 @@ pub fn get_rebalance_step(
     // increasing leverage:
     // -
     // if debt + debt adjustment keeps utilization rate under buffer_room, instructions are:
-    // solauto rebalance - borrows more debt worth debt_adjustment_usd (figure out what to do with solauto fee after borrow)
+    // solauto rebalance - borrows more debt worth debt_adjustment_usd
     // jup swap - swap debt token to supply token
-    // solauto rebalance - deposit supply token
+    // solauto rebalance - payout solauto fees & deposit supply token
     // -
     // if debt + debt adjustment brings utilization rate above buffer_room, instructions are:
-    // take out flash loan in debt token
+    // take out flash loan in debt token (+ solauto fees)
     // jup swap - swap debt token to supply token
-    // solauto rebalance - deposit supply token, borrow equivalent debt token amount from flash borrow ix + flash loan fee
+    // solauto rebalance - payout solauto fees & deposit supply token, borrow equivalent debt token amount from flash borrow ix + flash loan fee
     // repay flash loan in debt token
     // -
     // IF MARGINFI:
     // start flash loan
     // solauto rebalance - borrow debt token worth debt_adjustment_usd
     // jup swap - swap debt token to supply token
-    // solauto rebalance - supply debt token
+    // solauto rebalance - payout solauto fees & deposit supply token
     // end flash loan
 
     // deleveraging:
@@ -493,22 +493,23 @@ impl InstructionChecker {
 }
 
 pub struct SolautoFeesBps {
-    pub founders: u16,
+    pub solauto: u16,
     pub referrer: u16,
-    pub rewards_fund: u16,
     pub total: u16,
 }
 impl SolautoFeesBps {
     pub fn from(has_been_referred: bool) -> Self {
-        let founders = 20;
-        let referrer = if has_been_referred { 20 } else { 0 };
-        let rewards_fund = 80 - referrer;
+        let solauto = 80;
+        let referrer = if has_been_referred {
+            ((solauto as f64) * REFERRER_FEE_SPLIT) as u16
+        } else {
+            0
+        };
 
         Self {
-            founders,
+            solauto,
             referrer,
-            rewards_fund,
-            total: founders + referrer + rewards_fund,
+            total: solauto + referrer,
         }
     }
 }
