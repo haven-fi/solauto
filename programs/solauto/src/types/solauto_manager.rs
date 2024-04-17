@@ -7,7 +7,7 @@ use solana_program::{
 };
 
 use crate::utils::{
-    math_utils::calculate_debt_adjustment_usd,
+    math_utils::{ calculate_debt_adjustment_usd, to_base_unit },
     solana_utils::init_ata_if_needed,
     solauto_utils::SolautoFeesBps,
 };
@@ -148,125 +148,92 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
             rebalance_step == SolautoRebalanceStep::StartSolautoRebalanceSandwich ||
             rebalance_step == SolautoRebalanceStep::StartMarginfiFlashLoanSandwich
         {
-            let current_utilization_rate_bps =
-                self.obligation_position.current_utilization_rate_bps();
-            let flash_loan_fee_bps = if
-                rebalance_step == SolautoRebalanceStep::FinishStandardFlashLoanSandwich
-            {
-                // TODO
-                0
-            } else {
-                0
-            };
-            let adjustment_fee_bps = if
-                current_utilization_rate_bps < target_liq_utilization_rate_bps
-            {
-                self.solauto_fees_bps.total + flash_loan_fee_bps
-            } else {
-                flash_loan_fee_bps
-            };
-
-            let debt_adjustment_usd = calculate_debt_adjustment_usd(
-                self.obligation_position.liq_threshold,
-                self.obligation_position.supply.as_ref().unwrap().amount_used.usd_value as f64,
-                self.obligation_position.debt.as_ref().unwrap().amount_used.usd_value as f64,
+            self.begin_rebalance(
                 target_liq_utilization_rate_bps,
-                Some(adjustment_fee_bps)
-            );
-
-            // TODO add max_price_slippage_bps to debt_adjustment_usd
-
-            let token_mint = if
-                current_utilization_rate_bps <
-                self.obligation_position.current_liq_utilization_rate_bps()
-            {
-                self.accounts.debt.as_ref().unwrap().mint
-            } else {
-                self.accounts.supply.as_ref().unwrap().mint
-            };
-            init_ata_if_needed(
-                self.std_accounts.token_program,
-                self.std_accounts.system_program,
-                self.std_accounts.rent,
-                self.std_accounts.signer,
-                self.std_accounts.signer,
-                self.accounts.intermediary_ta.unwrap(),
-                token_mint
-            )?;
-
-            // TODO borrow or withdraw to intermediary_ta
+                max_price_slippage_bps,
+                rebalance_step
+            )
         } else if
             rebalance_step == SolautoRebalanceStep::FinishSolautoRebalanceSandwich ||
             rebalance_step == SolautoRebalanceStep::FinishMarginfiFlashLoanSandwich
         {
-            // payout solauto fees if increasing leverage
+            // TODO also payout solauto fees if increasing leverage
+            Ok(())
         } else {
             // TODO
             msg!("Rebalance currently unsupported for this");
             return Err(SolautoError::InvalidRebalanceCondition.into());
         }
-
-        Ok(())
     }
 
-    // pub fn rebalance(&mut self, target_liq_utilization_rate_bps: u16) -> ProgramResult {
-    //     if self.obligation_position.current_liq_utilization_rate_bps()
-    //         < target_liq_utilization_rate_bps
-    //     {
-    //         self.increase_leverage(target_liq_utilization_rate_bps)
-    //     } else {
-    //         self.decrease_leverage(target_liq_utilization_rate_bps)
-    //     }
-    // }
+    fn begin_rebalance(
+        &mut self,
+        target_liq_utilization_rate_bps: u16,
+        max_price_slippage_bps: u16,
+        rebalance_step: SolautoRebalanceStep
+    ) -> ProgramResult {
+        let increasing_leverage =
+            self.obligation_position.current_liq_utilization_rate_bps() <
+            target_liq_utilization_rate_bps;
 
-    // fn increase_leverage(&mut self, target_liq_utilization_rate_bps: u16) -> ProgramResult {
-    //     let debt = self.obligation_position.debt.as_ref().unwrap();
+        let flash_loan_fee_bps = if
+            rebalance_step == SolautoRebalanceStep::FinishStandardFlashLoanSandwich
+        {
+            // TODO
+            0
+        } else {
+            0
+        };
+        let adjustment_fee_bps = if increasing_leverage {
+            self.solauto_fees_bps.total + flash_loan_fee_bps
+        } else {
+            flash_loan_fee_bps
+        };
 
-    //     let debt_adjustment_usd = calculate_debt_adjustment_usd(
-    //         self.obligation_position.liq_threshold,
-    //         self.obligation_position
-    //             .supply
-    //             .as_ref()
-    //             .unwrap()
-    //             .amount_used
-    //             .usd_value as f64,
-    //         self.obligation_position
-    //             .debt
-    //             .as_ref()
-    //             .unwrap()
-    //             .amount_used
-    //             .usd_value as f64,
-    //         target_liq_utilization_rate_bps,
-    //         Some(SOLAUTO_BOOST_FEE_BPS),
-    //     );
-    //     // TODO: get complete_debt_adjustment_usd based on the max_slippage_bps (TOD we need to add)
+        let debt_adjustment_usd = calculate_debt_adjustment_usd(
+            self.obligation_position.liq_threshold,
+            self.obligation_position.supply.as_ref().unwrap().amount_used.usd_value as f64,
+            self.obligation_position.debt.as_ref().unwrap().amount_used.usd_value as f64,
+            target_liq_utilization_rate_bps,
+            Some(adjustment_fee_bps)
+        );
+        let full_debt_adjustment_usd =
+            debt_adjustment_usd +
+            debt_adjustment_usd.mul((max_price_slippage_bps as f64).div(10000.0));
 
-    //     let buffer_room_from_cap = 0.9;
-    //     let borrow_cap_usd = debt.amount_can_be_used.usd_value * buffer_room_from_cap;
-    //     let borrow_value_usd = if debt_adjustment_usd < borrow_cap_usd {
-    //         debt_adjustment_usd
-    //     } else {
-    //         msg!(
-    //             "Capped at borrowing only {} USD value of debt during leverage increase",
-    //             borrow_cap_usd
-    //         );
-    //         borrow_cap_usd
-    //     };
-    //     let solauto_fee_usd = borrow_cap_usd.mul((SOLAUTO_BOOST_FEE_BPS as f64).div(10000.0));
+        let (token_mint, market_price, decimals) = if increasing_leverage {
+            (
+                self.accounts.debt.as_ref().unwrap().mint,
+                self.obligation_position.debt.as_ref().unwrap().market_price,
+                self.obligation_position.debt.as_ref().unwrap().decimals,
+            )
+        } else {
+            (
+                self.accounts.supply.as_ref().unwrap().mint,
+                self.obligation_position.supply.as_ref().unwrap().market_price,
+                self.obligation_position.supply.as_ref().unwrap().decimals,
+            )
+        };
+        init_ata_if_needed(
+            self.std_accounts.token_program,
+            self.std_accounts.system_program,
+            self.std_accounts.rent,
+            self.std_accounts.signer,
+            self.std_accounts.signer,
+            self.accounts.intermediary_ta.unwrap(),
+            token_mint
+        )?;
 
-    //     let borrow_value_base_unit =
-    //         to_base_unit::<f64, u8, u64>(borrow_value_usd.div(debt.market_price), debt.decimals);
-    //     let solauto_value_base_unit =
-    //         to_base_unit::<f64, u8, u64>(solauto_fee_usd.div(debt.market_price), debt.decimals);
-    //     self.borrow(borrow_value_base_unit + solauto_value_base_unit)?;
-
-    //     self.payout_solauto_fee()
-    // }
-
-    // fn decrease_leverage(&mut self, target_liq_utilization_rate_bps: u16) -> ProgramResult {
-    //     // TODO: if we are unable to rebalance to desired position due to borrow / withdraw caps, we should expect a flash loan to have filled required amount
-    //     Ok(())
-    // }
+        let base_unit_amount = to_base_unit::<f64, u8, u64>(
+            full_debt_adjustment_usd.div(market_price),
+            decimals
+        );
+        if increasing_leverage {
+            self.borrow(base_unit_amount, self.accounts.intermediary_ta.unwrap())
+        } else {
+            self.withdraw(base_unit_amount, self.accounts.intermediary_ta.unwrap())
+        }
+    }
 
     fn payout_fees(&self) -> ProgramResult {
         // swap solauto_fee = solauto_fee_value_usd * debt_market_price to the fee_receiver_token
