@@ -16,7 +16,6 @@ pub(crate) mod r#solend_protocol_interaction;
 pub(crate) mod r#solend_rebalance;
 pub(crate) mod r#solend_refresh_data;
 pub(crate) mod r#update_position;
-pub(crate) mod r#update_solauto_admin_settings;
 
 pub use self::r#claim_referral_fees::*;
 pub use self::r#close_position::*;
@@ -29,4 +28,3 @@ pub use self::r#solend_protocol_interaction::*;
 pub use self::r#solend_rebalance::*;
 pub use self::r#solend_refresh_data::*;
 pub use self::r#update_position::*;
-pub use self::r#update_solauto_admin_settings::*;

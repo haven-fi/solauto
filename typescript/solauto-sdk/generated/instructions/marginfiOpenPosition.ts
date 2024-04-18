@@ -8,8 +8,6 @@
 
 import {
   Context,
-  Option,
-  OptionOrNullable,
   Pda,
   PublicKey,
   Signer,
@@ -20,7 +18,6 @@ import {
 import {
   Serializer,
   mapSerializer,
-  option,
   struct,
   u8,
 } from '@metaplex-foundation/umi/serializers';
@@ -30,9 +27,9 @@ import {
   getAccountMetasAndSigners,
 } from '../shared';
 import {
-  PositionData,
-  PositionDataArgs,
-  getPositionDataSerializer,
+  UpdatePositionData,
+  UpdatePositionDataArgs,
+  getUpdatePositionDataSerializer,
 } from '../types';
 
 // Accounts.
@@ -43,29 +40,32 @@ export type MarginfiOpenPositionInstructionAccounts = {
   tokenProgram?: PublicKey | Pda;
   ataProgram?: PublicKey | Pda;
   rent?: PublicKey | Pda;
+  solautoFeesReceiver: PublicKey | Pda;
+  solautoFeesReceiverTa: PublicKey | Pda;
   signerReferralState: PublicKey | Pda;
   referralFeesMint: PublicKey | Pda;
-  signerReferralFeesTa: PublicKey | Pda;
+  signerReferralDestTa: PublicKey | Pda;
   referredByState?: PublicKey | Pda;
   referredByAuthority?: PublicKey | Pda;
-  referredByTa?: PublicKey | Pda;
-  solautoPosition?: PublicKey | Pda;
+  referredByDestTa?: PublicKey | Pda;
+  referredBySupplyTa?: PublicKey | Pda;
+  solautoPosition: PublicKey | Pda;
   marginfiGroup: PublicKey | Pda;
   marginfiAccount: PublicKey | Pda;
-  supplyTa: PublicKey | Pda;
-  supplyTokenMint: PublicKey | Pda;
-  debtTa: PublicKey | Pda;
-  debtTokenMint: PublicKey | Pda;
+  positionSupplyTa: PublicKey | Pda;
+  supplyMint: PublicKey | Pda;
+  positionDebtTa: PublicKey | Pda;
+  debtMint: PublicKey | Pda;
 };
 
 // Data.
 export type MarginfiOpenPositionInstructionData = {
   discriminator: number;
-  args: Option<PositionData>;
+  updatePositionData: UpdatePositionData;
 };
 
 export type MarginfiOpenPositionInstructionDataArgs = {
-  args: OptionOrNullable<PositionDataArgs>;
+  updatePositionData: UpdatePositionDataArgs;
 };
 
 export function getMarginfiOpenPositionInstructionDataSerializer(): Serializer<
@@ -80,11 +80,11 @@ export function getMarginfiOpenPositionInstructionDataSerializer(): Serializer<
     struct<MarginfiOpenPositionInstructionData>(
       [
         ['discriminator', u8()],
-        ['args', option(getPositionDataSerializer())],
+        ['updatePositionData', getUpdatePositionDataSerializer()],
       ],
       { description: 'MarginfiOpenPositionInstructionData' }
     ),
-    (value) => ({ ...value, discriminator: 2 })
+    (value) => ({ ...value, discriminator: 1 })
   ) as Serializer<
     MarginfiOpenPositionInstructionDataArgs,
     MarginfiOpenPositionInstructionData
@@ -135,70 +135,85 @@ export function marginfiOpenPosition(
       value: input.ataProgram ?? null,
     },
     rent: { index: 5, isWritable: false as boolean, value: input.rent ?? null },
-    signerReferralState: {
+    solautoFeesReceiver: {
       index: 6,
+      isWritable: false as boolean,
+      value: input.solautoFeesReceiver ?? null,
+    },
+    solautoFeesReceiverTa: {
+      index: 7,
+      isWritable: false as boolean,
+      value: input.solautoFeesReceiverTa ?? null,
+    },
+    signerReferralState: {
+      index: 8,
       isWritable: true as boolean,
       value: input.signerReferralState ?? null,
     },
     referralFeesMint: {
-      index: 7,
+      index: 9,
       isWritable: true as boolean,
       value: input.referralFeesMint ?? null,
     },
-    signerReferralFeesTa: {
-      index: 8,
+    signerReferralDestTa: {
+      index: 10,
       isWritable: true as boolean,
-      value: input.signerReferralFeesTa ?? null,
+      value: input.signerReferralDestTa ?? null,
     },
     referredByState: {
-      index: 9,
+      index: 11,
       isWritable: true as boolean,
       value: input.referredByState ?? null,
     },
     referredByAuthority: {
-      index: 10,
-      isWritable: true as boolean,
+      index: 12,
+      isWritable: false as boolean,
       value: input.referredByAuthority ?? null,
     },
-    referredByTa: {
-      index: 11,
+    referredByDestTa: {
+      index: 13,
       isWritable: true as boolean,
-      value: input.referredByTa ?? null,
+      value: input.referredByDestTa ?? null,
+    },
+    referredBySupplyTa: {
+      index: 14,
+      isWritable: true as boolean,
+      value: input.referredBySupplyTa ?? null,
     },
     solautoPosition: {
-      index: 12,
+      index: 15,
       isWritable: true as boolean,
       value: input.solautoPosition ?? null,
     },
     marginfiGroup: {
-      index: 13,
+      index: 16,
       isWritable: false as boolean,
       value: input.marginfiGroup ?? null,
     },
     marginfiAccount: {
-      index: 14,
+      index: 17,
       isWritable: true as boolean,
       value: input.marginfiAccount ?? null,
     },
-    supplyTa: {
-      index: 15,
-      isWritable: true as boolean,
-      value: input.supplyTa ?? null,
-    },
-    supplyTokenMint: {
-      index: 16,
-      isWritable: false as boolean,
-      value: input.supplyTokenMint ?? null,
-    },
-    debtTa: {
-      index: 17,
-      isWritable: true as boolean,
-      value: input.debtTa ?? null,
-    },
-    debtTokenMint: {
+    positionSupplyTa: {
       index: 18,
+      isWritable: true as boolean,
+      value: input.positionSupplyTa ?? null,
+    },
+    supplyMint: {
+      index: 19,
       isWritable: false as boolean,
-      value: input.debtTokenMint ?? null,
+      value: input.supplyMint ?? null,
+    },
+    positionDebtTa: {
+      index: 20,
+      isWritable: true as boolean,
+      value: input.positionDebtTa ?? null,
+    },
+    debtMint: {
+      index: 21,
+      isWritable: false as boolean,
+      value: input.debtMint ?? null,
     },
   } satisfies ResolvedAccountsWithIndices;
 

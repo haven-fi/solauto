@@ -12,6 +12,7 @@ import {
   PublicKey,
   Signer,
   TransactionBuilder,
+  publicKey,
   transactionBuilder,
 } from '@metaplex-foundation/umi';
 import {
@@ -38,7 +39,14 @@ export type MarginfiProtocolInteractionInstructionAccounts = {
   systemProgram?: PublicKey | Pda;
   tokenProgram?: PublicKey | Pda;
   ataProgram?: PublicKey | Pda;
-  solautoPosition?: PublicKey | Pda;
+  rent?: PublicKey | Pda;
+  solautoPosition: PublicKey | Pda;
+  supplyMint?: PublicKey | Pda;
+  authoritySupplyTa?: PublicKey | Pda;
+  bankSupplyTa?: PublicKey | Pda;
+  debtMint?: PublicKey | Pda;
+  authorityDebtTa?: PublicKey | Pda;
+  bankDebtTa?: PublicKey | Pda;
 };
 
 // Data.
@@ -67,7 +75,7 @@ export function getMarginfiProtocolInteractionInstructionDataSerializer(): Seria
       ],
       { description: 'MarginfiProtocolInteractionInstructionData' }
     ),
-    (value) => ({ ...value, discriminator: 8 })
+    (value) => ({ ...value, discriminator: 7 })
   ) as Serializer<
     MarginfiProtocolInteractionInstructionDataArgs,
     MarginfiProtocolInteractionInstructionData
@@ -117,10 +125,41 @@ export function marginfiProtocolInteraction(
       isWritable: false as boolean,
       value: input.ataProgram ?? null,
     },
+    rent: { index: 5, isWritable: false as boolean, value: input.rent ?? null },
     solautoPosition: {
-      index: 5,
+      index: 6,
       isWritable: true as boolean,
       value: input.solautoPosition ?? null,
+    },
+    supplyMint: {
+      index: 7,
+      isWritable: false as boolean,
+      value: input.supplyMint ?? null,
+    },
+    authoritySupplyTa: {
+      index: 8,
+      isWritable: true as boolean,
+      value: input.authoritySupplyTa ?? null,
+    },
+    bankSupplyTa: {
+      index: 9,
+      isWritable: true as boolean,
+      value: input.bankSupplyTa ?? null,
+    },
+    debtMint: {
+      index: 10,
+      isWritable: false as boolean,
+      value: input.debtMint ?? null,
+    },
+    authorityDebtTa: {
+      index: 11,
+      isWritable: true as boolean,
+      value: input.authorityDebtTa ?? null,
+    },
+    bankDebtTa: {
+      index: 12,
+      isWritable: true as boolean,
+      value: input.bankDebtTa ?? null,
     },
   } satisfies ResolvedAccountsWithIndices;
 
@@ -148,6 +187,11 @@ export function marginfiProtocolInteraction(
       'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'
     );
     resolvedAccounts.ataProgram.isWritable = false;
+  }
+  if (!resolvedAccounts.rent.value) {
+    resolvedAccounts.rent.value = publicKey(
+      'SysvarRent111111111111111111111111111111111'
+    );
   }
 
   // Accounts in order.

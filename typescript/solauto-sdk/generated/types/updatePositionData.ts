@@ -11,47 +11,39 @@ import {
   Serializer,
   option,
   struct,
+  u8,
 } from '@metaplex-foundation/umi/serializers';
 import {
-  LendingPlatform,
-  LendingPlatformArgs,
   LendingProtocolPositionData,
   LendingProtocolPositionDataArgs,
-  PositionState,
-  PositionStateArgs,
   SolautoSettingsParameters,
   SolautoSettingsParametersArgs,
-  getLendingPlatformSerializer,
   getLendingProtocolPositionDataSerializer,
-  getPositionStateSerializer,
   getSolautoSettingsParametersSerializer,
 } from '.';
 
-export type PositionData = {
-  settingParams: SolautoSettingsParameters;
-  state: PositionState;
-  lendingPlatform: LendingPlatform;
+export type UpdatePositionData = {
+  positionId: number;
+  settingParams: Option<SolautoSettingsParameters>;
   protocolData: Option<LendingProtocolPositionData>;
 };
 
-export type PositionDataArgs = {
-  settingParams: SolautoSettingsParametersArgs;
-  state: PositionStateArgs;
-  lendingPlatform: LendingPlatformArgs;
+export type UpdatePositionDataArgs = {
+  positionId: number;
+  settingParams: OptionOrNullable<SolautoSettingsParametersArgs>;
   protocolData: OptionOrNullable<LendingProtocolPositionDataArgs>;
 };
 
-export function getPositionDataSerializer(): Serializer<
-  PositionDataArgs,
-  PositionData
+export function getUpdatePositionDataSerializer(): Serializer<
+  UpdatePositionDataArgs,
+  UpdatePositionData
 > {
-  return struct<PositionData>(
+  return struct<UpdatePositionData>(
     [
-      ['settingParams', getSolautoSettingsParametersSerializer()],
-      ['state', getPositionStateSerializer()],
-      ['lendingPlatform', getLendingPlatformSerializer()],
+      ['positionId', u8()],
+      ['settingParams', option(getSolautoSettingsParametersSerializer())],
       ['protocolData', option(getLendingProtocolPositionDataSerializer())],
     ],
-    { description: 'PositionData' }
-  ) as Serializer<PositionDataArgs, PositionData>;
+    { description: 'UpdatePositionData' }
+  ) as Serializer<UpdatePositionDataArgs, UpdatePositionData>;
 }

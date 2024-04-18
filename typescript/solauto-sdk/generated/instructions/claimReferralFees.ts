@@ -55,7 +55,7 @@ export function getClaimReferralFeesInstructionDataSerializer(): Serializer<
     struct<ClaimReferralFeesInstructionData>([['discriminator', u8()]], {
       description: 'ClaimReferralFeesInstructionData',
     }),
-    (value) => ({ ...value, discriminator: 1 })
+    (value) => ({ ...value, discriminator: 0 })
   ) as Serializer<
     ClaimReferralFeesInstructionDataArgs,
     ClaimReferralFeesInstructionData

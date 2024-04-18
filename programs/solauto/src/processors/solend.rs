@@ -1,4 +1,4 @@
-use solana_program::{ account_info::AccountInfo, entrypoint::ProgramResult, msg };
+use solana_program::{account_info::AccountInfo, entrypoint::ProgramResult, msg};
 
 use crate::{
     constants::SOLAUTO_FEES_RECEIVER_WALLET,
@@ -6,23 +6,19 @@ use crate::{
     types::{
         instruction::{
             accounts::{
-                SolendOpenPositionAccounts,
-                SolendProtocolInteractionAccounts,
-                SolendRebalanceAccounts,
-                SolendRefreshDataAccounts,
+                SolendOpenPositionAccounts, SolendProtocolInteractionAccounts,
+                SolendRebalanceAccounts, SolendRefreshDataAccounts,
             },
-            RebalanceArgs,
-            SolautoAction,
-            SolautoStandardAccounts, UpdatePositionData,
+            RebalanceArgs, SolautoAction, SolautoStandardAccounts, UpdatePositionData,
         },
-        shared::{ DeserializedAccount, LendingPlatform, Position, RefferalState, SolautoError },
+        shared::{DeserializedAccount, LendingPlatform, Position, RefferalState, SolautoError},
     },
-    utils::{ solana_utils::init_ata_if_needed, * },
+    utils::{solana_utils::init_ata_if_needed, *},
 };
 
 pub fn process_solend_open_position_instruction<'a>(
     accounts: &'a [AccountInfo<'a>],
-    position_data: UpdatePositionData
+    position_data: UpdatePositionData,
 ) -> ProgramResult {
     // TODO
     msg!("Instruction is currently a WIP");
@@ -32,7 +28,7 @@ pub fn process_solend_open_position_instruction<'a>(
         ctx.accounts.signer,
         ctx.accounts.solauto_position,
         position_data,
-        LendingPlatform::Solend
+        LendingPlatform::Solend,
     )?;
 
     if ctx.accounts.solauto_fees_receiver.key != &SOLAUTO_FEES_RECEIVER_WALLET {
@@ -45,7 +41,7 @@ pub fn process_solend_open_position_instruction<'a>(
         ctx.accounts.signer,
         ctx.accounts.solauto_fees_receiver,
         ctx.accounts.solauto_fees_receiver_ta,
-        ctx.accounts.supply_liquidity_mint
+        ctx.accounts.supply_liquidity_mint,
     )?;
 
     let authority_referral_state = solauto_utils::get_or_create_referral_state(
@@ -58,7 +54,7 @@ pub fn process_solend_open_position_instruction<'a>(
         ctx.accounts.referral_fees_mint,
         ctx.accounts.signer_referral_dest_ta,
         ctx.accounts.referred_by_state,
-        ctx.accounts.referred_by_dest_ta
+        ctx.accounts.referred_by_dest_ta,
     )?;
 
     if !ctx.accounts.referred_by_state.is_none() {
@@ -72,7 +68,7 @@ pub fn process_solend_open_position_instruction<'a>(
             ctx.accounts.referral_fees_mint,
             ctx.accounts.referred_by_dest_ta.unwrap(),
             None,
-            None
+            None,
         )?;
 
         init_ata_if_needed(
@@ -82,7 +78,7 @@ pub fn process_solend_open_position_instruction<'a>(
             ctx.accounts.signer,
             ctx.accounts.referred_by_state.unwrap(),
             ctx.accounts.referred_by_supply_ta.unwrap(),
-            ctx.accounts.referral_fees_mint
+            ctx.accounts.referral_fees_mint,
         )?;
     }
 
@@ -104,7 +100,7 @@ pub fn process_solend_open_position_instruction<'a>(
         &std_accounts,
         true,
         LendingPlatform::Solend,
-        Some(ctx.accounts.supply_liquidity_mint)
+        Some(ctx.accounts.supply_liquidity_mint),
     )?;
 
     open_position::solend_open_position(ctx, std_accounts.solauto_position)
@@ -115,27 +111,25 @@ pub fn process_solend_refresh_data<'a>(accounts: &'a [AccountInfo<'a>]) -> Progr
     msg!("Instruction is currently a WIP");
 
     let ctx = SolendRefreshDataAccounts::context(accounts)?;
-    let solauto_position = DeserializedAccount::<Position>::deserialize(
-        ctx.accounts.solauto_position
-    )?;
+    let solauto_position =
+        DeserializedAccount::<Position>::deserialize(ctx.accounts.solauto_position)?;
     validation_utils::validate_program_account(
         &ctx.accounts.solend_program,
-        LendingPlatform::Solend
+        LendingPlatform::Solend,
     )?;
     refresh::solend_refresh_accounts(ctx, solauto_position)
 }
 
 pub fn process_solend_interaction_instruction<'a>(
     accounts: &'a [AccountInfo<'a>],
-    action: SolautoAction
+    action: SolautoAction,
 ) -> ProgramResult {
     // TODO
     msg!("Instruction is currently a WIP");
 
     let ctx = SolendProtocolInteractionAccounts::context(accounts)?;
-    let solauto_position = DeserializedAccount::<Position>::deserialize(
-        Some(ctx.accounts.solauto_position)
-    )?.unwrap();
+    let solauto_position =
+        DeserializedAccount::<Position>::deserialize(Some(ctx.accounts.solauto_position))?.unwrap();
 
     let std_accounts = SolautoStandardAccounts {
         signer: ctx.accounts.signer,
@@ -155,7 +149,7 @@ pub fn process_solend_interaction_instruction<'a>(
         &std_accounts,
         true,
         LendingPlatform::Solend,
-        ctx.accounts.supply_liquidity_mint
+        ctx.accounts.supply_liquidity_mint,
     )?;
 
     validation_utils::validate_solend_protocol_interaction_ix(&ctx, &action)?;
@@ -164,15 +158,14 @@ pub fn process_solend_interaction_instruction<'a>(
 
 pub fn process_solend_rebalance<'a>(
     accounts: &'a [AccountInfo<'a>],
-    args: RebalanceArgs
+    args: RebalanceArgs,
 ) -> ProgramResult {
     // TODO
     msg!("Instruction is currently a WIP");
 
     let ctx = SolendRebalanceAccounts::context(accounts)?;
-    let solauto_position = DeserializedAccount::<Position>::deserialize(
-        Some(ctx.accounts.solauto_position)
-    )?.unwrap();
+    let solauto_position =
+        DeserializedAccount::<Position>::deserialize(Some(ctx.accounts.solauto_position))?.unwrap();
 
     let std_accounts = SolautoStandardAccounts {
         signer: ctx.accounts.signer,
@@ -184,9 +177,9 @@ pub fn process_solend_rebalance<'a>(
         ixs_sysvar: Some(ctx.accounts.ixs_sysvar),
         solauto_position,
         solauto_fees_receiver_ta: Some(ctx.accounts.solauto_fees_receiver_ta),
-        authority_referral_state: DeserializedAccount::<RefferalState>::deserialize(
-            Some(ctx.accounts.authority_referral_state)
-        )?,
+        authority_referral_state: DeserializedAccount::<RefferalState>::deserialize(Some(
+            ctx.accounts.authority_referral_state,
+        ))?,
         referred_by_state: ctx.accounts.referred_by_state,
         referred_by_supply_ta: ctx.accounts.referred_by_supply_ta,
     };
@@ -194,7 +187,7 @@ pub fn process_solend_rebalance<'a>(
         &std_accounts,
         false,
         LendingPlatform::Solend,
-        Some(ctx.accounts.supply_liquidity_mint)
+        Some(ctx.accounts.supply_liquidity_mint),
     )?;
 
     rebalance::solend_rebalance(ctx, std_accounts, args)

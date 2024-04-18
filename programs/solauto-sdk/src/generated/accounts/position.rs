@@ -5,12 +5,7 @@
 //! [https://github.com/metaplex-foundation/kinobi]
 //!
 
-use crate::generated::types::GeneralPositionData;
-use crate::generated::types::KaminoPositionData;
-use crate::generated::types::LendingPlatform;
-use crate::generated::types::MarginfiPositionData;
-use crate::generated::types::SolautoSettingsParameters;
-use crate::generated::types::SolendPositionData;
+use crate::generated::types::PositionData;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 use solana_program::pubkey::Pubkey;
@@ -24,12 +19,8 @@ pub struct Position {
         serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
     )]
     pub authority: Pubkey,
-    pub setting_params: SolautoSettingsParameters,
-    pub general_data: GeneralPositionData,
-    pub lending_platform: LendingPlatform,
-    pub marginfi_data: Option<MarginfiPositionData>,
-    pub solend_data: Option<SolendPositionData>,
-    pub kamino_data: Option<KaminoPositionData>,
+    pub self_managed: bool,
+    pub position: Option<PositionData>,
 }
 
 impl Position {

@@ -15,20 +15,24 @@ type ProgramErrorConstructor = new (
 const codeToErrorMap: Map<number, ProgramErrorConstructor> = new Map();
 const nameToErrorMap: Map<string, ProgramErrorConstructor> = new Map();
 
-/** IncorrectSolautoSettingsAccount: Incorrect Solauto admin settings account */
-export class IncorrectSolautoSettingsAccountError extends ProgramError {
-  override readonly name: string = 'IncorrectSolautoSettingsAccount';
+/** InvalidSolautoPositionAccount: Incorrect Solauto position given the other accounts provided */
+export class InvalidSolautoPositionAccountError extends ProgramError {
+  override readonly name: string = 'InvalidSolautoPositionAccount';
 
   readonly code: number = 0x0; // 0
 
   constructor(program: Program, cause?: Error) {
-    super('Incorrect Solauto admin settings account', program, cause);
+    super(
+      'Incorrect Solauto position given the other accounts provided',
+      program,
+      cause
+    );
   }
 }
-codeToErrorMap.set(0x0, IncorrectSolautoSettingsAccountError);
+codeToErrorMap.set(0x0, InvalidSolautoPositionAccountError);
 nameToErrorMap.set(
-  'IncorrectSolautoSettingsAccount',
-  IncorrectSolautoSettingsAccountError
+  'InvalidSolautoPositionAccount',
+  InvalidSolautoPositionAccountError
 );
 
 /** IncorrectFeesReceiverAccount: Incorrect fee receiver account provided */

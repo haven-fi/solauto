@@ -27,15 +27,17 @@ pub struct SolendRebalance {
 
     pub ixs_sysvar: solana_program::pubkey::Pubkey,
 
-    pub solauto_admin_settings: solana_program::pubkey::Pubkey,
-
     pub solauto_fees_receiver_ta: solana_program::pubkey::Pubkey,
 
     pub authority_referral_state: solana_program::pubkey::Pubkey,
 
-    pub referred_by_ta: Option<solana_program::pubkey::Pubkey>,
+    pub referred_by_state: Option<solana_program::pubkey::Pubkey>,
 
-    pub solauto_position: Option<solana_program::pubkey::Pubkey>,
+    pub referred_by_supply_ta: Option<solana_program::pubkey::Pubkey>,
+
+    pub solauto_position: solana_program::pubkey::Pubkey,
+
+    pub intermediary_ta: solana_program::pubkey::Pubkey,
 
     pub lending_market: solana_program::pubkey::Pubkey,
 
@@ -49,13 +51,13 @@ pub struct SolendRebalance {
 
     pub supply_liquidity_mint: solana_program::pubkey::Pubkey,
 
-    pub source_supply_liquidity_ta: solana_program::pubkey::Pubkey,
+    pub position_supply_liquidity_ta: solana_program::pubkey::Pubkey,
 
     pub reserve_supply_liquidity_ta: solana_program::pubkey::Pubkey,
 
     pub supply_collateral_mint: solana_program::pubkey::Pubkey,
 
-    pub source_supply_collateral_ta: solana_program::pubkey::Pubkey,
+    pub position_supply_collateral_ta: solana_program::pubkey::Pubkey,
 
     pub reserve_supply_collateral_ta: solana_program::pubkey::Pubkey,
 
@@ -65,7 +67,7 @@ pub struct SolendRebalance {
 
     pub debt_liquidity_mint: solana_program::pubkey::Pubkey,
 
-    pub source_debt_liquidity_ta: solana_program::pubkey::Pubkey,
+    pub position_debt_liquidity_ta: solana_program::pubkey::Pubkey,
 
     pub reserve_debt_liquidity_ta: solana_program::pubkey::Pubkey,
 }
@@ -83,7 +85,7 @@ impl SolendRebalance {
         args: SolendRebalanceInstructionArgs,
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
-        let mut accounts = Vec::with_capacity(29 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(30 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.signer,
             true,
@@ -114,10 +116,6 @@ impl SolendRebalance {
             self.ixs_sysvar,
             false,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.solauto_admin_settings,
-            false,
-        ));
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.solauto_fees_receiver_ta,
             false,
@@ -126,9 +124,9 @@ impl SolendRebalance {
             self.authority_referral_state,
             false,
         ));
-        if let Some(referred_by_ta) = self.referred_by_ta {
-            accounts.push(solana_program::instruction::AccountMeta::new(
-                referred_by_ta,
+        if let Some(referred_by_state) = self.referred_by_state {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                referred_by_state,
                 false,
             ));
         } else {
@@ -137,9 +135,9 @@ impl SolendRebalance {
                 false,
             ));
         }
-        if let Some(solauto_position) = self.solauto_position {
+        if let Some(referred_by_supply_ta) = self.referred_by_supply_ta {
             accounts.push(solana_program::instruction::AccountMeta::new(
-                solauto_position,
+                referred_by_supply_ta,
                 false,
             ));
         } else {
@@ -148,6 +146,14 @@ impl SolendRebalance {
                 false,
             ));
         }
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            self.solauto_position,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            self.intermediary_ta,
+            false,
+        ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.lending_market,
             false,
@@ -173,7 +179,7 @@ impl SolendRebalance {
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
-            self.source_supply_liquidity_ta,
+            self.position_supply_liquidity_ta,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
@@ -185,7 +191,7 @@ impl SolendRebalance {
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
-            self.source_supply_collateral_ta,
+            self.position_supply_collateral_ta,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
@@ -205,7 +211,7 @@ impl SolendRebalance {
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
-            self.source_debt_liquidity_ta,
+            self.position_debt_liquidity_ta,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
@@ -232,7 +238,7 @@ struct SolendRebalanceInstructionData {
 
 impl SolendRebalanceInstructionData {
     fn new() -> Self {
-        Self { discriminator: 11 }
+        Self { discriminator: 10 }
     }
 }
 
@@ -254,27 +260,28 @@ pub struct SolendRebalanceInstructionArgs {
 ///   5. `[]` clock
 ///   6. `[optional]` rent (default to `SysvarRent111111111111111111111111111111111`)
 ///   7. `[]` ixs_sysvar
-///   8. `[]` solauto_admin_settings
-///   9. `[writable]` solauto_fees_receiver_ta
-///   10. `[]` authority_referral_state
-///   11. `[writable, optional]` referred_by_ta
-///   12. `[writable, optional]` solauto_position
-///   13. `[]` lending_market
-///   14. `[writable]` obligation
-///   15. `[writable]` supply_reserve
-///   16. `[]` supply_reserve_pyth_price_oracle
-///   17. `[]` supply_reserve_switchboard_oracle
-///   18. `[]` supply_liquidity_mint
-///   19. `[writable]` source_supply_liquidity_ta
-///   20. `[writable]` reserve_supply_liquidity_ta
-///   21. `[]` supply_collateral_mint
-///   22. `[writable]` source_supply_collateral_ta
-///   23. `[writable]` reserve_supply_collateral_ta
-///   24. `[writable]` debt_reserve
-///   25. `[writable]` debt_reserve_fee_receiver_ta
-///   26. `[]` debt_liquidity_mint
-///   27. `[writable]` source_debt_liquidity_ta
-///   28. `[writable]` reserve_debt_liquidity_ta
+///   8. `[writable]` solauto_fees_receiver_ta
+///   9. `[]` authority_referral_state
+///   10. `[optional]` referred_by_state
+///   11. `[writable, optional]` referred_by_supply_ta
+///   12. `[writable]` solauto_position
+///   13. `[writable]` intermediary_ta
+///   14. `[]` lending_market
+///   15. `[writable]` obligation
+///   16. `[writable]` supply_reserve
+///   17. `[]` supply_reserve_pyth_price_oracle
+///   18. `[]` supply_reserve_switchboard_oracle
+///   19. `[]` supply_liquidity_mint
+///   20. `[writable]` position_supply_liquidity_ta
+///   21. `[writable]` reserve_supply_liquidity_ta
+///   22. `[]` supply_collateral_mint
+///   23. `[writable]` position_supply_collateral_ta
+///   24. `[writable]` reserve_supply_collateral_ta
+///   25. `[writable]` debt_reserve
+///   26. `[writable]` debt_reserve_fee_receiver_ta
+///   27. `[]` debt_liquidity_mint
+///   28. `[writable]` position_debt_liquidity_ta
+///   29. `[writable]` reserve_debt_liquidity_ta
 #[derive(Default)]
 pub struct SolendRebalanceBuilder {
     signer: Option<solana_program::pubkey::Pubkey>,
@@ -285,26 +292,27 @@ pub struct SolendRebalanceBuilder {
     clock: Option<solana_program::pubkey::Pubkey>,
     rent: Option<solana_program::pubkey::Pubkey>,
     ixs_sysvar: Option<solana_program::pubkey::Pubkey>,
-    solauto_admin_settings: Option<solana_program::pubkey::Pubkey>,
     solauto_fees_receiver_ta: Option<solana_program::pubkey::Pubkey>,
     authority_referral_state: Option<solana_program::pubkey::Pubkey>,
-    referred_by_ta: Option<solana_program::pubkey::Pubkey>,
+    referred_by_state: Option<solana_program::pubkey::Pubkey>,
+    referred_by_supply_ta: Option<solana_program::pubkey::Pubkey>,
     solauto_position: Option<solana_program::pubkey::Pubkey>,
+    intermediary_ta: Option<solana_program::pubkey::Pubkey>,
     lending_market: Option<solana_program::pubkey::Pubkey>,
     obligation: Option<solana_program::pubkey::Pubkey>,
     supply_reserve: Option<solana_program::pubkey::Pubkey>,
     supply_reserve_pyth_price_oracle: Option<solana_program::pubkey::Pubkey>,
     supply_reserve_switchboard_oracle: Option<solana_program::pubkey::Pubkey>,
     supply_liquidity_mint: Option<solana_program::pubkey::Pubkey>,
-    source_supply_liquidity_ta: Option<solana_program::pubkey::Pubkey>,
+    position_supply_liquidity_ta: Option<solana_program::pubkey::Pubkey>,
     reserve_supply_liquidity_ta: Option<solana_program::pubkey::Pubkey>,
     supply_collateral_mint: Option<solana_program::pubkey::Pubkey>,
-    source_supply_collateral_ta: Option<solana_program::pubkey::Pubkey>,
+    position_supply_collateral_ta: Option<solana_program::pubkey::Pubkey>,
     reserve_supply_collateral_ta: Option<solana_program::pubkey::Pubkey>,
     debt_reserve: Option<solana_program::pubkey::Pubkey>,
     debt_reserve_fee_receiver_ta: Option<solana_program::pubkey::Pubkey>,
     debt_liquidity_mint: Option<solana_program::pubkey::Pubkey>,
-    source_debt_liquidity_ta: Option<solana_program::pubkey::Pubkey>,
+    position_debt_liquidity_ta: Option<solana_program::pubkey::Pubkey>,
     reserve_debt_liquidity_ta: Option<solana_program::pubkey::Pubkey>,
     rebalance_args: Option<RebalanceArgs>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
@@ -359,14 +367,6 @@ impl SolendRebalanceBuilder {
         self
     }
     #[inline(always)]
-    pub fn solauto_admin_settings(
-        &mut self,
-        solauto_admin_settings: solana_program::pubkey::Pubkey,
-    ) -> &mut Self {
-        self.solauto_admin_settings = Some(solauto_admin_settings);
-        self
-    }
-    #[inline(always)]
     pub fn solauto_fees_receiver_ta(
         &mut self,
         solauto_fees_receiver_ta: solana_program::pubkey::Pubkey,
@@ -384,20 +384,36 @@ impl SolendRebalanceBuilder {
     }
     /// `[optional account]`
     #[inline(always)]
-    pub fn referred_by_ta(
+    pub fn referred_by_state(
         &mut self,
-        referred_by_ta: Option<solana_program::pubkey::Pubkey>,
+        referred_by_state: Option<solana_program::pubkey::Pubkey>,
     ) -> &mut Self {
-        self.referred_by_ta = referred_by_ta;
+        self.referred_by_state = referred_by_state;
         self
     }
     /// `[optional account]`
     #[inline(always)]
+    pub fn referred_by_supply_ta(
+        &mut self,
+        referred_by_supply_ta: Option<solana_program::pubkey::Pubkey>,
+    ) -> &mut Self {
+        self.referred_by_supply_ta = referred_by_supply_ta;
+        self
+    }
+    #[inline(always)]
     pub fn solauto_position(
         &mut self,
-        solauto_position: Option<solana_program::pubkey::Pubkey>,
+        solauto_position: solana_program::pubkey::Pubkey,
     ) -> &mut Self {
-        self.solauto_position = solauto_position;
+        self.solauto_position = Some(solauto_position);
+        self
+    }
+    #[inline(always)]
+    pub fn intermediary_ta(
+        &mut self,
+        intermediary_ta: solana_program::pubkey::Pubkey,
+    ) -> &mut Self {
+        self.intermediary_ta = Some(intermediary_ta);
         self
     }
     #[inline(always)]
@@ -440,11 +456,11 @@ impl SolendRebalanceBuilder {
         self
     }
     #[inline(always)]
-    pub fn source_supply_liquidity_ta(
+    pub fn position_supply_liquidity_ta(
         &mut self,
-        source_supply_liquidity_ta: solana_program::pubkey::Pubkey,
+        position_supply_liquidity_ta: solana_program::pubkey::Pubkey,
     ) -> &mut Self {
-        self.source_supply_liquidity_ta = Some(source_supply_liquidity_ta);
+        self.position_supply_liquidity_ta = Some(position_supply_liquidity_ta);
         self
     }
     #[inline(always)]
@@ -464,11 +480,11 @@ impl SolendRebalanceBuilder {
         self
     }
     #[inline(always)]
-    pub fn source_supply_collateral_ta(
+    pub fn position_supply_collateral_ta(
         &mut self,
-        source_supply_collateral_ta: solana_program::pubkey::Pubkey,
+        position_supply_collateral_ta: solana_program::pubkey::Pubkey,
     ) -> &mut Self {
-        self.source_supply_collateral_ta = Some(source_supply_collateral_ta);
+        self.position_supply_collateral_ta = Some(position_supply_collateral_ta);
         self
     }
     #[inline(always)]
@@ -501,11 +517,11 @@ impl SolendRebalanceBuilder {
         self
     }
     #[inline(always)]
-    pub fn source_debt_liquidity_ta(
+    pub fn position_debt_liquidity_ta(
         &mut self,
-        source_debt_liquidity_ta: solana_program::pubkey::Pubkey,
+        position_debt_liquidity_ta: solana_program::pubkey::Pubkey,
     ) -> &mut Self {
-        self.source_debt_liquidity_ta = Some(source_debt_liquidity_ta);
+        self.position_debt_liquidity_ta = Some(position_debt_liquidity_ta);
         self
     }
     #[inline(always)]
@@ -558,17 +574,16 @@ impl SolendRebalanceBuilder {
                 "SysvarRent111111111111111111111111111111111"
             )),
             ixs_sysvar: self.ixs_sysvar.expect("ixs_sysvar is not set"),
-            solauto_admin_settings: self
-                .solauto_admin_settings
-                .expect("solauto_admin_settings is not set"),
             solauto_fees_receiver_ta: self
                 .solauto_fees_receiver_ta
                 .expect("solauto_fees_receiver_ta is not set"),
             authority_referral_state: self
                 .authority_referral_state
                 .expect("authority_referral_state is not set"),
-            referred_by_ta: self.referred_by_ta,
-            solauto_position: self.solauto_position,
+            referred_by_state: self.referred_by_state,
+            referred_by_supply_ta: self.referred_by_supply_ta,
+            solauto_position: self.solauto_position.expect("solauto_position is not set"),
+            intermediary_ta: self.intermediary_ta.expect("intermediary_ta is not set"),
             lending_market: self.lending_market.expect("lending_market is not set"),
             obligation: self.obligation.expect("obligation is not set"),
             supply_reserve: self.supply_reserve.expect("supply_reserve is not set"),
@@ -581,18 +596,18 @@ impl SolendRebalanceBuilder {
             supply_liquidity_mint: self
                 .supply_liquidity_mint
                 .expect("supply_liquidity_mint is not set"),
-            source_supply_liquidity_ta: self
-                .source_supply_liquidity_ta
-                .expect("source_supply_liquidity_ta is not set"),
+            position_supply_liquidity_ta: self
+                .position_supply_liquidity_ta
+                .expect("position_supply_liquidity_ta is not set"),
             reserve_supply_liquidity_ta: self
                 .reserve_supply_liquidity_ta
                 .expect("reserve_supply_liquidity_ta is not set"),
             supply_collateral_mint: self
                 .supply_collateral_mint
                 .expect("supply_collateral_mint is not set"),
-            source_supply_collateral_ta: self
-                .source_supply_collateral_ta
-                .expect("source_supply_collateral_ta is not set"),
+            position_supply_collateral_ta: self
+                .position_supply_collateral_ta
+                .expect("position_supply_collateral_ta is not set"),
             reserve_supply_collateral_ta: self
                 .reserve_supply_collateral_ta
                 .expect("reserve_supply_collateral_ta is not set"),
@@ -603,9 +618,9 @@ impl SolendRebalanceBuilder {
             debt_liquidity_mint: self
                 .debt_liquidity_mint
                 .expect("debt_liquidity_mint is not set"),
-            source_debt_liquidity_ta: self
-                .source_debt_liquidity_ta
-                .expect("source_debt_liquidity_ta is not set"),
+            position_debt_liquidity_ta: self
+                .position_debt_liquidity_ta
+                .expect("position_debt_liquidity_ta is not set"),
             reserve_debt_liquidity_ta: self
                 .reserve_debt_liquidity_ta
                 .expect("reserve_debt_liquidity_ta is not set"),
@@ -639,15 +654,17 @@ pub struct SolendRebalanceCpiAccounts<'a, 'b> {
 
     pub ixs_sysvar: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub solauto_admin_settings: &'b solana_program::account_info::AccountInfo<'a>,
-
     pub solauto_fees_receiver_ta: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub authority_referral_state: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub referred_by_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    pub referred_by_state: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
-    pub solauto_position: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    pub referred_by_supply_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+
+    pub solauto_position: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub intermediary_ta: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub lending_market: &'b solana_program::account_info::AccountInfo<'a>,
 
@@ -661,13 +678,13 @@ pub struct SolendRebalanceCpiAccounts<'a, 'b> {
 
     pub supply_liquidity_mint: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub source_supply_liquidity_ta: &'b solana_program::account_info::AccountInfo<'a>,
+    pub position_supply_liquidity_ta: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub reserve_supply_liquidity_ta: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub supply_collateral_mint: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub source_supply_collateral_ta: &'b solana_program::account_info::AccountInfo<'a>,
+    pub position_supply_collateral_ta: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub reserve_supply_collateral_ta: &'b solana_program::account_info::AccountInfo<'a>,
 
@@ -677,7 +694,7 @@ pub struct SolendRebalanceCpiAccounts<'a, 'b> {
 
     pub debt_liquidity_mint: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub source_debt_liquidity_ta: &'b solana_program::account_info::AccountInfo<'a>,
+    pub position_debt_liquidity_ta: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub reserve_debt_liquidity_ta: &'b solana_program::account_info::AccountInfo<'a>,
 }
@@ -703,15 +720,17 @@ pub struct SolendRebalanceCpi<'a, 'b> {
 
     pub ixs_sysvar: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub solauto_admin_settings: &'b solana_program::account_info::AccountInfo<'a>,
-
     pub solauto_fees_receiver_ta: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub authority_referral_state: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub referred_by_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    pub referred_by_state: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
-    pub solauto_position: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    pub referred_by_supply_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+
+    pub solauto_position: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub intermediary_ta: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub lending_market: &'b solana_program::account_info::AccountInfo<'a>,
 
@@ -725,13 +744,13 @@ pub struct SolendRebalanceCpi<'a, 'b> {
 
     pub supply_liquidity_mint: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub source_supply_liquidity_ta: &'b solana_program::account_info::AccountInfo<'a>,
+    pub position_supply_liquidity_ta: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub reserve_supply_liquidity_ta: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub supply_collateral_mint: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub source_supply_collateral_ta: &'b solana_program::account_info::AccountInfo<'a>,
+    pub position_supply_collateral_ta: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub reserve_supply_collateral_ta: &'b solana_program::account_info::AccountInfo<'a>,
 
@@ -741,7 +760,7 @@ pub struct SolendRebalanceCpi<'a, 'b> {
 
     pub debt_liquidity_mint: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub source_debt_liquidity_ta: &'b solana_program::account_info::AccountInfo<'a>,
+    pub position_debt_liquidity_ta: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub reserve_debt_liquidity_ta: &'b solana_program::account_info::AccountInfo<'a>,
     /// The arguments for the instruction.
@@ -764,26 +783,27 @@ impl<'a, 'b> SolendRebalanceCpi<'a, 'b> {
             clock: accounts.clock,
             rent: accounts.rent,
             ixs_sysvar: accounts.ixs_sysvar,
-            solauto_admin_settings: accounts.solauto_admin_settings,
             solauto_fees_receiver_ta: accounts.solauto_fees_receiver_ta,
             authority_referral_state: accounts.authority_referral_state,
-            referred_by_ta: accounts.referred_by_ta,
+            referred_by_state: accounts.referred_by_state,
+            referred_by_supply_ta: accounts.referred_by_supply_ta,
             solauto_position: accounts.solauto_position,
+            intermediary_ta: accounts.intermediary_ta,
             lending_market: accounts.lending_market,
             obligation: accounts.obligation,
             supply_reserve: accounts.supply_reserve,
             supply_reserve_pyth_price_oracle: accounts.supply_reserve_pyth_price_oracle,
             supply_reserve_switchboard_oracle: accounts.supply_reserve_switchboard_oracle,
             supply_liquidity_mint: accounts.supply_liquidity_mint,
-            source_supply_liquidity_ta: accounts.source_supply_liquidity_ta,
+            position_supply_liquidity_ta: accounts.position_supply_liquidity_ta,
             reserve_supply_liquidity_ta: accounts.reserve_supply_liquidity_ta,
             supply_collateral_mint: accounts.supply_collateral_mint,
-            source_supply_collateral_ta: accounts.source_supply_collateral_ta,
+            position_supply_collateral_ta: accounts.position_supply_collateral_ta,
             reserve_supply_collateral_ta: accounts.reserve_supply_collateral_ta,
             debt_reserve: accounts.debt_reserve,
             debt_reserve_fee_receiver_ta: accounts.debt_reserve_fee_receiver_ta,
             debt_liquidity_mint: accounts.debt_liquidity_mint,
-            source_debt_liquidity_ta: accounts.source_debt_liquidity_ta,
+            position_debt_liquidity_ta: accounts.position_debt_liquidity_ta,
             reserve_debt_liquidity_ta: accounts.reserve_debt_liquidity_ta,
             __args: args,
         }
@@ -821,7 +841,7 @@ impl<'a, 'b> SolendRebalanceCpi<'a, 'b> {
             bool,
         )],
     ) -> solana_program::entrypoint::ProgramResult {
-        let mut accounts = Vec::with_capacity(29 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(30 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             *self.signer.key,
             true,
@@ -854,10 +874,6 @@ impl<'a, 'b> SolendRebalanceCpi<'a, 'b> {
             *self.ixs_sysvar.key,
             false,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.solauto_admin_settings.key,
-            false,
-        ));
         accounts.push(solana_program::instruction::AccountMeta::new(
             *self.solauto_fees_receiver_ta.key,
             false,
@@ -866,9 +882,9 @@ impl<'a, 'b> SolendRebalanceCpi<'a, 'b> {
             *self.authority_referral_state.key,
             false,
         ));
-        if let Some(referred_by_ta) = self.referred_by_ta {
-            accounts.push(solana_program::instruction::AccountMeta::new(
-                *referred_by_ta.key,
+        if let Some(referred_by_state) = self.referred_by_state {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                *referred_by_state.key,
                 false,
             ));
         } else {
@@ -877,9 +893,9 @@ impl<'a, 'b> SolendRebalanceCpi<'a, 'b> {
                 false,
             ));
         }
-        if let Some(solauto_position) = self.solauto_position {
+        if let Some(referred_by_supply_ta) = self.referred_by_supply_ta {
             accounts.push(solana_program::instruction::AccountMeta::new(
-                *solauto_position.key,
+                *referred_by_supply_ta.key,
                 false,
             ));
         } else {
@@ -888,6 +904,14 @@ impl<'a, 'b> SolendRebalanceCpi<'a, 'b> {
                 false,
             ));
         }
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            *self.solauto_position.key,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            *self.intermediary_ta.key,
+            false,
+        ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             *self.lending_market.key,
             false,
@@ -913,7 +937,7 @@ impl<'a, 'b> SolendRebalanceCpi<'a, 'b> {
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.source_supply_liquidity_ta.key,
+            *self.position_supply_liquidity_ta.key,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
@@ -925,7 +949,7 @@ impl<'a, 'b> SolendRebalanceCpi<'a, 'b> {
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.source_supply_collateral_ta.key,
+            *self.position_supply_collateral_ta.key,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
@@ -945,7 +969,7 @@ impl<'a, 'b> SolendRebalanceCpi<'a, 'b> {
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.source_debt_liquidity_ta.key,
+            *self.position_debt_liquidity_ta.key,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
@@ -968,7 +992,7 @@ impl<'a, 'b> SolendRebalanceCpi<'a, 'b> {
             accounts,
             data,
         };
-        let mut account_infos = Vec::with_capacity(29 + 1 + remaining_accounts.len());
+        let mut account_infos = Vec::with_capacity(30 + 1 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
         account_infos.push(self.signer.clone());
         account_infos.push(self.solend_program.clone());
@@ -978,30 +1002,31 @@ impl<'a, 'b> SolendRebalanceCpi<'a, 'b> {
         account_infos.push(self.clock.clone());
         account_infos.push(self.rent.clone());
         account_infos.push(self.ixs_sysvar.clone());
-        account_infos.push(self.solauto_admin_settings.clone());
         account_infos.push(self.solauto_fees_receiver_ta.clone());
         account_infos.push(self.authority_referral_state.clone());
-        if let Some(referred_by_ta) = self.referred_by_ta {
-            account_infos.push(referred_by_ta.clone());
+        if let Some(referred_by_state) = self.referred_by_state {
+            account_infos.push(referred_by_state.clone());
         }
-        if let Some(solauto_position) = self.solauto_position {
-            account_infos.push(solauto_position.clone());
+        if let Some(referred_by_supply_ta) = self.referred_by_supply_ta {
+            account_infos.push(referred_by_supply_ta.clone());
         }
+        account_infos.push(self.solauto_position.clone());
+        account_infos.push(self.intermediary_ta.clone());
         account_infos.push(self.lending_market.clone());
         account_infos.push(self.obligation.clone());
         account_infos.push(self.supply_reserve.clone());
         account_infos.push(self.supply_reserve_pyth_price_oracle.clone());
         account_infos.push(self.supply_reserve_switchboard_oracle.clone());
         account_infos.push(self.supply_liquidity_mint.clone());
-        account_infos.push(self.source_supply_liquidity_ta.clone());
+        account_infos.push(self.position_supply_liquidity_ta.clone());
         account_infos.push(self.reserve_supply_liquidity_ta.clone());
         account_infos.push(self.supply_collateral_mint.clone());
-        account_infos.push(self.source_supply_collateral_ta.clone());
+        account_infos.push(self.position_supply_collateral_ta.clone());
         account_infos.push(self.reserve_supply_collateral_ta.clone());
         account_infos.push(self.debt_reserve.clone());
         account_infos.push(self.debt_reserve_fee_receiver_ta.clone());
         account_infos.push(self.debt_liquidity_mint.clone());
-        account_infos.push(self.source_debt_liquidity_ta.clone());
+        account_infos.push(self.position_debt_liquidity_ta.clone());
         account_infos.push(self.reserve_debt_liquidity_ta.clone());
         remaining_accounts
             .iter()
@@ -1027,27 +1052,28 @@ impl<'a, 'b> SolendRebalanceCpi<'a, 'b> {
 ///   5. `[]` clock
 ///   6. `[]` rent
 ///   7. `[]` ixs_sysvar
-///   8. `[]` solauto_admin_settings
-///   9. `[writable]` solauto_fees_receiver_ta
-///   10. `[]` authority_referral_state
-///   11. `[writable, optional]` referred_by_ta
-///   12. `[writable, optional]` solauto_position
-///   13. `[]` lending_market
-///   14. `[writable]` obligation
-///   15. `[writable]` supply_reserve
-///   16. `[]` supply_reserve_pyth_price_oracle
-///   17. `[]` supply_reserve_switchboard_oracle
-///   18. `[]` supply_liquidity_mint
-///   19. `[writable]` source_supply_liquidity_ta
-///   20. `[writable]` reserve_supply_liquidity_ta
-///   21. `[]` supply_collateral_mint
-///   22. `[writable]` source_supply_collateral_ta
-///   23. `[writable]` reserve_supply_collateral_ta
-///   24. `[writable]` debt_reserve
-///   25. `[writable]` debt_reserve_fee_receiver_ta
-///   26. `[]` debt_liquidity_mint
-///   27. `[writable]` source_debt_liquidity_ta
-///   28. `[writable]` reserve_debt_liquidity_ta
+///   8. `[writable]` solauto_fees_receiver_ta
+///   9. `[]` authority_referral_state
+///   10. `[optional]` referred_by_state
+///   11. `[writable, optional]` referred_by_supply_ta
+///   12. `[writable]` solauto_position
+///   13. `[writable]` intermediary_ta
+///   14. `[]` lending_market
+///   15. `[writable]` obligation
+///   16. `[writable]` supply_reserve
+///   17. `[]` supply_reserve_pyth_price_oracle
+///   18. `[]` supply_reserve_switchboard_oracle
+///   19. `[]` supply_liquidity_mint
+///   20. `[writable]` position_supply_liquidity_ta
+///   21. `[writable]` reserve_supply_liquidity_ta
+///   22. `[]` supply_collateral_mint
+///   23. `[writable]` position_supply_collateral_ta
+///   24. `[writable]` reserve_supply_collateral_ta
+///   25. `[writable]` debt_reserve
+///   26. `[writable]` debt_reserve_fee_receiver_ta
+///   27. `[]` debt_liquidity_mint
+///   28. `[writable]` position_debt_liquidity_ta
+///   29. `[writable]` reserve_debt_liquidity_ta
 pub struct SolendRebalanceCpiBuilder<'a, 'b> {
     instruction: Box<SolendRebalanceCpiBuilderInstruction<'a, 'b>>,
 }
@@ -1064,26 +1090,27 @@ impl<'a, 'b> SolendRebalanceCpiBuilder<'a, 'b> {
             clock: None,
             rent: None,
             ixs_sysvar: None,
-            solauto_admin_settings: None,
             solauto_fees_receiver_ta: None,
             authority_referral_state: None,
-            referred_by_ta: None,
+            referred_by_state: None,
+            referred_by_supply_ta: None,
             solauto_position: None,
+            intermediary_ta: None,
             lending_market: None,
             obligation: None,
             supply_reserve: None,
             supply_reserve_pyth_price_oracle: None,
             supply_reserve_switchboard_oracle: None,
             supply_liquidity_mint: None,
-            source_supply_liquidity_ta: None,
+            position_supply_liquidity_ta: None,
             reserve_supply_liquidity_ta: None,
             supply_collateral_mint: None,
-            source_supply_collateral_ta: None,
+            position_supply_collateral_ta: None,
             reserve_supply_collateral_ta: None,
             debt_reserve: None,
             debt_reserve_fee_receiver_ta: None,
             debt_liquidity_mint: None,
-            source_debt_liquidity_ta: None,
+            position_debt_liquidity_ta: None,
             reserve_debt_liquidity_ta: None,
             rebalance_args: None,
             __remaining_accounts: Vec::new(),
@@ -1149,14 +1176,6 @@ impl<'a, 'b> SolendRebalanceCpiBuilder<'a, 'b> {
         self
     }
     #[inline(always)]
-    pub fn solauto_admin_settings(
-        &mut self,
-        solauto_admin_settings: &'b solana_program::account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.solauto_admin_settings = Some(solauto_admin_settings);
-        self
-    }
-    #[inline(always)]
     pub fn solauto_fees_receiver_ta(
         &mut self,
         solauto_fees_receiver_ta: &'b solana_program::account_info::AccountInfo<'a>,
@@ -1174,20 +1193,36 @@ impl<'a, 'b> SolendRebalanceCpiBuilder<'a, 'b> {
     }
     /// `[optional account]`
     #[inline(always)]
-    pub fn referred_by_ta(
+    pub fn referred_by_state(
         &mut self,
-        referred_by_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+        referred_by_state: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     ) -> &mut Self {
-        self.instruction.referred_by_ta = referred_by_ta;
+        self.instruction.referred_by_state = referred_by_state;
         self
     }
     /// `[optional account]`
     #[inline(always)]
+    pub fn referred_by_supply_ta(
+        &mut self,
+        referred_by_supply_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    ) -> &mut Self {
+        self.instruction.referred_by_supply_ta = referred_by_supply_ta;
+        self
+    }
+    #[inline(always)]
     pub fn solauto_position(
         &mut self,
-        solauto_position: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+        solauto_position: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
-        self.instruction.solauto_position = solauto_position;
+        self.instruction.solauto_position = Some(solauto_position);
+        self
+    }
+    #[inline(always)]
+    pub fn intermediary_ta(
+        &mut self,
+        intermediary_ta: &'b solana_program::account_info::AccountInfo<'a>,
+    ) -> &mut Self {
+        self.instruction.intermediary_ta = Some(intermediary_ta);
         self
     }
     #[inline(always)]
@@ -1240,11 +1275,11 @@ impl<'a, 'b> SolendRebalanceCpiBuilder<'a, 'b> {
         self
     }
     #[inline(always)]
-    pub fn source_supply_liquidity_ta(
+    pub fn position_supply_liquidity_ta(
         &mut self,
-        source_supply_liquidity_ta: &'b solana_program::account_info::AccountInfo<'a>,
+        position_supply_liquidity_ta: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
-        self.instruction.source_supply_liquidity_ta = Some(source_supply_liquidity_ta);
+        self.instruction.position_supply_liquidity_ta = Some(position_supply_liquidity_ta);
         self
     }
     #[inline(always)]
@@ -1264,11 +1299,11 @@ impl<'a, 'b> SolendRebalanceCpiBuilder<'a, 'b> {
         self
     }
     #[inline(always)]
-    pub fn source_supply_collateral_ta(
+    pub fn position_supply_collateral_ta(
         &mut self,
-        source_supply_collateral_ta: &'b solana_program::account_info::AccountInfo<'a>,
+        position_supply_collateral_ta: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
-        self.instruction.source_supply_collateral_ta = Some(source_supply_collateral_ta);
+        self.instruction.position_supply_collateral_ta = Some(position_supply_collateral_ta);
         self
     }
     #[inline(always)]
@@ -1304,11 +1339,11 @@ impl<'a, 'b> SolendRebalanceCpiBuilder<'a, 'b> {
         self
     }
     #[inline(always)]
-    pub fn source_debt_liquidity_ta(
+    pub fn position_debt_liquidity_ta(
         &mut self,
-        source_debt_liquidity_ta: &'b solana_program::account_info::AccountInfo<'a>,
+        position_debt_liquidity_ta: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
-        self.instruction.source_debt_liquidity_ta = Some(source_debt_liquidity_ta);
+        self.instruction.position_debt_liquidity_ta = Some(position_debt_liquidity_ta);
         self
     }
     #[inline(always)]
@@ -1403,11 +1438,6 @@ impl<'a, 'b> SolendRebalanceCpiBuilder<'a, 'b> {
 
             ixs_sysvar: self.instruction.ixs_sysvar.expect("ixs_sysvar is not set"),
 
-            solauto_admin_settings: self
-                .instruction
-                .solauto_admin_settings
-                .expect("solauto_admin_settings is not set"),
-
             solauto_fees_receiver_ta: self
                 .instruction
                 .solauto_fees_receiver_ta
@@ -1418,9 +1448,19 @@ impl<'a, 'b> SolendRebalanceCpiBuilder<'a, 'b> {
                 .authority_referral_state
                 .expect("authority_referral_state is not set"),
 
-            referred_by_ta: self.instruction.referred_by_ta,
+            referred_by_state: self.instruction.referred_by_state,
 
-            solauto_position: self.instruction.solauto_position,
+            referred_by_supply_ta: self.instruction.referred_by_supply_ta,
+
+            solauto_position: self
+                .instruction
+                .solauto_position
+                .expect("solauto_position is not set"),
+
+            intermediary_ta: self
+                .instruction
+                .intermediary_ta
+                .expect("intermediary_ta is not set"),
 
             lending_market: self
                 .instruction
@@ -1449,10 +1489,10 @@ impl<'a, 'b> SolendRebalanceCpiBuilder<'a, 'b> {
                 .supply_liquidity_mint
                 .expect("supply_liquidity_mint is not set"),
 
-            source_supply_liquidity_ta: self
+            position_supply_liquidity_ta: self
                 .instruction
-                .source_supply_liquidity_ta
-                .expect("source_supply_liquidity_ta is not set"),
+                .position_supply_liquidity_ta
+                .expect("position_supply_liquidity_ta is not set"),
 
             reserve_supply_liquidity_ta: self
                 .instruction
@@ -1464,10 +1504,10 @@ impl<'a, 'b> SolendRebalanceCpiBuilder<'a, 'b> {
                 .supply_collateral_mint
                 .expect("supply_collateral_mint is not set"),
 
-            source_supply_collateral_ta: self
+            position_supply_collateral_ta: self
                 .instruction
-                .source_supply_collateral_ta
-                .expect("source_supply_collateral_ta is not set"),
+                .position_supply_collateral_ta
+                .expect("position_supply_collateral_ta is not set"),
 
             reserve_supply_collateral_ta: self
                 .instruction
@@ -1489,10 +1529,10 @@ impl<'a, 'b> SolendRebalanceCpiBuilder<'a, 'b> {
                 .debt_liquidity_mint
                 .expect("debt_liquidity_mint is not set"),
 
-            source_debt_liquidity_ta: self
+            position_debt_liquidity_ta: self
                 .instruction
-                .source_debt_liquidity_ta
-                .expect("source_debt_liquidity_ta is not set"),
+                .position_debt_liquidity_ta
+                .expect("position_debt_liquidity_ta is not set"),
 
             reserve_debt_liquidity_ta: self
                 .instruction
@@ -1517,26 +1557,27 @@ struct SolendRebalanceCpiBuilderInstruction<'a, 'b> {
     clock: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     rent: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     ixs_sysvar: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    solauto_admin_settings: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     solauto_fees_receiver_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     authority_referral_state: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    referred_by_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    referred_by_state: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    referred_by_supply_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     solauto_position: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    intermediary_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     lending_market: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     obligation: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     supply_reserve: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     supply_reserve_pyth_price_oracle: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     supply_reserve_switchboard_oracle: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     supply_liquidity_mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    source_supply_liquidity_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    position_supply_liquidity_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     reserve_supply_liquidity_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     supply_collateral_mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    source_supply_collateral_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    position_supply_collateral_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     reserve_supply_collateral_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     debt_reserve: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     debt_reserve_fee_receiver_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     debt_liquidity_mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    source_debt_liquidity_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    position_debt_liquidity_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     reserve_debt_liquidity_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     rebalance_args: Option<RebalanceArgs>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.

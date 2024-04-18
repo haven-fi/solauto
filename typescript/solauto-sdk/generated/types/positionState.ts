@@ -13,7 +13,7 @@ import {
   u64,
 } from '@metaplex-foundation/umi/serializers';
 
-export type GeneralPositionData = {
+export type PositionState = {
   liqUtilizationRateBps: number;
   netWorthUsdBaseAmount: bigint;
   baseAmountLiquidityNetWorth: bigint;
@@ -21,7 +21,7 @@ export type GeneralPositionData = {
   baseAmountBorrowed: bigint;
 };
 
-export type GeneralPositionDataArgs = {
+export type PositionStateArgs = {
   liqUtilizationRateBps: number;
   netWorthUsdBaseAmount: number | bigint;
   baseAmountLiquidityNetWorth: number | bigint;
@@ -29,11 +29,11 @@ export type GeneralPositionDataArgs = {
   baseAmountBorrowed: number | bigint;
 };
 
-export function getGeneralPositionDataSerializer(): Serializer<
-  GeneralPositionDataArgs,
-  GeneralPositionData
+export function getPositionStateSerializer(): Serializer<
+  PositionStateArgs,
+  PositionState
 > {
-  return struct<GeneralPositionData>(
+  return struct<PositionState>(
     [
       ['liqUtilizationRateBps', u16()],
       ['netWorthUsdBaseAmount', u64()],
@@ -41,6 +41,6 @@ export function getGeneralPositionDataSerializer(): Serializer<
       ['baseAmountSupplied', u64()],
       ['baseAmountBorrowed', u64()],
     ],
-    { description: 'GeneralPositionData' }
-  ) as Serializer<GeneralPositionDataArgs, GeneralPositionData>;
+    { description: 'PositionState' }
+  ) as Serializer<PositionStateArgs, PositionState>;
 }

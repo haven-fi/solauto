@@ -41,22 +41,22 @@ export type SolendProtocolInteractionInstructionAccounts = {
   ataProgram?: PublicKey | Pda;
   clock: PublicKey | Pda;
   rent?: PublicKey | Pda;
-  solautoPosition?: PublicKey | Pda;
+  solautoPosition: PublicKey | Pda;
   lendingMarket: PublicKey | Pda;
   obligation: PublicKey | Pda;
   supplyReserve?: PublicKey | Pda;
   supplyReservePythPriceOracle?: PublicKey | Pda;
   supplyReserveSwitchboardOracle?: PublicKey | Pda;
   supplyLiquidityMint?: PublicKey | Pda;
-  sourceSupplyLiquidityTa?: PublicKey | Pda;
+  authoritySupplyLiquidityTa?: PublicKey | Pda;
   reserveSupplyLiquidityTa?: PublicKey | Pda;
   supplyCollateralMint?: PublicKey | Pda;
-  sourceSupplyCollateralTa?: PublicKey | Pda;
+  authoritySupplyCollateralTa?: PublicKey | Pda;
   reserveSupplyCollateralTa?: PublicKey | Pda;
   debtReserve?: PublicKey | Pda;
   debtReserveFeeReceiverTa?: PublicKey | Pda;
   debtLiquidityMint?: PublicKey | Pda;
-  sourceDebtLiquidityTa?: PublicKey | Pda;
+  authorityDebtLiquidityTa?: PublicKey | Pda;
   reserveDebtLiquidityTa?: PublicKey | Pda;
 };
 
@@ -86,7 +86,7 @@ export function getSolendProtocolInteractionInstructionDataSerializer(): Seriali
       ],
       { description: 'SolendProtocolInteractionInstructionData' }
     ),
-    (value) => ({ ...value, discriminator: 9 })
+    (value) => ({ ...value, discriminator: 8 })
   ) as Serializer<
     SolendProtocolInteractionInstructionDataArgs,
     SolendProtocolInteractionInstructionData
@@ -177,10 +177,10 @@ export function solendProtocolInteraction(
       isWritable: false as boolean,
       value: input.supplyLiquidityMint ?? null,
     },
-    sourceSupplyLiquidityTa: {
+    authoritySupplyLiquidityTa: {
       index: 14,
       isWritable: true as boolean,
-      value: input.sourceSupplyLiquidityTa ?? null,
+      value: input.authoritySupplyLiquidityTa ?? null,
     },
     reserveSupplyLiquidityTa: {
       index: 15,
@@ -192,10 +192,10 @@ export function solendProtocolInteraction(
       isWritable: false as boolean,
       value: input.supplyCollateralMint ?? null,
     },
-    sourceSupplyCollateralTa: {
+    authoritySupplyCollateralTa: {
       index: 17,
       isWritable: true as boolean,
-      value: input.sourceSupplyCollateralTa ?? null,
+      value: input.authoritySupplyCollateralTa ?? null,
     },
     reserveSupplyCollateralTa: {
       index: 18,
@@ -217,10 +217,10 @@ export function solendProtocolInteraction(
       isWritable: false as boolean,
       value: input.debtLiquidityMint ?? null,
     },
-    sourceDebtLiquidityTa: {
+    authorityDebtLiquidityTa: {
       index: 22,
       isWritable: true as boolean,
-      value: input.sourceDebtLiquidityTa ?? null,
+      value: input.authorityDebtLiquidityTa ?? null,
     },
     reserveDebtLiquidityTa: {
       index: 23,

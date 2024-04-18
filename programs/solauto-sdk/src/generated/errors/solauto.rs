@@ -10,9 +10,9 @@ use thiserror::Error;
 
 #[derive(Clone, Debug, Eq, Error, FromPrimitive, PartialEq)]
 pub enum SolautoError {
-    /// 0 (0x0) - Incorrect Solauto admin settings account
-    #[error("Incorrect Solauto admin settings account")]
-    IncorrectSolautoSettingsAccount,
+    /// 0 (0x0) - Incorrect Solauto position given the other accounts provided
+    #[error("Incorrect Solauto position given the other accounts provided")]
+    InvalidSolautoPositionAccount,
     /// 1 (0x1) - Incorrect fee receiver account provided
     #[error("Incorrect fee receiver account provided")]
     IncorrectFeesReceiverAccount,

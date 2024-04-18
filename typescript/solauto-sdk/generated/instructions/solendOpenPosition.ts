@@ -8,8 +8,6 @@
 
 import {
   Context,
-  Option,
-  OptionOrNullable,
   Pda,
   PublicKey,
   Signer,
@@ -20,7 +18,6 @@ import {
 import {
   Serializer,
   mapSerializer,
-  option,
   struct,
   u8,
 } from '@metaplex-foundation/umi/serializers';
@@ -30,9 +27,9 @@ import {
   getAccountMetasAndSigners,
 } from '../shared';
 import {
-  PositionData,
-  PositionDataArgs,
-  getPositionDataSerializer,
+  UpdatePositionData,
+  UpdatePositionDataArgs,
+  getUpdatePositionDataSerializer,
 } from '../types';
 
 // Accounts.
@@ -43,32 +40,35 @@ export type SolendOpenPositionInstructionAccounts = {
   tokenProgram?: PublicKey | Pda;
   ataProgram?: PublicKey | Pda;
   rent?: PublicKey | Pda;
+  solautoFeesReceiver: PublicKey | Pda;
+  solautoFeesReceiverTa: PublicKey | Pda;
   signerReferralState: PublicKey | Pda;
   referralFeesMint: PublicKey | Pda;
-  signerReferralFeesTa: PublicKey | Pda;
+  signerReferralDestTa: PublicKey | Pda;
   referredByState?: PublicKey | Pda;
   referredByAuthority?: PublicKey | Pda;
-  referredByTa?: PublicKey | Pda;
-  solautoPosition?: PublicKey | Pda;
+  referredByDestTa?: PublicKey | Pda;
+  referredBySupplyTa?: PublicKey | Pda;
+  solautoPosition: PublicKey | Pda;
   lendingMarket: PublicKey | Pda;
   obligation: PublicKey | Pda;
   supplyReserve: PublicKey | Pda;
-  supplyLiquidityTa: PublicKey | Pda;
+  positionSupplyLiquidityTa: PublicKey | Pda;
   supplyLiquidityMint: PublicKey | Pda;
-  supplyCollateralTa: PublicKey | Pda;
+  positionSupplyCollateralTa: PublicKey | Pda;
   supplyCollateralMint: PublicKey | Pda;
-  debtLiquidityTa: PublicKey | Pda;
+  positionDebtLiquidityTa: PublicKey | Pda;
   debtLiquidityMint: PublicKey | Pda;
 };
 
 // Data.
 export type SolendOpenPositionInstructionData = {
   discriminator: number;
-  args: Option<PositionData>;
+  updatePositionData: UpdatePositionData;
 };
 
 export type SolendOpenPositionInstructionDataArgs = {
-  args: OptionOrNullable<PositionDataArgs>;
+  updatePositionData: UpdatePositionDataArgs;
 };
 
 export function getSolendOpenPositionInstructionDataSerializer(): Serializer<
@@ -83,11 +83,11 @@ export function getSolendOpenPositionInstructionDataSerializer(): Serializer<
     struct<SolendOpenPositionInstructionData>(
       [
         ['discriminator', u8()],
-        ['args', option(getPositionDataSerializer())],
+        ['updatePositionData', getUpdatePositionDataSerializer()],
       ],
       { description: 'SolendOpenPositionInstructionData' }
     ),
-    (value) => ({ ...value, discriminator: 3 })
+    (value) => ({ ...value, discriminator: 2 })
   ) as Serializer<
     SolendOpenPositionInstructionDataArgs,
     SolendOpenPositionInstructionData
@@ -138,83 +138,98 @@ export function solendOpenPosition(
       value: input.ataProgram ?? null,
     },
     rent: { index: 5, isWritable: false as boolean, value: input.rent ?? null },
-    signerReferralState: {
+    solautoFeesReceiver: {
       index: 6,
+      isWritable: false as boolean,
+      value: input.solautoFeesReceiver ?? null,
+    },
+    solautoFeesReceiverTa: {
+      index: 7,
+      isWritable: false as boolean,
+      value: input.solautoFeesReceiverTa ?? null,
+    },
+    signerReferralState: {
+      index: 8,
       isWritable: true as boolean,
       value: input.signerReferralState ?? null,
     },
     referralFeesMint: {
-      index: 7,
+      index: 9,
       isWritable: true as boolean,
       value: input.referralFeesMint ?? null,
     },
-    signerReferralFeesTa: {
-      index: 8,
+    signerReferralDestTa: {
+      index: 10,
       isWritable: true as boolean,
-      value: input.signerReferralFeesTa ?? null,
+      value: input.signerReferralDestTa ?? null,
     },
     referredByState: {
-      index: 9,
+      index: 11,
       isWritable: true as boolean,
       value: input.referredByState ?? null,
     },
     referredByAuthority: {
-      index: 10,
-      isWritable: true as boolean,
+      index: 12,
+      isWritable: false as boolean,
       value: input.referredByAuthority ?? null,
     },
-    referredByTa: {
-      index: 11,
+    referredByDestTa: {
+      index: 13,
       isWritable: true as boolean,
-      value: input.referredByTa ?? null,
+      value: input.referredByDestTa ?? null,
+    },
+    referredBySupplyTa: {
+      index: 14,
+      isWritable: true as boolean,
+      value: input.referredBySupplyTa ?? null,
     },
     solautoPosition: {
-      index: 12,
+      index: 15,
       isWritable: true as boolean,
       value: input.solautoPosition ?? null,
     },
     lendingMarket: {
-      index: 13,
+      index: 16,
       isWritable: false as boolean,
       value: input.lendingMarket ?? null,
     },
     obligation: {
-      index: 14,
+      index: 17,
       isWritable: true as boolean,
       value: input.obligation ?? null,
     },
     supplyReserve: {
-      index: 15,
+      index: 18,
       isWritable: false as boolean,
       value: input.supplyReserve ?? null,
     },
-    supplyLiquidityTa: {
-      index: 16,
+    positionSupplyLiquidityTa: {
+      index: 19,
       isWritable: true as boolean,
-      value: input.supplyLiquidityTa ?? null,
+      value: input.positionSupplyLiquidityTa ?? null,
     },
     supplyLiquidityMint: {
-      index: 17,
+      index: 20,
       isWritable: false as boolean,
       value: input.supplyLiquidityMint ?? null,
     },
-    supplyCollateralTa: {
-      index: 18,
+    positionSupplyCollateralTa: {
+      index: 21,
       isWritable: true as boolean,
-      value: input.supplyCollateralTa ?? null,
+      value: input.positionSupplyCollateralTa ?? null,
     },
     supplyCollateralMint: {
-      index: 19,
+      index: 22,
       isWritable: false as boolean,
       value: input.supplyCollateralMint ?? null,
     },
-    debtLiquidityTa: {
-      index: 20,
+    positionDebtLiquidityTa: {
+      index: 23,
       isWritable: true as boolean,
-      value: input.debtLiquidityTa ?? null,
+      value: input.positionDebtLiquidityTa ?? null,
     },
     debtLiquidityMint: {
-      index: 21,
+      index: 24,
       isWritable: false as boolean,
       value: input.debtLiquidityMint ?? null,
     },

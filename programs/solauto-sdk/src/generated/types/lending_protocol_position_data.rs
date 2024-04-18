@@ -11,16 +11,16 @@ use solana_program::pubkey::Pubkey;
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct MarginfiPositionData {
+pub struct LendingProtocolPositionData {
     #[cfg_attr(
         feature = "serde",
         serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
     )]
-    pub marginfi_account: Pubkey,
+    pub protocol_position: Pubkey,
     #[cfg_attr(
         feature = "serde",
         serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
     )]
-    pub supply_bank: Pubkey,
-    pub debt_bank: Option<Pubkey>,
+    pub supply_mint: Pubkey,
+    pub debt_mint: Option<Pubkey>,
 }

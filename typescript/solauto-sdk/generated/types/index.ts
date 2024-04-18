@@ -6,13 +6,12 @@
  * @see https://github.com/metaplex-foundation/kinobi
  */
 
-export * from './generalPositionData';
-export * from './kaminoPositionData';
 export * from './lendingPlatform';
-export * from './marginfiPositionData';
+export * from './lendingProtocolPositionData';
 export * from './positionData';
+export * from './positionState';
 export * from './rebalanceArgs';
 export * from './solautoAction';
 export * from './solautoSettingsParameters';
-export * from './solendPositionData';
+export * from './updatePositionData';
 export * from './withdrawParams';

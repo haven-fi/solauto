@@ -3,56 +3,6 @@
   "name": "solauto",
   "instructions": [
     {
-      "name": "UpdateSolautoAdminSettings",
-      "accounts": [
-        {
-          "name": "solautoAdmin",
-          "isMut": false,
-          "isSigner": true
-        },
-        {
-          "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "tokenProgram",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "rent",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "solautoAdminSettings",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "solautoFeesWallet",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "solautoFeesReceiverTa",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "solautoFeesMint",
-          "isMut": false,
-          "isSigner": false
-        }
-      ],
-      "args": [],
-      "discriminant": {
-        "type": "u8",
-        "value": 0
-      }
-    },
-    {
       "name": "ClaimReferralFees",
       "accounts": [
         {
@@ -94,7 +44,7 @@
       "args": [],
       "discriminant": {
         "type": "u8",
-        "value": 1
+        "value": 0
       }
     },
     {
@@ -131,6 +81,16 @@
           "isSigner": false
         },
         {
+          "name": "solautoFeesReceiver",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "solautoFeesReceiverTa",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
           "name": "signerReferralState",
           "isMut": true,
           "isSigner": false
@@ -141,7 +101,7 @@
           "isSigner": false
         },
         {
-          "name": "signerReferralFeesTa",
+          "name": "signerReferralDestTa",
           "isMut": true,
           "isSigner": false
         },
@@ -153,12 +113,18 @@
         },
         {
           "name": "referredByAuthority",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "referredByDestTa",
           "isMut": true,
           "isSigner": false,
           "isOptional": true
         },
         {
-          "name": "referredByTa",
+          "name": "referredBySupplyTa",
           "isMut": true,
           "isSigner": false,
           "isOptional": true
@@ -166,8 +132,7 @@
         {
           "name": "solautoPosition",
           "isMut": true,
-          "isSigner": false,
-          "isOptional": true
+          "isSigner": false
         },
         {
           "name": "marginfiGroup",
@@ -180,39 +145,37 @@
           "isSigner": false
         },
         {
-          "name": "supplyTa",
+          "name": "positionSupplyTa",
           "isMut": true,
           "isSigner": false
         },
         {
-          "name": "supplyTokenMint",
+          "name": "supplyMint",
           "isMut": false,
           "isSigner": false
         },
         {
-          "name": "debtTa",
+          "name": "positionDebtTa",
           "isMut": true,
           "isSigner": false
         },
         {
-          "name": "debtTokenMint",
+          "name": "debtMint",
           "isMut": false,
           "isSigner": false
         }
       ],
       "args": [
         {
-          "name": "args",
+          "name": "updatePositionData",
           "type": {
-            "option": {
-              "defined": "PositionData"
-            }
+            "defined": "UpdatePositionData"
           }
         }
       ],
       "discriminant": {
         "type": "u8",
-        "value": 2
+        "value": 1
       }
     },
     {
@@ -249,6 +212,16 @@
           "isSigner": false
         },
         {
+          "name": "solautoFeesReceiver",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "solautoFeesReceiverTa",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
           "name": "signerReferralState",
           "isMut": true,
           "isSigner": false
@@ -259,7 +232,7 @@
           "isSigner": false
         },
         {
-          "name": "signerReferralFeesTa",
+          "name": "signerReferralDestTa",
           "isMut": true,
           "isSigner": false
         },
@@ -271,12 +244,18 @@
         },
         {
           "name": "referredByAuthority",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "referredByDestTa",
           "isMut": true,
           "isSigner": false,
           "isOptional": true
         },
         {
-          "name": "referredByTa",
+          "name": "referredBySupplyTa",
           "isMut": true,
           "isSigner": false,
           "isOptional": true
@@ -284,8 +263,7 @@
         {
           "name": "solautoPosition",
           "isMut": true,
-          "isSigner": false,
-          "isOptional": true
+          "isSigner": false
         },
         {
           "name": "lendingMarket",
@@ -303,7 +281,7 @@
           "isSigner": false
         },
         {
-          "name": "supplyLiquidityTa",
+          "name": "positionSupplyLiquidityTa",
           "isMut": true,
           "isSigner": false
         },
@@ -313,7 +291,7 @@
           "isSigner": false
         },
         {
-          "name": "supplyCollateralTa",
+          "name": "positionSupplyCollateralTa",
           "isMut": true,
           "isSigner": false
         },
@@ -323,7 +301,7 @@
           "isSigner": false
         },
         {
-          "name": "debtLiquidityTa",
+          "name": "positionDebtLiquidityTa",
           "isMut": true,
           "isSigner": false
         },
@@ -335,17 +313,15 @@
       ],
       "args": [
         {
-          "name": "args",
+          "name": "updatePositionData",
           "type": {
-            "option": {
-              "defined": "PositionData"
-            }
+            "defined": "UpdatePositionData"
           }
         }
       ],
       "discriminant": {
         "type": "u8",
-        "value": 3
+        "value": 2
       }
     },
     {
@@ -372,7 +348,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 4
+        "value": 3
       }
     },
     {
@@ -408,7 +384,7 @@
       "args": [],
       "discriminant": {
         "type": "u8",
-        "value": 5
+        "value": 4
       }
     },
     {
@@ -434,7 +410,7 @@
       "args": [],
       "discriminant": {
         "type": "u8",
-        "value": 6
+        "value": 5
       }
     },
     {
@@ -509,7 +485,7 @@
       "args": [],
       "discriminant": {
         "type": "u8",
-        "value": 7
+        "value": 6
       }
     },
     {
@@ -541,7 +517,47 @@
           "isSigner": false
         },
         {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
           "name": "solautoPosition",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "supplyMint",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "authoritySupplyTa",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "bankSupplyTa",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "debtMint",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "authorityDebtTa",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "bankDebtTa",
           "isMut": true,
           "isSigner": false,
           "isOptional": true
@@ -557,7 +573,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 8
+        "value": 7
       }
     },
     {
@@ -601,8 +617,7 @@
         {
           "name": "solautoPosition",
           "isMut": true,
-          "isSigner": false,
-          "isOptional": true
+          "isSigner": false
         },
         {
           "name": "lendingMarket",
@@ -639,7 +654,7 @@
           "isOptional": true
         },
         {
-          "name": "sourceSupplyLiquidityTa",
+          "name": "authoritySupplyLiquidityTa",
           "isMut": true,
           "isSigner": false,
           "isOptional": true
@@ -657,7 +672,7 @@
           "isOptional": true
         },
         {
-          "name": "sourceSupplyCollateralTa",
+          "name": "authoritySupplyCollateralTa",
           "isMut": true,
           "isSigner": false,
           "isOptional": true
@@ -687,7 +702,7 @@
           "isOptional": true
         },
         {
-          "name": "sourceDebtLiquidityTa",
+          "name": "authorityDebtLiquidityTa",
           "isMut": true,
           "isSigner": false,
           "isOptional": true
@@ -709,7 +724,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 9
+        "value": 8
       }
     },
     {
@@ -741,12 +756,12 @@
           "isSigner": false
         },
         {
-          "name": "ixsSysvar",
+          "name": "rent",
           "isMut": false,
           "isSigner": false
         },
         {
-          "name": "solautoAdminSettings",
+          "name": "ixsSysvar",
           "isMut": false,
           "isSigner": false
         },
@@ -761,7 +776,13 @@
           "isSigner": false
         },
         {
-          "name": "referredByTa",
+          "name": "referredByState",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "referredBySupplyTa",
           "isMut": true,
           "isSigner": false,
           "isOptional": true
@@ -769,8 +790,42 @@
         {
           "name": "solautoPosition",
           "isMut": true,
-          "isSigner": false,
-          "isOptional": true
+          "isSigner": false
+        },
+        {
+          "name": "intermediaryTa",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "supplyMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "positionSupplyTa",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "bankSupplyTa",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "debtMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "positionDebtTa",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "bankDebtTa",
+          "isMut": true,
+          "isSigner": false
         }
       ],
       "args": [
@@ -783,7 +838,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 10
+        "value": 9
       }
     },
     {
@@ -830,11 +885,6 @@
           "isSigner": false
         },
         {
-          "name": "solautoAdminSettings",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
           "name": "solautoFeesReceiverTa",
           "isMut": true,
           "isSigner": false
@@ -845,7 +895,13 @@
           "isSigner": false
         },
         {
-          "name": "referredByTa",
+          "name": "referredByState",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "referredBySupplyTa",
           "isMut": true,
           "isSigner": false,
           "isOptional": true
@@ -853,8 +909,12 @@
         {
           "name": "solautoPosition",
           "isMut": true,
-          "isSigner": false,
-          "isOptional": true
+          "isSigner": false
+        },
+        {
+          "name": "intermediaryTa",
+          "isMut": true,
+          "isSigner": false
         },
         {
           "name": "lendingMarket",
@@ -887,7 +947,7 @@
           "isSigner": false
         },
         {
-          "name": "sourceSupplyLiquidityTa",
+          "name": "positionSupplyLiquidityTa",
           "isMut": true,
           "isSigner": false
         },
@@ -902,7 +962,7 @@
           "isSigner": false
         },
         {
-          "name": "sourceSupplyCollateralTa",
+          "name": "positionSupplyCollateralTa",
           "isMut": true,
           "isSigner": false
         },
@@ -927,7 +987,7 @@
           "isSigner": false
         },
         {
-          "name": "sourceDebtLiquidityTa",
+          "name": "positionDebtLiquidityTa",
           "isMut": true,
           "isSigner": false
         },
@@ -947,7 +1007,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 11
+        "value": 10
       }
     }
   ],
@@ -966,44 +1026,14 @@
             "type": "publicKey"
           },
           {
-            "name": "settingParams",
-            "type": {
-              "defined": "SolautoSettingsParameters"
-            }
+            "name": "selfManaged",
+            "type": "bool"
           },
           {
-            "name": "generalData",
-            "type": {
-              "defined": "GeneralPositionData"
-            }
-          },
-          {
-            "name": "lendingPlatform",
-            "type": {
-              "defined": "LendingPlatform"
-            }
-          },
-          {
-            "name": "marginfiData",
+            "name": "position",
             "type": {
               "option": {
-                "defined": "MarginfiPositionData"
-              }
-            }
-          },
-          {
-            "name": "solendData",
-            "type": {
-              "option": {
-                "defined": "SolendPositionData"
-              }
-            }
-          },
-          {
-            "name": "kaminoData",
-            "type": {
-              "option": {
-                "defined": "KaminoPositionData"
+                "defined": "PositionData"
               }
             }
           }
@@ -1020,7 +1050,7 @@
             "type": "publicKey"
           },
           {
-            "name": "referredByTa",
+            "name": "referredByState",
             "type": {
               "option": "publicKey"
             }
@@ -1030,7 +1060,7 @@
             "type": "publicKey"
           },
           {
-            "name": "feesTa",
+            "name": "destFeesTa",
             "type": "publicKey"
           }
         ]
@@ -1055,7 +1085,7 @@
   ],
   "types": [
     {
-      "name": "PositionData",
+      "name": "UpdatePositionData",
       "type": {
         "kind": "struct",
         "fields": [
@@ -1064,38 +1094,18 @@
             "type": "u8"
           },
           {
-            "name": "referredByAuthority",
-            "type": {
-              "option": "publicKey"
-            }
-          },
-          {
             "name": "settingParams",
             "type": {
-              "defined": "SolautoSettingsParameters"
-            }
-          },
-          {
-            "name": "marginfiData",
-            "type": {
               "option": {
-                "defined": "MarginfiPositionData"
+                "defined": "SolautoSettingsParameters"
               }
             }
           },
           {
-            "name": "solendData",
+            "name": "protocolData",
             "type": {
               "option": {
-                "defined": "SolendPositionData"
-              }
-            }
-          },
-          {
-            "name": "kaminoData",
-            "type": {
-              "option": {
-                "defined": "KaminoPositionData"
+                "defined": "LendingProtocolPositionData"
               }
             }
           }
@@ -1147,20 +1157,20 @@
       }
     },
     {
-      "name": "SolendPositionData",
+      "name": "LendingProtocolPositionData",
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "obligation",
+            "name": "protocolPosition",
             "type": "publicKey"
           },
           {
-            "name": "supplyReserve",
+            "name": "supplyMint",
             "type": "publicKey"
           },
           {
-            "name": "debtReserve",
+            "name": "debtMint",
             "type": {
               "option": "publicKey"
             }
@@ -1169,36 +1179,7 @@
       }
     },
     {
-      "name": "MarginfiPositionData",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "marginfiAccount",
-            "type": "publicKey"
-          },
-          {
-            "name": "supplyBank",
-            "type": "publicKey"
-          },
-          {
-            "name": "debtBank",
-            "type": {
-              "option": "publicKey"
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "KaminoPositionData",
-      "type": {
-        "kind": "struct",
-        "fields": []
-      }
-    },
-    {
-      "name": "GeneralPositionData",
+      "name": "PositionState",
       "type": {
         "kind": "struct",
         "fields": [
@@ -1221,6 +1202,40 @@
           {
             "name": "baseAmountBorrowed",
             "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PositionData",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "settingParams",
+            "type": {
+              "defined": "SolautoSettingsParameters"
+            }
+          },
+          {
+            "name": "state",
+            "type": {
+              "defined": "PositionState"
+            }
+          },
+          {
+            "name": "lendingPlatform",
+            "type": {
+              "defined": "LendingPlatform"
+            }
+          },
+          {
+            "name": "protocolData",
+            "type": {
+              "option": {
+                "defined": "LendingProtocolPositionData"
+              }
+            }
           }
         ]
       }
@@ -1297,8 +1312,8 @@
   "errors": [
     {
       "code": 0,
-      "name": "IncorrectSolautoSettingsAccount",
-      "msg": "Incorrect Solauto admin settings account"
+      "name": "InvalidSolautoPositionAccount",
+      "msg": "Incorrect Solauto position given the other accounts provided"
     },
     {
       "code": 1,

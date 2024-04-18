@@ -63,7 +63,10 @@ pub fn solend_refresh_accounts(
                 &data_accounts.obligation.data,
             )?;
 
-            SolautoManager::refresh_position(&obligation_position, solauto_position.as_mut().unwrap());
+            SolautoManager::refresh_position(
+                &obligation_position,
+                solauto_position.as_mut().unwrap(),
+            );
         }
     }
 

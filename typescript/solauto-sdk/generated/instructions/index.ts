@@ -17,4 +17,3 @@ export * from './solendProtocolInteraction';
 export * from './solendRebalance';
 export * from './solendRefreshData';
 export * from './updatePosition';
-export * from './updateSolautoAdminSettings';

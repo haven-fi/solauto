@@ -5,15 +5,15 @@
 //! [https://github.com/metaplex-foundation/kinobi]
 //!
 
+use crate::generated::types::LendingProtocolPositionData;
+use crate::generated::types::SolautoSettingsParameters;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct GeneralPositionData {
-    pub liq_utilization_rate_bps: u16,
-    pub net_worth_usd_base_amount: u64,
-    pub base_amount_liquidity_net_worth: u64,
-    pub base_amount_supplied: u64,
-    pub base_amount_borrowed: u64,
+pub struct UpdatePositionData {
+    pub position_id: u8,
+    pub setting_params: Option<SolautoSettingsParameters>,
+    pub protocol_data: Option<LendingProtocolPositionData>,
 }

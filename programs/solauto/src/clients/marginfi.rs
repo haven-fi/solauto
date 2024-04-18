@@ -84,7 +84,7 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
         &self,
         base_unit_amount: u64,
         destination: &'a AccountInfo<'a>,
-        std_accounts: &'b SolautoStandardAccounts<'a>
+        std_accounts: &'b SolautoStandardAccounts<'a>,
     ) -> ProgramResult {
         // TODO
         Ok(())
@@ -94,7 +94,7 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
         &self,
         base_unit_amount: u64,
         destination: &'a AccountInfo<'a>,
-        std_accounts: &'b SolautoStandardAccounts<'a>
+        std_accounts: &'b SolautoStandardAccounts<'a>,
     ) -> ProgramResult {
         // TODO
         Ok(())

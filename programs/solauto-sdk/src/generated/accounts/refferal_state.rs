@@ -17,7 +17,7 @@ pub struct RefferalState {
         serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
     )]
     pub authority: Pubkey,
-    pub referred_by_ta: Option<Pubkey>,
+    pub referred_by_state: Option<Pubkey>,
     #[cfg_attr(
         feature = "serde",
         serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
@@ -27,7 +27,7 @@ pub struct RefferalState {
         feature = "serde",
         serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
     )]
-    pub fees_ta: Pubkey,
+    pub dest_fees_ta: Pubkey,
 }
 
 impl RefferalState {

@@ -32,16 +32,16 @@ export type RefferalState = Account<RefferalStateAccountData>;
 
 export type RefferalStateAccountData = {
   authority: PublicKey;
-  referredByTa: Option<PublicKey>;
+  referredByState: Option<PublicKey>;
   feesMint: PublicKey;
-  feesTa: PublicKey;
+  destFeesTa: PublicKey;
 };
 
 export type RefferalStateAccountDataArgs = {
   authority: PublicKey;
-  referredByTa: OptionOrNullable<PublicKey>;
+  referredByState: OptionOrNullable<PublicKey>;
   feesMint: PublicKey;
-  feesTa: PublicKey;
+  destFeesTa: PublicKey;
 };
 
 export function getRefferalStateAccountDataSerializer(): Serializer<
@@ -51,9 +51,9 @@ export function getRefferalStateAccountDataSerializer(): Serializer<
   return struct<RefferalStateAccountData>(
     [
       ['authority', publicKeySerializer()],
-      ['referredByTa', option(publicKeySerializer())],
+      ['referredByState', option(publicKeySerializer())],
       ['feesMint', publicKeySerializer()],
-      ['feesTa', publicKeySerializer()],
+      ['destFeesTa', publicKeySerializer()],
     ],
     { description: 'RefferalStateAccountData' }
   ) as Serializer<RefferalStateAccountDataArgs, RefferalStateAccountData>;
@@ -134,14 +134,14 @@ export function getRefferalStateGpaBuilder(
   return gpaBuilder(context, programId)
     .registerFields<{
       authority: PublicKey;
-      referredByTa: OptionOrNullable<PublicKey>;
+      referredByState: OptionOrNullable<PublicKey>;
       feesMint: PublicKey;
-      feesTa: PublicKey;
+      destFeesTa: PublicKey;
     }>({
       authority: [0, publicKeySerializer()],
-      referredByTa: [32, option(publicKeySerializer())],
+      referredByState: [32, option(publicKeySerializer())],
       feesMint: [null, publicKeySerializer()],
-      feesTa: [null, publicKeySerializer()],
+      destFeesTa: [null, publicKeySerializer()],
     })
     .deserializeUsing<RefferalState>((account) =>
       deserializeRefferalState(account)

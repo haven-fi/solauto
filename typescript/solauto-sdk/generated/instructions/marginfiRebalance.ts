@@ -12,6 +12,7 @@ import {
   PublicKey,
   Signer,
   TransactionBuilder,
+  publicKey,
   transactionBuilder,
 } from '@metaplex-foundation/umi';
 import {
@@ -38,12 +39,20 @@ export type MarginfiRebalanceInstructionAccounts = {
   systemProgram?: PublicKey | Pda;
   tokenProgram?: PublicKey | Pda;
   ataProgram?: PublicKey | Pda;
+  rent?: PublicKey | Pda;
   ixsSysvar: PublicKey | Pda;
-  solautoAdminSettings: PublicKey | Pda;
   solautoFeesReceiverTa: PublicKey | Pda;
   authorityReferralState: PublicKey | Pda;
-  referredByTa?: PublicKey | Pda;
-  solautoPosition?: PublicKey | Pda;
+  referredByState?: PublicKey | Pda;
+  referredBySupplyTa?: PublicKey | Pda;
+  solautoPosition: PublicKey | Pda;
+  intermediaryTa: PublicKey | Pda;
+  supplyMint: PublicKey | Pda;
+  positionSupplyTa: PublicKey | Pda;
+  bankSupplyTa: PublicKey | Pda;
+  debtMint: PublicKey | Pda;
+  positionDebtTa: PublicKey | Pda;
+  bankDebtTa: PublicKey | Pda;
 };
 
 // Data.
@@ -72,7 +81,7 @@ export function getMarginfiRebalanceInstructionDataSerializer(): Serializer<
       ],
       { description: 'MarginfiRebalanceInstructionData' }
     ),
-    (value) => ({ ...value, discriminator: 10 })
+    (value) => ({ ...value, discriminator: 9 })
   ) as Serializer<
     MarginfiRebalanceInstructionDataArgs,
     MarginfiRebalanceInstructionData
@@ -121,15 +130,11 @@ export function marginfiRebalance(
       isWritable: false as boolean,
       value: input.ataProgram ?? null,
     },
+    rent: { index: 5, isWritable: false as boolean, value: input.rent ?? null },
     ixsSysvar: {
-      index: 5,
-      isWritable: false as boolean,
-      value: input.ixsSysvar ?? null,
-    },
-    solautoAdminSettings: {
       index: 6,
       isWritable: false as boolean,
-      value: input.solautoAdminSettings ?? null,
+      value: input.ixsSysvar ?? null,
     },
     solautoFeesReceiverTa: {
       index: 7,
@@ -141,15 +146,55 @@ export function marginfiRebalance(
       isWritable: false as boolean,
       value: input.authorityReferralState ?? null,
     },
-    referredByTa: {
+    referredByState: {
       index: 9,
-      isWritable: true as boolean,
-      value: input.referredByTa ?? null,
+      isWritable: false as boolean,
+      value: input.referredByState ?? null,
     },
-    solautoPosition: {
+    referredBySupplyTa: {
       index: 10,
       isWritable: true as boolean,
+      value: input.referredBySupplyTa ?? null,
+    },
+    solautoPosition: {
+      index: 11,
+      isWritable: true as boolean,
       value: input.solautoPosition ?? null,
+    },
+    intermediaryTa: {
+      index: 12,
+      isWritable: true as boolean,
+      value: input.intermediaryTa ?? null,
+    },
+    supplyMint: {
+      index: 13,
+      isWritable: false as boolean,
+      value: input.supplyMint ?? null,
+    },
+    positionSupplyTa: {
+      index: 14,
+      isWritable: true as boolean,
+      value: input.positionSupplyTa ?? null,
+    },
+    bankSupplyTa: {
+      index: 15,
+      isWritable: true as boolean,
+      value: input.bankSupplyTa ?? null,
+    },
+    debtMint: {
+      index: 16,
+      isWritable: false as boolean,
+      value: input.debtMint ?? null,
+    },
+    positionDebtTa: {
+      index: 17,
+      isWritable: true as boolean,
+      value: input.positionDebtTa ?? null,
+    },
+    bankDebtTa: {
+      index: 18,
+      isWritable: true as boolean,
+      value: input.bankDebtTa ?? null,
     },
   } satisfies ResolvedAccountsWithIndices;
 
@@ -177,6 +222,11 @@ export function marginfiRebalance(
       'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'
     );
     resolvedAccounts.ataProgram.isWritable = false;
+  }
+  if (!resolvedAccounts.rent.value) {
+    resolvedAccounts.rent.value = publicKey(
+      'SysvarRent111111111111111111111111111111111'
+    );
   }
 
   // Accounts in order.

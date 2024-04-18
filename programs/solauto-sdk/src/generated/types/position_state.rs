@@ -7,20 +7,13 @@
 
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
-use solana_program::pubkey::Pubkey;
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct SolendPositionData {
-    #[cfg_attr(
-        feature = "serde",
-        serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
-    )]
-    pub obligation: Pubkey,
-    #[cfg_attr(
-        feature = "serde",
-        serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
-    )]
-    pub supply_reserve: Pubkey,
-    pub debt_reserve: Option<Pubkey>,
+pub struct PositionState {
+    pub liq_utilization_rate_bps: u16,
+    pub net_worth_usd_base_amount: u64,
+    pub base_amount_liquidity_net_worth: u64,
+    pub base_amount_supplied: u64,
+    pub base_amount_borrowed: u64,
 }

@@ -23,30 +23,16 @@ import {
 } from '@metaplex-foundation/umi';
 import {
   Serializer,
+  bool,
   option,
   publicKey as publicKeySerializer,
   struct,
   u8,
 } from '@metaplex-foundation/umi/serializers';
 import {
-  GeneralPositionData,
-  GeneralPositionDataArgs,
-  KaminoPositionData,
-  KaminoPositionDataArgs,
-  LendingPlatform,
-  LendingPlatformArgs,
-  MarginfiPositionData,
-  MarginfiPositionDataArgs,
-  SolautoSettingsParameters,
-  SolautoSettingsParametersArgs,
-  SolendPositionData,
-  SolendPositionDataArgs,
-  getGeneralPositionDataSerializer,
-  getKaminoPositionDataSerializer,
-  getLendingPlatformSerializer,
-  getMarginfiPositionDataSerializer,
-  getSolautoSettingsParametersSerializer,
-  getSolendPositionDataSerializer,
+  PositionData,
+  PositionDataArgs,
+  getPositionDataSerializer,
 } from '../types';
 
 export type Position = Account<PositionAccountData>;
@@ -54,23 +40,15 @@ export type Position = Account<PositionAccountData>;
 export type PositionAccountData = {
   positionId: number;
   authority: PublicKey;
-  settingParams: SolautoSettingsParameters;
-  generalData: GeneralPositionData;
-  lendingPlatform: LendingPlatform;
-  marginfiData: Option<MarginfiPositionData>;
-  solendData: Option<SolendPositionData>;
-  kaminoData: Option<KaminoPositionData>;
+  selfManaged: boolean;
+  position: Option<PositionData>;
 };
 
 export type PositionAccountDataArgs = {
   positionId: number;
   authority: PublicKey;
-  settingParams: SolautoSettingsParametersArgs;
-  generalData: GeneralPositionDataArgs;
-  lendingPlatform: LendingPlatformArgs;
-  marginfiData: OptionOrNullable<MarginfiPositionDataArgs>;
-  solendData: OptionOrNullable<SolendPositionDataArgs>;
-  kaminoData: OptionOrNullable<KaminoPositionDataArgs>;
+  selfManaged: boolean;
+  position: OptionOrNullable<PositionDataArgs>;
 };
 
 export function getPositionAccountDataSerializer(): Serializer<
@@ -81,12 +59,8 @@ export function getPositionAccountDataSerializer(): Serializer<
     [
       ['positionId', u8()],
       ['authority', publicKeySerializer()],
-      ['settingParams', getSolautoSettingsParametersSerializer()],
-      ['generalData', getGeneralPositionDataSerializer()],
-      ['lendingPlatform', getLendingPlatformSerializer()],
-      ['marginfiData', option(getMarginfiPositionDataSerializer())],
-      ['solendData', option(getSolendPositionDataSerializer())],
-      ['kaminoData', option(getKaminoPositionDataSerializer())],
+      ['selfManaged', bool()],
+      ['position', option(getPositionDataSerializer())],
     ],
     { description: 'PositionAccountData' }
   ) as Serializer<PositionAccountDataArgs, PositionAccountData>;
@@ -161,21 +135,13 @@ export function getPositionGpaBuilder(
     .registerFields<{
       positionId: number;
       authority: PublicKey;
-      settingParams: SolautoSettingsParametersArgs;
-      generalData: GeneralPositionDataArgs;
-      lendingPlatform: LendingPlatformArgs;
-      marginfiData: OptionOrNullable<MarginfiPositionDataArgs>;
-      solendData: OptionOrNullable<SolendPositionDataArgs>;
-      kaminoData: OptionOrNullable<KaminoPositionDataArgs>;
+      selfManaged: boolean;
+      position: OptionOrNullable<PositionDataArgs>;
     }>({
       positionId: [0, u8()],
       authority: [1, publicKeySerializer()],
-      settingParams: [33, getSolautoSettingsParametersSerializer()],
-      generalData: [41, getGeneralPositionDataSerializer()],
-      lendingPlatform: [75, getLendingPlatformSerializer()],
-      marginfiData: [76, option(getMarginfiPositionDataSerializer())],
-      solendData: [null, option(getSolendPositionDataSerializer())],
-      kaminoData: [null, option(getKaminoPositionDataSerializer())],
+      selfManaged: [33, bool()],
+      position: [34, option(getPositionDataSerializer())],
     })
     .deserializeUsing<Position>((account) => deserializePosition(account));
 }

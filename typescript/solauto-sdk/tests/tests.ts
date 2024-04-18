@@ -79,19 +79,19 @@ describe("Solauto tests", async () => {
     solendAccounts.solendProgram,
     reuseAccounts
   );
-  const supplyLiquidityTokenAccount = await getAssociatedTokenAddress(
+  const positionSupplyLiquidityTokenAccount = await getAssociatedTokenAddress(
     solendAccounts.solReserve.liquidityTokenMint,
-    solautoPosition ?? signerPublicKey,
+    solautoPosition,
     solautoManaged
   );
-  const supplyCollateralTokenAccount = await getAssociatedTokenAddress(
+  const positionSupplyCollateralTokenAccount = await getAssociatedTokenAddress(
     solendAccounts.solReserve.collateralTokenMint,
-    solautoPosition ?? signerPublicKey,
+    solautoPosition,
     solautoManaged
   );
-  const debtLiquidityTokenAccount = await getAssociatedTokenAddress(
+  const positionDebtLiquidityTokenAccount = await getAssociatedTokenAddress(
     solendAccounts.usdcReserve.liquidityTokenMint,
-    solautoPosition ?? signerPublicKey,
+    solautoPosition,
     solautoManaged
   );
 
@@ -113,36 +113,29 @@ describe("Solauto tests", async () => {
       obligation: publicKey(obligation),
       lendingMarket: publicKey(solendAccounts.lendingMarket),
       supplyReserve: publicKey(solendAccounts.solReserve.reserve),
-      supplyLiquidityTa: publicKey(supplyLiquidityTokenAccount),
+      positionSupplyLiquidityTa: publicKey(positionSupplyLiquidityTokenAccount),
       supplyLiquidityMint: publicKey(
         solendAccounts.solReserve.liquidityTokenMint
       ),
-      supplyCollateralTa: publicKey(supplyCollateralTokenAccount),
+      positionSupplyCollateralTa: publicKey(
+        positionSupplyCollateralTokenAccount
+      ),
       supplyCollateralMint: publicKey(
         solendAccounts.solReserve.collateralTokenMint
       ),
-      debtLiquidityTa: publicKey(debtLiquidityTokenAccount),
+      positionDebtLiquidityTa: publicKey(positionDebtLiquidityTokenAccount),
       debtLiquidityMint: publicKey(
         solendAccounts.usdcReserve.liquidityTokenMint
       ),
-      args: solautoManaged
-        ? {
-            __option: "Some",
-            value: {
-              positionId,
-              settingParams,
-              solendData: {
-                supplyReserve: publicKey(solendAccounts.solReserve.reserve),
-                debtReserve: publicKey(solendAccounts.usdcReserve.reserve),
-                obligation: publicKey(obligation),
-              },
-              kaminoData: { __option: "None" },
-              marginfiData: { __option: "None" },
-            },
-          }
-        : {
-            __option: "None",
-          },
+      updatePositionData: {
+        positionId,
+        settingParams,
+        protocolData: {
+          protocolPosition: publicKey(obligation),
+          supplyMint: publicKey(solendAccounts.solReserve.liquidityTokenMint),
+          debtMint: publicKey(solendAccounts.usdcReserve.liquidityTokenMint),
+        },
+      },
     });
 
     const transaction = await builder.buildWithLatestBlockhash(umi);
@@ -156,7 +149,7 @@ describe("Solauto tests", async () => {
       const account = await umi.rpc.getAccount(publicKey(solautoPosition));
       assert(account.exists);
       const position = deserializePosition(account);
-      expect(position.settingParams).to.deep.equal(settingParams);
+      expect(position.position.setting_params).to.deep.equal(settingParams);
     }
   });
 

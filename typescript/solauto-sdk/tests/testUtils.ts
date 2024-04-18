@@ -14,5 +14,5 @@ export function getSecretKey(keypairFilename: string = "id"): Uint8Array {
 }
 
 export function generateRandomU8(): number {
-  return Math.floor(Math.random() * 256);
+  return Math.floor((Math.random() * 255) + 1);
 }
