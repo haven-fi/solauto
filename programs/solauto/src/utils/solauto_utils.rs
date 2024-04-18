@@ -61,6 +61,11 @@ pub fn create_new_solauto_position<'a>(
     lending_platform: LendingPlatform
 ) -> Result<DeserializedAccount<'a, Position>, ProgramError> {
     let data = if !update_position_data.setting_params.is_none() {
+        if update_position_data.position_id == 0 {
+            msg!("Position ID 0 is reserved for self managed positions");
+            return Err(ProgramError::InvalidInstructionData.into());
+        }
+
         Position {
             position_id: update_position_data.position_id,
             authority: *signer.key,
