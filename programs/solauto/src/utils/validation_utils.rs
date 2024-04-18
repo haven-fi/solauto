@@ -31,8 +31,7 @@ use crate::{
 };
 
 use crate::constants::{ KAMINO_PROGRAM, MARGINFI_PROGRAM, SOLEND_PROGRAM };
-
-use super::{ math_utils::get_maximum_repay_to_bps_param, solauto_utils::get_owner };
+use super::math_utils::get_maximum_repay_to_bps_param;
 
 pub fn generic_instruction_validation(
     accounts: &SolautoStandardAccounts,
@@ -42,6 +41,7 @@ pub fn generic_instruction_validation(
 ) -> ProgramResult {
     validate_signer(accounts.signer, &accounts.solauto_position, authority_only_ix)?;
     validate_program_account(accounts.lending_protocol, lending_platform)?;
+
     if !supply_token_mint.is_none() {
         validate_referral_accounts(accounts, supply_token_mint.unwrap())?;
 
@@ -62,8 +62,7 @@ pub fn generic_instruction_validation(
         return Err(ProgramError::InvalidAccountData.into());
     }
     // We don't need to check other standard variables as shank handles system_program, token_program, ata_program, & rent
-
-    // TODO verify this with a test by providing a different account in place of rent account (instruction should fail)
+    // TODO verify the above comment with a test by providing a different account in place of rent account (instruction should fail)
 
     Ok(())
 }
@@ -353,5 +352,34 @@ pub fn validate_source_token_account(
         msg!("Invalid source token account provided for the given solauto position & token mint");
         return Err(ProgramError::InvalidAccountData.into());
     }
+    Ok(())
+}
+
+pub fn validate_lending_protocol_accounts(
+    solauto_position: &DeserializedAccount<Position>,
+    protocol_owned_account: &AccountInfo,
+    supply_mint: &AccountInfo,
+    debt_mint: &AccountInfo
+) -> ProgramResult {
+    if !solauto_position.data.self_managed {
+        let protocol_data = solauto_position.data.position
+            .as_ref()
+            .unwrap()
+            .protocol_data.as_ref()
+            .unwrap();
+        if protocol_owned_account.key != &protocol_data.protocol_owned_account {
+            msg!("Incorrect obligation account");
+            return Err(SolautoError::InvalidSolautoPositionAccount.into());
+        }
+        if supply_mint.key != &protocol_data.supply_mint {
+            msg!("Incorrect supply mint account");
+            return Err(SolautoError::InvalidSolautoPositionAccount.into());
+        }
+        if debt_mint.key != &protocol_data.supply_mint {
+            msg!("Incorrect debt mint account");
+            return Err(SolautoError::InvalidSolautoPositionAccount.into());
+        }
+    }
+
     Ok(())
 }

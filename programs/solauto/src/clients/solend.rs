@@ -27,7 +27,7 @@ use crate::{
         obligation_position::*,
         shared::{ DeserializedAccount, LendingPlatform, Position, SolautoError },
     },
-    utils::{ ix_utils::*, solauto_utils::*, validation_utils::* },
+    utils::{ ix_utils::*, solauto_utils::*, validation_utils::{ self, * } },
 };
 
 pub struct ReserveOracleAccounts<'a> {
@@ -312,6 +312,7 @@ impl<'a> LendingProtocolClient<'a> for SolendClient<'a> {
             );
             return Err(SolautoError::StaleProtocolData.into());
         }
+
         if
             !self.data.supply_reserve.is_none() &&
             self.data.supply_reserve.as_ref().unwrap().data.last_update.is_stale(curr_slot)?
@@ -321,6 +322,7 @@ impl<'a> LendingProtocolClient<'a> for SolendClient<'a> {
             );
             return Err(SolautoError::StaleProtocolData.into());
         }
+
         if
             !self.data.debt_reserve.is_none() &&
             self.data.debt_reserve.as_ref().unwrap().data.last_update.is_stale(curr_slot)?
@@ -330,6 +332,7 @@ impl<'a> LendingProtocolClient<'a> for SolendClient<'a> {
             );
             return Err(SolautoError::StaleProtocolData.into());
         }
+
         if !self.supply_liquidity.is_none() {
             let supply_liquidity = self.supply_liquidity.as_ref().unwrap();
             validate_source_token_account(
@@ -338,6 +341,7 @@ impl<'a> LendingProtocolClient<'a> for SolendClient<'a> {
                 supply_liquidity.mint
             )?;
         }
+
         if !self.debt_liquidity.is_none() {
             let debt_liquidity = self.debt_liquidity.as_ref().unwrap();
             validate_source_token_account(
@@ -346,6 +350,14 @@ impl<'a> LendingProtocolClient<'a> for SolendClient<'a> {
                 debt_liquidity.mint
             )?;
         }
+
+        validate_lending_protocol_accounts(
+            &std_accounts.solauto_position,
+            self.data.obligation.account_info,
+            self.supply_liquidity.as_ref().unwrap().mint,
+            self.debt_liquidity.as_ref().unwrap().mint
+        )?;
+
         Ok(())
     }
 

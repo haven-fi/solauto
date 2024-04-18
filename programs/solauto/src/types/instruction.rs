@@ -216,12 +216,8 @@ pub struct UpdatePositionData {
     pub position_id: u8,
     /// Setting parameters for the position
     pub setting_params: Option<SolautoSettingsParameters>,
-    /// Marginfi-specific data for the position
-    pub marginfi_data: Option<MarginfiPositionData>,
-    /// Solend-specific data for the position
-    pub solend_data: Option<SolendPositionData>,
-    /// Kamino-specific data for the position
-    pub kamino_data: Option<KaminoPositionData>,
+    /// Protocol-specific data for the position
+    pub protocol_data: Option<LendingProtocolPositionData>,
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, PartialEq)]

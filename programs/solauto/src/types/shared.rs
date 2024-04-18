@@ -30,17 +30,13 @@ pub struct SolautoSettingsParameters {
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType)]
-pub struct SolendPositionData {
-    pub obligation: Pubkey,
-    pub supply_reserve: Pubkey,
-    pub debt_reserve: Option<Pubkey>,
-}
-
-#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType)]
-pub struct MarginfiPositionData {
-    pub marginfi_account: Pubkey,
-    pub supply_bank: Pubkey,
-    pub debt_bank: Option<Pubkey>,
+pub struct LendingProtocolPositionData {
+    /// Marginfi: "marginfi_account", Solend: "obligation", Kamino: "obligation"
+    pub protocol_owned_account: Pubkey,
+    /// The supply token mint
+    pub supply_mint: Pubkey,
+    /// The debt token mint
+    pub debt_mint: Option<Pubkey>,
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType)]
@@ -62,9 +58,7 @@ pub struct PositionData {
     pub setting_params: SolautoSettingsParameters,
     pub state: PositionState,
     pub lending_platform: LendingPlatform,
-    pub marginfi_data: Option<MarginfiPositionData>,
-    pub solend_data: Option<SolendPositionData>,
-    pub kamino_data: Option<KaminoPositionData>,
+    pub protocol_data: Option<LendingProtocolPositionData>,
 }
 
 pub const POSITION_ACCOUNT_SPACE: usize = 500;
@@ -147,8 +141,8 @@ impl<'a, T: Pack + IsInitialized> DeserializedAccount<'a, T> {
 
 #[derive(Error, Debug)]
 pub enum SolautoError {
-    #[error("Incorrect Solauto admin settings account")]
-    IncorrectSolautoSettingsAccount,
+    #[error("Incorrect Solauto position given the other accounts provided")]
+    InvalidSolautoPositionAccount,
     #[error("Incorrect fee receiver account provided")]
     IncorrectFeesReceiverAccount,
     #[error("Missing required accounts for the given instruction")]

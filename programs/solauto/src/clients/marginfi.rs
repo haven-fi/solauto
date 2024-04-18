@@ -67,6 +67,7 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
     fn validate(&self, std_accounts: &SolautoStandardAccounts) -> ProgramResult {
         // TODO
         // TODO: we need to validate the supply & debt source token accounts according to the validation_utils::validate_source_token_account
+        // TODO: we need to validate the program accounts validation_utils::validate_lending_protocol_accounts
         Ok(())
     }
 

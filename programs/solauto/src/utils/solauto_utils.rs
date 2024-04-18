@@ -69,9 +69,7 @@ pub fn create_new_solauto_position<'a>(
                 setting_params: update_position_data.setting_params.unwrap().clone(),
                 state: PositionState::default(),
                 lending_platform,
-                marginfi_data: update_position_data.marginfi_data.clone(),
-                solend_data: update_position_data.solend_data.clone(),
-                kamino_data: update_position_data.kamino_data.clone(),
+                protocol_data: update_position_data.protocol_data.clone(),
             }),
         }
     } else {

@@ -13,7 +13,8 @@ use crate::{
             },
             RebalanceArgs,
             SolautoAction,
-            SolautoStandardAccounts, UpdatePositionData,
+            SolautoStandardAccounts,
+            UpdatePositionData,
         },
         shared::{ DeserializedAccount, LendingPlatform, Position, RefferalState, SolautoError },
     },
@@ -126,9 +127,9 @@ pub fn process_marginfi_interaction_instruction<'a>(
     action: SolautoAction
 ) -> ProgramResult {
     let ctx = MarginfiProtocolInteractionAccounts::context(accounts)?;
-    let solauto_position = DeserializedAccount::<Position>::deserialize(
-        Some(ctx.accounts.solauto_position)
-    )?.unwrap();
+    let solauto_position = DeserializedAccount::<Position>
+        ::deserialize(Some(ctx.accounts.solauto_position))?
+        .unwrap();
 
     let std_accounts = SolautoStandardAccounts {
         signer: ctx.accounts.signer,
@@ -160,9 +161,9 @@ pub fn process_marginfi_rebalance<'a>(
     args: RebalanceArgs
 ) -> ProgramResult {
     let ctx = MarginfiRebalanceAccounts::context(accounts)?;
-    let solauto_position = DeserializedAccount::<Position>::deserialize(
-        Some(ctx.accounts.solauto_position)
-    )?.unwrap();
+    let solauto_position = DeserializedAccount::<Position>
+        ::deserialize(Some(ctx.accounts.solauto_position))?
+        .unwrap();
 
     let std_accounts = SolautoStandardAccounts {
         signer: ctx.accounts.signer,
