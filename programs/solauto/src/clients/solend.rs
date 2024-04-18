@@ -355,7 +355,10 @@ impl<'a> LendingProtocolClient<'a> for SolendClient<'a> {
             &std_accounts.solauto_position,
             self.data.obligation.account_info,
             self.supply_liquidity.as_ref().unwrap().mint,
-            self.debt_liquidity.as_ref().unwrap().mint
+            self.debt_liquidity.as_ref().map_or_else(
+                || None,
+                |debt| Some(debt.mint)
+            )
         )?;
 
         Ok(())

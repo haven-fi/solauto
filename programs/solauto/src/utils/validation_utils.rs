@@ -359,7 +359,7 @@ pub fn validate_lending_protocol_accounts(
     solauto_position: &DeserializedAccount<Position>,
     protocol_owned_account: &AccountInfo,
     supply_mint: &AccountInfo,
-    debt_mint: &AccountInfo
+    debt_mint: Option<&AccountInfo>
 ) -> ProgramResult {
     if !solauto_position.data.self_managed {
         let protocol_data = solauto_position.data.position
@@ -375,7 +375,7 @@ pub fn validate_lending_protocol_accounts(
             msg!("Incorrect supply mint account");
             return Err(SolautoError::InvalidSolautoPositionAccount.into());
         }
-        if debt_mint.key != &protocol_data.debt_mint {
+        if !protocol_data.debt_mint.is_none() && !debt_mint.is_none() || debt_mint.unwrap().key != &protocol_data.debt_mint.unwrap() {
             msg!("Incorrect debt mint account");
             return Err(SolautoError::InvalidSolautoPositionAccount.into());
         }
