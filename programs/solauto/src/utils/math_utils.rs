@@ -70,5 +70,5 @@ pub fn calculate_debt_adjustment_usd(
 }
 
 pub fn get_maximum_repay_to_bps_param(max_ltv: f64, liq_threshold: f64) -> u16 {
-    max_ltv.div(liq_threshold).mul(10000.0) as u16
+    (max_ltv - 0.01).div(liq_threshold).mul(10000.0) as u16
 }
