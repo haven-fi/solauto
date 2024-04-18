@@ -25,7 +25,7 @@ pub struct MarginfiRebalance {
 
     pub ixs_sysvar: solana_program::pubkey::Pubkey,
 
-    pub solauto_fees_receiver_ta: solana_program::pubkey::Pubkey,
+    pub solauto_fees_supply_ta: solana_program::pubkey::Pubkey,
 
     pub authority_referral_state: solana_program::pubkey::Pubkey,
 
@@ -92,7 +92,7 @@ impl MarginfiRebalance {
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
-            self.solauto_fees_receiver_ta,
+            self.solauto_fees_supply_ta,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
@@ -196,7 +196,7 @@ pub struct MarginfiRebalanceInstructionArgs {
 ///   4. `[optional]` ata_program (default to `ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL`)
 ///   5. `[optional]` rent (default to `SysvarRent111111111111111111111111111111111`)
 ///   6. `[]` ixs_sysvar
-///   7. `[writable]` solauto_fees_receiver_ta
+///   7. `[writable]` solauto_fees_supply_ta
 ///   8. `[]` authority_referral_state
 ///   9. `[optional]` referred_by_state
 ///   10. `[writable, optional]` referred_by_supply_ta
@@ -217,7 +217,7 @@ pub struct MarginfiRebalanceBuilder {
     ata_program: Option<solana_program::pubkey::Pubkey>,
     rent: Option<solana_program::pubkey::Pubkey>,
     ixs_sysvar: Option<solana_program::pubkey::Pubkey>,
-    solauto_fees_receiver_ta: Option<solana_program::pubkey::Pubkey>,
+    solauto_fees_supply_ta: Option<solana_program::pubkey::Pubkey>,
     authority_referral_state: Option<solana_program::pubkey::Pubkey>,
     referred_by_state: Option<solana_program::pubkey::Pubkey>,
     referred_by_supply_ta: Option<solana_program::pubkey::Pubkey>,
@@ -280,11 +280,11 @@ impl MarginfiRebalanceBuilder {
         self
     }
     #[inline(always)]
-    pub fn solauto_fees_receiver_ta(
+    pub fn solauto_fees_supply_ta(
         &mut self,
-        solauto_fees_receiver_ta: solana_program::pubkey::Pubkey,
+        solauto_fees_supply_ta: solana_program::pubkey::Pubkey,
     ) -> &mut Self {
-        self.solauto_fees_receiver_ta = Some(solauto_fees_receiver_ta);
+        self.solauto_fees_supply_ta = Some(solauto_fees_supply_ta);
         self
     }
     #[inline(always)]
@@ -406,9 +406,9 @@ impl MarginfiRebalanceBuilder {
                 "SysvarRent111111111111111111111111111111111"
             )),
             ixs_sysvar: self.ixs_sysvar.expect("ixs_sysvar is not set"),
-            solauto_fees_receiver_ta: self
-                .solauto_fees_receiver_ta
-                .expect("solauto_fees_receiver_ta is not set"),
+            solauto_fees_supply_ta: self
+                .solauto_fees_supply_ta
+                .expect("solauto_fees_supply_ta is not set"),
             authority_referral_state: self
                 .authority_referral_state
                 .expect("authority_referral_state is not set"),
@@ -452,7 +452,7 @@ pub struct MarginfiRebalanceCpiAccounts<'a, 'b> {
 
     pub ixs_sysvar: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub solauto_fees_receiver_ta: &'b solana_program::account_info::AccountInfo<'a>,
+    pub solauto_fees_supply_ta: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub authority_referral_state: &'b solana_program::account_info::AccountInfo<'a>,
 
@@ -496,7 +496,7 @@ pub struct MarginfiRebalanceCpi<'a, 'b> {
 
     pub ixs_sysvar: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub solauto_fees_receiver_ta: &'b solana_program::account_info::AccountInfo<'a>,
+    pub solauto_fees_supply_ta: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub authority_referral_state: &'b solana_program::account_info::AccountInfo<'a>,
 
@@ -538,7 +538,7 @@ impl<'a, 'b> MarginfiRebalanceCpi<'a, 'b> {
             ata_program: accounts.ata_program,
             rent: accounts.rent,
             ixs_sysvar: accounts.ixs_sysvar,
-            solauto_fees_receiver_ta: accounts.solauto_fees_receiver_ta,
+            solauto_fees_supply_ta: accounts.solauto_fees_supply_ta,
             authority_referral_state: accounts.authority_referral_state,
             referred_by_state: accounts.referred_by_state,
             referred_by_supply_ta: accounts.referred_by_supply_ta,
@@ -616,7 +616,7 @@ impl<'a, 'b> MarginfiRebalanceCpi<'a, 'b> {
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.solauto_fees_receiver_ta.key,
+            *self.solauto_fees_supply_ta.key,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
@@ -704,7 +704,7 @@ impl<'a, 'b> MarginfiRebalanceCpi<'a, 'b> {
         account_infos.push(self.ata_program.clone());
         account_infos.push(self.rent.clone());
         account_infos.push(self.ixs_sysvar.clone());
-        account_infos.push(self.solauto_fees_receiver_ta.clone());
+        account_infos.push(self.solauto_fees_supply_ta.clone());
         account_infos.push(self.authority_referral_state.clone());
         if let Some(referred_by_state) = self.referred_by_state {
             account_infos.push(referred_by_state.clone());
@@ -743,7 +743,7 @@ impl<'a, 'b> MarginfiRebalanceCpi<'a, 'b> {
 ///   4. `[]` ata_program
 ///   5. `[]` rent
 ///   6. `[]` ixs_sysvar
-///   7. `[writable]` solauto_fees_receiver_ta
+///   7. `[writable]` solauto_fees_supply_ta
 ///   8. `[]` authority_referral_state
 ///   9. `[optional]` referred_by_state
 ///   10. `[writable, optional]` referred_by_supply_ta
@@ -770,7 +770,7 @@ impl<'a, 'b> MarginfiRebalanceCpiBuilder<'a, 'b> {
             ata_program: None,
             rent: None,
             ixs_sysvar: None,
-            solauto_fees_receiver_ta: None,
+            solauto_fees_supply_ta: None,
             authority_referral_state: None,
             referred_by_state: None,
             referred_by_supply_ta: None,
@@ -841,11 +841,11 @@ impl<'a, 'b> MarginfiRebalanceCpiBuilder<'a, 'b> {
         self
     }
     #[inline(always)]
-    pub fn solauto_fees_receiver_ta(
+    pub fn solauto_fees_supply_ta(
         &mut self,
-        solauto_fees_receiver_ta: &'b solana_program::account_info::AccountInfo<'a>,
+        solauto_fees_supply_ta: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
-        self.instruction.solauto_fees_receiver_ta = Some(solauto_fees_receiver_ta);
+        self.instruction.solauto_fees_supply_ta = Some(solauto_fees_supply_ta);
         self
     }
     #[inline(always)]
@@ -1020,10 +1020,10 @@ impl<'a, 'b> MarginfiRebalanceCpiBuilder<'a, 'b> {
 
             ixs_sysvar: self.instruction.ixs_sysvar.expect("ixs_sysvar is not set"),
 
-            solauto_fees_receiver_ta: self
+            solauto_fees_supply_ta: self
                 .instruction
-                .solauto_fees_receiver_ta
-                .expect("solauto_fees_receiver_ta is not set"),
+                .solauto_fees_supply_ta
+                .expect("solauto_fees_supply_ta is not set"),
 
             authority_referral_state: self
                 .instruction
@@ -1088,7 +1088,7 @@ struct MarginfiRebalanceCpiBuilderInstruction<'a, 'b> {
     ata_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     rent: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     ixs_sysvar: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    solauto_fees_receiver_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    solauto_fees_supply_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     authority_referral_state: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     referred_by_state: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     referred_by_supply_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,

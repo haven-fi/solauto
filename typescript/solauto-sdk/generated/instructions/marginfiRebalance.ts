@@ -41,7 +41,7 @@ export type MarginfiRebalanceInstructionAccounts = {
   ataProgram?: PublicKey | Pda;
   rent?: PublicKey | Pda;
   ixsSysvar: PublicKey | Pda;
-  solautoFeesReceiverTa: PublicKey | Pda;
+  solautoFeesSupplyTa: PublicKey | Pda;
   authorityReferralState: PublicKey | Pda;
   referredByState?: PublicKey | Pda;
   referredBySupplyTa?: PublicKey | Pda;
@@ -136,10 +136,10 @@ export function marginfiRebalance(
       isWritable: false as boolean,
       value: input.ixsSysvar ?? null,
     },
-    solautoFeesReceiverTa: {
+    solautoFeesSupplyTa: {
       index: 7,
       isWritable: true as boolean,
-      value: input.solautoFeesReceiverTa ?? null,
+      value: input.solautoFeesSupplyTa ?? null,
     },
     authorityReferralState: {
       index: 8,

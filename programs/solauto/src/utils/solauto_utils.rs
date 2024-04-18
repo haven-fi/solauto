@@ -1,5 +1,6 @@
 use solana_program::{
     account_info::AccountInfo,
+    entrypoint::ProgramResult,
     instruction::{get_stack_height, Instruction, TRANSACTION_LEVEL_STACK_HEIGHT},
     msg,
     program_error::ProgramError,
@@ -17,7 +18,10 @@ use super::{
     },
 };
 use crate::{
-    constants::{JUP_PROGRAM, MARGINFI_PROGRAM, REFERRER_FEE_SPLIT, SOLAUTO_MANAGER, WSOL_MINT},
+    constants::{
+        JUP_PROGRAM, MARGINFI_PROGRAM, REFERRER_FEE_SPLIT, SOLAUTO_FEES_WALLET, SOLAUTO_MANAGER,
+        WSOL_MINT,
+    },
     types::{
         instruction::{
             RebalanceArgs, SolautoStandardAccounts, UpdatePositionData,
@@ -198,6 +202,29 @@ pub fn get_or_create_referral_state<'a>(
 
 pub fn get_referral_account_seeds<'a>(authority: &'a AccountInfo<'a>) -> Vec<&[u8]> {
     vec![authority.key.as_ref(), b"referrals"]
+}
+
+pub fn init_solauto_fees_supply_ta<'a>(
+    token_program: &'a AccountInfo<'a>,
+    system_program: &'a AccountInfo<'a>,
+    rent: &'a AccountInfo<'a>,
+    signer: &'a AccountInfo<'a>,
+    solauto_fees_wallet: &'a AccountInfo<'a>,
+    solauto_fees_supply_ta: &'a AccountInfo<'a>,
+    supply_mint: &'a AccountInfo<'a>,
+) -> ProgramResult {
+    if solauto_fees_wallet.key != &SOLAUTO_FEES_WALLET {
+        return Err(SolautoError::IncorrectFeesReceiverAccount.into());
+    }
+    init_ata_if_needed(
+        token_program,
+        system_program,
+        rent,
+        signer,
+        solauto_fees_wallet,
+        solauto_fees_supply_ta,
+        supply_mint,
+    )
 }
 
 pub fn should_proceed_with_rebalance(

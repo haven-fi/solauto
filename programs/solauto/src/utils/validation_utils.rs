@@ -5,7 +5,7 @@ use solana_program::{
 use spl_associated_token_account::get_associated_token_address;
 
 use crate::{
-    constants::{SOLAUTO_FEES_RECEIVER_WALLET, SOLAUTO_MANAGER},
+    constants::{SOLAUTO_FEES_WALLET, SOLAUTO_MANAGER},
     types::{
         instruction::{
             accounts::{
@@ -41,7 +41,7 @@ pub fn generic_instruction_validation(
         if !accounts.solauto_fees_supply_ta.is_none()
             && accounts.solauto_fees_supply_ta.unwrap().key
                 != &get_associated_token_address(
-                    &SOLAUTO_FEES_RECEIVER_WALLET,
+                    &SOLAUTO_FEES_WALLET,
                     supply_token_mint.unwrap().key,
                 )
         {
@@ -317,7 +317,9 @@ pub fn validate_referral_accounts(
         || std_accounts.referred_by_supply_ta.unwrap().key
             != &get_associated_token_address(&referred_by_state.unwrap(), supply_token_mint.key)
     {
-        msg!("Provided incorrect referred_by_supply_ta according to the given authority and token mint");
+        msg!(
+            "Provided incorrect referred_by_supply_ta according to the given authority and token mint"
+        );
         return Err(ProgramError::InvalidAccountData.into());
     }
 

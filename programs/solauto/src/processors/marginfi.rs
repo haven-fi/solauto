@@ -1,7 +1,6 @@
 use solana_program::{account_info::AccountInfo, entrypoint::ProgramResult};
 
 use crate::{
-    constants::SOLAUTO_FEES_RECEIVER_WALLET,
     instructions::{open_position, protocol_interaction, rebalance, refresh},
     types::{
         instruction::{
@@ -11,12 +10,10 @@ use crate::{
             },
             RebalanceArgs, SolautoAction, SolautoStandardAccounts, UpdatePositionData,
         },
-        shared::{DeserializedAccount, LendingPlatform, Position, RefferalState, SolautoError},
+        shared::{DeserializedAccount, LendingPlatform, Position, RefferalState},
     },
     utils::*,
 };
-
-use self::solana_utils::init_ata_if_needed;
 
 pub fn process_marginfi_open_position_instruction<'a>(
     accounts: &'a [AccountInfo<'a>],
@@ -30,15 +27,12 @@ pub fn process_marginfi_open_position_instruction<'a>(
         LendingPlatform::Marginfi,
     )?;
 
-    if ctx.accounts.solauto_fees_receiver.key != &SOLAUTO_FEES_RECEIVER_WALLET {
-        return Err(SolautoError::IncorrectFeesReceiverAccount.into());
-    }
-    init_ata_if_needed(
+    solauto_utils::init_solauto_fees_supply_ta(
         ctx.accounts.token_program,
         ctx.accounts.system_program,
         ctx.accounts.rent,
         ctx.accounts.signer,
-        ctx.accounts.solauto_fees_receiver,
+        ctx.accounts.solauto_fees_wallet,
         ctx.accounts.solauto_fees_supply_ta,
         ctx.accounts.supply_mint,
     )?;
@@ -70,7 +64,7 @@ pub fn process_marginfi_open_position_instruction<'a>(
             None,
         )?;
 
-        init_ata_if_needed(
+        solana_utils::init_ata_if_needed(
             ctx.accounts.token_program,
             ctx.accounts.system_program,
             ctx.accounts.rent,

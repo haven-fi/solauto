@@ -81,12 +81,12 @@
           "isSigner": false
         },
         {
-          "name": "solautoFeesReceiver",
+          "name": "solautoFeesWallet",
           "isMut": false,
           "isSigner": false
         },
         {
-          "name": "solautoFeesReceiverTa",
+          "name": "solautoFeesSupplyTa",
           "isMut": false,
           "isSigner": false
         },
@@ -212,12 +212,12 @@
           "isSigner": false
         },
         {
-          "name": "solautoFeesReceiver",
+          "name": "solautoFeesWallet",
           "isMut": false,
           "isSigner": false
         },
         {
-          "name": "solautoFeesReceiverTa",
+          "name": "solautoFeesSupplyTa",
           "isMut": false,
           "isSigner": false
         },
@@ -766,7 +766,7 @@
           "isSigner": false
         },
         {
-          "name": "solautoFeesReceiverTa",
+          "name": "solautoFeesSupplyTa",
           "isMut": true,
           "isSigner": false
         },
@@ -885,7 +885,7 @@
           "isSigner": false
         },
         {
-          "name": "solautoFeesReceiverTa",
+          "name": "solautoFeesSupplyTa",
           "isMut": true,
           "isSigner": false
         },

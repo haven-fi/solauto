@@ -40,8 +40,8 @@ export type SolendOpenPositionInstructionAccounts = {
   tokenProgram?: PublicKey | Pda;
   ataProgram?: PublicKey | Pda;
   rent?: PublicKey | Pda;
-  solautoFeesReceiver: PublicKey | Pda;
-  solautoFeesReceiverTa: PublicKey | Pda;
+  solautoFeesWallet: PublicKey | Pda;
+  solautoFeesSupplyTa: PublicKey | Pda;
   signerReferralState: PublicKey | Pda;
   referralFeesMint: PublicKey | Pda;
   signerReferralDestTa: PublicKey | Pda;
@@ -138,15 +138,15 @@ export function solendOpenPosition(
       value: input.ataProgram ?? null,
     },
     rent: { index: 5, isWritable: false as boolean, value: input.rent ?? null },
-    solautoFeesReceiver: {
+    solautoFeesWallet: {
       index: 6,
       isWritable: false as boolean,
-      value: input.solautoFeesReceiver ?? null,
+      value: input.solautoFeesWallet ?? null,
     },
-    solautoFeesReceiverTa: {
+    solautoFeesSupplyTa: {
       index: 7,
       isWritable: false as boolean,
-      value: input.solautoFeesReceiverTa ?? null,
+      value: input.solautoFeesSupplyTa ?? null,
     },
     signerReferralState: {
       index: 8,
