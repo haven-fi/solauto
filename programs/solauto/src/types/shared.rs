@@ -1,4 +1,3 @@
-use borsh;
 use borsh::{BorshDeserialize, BorshSerialize};
 use shank::{ShankAccount, ShankType};
 use solana_program::{

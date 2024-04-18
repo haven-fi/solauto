@@ -300,7 +300,7 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
         } else if debt_balance > 0 {
             self.repay(debt_balance)?;
         } else {
-            msg!("Missing required source liquidity to rebalance position");
+            msg!("Missing required position liquidity to rebalance position");
             return Err(SolautoError::UnableToReposition.into());
         }
 
