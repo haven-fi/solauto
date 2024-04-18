@@ -1,11 +1,11 @@
 use solana_program::{
     account_info::AccountInfo,
     entrypoint::ProgramResult,
-    instruction::{get_stack_height, Instruction, TRANSACTION_LEVEL_STACK_HEIGHT},
+    instruction::{ get_stack_height, Instruction, TRANSACTION_LEVEL_STACK_HEIGHT },
     msg,
     program_error::ProgramError,
     pubkey::Pubkey,
-    sysvar::instructions::{load_current_index_checked, load_instruction_at_checked},
+    sysvar::instructions::{ load_current_index_checked, load_instruction_at_checked },
 };
 use spl_associated_token_account::get_associated_token_address;
 use std::cmp::min;
@@ -14,43 +14,48 @@ use super::{
     ix_utils,
     math_utils::get_maximum_repay_to_bps_param,
     solana_utils::{
-        account_is_rent_exempt, get_anchor_ix_discriminator, init_ata_if_needed, init_new_account,
+        account_is_rent_exempt,
+        get_anchor_ix_discriminator,
+        init_ata_if_needed,
+        init_new_account,
     },
 };
 use crate::{
-    constants::{
-        JUP_PROGRAM, MARGINFI_PROGRAM, REFERRER_FEE_SPLIT, SOLAUTO_FEES_WALLET, SOLAUTO_MANAGER,
-        WSOL_MINT,
-    },
+    constants::{ JUP_PROGRAM, MARGINFI_PROGRAM, REFERRER_FEE_SPLIT, SOLAUTO_MANAGER, WSOL_MINT },
     types::{
         instruction::{
-            RebalanceArgs, SolautoStandardAccounts, UpdatePositionData,
+            RebalanceArgs,
+            SolautoStandardAccounts,
+            UpdatePositionData,
             SOLAUTO_REBALANCE_IX_DISCRIMINATORS,
         },
         obligation_position::LendingProtocolObligationPosition,
         shared::{
-            DeserializedAccount, LendingPlatform, Position, PositionData, PositionState,
-            RefferalState, SolautoError, SolautoRebalanceStep, REFERRAL_ACCOUNT_SPACE,
+            DeserializedAccount,
+            LendingPlatform,
+            Position,
+            PositionData,
+            PositionState,
+            RefferalState,
+            SolautoError,
+            SolautoRebalanceStep,
+            REFERRAL_ACCOUNT_SPACE,
         },
     },
 };
 
 pub fn get_owner<'a, 'b>(
     solauto_position: &'b DeserializedAccount<'a, Position>,
-    signer: &'a AccountInfo<'a>,
+    signer: &'a AccountInfo<'a>
 ) -> &'a AccountInfo<'a> {
-    if solauto_position.data.self_managed {
-        signer
-    } else {
-        solauto_position.account_info
-    }
+    if solauto_position.data.self_managed { signer } else { solauto_position.account_info }
 }
 
 pub fn create_new_solauto_position<'a>(
     signer: &AccountInfo<'a>,
     solauto_position: &'a AccountInfo<'a>,
     update_position_data: UpdatePositionData,
-    lending_platform: LendingPlatform,
+    lending_platform: LendingPlatform
 ) -> Result<DeserializedAccount<'a, Position>, ProgramError> {
     let data = if !update_position_data.setting_params.is_none() {
         if update_position_data.position_id == 0 {
@@ -94,7 +99,7 @@ pub fn get_or_create_referral_state<'a>(
     referral_fees_mint: &'a AccountInfo<'a>,
     referral_dest_ta: &'a AccountInfo<'a>,
     referred_by_state: Option<&'a AccountInfo<'a>>,
-    referred_by_dest_ta: Option<&'a AccountInfo<'a>>,
+    referred_by_dest_ta: Option<&'a AccountInfo<'a>>
 ) -> Result<DeserializedAccount<'a, RefferalState>, ProgramError> {
     let validate_correct_token_account = |wallet: &AccountInfo, token_account: &AccountInfo| {
         let token_account_pubkey = get_associated_token_address(wallet.key, &WSOL_MINT);
@@ -106,8 +111,10 @@ pub fn get_or_create_referral_state<'a>(
     };
 
     let referral_state_seeds = get_referral_account_seeds(authority);
-    let (referral_state_pda, _bump) =
-        Pubkey::find_program_address(referral_state_seeds.as_slice(), &crate::ID);
+    let (referral_state_pda, _bump) = Pubkey::find_program_address(
+        referral_state_seeds.as_slice(),
+        &crate::ID
+    );
     if &referral_state_pda != referral_state.key {
         msg!("Invalid referral position account given for the provided authority");
         return Err(ProgramError::InvalidAccountData.into());
@@ -123,21 +130,14 @@ pub fn get_or_create_referral_state<'a>(
     }
 
     if account_is_rent_exempt(rent, referral_state)? {
-        let mut referral_state_account =
-            Some(DeserializedAccount::<RefferalState>::deserialize(Some(referral_state))?.unwrap());
+        let mut referral_state_account = Some(
+            DeserializedAccount::<RefferalState>::deserialize(Some(referral_state))?.unwrap()
+        );
 
-        if referral_state_account
-            .as_ref()
-            .unwrap()
-            .data
-            .referred_by_state
-            .is_none()
-        {
-            referral_state_account
-                .as_mut()
-                .unwrap()
-                .data
-                .referred_by_state = Some(referred_by_dest_ta.unwrap().key.clone());
+        if referral_state_account.as_ref().unwrap().data.referred_by_state.is_none() {
+            referral_state_account.as_mut().unwrap().data.referred_by_state = Some(
+                referred_by_dest_ta.unwrap().key.clone()
+            );
         }
 
         if !referral_state_account.is_none() {
@@ -153,7 +153,7 @@ pub fn get_or_create_referral_state<'a>(
             referral_state,
             &crate::ID,
             referral_state_seeds[..].to_vec(),
-            REFERRAL_ACCOUNT_SPACE,
+            REFERRAL_ACCOUNT_SPACE
         )?;
 
         let fees_mint = referral_fees_mint.key;
@@ -169,7 +169,7 @@ pub fn get_or_create_referral_state<'a>(
             signer,
             referral_state,
             referral_dest_ta,
-            referral_fees_mint,
+            referral_fees_mint
         )?;
 
         if !referred_by_state.is_none() && !referred_by_dest_ta.is_none() {
@@ -180,7 +180,7 @@ pub fn get_or_create_referral_state<'a>(
                 signer,
                 referred_by_state.unwrap(),
                 referred_by_dest_ta.unwrap(),
-                referral_fees_mint,
+                referral_fees_mint
             )?;
         }
 
@@ -211,9 +211,9 @@ pub fn init_solauto_fees_supply_ta<'a>(
     signer: &'a AccountInfo<'a>,
     solauto_fees_wallet: &'a AccountInfo<'a>,
     solauto_fees_supply_ta: &'a AccountInfo<'a>,
-    supply_mint: &'a AccountInfo<'a>,
+    supply_mint: &'a AccountInfo<'a>
 ) -> ProgramResult {
-    if solauto_fees_wallet.key != &SOLAUTO_FEES_WALLET {
+    if solauto_fees_wallet.key != &SOLAUTO_MANAGER {
         return Err(SolautoError::IncorrectFeesReceiverAccount.into());
     }
     init_ata_if_needed(
@@ -223,7 +223,7 @@ pub fn init_solauto_fees_supply_ta<'a>(
         signer,
         solauto_fees_wallet,
         solauto_fees_supply_ta,
-        supply_mint,
+        supply_mint
     )
 }
 
@@ -231,12 +231,12 @@ pub fn should_proceed_with_rebalance(
     std_accounts: &SolautoStandardAccounts,
     obligation_position: &LendingProtocolObligationPosition,
     rebalance_args: &RebalanceArgs,
-    rebalance_step: &SolautoRebalanceStep,
+    rebalance_step: &SolautoRebalanceStep
 ) -> Result<u16, ProgramError> {
-    let first_or_only_rebalance_ix = rebalance_step
-        == &SolautoRebalanceStep::StartSolautoRebalanceSandwich
-        || rebalance_step == &SolautoRebalanceStep::StartMarginfiFlashLoanSandwich
-        || rebalance_step == &SolautoRebalanceStep::FinishStandardFlashLoanSandwich;
+    let first_or_only_rebalance_ix =
+        rebalance_step == &SolautoRebalanceStep::StartSolautoRebalanceSandwich ||
+        rebalance_step == &SolautoRebalanceStep::StartMarginfiFlashLoanSandwich ||
+        rebalance_step == &SolautoRebalanceStep::FinishStandardFlashLoanSandwich;
 
     let current_liq_utilization_rate_bps = if first_or_only_rebalance_ix {
         obligation_position.current_utilization_rate_bps()
@@ -245,13 +245,17 @@ pub fn should_proceed_with_rebalance(
         0
     };
 
-    let target_rate_bps =
-        get_target_liq_utilization_rate(&std_accounts, &obligation_position, rebalance_args)?;
+    let target_rate_bps = get_target_liq_utilization_rate(
+        &std_accounts,
+        &obligation_position,
+        rebalance_args
+    )?;
 
-    if first_or_only_rebalance_ix
-        && current_liq_utilization_rate_bps < target_rate_bps
-        && (std_accounts.authority_referral_state.is_none()
-            || std_accounts.referred_by_supply_ta.is_none())
+    if
+        first_or_only_rebalance_ix &&
+        current_liq_utilization_rate_bps < target_rate_bps &&
+        (std_accounts.authority_referral_state.is_none() ||
+            std_accounts.referred_by_supply_ta.is_none())
     {
         msg!(
             "Missing referral account(s) when we are boosting leverage. Referral accounts required."
@@ -265,32 +269,29 @@ pub fn should_proceed_with_rebalance(
 pub fn get_target_liq_utilization_rate(
     std_accounts: &SolautoStandardAccounts,
     obligation_position: &LendingProtocolObligationPosition,
-    rebalance_args: &RebalanceArgs,
+    rebalance_args: &RebalanceArgs
 ) -> Result<u16, SolautoError> {
     let current_liq_utilization_rate_bps = obligation_position.current_utilization_rate_bps();
-    let result: Result<u16, SolautoError> =
-        if rebalance_args.target_liq_utilization_rate_bps.is_none() {
-            let setting_params = &std_accounts
-                .solauto_position
-                .data
-                .position
-                .as_ref()
-                .unwrap()
-                .setting_params;
-            if current_liq_utilization_rate_bps > setting_params.repay_from_bps {
-                let maximum_repay_to_bps = get_maximum_repay_to_bps_param(
-                    obligation_position.max_ltv,
-                    obligation_position.liq_threshold,
-                );
-                Ok(min(setting_params.repay_to_bps, maximum_repay_to_bps))
-            } else if current_liq_utilization_rate_bps < setting_params.boost_from_bps {
-                Ok(setting_params.boost_from_bps)
-            } else {
-                return Err(SolautoError::InvalidRebalanceCondition.into());
-            }
+    let result: Result<u16, SolautoError> = if
+        rebalance_args.target_liq_utilization_rate_bps.is_none()
+    {
+        let setting_params = &std_accounts.solauto_position.data.position
+            .as_ref()
+            .unwrap().setting_params;
+        if current_liq_utilization_rate_bps > setting_params.repay_from_bps {
+            let maximum_repay_to_bps = get_maximum_repay_to_bps_param(
+                obligation_position.max_ltv,
+                obligation_position.liq_threshold
+            );
+            Ok(min(setting_params.repay_to_bps, maximum_repay_to_bps))
+        } else if current_liq_utilization_rate_bps < setting_params.boost_from_bps {
+            Ok(setting_params.boost_from_bps)
         } else {
-            Ok(rebalance_args.target_liq_utilization_rate_bps.unwrap())
-        };
+            return Err(SolautoError::InvalidRebalanceCondition.into());
+        }
+    } else {
+        Ok(rebalance_args.target_liq_utilization_rate_bps.unwrap())
+    };
 
     let target_rate_bps = result.unwrap();
     Ok(target_rate_bps)
@@ -298,7 +299,7 @@ pub fn get_target_liq_utilization_rate(
 
 pub fn get_rebalance_step(
     std_accounts: &SolautoStandardAccounts,
-    args: &RebalanceArgs,
+    args: &RebalanceArgs
 ) -> Result<SolautoRebalanceStep, ProgramError> {
     // TODO notes for typescript client
     // max_price_slippage = 0.05 (500bps) (5%)
@@ -347,8 +348,9 @@ pub fn get_rebalance_step(
     // end flash loan
 
     let ixs_sysvar = std_accounts.ixs_sysvar.unwrap();
-    if !args.target_liq_utilization_rate_bps.is_none()
-        && !std_accounts.solauto_position.data.self_managed
+    if
+        !args.target_liq_utilization_rate_bps.is_none() &&
+        !std_accounts.solauto_position.data.self_managed
     {
         msg!(
             "Cannot provide a target liquidation utilization rate if the position is solauto-managed"
@@ -356,9 +358,10 @@ pub fn get_rebalance_step(
         return Err(ProgramError::InvalidInstructionData.into());
     }
 
-    if !args.max_price_slippage_bps.is_none()
-        && std_accounts.signer.key != &SOLAUTO_MANAGER
-        && std_accounts.signer.key != &std_accounts.solauto_position.data.authority
+    if
+        !args.max_price_slippage_bps.is_none() &&
+        std_accounts.signer.key != &SOLAUTO_MANAGER &&
+        std_accounts.signer.key != &std_accounts.solauto_position.data.authority
     {
         msg!(
             "If the signer is not the position authority or Solauto rebalancer accounts, max_price_slippage_bps cannot be provided"
@@ -374,25 +377,22 @@ pub fn get_rebalance_step(
 
     let solauto_rebalance = InstructionChecker::from(
         crate::ID,
-        Some(SOLAUTO_REBALANCE_IX_DISCRIMINATORS.to_vec()),
+        Some(SOLAUTO_REBALANCE_IX_DISCRIMINATORS.to_vec())
     );
     let jup_swap = InstructionChecker::from_anchor(
         JUP_PROGRAM,
         "jupiter",
-        vec![
-            "route_with_token_ledger",
-            "shared_accounts_route_with_token_ledger",
-        ],
+        vec!["route_with_token_ledger", "shared_accounts_route_with_token_ledger"]
     );
     let marginfi_start_fl = InstructionChecker::from_anchor(
         MARGINFI_PROGRAM,
         "marginfi",
-        vec!["lending_account_start_flashloan"],
+        vec!["lending_account_start_flashloan"]
     );
     let marginfi_end_fl = InstructionChecker::from_anchor(
         MARGINFI_PROGRAM,
         "marginfi",
-        vec!["lending_account_end_flashloan"],
+        vec!["lending_account_end_flashloan"]
     );
 
     let mut rebalance_instructions = 0;
@@ -420,28 +420,32 @@ pub fn get_rebalance_step(
     let ix_2_before = get_relative_instruction(ixs_sysvar, current_ix_idx, -2, index)?;
     let ix_3_before = get_relative_instruction(ixs_sysvar, current_ix_idx, -3, index)?;
 
-    if marginfi_start_fl.matches(&prev_ix)
-        && jup_swap.matches(&next_ix)
-        && solauto_rebalance.matches(&ix_2_after)
-        && marginfi_end_fl.matches(&ix_3_after)
-        && rebalance_instructions == 2
+    if
+        marginfi_start_fl.matches(&prev_ix) &&
+        jup_swap.matches(&next_ix) &&
+        solauto_rebalance.matches(&ix_2_after) &&
+        marginfi_end_fl.matches(&ix_3_after) &&
+        rebalance_instructions == 2
     {
         Ok(SolautoRebalanceStep::StartMarginfiFlashLoanSandwich)
-    } else if marginfi_start_fl.matches(&ix_3_before)
-        && solauto_rebalance.matches(&ix_2_before)
-        && jup_swap.matches(&prev_ix)
-        && marginfi_end_fl.matches(&next_ix)
-        && rebalance_instructions == 2
+    } else if
+        marginfi_start_fl.matches(&ix_3_before) &&
+        solauto_rebalance.matches(&ix_2_before) &&
+        jup_swap.matches(&prev_ix) &&
+        marginfi_end_fl.matches(&next_ix) &&
+        rebalance_instructions == 2
     {
         Ok(SolautoRebalanceStep::FinishMarginfiFlashLoanSandwich)
-    } else if jup_swap.matches(&next_ix)
-        && solauto_rebalance.matches(&ix_2_after)
-        && rebalance_instructions == 2
+    } else if
+        jup_swap.matches(&next_ix) &&
+        solauto_rebalance.matches(&ix_2_after) &&
+        rebalance_instructions == 2
     {
         Ok(SolautoRebalanceStep::StartSolautoRebalanceSandwich)
-    } else if jup_swap.matches(&prev_ix)
-        && solauto_rebalance.matches(&ix_2_before)
-        && rebalance_instructions == 2
+    } else if
+        jup_swap.matches(&prev_ix) &&
+        solauto_rebalance.matches(&ix_2_before) &&
+        rebalance_instructions == 2
     {
         Ok(SolautoRebalanceStep::FinishSolautoRebalanceSandwich)
     } else {
@@ -453,15 +457,20 @@ fn get_relative_instruction(
     ixs_sysvar: &AccountInfo,
     current_ix_idx: u16,
     relative_idx: i16,
-    total_ix_in_tx: u16,
+    total_ix_in_tx: u16
 ) -> Result<Option<Instruction>, ProgramError> {
-    if (current_ix_idx as i16) + relative_idx > 0
-        && (current_ix_idx as i16) + relative_idx < (total_ix_in_tx as i16)
+    if
+        (current_ix_idx as i16) + relative_idx > 0 &&
+        (current_ix_idx as i16) + relative_idx < (total_ix_in_tx as i16)
     {
-        Ok(Some(load_instruction_at_checked(
-            ((current_ix_idx as i16) + relative_idx) as usize,
-            ixs_sysvar,
-        )?))
+        Ok(
+            Some(
+                load_instruction_at_checked(
+                    ((current_ix_idx as i16) + relative_idx) as usize,
+                    ixs_sysvar
+                )?
+            )
+        )
     } else {
         Ok(None)
     }
@@ -500,9 +509,9 @@ impl InstructionChecker {
                     .try_into()
                     .expect("Slice with incorrect length");
 
-                if self.ix_discriminators.is_none()
-                    || self
-                        .ix_discriminators
+                if
+                    self.ix_discriminators.is_none() ||
+                    self.ix_discriminators
                         .as_ref()
                         .unwrap()
                         .iter()

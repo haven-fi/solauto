@@ -1,11 +1,14 @@
 use solana_program::{
-    account_info::AccountInfo, entrypoint::ProgramResult, msg, program_error::ProgramError,
+    account_info::AccountInfo,
+    entrypoint::ProgramResult,
+    msg,
+    program_error::ProgramError,
 };
 
 use crate::{
     types::{
         instruction::accounts::ClaimReferralFeesAccounts,
-        shared::{DeserializedAccount, RefferalState},
+        shared::{ DeserializedAccount, RefferalState },
     },
     utils::*,
 };
@@ -22,9 +25,9 @@ pub fn process_close_position_instruction() -> ProgramResult {
 
 pub fn process_claim_referral_fees<'a>(accounts: &'a [AccountInfo<'a>]) -> ProgramResult {
     let ctx = ClaimReferralFeesAccounts::context(accounts)?;
-    let referral_state =
-        DeserializedAccount::<RefferalState>::deserialize(Some(ctx.accounts.referral_state))?
-            .unwrap();
+    let referral_state = DeserializedAccount::<RefferalState>
+        ::deserialize(Some(ctx.accounts.referral_state))?
+        .unwrap();
 
     if !ctx.accounts.signer.is_signer {
         return Err(ProgramError::MissingRequiredSignature.into());
@@ -39,7 +42,7 @@ pub fn process_claim_referral_fees<'a>(accounts: &'a [AccountInfo<'a>]) -> Progr
         ctx.accounts.token_program,
         ctx.accounts.referral_fees_ta,
         ctx.accounts.signer,
-        ctx.accounts.referral_state,
+        ctx.accounts.referral_state
     )?;
 
     solana_utils::init_ata_if_needed(
@@ -49,7 +52,7 @@ pub fn process_claim_referral_fees<'a>(accounts: &'a [AccountInfo<'a>]) -> Progr
         ctx.accounts.signer,
         ctx.accounts.referral_state,
         ctx.accounts.referral_fees_ta,
-        ctx.accounts.referral_fees_mint,
+        ctx.accounts.referral_fees_mint
     )?;
 
     Ok(())

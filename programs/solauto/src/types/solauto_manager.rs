@@ -331,8 +331,22 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
 
         let referrer_fees =
             (balance as f64).mul((self.solauto_fees_bps.referrer as f64).div(10000.0)) as u64;
-        // TODO NEXT referrer_ta is not correct, we need to have signing authority outside this program to sign a jup swap\
-        // OR, we use this for now, but we add a new instruction to convert to dest token where the transaction creates new ta with random wallet
+
+        if referrer_fees > 0 {
+            spl_token_transfer(
+                self.std_accounts.token_program,
+                account_info,
+                self.std_accounts.solauto_position.account_info,
+                self.std_accounts.referred_by_supply_ta.unwrap(),
+                referrer_fees,
+                Some(vec![
+                    &[self.std_accounts.solauto_position.data.position_id],
+                    self.std_accounts.solauto_position.data.authority.as_ref(),
+                ]),
+            )?;
+        }
+
+        // TODO NEXT add a new instruction to convert to dest token where the transaction creates new ta with random wallet
         // and solauto transfers to that ta, then a jup swap occurs, and the dest ta is the referrer dest ta
 
         Ok(())

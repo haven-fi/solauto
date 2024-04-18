@@ -30,13 +30,6 @@ pub const SOLAUTO_MANAGER: Pubkey = Pubkey::new_from_array([
     35, 228, 216, 122, 54, 147, 76, 46, 180, 66, 110, 112,
 ]);
 
-// The Solauto fees receiver pubkey (NOT A TOKEN ACCOUNT)
-// AprYCPiVeKMCgjQ2ZufwChMzvQ5kFjJo2ekTLSkXsQDm (TODO)
-pub const SOLAUTO_FEES_WALLET: Pubkey = Pubkey::new_from_array([
-    145, 251, 126, 53, 245, 169, 146, 209, 147, 243, 95, 78, 165, 119, 126, 212, 48, 177, 204, 152,
-    35, 228, 216, 122, 54, 147, 76, 46, 180, 66, 110, 112,
-]);
-
 // So11111111111111111111111111111111111111112
 pub const WSOL_MINT: Pubkey = Pubkey::new_from_array([
     6, 155, 136, 87, 254, 171, 129, 132, 251, 104, 127, 99, 70, 24, 192, 53, 218, 196, 57, 220, 26,
