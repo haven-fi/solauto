@@ -367,15 +367,22 @@ pub fn validate_lending_protocol_accounts(
             .unwrap()
             .protocol_data.as_ref()
             .unwrap();
+
         if protocol_owned_account.key != &protocol_data.protocol_owned_account {
             msg!("Incorrect protocol-owned account");
             return Err(SolautoError::InvalidSolautoPositionAccount.into());
         }
+
         if supply_mint.key != &protocol_data.supply_mint {
             msg!("Incorrect supply mint account");
             return Err(SolautoError::InvalidSolautoPositionAccount.into());
         }
-        if !protocol_data.debt_mint.is_none() && !debt_mint.is_none() || debt_mint.unwrap().key != &protocol_data.debt_mint.unwrap() {
+
+        if
+            !debt_mint.is_none() &&
+            !protocol_data.debt_mint.is_none() &&
+            debt_mint.unwrap().key != &protocol_data.debt_mint.unwrap()
+        {
             msg!("Incorrect debt mint account");
             return Err(SolautoError::InvalidSolautoPositionAccount.into());
         }
