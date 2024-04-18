@@ -321,7 +321,7 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
             self.std_accounts.token_program,
             account_info,
             self.std_accounts.solauto_position.account_info,
-            self.std_accounts.solauto_fees_receiver_ta.unwrap(),
+            self.std_accounts.solauto_fees_supply_ta.unwrap(),
             solauto_fees,
             Some(vec![
                 &[self.std_accounts.solauto_position.data.position_id],

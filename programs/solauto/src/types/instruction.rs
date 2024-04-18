@@ -25,7 +25,7 @@ pub enum Instruction {
     #[account(name = "ata_program")]
     #[account(name = "rent")]
     #[account(name = "solauto_fees_receiver")]
-    #[account(name = "solauto_fees_receiver_ta")]
+    #[account(name = "solauto_fees_supply_ta")]
     #[account(mut, name = "signer_referral_state")]
     #[account(mut, name = "referral_fees_mint")]
     #[account(mut, name = "signer_referral_dest_ta")]
@@ -50,7 +50,7 @@ pub enum Instruction {
     #[account(name = "ata_program")]
     #[account(name = "rent")]
     #[account(name = "solauto_fees_receiver")]
-    #[account(name = "solauto_fees_receiver_ta")]
+    #[account(name = "solauto_fees_supply_ta")]
     #[account(mut, name = "signer_referral_state")]
     #[account(mut, name = "referral_fees_mint")]
     #[account(mut, name = "signer_referral_dest_ta")]
@@ -157,7 +157,7 @@ pub enum Instruction {
     #[account(name = "ata_program")]
     #[account(name = "rent")]
     #[account(name = "ixs_sysvar")]
-    #[account(mut, name = "solauto_fees_receiver_ta")]
+    #[account(mut, name = "solauto_fees_supply_ta")]
     #[account(name = "authority_referral_state")]
     #[account(optional, name = "referred_by_state")]
     #[account(mut, optional, name = "referred_by_supply_ta")]
@@ -181,7 +181,7 @@ pub enum Instruction {
     #[account(name = "clock")]
     #[account(name = "rent")]
     #[account(name = "ixs_sysvar")]
-    #[account(mut, name = "solauto_fees_receiver_ta")]
+    #[account(mut, name = "solauto_fees_supply_ta")]
     #[account(name = "authority_referral_state")]
     #[account(optional, name = "referred_by_state")]
     #[account(mut, optional, name = "referred_by_supply_ta")]
@@ -254,7 +254,7 @@ pub struct SolautoStandardAccounts<'a> {
     pub rent: &'a AccountInfo<'a>,
     pub ixs_sysvar: Option<&'a AccountInfo<'a>>,
     pub solauto_position: DeserializedAccount<'a, Position>,
-    pub solauto_fees_receiver_ta: Option<&'a AccountInfo<'a>>,
+    pub solauto_fees_supply_ta: Option<&'a AccountInfo<'a>>,
     pub authority_referral_state: Option<DeserializedAccount<'a, RefferalState>>,
     pub referred_by_state: Option<&'a AccountInfo<'a>>,
     pub referred_by_supply_ta: Option<&'a AccountInfo<'a>>,

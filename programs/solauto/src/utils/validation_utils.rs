@@ -38,8 +38,8 @@ pub fn generic_instruction_validation(
     if !supply_token_mint.is_none() {
         validate_referral_accounts(accounts, supply_token_mint.unwrap())?;
 
-        if !accounts.solauto_fees_receiver_ta.is_none()
-            && accounts.solauto_fees_receiver_ta.unwrap().key
+        if !accounts.solauto_fees_supply_ta.is_none()
+            && accounts.solauto_fees_supply_ta.unwrap().key
                 != &get_associated_token_address(
                     &SOLAUTO_FEES_RECEIVER_WALLET,
                     supply_token_mint.unwrap().key,

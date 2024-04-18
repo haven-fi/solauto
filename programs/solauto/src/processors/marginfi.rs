@@ -39,7 +39,7 @@ pub fn process_marginfi_open_position_instruction<'a>(
         ctx.accounts.rent,
         ctx.accounts.signer,
         ctx.accounts.solauto_fees_receiver,
-        ctx.accounts.solauto_fees_receiver_ta,
+        ctx.accounts.solauto_fees_supply_ta,
         ctx.accounts.supply_mint,
     )?;
 
@@ -90,7 +90,7 @@ pub fn process_marginfi_open_position_instruction<'a>(
         rent: ctx.accounts.rent,
         ixs_sysvar: None,
         solauto_position,
-        solauto_fees_receiver_ta: Some(ctx.accounts.solauto_fees_receiver_ta),
+        solauto_fees_supply_ta: Some(ctx.accounts.solauto_fees_supply_ta),
         authority_referral_state: Some(authority_referral_state),
         referred_by_state: ctx.accounts.referred_by_state,
         referred_by_supply_ta: ctx.accounts.referred_by_supply_ta,
@@ -133,7 +133,7 @@ pub fn process_marginfi_interaction_instruction<'a>(
         rent: ctx.accounts.rent,
         ixs_sysvar: None,
         solauto_position,
-        solauto_fees_receiver_ta: None,
+        solauto_fees_supply_ta: None,
         authority_referral_state: None,
         referred_by_state: None,
         referred_by_supply_ta: None,
@@ -166,7 +166,7 @@ pub fn process_marginfi_rebalance<'a>(
         rent: ctx.accounts.rent,
         ixs_sysvar: Some(ctx.accounts.ixs_sysvar),
         solauto_position,
-        solauto_fees_receiver_ta: Some(ctx.accounts.solauto_fees_receiver_ta),
+        solauto_fees_supply_ta: Some(ctx.accounts.solauto_fees_supply_ta),
         authority_referral_state: DeserializedAccount::<RefferalState>::deserialize(Some(
             ctx.accounts.authority_referral_state,
         ))?,
