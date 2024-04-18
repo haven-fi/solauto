@@ -250,11 +250,11 @@ pub fn validate_solend_protocol_interaction_ix(
                 ctx.accounts.supply_reserve_pyth_price_oracle,
                 ctx.accounts.supply_reserve_switchboard_oracle,
                 ctx.accounts.supply_liquidity_mint,
-                ctx.accounts.source_supply_liquidity_ta,
+                ctx.accounts.authority_supply_liquidity_ta,
                 ctx.accounts.reserve_supply_liquidity_ta,
                 ctx.accounts.supply_collateral_mint,
                 ctx.accounts.supply_collateral_mint,
-                ctx.accounts.source_supply_collateral_ta,
+                ctx.accounts.authority_supply_collateral_ta,
                 ctx.accounts.reserve_supply_collateral_ta,
             ]
         );
@@ -266,7 +266,7 @@ pub fn validate_solend_protocol_interaction_ix(
                 ctx.accounts.debt_reserve,
                 ctx.accounts.debt_reserve_fee_receiver_ta,
                 ctx.accounts.debt_liquidity_mint,
-                ctx.accounts.source_debt_liquidity_ta,
+                ctx.accounts.authority_debt_liquidity_ta,
                 ctx.accounts.reserve_debt_liquidity_ta,
             ]
         );
@@ -337,17 +337,19 @@ pub fn validate_referral_accounts(
     Ok(())
 }
 
-pub fn validate_source_token_account(
+pub fn validate_position_token_account(
     std_accounts: &SolautoStandardAccounts,
-    source_token_account: &AccountInfo,
+    position_token_account: &AccountInfo,
     token_mint: &AccountInfo
 ) -> ProgramResult {
     if
-        source_token_account.key !=
-        &get_associated_token_address(
-            std_accounts.solauto_position.account_info.key,
-            token_mint.key
-        )
+        position_token_account.key !=
+            &get_associated_token_address(
+                std_accounts.solauto_position.account_info.key,
+                token_mint.key
+            ) &&
+        position_token_account.key !=
+            &get_associated_token_address(std_accounts.signer.key, token_mint.key)
     {
         msg!("Invalid source token account provided for the given solauto position & token mint");
         return Err(ProgramError::InvalidAccountData.into());

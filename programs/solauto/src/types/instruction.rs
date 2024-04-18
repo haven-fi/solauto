@@ -36,9 +36,9 @@ pub enum Instruction {
     #[account(mut, name = "solauto_position")]
     #[account(name = "marginfi_group")]
     #[account(mut, name = "marginfi_account")]
-    #[account(mut, name = "supply_ta")]
+    #[account(mut, name = "position_supply_ta")]
     #[account(name = "supply_mint")]
-    #[account(mut, name = "debt_ta")]
+    #[account(mut, name = "position_debt_ta")]
     #[account(name = "debt_mint")]
     MarginfiOpenPosition(UpdatePositionData),
 
@@ -62,11 +62,11 @@ pub enum Instruction {
     #[account(name = "lending_market")]
     #[account(mut, name = "obligation")]
     #[account(name = "supply_reserve")]
-    #[account(mut, name = "supply_liquidity_ta")]
+    #[account(mut, name = "position_supply_liquidity_ta")]
     #[account(name = "supply_liquidity_mint")]
-    #[account(mut, name = "supply_collateral_ta")]
+    #[account(mut, name = "position_supply_collateral_ta")]
     #[account(name = "supply_collateral_mint")]
-    #[account(mut, name = "debt_liquidity_ta")]
+    #[account(mut, name = "position_debt_liquidity_ta")]
     #[account(name = "debt_liquidity_mint")]
     SolendOpenPosition(UpdatePositionData),
 
@@ -105,7 +105,6 @@ pub enum Instruction {
     #[account(mut, optional, name = "solauto_position")]
     SolendRefreshData,
 
-    /// TODO source accounts here will now be token accounts of the solauto position pda, so how do we get funds to and from signer?
     /// Marginfi protocol interaction. Can only be invoked by the authority of the position
     #[account(signer, mut, name = "signer")]
     #[account(name = "marginfi_program")]
@@ -115,15 +114,14 @@ pub enum Instruction {
     #[account(name = "rent")]
     #[account(mut, name = "solauto_position")]
     #[account(optional, name = "supply_mint")]
-    #[account(mut, optional, name = "source_supply_ta")]
+    #[account(mut, optional, name = "authority_supply_ta")]
     #[account(mut, optional, name = "bank_supply_ta")]
     #[account(optional, name = "debt_mint")]
-    #[account(mut, optional, name = "source_debt_ta")]
+    #[account(mut, optional, name = "authority_debt_ta")]
     #[account(mut, optional, name = "bank_debt_ta")]
     // TODO missing accounts
     MarginfiProtocolInteraction(SolautoAction),
 
-    /// TODO source accounts here will now be token accounts of the solauto position pda, so how do we get funds to and from signer?
     /// Solend protocol interaction. Can only be invoked by the authority of the position
     #[account(signer, mut, name = "signer")]
     #[account(name = "solend_program")]
@@ -139,15 +137,15 @@ pub enum Instruction {
     #[account(optional, name = "supply_reserve_pyth_price_oracle")]
     #[account(optional, name = "supply_reserve_switchboard_oracle")]
     #[account(optional, name = "supply_liquidity_mint")]
-    #[account(mut, optional, name = "source_supply_liquidity_ta")]
+    #[account(mut, optional, name = "authority_supply_liquidity_ta")]
     #[account(mut, optional, name = "reserve_supply_liquidity_ta")]
     #[account(optional, name = "supply_collateral_mint")]
-    #[account(mut, optional, name = "source_supply_collateral_ta")]
+    #[account(mut, optional, name = "authority_supply_collateral_ta")]
     #[account(mut, optional, name = "reserve_supply_collateral_ta")]
     #[account(mut, optional, name = "debt_reserve")]
     #[account(mut, optional, name = "debt_reserve_fee_receiver_ta")]
     #[account(optional, name = "debt_liquidity_mint")]
-    #[account(mut, optional, name = "source_debt_liquidity_ta")]
+    #[account(mut, optional, name = "authority_debt_liquidity_ta")]
     #[account(mut, optional, name = "reserve_debt_liquidity_ta")]
     SolendProtocolInteraction(SolautoAction),
 
@@ -166,10 +164,10 @@ pub enum Instruction {
     #[account(mut, name = "solauto_position")]
     #[account(mut, name = "intermediary_ta")]
     #[account(name = "supply_mint")]
-    #[account(mut, name = "source_supply_ta")]
+    #[account(mut, name = "position_supply_ta")]
     #[account(mut, name = "bank_supply_ta")]
     #[account(name = "debt_mint")]
-    #[account(mut, name = "source_debt_ta")]
+    #[account(mut, name = "position_debt_ta")]
     #[account(mut, name = "bank_debt_ta")]
     // TODO missing accounts
     MarginfiRebalance(RebalanceArgs),
@@ -195,15 +193,15 @@ pub enum Instruction {
     #[account(name = "supply_reserve_pyth_price_oracle")]
     #[account(name = "supply_reserve_switchboard_oracle")]
     #[account(name = "supply_liquidity_mint")]
-    #[account(mut, name = "source_supply_liquidity_ta")]
+    #[account(mut, name = "position_supply_liquidity_ta")]
     #[account(mut, name = "reserve_supply_liquidity_ta")]
     #[account(name = "supply_collateral_mint")]
-    #[account(mut, name = "source_supply_collateral_ta")]
+    #[account(mut, name = "position_supply_collateral_ta")]
     #[account(mut, name = "reserve_supply_collateral_ta")]
     #[account(mut, name = "debt_reserve")]
     #[account(mut, name = "debt_reserve_fee_receiver_ta")]
     #[account(name = "debt_liquidity_mint")]
-    #[account(mut, name = "source_debt_liquidity_ta")]
+    #[account(mut, name = "position_debt_liquidity_ta")]
     #[account(mut, name = "reserve_debt_liquidity_ta")]
     SolendRebalance(RebalanceArgs),
 }

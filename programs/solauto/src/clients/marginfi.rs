@@ -13,7 +13,7 @@ use crate::{
         obligation_position::LendingProtocolObligationPosition,
         shared::{DeserializedAccount, Position},
     },
-    utils::validation_utils::validate_position_settings,
+    utils::validation_utils::*,
 };
 
 pub struct MarginfiDataAccounts<'a> {
@@ -66,8 +66,8 @@ impl<'a> MarginfiClient<'a> {
 impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
     fn validate(&self, std_accounts: &SolautoStandardAccounts) -> ProgramResult {
         // TODO
-        // TODO: we need to validate the supply & debt source token accounts according to the validation_utils::validate_source_token_account
-        // TODO: we need to validate the program accounts validation_utils::validate_lending_protocol_accounts
+        // TODO: we need to validate the supply & debt source token accounts according to the validate_position_token_account
+        // TODO: we need to validate the program accounts validate_lending_protocol_accounts
         Ok(())
     }
 

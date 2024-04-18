@@ -28,19 +28,19 @@ pub struct SolautoManagerAccounts<'a> {
 impl<'a> SolautoManagerAccounts<'a> {
     pub fn from(
         supply_mint: Option<&'a AccountInfo<'a>>,
-        source_supply_ta: Option<&'a AccountInfo<'a>>,
+        position_supply_ta: Option<&'a AccountInfo<'a>>,
         bank_supply_ta: Option<&'a AccountInfo<'a>>,
         debt_mint: Option<&'a AccountInfo<'a>>,
-        source_debt_ta: Option<&'a AccountInfo<'a>>,
+        position_debt_ta: Option<&'a AccountInfo<'a>>,
         bank_debt_ta: Option<&'a AccountInfo<'a>>,
         intermediary_ta: Option<&'a AccountInfo<'a>>
     ) -> Self {
         let supply = LendingProtocolTokenAccounts::from(
             supply_mint,
-            source_supply_ta,
+            position_supply_ta,
             bank_supply_ta
         );
-        let debt = LendingProtocolTokenAccounts::from(debt_mint, source_debt_ta, bank_debt_ta);
+        let debt = LendingProtocolTokenAccounts::from(debt_mint, position_debt_ta, bank_debt_ta);
         Self {
             supply,
             debt,
@@ -81,7 +81,7 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
                 self.deposit(base_unit_amount)?;
             }
             SolautoAction::Borrow(base_unit_amount) => {
-                self.borrow(base_unit_amount, self.accounts.debt.as_ref().unwrap().source_ta)?;
+                self.borrow(base_unit_amount, self.accounts.debt.as_ref().unwrap().position_ta)?;
             }
             SolautoAction::Repay(base_unit_amount) => {
                 self.repay(base_unit_amount)?;
@@ -91,13 +91,13 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
                     WithdrawParams::All => {
                         self.withdraw(
                             self.obligation_position.net_worth_base_amount(),
-                            self.accounts.supply.as_ref().unwrap().source_ta
+                            self.accounts.supply.as_ref().unwrap().position_ta
                         )?;
                     }
                     WithdrawParams::Partial(base_unit_amount) =>
                         self.withdraw(
                             base_unit_amount,
-                            self.accounts.supply.as_ref().unwrap().source_ta
+                            self.accounts.supply.as_ref().unwrap().position_ta
                         )?,
                 }
         }
@@ -239,21 +239,21 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
     }
 
     fn finish_rebalance(&mut self) -> ProgramResult {
-        let supply_source_ta = TokenAccount::unpack(
-            &self.accounts.supply.as_ref().unwrap().source_ta.data.borrow()
+        let supply_position_ta = TokenAccount::unpack(
+            &self.accounts.supply.as_ref().unwrap().position_ta.data.borrow()
         )?;
-        let debt_source_ta = TokenAccount::unpack(
-            &self.accounts.debt.as_ref().unwrap().source_ta.data.borrow()
+        let debt_position_ta = TokenAccount::unpack(
+            &self.accounts.debt.as_ref().unwrap().position_ta.data.borrow()
         )?;
 
-        let supply_balance = supply_source_ta.amount;
-        let debt_balance = debt_source_ta.amount;
+        let supply_balance = supply_position_ta.amount;
+        let debt_balance = debt_position_ta.amount;
 
         if supply_balance > 0 {
-            self.payout_fees(self.accounts.supply.as_ref().unwrap().source_ta, &supply_source_ta)?;
+            self.payout_fees(self.accounts.supply.as_ref().unwrap().position_ta, &supply_position_ta)?;
 
             let new_supply_balance = TokenAccount::unpack(
-                &self.accounts.supply.as_ref().unwrap().source_ta.data.borrow()
+                &self.accounts.supply.as_ref().unwrap().position_ta.data.borrow()
             )?.amount;
             self.deposit(new_supply_balance)?;
         } else if debt_balance > 0 {
@@ -292,7 +292,7 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
         let referrer_fees = (balance as f64).mul(
             (self.solauto_fees_bps.referrer as f64).div(10000.0)
         ) as u64;
-        // TODO referrer_ta is not correct, we need to have signing authority outside this program to sign a jup swap\
+        // TODO NEXT referrer_ta is not correct, we need to have signing authority outside this program to sign a jup swap\
         // OR, we use this for now, but we add a new instruction to convert to dest token where the transaction creates new ta with random wallet
         // and solauto transfers to that ta, then a jup swap occurs, and the dest ta is the referrer dest ta
 

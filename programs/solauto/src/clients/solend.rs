@@ -27,7 +27,7 @@ use crate::{
         obligation_position::*,
         shared::{ DeserializedAccount, LendingPlatform, Position, SolautoError },
     },
-    utils::{ ix_utils::*, solauto_utils::*, validation_utils::{ self, * } },
+    utils::{ ix_utils::*, solauto_utils::*, validation_utils::* },
 };
 
 pub struct ReserveOracleAccounts<'a> {
@@ -99,15 +99,15 @@ impl<'a> SolendClient<'a> {
         supply_reserve_pyth_price_oracle: Option<&'a AccountInfo<'a>>,
         supply_reserve_switchboard_oracle: Option<&'a AccountInfo<'a>>,
         supply_liquidity_mint: Option<&'a AccountInfo<'a>>,
-        source_supply_liquidity: Option<&'a AccountInfo<'a>>,
+        position_supply_liquidity: Option<&'a AccountInfo<'a>>,
         reserve_supply_liquidity: Option<&'a AccountInfo<'a>>,
         supply_collateral_mint: Option<&'a AccountInfo<'a>>,
-        source_supply_collateral: Option<&'a AccountInfo<'a>>,
+        position_supply_collateral: Option<&'a AccountInfo<'a>>,
         reserve_supply_collateral: Option<&'a AccountInfo<'a>>,
         debt_reserve: Option<&'a AccountInfo<'a>>,
         debt_reserve_fee_receiver: Option<&'a AccountInfo<'a>>,
         debt_liquidity_mint: Option<&'a AccountInfo<'a>>,
-        source_debt_liquidity: Option<&'a AccountInfo<'a>>,
+        position_debt_liquidity: Option<&'a AccountInfo<'a>>,
         reserve_debt_liquidity: Option<&'a AccountInfo<'a>>
     ) -> Result<(Self, LendingProtocolObligationPosition), ProgramError> {
         let mut data_accounts = SolendClient::deserialize_solend_accounts(
@@ -119,17 +119,17 @@ impl<'a> SolendClient<'a> {
 
         let supply_liquidity = LendingProtocolTokenAccounts::from(
             supply_liquidity_mint,
-            source_supply_liquidity,
+            position_supply_liquidity,
             reserve_supply_liquidity
         );
         let supply_collateral = LendingProtocolTokenAccounts::from(
             supply_collateral_mint,
-            source_supply_collateral,
+            position_supply_collateral,
             reserve_supply_collateral
         );
         let debt_liquidity = LendingProtocolTokenAccounts::from(
             debt_liquidity_mint,
-            source_debt_liquidity,
+            position_debt_liquidity,
             reserve_debt_liquidity
         );
 
@@ -335,18 +335,18 @@ impl<'a> LendingProtocolClient<'a> for SolendClient<'a> {
 
         if !self.supply_liquidity.is_none() {
             let supply_liquidity = self.supply_liquidity.as_ref().unwrap();
-            validate_source_token_account(
+            validate_position_token_account(
                 std_accounts,
-                supply_liquidity.source_ta,
+                supply_liquidity.position_ta,
                 supply_liquidity.mint
             )?;
         }
 
         if !self.debt_liquidity.is_none() {
             let debt_liquidity = self.debt_liquidity.as_ref().unwrap();
-            validate_source_token_account(
+            validate_position_token_account(
                 std_accounts,
-                debt_liquidity.source_ta,
+                debt_liquidity.position_ta,
                 debt_liquidity.mint
             )?;
         }
@@ -378,8 +378,8 @@ impl<'a> LendingProtocolClient<'a> for SolendClient<'a> {
         let deposit_instruction = deposit_reserve_liquidity_and_obligation_collateral(
             SOLEND_PROGRAM.clone(),
             base_unit_amount,
-            *supply_liquidity.source_ta.key,
-            *supply_collateral.source_ta.key,
+            *supply_liquidity.position_ta.key,
+            *supply_collateral.position_ta.key,
             *supply_reserve.key,
             *supply_liquidity.reserve_ta.key,
             *supply_collateral.mint.key,
@@ -393,8 +393,8 @@ impl<'a> LendingProtocolClient<'a> for SolendClient<'a> {
         );
 
         let account_infos = &[
-            supply_liquidity.source_ta.clone(),
-            supply_collateral.source_ta.clone(),
+            supply_liquidity.position_ta.clone(),
+            supply_collateral.position_ta.clone(),
             supply_reserve.clone(),
             supply_liquidity.reserve_ta.clone(),
             supply_collateral.mint.clone(),

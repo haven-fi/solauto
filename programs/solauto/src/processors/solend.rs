@@ -104,7 +104,7 @@ pub fn process_solend_open_position_instruction<'a>(
         &std_accounts,
         true,
         LendingPlatform::Solend,
-        Some(ctx.accounts.supply_liquidity_ta)
+        Some(ctx.accounts.supply_liquidity_mint)
     )?;
 
     open_position::solend_open_position(ctx, std_accounts.solauto_position)

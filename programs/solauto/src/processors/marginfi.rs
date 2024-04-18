@@ -149,7 +149,7 @@ pub fn process_marginfi_interaction_instruction<'a>(
         &std_accounts,
         true,
         LendingPlatform::Marginfi,
-        None
+        ctx.accounts.supply_mint
     )?;
 
     validation_utils::validate_marginfi_protocol_interaction_ix(&ctx, &action)?;

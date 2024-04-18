@@ -1,4 +1,4 @@
-use std::{ cmp::min, collections::HashMap };
+use std::cmp::min;
 use solana_program::{
     instruction::{ get_stack_height, Instruction, TRANSACTION_LEVEL_STACK_HEIGHT },
     msg,
@@ -216,7 +216,7 @@ pub fn should_proceed_with_rebalance(
     let current_liq_utilization_rate_bps = if first_or_only_rebalance_ix {
         obligation_position.current_utilization_rate_bps()
     } else {
-        // TODO pretend modify supply or debt (based on the source_[supply|debt]_token_account) and calculate new utilization rate using that
+        // TODO pretend modify supply or debt (based on the position_[supply|debt]_token_account) and calculate new utilization rate using that
         0
     };
 

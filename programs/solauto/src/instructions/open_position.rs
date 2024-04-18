@@ -32,9 +32,9 @@ pub fn marginfi_open_position<'a>(
         ctx.accounts.token_program,
         ctx.accounts.rent,
         ctx.accounts.signer,
-        ctx.accounts.supply_ta,
+        ctx.accounts.position_supply_ta,
         ctx.accounts.supply_mint,
-        ctx.accounts.debt_ta,
+        ctx.accounts.position_debt_ta,
         ctx.accounts.debt_mint
     )?;
 
@@ -81,9 +81,9 @@ pub fn solend_open_position<'a>(
         ctx.accounts.token_program,
         ctx.accounts.rent,
         ctx.accounts.signer,
-        ctx.accounts.supply_liquidity_ta,
+        ctx.accounts.position_supply_liquidity_ta,
         ctx.accounts.supply_liquidity_mint,
-        ctx.accounts.debt_liquidity_ta,
+        ctx.accounts.position_debt_liquidity_ta,
         ctx.accounts.debt_liquidity_mint
     )?;
 
@@ -93,7 +93,7 @@ pub fn solend_open_position<'a>(
         ctx.accounts.rent,
         ctx.accounts.signer,
         solauto_position.account_info,
-        ctx.accounts.supply_collateral_ta,
+        ctx.accounts.position_supply_collateral_ta,
         ctx.accounts.supply_collateral_mint
     )?;
 
