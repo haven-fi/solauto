@@ -65,7 +65,7 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
         std_accounts: SolautoStandardAccounts<'a>
     ) -> Result<Self, ProgramError> {
         client.validate(&std_accounts)?;
-        let solauto_fees_bps = SolautoFeesBps::from(!&std_accounts.referred_by_ta.is_none());
+        let solauto_fees_bps = SolautoFeesBps::from(!&std_accounts.referred_by_supply_ta.is_none());
         Ok(Self {
             client,
             obligation_position,
@@ -250,7 +250,10 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
         let debt_balance = debt_position_ta.amount;
 
         if supply_balance > 0 {
-            self.payout_fees(self.accounts.supply.as_ref().unwrap().source_ta, &supply_position_ta)?;
+            self.payout_fees(
+                self.accounts.supply.as_ref().unwrap().source_ta,
+                &supply_position_ta
+            )?;
 
             let new_supply_balance = TokenAccount::unpack(
                 &self.accounts.supply.as_ref().unwrap().source_ta.data.borrow()
@@ -283,10 +286,12 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
             self.std_accounts.solauto_position.account_info,
             self.std_accounts.solauto_fees_receiver_ta.unwrap(),
             solauto_fees,
-            Some(vec![
-                &[self.std_accounts.solauto_position.data.position_id],
-                self.std_accounts.solauto_position.data.authority.as_ref()
-            ])
+            Some(
+                vec![
+                    &[self.std_accounts.solauto_position.data.position_id],
+                    self.std_accounts.solauto_position.data.authority.as_ref()
+                ]
+            )
         )?;
 
         let referrer_fees = (balance as f64).mul(

@@ -32,7 +32,7 @@ pub enum Instruction {
     #[account(mut, optional, name = "referred_by_state")]
     #[account(optional, name = "referred_by_authority")]
     #[account(mut, optional, name = "referred_by_dest_ta")]
-    #[account(mut, optional, name = "referred_by_ta")]
+    #[account(mut, optional, name = "referred_by_supply_ta")]
     #[account(mut, name = "solauto_position")]
     #[account(name = "marginfi_group")]
     #[account(mut, name = "marginfi_account")]
@@ -57,7 +57,7 @@ pub enum Instruction {
     #[account(mut, optional, name = "referred_by_state")]
     #[account(optional, name = "referred_by_authority")]
     #[account(mut, optional, name = "referred_by_dest_ta")]
-    #[account(mut, optional, name = "referred_by_ta")]
+    #[account(mut, optional, name = "referred_by_supply_ta")]
     #[account(mut, name = "solauto_position")]
     #[account(name = "lending_market")]
     #[account(mut, name = "obligation")]
@@ -160,7 +160,7 @@ pub enum Instruction {
     #[account(mut, name = "solauto_fees_receiver_ta")]
     #[account(name = "authority_referral_state")]
     #[account(optional, name = "referred_by_state")]
-    #[account(mut, optional, name = "referred_by_ta")]
+    #[account(mut, optional, name = "referred_by_supply_ta")]
     #[account(mut, name = "solauto_position")]
     #[account(mut, name = "intermediary_ta")]
     #[account(name = "supply_mint")]
@@ -184,7 +184,7 @@ pub enum Instruction {
     #[account(mut, name = "solauto_fees_receiver_ta")]
     #[account(name = "authority_referral_state")]
     #[account(optional, name = "referred_by_state")]
-    #[account(mut, optional, name = "referred_by_ta")]
+    #[account(mut, optional, name = "referred_by_supply_ta")]
     #[account(mut, name = "solauto_position")]
     #[account(mut, name = "intermediary_ta")]
     #[account(name = "lending_market")]
@@ -257,5 +257,5 @@ pub struct SolautoStandardAccounts<'a> {
     pub solauto_fees_receiver_ta: Option<&'a AccountInfo<'a>>,
     pub authority_referral_state: Option<DeserializedAccount<'a, RefferalState>>,
     pub referred_by_state: Option<&'a AccountInfo<'a>>,
-    pub referred_by_ta: Option<&'a AccountInfo<'a>>,
+    pub referred_by_supply_ta: Option<&'a AccountInfo<'a>>,
 }

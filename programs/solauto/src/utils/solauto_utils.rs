@@ -229,7 +229,7 @@ pub fn should_proceed_with_rebalance(
     if
         first_or_only_rebalance_ix &&
         current_liq_utilization_rate_bps < target_rate_bps &&
-        (std_accounts.authority_referral_state.is_none() || std_accounts.referred_by_ta.is_none())
+        (std_accounts.authority_referral_state.is_none() || std_accounts.referred_by_supply_ta.is_none())
     {
         msg!(
             "Missing referral account(s) when we are boosting leverage. Referral accounts required."

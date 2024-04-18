@@ -326,11 +326,11 @@ pub fn validate_referral_accounts(
     }
 
     if
-        std_accounts.referred_by_ta.is_none() ||
-        std_accounts.referred_by_ta.unwrap().key !=
+        std_accounts.referred_by_supply_ta.is_none() ||
+        std_accounts.referred_by_supply_ta.unwrap().key !=
             &get_associated_token_address(&referred_by_state.unwrap(), supply_token_mint.key)
     {
-        msg!("Provided incorrect referred_by_ta according to the given authority and token mint");
+        msg!("Provided incorrect referred_by_supply_ta according to the given authority and token mint");
         return Err(ProgramError::InvalidAccountData.into());
     }
 

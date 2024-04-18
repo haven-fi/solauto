@@ -81,7 +81,7 @@ pub fn process_solend_open_position_instruction<'a>(
             ctx.accounts.rent,
             ctx.accounts.signer,
             ctx.accounts.referred_by_state.unwrap(),
-            ctx.accounts.referred_by_ta.unwrap(),
+            ctx.accounts.referred_by_supply_ta.unwrap(),
             ctx.accounts.referral_fees_mint
         )?;
     }
@@ -98,7 +98,7 @@ pub fn process_solend_open_position_instruction<'a>(
         solauto_fees_receiver_ta: Some(ctx.accounts.solauto_fees_receiver_ta),
         authority_referral_state: Some(authority_referral_state),
         referred_by_state: ctx.accounts.referred_by_state,
-        referred_by_ta: ctx.accounts.referred_by_ta,
+        referred_by_supply_ta: ctx.accounts.referred_by_supply_ta,
     };
     validation_utils::generic_instruction_validation(
         &std_accounts,
@@ -149,7 +149,7 @@ pub fn process_solend_interaction_instruction<'a>(
         solauto_fees_receiver_ta: None,
         authority_referral_state: None,
         referred_by_state: None,
-        referred_by_ta: None,
+        referred_by_supply_ta: None,
     };
     validation_utils::generic_instruction_validation(
         &std_accounts,
@@ -188,7 +188,7 @@ pub fn process_solend_rebalance<'a>(
             Some(ctx.accounts.authority_referral_state)
         )?,
         referred_by_state: ctx.accounts.referred_by_state,
-        referred_by_ta: ctx.accounts.referred_by_ta,
+        referred_by_supply_ta: ctx.accounts.referred_by_supply_ta,
     };
     validation_utils::generic_instruction_validation(
         &std_accounts,
