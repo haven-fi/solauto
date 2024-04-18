@@ -337,18 +337,18 @@ pub fn validate_referral_accounts(
     Ok(())
 }
 
-pub fn validate_position_token_account(
+pub fn validate_source_token_account(
     std_accounts: &SolautoStandardAccounts,
-    position_token_account: &AccountInfo,
+    source_ta: &AccountInfo,
     token_mint: &AccountInfo
 ) -> ProgramResult {
     if
-        position_token_account.key !=
+        source_ta.key !=
             &get_associated_token_address(
                 std_accounts.solauto_position.account_info.key,
                 token_mint.key
             ) &&
-        position_token_account.key !=
+        source_ta.key !=
             &get_associated_token_address(std_accounts.signer.key, token_mint.key)
     {
         msg!("Invalid source token account provided for the given solauto position & token mint");
@@ -359,7 +359,7 @@ pub fn validate_position_token_account(
 
 pub fn validate_lending_protocol_accounts(
     solauto_position: &DeserializedAccount<Position>,
-    protocol_owned_account: &AccountInfo,
+    protocol_position: &AccountInfo,
     supply_mint: &AccountInfo,
     debt_mint: Option<&AccountInfo>
 ) -> ProgramResult {
@@ -370,7 +370,7 @@ pub fn validate_lending_protocol_accounts(
             .protocol_data.as_ref()
             .unwrap();
 
-        if protocol_owned_account.key != &protocol_data.protocol_owned_account {
+        if protocol_position.key != &protocol_data.protocol_position {
             msg!("Incorrect protocol-owned account");
             return Err(SolautoError::InvalidSolautoPositionAccount.into());
         }

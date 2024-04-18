@@ -81,7 +81,7 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
                 self.deposit(base_unit_amount)?;
             }
             SolautoAction::Borrow(base_unit_amount) => {
-                self.borrow(base_unit_amount, self.accounts.debt.as_ref().unwrap().position_ta)?;
+                self.borrow(base_unit_amount, self.accounts.debt.as_ref().unwrap().source_ta)?;
             }
             SolautoAction::Repay(base_unit_amount) => {
                 self.repay(base_unit_amount)?;
@@ -91,13 +91,13 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
                     WithdrawParams::All => {
                         self.withdraw(
                             self.obligation_position.net_worth_base_amount(),
-                            self.accounts.supply.as_ref().unwrap().position_ta
+                            self.accounts.supply.as_ref().unwrap().source_ta
                         )?;
                     }
                     WithdrawParams::Partial(base_unit_amount) =>
                         self.withdraw(
                             base_unit_amount,
-                            self.accounts.supply.as_ref().unwrap().position_ta
+                            self.accounts.supply.as_ref().unwrap().source_ta
                         )?,
                 }
         }
@@ -240,20 +240,20 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
 
     fn finish_rebalance(&mut self) -> ProgramResult {
         let supply_position_ta = TokenAccount::unpack(
-            &self.accounts.supply.as_ref().unwrap().position_ta.data.borrow()
+            &self.accounts.supply.as_ref().unwrap().source_ta.data.borrow()
         )?;
         let debt_position_ta = TokenAccount::unpack(
-            &self.accounts.debt.as_ref().unwrap().position_ta.data.borrow()
+            &self.accounts.debt.as_ref().unwrap().source_ta.data.borrow()
         )?;
 
         let supply_balance = supply_position_ta.amount;
         let debt_balance = debt_position_ta.amount;
 
         if supply_balance > 0 {
-            self.payout_fees(self.accounts.supply.as_ref().unwrap().position_ta, &supply_position_ta)?;
+            self.payout_fees(self.accounts.supply.as_ref().unwrap().source_ta, &supply_position_ta)?;
 
             let new_supply_balance = TokenAccount::unpack(
-                &self.accounts.supply.as_ref().unwrap().position_ta.data.borrow()
+                &self.accounts.supply.as_ref().unwrap().source_ta.data.borrow()
             )?.amount;
             self.deposit(new_supply_balance)?;
         } else if debt_balance > 0 {

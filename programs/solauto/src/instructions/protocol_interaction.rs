@@ -112,7 +112,7 @@ fn protocol_interaction<'a, T: LendingProtocolClient<'a>>(
             std_accounts.rent,
             std_accounts.signer,
             std_accounts.signer,
-            solauto_manager_accounts.supply.as_ref().unwrap().position_ta,
+            solauto_manager_accounts.supply.as_ref().unwrap().source_ta,
             solauto_manager_accounts.supply.as_ref().unwrap().mint
         )?;
     } else if let SolautoAction::Borrow(_) = action {
@@ -122,7 +122,7 @@ fn protocol_interaction<'a, T: LendingProtocolClient<'a>>(
             std_accounts.rent,
             std_accounts.signer,
             std_accounts.signer,
-            solauto_manager_accounts.debt.as_ref().unwrap().position_ta,
+            solauto_manager_accounts.debt.as_ref().unwrap().source_ta,
             solauto_manager_accounts.debt.as_ref().unwrap().mint
         )?;
     }

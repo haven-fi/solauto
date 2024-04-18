@@ -335,18 +335,18 @@ impl<'a> LendingProtocolClient<'a> for SolendClient<'a> {
 
         if !self.supply_liquidity.is_none() {
             let supply_liquidity = self.supply_liquidity.as_ref().unwrap();
-            validate_position_token_account(
+            validate_source_token_account(
                 std_accounts,
-                supply_liquidity.position_ta,
+                supply_liquidity.source_ta,
                 supply_liquidity.mint
             )?;
         }
 
         if !self.debt_liquidity.is_none() {
             let debt_liquidity = self.debt_liquidity.as_ref().unwrap();
-            validate_position_token_account(
+            validate_source_token_account(
                 std_accounts,
-                debt_liquidity.position_ta,
+                debt_liquidity.source_ta,
                 debt_liquidity.mint
             )?;
         }
@@ -378,8 +378,8 @@ impl<'a> LendingProtocolClient<'a> for SolendClient<'a> {
         let deposit_instruction = deposit_reserve_liquidity_and_obligation_collateral(
             SOLEND_PROGRAM.clone(),
             base_unit_amount,
-            *supply_liquidity.position_ta.key,
-            *supply_collateral.position_ta.key,
+            *supply_liquidity.source_ta.key,
+            *supply_collateral.source_ta.key,
             *supply_reserve.key,
             *supply_liquidity.reserve_ta.key,
             *supply_collateral.mint.key,
@@ -393,8 +393,8 @@ impl<'a> LendingProtocolClient<'a> for SolendClient<'a> {
         );
 
         let account_infos = &[
-            supply_liquidity.position_ta.clone(),
-            supply_collateral.position_ta.clone(),
+            supply_liquidity.source_ta.clone(),
+            supply_collateral.source_ta.clone(),
             supply_reserve.clone(),
             supply_liquidity.reserve_ta.clone(),
             supply_collateral.mint.clone(),
