@@ -4,11 +4,13 @@ use solana_program::{
     entrypoint::ProgramResult,
     msg,
     program_error::ProgramError,
+    program_pack::Pack,
 };
+use spl_token::state::Account as TokenAccount;
 
 use crate::utils::{
     math_utils::{ calculate_debt_adjustment_usd, to_base_unit },
-    solana_utils::init_ata_if_needed,
+    solana_utils::{ init_ata_if_needed, spl_token_transfer },
     solauto_utils::SolautoFeesBps,
 };
 use super::{
@@ -100,10 +102,10 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
                 }
         }
 
-        if !self.std_accounts.solauto_position.is_none() {
-            let repay_from_bps = self.std_accounts.solauto_position
+        if !self.std_accounts.solauto_position.data.self_managed {
+            let repay_from_bps = self.std_accounts.solauto_position.data.position
                 .as_ref()
-                .unwrap().data.setting_params.repay_from_bps;
+                .unwrap().setting_params.repay_from_bps;
             if self.obligation_position.current_liq_utilization_rate_bps() > repay_from_bps {
                 return Err(SolautoError::ExceededValidUtilizationRate.into());
             }
@@ -153,7 +155,7 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
             rebalance_step == SolautoRebalanceStep::FinishSolautoRebalanceSandwich ||
             rebalance_step == SolautoRebalanceStep::FinishMarginfiFlashLoanSandwich
         {
-            // TODO also payout solauto fees if increasing leverage
+            self.finish_rebalance()?;
             Ok(())
         } else {
             // TODO
@@ -236,34 +238,88 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
         }
     }
 
-    fn payout_fees(&self) -> ProgramResult {
-        // swap solauto_fee = solauto_fee_value_usd * debt_market_price to the fee_receiver_token
-        // send solauto fee to solauto fee receiver address
+    fn finish_rebalance(&mut self) -> ProgramResult {
+        let supply_source_ta = TokenAccount::unpack(
+            &self.accounts.supply.as_ref().unwrap().source_ta.data.borrow()
+        )?;
+        let debt_source_ta = TokenAccount::unpack(
+            &self.accounts.debt.as_ref().unwrap().source_ta.data.borrow()
+        )?;
+
+        let supply_balance = supply_source_ta.amount;
+        let debt_balance = debt_source_ta.amount;
+
+        if supply_balance > 0 {
+            self.payout_fees(self.accounts.supply.as_ref().unwrap().source_ta, &supply_source_ta)?;
+
+            let new_supply_balance = TokenAccount::unpack(
+                &self.accounts.supply.as_ref().unwrap().source_ta.data.borrow()
+            )?.amount;
+            self.deposit(new_supply_balance)?;
+        } else if debt_balance > 0 {
+            self.repay(debt_balance)?;
+        } else {
+            msg!("Missing required source liquidity to rebalance position");
+            return Err(SolautoError::UnableToReposition.into());
+        }
+
+        Ok(())
+    }
+
+    fn payout_fees(
+        &self,
+        account_info: &'a AccountInfo<'a>,
+        token_account: &'b TokenAccount
+    ) -> ProgramResult {
+        let balance = token_account.amount;
+
+        let solauto_fees = (balance as f64).mul(
+            (self.solauto_fees_bps.solauto as f64).div(10000.0)
+        ) as u64;
+
+        spl_token_transfer(
+            self.std_accounts.token_program,
+            account_info,
+            self.std_accounts.solauto_position.account_info,
+            self.std_accounts.solauto_fees_receiver_ta.unwrap(),
+            solauto_fees,
+            Some(vec![
+                &[self.std_accounts.solauto_position.data.position_id],
+                self.std_accounts.solauto_position.data.authority.as_ref()
+            ])
+        )?;
+
+        let referrer_fees = (balance as f64).mul(
+            (self.solauto_fees_bps.referrer as f64).div(10000.0)
+        ) as u64;
+        // TODO referrer_ta is not correct, we need to have signing authority outside this program to sign a jup swap\
+        // OR, we use this for now, but we add a new instruction to convert to dest token where the transaction creates new ta with random wallet
+        // and solauto transfers to that ta, then a jup swap occurs, and the dest ta is the referrer dest ta
+
         Ok(())
     }
 
     pub fn refresh_position(
         obligation_position: &LendingProtocolObligationPosition,
-        solauto_position: &mut Option<DeserializedAccount<Position>>
+        solauto_position: &mut DeserializedAccount<Position>
     ) {
-        if solauto_position.is_none() {
+        if solauto_position.data.self_managed {
             return;
         }
 
-        let position = solauto_position.as_mut().unwrap();
+        let position = solauto_position.data.position.as_mut().unwrap();
 
-        position.data.general_data.net_worth_usd_base_amount =
-            obligation_position.net_worth_usd_base_amount();
-        position.data.general_data.base_amount_liquidity_net_worth =
+        position.state.net_worth_usd_base_amount = obligation_position.net_worth_usd_base_amount();
+        position.state.base_amount_liquidity_net_worth =
             obligation_position.net_worth_base_amount();
-        position.data.general_data.liq_utilization_rate_bps =
+        position.state.liq_utilization_rate_bps =
             obligation_position.current_liq_utilization_rate_bps();
-        position.data.general_data.base_amount_supplied = if !obligation_position.supply.is_none() {
+        position.state.base_amount_supplied = if !obligation_position.supply.is_none() {
             obligation_position.supply.as_ref().unwrap().amount_used.base_unit
         } else {
             0
         };
-        position.data.general_data.base_amount_supplied = if !obligation_position.debt.is_none() {
+        position.state.base_amount_supplied = if !obligation_position.debt.is_none() {
             obligation_position.debt.as_ref().unwrap().amount_used.base_unit
         } else {
             0

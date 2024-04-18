@@ -1,10 +1,10 @@
 use borsh;
-use borsh::{BorshDeserialize, BorshSerialize};
-use shank::{ShankAccount, ShankType};
+use borsh::{ BorshDeserialize, BorshSerialize };
+use shank::{ ShankAccount, ShankType };
 use solana_program::{
     account_info::AccountInfo,
     program_error::ProgramError,
-    program_pack::{IsInitialized, Pack},
+    program_pack::{ IsInitialized, Pack },
     pubkey::Pubkey,
 };
 use thiserror::Error;
@@ -49,7 +49,7 @@ pub struct KaminoPositionData {
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, Default)]
-pub struct GeneralPositionData {
+pub struct PositionState {
     pub liq_utilization_rate_bps: u16,
     pub net_worth_usd_base_amount: u64,
     pub base_amount_liquidity_net_worth: u64,
@@ -57,17 +57,23 @@ pub struct GeneralPositionData {
     pub base_amount_borrowed: u64,
 }
 
+#[derive(ShankAccount, BorshDeserialize, BorshSerialize, Clone, Debug)]
+pub struct PositionData {
+    pub setting_params: SolautoSettingsParameters,
+    pub state: PositionState,
+    pub lending_platform: LendingPlatform,
+    pub marginfi_data: Option<MarginfiPositionData>,
+    pub solend_data: Option<SolendPositionData>,
+    pub kamino_data: Option<KaminoPositionData>,
+}
+
 pub const POSITION_ACCOUNT_SPACE: usize = 500;
 #[derive(ShankAccount, BorshDeserialize, BorshSerialize, Clone, Debug)]
 pub struct Position {
     pub position_id: u8,
     pub authority: Pubkey,
-    pub setting_params: SolautoSettingsParameters,
-    pub general_data: GeneralPositionData,
-    pub lending_platform: LendingPlatform,
-    pub marginfi_data: Option<MarginfiPositionData>,
-    pub solend_data: Option<SolendPositionData>,
-    pub kamino_data: Option<KaminoPositionData>,
+    pub self_managed: bool,
+    pub position: Option<PositionData>,
 }
 
 pub const REFERRAL_ACCOUNT_SPACE: usize = 300;
@@ -92,7 +98,7 @@ pub enum SolautoRebalanceStep {
     FinishSolautoRebalanceSandwich,
     StartMarginfiFlashLoanSandwich,
     FinishMarginfiFlashLoanSandwich,
-    FinishStandardFlashLoanSandwich
+    FinishStandardFlashLoanSandwich,
 }
 
 #[derive(Clone)]
@@ -105,12 +111,15 @@ impl<'a, T: BorshDeserialize> DeserializedAccount<'a, T> {
     pub fn deserialize(account: Option<&'a AccountInfo<'a>>) -> Result<Option<Self>, ProgramError> {
         match account {
             Some(account_info) => {
-                let deserialized_data = T::try_from_slice(&account_info.data.borrow())
-                    .map_err(|_| SolautoError::FailedAccountDeserialization)?;
-                Ok(Some(Self {
-                    account_info,
-                    data: Box::new(deserialized_data),
-                }))
+                let deserialized_data = T::try_from_slice(&account_info.data.borrow()).map_err(
+                    |_| SolautoError::FailedAccountDeserialization
+                )?;
+                Ok(
+                    Some(Self {
+                        account_info,
+                        data: Box::new(deserialized_data),
+                    })
+                )
             }
             None => Ok(None),
         }
@@ -121,12 +130,15 @@ impl<'a, T: Pack + IsInitialized> DeserializedAccount<'a, T> {
     pub fn unpack(account: Option<&'a AccountInfo<'a>>) -> Result<Option<Self>, ProgramError> {
         match account {
             Some(account_info) => {
-                let deserialized_data = T::unpack(&account_info.data.borrow())
-                    .map_err(|_| SolautoError::FailedAccountDeserialization)?;
-                Ok(Some(Self {
-                    account_info,
-                    data: Box::new(deserialized_data),
-                }))
+                let deserialized_data = T::unpack(&account_info.data.borrow()).map_err(
+                    |_| SolautoError::FailedAccountDeserialization
+                )?;
+                Ok(
+                    Some(Self {
+                        account_info,
+                        data: Box::new(deserialized_data),
+                    })
+                )
             }
             None => Ok(None),
         }

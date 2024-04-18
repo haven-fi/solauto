@@ -16,7 +16,7 @@ use crate::{
         obligation_position::LendingProtocolObligationPosition,
         solauto_manager::{ SolautoManager, SolautoManagerAccounts },
     },
-    utils::ix_utils,
+    utils::{ ix_utils, solana_utils::init_ata_if_needed },
 };
 
 pub fn marginfi_interaction<'a, 'b>(
@@ -75,6 +75,7 @@ pub fn solend_interaction<'a, 'b>(
         ctx.accounts.reserve_debt_liquidity_ta,
         None
     );
+
     protocol_interaction(
         solend_client,
         obligation_position,
@@ -91,6 +92,28 @@ fn protocol_interaction<'a, T: LendingProtocolClient<'a>>(
     std_accounts: SolautoStandardAccounts<'a>,
     action: SolautoAction
 ) -> ProgramResult {
+    if let SolautoAction::Withdraw(_) = action {
+        init_ata_if_needed(
+            std_accounts.token_program,
+            std_accounts.system_program,
+            std_accounts.rent,
+            std_accounts.signer,
+            std_accounts.signer,
+            solauto_manager_accounts.supply.as_ref().unwrap().source_ta,
+            solauto_manager_accounts.supply.as_ref().unwrap().mint
+        )?;
+    } else if let SolautoAction::Borrow(_) = action {
+        init_ata_if_needed(
+            std_accounts.token_program,
+            std_accounts.system_program,
+            std_accounts.rent,
+            std_accounts.signer,
+            std_accounts.signer,
+            solauto_manager_accounts.debt.as_ref().unwrap().source_ta,
+            solauto_manager_accounts.debt.as_ref().unwrap().mint
+        )?;
+    }
+
     let mut solauto_manager = SolautoManager::from(
         &client,
         &mut obligation_position,

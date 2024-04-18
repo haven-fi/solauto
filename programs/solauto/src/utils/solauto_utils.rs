@@ -20,20 +20,21 @@ use super::{
     },
 };
 use crate::{
-    constants::{ JUP_PROGRAM, MARGINFI_PROGRAM, REFERRER_FEE_SPLIT, SOLAUTO_REBALANCER, WSOL_MINT },
+    constants::{ JUP_PROGRAM, MARGINFI_PROGRAM, REFERRER_FEE_SPLIT, SOLAUTO_MANAGER, WSOL_MINT },
     types::{
         instruction::{
-            PositionData,
             RebalanceArgs,
             SolautoStandardAccounts,
+            UpdatePositionData,
             SOLAUTO_REBALANCE_IX_DISCRIMINATORS,
         },
         obligation_position::LendingProtocolObligationPosition,
         shared::{
             DeserializedAccount,
-            GeneralPositionData,
             LendingPlatform,
             Position,
+            PositionData,
+            PositionState,
             RefferalState,
             SolautoError,
             SolautoRebalanceStep,
@@ -43,48 +44,49 @@ use crate::{
 };
 
 pub fn get_owner<'a, 'b>(
-    solauto_position: &'b Option<DeserializedAccount<'a, Position>>,
+    solauto_position: &'b DeserializedAccount<'a, Position>,
     signer: &'a AccountInfo<'a>
 ) -> &'a AccountInfo<'a> {
-    if !solauto_position.is_none() {
-        solauto_position.as_ref().unwrap().account_info
-    } else {
+    if solauto_position.data.self_managed {
         signer
+    } else {
+        solauto_position.account_info
     }
 }
 
 pub fn create_new_solauto_position<'a>(
     signer: &AccountInfo<'a>,
-    solauto_position: Option<&'a AccountInfo<'a>>,
-    new_position_data: Option<PositionData>,
+    solauto_position: &'a AccountInfo<'a>,
+    update_position_data: UpdatePositionData,
     lending_platform: LendingPlatform
-) -> Result<Option<DeserializedAccount<'a, Position>>, ProgramError> {
-    let data = if !new_position_data.is_none() {
-        let data = new_position_data.as_ref().unwrap();
-        Some(Position {
-            position_id: data.position_id,
+) -> Result<DeserializedAccount<'a, Position>, ProgramError> {
+    let data = if !update_position_data.setting_params.is_none() {
+        Position {
+            position_id: update_position_data.position_id,
             authority: *signer.key,
-            setting_params: data.setting_params.clone(),
-            general_data: GeneralPositionData::default(),
-            lending_platform,
-            marginfi_data: data.marginfi_data.clone(),
-            solend_data: data.solend_data.clone(),
-            kamino_data: data.kamino_data.clone(),
-        })
+            self_managed: false,
+            position: Some(PositionData {
+                setting_params: update_position_data.setting_params.unwrap().clone(),
+                state: PositionState::default(),
+                lending_platform,
+                marginfi_data: update_position_data.marginfi_data.clone(),
+                solend_data: update_position_data.solend_data.clone(),
+                kamino_data: update_position_data.kamino_data.clone(),
+            }),
+        }
     } else {
-        None
+        Position {
+            position_id: update_position_data.position_id,
+            authority: *signer.key,
+            self_managed: true,
+            position: None,
+        }
     };
 
-    if !data.is_none() {
-        Ok(
-            Some(DeserializedAccount::<Position> {
-                account_info: solauto_position.unwrap(),
-                data: Box::new(data.unwrap()),
-            })
-        )
-    } else {
-        Ok(None)
-    }
+    Ok(DeserializedAccount::<Position> {
+        account_info: solauto_position,
+        data: Box::new(data),
+    })
 }
 
 pub fn get_or_create_referral_state<'a>(
@@ -138,7 +140,10 @@ pub fn get_or_create_referral_state<'a>(
             );
         }
 
-        ix_utils::update_data(&mut referral_state_account)?;
+        if !referral_state_account.is_none() {
+            ix_utils::update_data(referral_state_account.as_mut().unwrap())?;
+        }
+
         Ok(referral_state_account.unwrap())
     } else {
         init_new_account(
@@ -246,7 +251,7 @@ pub fn get_target_liq_utilization_rate(
     let result: Result<u16, SolautoError> = if
         rebalance_args.target_liq_utilization_rate_bps.is_none()
     {
-        let setting_params = &std_accounts.solauto_position.as_ref().unwrap().data.setting_params;
+        let setting_params = &std_accounts.solauto_position.data.position.as_ref().unwrap().setting_params;
         if current_liq_utilization_rate_bps > setting_params.repay_from_bps {
             let maximum_repay_to_bps = get_maximum_repay_to_bps_param(
                 obligation_position.max_ltv,
@@ -317,7 +322,7 @@ pub fn get_rebalance_step(
     // end flash loan
 
     let ixs_sysvar = std_accounts.ixs_sysvar.unwrap();
-    if !args.target_liq_utilization_rate_bps.is_none() && !std_accounts.solauto_position.is_none() {
+    if !args.target_liq_utilization_rate_bps.is_none() && !std_accounts.solauto_position.data.self_managed {
         msg!(
             "Cannot provide a target liquidation utilization rate if the position is solauto-managed"
         );
@@ -326,11 +331,11 @@ pub fn get_rebalance_step(
 
     if
         !args.max_price_slippage_bps.is_none() &&
-        std_accounts.signer.key != &SOLAUTO_REBALANCER &&
-        std_accounts.signer.key != &std_accounts.solauto_position.as_ref().unwrap().data.authority
+        std_accounts.signer.key != &SOLAUTO_MANAGER &&
+        std_accounts.signer.key != &std_accounts.solauto_position.data.authority
     {
         msg!(
-            "If the signer is not the position authority or Solauto rebalancer accouunts, max_price_slippage_bps cannot be provided"
+            "If the signer is not the position authority or Solauto rebalancer accounts, max_price_slippage_bps cannot be provided"
         );
         return Err(ProgramError::InvalidInstructionData.into());
     }

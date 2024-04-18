@@ -1,6 +1,6 @@
 use borsh::{ BorshDeserialize, BorshSerialize };
 use shank::{ ShankContext, ShankInstruction };
-use solana_program::{ account_info::AccountInfo, pubkey::Pubkey };
+use solana_program::account_info::AccountInfo;
 
 use super::shared::*;
 
@@ -33,14 +33,14 @@ pub enum Instruction {
     #[account(optional, name = "referred_by_authority")]
     #[account(mut, optional, name = "referred_by_dest_ta")]
     #[account(mut, optional, name = "referred_by_ta")]
-    #[account(mut, optional, name = "solauto_position")]
+    #[account(mut, name = "solauto_position")]
     #[account(name = "marginfi_group")]
     #[account(mut, name = "marginfi_account")]
     #[account(mut, name = "supply_ta")]
     #[account(name = "supply_mint")]
     #[account(mut, name = "debt_ta")]
     #[account(name = "debt_mint")]
-    MarginfiOpenPosition(Option<PositionData>),
+    MarginfiOpenPosition(UpdatePositionData),
 
     /// Open a new Solauto position with Solend
     #[account(signer, mut, name = "signer")]
@@ -58,7 +58,7 @@ pub enum Instruction {
     #[account(optional, name = "referred_by_authority")]
     #[account(mut, optional, name = "referred_by_dest_ta")]
     #[account(mut, optional, name = "referred_by_ta")]
-    #[account(mut, optional, name = "solauto_position")]
+    #[account(mut, name = "solauto_position")]
     #[account(name = "lending_market")]
     #[account(mut, name = "obligation")]
     #[account(name = "supply_reserve")]
@@ -68,7 +68,7 @@ pub enum Instruction {
     #[account(name = "supply_collateral_mint")]
     #[account(mut, name = "debt_liquidity_ta")]
     #[account(name = "debt_liquidity_mint")]
-    SolendOpenPosition(Option<PositionData>),
+    SolendOpenPosition(UpdatePositionData),
 
     /// Update solauto position settings. Can only be invoked by position authority
     #[account(signer, mut, name = "signer")]
@@ -105,6 +105,7 @@ pub enum Instruction {
     #[account(mut, optional, name = "solauto_position")]
     SolendRefreshData,
 
+    /// TODO source accounts here will now be token accounts of the solauto position pda, so how do we get funds to and from signer?
     /// Marginfi protocol interaction. Can only be invoked by the authority of the position
     #[account(signer, mut, name = "signer")]
     #[account(name = "marginfi_program")]
@@ -112,7 +113,7 @@ pub enum Instruction {
     #[account(name = "token_program")]
     #[account(name = "ata_program")]
     #[account(name = "rent")]
-    #[account(mut, optional, name = "solauto_position")]
+    #[account(mut, name = "solauto_position")]
     #[account(optional, name = "supply_mint")]
     #[account(mut, optional, name = "source_supply_ta")]
     #[account(mut, optional, name = "bank_supply_ta")]
@@ -122,6 +123,7 @@ pub enum Instruction {
     // TODO missing accounts
     MarginfiProtocolInteraction(SolautoAction),
 
+    /// TODO source accounts here will now be token accounts of the solauto position pda, so how do we get funds to and from signer?
     /// Solend protocol interaction. Can only be invoked by the authority of the position
     #[account(signer, mut, name = "signer")]
     #[account(name = "solend_program")]
@@ -130,7 +132,7 @@ pub enum Instruction {
     #[account(name = "ata_program")]
     #[account(name = "clock")]
     #[account(name = "rent")]
-    #[account(mut, optional, name = "solauto_position")]
+    #[account(mut, name = "solauto_position")]
     #[account(name = "lending_market")]
     #[account(mut, name = "obligation")]
     #[account(mut, optional, name = "supply_reserve")]
@@ -149,7 +151,7 @@ pub enum Instruction {
     #[account(mut, optional, name = "reserve_debt_liquidity_ta")]
     SolendProtocolInteraction(SolautoAction),
 
-    /// Rebalance the leverage position
+    /// Rebalance the position, can be invoked by the authority or Solauto manager
     #[account(signer, mut, name = "signer")]
     #[account(name = "marginfi_program")]
     #[account(name = "system_program")]
@@ -161,7 +163,7 @@ pub enum Instruction {
     #[account(name = "authority_referral_state")]
     #[account(optional, name = "referred_by_state")]
     #[account(mut, optional, name = "referred_by_ta")]
-    #[account(mut, optional, name = "solauto_position")]
+    #[account(mut, name = "solauto_position")]
     #[account(mut, name = "intermediary_ta")]
     #[account(name = "supply_mint")]
     #[account(mut, name = "source_supply_ta")]
@@ -172,7 +174,7 @@ pub enum Instruction {
     // TODO missing accounts
     MarginfiRebalance(RebalanceArgs),
     
-    /// Rebalance the leverage position
+    /// Rebalance the position, can be invoked by the authority or Solauto manager
     #[account(signer, mut, name = "signer")]
     #[account(name = "solend_program")]
     #[account(name = "system_program")]
@@ -185,7 +187,7 @@ pub enum Instruction {
     #[account(name = "authority_referral_state")]
     #[account(optional, name = "referred_by_state")]
     #[account(mut, optional, name = "referred_by_ta")]
-    #[account(mut, optional, name = "solauto_position")]
+    #[account(mut, name = "solauto_position")]
     #[account(mut, name = "intermediary_ta")]
     #[account(name = "lending_market")]
     #[account(mut, name = "obligation")]
@@ -209,13 +211,11 @@ pub enum Instruction {
 pub const SOLAUTO_REBALANCE_IX_DISCRIMINATORS: [u64; 2] = [9, 10];
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug)]
-pub struct PositionData {
+pub struct UpdatePositionData {
     /// ID of the Solauto position
     pub position_id: u8,
-    /// the authority of the referred_by
-    pub referred_by_authority: Option<Pubkey>,
     /// Setting parameters for the position
-    pub setting_params: SolautoSettingsParameters,
+    pub setting_params: Option<SolautoSettingsParameters>,
     /// Marginfi-specific data for the position
     pub marginfi_data: Option<MarginfiPositionData>,
     /// Solend-specific data for the position
@@ -224,7 +224,7 @@ pub struct PositionData {
     pub kamino_data: Option<KaminoPositionData>,
 }
 
-#[derive(BorshDeserialize, BorshSerialize, Clone, Debug)]
+#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, PartialEq)]
 pub enum SolautoAction {
     /// Provide the base unit amount to deposit
     Deposit(u64),
@@ -236,7 +236,7 @@ pub enum SolautoAction {
     Withdraw(WithdrawParams),
 }
 
-#[derive(BorshDeserialize, BorshSerialize, Clone, Debug)]
+#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, PartialEq)]
 pub enum WithdrawParams {
     All,
     /// Provide the amount to withdraw in the base unit
@@ -259,8 +259,8 @@ pub struct SolautoStandardAccounts<'a> {
     pub ata_program: &'a AccountInfo<'a>,
     pub rent: &'a AccountInfo<'a>,
     pub ixs_sysvar: Option<&'a AccountInfo<'a>>,
+    pub solauto_position: DeserializedAccount<'a, Position>,
     pub solauto_fees_receiver_ta: Option<&'a AccountInfo<'a>>,
-    pub solauto_position: Option<DeserializedAccount<'a, Position>>,
     pub authority_referral_state: Option<DeserializedAccount<'a, RefferalState>>,
     pub referred_by_state: Option<&'a AccountInfo<'a>>,
     pub referred_by_ta: Option<&'a AccountInfo<'a>>,

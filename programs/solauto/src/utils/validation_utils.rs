@@ -9,7 +9,7 @@ use solana_program::{
 use spl_associated_token_account::get_associated_token_address;
 
 use crate::{
-    constants::{SOLAUTO_FEES_RECEIVER_WALLET, SOLAUTO_REBALANCER},
+    constants::{ SOLAUTO_FEES_RECEIVER_WALLET, SOLAUTO_MANAGER },
     types::{
         instruction::{
             accounts::{
@@ -63,14 +63,14 @@ pub fn generic_instruction_validation(
     }
     // We don't need to check other standard variables as shank handles system_program, token_program, ata_program, & rent
 
-    // TODO verify this with a test by providing a different account in place of rent account
+    // TODO verify this with a test by providing a different account in place of rent account (instruction should fail)
 
     Ok(())
 }
 
 pub fn validate_signer(
     signer: &AccountInfo,
-    position_account: &Option<DeserializedAccount<Position>>,
+    solauto_position: &DeserializedAccount<Position>,
     authority_only_ix: bool
 ) -> ProgramResult {
     if !signer.is_signer {
@@ -78,12 +78,7 @@ pub fn validate_signer(
         return Err(ProgramError::MissingRequiredSignature.into());
     }
 
-    if position_account.is_none() {
-        return Ok(());
-    }
-
-    let position = position_account.as_ref().unwrap();
-    let position_authority = position.data.authority;
+    let position_authority = solauto_position.data.authority;
 
     if authority_only_ix {
         if signer.key != &position_authority {
@@ -91,16 +86,18 @@ pub fn validate_signer(
             return Err(ProgramError::InvalidAccountData.into());
         }
 
-        let seeds = &[&[position.data.position_id], signer.key.as_ref()];
+        let seeds = &[&[solauto_position.data.position_id], signer.key.as_ref()];
         let (pda, _bump) = Pubkey::find_program_address(seeds, &crate::ID);
-        if &pda != position.account_info.key {
+        if &pda != solauto_position.account_info.key {
             msg!("Invalid position specified for the current signer");
             return Err(ProgramError::MissingRequiredSignature.into());
         }
     }
 
-    if signer.key != &position_authority && signer.key != &SOLAUTO_REBALANCER {
-        msg!("Rebalance instruction can only be done by the position authority or Solauto rebalancer");
+    if signer.key != &position_authority && signer.key != &SOLAUTO_MANAGER {
+        msg!(
+            "Rebalance instruction can only be done by the position authority or Solauto rebalancer"
+        );
         return Err(ProgramError::MissingRequiredSignature.into());
     }
 
@@ -302,13 +299,10 @@ pub fn validate_referral_accounts(
         return Ok(());
     }
 
-    let authority = if !std_accounts.solauto_position.is_none() {
-        &std_accounts.solauto_position.as_ref().unwrap().data.authority
-    } else {
-        std_accounts.signer.key
-    };
-
-    let referral_state_seeds = &[authority.as_ref(), b"referral_state"];
+    let referral_state_seeds = &[
+        std_accounts.solauto_position.data.authority.as_ref(),
+        b"referral_state",
+    ];
     let (referral_state_pda, _bump) = Pubkey::find_program_address(
         referral_state_seeds,
         &crate::ID
@@ -349,12 +343,14 @@ pub fn validate_source_token_account(
     source_token_account: &AccountInfo,
     token_mint: &AccountInfo
 ) -> ProgramResult {
-    let obligation_owner = get_owner(&std_accounts.solauto_position, std_accounts.signer);
     if
         source_token_account.key !=
-        &get_associated_token_address(obligation_owner.key, token_mint.key)
+        &get_associated_token_address(
+            std_accounts.solauto_position.account_info.key,
+            token_mint.key
+        )
     {
-        msg!("Invalid source token account provided for the given obligation owner & token mint");
+        msg!("Invalid source token account provided for the given solauto position & token mint");
         return Err(ProgramError::InvalidAccountData.into());
     }
     Ok(())

@@ -31,7 +31,7 @@ pub struct MarginfiClient<'a> {
 impl<'a> MarginfiClient<'a> {
     pub fn initialize<'b>(
         ctx: &'b Context<'a, MarginfiOpenPositionAccounts>,
-        solauto_position: &Option<DeserializedAccount<Position>>,
+        solauto_position: &DeserializedAccount<Position>,
     ) -> ProgramResult {
         // validate_position_settings(solauto_position.as_ref().unwrap().data.setting_params, max_ltv, liq_threshold)
         // TODO

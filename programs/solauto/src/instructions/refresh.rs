@@ -15,7 +15,12 @@ pub fn marginfi_refresh_accounts(
     mut solauto_position: Option<DeserializedAccount<Position>>,
 ) -> ProgramResult {
     // TODO
-    ix_utils::update_data(&mut solauto_position)
+
+    if !solauto_position.is_none() {
+        ix_utils::update_data(solauto_position.as_mut().unwrap())?;
+    }
+
+    Ok(())
 }
 
 pub fn solend_refresh_accounts(
@@ -58,9 +63,13 @@ pub fn solend_refresh_accounts(
                 &data_accounts.obligation.data,
             )?;
 
-            SolautoManager::refresh_position(&obligation_position, &mut solauto_position);
+            SolautoManager::refresh_position(&obligation_position, solauto_position.as_mut().unwrap());
         }
     }
 
-    ix_utils::update_data(&mut solauto_position)
+    if !solauto_position.is_none() {
+        ix_utils::update_data(&mut solauto_position.as_mut().unwrap())?;
+    }
+
+    Ok(())
 }

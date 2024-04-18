@@ -25,7 +25,7 @@ pub const JUP_PROGRAM: Pubkey = Pubkey::new_from_array([
 ]);
 
 // AprYCPiVeKMCgjQ2ZufwChMzvQ5kFjJo2ekTLSkXsQDm (TODO)
-pub const SOLAUTO_REBALANCER: Pubkey = Pubkey::new_from_array([
+pub const SOLAUTO_MANAGER: Pubkey = Pubkey::new_from_array([
     145, 251, 126, 53, 245, 169, 146, 209, 147, 243, 95, 78, 165, 119, 126, 212, 48, 177, 204, 152,
     35, 228, 216, 122, 54, 147, 76, 46, 180, 66, 110, 112,
 ]);

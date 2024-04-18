@@ -1,5 +1,3 @@
-use std::any::Any;
-
 use solana_program::{ account_info::AccountInfo, entrypoint::ProgramResult, msg };
 
 use crate::{
@@ -13,10 +11,9 @@ use crate::{
                 SolendRebalanceAccounts,
                 SolendRefreshDataAccounts,
             },
-            PositionData,
             RebalanceArgs,
             SolautoAction,
-            SolautoStandardAccounts,
+            SolautoStandardAccounts, UpdatePositionData,
         },
         shared::{ DeserializedAccount, LendingPlatform, Position, RefferalState, SolautoError },
     },
@@ -25,7 +22,7 @@ use crate::{
 
 pub fn process_solend_open_position_instruction<'a>(
     accounts: &'a [AccountInfo<'a>],
-    position_data: Option<PositionData>
+    position_data: UpdatePositionData
 ) -> ProgramResult {
     // TODO
     msg!("Instruction is currently a WIP");
@@ -137,8 +134,8 @@ pub fn process_solend_interaction_instruction<'a>(
 
     let ctx = SolendProtocolInteractionAccounts::context(accounts)?;
     let solauto_position = DeserializedAccount::<Position>::deserialize(
-        ctx.accounts.solauto_position
-    )?;
+        Some(ctx.accounts.solauto_position)
+    )?.unwrap();
 
     let std_accounts = SolautoStandardAccounts {
         signer: ctx.accounts.signer,
@@ -174,8 +171,8 @@ pub fn process_solend_rebalance<'a>(
 
     let ctx = SolendRebalanceAccounts::context(accounts)?;
     let solauto_position = DeserializedAccount::<Position>::deserialize(
-        ctx.accounts.solauto_position
-    )?;
+        Some(ctx.accounts.solauto_position)
+    )?.unwrap();
 
     let std_accounts = SolautoStandardAccounts {
         signer: ctx.accounts.signer,
