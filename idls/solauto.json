@@ -3,6 +3,61 @@
   "name": "solauto",
   "instructions": [
     {
+      "name": "ConvertReferralFees",
+      "accounts": [
+        {
+          "name": "solautoManager",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "ataProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "ixsSysvar",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "referralState",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "referralFeesTa",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "intermediaryTa",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": [],
+      "discriminant": {
+        "type": "u8",
+        "value": 0
+      }
+    },
+    {
       "name": "ClaimReferralFees",
       "accounts": [
         {
@@ -39,12 +94,18 @@
           "name": "referralFeesMint",
           "isMut": true,
           "isSigner": false
+        },
+        {
+          "name": "destTa",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
         }
       ],
       "args": [],
       "discriminant": {
         "type": "u8",
-        "value": 0
+        "value": 1
       }
     },
     {
@@ -175,7 +236,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 1
+        "value": 2
       }
     },
     {
@@ -321,7 +382,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 2
+        "value": 3
       }
     },
     {
@@ -348,7 +409,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 3
+        "value": 4
       }
     },
     {
@@ -384,7 +445,7 @@
       "args": [],
       "discriminant": {
         "type": "u8",
-        "value": 4
+        "value": 5
       }
     },
     {
@@ -410,7 +471,7 @@
       "args": [],
       "discriminant": {
         "type": "u8",
-        "value": 5
+        "value": 6
       }
     },
     {
@@ -485,7 +546,7 @@
       "args": [],
       "discriminant": {
         "type": "u8",
-        "value": 6
+        "value": 7
       }
     },
     {
@@ -573,7 +634,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 7
+        "value": 8
       }
     },
     {
@@ -724,7 +785,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 8
+        "value": 9
       }
     },
     {
@@ -838,7 +899,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 9
+        "value": 10
       }
     },
     {
@@ -1007,7 +1068,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 10
+        "value": 11
       }
     }
   ],
@@ -1061,22 +1122,6 @@
           },
           {
             "name": "destFeesTa",
-            "type": "publicKey"
-          }
-        ]
-      }
-    },
-    {
-      "name": "SolautoAdminSettings",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "feesWallet",
-            "type": "publicKey"
-          },
-          {
-            "name": "feesTokenMint",
             "type": "publicKey"
           }
         ]
@@ -1367,8 +1412,8 @@
     },
     {
       "code": 11,
-      "name": "IncorrectRebalanceInstructions",
-      "msg": "Incorrect set of rebalance instructions in the transaction"
+      "name": "IncorrectInstructions",
+      "msg": "Incorrect set of instructions in the transaction"
     }
   ],
   "metadata": {

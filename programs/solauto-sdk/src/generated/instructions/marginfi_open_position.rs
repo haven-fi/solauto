@@ -207,7 +207,7 @@ struct MarginfiOpenPositionInstructionData {
 
 impl MarginfiOpenPositionInstructionData {
     fn new() -> Self {
-        Self { discriminator: 1 }
+        Self { discriminator: 2 }
     }
 }
 

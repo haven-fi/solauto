@@ -84,7 +84,7 @@ export function getMarginfiOpenPositionInstructionDataSerializer(): Serializer<
       ],
       { description: 'MarginfiOpenPositionInstructionData' }
     ),
-    (value) => ({ ...value, discriminator: 1 })
+    (value) => ({ ...value, discriminator: 2 })
   ) as Serializer<
     MarginfiOpenPositionInstructionDataArgs,
     MarginfiOpenPositionInstructionData

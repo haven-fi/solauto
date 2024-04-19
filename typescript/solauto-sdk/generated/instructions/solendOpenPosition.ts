@@ -87,7 +87,7 @@ export function getSolendOpenPositionInstructionDataSerializer(): Serializer<
       ],
       { description: 'SolendOpenPositionInstructionData' }
     ),
-    (value) => ({ ...value, discriminator: 2 })
+    (value) => ({ ...value, discriminator: 3 })
   ) as Serializer<
     SolendOpenPositionInstructionDataArgs,
     SolendOpenPositionInstructionData

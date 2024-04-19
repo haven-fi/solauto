@@ -225,7 +225,7 @@ struct SolendOpenPositionInstructionData {
 
 impl SolendOpenPositionInstructionData {
     fn new() -> Self {
-        Self { discriminator: 2 }
+        Self { discriminator: 3 }
     }
 }
 

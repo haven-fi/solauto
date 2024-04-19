@@ -1,5 +1,5 @@
-use borsh::{ BorshDeserialize, BorshSerialize };
-use shank::{ ShankContext, ShankInstruction };
+use borsh::{BorshDeserialize, BorshSerialize};
+use shank::{ShankContext, ShankInstruction};
 use solana_program::account_info::AccountInfo;
 
 use super::shared::*;

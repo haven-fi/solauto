@@ -28,45 +28,46 @@ import {
 } from '../shared';
 
 // Accounts.
-export type ClaimReferralFeesInstructionAccounts = {
-  signer: Signer;
+export type ConvertReferralFeesInstructionAccounts = {
+  solautoManager: Signer;
   systemProgram?: PublicKey | Pda;
   tokenProgram?: PublicKey | Pda;
+  ataProgram?: PublicKey | Pda;
   rent?: PublicKey | Pda;
+  ixsSysvar: PublicKey | Pda;
   referralState: PublicKey | Pda;
   referralFeesTa: PublicKey | Pda;
-  referralFeesMint: PublicKey | Pda;
-  destTa?: PublicKey | Pda;
+  intermediaryTa: PublicKey | Pda;
 };
 
 // Data.
-export type ClaimReferralFeesInstructionData = { discriminator: number };
+export type ConvertReferralFeesInstructionData = { discriminator: number };
 
-export type ClaimReferralFeesInstructionDataArgs = {};
+export type ConvertReferralFeesInstructionDataArgs = {};
 
-export function getClaimReferralFeesInstructionDataSerializer(): Serializer<
-  ClaimReferralFeesInstructionDataArgs,
-  ClaimReferralFeesInstructionData
+export function getConvertReferralFeesInstructionDataSerializer(): Serializer<
+  ConvertReferralFeesInstructionDataArgs,
+  ConvertReferralFeesInstructionData
 > {
   return mapSerializer<
-    ClaimReferralFeesInstructionDataArgs,
+    ConvertReferralFeesInstructionDataArgs,
     any,
-    ClaimReferralFeesInstructionData
+    ConvertReferralFeesInstructionData
   >(
-    struct<ClaimReferralFeesInstructionData>([['discriminator', u8()]], {
-      description: 'ClaimReferralFeesInstructionData',
+    struct<ConvertReferralFeesInstructionData>([['discriminator', u8()]], {
+      description: 'ConvertReferralFeesInstructionData',
     }),
-    (value) => ({ ...value, discriminator: 1 })
+    (value) => ({ ...value, discriminator: 0 })
   ) as Serializer<
-    ClaimReferralFeesInstructionDataArgs,
-    ClaimReferralFeesInstructionData
+    ConvertReferralFeesInstructionDataArgs,
+    ConvertReferralFeesInstructionData
   >;
 }
 
 // Instruction.
-export function claimReferralFees(
+export function convertReferralFees(
   context: Pick<Context, 'programs'>,
-  input: ClaimReferralFeesInstructionAccounts
+  input: ConvertReferralFeesInstructionAccounts
 ): TransactionBuilder {
   // Program ID.
   const programId = context.programs.getPublicKey(
@@ -76,10 +77,10 @@ export function claimReferralFees(
 
   // Accounts.
   const resolvedAccounts = {
-    signer: {
+    solautoManager: {
       index: 0,
       isWritable: true as boolean,
-      value: input.signer ?? null,
+      value: input.solautoManager ?? null,
     },
     systemProgram: {
       index: 1,
@@ -91,26 +92,31 @@ export function claimReferralFees(
       isWritable: false as boolean,
       value: input.tokenProgram ?? null,
     },
-    rent: { index: 3, isWritable: false as boolean, value: input.rent ?? null },
+    ataProgram: {
+      index: 3,
+      isWritable: false as boolean,
+      value: input.ataProgram ?? null,
+    },
+    rent: { index: 4, isWritable: false as boolean, value: input.rent ?? null },
+    ixsSysvar: {
+      index: 5,
+      isWritable: false as boolean,
+      value: input.ixsSysvar ?? null,
+    },
     referralState: {
-      index: 4,
+      index: 6,
       isWritable: false as boolean,
       value: input.referralState ?? null,
     },
     referralFeesTa: {
-      index: 5,
+      index: 7,
       isWritable: true as boolean,
       value: input.referralFeesTa ?? null,
     },
-    referralFeesMint: {
-      index: 6,
+    intermediaryTa: {
+      index: 8,
       isWritable: true as boolean,
-      value: input.referralFeesMint ?? null,
-    },
-    destTa: {
-      index: 7,
-      isWritable: true as boolean,
-      value: input.destTa ?? null,
+      value: input.intermediaryTa ?? null,
     },
   } satisfies ResolvedAccountsWithIndices;
 
@@ -128,6 +134,13 @@ export function claimReferralFees(
       'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'
     );
     resolvedAccounts.tokenProgram.isWritable = false;
+  }
+  if (!resolvedAccounts.ataProgram.value) {
+    resolvedAccounts.ataProgram.value = context.programs.getPublicKey(
+      'splAssociatedToken',
+      'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'
+    );
+    resolvedAccounts.ataProgram.isWritable = false;
   }
   if (!resolvedAccounts.rent.value) {
     resolvedAccounts.rent.value = publicKey(
@@ -148,7 +161,7 @@ export function claimReferralFees(
   );
 
   // Data.
-  const data = getClaimReferralFeesInstructionDataSerializer().serialize({});
+  const data = getConvertReferralFeesInstructionDataSerializer().serialize({});
 
   // Bytes Created On Chain.
   const bytesCreatedOnChain = 0;

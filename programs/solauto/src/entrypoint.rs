@@ -4,11 +4,7 @@ use solana_program::{
 };
 
 use crate::{
-    processors::{
-        general::*,
-        marginfi::*,
-        solend::*,
-    },
+    processors::{general::*, marginfi::*, solend::*},
     types::instruction::Instruction,
 };
 

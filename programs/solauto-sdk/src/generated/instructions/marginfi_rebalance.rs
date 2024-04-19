@@ -175,7 +175,7 @@ struct MarginfiRebalanceInstructionData {
 
 impl MarginfiRebalanceInstructionData {
     fn new() -> Self {
-        Self { discriminator: 9 }
+        Self { discriminator: 10 }
     }
 }
 
