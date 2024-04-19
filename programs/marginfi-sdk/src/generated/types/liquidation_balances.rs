@@ -8,11 +8,11 @@
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 
-#[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
+#[derive(BorshSerialize, BorshDeserialize, Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct LiquidationBalances {
-    pub liquidatee_asset_balance: u64,
-    pub liquidatee_liability_balance: u64,
-    pub liquidator_asset_balance: u64,
-    pub liquidator_liability_balance: u64,
+    pub liquidatee_asset_balance: f64,
+    pub liquidatee_liability_balance: f64,
+    pub liquidator_asset_balance: f64,
+    pub liquidator_liability_balance: f64,
 }
