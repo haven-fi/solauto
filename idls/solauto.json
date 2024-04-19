@@ -1041,7 +1041,7 @@
       }
     },
     {
-      "name": "RefferalState",
+      "name": "ReferralState",
       "type": {
         "kind": "struct",
         "fields": [

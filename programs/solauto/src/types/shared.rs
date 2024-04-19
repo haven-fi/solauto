@@ -1,9 +1,9 @@
-use borsh::{BorshDeserialize, BorshSerialize};
-use shank::{ShankAccount, ShankType};
+use borsh::{ BorshDeserialize, BorshSerialize };
+use shank::{ ShankAccount, ShankType };
 use solana_program::{
     account_info::AccountInfo,
     program_error::ProgramError,
-    program_pack::{IsInitialized, Pack},
+    program_pack::{ IsInitialized, Pack },
     pubkey::Pubkey,
 };
 use thiserror::Error;
@@ -66,18 +66,11 @@ pub struct Position {
 
 pub const REFERRAL_ACCOUNT_SPACE: usize = 300;
 #[derive(ShankAccount, BorshDeserialize, BorshSerialize, Clone, Debug)]
-pub struct RefferalState {
+pub struct ReferralState {
     pub authority: Pubkey,
     pub referred_by_state: Option<Pubkey>,
     pub fees_mint: Pubkey,
     pub dest_fees_ta: Pubkey,
-}
-
-pub const SOLAUTO_SETTINGS_ACCOUNT_SPACE: usize = 100;
-#[derive(ShankAccount, BorshDeserialize, BorshSerialize, Clone, Debug)]
-pub struct SolautoAdminSettings {
-    pub fees_wallet: Pubkey,
-    pub fees_token_mint: Pubkey,
 }
 
 #[derive(PartialEq)]
@@ -99,12 +92,15 @@ impl<'a, T: BorshDeserialize> DeserializedAccount<'a, T> {
     pub fn deserialize(account: Option<&'a AccountInfo<'a>>) -> Result<Option<Self>, ProgramError> {
         match account {
             Some(account_info) => {
-                let deserialized_data = T::try_from_slice(&account_info.data.borrow())
-                    .map_err(|_| SolautoError::FailedAccountDeserialization)?;
-                Ok(Some(Self {
-                    account_info,
-                    data: Box::new(deserialized_data),
-                }))
+                let deserialized_data = T::try_from_slice(&account_info.data.borrow()).map_err(
+                    |_| SolautoError::FailedAccountDeserialization
+                )?;
+                Ok(
+                    Some(Self {
+                        account_info,
+                        data: Box::new(deserialized_data),
+                    })
+                )
             }
             None => Ok(None),
         }
@@ -115,12 +111,15 @@ impl<'a, T: Pack + IsInitialized> DeserializedAccount<'a, T> {
     pub fn unpack(account: Option<&'a AccountInfo<'a>>) -> Result<Option<Self>, ProgramError> {
         match account {
             Some(account_info) => {
-                let deserialized_data = T::unpack(&account_info.data.borrow())
-                    .map_err(|_| SolautoError::FailedAccountDeserialization)?;
-                Ok(Some(Self {
-                    account_info,
-                    data: Box::new(deserialized_data),
-                }))
+                let deserialized_data = T::unpack(&account_info.data.borrow()).map_err(
+                    |_| SolautoError::FailedAccountDeserialization
+                )?;
+                Ok(
+                    Some(Self {
+                        account_info,
+                        data: Box::new(deserialized_data),
+                    })
+                )
             }
             None => Ok(None),
         }
@@ -153,8 +152,8 @@ pub enum SolautoError {
     InstructionIsCPI,
     #[error("Too many rebalance instruction invocations in the same transaction")]
     RebalanceAbuse,
-    #[error("Incorrect set of rebalance instructions in the transaction")]
-    IncorrectRebalanceInstructions,
+    #[error("Incorrect set of instructions in the transaction")]
+    IncorrectInstructions,
 }
 
 impl From<SolautoError> for ProgramError {

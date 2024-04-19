@@ -36,7 +36,7 @@ use crate::{
             Position,
             PositionData,
             PositionState,
-            RefferalState,
+            ReferralState,
             SolautoError,
             SolautoRebalanceStep,
             REFERRAL_ACCOUNT_SPACE,
@@ -100,7 +100,7 @@ pub fn get_or_create_referral_state<'a>(
     referral_dest_ta: &'a AccountInfo<'a>,
     referred_by_state: Option<&'a AccountInfo<'a>>,
     referred_by_dest_ta: Option<&'a AccountInfo<'a>>
-) -> Result<DeserializedAccount<'a, RefferalState>, ProgramError> {
+) -> Result<DeserializedAccount<'a, ReferralState>, ProgramError> {
     let validate_correct_token_account = |wallet: &AccountInfo, token_account: &AccountInfo| {
         let token_account_pubkey = get_associated_token_address(wallet.key, &WSOL_MINT);
         if &token_account_pubkey != token_account.key {
@@ -110,7 +110,7 @@ pub fn get_or_create_referral_state<'a>(
         Ok(())
     };
 
-    let referral_state_seeds = get_referral_account_seeds(authority);
+    let referral_state_seeds = get_referral_account_seeds(authority.key);
     let (referral_state_pda, _bump) = Pubkey::find_program_address(
         referral_state_seeds.as_slice(),
         &crate::ID
@@ -131,7 +131,7 @@ pub fn get_or_create_referral_state<'a>(
 
     if account_is_rent_exempt(rent, referral_state)? {
         let mut referral_state_account = Some(
-            DeserializedAccount::<RefferalState>::deserialize(Some(referral_state))?.unwrap()
+            DeserializedAccount::<ReferralState>::deserialize(Some(referral_state))?.unwrap()
         );
 
         if referral_state_account.as_ref().unwrap().data.referred_by_state.is_none() {
@@ -184,7 +184,7 @@ pub fn get_or_create_referral_state<'a>(
             )?;
         }
 
-        let data = Box::new(RefferalState {
+        let data = Box::new(ReferralState {
             authority: authority.key.clone(),
             referred_by_state: referred_by_state.map_or(None, |r| Some(r.key.clone())),
             dest_fees_ta: referral_dest_ta.key.clone(),
@@ -200,8 +200,8 @@ pub fn get_or_create_referral_state<'a>(
     }
 }
 
-pub fn get_referral_account_seeds<'a>(authority: &'a AccountInfo<'a>) -> Vec<&[u8]> {
-    vec![authority.key.as_ref(), b"referrals"]
+pub fn get_referral_account_seeds<'a>(authority: &'a Pubkey) -> Vec<&[u8]> {
+    vec![authority.as_ref(), b"referrals"]
 }
 
 pub fn init_solauto_fees_supply_ta<'a>(
@@ -449,11 +449,11 @@ pub fn get_rebalance_step(
     {
         Ok(SolautoRebalanceStep::FinishSolautoRebalanceSandwich)
     } else {
-        Err(SolautoError::IncorrectRebalanceInstructions.into())
+        Err(SolautoError::IncorrectInstructions.into())
     }
 }
 
-fn get_relative_instruction(
+pub fn get_relative_instruction(
     ixs_sysvar: &AccountInfo,
     current_ix_idx: u16,
     relative_idx: i16,
@@ -476,7 +476,7 @@ fn get_relative_instruction(
     }
 }
 
-struct InstructionChecker {
+pub struct InstructionChecker {
     program_id: Pubkey,
     ix_discriminators: Option<Vec<u64>>,
 }

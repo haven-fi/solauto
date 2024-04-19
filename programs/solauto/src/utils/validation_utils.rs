@@ -78,7 +78,7 @@ pub fn validate_signer(
 
     if authority_only_ix {
         if signer.key != &position_authority {
-            msg!("Authority-only instruction, invalid signer for the specified instruction");
+            msg!("Authority-only instruction, invalid signer for the specified instruction & Solauto position");
             return Err(ProgramError::InvalidAccountData.into());
         }
 
@@ -88,9 +88,7 @@ pub fn validate_signer(
             msg!("Invalid position specified for the current signer");
             return Err(ProgramError::MissingRequiredSignature.into());
         }
-    }
-
-    if signer.key != &position_authority && signer.key != &SOLAUTO_MANAGER {
+    } else if signer.key != &SOLAUTO_MANAGER {
         msg!(
             "Rebalance instruction can only be done by the position authority or Solauto rebalancer"
         );

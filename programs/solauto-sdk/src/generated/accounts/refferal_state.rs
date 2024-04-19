@@ -11,7 +11,7 @@ use solana_program::pubkey::Pubkey;
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct RefferalState {
+pub struct ReferralState {
     #[cfg_attr(
         feature = "serde",
         serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
@@ -30,7 +30,7 @@ pub struct RefferalState {
     pub dest_fees_ta: Pubkey,
 }
 
-impl RefferalState {
+impl ReferralState {
     #[inline(always)]
     pub fn from_bytes(data: &[u8]) -> Result<Self, std::io::Error> {
         let mut data = data;
@@ -38,7 +38,7 @@ impl RefferalState {
     }
 }
 
-impl<'a> TryFrom<&solana_program::account_info::AccountInfo<'a>> for RefferalState {
+impl<'a> TryFrom<&solana_program::account_info::AccountInfo<'a>> for ReferralState {
     type Error = std::io::Error;
 
     fn try_from(

@@ -7,6 +7,18 @@ use super::shared::*;
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankContext, ShankInstruction)]
 #[rustfmt::skip]
 pub enum Instruction {
+    /// Moves the referral fees to an intermediary token account, where a jup swap will convert to the destination token mint
+    #[account(signer, mut, name = "solauto_manager")]
+    #[account(name = "system_program")]
+    #[account(name = "token_program")]
+    #[account(name = "ata_program")]
+    #[account(name = "rent")]
+    #[account(name = "ixs_sysvar")]
+    #[account(name = "referral_state")]
+    #[account(mut, name = "referral_fees_ta")]
+    #[account(mut, name = "intermediary_ta")]
+    ConvertReferralFees,
+
     /// Claim the accumulated fees from referrals
     #[account(signer, mut, name = "signer")]
     #[account(name = "system_program")]
@@ -15,6 +27,7 @@ pub enum Instruction {
     #[account(name = "referral_state")]
     #[account(mut, name = "referral_fees_ta")]
     #[account(mut, name = "referral_fees_mint")]
+    #[account(mut, optional, name = "dest_ta")]
     ClaimReferralFees,
 
     /// Open a new Solauto position with Marginfi
@@ -206,7 +219,7 @@ pub enum Instruction {
     SolendRebalance(RebalanceArgs),
 }
 
-pub const SOLAUTO_REBALANCE_IX_DISCRIMINATORS: [u64; 2] = [9, 10];
+pub const SOLAUTO_REBALANCE_IX_DISCRIMINATORS: [u64; 2] = [10, 11];
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug)]
 pub struct UpdatePositionData {
@@ -255,7 +268,7 @@ pub struct SolautoStandardAccounts<'a> {
     pub ixs_sysvar: Option<&'a AccountInfo<'a>>,
     pub solauto_position: DeserializedAccount<'a, Position>,
     pub solauto_fees_supply_ta: Option<&'a AccountInfo<'a>>,
-    pub authority_referral_state: Option<DeserializedAccount<'a, RefferalState>>,
+    pub authority_referral_state: Option<DeserializedAccount<'a, ReferralState>>,
     pub referred_by_state: Option<&'a AccountInfo<'a>>,
     pub referred_by_supply_ta: Option<&'a AccountInfo<'a>>,
 }

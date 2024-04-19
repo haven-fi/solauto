@@ -10,7 +10,7 @@ use crate::{
             },
             RebalanceArgs, SolautoAction, SolautoStandardAccounts, UpdatePositionData,
         },
-        shared::{DeserializedAccount, LendingPlatform, Position, RefferalState},
+        shared::{DeserializedAccount, LendingPlatform, Position, ReferralState},
     },
     utils::*,
 };
@@ -173,7 +173,7 @@ pub fn process_solend_rebalance<'a>(
         ixs_sysvar: Some(ctx.accounts.ixs_sysvar),
         solauto_position,
         solauto_fees_supply_ta: Some(ctx.accounts.solauto_fees_supply_ta),
-        authority_referral_state: DeserializedAccount::<RefferalState>::deserialize(Some(
+        authority_referral_state: DeserializedAccount::<ReferralState>::deserialize(Some(
             ctx.accounts.authority_referral_state,
         ))?,
         referred_by_state: ctx.accounts.referred_by_state,
