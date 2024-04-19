@@ -7,10 +7,7 @@ use crate::{
     processors::{
         general::*,
         marginfi::*,
-        solend::{
-            process_solend_interaction_instruction, process_solend_open_position_instruction,
-            process_solend_rebalance, process_solend_refresh_data,
-        },
+        solend::*,
     },
     types::instruction::Instruction,
 };
