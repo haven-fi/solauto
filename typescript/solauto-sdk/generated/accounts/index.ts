@@ -7,4 +7,4 @@
  */
 
 export * from './position';
-export * from './referralState';
+export * from './ReferralStateAccount';

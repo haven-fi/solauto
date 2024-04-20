@@ -3,9 +3,16 @@ name = "solauto-sdk"
 version = "0.1.0"
 edition = "2021"
 
+[features]
+test-sbf = []
+
 [dependencies]
 solana-program = ">=1.16"
 borsh = "^0.10"
 thiserror = "1.0.58"
 num-derive = "0.4.2"
 num-traits = "0.2.18"
+
+[dev-dependencies]
+solana-program-test = ">=1.16"
+solana-sdk = ">=1.16"

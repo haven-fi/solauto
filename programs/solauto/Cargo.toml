@@ -30,10 +30,7 @@ thiserror = "1.0.58"
 # reqwest = { version="0.11.25", features = ["json"] }
 # serde = "1.0.197"
 # base64 = "0.22.0"
-
-[dev-dependencies]
-tokio = { version="1.36.0", features = ["full"] }
-solana-program-test = ">=1.16"
+# tokio = { version="1.36.0", features = ["full"] }
 
 [profile.release]
 lto = "fat"

@@ -5037,12 +5037,10 @@ dependencies = [
  "num-traits",
  "shank",
  "solana-program",
- "solana-program-test",
  "solend-sdk",
  "spl-associated-token-account 1.1.3",
  "spl-token 4.0.0",
  "thiserror",
- "tokio",
 ]
 
 [[package]]
@@ -5053,6 +5051,8 @@ dependencies = [
  "num-derive 0.4.2",
  "num-traits",
  "solana-program",
+ "solana-program-test",
+ "solana-sdk",
  "thiserror",
 ]
 

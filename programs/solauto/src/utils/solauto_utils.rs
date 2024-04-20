@@ -6,14 +6,17 @@ use solana_program::{
     program_error::ProgramError,
     pubkey::Pubkey,
     sysvar::instructions::{ load_current_index_checked, load_instruction_at_checked },
+    program_pack::Pack,
 };
 use spl_associated_token_account::get_associated_token_address;
-use std::cmp::min;
+use spl_token::state::Account as TokenAccount;
+use std::{ cmp::min, ops::{ Div, Mul } };
 
 use super::{
     ix_utils,
     math_utils::get_maximum_repay_to_bps_param,
     solana_utils::{
+        self,
         account_is_rent_exempt,
         get_anchor_ix_discriminator,
         init_ata_if_needed,
@@ -31,12 +34,13 @@ use crate::{
         },
         obligation_position::LendingProtocolObligationPosition,
         shared::{
+            DCADirection,
             DeserializedAccount,
             LendingPlatform,
-            Position,
+            PositionAccount,
             PositionData,
             PositionState,
-            ReferralState,
+            ReferralStateAccount,
             SolautoError,
             SolautoRebalanceStep,
             REFERRAL_ACCOUNT_SPACE,
@@ -45,7 +49,7 @@ use crate::{
 };
 
 pub fn get_owner<'a, 'b>(
-    solauto_position: &'b DeserializedAccount<'a, Position>,
+    solauto_position: &'b DeserializedAccount<'a, PositionAccount>,
     signer: &'a AccountInfo<'a>
 ) -> &'a AccountInfo<'a> {
     if solauto_position.data.self_managed { signer } else { solauto_position.account_info }
@@ -56,14 +60,14 @@ pub fn create_new_solauto_position<'a>(
     solauto_position: &'a AccountInfo<'a>,
     update_position_data: UpdatePositionData,
     lending_platform: LendingPlatform
-) -> Result<DeserializedAccount<'a, Position>, ProgramError> {
+) -> Result<DeserializedAccount<'a, PositionAccount>, ProgramError> {
     let data = if !update_position_data.setting_params.is_none() {
         if update_position_data.position_id == 0 {
             msg!("Position ID 0 is reserved for self managed positions");
             return Err(ProgramError::InvalidInstructionData.into());
         }
 
-        Position {
+        PositionAccount {
             position_id: update_position_data.position_id,
             authority: *signer.key,
             self_managed: false,
@@ -72,10 +76,11 @@ pub fn create_new_solauto_position<'a>(
                 state: PositionState::default(),
                 lending_platform,
                 protocol_data: update_position_data.protocol_data.clone(),
+                active_dca: update_position_data.active_dca.clone(),
             }),
         }
     } else {
-        Position {
+        PositionAccount {
             position_id: update_position_data.position_id,
             authority: *signer.key,
             self_managed: true,
@@ -83,7 +88,7 @@ pub fn create_new_solauto_position<'a>(
         }
     };
 
-    Ok(DeserializedAccount::<Position> {
+    Ok(DeserializedAccount::<PositionAccount> {
         account_info: solauto_position,
         data: Box::new(data),
     })
@@ -100,7 +105,7 @@ pub fn get_or_create_referral_state<'a>(
     referral_dest_ta: &'a AccountInfo<'a>,
     referred_by_state: Option<&'a AccountInfo<'a>>,
     referred_by_dest_ta: Option<&'a AccountInfo<'a>>
-) -> Result<DeserializedAccount<'a, ReferralState>, ProgramError> {
+) -> Result<DeserializedAccount<'a, ReferralStateAccount>, ProgramError> {
     let validate_correct_token_account = |wallet: &AccountInfo, token_account: &AccountInfo| {
         let token_account_pubkey = get_associated_token_address(wallet.key, &WSOL_MINT);
         if &token_account_pubkey != token_account.key {
@@ -131,7 +136,7 @@ pub fn get_or_create_referral_state<'a>(
 
     if account_is_rent_exempt(rent, referral_state)? {
         let mut referral_state_account = Some(
-            DeserializedAccount::<ReferralState>::deserialize(Some(referral_state))?.unwrap()
+            DeserializedAccount::<ReferralStateAccount>::deserialize(Some(referral_state))?.unwrap()
         );
 
         if referral_state_account.as_ref().unwrap().data.referred_by_state.is_none() {
@@ -184,7 +189,7 @@ pub fn get_or_create_referral_state<'a>(
             )?;
         }
 
-        let data = Box::new(ReferralState {
+        let data = Box::new(ReferralStateAccount {
             authority: authority.key.clone(),
             referred_by_state: referred_by_state.map_or(None, |r| Some(r.key.clone())),
             dest_fees_ta: referral_dest_ta.key.clone(),
@@ -513,6 +518,64 @@ impl InstructionChecker {
 
         false
     }
+}
+
+pub fn initiate_dca_in_if_necessary<'a, 'b>(
+    token_program: &'a AccountInfo<'a>,
+    solauto_position: &'b DeserializedAccount<'a, PositionAccount>,
+    position_supply_ta: Option<&'a AccountInfo<'a>>,
+    signer: &'a AccountInfo<'a>,
+    signer_supply_ta: Option<&'a AccountInfo<'a>>,
+    supply_mint: Option<&'a AccountInfo<'a>>
+) -> ProgramResult {
+    if !solauto_position.data.self_managed {
+        return Ok(());
+    }
+
+    let position = solauto_position.data.position.as_ref().unwrap();
+    if position.active_dca.is_none() {
+        return Ok(());
+    }
+
+    let active_dca = position.active_dca.as_ref().unwrap();
+    if active_dca.dca_direction == DCADirection::Out {
+        return Ok(());
+    }
+
+    if position_supply_ta.is_none() || signer_supply_ta.is_none() || supply_mint.is_none() {
+        msg!("Missing required accounts in order to initiate DCA-in");
+        return Err(ProgramError::InvalidAccountData.into());
+    }
+
+    if
+        position_supply_ta.unwrap().key !=
+        &get_associated_token_address(
+            solauto_position.account_info.key,
+            supply_mint.unwrap().key
+        )
+    {
+        msg!("Incorrect position token account provided");
+        return Err(ProgramError::InvalidAccountData.into());
+    }
+
+    let balance = TokenAccount::unpack(&signer_supply_ta.unwrap().data.borrow())?.amount;
+    if balance == 0 {
+        msg!("Unable to initiate DCA with a lack of funds in the signer supply token account");
+        return Err(ProgramError::InvalidInstructionData.into());
+    }
+
+    let transfer_amount = (balance as f64).mul(
+        (active_dca.pct_bps_to_dca as f64).div(10000.0)
+    ) as u64;
+
+    solana_utils::spl_token_transfer(
+        token_program,
+        signer,
+        signer,
+        position_supply_ta.unwrap(),
+        transfer_amount,
+        None
+    )
 }
 
 pub struct SolautoFeesBps {

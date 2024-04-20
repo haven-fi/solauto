@@ -35,7 +35,7 @@ export type ConvertReferralFeesInstructionAccounts = {
   ataProgram?: PublicKey | Pda;
   rent?: PublicKey | Pda;
   ixsSysvar: PublicKey | Pda;
-  referralState: PublicKey | Pda;
+  ReferralStateAccount: PublicKey | Pda;
   referralFeesTa: PublicKey | Pda;
   intermediaryTa: PublicKey | Pda;
 };
@@ -103,10 +103,10 @@ export function convertReferralFees(
       isWritable: false as boolean,
       value: input.ixsSysvar ?? null,
     },
-    referralState: {
+    ReferralStateAccount: {
       index: 6,
       isWritable: false as boolean,
-      value: input.referralState ?? null,
+      value: input.ReferralStateAccount ?? null,
     },
     referralFeesTa: {
       index: 7,

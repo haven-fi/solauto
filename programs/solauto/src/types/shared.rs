@@ -11,9 +11,31 @@ use thiserror::Error;
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, PartialEq)]
 #[borsh(use_discriminant = true)]
 pub enum LendingPlatform {
-    Marginfi = 0,
-    Solend = 1,
-    Kamino = 2,
+    Marginfi,
+    Solend,
+    Kamino,
+}
+
+#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, PartialEq)]
+pub enum DCADirection {
+    In,
+    Out
+}
+
+#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType)]
+pub struct DCASettings {
+    /// The unix timestamp (in seconds) start date of DCA
+    pub unix_start_date: u64,
+    /// The unix timestamp (in seconds) interval between each DCA
+    pub unix_dca_interval: u64,
+    /// How many DCA periods have already passed
+    pub dca_periods_passed: u8,
+    /// The target number of DCA periods
+    pub target_dca_periods: u8,
+    /// Whether to DCA-in or DCA-out
+    pub dca_direction: DCADirection,
+    /// The percentage of the funds (in or outside of the position) to DCA
+    pub pct_bps_to_dca: u16,
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType)]
@@ -51,15 +73,16 @@ pub struct PositionState {
 
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType)]
 pub struct PositionData {
-    pub setting_params: SolautoSettingsParameters,
     pub state: PositionState,
     pub lending_platform: LendingPlatform,
     pub protocol_data: Option<LendingProtocolPositionData>,
+    pub setting_params: SolautoSettingsParameters,
+    pub active_dca: Option<DCASettings>,
 }
 
 pub const POSITION_ACCOUNT_SPACE: usize = 500;
 #[derive(ShankAccount, BorshDeserialize, BorshSerialize, Clone, Debug)]
-pub struct Position {
+pub struct PositionAccount {
     pub position_id: u8,
     pub authority: Pubkey,
     pub self_managed: bool,
@@ -68,7 +91,7 @@ pub struct Position {
 
 pub const REFERRAL_ACCOUNT_SPACE: usize = 300;
 #[derive(ShankAccount, BorshDeserialize, BorshSerialize, Clone, Debug)]
-pub struct ReferralState {
+pub struct ReferralStateAccount {
     pub authority: Pubkey,
     pub referred_by_state: Option<Pubkey>,
     pub fees_mint: Pubkey,
@@ -134,6 +157,8 @@ pub enum SolautoError {
     FailedAccountDeserialization,
     #[error("Invalid position data given")]
     InvalidPositionSettings,
+    #[error("Invalid DCA data given")]
+    InvalidDCASettings,
     #[error(
         "Stale protocol data. Refresh instruction must be invoked before taking a protocol action"
     )]

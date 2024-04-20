@@ -43,7 +43,7 @@ export type SolendRebalanceInstructionAccounts = {
   rent?: PublicKey | Pda;
   ixsSysvar: PublicKey | Pda;
   solautoFeesSupplyTa: PublicKey | Pda;
-  authorityReferralState: PublicKey | Pda;
+  authorityReferralStateAccount: PublicKey | Pda;
   referredByState?: PublicKey | Pda;
   referredBySupplyTa?: PublicKey | Pda;
   solautoPosition: PublicKey | Pda;
@@ -156,10 +156,10 @@ export function solendRebalance(
       isWritable: true as boolean,
       value: input.solautoFeesSupplyTa ?? null,
     },
-    authorityReferralState: {
+    authorityReferralStateAccount: {
       index: 9,
       isWritable: false as boolean,
-      value: input.authorityReferralState ?? null,
+      value: input.authorityReferralStateAccount ?? null,
     },
     referredByState: {
       index: 10,

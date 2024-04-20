@@ -36,7 +36,7 @@
           "isSigner": false
         },
         {
-          "name": "referralState",
+          "name": "ReferralStateAccount",
           "isMut": false,
           "isSigner": false
         },
@@ -81,7 +81,7 @@
           "isSigner": false
         },
         {
-          "name": "referralState",
+          "name": "ReferralStateAccount",
           "isMut": false,
           "isSigner": false
         },
@@ -152,7 +152,7 @@
           "isSigner": false
         },
         {
-          "name": "signerReferralState",
+          "name": "signerReferralStateAccount",
           "isMut": true,
           "isSigner": false
         },
@@ -283,7 +283,7 @@
           "isSigner": false
         },
         {
-          "name": "signerReferralState",
+          "name": "signerReferralStateAccount",
           "isMut": true,
           "isSigner": false
         },
@@ -832,7 +832,7 @@
           "isSigner": false
         },
         {
-          "name": "authorityReferralState",
+          "name": "authorityReferralStateAccount",
           "isMut": false,
           "isSigner": false
         },
@@ -951,7 +951,7 @@
           "isSigner": false
         },
         {
-          "name": "authorityReferralState",
+          "name": "authorityReferralStateAccount",
           "isMut": false,
           "isSigner": false
         },
@@ -1102,7 +1102,7 @@
       }
     },
     {
-      "name": "ReferralState",
+      "name": "ReferralStateAccount",
       "type": {
         "kind": "struct",
         "fields": [

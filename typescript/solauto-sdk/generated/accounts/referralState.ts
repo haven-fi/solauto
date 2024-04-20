@@ -28,91 +28,91 @@ import {
   struct,
 } from '@metaplex-foundation/umi/serializers';
 
-export type ReferralState = Account<ReferralStateAccountData>;
+export type ReferralStateAccount = Account<ReferralStateAccountAccountData>;
 
-export type ReferralStateAccountData = {
+export type ReferralStateAccountAccountData = {
   authority: PublicKey;
   referredByState: Option<PublicKey>;
   feesMint: PublicKey;
   destFeesTa: PublicKey;
 };
 
-export type ReferralStateAccountDataArgs = {
+export type ReferralStateAccountAccountDataArgs = {
   authority: PublicKey;
   referredByState: OptionOrNullable<PublicKey>;
   feesMint: PublicKey;
   destFeesTa: PublicKey;
 };
 
-export function getReferralStateAccountDataSerializer(): Serializer<
-  ReferralStateAccountDataArgs,
-  ReferralStateAccountData
+export function getReferralStateAccountAccountDataSerializer(): Serializer<
+  ReferralStateAccountAccountDataArgs,
+  ReferralStateAccountAccountData
 > {
-  return struct<ReferralStateAccountData>(
+  return struct<ReferralStateAccountAccountData>(
     [
       ['authority', publicKeySerializer()],
       ['referredByState', option(publicKeySerializer())],
       ['feesMint', publicKeySerializer()],
       ['destFeesTa', publicKeySerializer()],
     ],
-    { description: 'ReferralStateAccountData' }
-  ) as Serializer<ReferralStateAccountDataArgs, ReferralStateAccountData>;
+    { description: 'ReferralStateAccountAccountData' }
+  ) as Serializer<ReferralStateAccountAccountDataArgs, ReferralStateAccountAccountData>;
 }
 
-export function deserializeReferralState(
+export function deserializeReferralStateAccount(
   rawAccount: RpcAccount
-): ReferralState {
+): ReferralStateAccount {
   return deserializeAccount(
     rawAccount,
-    getReferralStateAccountDataSerializer()
+    getReferralStateAccountAccountDataSerializer()
   );
 }
 
-export async function fetchReferralState(
+export async function fetchReferralStateAccount(
   context: Pick<Context, 'rpc'>,
   publicKey: PublicKey | Pda,
   options?: RpcGetAccountOptions
-): Promise<ReferralState> {
+): Promise<ReferralStateAccount> {
   const maybeAccount = await context.rpc.getAccount(
     toPublicKey(publicKey, false),
     options
   );
-  assertAccountExists(maybeAccount, 'ReferralState');
-  return deserializeReferralState(maybeAccount);
+  assertAccountExists(maybeAccount, 'ReferralStateAccount');
+  return deserializeReferralStateAccount(maybeAccount);
 }
 
-export async function safeFetchReferralState(
+export async function safeFetchReferralStateAccount(
   context: Pick<Context, 'rpc'>,
   publicKey: PublicKey | Pda,
   options?: RpcGetAccountOptions
-): Promise<ReferralState | null> {
+): Promise<ReferralStateAccount | null> {
   const maybeAccount = await context.rpc.getAccount(
     toPublicKey(publicKey, false),
     options
   );
-  return maybeAccount.exists ? deserializeReferralState(maybeAccount) : null;
+  return maybeAccount.exists ? deserializeReferralStateAccount(maybeAccount) : null;
 }
 
-export async function fetchAllReferralState(
+export async function fetchAllReferralStateAccount(
   context: Pick<Context, 'rpc'>,
   publicKeys: Array<PublicKey | Pda>,
   options?: RpcGetAccountsOptions
-): Promise<ReferralState[]> {
+): Promise<ReferralStateAccount[]> {
   const maybeAccounts = await context.rpc.getAccounts(
     publicKeys.map((key) => toPublicKey(key, false)),
     options
   );
   return maybeAccounts.map((maybeAccount) => {
-    assertAccountExists(maybeAccount, 'ReferralState');
-    return deserializeReferralState(maybeAccount);
+    assertAccountExists(maybeAccount, 'ReferralStateAccount');
+    return deserializeReferralStateAccount(maybeAccount);
   });
 }
 
-export async function safeFetchAllReferralState(
+export async function safeFetchAllReferralStateAccount(
   context: Pick<Context, 'rpc'>,
   publicKeys: Array<PublicKey | Pda>,
   options?: RpcGetAccountsOptions
-): Promise<ReferralState[]> {
+): Promise<ReferralStateAccount[]> {
   const maybeAccounts = await context.rpc.getAccounts(
     publicKeys.map((key) => toPublicKey(key, false)),
     options
@@ -120,11 +120,11 @@ export async function safeFetchAllReferralState(
   return maybeAccounts
     .filter((maybeAccount) => maybeAccount.exists)
     .map((maybeAccount) =>
-      deserializeReferralState(maybeAccount as RpcAccount)
+      deserializeReferralStateAccount(maybeAccount as RpcAccount)
     );
 }
 
-export function getReferralStateGpaBuilder(
+export function getReferralStateAccountGpaBuilder(
   context: Pick<Context, 'rpc' | 'programs'>
 ) {
   const programId = context.programs.getPublicKey(
@@ -143,7 +143,7 @@ export function getReferralStateGpaBuilder(
       feesMint: [null, publicKeySerializer()],
       destFeesTa: [null, publicKeySerializer()],
     })
-    .deserializeUsing<ReferralState>((account) =>
-      deserializeReferralState(account)
+    .deserializeUsing<ReferralStateAccount>((account) =>
+      deserializeReferralStateAccount(account)
     );
 }

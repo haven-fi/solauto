@@ -10,7 +10,7 @@ use crate::{
             },
             RebalanceArgs, SolautoAction, SolautoStandardAccounts, UpdatePositionData,
         },
-        shared::{DeserializedAccount, LendingPlatform, Position, ReferralState},
+        shared::{DeserializedAccount, LendingPlatform, PositionAccount, ReferralStateAccount},
     },
     utils::*,
 };
@@ -20,6 +20,8 @@ pub fn process_marginfi_open_position_instruction<'a>(
     position_data: UpdatePositionData,
 ) -> ProgramResult {
     let ctx = MarginfiOpenPositionAccounts::context(accounts)?;
+
+    validation_utils::validate_dca_settings(&position_data.active_dca)?;
     let solauto_position = solauto_utils::create_new_solauto_position(
         ctx.accounts.signer,
         ctx.accounts.solauto_position,
@@ -102,7 +104,7 @@ pub fn process_marginfi_open_position_instruction<'a>(
 pub fn process_marginfi_refresh_data<'a>(accounts: &'a [AccountInfo<'a>]) -> ProgramResult {
     let ctx = MarginfiRefreshDataAccounts::context(accounts)?;
     let solauto_position =
-        DeserializedAccount::<Position>::deserialize(ctx.accounts.solauto_position)?;
+        DeserializedAccount::<PositionAccount>::deserialize(ctx.accounts.solauto_position)?;
     validation_utils::validate_program_account(
         &ctx.accounts.marginfi_program,
         LendingPlatform::Marginfi,
@@ -116,7 +118,7 @@ pub fn process_marginfi_interaction_instruction<'a>(
 ) -> ProgramResult {
     let ctx = MarginfiProtocolInteractionAccounts::context(accounts)?;
     let solauto_position =
-        DeserializedAccount::<Position>::deserialize(Some(ctx.accounts.solauto_position))?.unwrap();
+        DeserializedAccount::<PositionAccount>::deserialize(Some(ctx.accounts.solauto_position))?.unwrap();
 
     let std_accounts = SolautoStandardAccounts {
         signer: ctx.accounts.signer,
@@ -149,7 +151,7 @@ pub fn process_marginfi_rebalance<'a>(
 ) -> ProgramResult {
     let ctx = MarginfiRebalanceAccounts::context(accounts)?;
     let solauto_position =
-        DeserializedAccount::<Position>::deserialize(Some(ctx.accounts.solauto_position))?.unwrap();
+        DeserializedAccount::<PositionAccount>::deserialize(Some(ctx.accounts.solauto_position))?.unwrap();
 
     let std_accounts = SolautoStandardAccounts {
         signer: ctx.accounts.signer,
@@ -161,7 +163,7 @@ pub fn process_marginfi_rebalance<'a>(
         ixs_sysvar: Some(ctx.accounts.ixs_sysvar),
         solauto_position,
         solauto_fees_supply_ta: Some(ctx.accounts.solauto_fees_supply_ta),
-        authority_referral_state: DeserializedAccount::<ReferralState>::deserialize(Some(
+        authority_referral_state: DeserializedAccount::<ReferralStateAccount>::deserialize(Some(
             ctx.accounts.authority_referral_state,
         ))?,
         referred_by_state: ctx.accounts.referred_by_state,

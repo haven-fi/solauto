@@ -14,16 +14,19 @@ use crate::{
     constants::{ JUP_PROGRAM, SOLAUTO_MANAGER, WSOL_MINT },
     instructions::referral_fees,
     types::{
-        instruction::accounts::{
-            ClaimReferralFeesAccounts,
-            ClosePositionAccounts,
-            ConvertReferralFeesAccounts,
-            UpdatePositionAccounts,
+        instruction::{
+            accounts::{
+                ClaimReferralFeesAccounts,
+                ClosePositionAccounts,
+                ConvertReferralFeesAccounts,
+                UpdatePositionAccounts,
+            },
+            UpdatePositionData,
         },
         shared::{
             DeserializedAccount,
-            Position,
-            ReferralState,
+            PositionAccount,
+            ReferralStateAccount,
             SolautoError,
             SolautoSettingsParameters,
         },
@@ -33,7 +36,7 @@ use crate::{
 
 pub fn process_convert_referral_fees<'a>(accounts: &'a [AccountInfo<'a>]) -> ProgramResult {
     let ctx = ConvertReferralFeesAccounts::context(accounts)?;
-    let referral_state = DeserializedAccount::<ReferralState>
+    let referral_state = DeserializedAccount::<ReferralStateAccount>
         ::deserialize(Some(ctx.accounts.referral_state))?
         .unwrap();
 
@@ -83,7 +86,7 @@ pub fn process_convert_referral_fees<'a>(accounts: &'a [AccountInfo<'a>]) -> Pro
 
 pub fn process_claim_referral_fees<'a>(accounts: &'a [AccountInfo<'a>]) -> ProgramResult {
     let ctx = ClaimReferralFeesAccounts::context(accounts)?;
-    let referral_state = DeserializedAccount::<ReferralState>
+    let referral_state = DeserializedAccount::<ReferralStateAccount>
         ::deserialize(Some(ctx.accounts.referral_state))?
         .unwrap();
 
@@ -120,10 +123,10 @@ pub fn process_claim_referral_fees<'a>(accounts: &'a [AccountInfo<'a>]) -> Progr
 
 pub fn process_update_position_instruction<'a>(
     accounts: &'a [AccountInfo<'a>],
-    new_settings: SolautoSettingsParameters
+    new_data: UpdatePositionData
 ) -> ProgramResult {
     let ctx = UpdatePositionAccounts::context(accounts)?;
-    let mut solauto_position = DeserializedAccount::<Position>
+    let mut solauto_position = DeserializedAccount::<PositionAccount>
         ::deserialize(Some(ctx.accounts.solauto_position))?
         .unwrap();
 
@@ -134,19 +137,34 @@ pub fn process_update_position_instruction<'a>(
     }
 
     let position_data = solauto_position.data.position.as_mut().unwrap();
-    validation_utils::validate_position_settings(
-        &new_settings,
-        (position_data.state.max_ltv_bps as f64).div(10000.0),
-        (position_data.state.liq_threshold as f64).div(10000.0)
-    )?;
+    if !new_data.setting_params.is_none() {
+        validation_utils::validate_position_settings(
+            new_data.setting_params.as_ref().unwrap(),
+            (position_data.state.max_ltv_bps as f64).div(10000.0),
+            (position_data.state.liq_threshold as f64).div(10000.0)
+        )?;
+        position_data.setting_params = new_data.setting_params.as_ref().unwrap().clone();
+    }
 
-    position_data.setting_params = new_settings.clone();
+    if !new_data.active_dca.is_none() {
+        validation_utils::validate_dca_settings(&new_data.active_dca)?;
+        position_data.active_dca = new_data.active_dca.clone();
+        solauto_utils::initiate_dca_in_if_necessary(
+            ctx.accounts.token_program,
+            &solauto_position,
+            ctx.accounts.position_supply_ta,
+            ctx.accounts.signer,
+            ctx.accounts.signer_supply_ta,
+            ctx.accounts.supply_mint
+        )?;
+    }
+
     ix_utils::update_data(&mut solauto_position)
 }
 
 pub fn process_close_position_instruction<'a>(accounts: &'a [AccountInfo<'a>]) -> ProgramResult {
     let ctx = ClosePositionAccounts::context(accounts)?;
-    let solauto_position = DeserializedAccount::<Position>
+    let solauto_position = DeserializedAccount::<PositionAccount>
         ::deserialize(Some(ctx.accounts.solauto_position))?
         .unwrap();
 

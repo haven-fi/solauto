@@ -12,7 +12,7 @@ use super::{
     instruction::{SolautoAction, SolautoStandardAccounts, WithdrawParams},
     lending_protocol::{LendingProtocolClient, LendingProtocolTokenAccounts},
     obligation_position::LendingProtocolObligationPosition,
-    shared::{DeserializedAccount, Position, SolautoError, SolautoRebalanceStep},
+    shared::{DeserializedAccount, PositionAccount, SolautoError, SolautoRebalanceStep},
 };
 use crate::utils::*;
 
@@ -353,7 +353,7 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
 
     pub fn refresh_position(
         obligation_position: &LendingProtocolObligationPosition,
-        solauto_position: &mut DeserializedAccount<Position>,
+        solauto_position: &mut DeserializedAccount<PositionAccount>,
     ) {
         if solauto_position.data.self_managed {
             return;

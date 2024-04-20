@@ -10,10 +10,10 @@ use crate::{
 
 entrypoint!(process_instruction);
 
-fn process_instruction<'a>(
-    _program_id: &Pubkey,
+pub fn process_instruction<'a>(
+    _program_id: &'a Pubkey,
     accounts: &'a [AccountInfo<'a>],
-    data: &[u8],
+    data: &'a [u8],
 ) -> ProgramResult {
     let instruction = Instruction::try_from_slice(data)?;
     match instruction {

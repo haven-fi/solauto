@@ -4,7 +4,7 @@ use crate::{
     clients::solend::SolendClient,
     types::{
         instruction::accounts::{Context, MarginfiRefreshDataAccounts, SolendRefreshDataAccounts},
-        shared::{DeserializedAccount, Position},
+        shared::{DeserializedAccount, PositionAccount},
         solauto_manager::SolautoManager,
     },
     utils::ix_utils,
@@ -12,7 +12,7 @@ use crate::{
 
 pub fn marginfi_refresh_accounts(
     ctx: Context<MarginfiRefreshDataAccounts>,
-    mut solauto_position: Option<DeserializedAccount<Position>>,
+    mut solauto_position: Option<DeserializedAccount<PositionAccount>>,
 ) -> ProgramResult {
     // TODO
 
@@ -25,7 +25,7 @@ pub fn marginfi_refresh_accounts(
 
 pub fn solend_refresh_accounts(
     ctx: Context<SolendRefreshDataAccounts>,
-    mut solauto_position: Option<DeserializedAccount<Position>>,
+    mut solauto_position: Option<DeserializedAccount<PositionAccount>>,
 ) -> ProgramResult {
     SolendClient::refresh_reserve(
         ctx.accounts.supply_reserve,

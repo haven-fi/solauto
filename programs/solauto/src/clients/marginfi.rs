@@ -11,7 +11,7 @@ use crate::{
         },
         lending_protocol::LendingProtocolClient,
         obligation_position::LendingProtocolObligationPosition,
-        shared::{DeserializedAccount, Position},
+        shared::{DeserializedAccount, PositionAccount},
     },
     utils::validation_utils::*,
 };
@@ -31,7 +31,7 @@ pub struct MarginfiClient<'a> {
 impl<'a> MarginfiClient<'a> {
     pub fn initialize<'b>(
         ctx: &'b Context<'a, MarginfiOpenPositionAccounts>,
-        solauto_position: &DeserializedAccount<Position>,
+        solauto_position: &DeserializedAccount<PositionAccount>,
     ) -> ProgramResult {
         // validate_position_settings(solauto_position.as_ref().unwrap().data.setting_params, max_ltv, liq_threshold)
         // TODO

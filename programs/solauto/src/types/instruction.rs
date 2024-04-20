@@ -1,5 +1,5 @@
-use borsh::{BorshDeserialize, BorshSerialize};
-use shank::{ShankContext, ShankInstruction};
+use borsh::{ BorshDeserialize, BorshSerialize };
+use shank::{ ShankContext, ShankInstruction };
 use solana_program::account_info::AccountInfo;
 
 use super::shared::*;
@@ -49,6 +49,7 @@ pub enum Instruction {
     #[account(mut, name = "solauto_position")]
     #[account(name = "marginfi_group")]
     #[account(mut, name = "marginfi_account")]
+    #[account(mut, optional, name = "signer_supply_ta")]
     #[account(mut, name = "position_supply_ta")]
     #[account(name = "supply_mint")]
     #[account(mut, name = "position_debt_ta")]
@@ -75,6 +76,7 @@ pub enum Instruction {
     #[account(name = "lending_market")]
     #[account(mut, name = "obligation")]
     #[account(name = "supply_reserve")]
+    #[account(mut, optional, name = "signer_supply_liquidity_ta")]
     #[account(mut, name = "position_supply_liquidity_ta")]
     #[account(name = "supply_liquidity_mint")]
     #[account(mut, name = "position_supply_collateral_ta")]
@@ -85,8 +87,12 @@ pub enum Instruction {
 
     /// Update solauto position settings. Can only be invoked by position authority
     #[account(signer, name = "signer")]
+    #[account(name = "token_program")]
     #[account(mut, name = "solauto_position")]
-    UpdatePosition(SolautoSettingsParameters),
+    #[account(mut, optional, name = "position_supply_ta")]
+    #[account(mut, optional, name = "signer_supply_ta")]
+    #[account(optional, name = "supply_mint")]
+    UpdatePosition(UpdatePositionData),
     
     /// Close the Solauto position and return the rent for the various accounts
     #[account(signer, mut, name = "signer")]
@@ -231,6 +237,8 @@ pub struct UpdatePositionData {
     pub setting_params: Option<SolautoSettingsParameters>,
     /// Protocol-specific data for the position
     pub protocol_data: Option<LendingProtocolPositionData>,
+    /// New DCA data to initiate on the position
+    pub active_dca: Option<DCASettings>,
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, PartialEq)]
@@ -268,9 +276,9 @@ pub struct SolautoStandardAccounts<'a> {
     pub ata_program: &'a AccountInfo<'a>,
     pub rent: &'a AccountInfo<'a>,
     pub ixs_sysvar: Option<&'a AccountInfo<'a>>,
-    pub solauto_position: DeserializedAccount<'a, Position>,
+    pub solauto_position: DeserializedAccount<'a, PositionAccount>,
     pub solauto_fees_supply_ta: Option<&'a AccountInfo<'a>>,
-    pub authority_referral_state: Option<DeserializedAccount<'a, ReferralState>>,
+    pub authority_referral_state: Option<DeserializedAccount<'a, ReferralStateAccount>>,
     pub referred_by_state: Option<&'a AccountInfo<'a>>,
     pub referred_by_supply_ta: Option<&'a AccountInfo<'a>>,
 }

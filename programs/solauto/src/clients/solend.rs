@@ -20,7 +20,7 @@ use crate::{
         },
         lending_protocol::*,
         obligation_position::*,
-        shared::{DeserializedAccount, LendingPlatform, Position, SolautoError},
+        shared::{DeserializedAccount, LendingPlatform, PositionAccount, SolautoError},
     },
     utils::{ix_utils::*, solauto_utils::*, validation_utils::*},
 };
@@ -49,7 +49,7 @@ pub struct SolendClient<'a> {
 impl<'a> SolendClient<'a> {
     pub fn initialize<'b>(
         ctx: &'b Context<'a, SolendOpenPositionAccounts<'a>>,
-        solauto_position: &'b DeserializedAccount<'a, Position>,
+        solauto_position: &'b DeserializedAccount<'a, PositionAccount>,
     ) -> ProgramResult {
         let supply_reserve =
             DeserializedAccount::<Reserve>::unpack(Some(ctx.accounts.supply_reserve))?.unwrap();
