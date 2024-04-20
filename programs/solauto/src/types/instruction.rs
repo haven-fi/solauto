@@ -84,16 +84,18 @@ pub enum Instruction {
     SolendOpenPosition(UpdatePositionData),
 
     /// Update solauto position settings. Can only be invoked by position authority
-    #[account(signer, mut, name = "signer")]
+    #[account(signer, name = "signer")]
     #[account(mut, name = "solauto_position")]
     UpdatePosition(SolautoSettingsParameters),
     
     /// Close the Solauto position and return the rent for the various accounts
     #[account(signer, mut, name = "signer")]
+    #[account(name = "system_program")]
+    #[account(name = "token_program")]
     #[account(mut, name = "solauto_position")]
-    #[account(mut, name = "supply_liquidity_ta")]
-    #[account(optional, mut, name = "supply_collateral_ta")]
-    #[account(mut, name = "debt_liquidity_ta")]
+    #[account(mut, name = "position_supply_liquidity_ta")]
+    #[account(optional, mut, name = "position_supply_collateral_ta")]
+    #[account(mut, name = "position_debt_liquidity_ta")]
     ClosePosition,
 
     /// Refresh Marginfi accounts & position data

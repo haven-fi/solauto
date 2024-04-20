@@ -28,7 +28,7 @@ fn process_instruction<'a>(
         }
 
         Instruction::UpdatePosition(settings) => process_update_position_instruction(accounts, settings),
-        Instruction::ClosePosition => process_close_position_instruction(),
+        Instruction::ClosePosition => process_close_position_instruction(accounts),
 
         Instruction::MarginfiRefreshData => process_marginfi_refresh_data(accounts),
         Instruction::SolendRefreshData => process_solend_refresh_data(accounts),

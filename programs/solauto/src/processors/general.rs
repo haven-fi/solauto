@@ -16,6 +16,7 @@ use crate::{
     types::{
         instruction::accounts::{
             ClaimReferralFeesAccounts,
+            ClosePositionAccounts,
             ConvertReferralFeesAccounts,
             UpdatePositionAccounts,
         },
@@ -27,7 +28,7 @@ use crate::{
             SolautoSettingsParameters,
         },
     },
-    utils::{ ix_utils, solauto_utils, validation_utils },
+    utils::{ ix_utils, solana_utils, solauto_utils, validation_utils },
 };
 
 pub fn process_convert_referral_fees<'a>(accounts: &'a [AccountInfo<'a>]) -> ProgramResult {
@@ -143,7 +144,46 @@ pub fn process_update_position_instruction<'a>(
     ix_utils::update_data(&mut solauto_position)
 }
 
-pub fn process_close_position_instruction() -> ProgramResult {
-    // TODO
+pub fn process_close_position_instruction<'a>(accounts: &'a [AccountInfo<'a>]) -> ProgramResult {
+    let ctx = ClosePositionAccounts::context(accounts)?;
+    let solauto_position = DeserializedAccount::<Position>
+        ::deserialize(Some(ctx.accounts.solauto_position))?
+        .unwrap();
+
+    validation_utils::validate_signer(ctx.accounts.signer, &solauto_position, true)?;
+    if solauto_position.data.self_managed {
+        msg!("Cannot close a self-managed position");
+        return Err(ProgramError::InvalidAccountData.into());
+    }
+
+    solana_utils::close_token_account(
+        ctx.accounts.token_program,
+        ctx.accounts.position_supply_liquidity_ta,
+        ctx.accounts.signer,
+        ctx.accounts.solauto_position
+    )?;
+
+    solana_utils::close_token_account(
+        ctx.accounts.token_program,
+        ctx.accounts.position_debt_liquidity_ta,
+        ctx.accounts.signer,
+        ctx.accounts.solauto_position
+    )?;
+
+    if !ctx.accounts.position_supply_collateral_ta.is_none() {
+        solana_utils::close_token_account(
+            ctx.accounts.token_program,
+            ctx.accounts.position_supply_collateral_ta.unwrap(),
+            ctx.accounts.signer,
+            ctx.accounts.solauto_position
+        )?;
+    }
+
+    solana_utils::close_pda(
+        ctx.accounts.solauto_position,
+        ctx.accounts.signer,
+        vec![&[solauto_position.data.position_id], ctx.accounts.signer.key.as_ref()]
+    )?;
+
     Ok(())
 }
