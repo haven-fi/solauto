@@ -146,13 +146,11 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
         rebalance_args: RebalanceArgs,
         rebalance_step: SolautoRebalanceStep
     ) -> ProgramResult {
-        let (target_liq_utilization_rate_bps, max_price_slippage_bps) =
-            self.should_proceed_with_rebalance(rebalance_args, &rebalance_step)?;
         if
             rebalance_step == SolautoRebalanceStep::StartSolautoRebalanceSandwich ||
             rebalance_step == SolautoRebalanceStep::StartMarginfiFlashLoanSandwich
         {
-            self.begin_rebalance(target_liq_utilization_rate_bps, max_price_slippage_bps)
+            self.begin_rebalance(&rebalance_args, &rebalance_step)
         } else if
             rebalance_step == SolautoRebalanceStep::FinishSolautoRebalanceSandwich ||
             rebalance_step == SolautoRebalanceStep::FinishMarginfiFlashLoanSandwich
@@ -165,11 +163,11 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
         }
     }
 
-    fn should_proceed_with_rebalance(
+    fn get_debt_adjustment_usd(
         &self,
-        rebalance_args: RebalanceArgs,
+        rebalance_args: &RebalanceArgs,
         rebalance_step: &SolautoRebalanceStep
-    ) -> Result<(u16, u16), ProgramError> {
+    ) -> Result<f64, ProgramError> {
         // TODO CHECK IF DCA
         // TODO WHAT DO WE SET AS TARGET BPS IF DCA?
         // TODO WE NEED TO HANDLE A DEPOSIT FIRST IF DCAing IN (in solauto manager)
@@ -193,7 +191,7 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
             if supply_position_ta.amount > 0 {
                 self.obligation_position.current_liq_utilization_rate_bps(
                     None,
-                    Some((supply_position_ta.amount as i64).mul(-1)),
+                    Some((supply_position_ta.amount as i64).mul(-1))
                 )
             } else {
                 self.obligation_position.current_liq_utilization_rate_bps(
@@ -211,46 +209,42 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
             &rebalance_args
         )?;
 
-        if
-            !first_or_only_rebalance_ix &&
-            current_liq_utilization_rate_bps < target_liq_utilization_rate_bps &&
-            (self.std_accounts.authority_referral_state.is_none() ||
-                self.std_accounts.referred_by_supply_ta.is_none())
-        {
-            msg!(
-                "Missing referral account(s) when we are boosting leverage. Referral accounts required."
-            );
-            return Err(ProgramError::InvalidAccountData.into());
-        }
-
         let max_price_slippage_bps = if !rebalance_args.max_price_slippage_bps.is_none() {
             rebalance_args.max_price_slippage_bps.unwrap()
         } else {
             300
         };
 
-        Ok((target_liq_utilization_rate_bps, max_price_slippage_bps))
-    }
-
-    fn begin_rebalance(
-        &mut self,
-        target_liq_utilization_rate_bps: u16,
-        max_price_slippage_bps: u16
-    ) -> ProgramResult {
         let increasing_leverage =
-            self.obligation_position.current_liq_utilization_rate_bps(None, None) <
-            target_liq_utilization_rate_bps;
+            current_liq_utilization_rate_bps < target_liq_utilization_rate_bps;
+
+        let adjustment_fee_bps = if increasing_leverage {
+            Some(self.solauto_fees_bps.total)
+        } else {
+            None
+        };
 
         let mut debt_adjustment_usd = math_utils::calculate_debt_adjustment_usd(
             self.obligation_position.liq_threshold,
             self.obligation_position.supply.as_ref().unwrap().amount_used.usd_value as f64,
             self.obligation_position.debt.as_ref().unwrap().amount_used.usd_value as f64,
             target_liq_utilization_rate_bps,
-            Some(self.solauto_fees_bps.total)
+            adjustment_fee_bps
         );
         debt_adjustment_usd += debt_adjustment_usd.mul(
             (max_price_slippage_bps as f64).div(10000.0)
         );
+
+        Ok(debt_adjustment_usd)
+    }
+
+    fn begin_rebalance(
+        &mut self,
+        rebalance_args: &RebalanceArgs,
+        rebalance_step: &SolautoRebalanceStep
+    ) -> ProgramResult {
+        let debt_adjustment_usd = self.get_debt_adjustment_usd(rebalance_args, rebalance_step)?;
+        let increasing_leverage = debt_adjustment_usd > 0.0;
 
         let (token_mint, market_price, decimals) = if increasing_leverage {
             (
@@ -279,6 +273,7 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
             debt_adjustment_usd.div(market_price),
             decimals
         );
+
         if increasing_leverage {
             self.borrow(
                 min(
@@ -342,6 +337,16 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
         account_info: &'a AccountInfo<'a>,
         token_account: &'b TokenAccount
     ) -> ProgramResult {
+        if
+            self.std_accounts.authority_referral_state.is_none() ||
+            self.std_accounts.referred_by_supply_ta.is_none()
+        {
+            msg!(
+                "Missing referral account(s) when we are boosting leverage. Referral accounts are required"
+            );
+            return Err(ProgramError::InvalidAccountData.into());
+        }
+
         let balance = token_account.amount;
 
         let solauto_fees = (balance as f64).mul(
