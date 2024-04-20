@@ -87,39 +87,13 @@ pub struct LendingProtocolObligationPosition {
 }
 
 impl LendingProtocolObligationPosition {
-    pub fn current_liq_utilization_rate_bps(
-        &self,
-        update_supply_base_amount: Option<i64>,
-        update_debt_base_amount: Option<i64>
-    ) -> u16 {
-        let mut supply_base_amount = if let Some(supply) = self.supply.as_ref() {
-            supply.amount_used.base_unit as i64
-        } else {
-            0
-        };
-        if update_supply_base_amount.is_some() {
-            supply_base_amount += update_supply_base_amount.unwrap();
-        }
-
-        let mut debt_base_amount = if let Some(debt) = self.debt.as_ref() {
-            debt.amount_used.base_unit as i64
-        } else {
-            0
-        };
-        if update_debt_base_amount.is_some() {
-            debt_base_amount = max(0, debt_base_amount + update_debt_base_amount.unwrap());
-        }
-
-        if debt_base_amount <= 0 {
-            return 0;
-        } else {
-            let supply_usd_value = (supply_base_amount as f64).mul(
-                self.supply.as_ref().unwrap().market_price
-            );
-            let debt_usd_value = (debt_base_amount as f64).mul(
-                self.debt.as_ref().unwrap().market_price
-            );
-            debt_usd_value.div(supply_usd_value.mul(self.liq_threshold as f64)).mul(10000.0) as u16
+    pub fn current_liq_utilization_rate_bps(&self) -> u16 {
+        match (&self.debt, &self.supply) {
+            (Some(debt), Some(supply)) =>
+                debt.amount_used.usd_value
+                    .div(supply.amount_used.usd_value.mul(self.liq_threshold as f64))
+                    .mul(10000.0) as u16,
+            _ => 0,
         }
     }
 

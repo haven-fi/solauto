@@ -89,9 +89,9 @@ pub enum Instruction {
     #[account(signer, name = "signer")]
     #[account(name = "token_program")]
     #[account(mut, name = "solauto_position")]
-    #[account(mut, optional, name = "position_supply_ta")]
-    #[account(mut, optional, name = "signer_supply_ta")]
-    #[account(optional, name = "supply_mint")]
+    #[account(mut, optional, name = "position_debt_ta")]
+    #[account(mut, optional, name = "signer_debt_ta")]
+    #[account(optional, name = "debt_mint")]
     UpdatePosition(UpdatePositionData),
     
     /// Close the Solauto position and return the rent for the various accounts

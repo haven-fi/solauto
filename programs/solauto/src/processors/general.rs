@@ -28,7 +28,6 @@ use crate::{
             PositionAccount,
             ReferralStateAccount,
             SolautoError,
-            SolautoSettingsParameters,
         },
     },
     utils::{ ix_utils, solana_utils, solauto_utils, validation_utils },
@@ -152,10 +151,10 @@ pub fn process_update_position_instruction<'a>(
         solauto_utils::initiate_dca_in_if_necessary(
             ctx.accounts.token_program,
             &solauto_position,
-            ctx.accounts.position_supply_ta,
+            ctx.accounts.position_debt_ta,
             ctx.accounts.signer,
-            ctx.accounts.signer_supply_ta,
-            ctx.accounts.supply_mint
+            ctx.accounts.signer_debt_ta,
+            ctx.accounts.debt_mint
         )?;
     }
 
