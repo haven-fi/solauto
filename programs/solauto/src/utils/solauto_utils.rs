@@ -32,7 +32,6 @@ use crate::{
             UpdatePositionData,
             SOLAUTO_REBALANCE_IX_DISCRIMINATORS,
         },
-        obligation_position::LendingProtocolObligationPosition,
         shared::{
             DCADirection,
             DeserializedAccount,
@@ -232,51 +231,13 @@ pub fn init_solauto_fees_supply_ta<'a>(
     )
 }
 
-pub fn should_proceed_with_rebalance(
-    std_accounts: &SolautoStandardAccounts,
-    obligation_position: &LendingProtocolObligationPosition,
-    rebalance_args: &RebalanceArgs,
-    rebalance_step: &SolautoRebalanceStep
-) -> Result<u16, ProgramError> {
-    let first_or_only_rebalance_ix =
-        rebalance_step == &SolautoRebalanceStep::StartSolautoRebalanceSandwich ||
-        rebalance_step == &SolautoRebalanceStep::StartMarginfiFlashLoanSandwich ||
-        rebalance_step == &SolautoRebalanceStep::FinishStandardFlashLoanSandwich;
-
-    let current_liq_utilization_rate_bps = if first_or_only_rebalance_ix {
-        obligation_position.current_utilization_rate_bps()
-    } else {
-        // TODO pretend modify supply or debt (based on the position_[supply|debt]_token_account) and calculate new utilization rate using that
-        0
-    };
-
-    let target_rate_bps = get_target_liq_utilization_rate(
-        &std_accounts,
-        &obligation_position,
-        rebalance_args
-    )?;
-
-    if
-        first_or_only_rebalance_ix &&
-        current_liq_utilization_rate_bps < target_rate_bps &&
-        (std_accounts.authority_referral_state.is_none() ||
-            std_accounts.referred_by_supply_ta.is_none())
-    {
-        msg!(
-            "Missing referral account(s) when we are boosting leverage. Referral accounts required."
-        );
-        return Err(ProgramError::InvalidAccountData.into());
-    }
-
-    Ok(target_rate_bps)
-}
-
 pub fn get_target_liq_utilization_rate(
     std_accounts: &SolautoStandardAccounts,
-    obligation_position: &LendingProtocolObligationPosition,
+    current_liq_utilization_rate_bps: u16,
+    max_ltv: f64,
+    liq_threshold: f64,
     rebalance_args: &RebalanceArgs
 ) -> Result<u16, SolautoError> {
-    let current_liq_utilization_rate_bps = obligation_position.current_utilization_rate_bps();
     let result: Result<u16, SolautoError> = if
         rebalance_args.target_liq_utilization_rate_bps.is_none()
     {
@@ -284,10 +245,7 @@ pub fn get_target_liq_utilization_rate(
             .as_ref()
             .unwrap().setting_params;
         if current_liq_utilization_rate_bps > setting_params.repay_from_bps {
-            let maximum_repay_to_bps = get_maximum_repay_to_bps_param(
-                obligation_position.max_ltv,
-                obligation_position.liq_threshold
-            );
+            let maximum_repay_to_bps = get_maximum_repay_to_bps_param(max_ltv, liq_threshold);
             Ok(min(setting_params.repay_to_bps, maximum_repay_to_bps))
         } else if current_liq_utilization_rate_bps < setting_params.boost_from_bps {
             Ok(setting_params.boost_from_bps)
@@ -549,10 +507,7 @@ pub fn initiate_dca_in_if_necessary<'a, 'b>(
 
     if
         position_supply_ta.unwrap().key !=
-        &get_associated_token_address(
-            solauto_position.account_info.key,
-            supply_mint.unwrap().key
-        )
+        &get_associated_token_address(solauto_position.account_info.key, supply_mint.unwrap().key)
     {
         msg!("Incorrect position token account provided");
         return Err(ProgramError::InvalidAccountData.into());
