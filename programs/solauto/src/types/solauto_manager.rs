@@ -4,7 +4,7 @@ use solana_program::{
     msg,
     program_error::ProgramError,
 };
-use std::{ cmp::min, ops::{ Div, Mul, Sub } };
+use std::{ cmp::min, ops::{ Add, Div, Mul, Sub } };
 
 use super::{
     instruction::{ RebalanceArgs, SolautoAction, SolautoStandardAccounts, WithdrawParams },
@@ -111,10 +111,7 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
             let repay_from_bps = self.std_accounts.solauto_position.data.position
                 .as_ref()
                 .unwrap().setting_params.repay_from_bps;
-            if
-                self.obligation_position.current_liq_utilization_rate_bps() >
-                repay_from_bps
-            {
+            if self.obligation_position.current_liq_utilization_rate_bps() > repay_from_bps {
                 return Err(SolautoError::ExceededValidUtilizationRate.into());
             }
         } else if self.obligation_position.current_liq_utilization_rate_bps() > 9500 {
@@ -171,8 +168,6 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
     }
 
     fn get_target_liq_utilization_rate_bps_if_dca(&mut self) -> Result<Option<u16>, ProgramError> {
-        // TODO WE NEED TO HANDLE IF THIS IS DEBT OR SUPPLY
-        // WE NEED TO DELETE DCA DATA IN SOLAUTO POSITION IF DCAing HAS FINISHED
         // TODO check timing, only use this rate if the timing works out, otherwise this is a normal boost or repay
 
         let current_liq_utilization_rate_bps =
@@ -188,8 +183,24 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
                     )
                 );
                 if let DCADirection::In(_) = dca_settings.dca_direction {
-                    // balance = TODO use percentage
-                    // transfer calculated balance to intermediary ta
+                    let debt_ta = &self.accounts.debt.as_ref().unwrap().source_ta;
+                    let amount = (debt_ta.data.amount as f64).mul(percent) as u64;
+
+                    solana_utils::spl_token_transfer(
+                        self.std_accounts.token_program,
+                        debt_ta.account_info,
+                        self.std_accounts.solauto_position.account_info,
+                        self.accounts.intermediary_ta.unwrap(),
+                        amount,
+                        Some(
+                            vec![
+                                &[self.std_accounts.solauto_position.data.position_id],
+                                self.std_accounts.solauto_position.data.authority.as_ref()
+                            ]
+                        )
+                    )?;
+
+                    // TODO when calculating debt adjustment, we need to factor into account this additional bit of debt that will enter as supply
 
                     return Ok(None);
                 } else {
