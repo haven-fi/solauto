@@ -157,7 +157,6 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
             rebalance_step == SolautoRebalanceStep::StartSolautoRebalanceSandwich ||
             rebalance_step == SolautoRebalanceStep::StartMarginfiFlashLoanSandwich
         {
-            self.update_position_if_dca()?;
             self.begin_rebalance(&rebalance_args, &rebalance_step)
         } else if
             rebalance_step == SolautoRebalanceStep::FinishSolautoRebalanceSandwich ||
@@ -171,7 +170,7 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
         }
     }
 
-    fn update_position_if_dca(&mut self) -> ProgramResult {
+    fn get_target_liq_utilization_rate_bps_if_dca(&mut self) -> Result<Option<u16>, ProgramError> {
         // TODO WE NEED TO HANDLE A DEPOSIT FIRST IF DCAing IN (in solauto manager)
         // TODO WE NEED TO HANDLE IF THIS IS DEBT OR SUPPLY
         // WE NEED TO DELETE DCA DATA IN SOLAUTO POSITION IF DCAing HAS FINISHED
@@ -203,15 +202,19 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
                         setting_params.boost_to_bps - diff
                     };
 
+
                     // TODO handle if this is the last DCA
                     setting_params.boost_from_bps = new_boost_from_bps;
                     setting_params.boost_to_bps = new_boost_to_bps;
                     ix_utils::update_data(&mut self.std_accounts.solauto_position)?;
+
+                    // TODO get target liq utilization rate bps
+                    return Ok(Some(0));
                 }
             }
         }
 
-        Ok(())
+        Ok(None)
     }
 
     fn get_debt_adjustment_usd(
@@ -243,13 +246,16 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
             }
         };
 
-        let target_liq_utilization_rate_bps = solauto_utils::get_target_liq_utilization_rate(
-            &self.std_accounts,
-            current_liq_utilization_rate_bps,
-            self.obligation_position.max_ltv,
-            self.obligation_position.liq_threshold,
-            &rebalance_args
-        )?;
+        let mut target_liq_utilization_rate_bps = self.get_target_liq_utilization_rate_bps_if_dca()?;
+        if target_liq_utilization_rate_bps.is_none() {
+            target_liq_utilization_rate_bps = Some(solauto_utils::get_target_liq_utilization_rate(
+                &self.std_accounts,
+                current_liq_utilization_rate_bps,
+                self.obligation_position.max_ltv,
+                self.obligation_position.liq_threshold,
+                &rebalance_args
+            )?);
+        }
 
         let max_price_slippage_bps = if !rebalance_args.max_price_slippage_bps.is_none() {
             rebalance_args.max_price_slippage_bps.unwrap()
@@ -258,7 +264,7 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
         };
 
         let increasing_leverage =
-            current_liq_utilization_rate_bps < target_liq_utilization_rate_bps;
+            current_liq_utilization_rate_bps < target_liq_utilization_rate_bps.unwrap();
 
         let adjustment_fee_bps = if increasing_leverage {
             Some(self.solauto_fees_bps.total)
@@ -270,7 +276,7 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
             self.obligation_position.liq_threshold,
             self.obligation_position.supply.as_ref().unwrap().amount_used.usd_value as f64,
             self.obligation_position.debt.as_ref().unwrap().amount_used.usd_value as f64,
-            target_liq_utilization_rate_bps,
+            target_liq_utilization_rate_bps.unwrap(),
             adjustment_fee_bps
         );
         debt_adjustment_usd += debt_adjustment_usd.mul(
