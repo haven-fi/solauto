@@ -5,6 +5,7 @@ pub mod instructions;
 pub mod processors;
 pub mod types;
 pub mod utils;
+pub mod tests;
 
 use solana_program::declare_id;
 
