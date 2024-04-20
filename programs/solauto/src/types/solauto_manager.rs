@@ -4,13 +4,19 @@ use solana_program::{
     msg,
     program_error::ProgramError,
 };
-use std::{ cmp::min, ops::{ Div, Mul } };
+use std::{ cmp::min, ops::{ Div, Mul, Sub } };
 
 use super::{
     instruction::{ RebalanceArgs, SolautoAction, SolautoStandardAccounts, WithdrawParams },
     lending_protocol::{ LendingProtocolClient, LendingProtocolTokenAccounts },
     obligation_position::LendingProtocolObligationPosition,
-    shared::{ DeserializedAccount, PositionAccount, SolautoError, SolautoRebalanceStep },
+    shared::{
+        DCADirection,
+        DeserializedAccount,
+        PositionAccount,
+        SolautoError,
+        SolautoRebalanceStep,
+    },
 };
 use crate::utils::*;
 
@@ -151,6 +157,7 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
             rebalance_step == SolautoRebalanceStep::StartSolautoRebalanceSandwich ||
             rebalance_step == SolautoRebalanceStep::StartMarginfiFlashLoanSandwich
         {
+            self.update_position_if_dca()?;
             self.begin_rebalance(&rebalance_args, &rebalance_step)
         } else if
             rebalance_step == SolautoRebalanceStep::FinishSolautoRebalanceSandwich ||
@@ -164,16 +171,54 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
         }
     }
 
+    fn update_position_if_dca(&mut self) -> ProgramResult {
+        // TODO WE NEED TO HANDLE A DEPOSIT FIRST IF DCAing IN (in solauto manager)
+        // TODO WE NEED TO HANDLE IF THIS IS DEBT OR SUPPLY
+        // WE NEED TO DELETE DCA DATA IN SOLAUTO POSITION IF DCAing HAS FINISHED
+
+        if !self.std_accounts.solauto_position.data.self_managed {
+            let position = self.std_accounts.solauto_position.data.position.as_mut().unwrap();
+            if position.active_dca.is_some() {
+                let dca_settings = position.active_dca.as_ref().unwrap();
+                let percent = (1.0).div(
+                    (dca_settings.target_dca_periods as f64).sub(
+                        dca_settings.dca_periods_passed as f64
+                    )
+                );
+                if let DCADirection::In(_) = dca_settings.dca_direction {
+                    // balance = TODO use percentage
+                    // if in supply token, deposit calculated balance
+                    // if in debt token, transfer calculated balance to intermediary ta
+
+                    // TODO handle validation to support if DCA-in is in the debt token? It should be this way only, maybe
+                } else {
+                    let setting_params = &mut position.setting_params;
+                    let new_boost_from_bps = (setting_params.boost_from_bps as f64).sub(
+                        (setting_params.boost_from_bps as f64).mul(percent)
+                    ) as u16;
+                    let diff = setting_params.boost_from_bps - new_boost_from_bps;
+                    let new_boost_to_bps = if new_boost_from_bps == 0 {
+                        0
+                    } else {
+                        setting_params.boost_to_bps - diff
+                    };
+
+                    // TODO handle if this is the last DCA
+                    setting_params.boost_from_bps = new_boost_from_bps;
+                    setting_params.boost_to_bps = new_boost_to_bps;
+                    ix_utils::update_data(&mut self.std_accounts.solauto_position)?;
+                }
+            }
+        }
+
+        Ok(())
+    }
+
     fn get_debt_adjustment_usd(
-        &self,
+        &mut self,
         rebalance_args: &RebalanceArgs,
         rebalance_step: &SolautoRebalanceStep
     ) -> Result<f64, ProgramError> {
-        // TODO CHECK IF DCA
-        // TODO WHAT DO WE SET AS TARGET BPS IF DCA?
-        // TODO WE NEED TO HANDLE A DEPOSIT FIRST IF DCAing IN (in solauto manager)
-        // WE NEED TO DELETE DCA DATA IN SOLAUTO POSITION IF DCAing HAS FINISHED
-
         let first_or_only_rebalance_ix =
             rebalance_step == &SolautoRebalanceStep::StartSolautoRebalanceSandwich ||
             rebalance_step == &SolautoRebalanceStep::StartMarginfiFlashLoanSandwich ||
