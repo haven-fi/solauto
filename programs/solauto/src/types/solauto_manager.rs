@@ -386,5 +386,8 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
         } else {
             0
         };
+
+        position.state.max_ltv_bps = obligation_position.max_ltv.mul(10000.0) as u64;
+        position.state.liq_threshold = obligation_position.liq_threshold.mul(10000.0) as u64;
     }
 }

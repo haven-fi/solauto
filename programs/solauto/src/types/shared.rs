@@ -45,6 +45,8 @@ pub struct PositionState {
     pub base_amount_liquidity_net_worth: u64,
     pub base_amount_supplied: u64,
     pub base_amount_borrowed: u64,
+    pub max_ltv_bps: u64,
+    pub liq_threshold: u64,
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType)]
