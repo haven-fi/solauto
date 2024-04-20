@@ -404,15 +404,10 @@ pub fn validate_dca_settings(settings: &Option<DCASettings>) -> ProgramResult {
         return Err(SolautoError::InvalidDCASettings.into());
     }
 
-    if dca_settings.pct_bps_to_dca > 10000 || dca_settings.pct_bps_to_dca == 0 {
-        msg!("Percent BPS to DCA must be greater than 0 and less than 10000");
-        return Err(SolautoError::InvalidDCASettings.into());
-    }
-
     if dca_settings.unix_dca_interval > 60 * 60 * 24 * 30 {
         msg!("DCA interval period cannot be greater than 1 month");
         return Err(SolautoError::InvalidDCASettings.into());
     }
-    
+
     Ok(())
 }

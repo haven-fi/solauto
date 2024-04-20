@@ -519,16 +519,21 @@ pub fn initiate_dca_in_if_necessary<'a, 'b>(
         return Err(ProgramError::InvalidInstructionData.into());
     }
 
-    let transfer_amount = (balance as f64).mul(
-        (active_dca.pct_bps_to_dca as f64).div(10000.0)
-    ) as u64;
+    let DCADirection::In(base_unit_amount) = active_dca.dca_direction else {
+        panic!("Expected DCADirection::In variant");
+    };
+
+    if base_unit_amount > balance {
+        msg!("Provided greater DCA-in value than exists in the signer supply token account");
+        return Err(ProgramError::InvalidInstructionData.into());
+    }
 
     solana_utils::spl_token_transfer(
         token_program,
         signer,
         signer,
         position_supply_ta.unwrap(),
-        transfer_amount,
+        base_unit_amount,
         None
     )
 }

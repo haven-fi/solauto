@@ -18,7 +18,8 @@ pub enum LendingPlatform {
 
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, PartialEq)]
 pub enum DCADirection {
-    In,
+    /// Base unit amount to DCA in with
+    In(u64),
     Out
 }
 
@@ -26,7 +27,7 @@ pub enum DCADirection {
 pub struct DCASettings {
     /// The unix timestamp (in seconds) start date of DCA
     pub unix_start_date: u64,
-    /// The unix timestamp (in seconds) interval between each DCA
+    /// The unix timestamp (in seconds) interval between each rebalance
     pub unix_dca_interval: u64,
     /// How many DCA periods have already passed
     pub dca_periods_passed: u8,
@@ -34,8 +35,6 @@ pub struct DCASettings {
     pub target_dca_periods: u8,
     /// Whether to DCA-in or DCA-out
     pub dca_direction: DCADirection,
-    /// The percentage of the funds (in or outside of the position) to DCA
-    pub pct_bps_to_dca: u16,
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType)]
