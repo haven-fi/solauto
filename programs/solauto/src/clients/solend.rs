@@ -119,17 +119,17 @@ impl<'a> SolendClient<'a> {
             supply_liquidity_mint,
             position_supply_liquidity,
             reserve_supply_liquidity,
-        );
+        )?;
         let supply_collateral = LendingProtocolTokenAccounts::from(
             supply_collateral_mint,
             position_supply_collateral,
             reserve_supply_collateral,
-        );
+        )?;
         let debt_liquidity = LendingProtocolTokenAccounts::from(
             debt_liquidity_mint,
             position_debt_liquidity,
             reserve_debt_liquidity,
-        );
+        )?;
 
         let supply_reserve_oracles = if !supply_reserve_pyth_price_oracle.is_none()
             && !supply_reserve_switchboard_oracle.is_none()
@@ -347,7 +347,7 @@ impl<'a> LendingProtocolClient<'a> for SolendClient<'a> {
             let supply_liquidity = self.supply_liquidity.as_ref().unwrap();
             validate_source_token_account(
                 std_accounts,
-                supply_liquidity.source_ta,
+                &supply_liquidity.source_ta,
                 supply_liquidity.mint,
             )?;
         }
@@ -356,7 +356,7 @@ impl<'a> LendingProtocolClient<'a> for SolendClient<'a> {
             let debt_liquidity = self.debt_liquidity.as_ref().unwrap();
             validate_source_token_account(
                 std_accounts,
-                debt_liquidity.source_ta,
+                &debt_liquidity.source_ta,
                 debt_liquidity.mint,
             )?;
         }
@@ -387,8 +387,8 @@ impl<'a> LendingProtocolClient<'a> for SolendClient<'a> {
         let deposit_instruction = deposit_reserve_liquidity_and_obligation_collateral(
             SOLEND_PROGRAM.clone(),
             base_unit_amount,
-            *supply_liquidity.source_ta.key,
-            *supply_collateral.source_ta.key,
+            *supply_liquidity.source_ta.account_info.key,
+            *supply_collateral.source_ta.account_info.key,
             *supply_reserve.key,
             *supply_liquidity.reserve_ta.key,
             *supply_collateral.mint.key,
@@ -402,8 +402,8 @@ impl<'a> LendingProtocolClient<'a> for SolendClient<'a> {
         );
 
         let account_infos = &[
-            supply_liquidity.source_ta.clone(),
-            supply_collateral.source_ta.clone(),
+            supply_liquidity.source_ta.account_info.clone(),
+            supply_collateral.source_ta.account_info.clone(),
             supply_reserve.clone(),
             supply_liquidity.reserve_ta.clone(),
             supply_collateral.mint.clone(),

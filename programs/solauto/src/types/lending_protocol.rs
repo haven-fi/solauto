@@ -1,10 +1,11 @@
-use solana_program::{account_info::AccountInfo, entrypoint::ProgramResult};
+use solana_program::{account_info::AccountInfo, entrypoint::ProgramResult, program_error::ProgramError};
+use spl_token::state::Account as TokenAccount;
 
-use super::instruction::SolautoStandardAccounts;
+use super::{instruction::SolautoStandardAccounts, shared::DeserializedAccount};
 
 pub struct LendingProtocolTokenAccounts<'a> {
     pub mint: &'a AccountInfo<'a>,
-    pub source_ta: &'a AccountInfo<'a>,
+    pub source_ta: DeserializedAccount<'a, TokenAccount>,
     pub reserve_ta: &'a AccountInfo<'a>,
 }
 
@@ -13,15 +14,15 @@ impl<'a> LendingProtocolTokenAccounts<'a> {
         mint: Option<&'a AccountInfo<'a>>,
         source_ta: Option<&'a AccountInfo<'a>>,
         reserve_ta: Option<&'a AccountInfo<'a>>,
-    ) -> Option<Self> {
+    ) -> Result<Option<Self>, ProgramError> {
         if !mint.is_none() && !source_ta.is_none() && !reserve_ta.is_none() {
-            Some(Self {
+            Ok(Some(Self {
                 mint: mint.unwrap(),
-                source_ta: source_ta.unwrap(),
+                source_ta: DeserializedAccount::<TokenAccount>::unpack(source_ta)?.unwrap(),
                 reserve_ta: reserve_ta.unwrap(),
-            })
+            }))
         } else {
-            None
+            Ok(None)
         }
     }
 }

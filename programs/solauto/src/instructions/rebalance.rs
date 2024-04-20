@@ -29,7 +29,7 @@ pub fn marginfi_rebalance<'a, 'b>(
         Some(ctx.accounts.position_debt_ta),
         Some(ctx.accounts.bank_debt_ta),
         Some(ctx.accounts.intermediary_ta)
-    );
+    )?;
     rebalance(marginfi_client, obligation_position, solauto_manager_accounts, std_accounts, args)
 }
 
@@ -64,7 +64,7 @@ pub fn solend_rebalance<'a, 'b>(
         Some(ctx.accounts.position_debt_liquidity_ta),
         Some(ctx.accounts.reserve_debt_liquidity_ta),
         Some(ctx.accounts.intermediary_ta)
-    );
+    )?;
     rebalance(solend_client, obligation_position, solauto_manager_accounts, std_accounts, args)
 }
 

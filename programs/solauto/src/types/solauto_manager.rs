@@ -3,9 +3,7 @@ use solana_program::{
     entrypoint::ProgramResult,
     msg,
     program_error::ProgramError,
-    program_pack::Pack,
 };
-use spl_token::state::Account as TokenAccount;
 use std::{ cmp::min, ops::{ Div, Mul } };
 
 use super::{
@@ -30,18 +28,18 @@ impl<'a> SolautoManagerAccounts<'a> {
         position_debt_ta: Option<&'a AccountInfo<'a>>,
         bank_debt_ta: Option<&'a AccountInfo<'a>>,
         intermediary_ta: Option<&'a AccountInfo<'a>>
-    ) -> Self {
+    ) -> Result<Self, ProgramError> {
         let supply = LendingProtocolTokenAccounts::from(
             supply_mint,
             position_supply_ta,
             bank_supply_ta
-        );
-        let debt = LendingProtocolTokenAccounts::from(debt_mint, position_debt_ta, bank_debt_ta);
-        Self {
+        )?;
+        let debt = LendingProtocolTokenAccounts::from(debt_mint, position_debt_ta, bank_debt_ta)?;
+        Ok(Self {
             supply,
             debt,
             intermediary_ta,
-        }
+        })
     }
 }
 
@@ -79,7 +77,10 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
                 self.deposit(base_unit_amount)?;
             }
             SolautoAction::Borrow(base_unit_amount) => {
-                self.borrow(base_unit_amount, self.accounts.debt.as_ref().unwrap().source_ta)?;
+                self.borrow(
+                    base_unit_amount,
+                    self.accounts.debt.as_ref().unwrap().source_ta.account_info
+                )?;
             }
             SolautoAction::Repay(base_unit_amount) => {
                 self.repay(base_unit_amount)?;
@@ -89,13 +90,13 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
                     WithdrawParams::All => {
                         self.withdraw(
                             self.obligation_position.net_worth_base_amount(),
-                            self.accounts.supply.as_ref().unwrap().source_ta
+                            self.accounts.supply.as_ref().unwrap().source_ta.account_info
                         )?;
                     }
                     WithdrawParams::Partial(base_unit_amount) =>
                         self.withdraw(
                             base_unit_amount,
-                            self.accounts.supply.as_ref().unwrap().source_ta
+                            self.accounts.supply.as_ref().unwrap().source_ta.account_info
                         )?,
                 }
         }
@@ -181,21 +182,17 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
         let current_liq_utilization_rate_bps = if first_or_only_rebalance_ix {
             self.obligation_position.current_liq_utilization_rate_bps(None, None)
         } else {
-            let supply_position_ta = TokenAccount::unpack(
-                &self.accounts.supply.as_ref().unwrap().source_ta.data.borrow()
-            )?;
-            let debt_position_ta = TokenAccount::unpack(
-                &self.accounts.debt.as_ref().unwrap().source_ta.data.borrow()
-            )?;
+            let position_supply_ta = &self.accounts.supply.as_ref().unwrap().source_ta.data;
+            let position_debt_ta = &self.accounts.debt.as_ref().unwrap().source_ta.data;
 
-            if supply_position_ta.amount > 0 {
+            if position_supply_ta.amount > 0 {
                 self.obligation_position.current_liq_utilization_rate_bps(
                     None,
-                    Some((supply_position_ta.amount as i64).mul(-1))
+                    Some((position_supply_ta.amount as i64).mul(-1))
                 )
             } else {
                 self.obligation_position.current_liq_utilization_rate_bps(
-                    Some(debt_position_ta.amount as i64),
+                    Some(position_debt_ta.amount as i64),
                     None
                 )
             }
@@ -302,28 +299,14 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
     }
 
     fn finish_rebalance(&mut self) -> ProgramResult {
-        let supply_position_ta = TokenAccount::unpack(
-            &self.accounts.supply.as_ref().unwrap().source_ta.data.borrow()
-        )?;
-        let debt_position_ta = TokenAccount::unpack(
-            &self.accounts.debt.as_ref().unwrap().source_ta.data.borrow()
-        )?;
+        let position_supply_ta = &self.accounts.supply.as_ref().unwrap().source_ta.data;
+        let position_debt_ta = &self.accounts.debt.as_ref().unwrap().source_ta.data;
 
-        let supply_balance = supply_position_ta.amount;
-        let debt_balance = debt_position_ta.amount;
-
-        if supply_balance > 0 {
-            self.payout_fees(
-                self.accounts.supply.as_ref().unwrap().source_ta,
-                &supply_position_ta
-            )?;
-
-            let new_supply_balance = TokenAccount::unpack(
-                &self.accounts.supply.as_ref().unwrap().source_ta.data.borrow()
-            )?.amount;
-            self.deposit(new_supply_balance)?;
-        } else if debt_balance > 0 {
-            self.repay(debt_balance)?;
+        if position_supply_ta.amount > 0 {
+            let amount_after_fees = self.payout_fees()?;
+            self.deposit(amount_after_fees)?;
+        } else if position_debt_ta.amount > 0 {
+            self.repay(position_debt_ta.amount)?;
         } else {
             msg!("Missing required position liquidity to rebalance position");
             return Err(SolautoError::UnableToReposition.into());
@@ -332,11 +315,7 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
         Ok(())
     }
 
-    fn payout_fees(
-        &self,
-        account_info: &'a AccountInfo<'a>,
-        token_account: &'b TokenAccount
-    ) -> ProgramResult {
+    fn payout_fees(&self) -> Result<u64, ProgramError> {
         if
             self.std_accounts.authority_referral_state.is_none() ||
             self.std_accounts.referred_by_supply_ta.is_none()
@@ -347,7 +326,8 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
             return Err(ProgramError::InvalidAccountData.into());
         }
 
-        let balance = token_account.amount;
+        let position_supply_ta = &self.accounts.supply.as_ref().unwrap().source_ta;
+        let balance = position_supply_ta.data.amount;
 
         let solauto_fees = (balance as f64).mul(
             (self.solauto_fees_bps.solauto as f64).div(10000.0)
@@ -355,7 +335,7 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
 
         solana_utils::spl_token_transfer(
             self.std_accounts.token_program,
-            account_info,
+            position_supply_ta.account_info,
             self.std_accounts.solauto_position.account_info,
             self.std_accounts.solauto_fees_supply_ta.unwrap(),
             solauto_fees,
@@ -374,7 +354,7 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
         if referrer_fees > 0 {
             solana_utils::spl_token_transfer(
                 self.std_accounts.token_program,
-                account_info,
+                position_supply_ta.account_info,
                 self.std_accounts.solauto_position.account_info,
                 self.std_accounts.referred_by_supply_ta.unwrap(),
                 referrer_fees,
@@ -387,10 +367,7 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
             )?;
         }
 
-        // TODO NEXT add a new instruction to convert to dest token where the transaction creates new ta with random wallet
-        // and solauto transfers to that ta, then a jup swap occurs, and the dest ta is the referrer dest ta
-
-        Ok(())
+        Ok(balance - solauto_fees)
     }
 
     pub fn refresh_position(

@@ -6,6 +6,7 @@ use solana_program::{
     pubkey::Pubkey,
     sysvar::instructions::ID as ixs_sysvar_id,
 };
+use spl_token::state::Account as TokenAccount;
 use spl_associated_token_account::get_associated_token_address;
 
 use crate::{
@@ -339,16 +340,16 @@ pub fn validate_referral_accounts(
 
 pub fn validate_source_token_account(
     std_accounts: &SolautoStandardAccounts,
-    source_ta: &AccountInfo,
+    source_ta: &DeserializedAccount<TokenAccount>,
     token_mint: &AccountInfo
 ) -> ProgramResult {
     if
-        source_ta.key !=
+        source_ta.account_info.key !=
             &get_associated_token_address(
                 std_accounts.solauto_position.account_info.key,
                 token_mint.key
             ) &&
-        source_ta.key != &get_associated_token_address(std_accounts.signer.key, token_mint.key)
+        source_ta.account_info.key != &get_associated_token_address(std_accounts.signer.key, token_mint.key)
     {
         msg!("Invalid source token account provided for the given solauto position & token mint");
         return Err(ProgramError::InvalidAccountData.into());
