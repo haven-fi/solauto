@@ -124,6 +124,8 @@ pub enum Instruction {
     #[account(name = "lending_market")]
     #[account(mut, optional, name = "obligation")]
     #[account(mut, optional, name = "solauto_position")]
+    #[account(mut, optional, name = "position_supply_liquidity_ta")]
+    #[account(mut, optional, name = "position_debt_liquidity_ta")]
     SolendRefreshData,
 
     /// Marginfi protocol interaction. Can only be invoked by the authority of the position

@@ -69,7 +69,7 @@ pub fn marginfi_open_position<'a>(
 
     solauto_utils::initiate_dca_in_if_necessary(
         ctx.accounts.token_program,
-        &solauto_position,
+        &mut solauto_position,
         Some(ctx.accounts.position_supply_ta),
         ctx.accounts.signer,
         ctx.accounts.signer_supply_ta,
@@ -144,7 +144,7 @@ pub fn solend_open_position<'a>(
 
     solauto_utils::initiate_dca_in_if_necessary(
         ctx.accounts.token_program,
-        &solauto_position,
+        &mut solauto_position,
         Some(ctx.accounts.position_supply_liquidity_ta),
         ctx.accounts.signer,
         ctx.accounts.signer_supply_liquidity_ta,

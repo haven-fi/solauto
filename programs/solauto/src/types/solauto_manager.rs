@@ -1,10 +1,11 @@
+use std::{ cmp::min, ops::{ Div, Mul, Sub } };
 use solana_program::{
     account_info::AccountInfo,
     entrypoint::ProgramResult,
     msg,
     program_error::ProgramError,
 };
-use std::{ cmp::min, ops::{ Add, Div, Mul, Sub } };
+use spl_token::state::Account as TokenAccount;
 
 use super::{
     instruction::{ RebalanceArgs, SolautoAction, SolautoStandardAccounts, WithdrawParams },
@@ -350,11 +351,23 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
         let position_supply_ta = &self.accounts.supply.as_ref().unwrap().source_ta.data;
         let position_debt_ta = &self.accounts.debt.as_ref().unwrap().source_ta.data;
 
+        let available_supply_balance = if self.std_accounts.solauto_position.data.self_managed {
+            position_supply_ta.amount
+        } else {
+            position_supply_ta.amount - self.std_accounts.solauto_position.data.position.as_ref().unwrap().supply_balance
+        };
+
+        let available_debt_balance = if self.std_accounts.solauto_position.data.self_managed {
+            position_debt_ta.amount
+        } else {
+            position_debt_ta.amount - self.std_accounts.solauto_position.data.position.as_ref().unwrap().debt_balance
+        };
+
         if position_supply_ta.amount > 0 {
-            let amount_after_fees = self.payout_fees()?;
+            let amount_after_fees = self.payout_fees(available_supply_balance)?;
             self.deposit(amount_after_fees)?;
         } else if position_debt_ta.amount > 0 {
-            self.repay(position_debt_ta.amount)?;
+            self.repay(available_debt_balance)?;
         } else {
             msg!("Missing required position liquidity to rebalance position");
             return Err(SolautoError::UnableToReposition.into());
@@ -363,7 +376,7 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
         Ok(())
     }
 
-    fn payout_fees(&self) -> Result<u64, ProgramError> {
+    fn payout_fees(&self, total_available_balance: u64) -> Result<u64, ProgramError> {
         if
             self.std_accounts.authority_referral_state.is_none() ||
             self.std_accounts.referred_by_supply_ta.is_none()
@@ -375,9 +388,8 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
         }
 
         let position_supply_ta = &self.accounts.supply.as_ref().unwrap().source_ta;
-        let balance = position_supply_ta.data.amount;
 
-        let solauto_fees = (balance as f64).mul(
+        let solauto_fees = (total_available_balance as f64).mul(
             (self.solauto_fees_bps.solauto as f64).div(10000.0)
         ) as u64;
 
@@ -395,7 +407,7 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
             )
         )?;
 
-        let referrer_fees = (balance as f64).mul(
+        let referrer_fees = (total_available_balance as f64).mul(
             (self.solauto_fees_bps.referrer as f64).div(10000.0)
         ) as u64;
 
@@ -415,15 +427,17 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
             )?;
         }
 
-        Ok(balance - solauto_fees)
+        Ok(total_available_balance - solauto_fees)
     }
 
     pub fn refresh_position(
         obligation_position: &LendingProtocolObligationPosition,
-        solauto_position: &mut DeserializedAccount<PositionAccount>
-    ) {
+        solauto_position: &mut DeserializedAccount<PositionAccount>,
+        position_supply_ta: Option<&'a AccountInfo<'a>>,
+        position_debt_ta: Option<&'a AccountInfo<'a>>
+    ) -> ProgramResult {
         if solauto_position.data.self_managed {
-            return;
+            return Ok(());
         }
 
         let position = solauto_position.data.position.as_mut().unwrap();
@@ -446,5 +460,16 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
 
         position.state.max_ltv_bps = obligation_position.max_ltv.mul(10000.0) as u64;
         position.state.liq_threshold = obligation_position.liq_threshold.mul(10000.0) as u64;
+
+        if position_supply_ta.is_some() {
+            let account = DeserializedAccount::<TokenAccount>::unpack(position_supply_ta)?.unwrap();
+            position.supply_balance = account.data.amount;
+        }
+        if position_debt_ta.is_some() {
+            let account: DeserializedAccount<'_, TokenAccount> = DeserializedAccount::<TokenAccount>::unpack(position_debt_ta)?.unwrap();
+            position.debt_balance = account.data.amount;
+        }
+
+        Ok(())
     }
 }

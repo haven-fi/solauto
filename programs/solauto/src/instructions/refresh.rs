@@ -1,4 +1,5 @@
 use solana_program::entrypoint::ProgramResult;
+use spl_token::state::Account as TokenAccount;
 
 use crate::{
     clients::solend::SolendClient,
@@ -55,7 +56,7 @@ pub fn solend_refresh_accounts(
             )?;
         }
 
-        if !ctx.accounts.solauto_position.is_none() {
+        if solauto_position.is_some() && !solauto_position.as_ref().unwrap().data.self_managed {
             let obligation_position = SolendClient::get_obligation_position(
                 &mut data_accounts.lending_market.data,
                 data_accounts.supply_reserve.as_ref().map(|sr| &sr.data),
@@ -66,7 +67,9 @@ pub fn solend_refresh_accounts(
             SolautoManager::refresh_position(
                 &obligation_position,
                 solauto_position.as_mut().unwrap(),
-            );
+                ctx.accounts.position_supply_liquidity_ta,
+                ctx.accounts.position_debt_liquidity_ta
+            )?;
         }
     }
 

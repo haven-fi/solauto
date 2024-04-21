@@ -76,6 +76,8 @@ pub fn create_new_solauto_position<'a>(
                 lending_platform,
                 protocol_data: update_position_data.protocol_data.clone(),
                 active_dca: update_position_data.active_dca.clone(),
+                supply_balance: 0,
+                debt_balance: 0,
             }),
         }
     } else {
@@ -480,7 +482,7 @@ impl InstructionChecker {
 
 pub fn initiate_dca_in_if_necessary<'a, 'b>(
     token_program: &'a AccountInfo<'a>,
-    solauto_position: &'b DeserializedAccount<'a, PositionAccount>,
+    solauto_position: &'b mut DeserializedAccount<'a, PositionAccount>,
     position_debt_ta: Option<&'a AccountInfo<'a>>,
     signer: &'a AccountInfo<'a>,
     signer_debt_ta: Option<&'a AccountInfo<'a>>,
@@ -528,6 +530,7 @@ pub fn initiate_dca_in_if_necessary<'a, 'b>(
         return Err(ProgramError::InvalidInstructionData.into());
     }
 
+    solauto_position.data.position.as_mut().unwrap().supply_balance += base_unit_amount;
     solana_utils::spl_token_transfer(
         token_program,
         signer,

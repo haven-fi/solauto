@@ -1,9 +1,9 @@
-use borsh::{BorshDeserialize, BorshSerialize};
-use shank::{ShankAccount, ShankType};
+use borsh::{ BorshDeserialize, BorshSerialize };
+use shank::{ ShankAccount, ShankType };
 use solana_program::{
     account_info::AccountInfo,
     program_error::ProgramError,
-    program_pack::{IsInitialized, Pack},
+    program_pack::{ IsInitialized, Pack },
     pubkey::Pubkey,
 };
 use thiserror::Error;
@@ -20,7 +20,7 @@ pub enum LendingPlatform {
 pub enum DCADirection {
     /// Base unit amount to DCA in with
     In(u64),
-    Out
+    Out,
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType)]
@@ -77,6 +77,8 @@ pub struct PositionData {
     pub protocol_data: Option<LendingProtocolPositionData>,
     pub setting_params: SolautoSettingsParameters,
     pub active_dca: Option<DCASettings>,
+    pub supply_balance: u64,
+    pub debt_balance: u64,
 }
 
 pub const POSITION_ACCOUNT_SPACE: usize = 500;
@@ -116,12 +118,15 @@ impl<'a, T: BorshDeserialize> DeserializedAccount<'a, T> {
     pub fn deserialize(account: Option<&'a AccountInfo<'a>>) -> Result<Option<Self>, ProgramError> {
         match account {
             Some(account_info) => {
-                let deserialized_data = T::try_from_slice(&account_info.data.borrow())
-                    .map_err(|_| SolautoError::FailedAccountDeserialization)?;
-                Ok(Some(Self {
-                    account_info,
-                    data: Box::new(deserialized_data),
-                }))
+                let deserialized_data = T::try_from_slice(&account_info.data.borrow()).map_err(
+                    |_| SolautoError::FailedAccountDeserialization
+                )?;
+                Ok(
+                    Some(Self {
+                        account_info,
+                        data: Box::new(deserialized_data),
+                    })
+                )
             }
             None => Ok(None),
         }
@@ -132,12 +137,15 @@ impl<'a, T: Pack + IsInitialized> DeserializedAccount<'a, T> {
     pub fn unpack(account: Option<&'a AccountInfo<'a>>) -> Result<Option<Self>, ProgramError> {
         match account {
             Some(account_info) => {
-                let deserialized_data = T::unpack(&account_info.data.borrow())
-                    .map_err(|_| SolautoError::FailedAccountDeserialization)?;
-                Ok(Some(Self {
-                    account_info,
-                    data: Box::new(deserialized_data),
-                }))
+                let deserialized_data = T::unpack(&account_info.data.borrow()).map_err(
+                    |_| SolautoError::FailedAccountDeserialization
+                )?;
+                Ok(
+                    Some(Self {
+                        account_info,
+                        data: Box::new(deserialized_data),
+                    })
+                )
             }
             None => Ok(None),
         }

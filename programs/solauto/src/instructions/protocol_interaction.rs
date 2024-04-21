@@ -135,6 +135,8 @@ fn protocol_interaction<'a, T: LendingProtocolClient<'a>>(
     SolautoManager::refresh_position(
         &solauto_manager.obligation_position,
         &mut solauto_manager.std_accounts.solauto_position,
-    );
+        None,
+        None
+    )?;
     ix_utils::update_data(&mut solauto_manager.std_accounts.solauto_position)
 }

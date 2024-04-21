@@ -150,7 +150,7 @@ pub fn process_update_position_instruction<'a>(
         position_data.active_dca = new_data.active_dca.clone();
         solauto_utils::initiate_dca_in_if_necessary(
             ctx.accounts.token_program,
-            &solauto_position,
+            &mut solauto_position,
             ctx.accounts.position_debt_ta,
             ctx.accounts.signer,
             ctx.accounts.signer_debt_ta,
