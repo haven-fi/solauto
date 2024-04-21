@@ -1,16 +1,9 @@
 use solana_program::{
-    account_info::AccountInfo,
-    entrypoint::ProgramResult,
-    instruction::{ get_stack_height, Instruction, TRANSACTION_LEVEL_STACK_HEIGHT },
-    msg,
-    program_error::ProgramError,
-    pubkey::Pubkey,
-    sysvar::instructions::{ load_current_index_checked, load_instruction_at_checked },
-    program_pack::Pack,
+    account_info::AccountInfo, clock::Clock, entrypoint::ProgramResult, instruction::{ get_stack_height, Instruction, TRANSACTION_LEVEL_STACK_HEIGHT }, msg, program_error::ProgramError, program_pack::Pack, pubkey::Pubkey, sysvar::{instructions::{ load_current_index_checked, load_instruction_at_checked }, Sysvar}
 };
 use spl_associated_token_account::get_associated_token_address;
 use spl_token::state::Account as TokenAccount;
-use std::{ cmp::min, ops::{ Div, Mul } };
+use std::{ cmp::min, ops::{ Add, Div, Mul } };
 
 use super::{
     ix_utils,
@@ -539,6 +532,21 @@ pub fn initiate_dca_in_if_necessary<'a, 'b>(
         base_unit_amount,
         None
     )
+}
+
+pub fn is_dca_instruction(solauto_position: &DeserializedAccount<PositionAccount>) -> Result<Option<DCADirection>, ProgramError> {
+    if solauto_position.data.self_managed || solauto_position.data.position.as_ref().unwrap().active_dca.is_none() {
+        return Ok(None);
+    }
+
+    let dca_settings = solauto_position.data.position.as_ref().unwrap().active_dca.as_ref().unwrap();
+    let clock = Clock::get()?;
+
+    if dca_settings.unix_start_date.add(dca_settings.unix_dca_interval.mul(dca_settings.dca_periods_passed as u64)) < clock.unix_timestamp as u64 {
+        return Ok(None);
+    }
+
+    Ok(Some(dca_settings.dca_direction))
 }
 
 pub struct SolautoFeesBps {

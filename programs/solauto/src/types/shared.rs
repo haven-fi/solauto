@@ -16,7 +16,7 @@ pub enum LendingPlatform {
     Kamino,
 }
 
-#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, PartialEq)]
+#[derive(BorshDeserialize, BorshSerialize, Clone, Copy, Debug, ShankType, PartialEq)]
 pub enum DCADirection {
     /// Base unit amount to DCA in with
     In(u64),
