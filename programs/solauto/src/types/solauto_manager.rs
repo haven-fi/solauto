@@ -174,7 +174,6 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
         let position = self.std_accounts.solauto_position.data.position.as_mut().unwrap();
 
         let dca_settings = position.active_dca.as_ref().unwrap();
-
         let percent = (1.0).div(
             (dca_settings.target_dca_periods as f64).sub(dca_settings.dca_periods_passed as f64)
         );

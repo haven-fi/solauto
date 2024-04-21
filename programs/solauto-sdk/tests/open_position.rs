@@ -1,3 +1,5 @@
+pub mod utils;
+
 use solana_program_test::{tokio, ProgramTest};
 
 use solauto_sdk::SOLAUTO_ID;

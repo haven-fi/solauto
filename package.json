@@ -5,7 +5,8 @@
     "format:rust": "find ./programs/* -name '*.rs' -exec rustfmt {} +",
     "generate": "cargo build-sbf && pnpm generate:idl && pnpm generate:clients",
     "generate:idl": "shank idl --crate-root programs/solauto --out-dir idls --out-filename solauto.json",
-    "generate:clients": "node ./generateClients.cjs && pnpm format:rust"
+    "generate:clients": "node ./generateClients.cjs && pnpm format:rust",
+    "test:solana-program": "cd programs/solauto-sdk && cargo test-sbf"
   },
   "dependencies": {
     "@coral-xyz/borsh": "^0.29.0",
