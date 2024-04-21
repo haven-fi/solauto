@@ -70,10 +70,10 @@ pub fn marginfi_open_position<'a>(
     solauto_utils::initiate_dca_in_if_necessary(
         ctx.accounts.token_program,
         &mut solauto_position,
-        Some(ctx.accounts.position_supply_ta),
+        Some(ctx.accounts.position_debt_ta),
         ctx.accounts.signer,
-        ctx.accounts.signer_supply_ta,
-        Some(ctx.accounts.supply_mint)
+        ctx.accounts.signer_debt_ta,
+        Some(ctx.accounts.debt_mint)
     )?;
 
     MarginfiClient::initialize(&ctx, &solauto_position)?;
@@ -145,10 +145,10 @@ pub fn solend_open_position<'a>(
     solauto_utils::initiate_dca_in_if_necessary(
         ctx.accounts.token_program,
         &mut solauto_position,
-        Some(ctx.accounts.position_supply_liquidity_ta),
+        Some(ctx.accounts.position_debt_liquidity_ta),
         ctx.accounts.signer,
-        ctx.accounts.signer_supply_liquidity_ta,
-        Some(ctx.accounts.supply_liquidity_mint)
+        ctx.accounts.signer_debt_liquidity_ta,
+        Some(ctx.accounts.debt_liquidity_mint)
     )?;
 
     SolendClient::initialize(&ctx, &solauto_position)?;
