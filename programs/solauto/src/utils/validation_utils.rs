@@ -44,11 +44,11 @@ pub fn generic_instruction_validation(
     validate_signer(accounts.signer, &accounts.solauto_position, authority_only_ix)?;
     validate_program_account(accounts.lending_protocol, lending_platform)?;
 
-    if !supply_token_mint.is_none() {
+    if supply_token_mint.is_some() {
         validate_referral_accounts(accounts, supply_token_mint.unwrap())?;
 
         if
-            !accounts.solauto_fees_supply_ta.is_none() &&
+            accounts.solauto_fees_supply_ta.is_some() &&
             accounts.solauto_fees_supply_ta.unwrap().key !=
                 &get_associated_token_address(&SOLAUTO_MANAGER, supply_token_mint.unwrap().key)
         {
@@ -56,7 +56,7 @@ pub fn generic_instruction_validation(
         }
     }
 
-    if !accounts.ixs_sysvar.is_none() && accounts.ixs_sysvar.unwrap().key != &ixs_sysvar_id {
+    if accounts.ixs_sysvar.is_some() && accounts.ixs_sysvar.unwrap().key != &ixs_sysvar_id {
         msg!("Incorrect ixs sysvar account provided");
         return Err(ProgramError::InvalidAccountData.into());
     }
@@ -317,7 +317,7 @@ pub fn validate_referral_accounts(
         .as_ref()
         .unwrap().data.referred_by_state;
 
-    if !referred_by_state.is_none() && std_accounts.referred_by_state.is_none() {
+    if referred_by_state.is_some() && std_accounts.referred_by_state.is_none() {
         msg!(
             "Missing referred_by_state account when the authority referral state has been referred"
         );
@@ -381,8 +381,8 @@ pub fn validate_lending_protocol_accounts(
         }
 
         if
-            !debt_mint.is_none() &&
-            !protocol_data.debt_mint.is_none() &&
+            debt_mint.is_some() &&
+            protocol_data.debt_mint.is_some() &&
             debt_mint.unwrap().key != &protocol_data.debt_mint.unwrap()
         {
             msg!("Incorrect debt mint account");

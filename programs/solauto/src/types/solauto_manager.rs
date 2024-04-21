@@ -69,7 +69,7 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
     ) -> Result<Self, ProgramError> {
         client.validate(&std_accounts)?;
         let solauto_fees_bps = solauto_utils::SolautoFeesBps::from(
-            !&std_accounts.referred_by_supply_ta.is_none()
+            std_accounts.referred_by_supply_ta.is_some()
         );
         Ok(Self {
             client,
@@ -299,7 +299,7 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
             None => self.get_std_target_liq_utilization_rate_bps(&rebalance_args)?,
         };
 
-        let max_price_slippage_bps = if !rebalance_args.max_price_slippage_bps.is_none() {
+        let max_price_slippage_bps = if rebalance_args.max_price_slippage_bps.is_some() {
             rebalance_args.max_price_slippage_bps.unwrap()
         } else {
             300
@@ -490,12 +490,12 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
             obligation_position.net_worth_base_amount();
         position.state.liq_utilization_rate_bps =
             obligation_position.current_liq_utilization_rate_bps();
-        position.state.base_amount_supplied = if !obligation_position.supply.is_none() {
+        position.state.base_amount_supplied = if obligation_position.supply.is_some() {
             obligation_position.supply.as_ref().unwrap().amount_used.base_unit
         } else {
             0
         };
-        position.state.base_amount_supplied = if !obligation_position.debt.is_none() {
+        position.state.base_amount_supplied = if obligation_position.debt.is_some() {
             obligation_position.debt.as_ref().unwrap().amount_used.base_unit
         } else {
             0

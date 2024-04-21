@@ -171,7 +171,7 @@ pub fn spl_token_transfer<'a, 'b>(
         amount
     )?;
 
-    if !pda_seeds.is_none() {
+    if pda_seeds.is_some() {
         invoke_signed_with_seed(
             &transfer_instruction,
             &[sender.clone(), recipient.clone(), token_program.clone()],

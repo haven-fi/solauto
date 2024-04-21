@@ -74,7 +74,7 @@ pub fn solend_interaction<'a, 'b>(
         None,
     )?;
 
-    if !ctx.accounts.authority_supply_collateral_ta.is_none() {
+    if ctx.accounts.authority_supply_collateral_ta.is_some() {
         init_ata_if_needed(
             ctx.accounts.token_program,
             ctx.accounts.system_program,

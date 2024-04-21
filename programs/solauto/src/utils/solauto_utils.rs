@@ -62,7 +62,7 @@ pub fn create_new_solauto_position<'a>(
     update_position_data: UpdatePositionData,
     lending_platform: LendingPlatform
 ) -> Result<DeserializedAccount<'a, PositionAccount>, ProgramError> {
-    let data = if !update_position_data.setting_params.is_none() {
+    let data = if update_position_data.setting_params.is_some() {
         if update_position_data.position_id == 0 {
             msg!("Position ID 0 is reserved for self managed positions");
             return Err(ProgramError::InvalidInstructionData.into());
@@ -129,7 +129,7 @@ pub fn get_or_create_referral_state<'a>(
     }
 
     validate_correct_token_account(referral_state, referral_dest_ta)?;
-    if !referred_by_state.is_none() && !referred_by_dest_ta.is_none() {
+    if referred_by_state.is_some() && referred_by_dest_ta.is_some() {
         validate_correct_token_account(referral_state, referral_dest_ta)?;
         if referred_by_state.unwrap().owner != &crate::ID {
             msg!("Referred by position account is not owned by Solauto");
@@ -148,7 +148,7 @@ pub fn get_or_create_referral_state<'a>(
             );
         }
 
-        if !referral_state_account.is_none() {
+        if referral_state_account.is_some() {
             ix_utils::update_data(referral_state_account.as_mut().unwrap())?;
         }
 
@@ -180,7 +180,7 @@ pub fn get_or_create_referral_state<'a>(
             referral_fees_mint
         )?;
 
-        if !referred_by_state.is_none() && !referred_by_dest_ta.is_none() {
+        if referred_by_state.is_some() && referred_by_dest_ta.is_some() {
             init_ata_if_needed(
                 token_program,
                 system_program,
@@ -287,7 +287,7 @@ pub fn get_rebalance_step(
 
     let ixs_sysvar = std_accounts.ixs_sysvar.unwrap();
     if
-        !args.target_liq_utilization_rate_bps.is_none() &&
+        args.target_liq_utilization_rate_bps.is_some() &&
         std_accounts.signer.key != &std_accounts.solauto_position.data.authority
     {
         msg!(

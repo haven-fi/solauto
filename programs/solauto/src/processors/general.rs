@@ -136,7 +136,7 @@ pub fn process_update_position_instruction<'a>(
     }
 
     let position_data = solauto_position.data.position.as_mut().unwrap();
-    if !new_data.setting_params.is_none() {
+    if new_data.setting_params.is_some() {
         validation_utils::validate_position_settings(
             new_data.setting_params.as_ref().unwrap(),
             (position_data.state.max_ltv_bps as f64).div(10000.0),
@@ -145,7 +145,7 @@ pub fn process_update_position_instruction<'a>(
         position_data.setting_params = new_data.setting_params.as_ref().unwrap().clone();
     }
 
-    if !new_data.active_dca.is_none() {
+    if new_data.active_dca.is_some() {
         validation_utils::validate_dca_settings(&new_data.active_dca)?;
         position_data.active_dca = new_data.active_dca.clone();
         solauto_utils::initiate_dca_in_if_necessary(
@@ -187,7 +187,7 @@ pub fn process_close_position_instruction<'a>(accounts: &'a [AccountInfo<'a>]) -
         ctx.accounts.solauto_position
     )?;
 
-    if !ctx.accounts.position_supply_collateral_ta.is_none() {
+    if ctx.accounts.position_supply_collateral_ta.is_some() {
         solana_utils::close_token_account(
             ctx.accounts.token_program,
             ctx.accounts.position_supply_collateral_ta.unwrap(),

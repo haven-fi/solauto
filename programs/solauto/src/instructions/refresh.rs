@@ -17,7 +17,7 @@ pub fn marginfi_refresh_accounts(
 ) -> ProgramResult {
     // TODO
 
-    if !solauto_position.is_none() {
+    if solauto_position.is_some() {
         ix_utils::update_data(solauto_position.as_mut().unwrap())?;
     }
 
@@ -33,14 +33,14 @@ pub fn solend_refresh_accounts(
         ctx.accounts.supply_reserve_pyth_price_oracle,
         ctx.accounts.supply_reserve_switchboard_oracle,
     )?;
-    if !ctx.accounts.debt_reserve.is_none() {
+    if ctx.accounts.debt_reserve.is_some() {
         SolendClient::refresh_reserve(
             ctx.accounts.debt_reserve.unwrap(),
             ctx.accounts.debt_reserve_pyth_price_oracle.unwrap(),
             ctx.accounts.debt_reserve_switchboard_oracle.unwrap(),
         )?;
     }
-    if !ctx.accounts.obligation.is_none() {
+    if ctx.accounts.obligation.is_some() {
         let mut data_accounts = SolendClient::deserialize_solend_accounts(
             ctx.accounts.lending_market,
             Some(ctx.accounts.supply_reserve),
@@ -73,7 +73,7 @@ pub fn solend_refresh_accounts(
         }
     }
 
-    if !solauto_position.is_none() {
+    if solauto_position.is_some() {
         ix_utils::update_data(&mut solauto_position.as_mut().unwrap())?;
     }
 

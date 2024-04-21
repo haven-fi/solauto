@@ -15,7 +15,7 @@ impl<'a> LendingProtocolTokenAccounts<'a> {
         source_ta: Option<&'a AccountInfo<'a>>,
         reserve_ta: Option<&'a AccountInfo<'a>>,
     ) -> Result<Option<Self>, ProgramError> {
-        if !mint.is_none() && !source_ta.is_none() && !reserve_ta.is_none() {
+        if mint.is_some() && source_ta.is_some() && reserve_ta.is_some() {
             Ok(Some(Self {
                 mint: mint.unwrap(),
                 source_ta: DeserializedAccount::<TokenAccount>::unpack(source_ta)?.unwrap(),

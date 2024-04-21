@@ -52,7 +52,7 @@ pub fn process_marginfi_open_position_instruction<'a>(
         ctx.accounts.referred_by_dest_ta,
     )?;
 
-    if !ctx.accounts.referred_by_state.is_none() {
+    if ctx.accounts.referred_by_state.is_some() {
         solauto_utils::get_or_create_referral_state(
             ctx.accounts.system_program,
             ctx.accounts.token_program,

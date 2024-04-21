@@ -131,8 +131,8 @@ impl<'a> SolendClient<'a> {
             reserve_debt_liquidity,
         )?;
 
-        let supply_reserve_oracles = if !supply_reserve_pyth_price_oracle.is_none()
-            && !supply_reserve_switchboard_oracle.is_none()
+        let supply_reserve_oracles = if supply_reserve_pyth_price_oracle.is_some()
+            && supply_reserve_switchboard_oracle.is_some()
         {
             Some(ReserveOracleAccounts {
                 pyth_price: supply_reserve_pyth_price_oracle.unwrap(),
@@ -283,14 +283,14 @@ impl<'a> SolendClient<'a> {
     ) -> ProgramResult {
         let mut reserve_pubkeys = Vec::new();
         reserve_pubkeys.push(*supply_reserve.key);
-        if !debt_reserve.is_none() {
+        if debt_reserve.is_some() {
             reserve_pubkeys.push(*debt_reserve.unwrap().key);
         }
 
         let mut account_infos = Vec::new();
         account_infos.push(obligation.clone());
         account_infos.push(supply_reserve.clone());
-        if !debt_reserve.is_none() {
+        if debt_reserve.is_some() {
             account_infos.push(debt_reserve.unwrap().clone());
         }
 
@@ -311,7 +311,7 @@ impl<'a> LendingProtocolClient<'a> for SolendClient<'a> {
             return Err(SolautoError::StaleProtocolData.into());
         }
 
-        if !self.data.supply_reserve.is_none()
+        if self.data.supply_reserve.is_some()
             && self
                 .data
                 .supply_reserve
@@ -327,7 +327,7 @@ impl<'a> LendingProtocolClient<'a> for SolendClient<'a> {
             return Err(SolautoError::StaleProtocolData.into());
         }
 
-        if !self.data.debt_reserve.is_none()
+        if self.data.debt_reserve.is_some()
             && self
                 .data
                 .debt_reserve
@@ -343,7 +343,7 @@ impl<'a> LendingProtocolClient<'a> for SolendClient<'a> {
             return Err(SolautoError::StaleProtocolData.into());
         }
 
-        if !self.supply_liquidity.is_none() {
+        if self.supply_liquidity.is_some() {
             let supply_liquidity = self.supply_liquidity.as_ref().unwrap();
             validate_source_token_account(
                 std_accounts,
@@ -352,7 +352,7 @@ impl<'a> LendingProtocolClient<'a> for SolendClient<'a> {
             )?;
         }
 
-        if !self.debt_liquidity.is_none() {
+        if self.debt_liquidity.is_some() {
             let debt_liquidity = self.debt_liquidity.as_ref().unwrap();
             validate_source_token_account(
                 std_accounts,
