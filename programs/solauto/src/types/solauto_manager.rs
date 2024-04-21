@@ -196,6 +196,7 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
                 ]
             )
         )?;
+        position.debt_balance -= amount;
 
         if dca_settings.dca_periods_passed == dca_settings.target_dca_periods - 1 {
             position.active_dca = None;
