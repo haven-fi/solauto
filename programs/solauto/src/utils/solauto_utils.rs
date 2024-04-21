@@ -1,5 +1,13 @@
 use solana_program::{
-    account_info::AccountInfo, clock::Clock, entrypoint::ProgramResult, instruction::{ get_stack_height, Instruction, TRANSACTION_LEVEL_STACK_HEIGHT }, msg, program_error::ProgramError, program_pack::Pack, pubkey::Pubkey, sysvar::{instructions::{ load_current_index_checked, load_instruction_at_checked }, Sysvar}
+    account_info::AccountInfo,
+    clock::Clock,
+    entrypoint::ProgramResult,
+    instruction::{ get_stack_height, Instruction, TRANSACTION_LEVEL_STACK_HEIGHT },
+    msg,
+    program_error::ProgramError,
+    program_pack::Pack,
+    pubkey::Pubkey,
+    sysvar::{ instructions::{ load_current_index_checked, load_instruction_at_checked }, Sysvar },
 };
 use spl_associated_token_account::get_associated_token_address;
 use spl_token::state::Account as TokenAccount;
@@ -25,6 +33,7 @@ use crate::{
             UpdatePositionData,
             SOLAUTO_REBALANCE_IX_DISCRIMINATORS,
         },
+        obligation_position::{ self, LendingProtocolObligationPosition },
         shared::{
             DCADirection,
             DeserializedAccount,
@@ -224,35 +233,6 @@ pub fn init_solauto_fees_supply_ta<'a>(
         solauto_fees_supply_ta,
         supply_mint
     )
-}
-
-pub fn get_target_liq_utilization_rate(
-    std_accounts: &SolautoStandardAccounts,
-    current_liq_utilization_rate_bps: u16,
-    max_ltv: f64,
-    liq_threshold: f64,
-    rebalance_args: &RebalanceArgs
-) -> Result<u16, SolautoError> {
-    let result: Result<u16, SolautoError> = if
-        rebalance_args.target_liq_utilization_rate_bps.is_none()
-    {
-        let setting_params = &std_accounts.solauto_position.data.position
-            .as_ref()
-            .unwrap().setting_params;
-        if current_liq_utilization_rate_bps > setting_params.repay_from_bps {
-            let maximum_repay_to_bps = get_maximum_repay_to_bps_param(max_ltv, liq_threshold);
-            Ok(min(setting_params.repay_to_bps, maximum_repay_to_bps))
-        } else if current_liq_utilization_rate_bps < setting_params.boost_from_bps {
-            Ok(setting_params.boost_from_bps)
-        } else {
-            return Err(SolautoError::InvalidRebalanceCondition.into());
-        }
-    } else {
-        Ok(rebalance_args.target_liq_utilization_rate_bps.unwrap())
-    };
-
-    let target_rate_bps = result.unwrap();
-    Ok(target_rate_bps)
 }
 
 pub fn get_rebalance_step(
@@ -534,15 +514,37 @@ pub fn initiate_dca_in_if_necessary<'a, 'b>(
     )
 }
 
-pub fn is_dca_instruction(solauto_position: &DeserializedAccount<PositionAccount>) -> Result<Option<DCADirection>, ProgramError> {
-    if solauto_position.data.self_managed || solauto_position.data.position.as_ref().unwrap().active_dca.is_none() {
+pub fn is_dca_instruction(
+    solauto_position: &DeserializedAccount<PositionAccount>,
+    obligation_position: &LendingProtocolObligationPosition
+) -> Result<Option<DCADirection>, ProgramError> {
+    if solauto_position.data.self_managed {
         return Ok(None);
     }
 
-    let dca_settings = solauto_position.data.position.as_ref().unwrap().active_dca.as_ref().unwrap();
+    if
+        obligation_position.current_liq_utilization_rate_bps() >=
+        solauto_position.data.position.as_ref().unwrap().setting_params.repay_from_bps
+    {
+        return Ok(None);
+    }
+
+    if solauto_position.data.position.as_ref().unwrap().active_dca.is_none() {
+        return Ok(None);
+    }
+
+    let dca_settings = solauto_position.data.position
+        .as_ref()
+        .unwrap()
+        .active_dca.as_ref()
+        .unwrap();
     let clock = Clock::get()?;
 
-    if dca_settings.unix_start_date.add(dca_settings.unix_dca_interval.mul(dca_settings.dca_periods_passed as u64)) < clock.unix_timestamp as u64 {
+    if
+        dca_settings.unix_start_date.add(
+            dca_settings.unix_dca_interval.mul(dca_settings.dca_periods_passed as u64)
+        ) < (clock.unix_timestamp as u64)
+    {
         return Ok(None);
     }
 
