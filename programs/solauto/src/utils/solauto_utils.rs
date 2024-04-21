@@ -503,7 +503,7 @@ pub fn initiate_dca_in_if_necessary<'a, 'b>(
         return Err(ProgramError::InvalidInstructionData.into());
     }
 
-    solauto_position.data.position.as_mut().unwrap().supply_balance += base_unit_amount;
+    solauto_position.data.position.as_mut().unwrap().debt_balance += base_unit_amount;
     solana_utils::spl_token_transfer(
         token_program,
         signer,
