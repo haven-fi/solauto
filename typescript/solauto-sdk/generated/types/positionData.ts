@@ -11,8 +11,11 @@ import {
   Serializer,
   option,
   struct,
+  u64,
 } from '@metaplex-foundation/umi/serializers';
 import {
+  DCASettings,
+  DCASettingsArgs,
   LendingPlatform,
   LendingPlatformArgs,
   LendingProtocolPositionData,
@@ -21,6 +24,7 @@ import {
   PositionStateArgs,
   SolautoSettingsParameters,
   SolautoSettingsParametersArgs,
+  getDCASettingsSerializer,
   getLendingPlatformSerializer,
   getLendingProtocolPositionDataSerializer,
   getPositionStateSerializer,
@@ -28,17 +32,23 @@ import {
 } from '.';
 
 export type PositionData = {
-  settingParams: SolautoSettingsParameters;
   state: PositionState;
   lendingPlatform: LendingPlatform;
   protocolData: Option<LendingProtocolPositionData>;
+  settingParams: SolautoSettingsParameters;
+  activeDca: Option<DCASettings>;
+  supplyBalance: bigint;
+  debtBalance: bigint;
 };
 
 export type PositionDataArgs = {
-  settingParams: SolautoSettingsParametersArgs;
   state: PositionStateArgs;
   lendingPlatform: LendingPlatformArgs;
   protocolData: OptionOrNullable<LendingProtocolPositionDataArgs>;
+  settingParams: SolautoSettingsParametersArgs;
+  activeDca: OptionOrNullable<DCASettingsArgs>;
+  supplyBalance: number | bigint;
+  debtBalance: number | bigint;
 };
 
 export function getPositionDataSerializer(): Serializer<
@@ -47,10 +57,13 @@ export function getPositionDataSerializer(): Serializer<
 > {
   return struct<PositionData>(
     [
-      ['settingParams', getSolautoSettingsParametersSerializer()],
       ['state', getPositionStateSerializer()],
       ['lendingPlatform', getLendingPlatformSerializer()],
       ['protocolData', option(getLendingProtocolPositionDataSerializer())],
+      ['settingParams', getSolautoSettingsParametersSerializer()],
+      ['activeDca', option(getDCASettingsSerializer())],
+      ['supplyBalance', u64()],
+      ['debtBalance', u64()],
     ],
     { description: 'PositionData' }
   ) as Serializer<PositionDataArgs, PositionData>;

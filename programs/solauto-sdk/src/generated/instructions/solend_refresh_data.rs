@@ -33,6 +33,10 @@ pub struct SolendRefreshData {
     pub obligation: Option<solana_program::pubkey::Pubkey>,
 
     pub solauto_position: Option<solana_program::pubkey::Pubkey>,
+
+    pub position_supply_liquidity_ta: Option<solana_program::pubkey::Pubkey>,
+
+    pub position_debt_liquidity_ta: Option<solana_program::pubkey::Pubkey>,
 }
 
 impl SolendRefreshData {
@@ -44,7 +48,7 @@ impl SolendRefreshData {
         &self,
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
-        let mut accounts = Vec::with_capacity(12 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(14 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.signer,
             true,
@@ -126,6 +130,28 @@ impl SolendRefreshData {
                 false,
             ));
         }
+        if let Some(position_supply_liquidity_ta) = self.position_supply_liquidity_ta {
+            accounts.push(solana_program::instruction::AccountMeta::new(
+                position_supply_liquidity_ta,
+                false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::SOLAUTO_ID,
+                false,
+            ));
+        }
+        if let Some(position_debt_liquidity_ta) = self.position_debt_liquidity_ta {
+            accounts.push(solana_program::instruction::AccountMeta::new(
+                position_debt_liquidity_ta,
+                false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::SOLAUTO_ID,
+                false,
+            ));
+        }
         accounts.extend_from_slice(remaining_accounts);
         let data = SolendRefreshDataInstructionData::new()
             .try_to_vec()
@@ -146,7 +172,7 @@ struct SolendRefreshDataInstructionData {
 
 impl SolendRefreshDataInstructionData {
     fn new() -> Self {
-        Self { discriminator: 7 }
+        Self { discriminator: 8 }
     }
 }
 
@@ -166,6 +192,8 @@ impl SolendRefreshDataInstructionData {
 ///   9. `[]` lending_market
 ///   10. `[writable, optional]` obligation
 ///   11. `[writable, optional]` solauto_position
+///   12. `[writable, optional]` position_supply_liquidity_ta
+///   13. `[writable, optional]` position_debt_liquidity_ta
 #[derive(Default)]
 pub struct SolendRefreshDataBuilder {
     signer: Option<solana_program::pubkey::Pubkey>,
@@ -180,6 +208,8 @@ pub struct SolendRefreshDataBuilder {
     lending_market: Option<solana_program::pubkey::Pubkey>,
     obligation: Option<solana_program::pubkey::Pubkey>,
     solauto_position: Option<solana_program::pubkey::Pubkey>,
+    position_supply_liquidity_ta: Option<solana_program::pubkey::Pubkey>,
+    position_debt_liquidity_ta: Option<solana_program::pubkey::Pubkey>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
 
@@ -270,6 +300,24 @@ impl SolendRefreshDataBuilder {
         self.solauto_position = solauto_position;
         self
     }
+    /// `[optional account]`
+    #[inline(always)]
+    pub fn position_supply_liquidity_ta(
+        &mut self,
+        position_supply_liquidity_ta: Option<solana_program::pubkey::Pubkey>,
+    ) -> &mut Self {
+        self.position_supply_liquidity_ta = position_supply_liquidity_ta;
+        self
+    }
+    /// `[optional account]`
+    #[inline(always)]
+    pub fn position_debt_liquidity_ta(
+        &mut self,
+        position_debt_liquidity_ta: Option<solana_program::pubkey::Pubkey>,
+    ) -> &mut Self {
+        self.position_debt_liquidity_ta = position_debt_liquidity_ta;
+        self
+    }
     /// Add an aditional account to the instruction.
     #[inline(always)]
     pub fn add_remaining_account(
@@ -307,6 +355,8 @@ impl SolendRefreshDataBuilder {
             lending_market: self.lending_market.expect("lending_market is not set"),
             obligation: self.obligation,
             solauto_position: self.solauto_position,
+            position_supply_liquidity_ta: self.position_supply_liquidity_ta,
+            position_debt_liquidity_ta: self.position_debt_liquidity_ta,
         };
 
         accounts.instruction_with_remaining_accounts(&self.__remaining_accounts)
@@ -338,6 +388,10 @@ pub struct SolendRefreshDataCpiAccounts<'a, 'b> {
     pub obligation: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
     pub solauto_position: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+
+    pub position_supply_liquidity_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+
+    pub position_debt_liquidity_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 }
 
 /// `solend_refresh_data` CPI instruction.
@@ -368,6 +422,10 @@ pub struct SolendRefreshDataCpi<'a, 'b> {
     pub obligation: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
     pub solauto_position: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+
+    pub position_supply_liquidity_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+
+    pub position_debt_liquidity_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 }
 
 impl<'a, 'b> SolendRefreshDataCpi<'a, 'b> {
@@ -389,6 +447,8 @@ impl<'a, 'b> SolendRefreshDataCpi<'a, 'b> {
             lending_market: accounts.lending_market,
             obligation: accounts.obligation,
             solauto_position: accounts.solauto_position,
+            position_supply_liquidity_ta: accounts.position_supply_liquidity_ta,
+            position_debt_liquidity_ta: accounts.position_debt_liquidity_ta,
         }
     }
     #[inline(always)]
@@ -424,7 +484,7 @@ impl<'a, 'b> SolendRefreshDataCpi<'a, 'b> {
             bool,
         )],
     ) -> solana_program::entrypoint::ProgramResult {
-        let mut accounts = Vec::with_capacity(12 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(14 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             *self.signer.key,
             true,
@@ -508,6 +568,28 @@ impl<'a, 'b> SolendRefreshDataCpi<'a, 'b> {
                 false,
             ));
         }
+        if let Some(position_supply_liquidity_ta) = self.position_supply_liquidity_ta {
+            accounts.push(solana_program::instruction::AccountMeta::new(
+                *position_supply_liquidity_ta.key,
+                false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::SOLAUTO_ID,
+                false,
+            ));
+        }
+        if let Some(position_debt_liquidity_ta) = self.position_debt_liquidity_ta {
+            accounts.push(solana_program::instruction::AccountMeta::new(
+                *position_debt_liquidity_ta.key,
+                false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::SOLAUTO_ID,
+                false,
+            ));
+        }
         remaining_accounts.iter().for_each(|remaining_account| {
             accounts.push(solana_program::instruction::AccountMeta {
                 pubkey: *remaining_account.0.key,
@@ -524,7 +606,7 @@ impl<'a, 'b> SolendRefreshDataCpi<'a, 'b> {
             accounts,
             data,
         };
-        let mut account_infos = Vec::with_capacity(12 + 1 + remaining_accounts.len());
+        let mut account_infos = Vec::with_capacity(14 + 1 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
         account_infos.push(self.signer.clone());
         account_infos.push(self.solend_program.clone());
@@ -547,6 +629,12 @@ impl<'a, 'b> SolendRefreshDataCpi<'a, 'b> {
         }
         if let Some(solauto_position) = self.solauto_position {
             account_infos.push(solauto_position.clone());
+        }
+        if let Some(position_supply_liquidity_ta) = self.position_supply_liquidity_ta {
+            account_infos.push(position_supply_liquidity_ta.clone());
+        }
+        if let Some(position_debt_liquidity_ta) = self.position_debt_liquidity_ta {
+            account_infos.push(position_debt_liquidity_ta.clone());
         }
         remaining_accounts
             .iter()
@@ -576,6 +664,8 @@ impl<'a, 'b> SolendRefreshDataCpi<'a, 'b> {
 ///   9. `[]` lending_market
 ///   10. `[writable, optional]` obligation
 ///   11. `[writable, optional]` solauto_position
+///   12. `[writable, optional]` position_supply_liquidity_ta
+///   13. `[writable, optional]` position_debt_liquidity_ta
 pub struct SolendRefreshDataCpiBuilder<'a, 'b> {
     instruction: Box<SolendRefreshDataCpiBuilderInstruction<'a, 'b>>,
 }
@@ -596,6 +686,8 @@ impl<'a, 'b> SolendRefreshDataCpiBuilder<'a, 'b> {
             lending_market: None,
             obligation: None,
             solauto_position: None,
+            position_supply_liquidity_ta: None,
+            position_debt_liquidity_ta: None,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
@@ -699,6 +791,24 @@ impl<'a, 'b> SolendRefreshDataCpiBuilder<'a, 'b> {
         self.instruction.solauto_position = solauto_position;
         self
     }
+    /// `[optional account]`
+    #[inline(always)]
+    pub fn position_supply_liquidity_ta(
+        &mut self,
+        position_supply_liquidity_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    ) -> &mut Self {
+        self.instruction.position_supply_liquidity_ta = position_supply_liquidity_ta;
+        self
+    }
+    /// `[optional account]`
+    #[inline(always)]
+    pub fn position_debt_liquidity_ta(
+        &mut self,
+        position_debt_liquidity_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    ) -> &mut Self {
+        self.instruction.position_debt_liquidity_ta = position_debt_liquidity_ta;
+        self
+    }
     /// Add an additional account to the instruction.
     #[inline(always)]
     pub fn add_remaining_account(
@@ -781,6 +891,10 @@ impl<'a, 'b> SolendRefreshDataCpiBuilder<'a, 'b> {
             obligation: self.instruction.obligation,
 
             solauto_position: self.instruction.solauto_position,
+
+            position_supply_liquidity_ta: self.instruction.position_supply_liquidity_ta,
+
+            position_debt_liquidity_ta: self.instruction.position_debt_liquidity_ta,
         };
         instruction.invoke_signed_with_remaining_accounts(
             signers_seeds,
@@ -803,6 +917,8 @@ struct SolendRefreshDataCpiBuilderInstruction<'a, 'b> {
     lending_market: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     obligation: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     solauto_position: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    position_supply_liquidity_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    position_debt_liquidity_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(
         &'b solana_program::account_info::AccountInfo<'a>,

@@ -10,12 +10,7 @@ use borsh::BorshSerialize;
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct PositionState {
-    pub liq_utilization_rate_bps: u16,
-    pub net_worth_usd_base_amount: u64,
-    pub base_amount_liquidity_net_worth: u64,
-    pub base_amount_supplied: u64,
-    pub base_amount_borrowed: u64,
-    pub max_ltv_bps: u64,
-    pub liq_threshold: u64,
+pub enum DCADirection {
+    In(u64),
+    Out,
 }

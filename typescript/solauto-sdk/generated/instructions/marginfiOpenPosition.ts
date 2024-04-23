@@ -42,18 +42,15 @@ export type MarginfiOpenPositionInstructionAccounts = {
   rent?: PublicKey | Pda;
   solautoFeesWallet: PublicKey | Pda;
   solautoFeesSupplyTa: PublicKey | Pda;
-  signerReferralStateAccount: PublicKey | Pda;
-  referralFeesMint: PublicKey | Pda;
-  signerReferralDestTa: PublicKey | Pda;
+  signerReferralState: PublicKey | Pda;
   referredByState?: PublicKey | Pda;
-  referredByAuthority?: PublicKey | Pda;
-  referredByDestTa?: PublicKey | Pda;
   referredBySupplyTa?: PublicKey | Pda;
   solautoPosition: PublicKey | Pda;
   marginfiGroup: PublicKey | Pda;
   marginfiAccount: PublicKey | Pda;
   positionSupplyTa: PublicKey | Pda;
   supplyMint: PublicKey | Pda;
+  signerDebtTa?: PublicKey | Pda;
   positionDebtTa: PublicKey | Pda;
   debtMint: PublicKey | Pda;
 };
@@ -84,7 +81,7 @@ export function getMarginfiOpenPositionInstructionDataSerializer(): Serializer<
       ],
       { description: 'MarginfiOpenPositionInstructionData' }
     ),
-    (value) => ({ ...value, discriminator: 2 })
+    (value) => ({ ...value, discriminator: 3 })
   ) as Serializer<
     MarginfiOpenPositionInstructionDataArgs,
     MarginfiOpenPositionInstructionData
@@ -145,73 +142,58 @@ export function marginfiOpenPosition(
       isWritable: false as boolean,
       value: input.solautoFeesSupplyTa ?? null,
     },
-    signerReferralStateAccount: {
+    signerReferralState: {
       index: 8,
       isWritable: true as boolean,
-      value: input.signerReferralStateAccount ?? null,
-    },
-    referralFeesMint: {
-      index: 9,
-      isWritable: true as boolean,
-      value: input.referralFeesMint ?? null,
-    },
-    signerReferralDestTa: {
-      index: 10,
-      isWritable: true as boolean,
-      value: input.signerReferralDestTa ?? null,
+      value: input.signerReferralState ?? null,
     },
     referredByState: {
-      index: 11,
+      index: 9,
       isWritable: true as boolean,
       value: input.referredByState ?? null,
     },
-    referredByAuthority: {
-      index: 12,
-      isWritable: false as boolean,
-      value: input.referredByAuthority ?? null,
-    },
-    referredByDestTa: {
-      index: 13,
-      isWritable: true as boolean,
-      value: input.referredByDestTa ?? null,
-    },
     referredBySupplyTa: {
-      index: 14,
+      index: 10,
       isWritable: true as boolean,
       value: input.referredBySupplyTa ?? null,
     },
     solautoPosition: {
-      index: 15,
+      index: 11,
       isWritable: true as boolean,
       value: input.solautoPosition ?? null,
     },
     marginfiGroup: {
-      index: 16,
+      index: 12,
       isWritable: false as boolean,
       value: input.marginfiGroup ?? null,
     },
     marginfiAccount: {
-      index: 17,
+      index: 13,
       isWritable: true as boolean,
       value: input.marginfiAccount ?? null,
     },
     positionSupplyTa: {
-      index: 18,
+      index: 14,
       isWritable: true as boolean,
       value: input.positionSupplyTa ?? null,
     },
     supplyMint: {
-      index: 19,
+      index: 15,
       isWritable: false as boolean,
       value: input.supplyMint ?? null,
     },
+    signerDebtTa: {
+      index: 16,
+      isWritable: true as boolean,
+      value: input.signerDebtTa ?? null,
+    },
     positionDebtTa: {
-      index: 20,
+      index: 17,
       isWritable: true as boolean,
       value: input.positionDebtTa ?? null,
     },
     debtMint: {
-      index: 21,
+      index: 18,
       isWritable: false as boolean,
       value: input.debtMint ?? null,
     },

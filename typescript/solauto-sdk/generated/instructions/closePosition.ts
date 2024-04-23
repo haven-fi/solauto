@@ -29,10 +29,12 @@ import {
 // Accounts.
 export type ClosePositionInstructionAccounts = {
   signer: Signer;
+  systemProgram?: PublicKey | Pda;
+  tokenProgram?: PublicKey | Pda;
   solautoPosition: PublicKey | Pda;
-  supplyLiquidityTa: PublicKey | Pda;
-  supplyCollateralTa?: PublicKey | Pda;
-  debtLiquidityTa: PublicKey | Pda;
+  positionSupplyLiquidityTa: PublicKey | Pda;
+  positionSupplyCollateralTa?: PublicKey | Pda;
+  positionDebtLiquidityTa: PublicKey | Pda;
 };
 
 // Data.
@@ -52,7 +54,7 @@ export function getClosePositionInstructionDataSerializer(): Serializer<
     struct<ClosePositionInstructionData>([['discriminator', u8()]], {
       description: 'ClosePositionInstructionData',
     }),
-    (value) => ({ ...value, discriminator: 5 })
+    (value) => ({ ...value, discriminator: 6 })
   ) as Serializer<
     ClosePositionInstructionDataArgs,
     ClosePositionInstructionData
@@ -77,27 +79,53 @@ export function closePosition(
       isWritable: true as boolean,
       value: input.signer ?? null,
     },
-    solautoPosition: {
+    systemProgram: {
       index: 1,
+      isWritable: false as boolean,
+      value: input.systemProgram ?? null,
+    },
+    tokenProgram: {
+      index: 2,
+      isWritable: false as boolean,
+      value: input.tokenProgram ?? null,
+    },
+    solautoPosition: {
+      index: 3,
       isWritable: true as boolean,
       value: input.solautoPosition ?? null,
     },
-    supplyLiquidityTa: {
-      index: 2,
-      isWritable: true as boolean,
-      value: input.supplyLiquidityTa ?? null,
-    },
-    supplyCollateralTa: {
-      index: 3,
-      isWritable: true as boolean,
-      value: input.supplyCollateralTa ?? null,
-    },
-    debtLiquidityTa: {
+    positionSupplyLiquidityTa: {
       index: 4,
       isWritable: true as boolean,
-      value: input.debtLiquidityTa ?? null,
+      value: input.positionSupplyLiquidityTa ?? null,
+    },
+    positionSupplyCollateralTa: {
+      index: 5,
+      isWritable: true as boolean,
+      value: input.positionSupplyCollateralTa ?? null,
+    },
+    positionDebtLiquidityTa: {
+      index: 6,
+      isWritable: true as boolean,
+      value: input.positionDebtLiquidityTa ?? null,
     },
   } satisfies ResolvedAccountsWithIndices;
+
+  // Default values.
+  if (!resolvedAccounts.systemProgram.value) {
+    resolvedAccounts.systemProgram.value = context.programs.getPublicKey(
+      'splSystem',
+      '11111111111111111111111111111111'
+    );
+    resolvedAccounts.systemProgram.isWritable = false;
+  }
+  if (!resolvedAccounts.tokenProgram.value) {
+    resolvedAccounts.tokenProgram.value = context.programs.getPublicKey(
+      'splToken',
+      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'
+    );
+    resolvedAccounts.tokenProgram.isWritable = false;
+  }
 
   // Accounts in order.
   const orderedAccounts: ResolvedAccount[] = Object.values(

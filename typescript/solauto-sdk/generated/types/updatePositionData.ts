@@ -14,10 +14,13 @@ import {
   u8,
 } from '@metaplex-foundation/umi/serializers';
 import {
+  DCASettings,
+  DCASettingsArgs,
   LendingProtocolPositionData,
   LendingProtocolPositionDataArgs,
   SolautoSettingsParameters,
   SolautoSettingsParametersArgs,
+  getDCASettingsSerializer,
   getLendingProtocolPositionDataSerializer,
   getSolautoSettingsParametersSerializer,
 } from '.';
@@ -26,12 +29,14 @@ export type UpdatePositionData = {
   positionId: number;
   settingParams: Option<SolautoSettingsParameters>;
   protocolData: Option<LendingProtocolPositionData>;
+  activeDca: Option<DCASettings>;
 };
 
 export type UpdatePositionDataArgs = {
   positionId: number;
   settingParams: OptionOrNullable<SolautoSettingsParametersArgs>;
   protocolData: OptionOrNullable<LendingProtocolPositionDataArgs>;
+  activeDca: OptionOrNullable<DCASettingsArgs>;
 };
 
 export function getUpdatePositionDataSerializer(): Serializer<
@@ -43,6 +48,7 @@ export function getUpdatePositionDataSerializer(): Serializer<
       ['positionId', u8()],
       ['settingParams', option(getSolautoSettingsParametersSerializer())],
       ['protocolData', option(getLendingProtocolPositionDataSerializer())],
+      ['activeDca', option(getDCASettingsSerializer())],
     ],
     { description: 'UpdatePositionData' }
   ) as Serializer<UpdatePositionDataArgs, UpdatePositionData>;

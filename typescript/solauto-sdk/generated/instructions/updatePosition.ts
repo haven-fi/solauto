@@ -26,25 +26,29 @@ import {
   getAccountMetasAndSigners,
 } from '../shared';
 import {
-  SolautoSettingsParameters,
-  SolautoSettingsParametersArgs,
-  getSolautoSettingsParametersSerializer,
+  UpdatePositionData,
+  UpdatePositionDataArgs,
+  getUpdatePositionDataSerializer,
 } from '../types';
 
 // Accounts.
 export type UpdatePositionInstructionAccounts = {
   signer: Signer;
+  tokenProgram?: PublicKey | Pda;
   solautoPosition: PublicKey | Pda;
+  positionDebtTa?: PublicKey | Pda;
+  signerDebtTa?: PublicKey | Pda;
+  debtMint?: PublicKey | Pda;
 };
 
 // Data.
 export type UpdatePositionInstructionData = {
   discriminator: number;
-  solautoSettingsParameters: SolautoSettingsParameters;
+  updatePositionData: UpdatePositionData;
 };
 
 export type UpdatePositionInstructionDataArgs = {
-  solautoSettingsParameters: SolautoSettingsParametersArgs;
+  updatePositionData: UpdatePositionDataArgs;
 };
 
 export function getUpdatePositionInstructionDataSerializer(): Serializer<
@@ -59,11 +63,11 @@ export function getUpdatePositionInstructionDataSerializer(): Serializer<
     struct<UpdatePositionInstructionData>(
       [
         ['discriminator', u8()],
-        ['solautoSettingsParameters', getSolautoSettingsParametersSerializer()],
+        ['updatePositionData', getUpdatePositionDataSerializer()],
       ],
       { description: 'UpdatePositionInstructionData' }
     ),
-    (value) => ({ ...value, discriminator: 4 })
+    (value) => ({ ...value, discriminator: 5 })
   ) as Serializer<
     UpdatePositionInstructionDataArgs,
     UpdatePositionInstructionData
@@ -88,18 +92,47 @@ export function updatePosition(
   const resolvedAccounts = {
     signer: {
       index: 0,
-      isWritable: true as boolean,
+      isWritable: false as boolean,
       value: input.signer ?? null,
     },
-    solautoPosition: {
+    tokenProgram: {
       index: 1,
+      isWritable: false as boolean,
+      value: input.tokenProgram ?? null,
+    },
+    solautoPosition: {
+      index: 2,
       isWritable: true as boolean,
       value: input.solautoPosition ?? null,
+    },
+    positionDebtTa: {
+      index: 3,
+      isWritable: true as boolean,
+      value: input.positionDebtTa ?? null,
+    },
+    signerDebtTa: {
+      index: 4,
+      isWritable: true as boolean,
+      value: input.signerDebtTa ?? null,
+    },
+    debtMint: {
+      index: 5,
+      isWritable: false as boolean,
+      value: input.debtMint ?? null,
     },
   } satisfies ResolvedAccountsWithIndices;
 
   // Arguments.
   const resolvedArgs: UpdatePositionInstructionArgs = { ...input };
+
+  // Default values.
+  if (!resolvedAccounts.tokenProgram.value) {
+    resolvedAccounts.tokenProgram.value = context.programs.getPublicKey(
+      'splToken',
+      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'
+    );
+    resolvedAccounts.tokenProgram.isWritable = false;
+  }
 
   // Accounts in order.
   const orderedAccounts: ResolvedAccount[] = Object.values(

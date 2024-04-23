@@ -52,4 +52,4 @@ function generateSDKForNonShankIDL(name, idlFilename, programId) {
 }
 
 generateSolautoSDKs();
-generateSDKForNonShankIDL("marginfi-kinobi-sdk", "marginfi.json", "MFv2hWf31Z9kbCa1snEPYctwafyhdvnV7FZnsebVacA");
+generateSDKForNonShankIDL("marginfi-sdk", "marginfi.json", "MFv2hWf31Z9kbCa1snEPYctwafyhdvnV7FZnsebVacA");

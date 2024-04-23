@@ -40,6 +40,8 @@ export type SolendRefreshDataInstructionAccounts = {
   lendingMarket: PublicKey | Pda;
   obligation?: PublicKey | Pda;
   solautoPosition?: PublicKey | Pda;
+  positionSupplyLiquidityTa?: PublicKey | Pda;
+  positionDebtLiquidityTa?: PublicKey | Pda;
 };
 
 // Data.
@@ -59,7 +61,7 @@ export function getSolendRefreshDataInstructionDataSerializer(): Serializer<
     struct<SolendRefreshDataInstructionData>([['discriminator', u8()]], {
       description: 'SolendRefreshDataInstructionData',
     }),
-    (value) => ({ ...value, discriminator: 7 })
+    (value) => ({ ...value, discriminator: 8 })
   ) as Serializer<
     SolendRefreshDataInstructionDataArgs,
     SolendRefreshDataInstructionData
@@ -138,6 +140,16 @@ export function solendRefreshData(
       index: 11,
       isWritable: true as boolean,
       value: input.solautoPosition ?? null,
+    },
+    positionSupplyLiquidityTa: {
+      index: 12,
+      isWritable: true as boolean,
+      value: input.positionSupplyLiquidityTa ?? null,
+    },
+    positionDebtLiquidityTa: {
+      index: 13,
+      isWritable: true as boolean,
+      value: input.positionDebtLiquidityTa ?? null,
     },
   } satisfies ResolvedAccountsWithIndices;
 

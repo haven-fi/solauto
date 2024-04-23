@@ -12,7 +12,7 @@ use solana_program::pubkey::Pubkey;
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct Position {
+pub struct PositionAccount {
     pub position_id: u8,
     #[cfg_attr(
         feature = "serde",
@@ -23,7 +23,7 @@ pub struct Position {
     pub position: Option<PositionData>,
 }
 
-impl Position {
+impl PositionAccount {
     #[inline(always)]
     pub fn from_bytes(data: &[u8]) -> Result<Self, std::io::Error> {
         let mut data = data;
@@ -31,7 +31,7 @@ impl Position {
     }
 }
 
-impl<'a> TryFrom<&solana_program::account_info::AccountInfo<'a>> for Position {
+impl<'a> TryFrom<&solana_program::account_info::AccountInfo<'a>> for PositionAccount {
     type Error = std::io::Error;
 
     fn try_from(

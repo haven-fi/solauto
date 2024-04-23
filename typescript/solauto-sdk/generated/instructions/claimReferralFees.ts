@@ -33,7 +33,7 @@ export type ClaimReferralFeesInstructionAccounts = {
   systemProgram?: PublicKey | Pda;
   tokenProgram?: PublicKey | Pda;
   rent?: PublicKey | Pda;
-  ReferralStateAccount: PublicKey | Pda;
+  referralState: PublicKey | Pda;
   referralFeesTa: PublicKey | Pda;
   referralFeesMint: PublicKey | Pda;
   destTa?: PublicKey | Pda;
@@ -56,7 +56,7 @@ export function getClaimReferralFeesInstructionDataSerializer(): Serializer<
     struct<ClaimReferralFeesInstructionData>([['discriminator', u8()]], {
       description: 'ClaimReferralFeesInstructionData',
     }),
-    (value) => ({ ...value, discriminator: 1 })
+    (value) => ({ ...value, discriminator: 2 })
   ) as Serializer<
     ClaimReferralFeesInstructionDataArgs,
     ClaimReferralFeesInstructionData
@@ -92,10 +92,10 @@ export function claimReferralFees(
       value: input.tokenProgram ?? null,
     },
     rent: { index: 3, isWritable: false as boolean, value: input.rent ?? null },
-    ReferralStateAccount: {
+    referralState: {
       index: 4,
       isWritable: false as boolean,
-      value: input.ReferralStateAccount ?? null,
+      value: input.referralState ?? null,
     },
     referralFeesTa: {
       index: 5,

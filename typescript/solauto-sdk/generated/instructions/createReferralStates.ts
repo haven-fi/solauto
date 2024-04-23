@@ -26,76 +26,52 @@ import {
   ResolvedAccountsWithIndices,
   getAccountMetasAndSigners,
 } from '../shared';
-import {
-  RebalanceArgs,
-  RebalanceArgsArgs,
-  getRebalanceArgsSerializer,
-} from '../types';
 
 // Accounts.
-export type MarginfiRebalanceInstructionAccounts = {
+export type CreateReferralStatesInstructionAccounts = {
   signer: Signer;
-  marginfiProgram: PublicKey | Pda;
   systemProgram?: PublicKey | Pda;
   tokenProgram?: PublicKey | Pda;
   ataProgram?: PublicKey | Pda;
   rent?: PublicKey | Pda;
-  ixsSysvar: PublicKey | Pda;
-  solautoFeesSupplyTa: PublicKey | Pda;
-  authorityReferralState: PublicKey | Pda;
+  signerReferralState: PublicKey | Pda;
+  destReferralFeesMint: PublicKey | Pda;
+  signerReferralDestTa: PublicKey | Pda;
   referredByState?: PublicKey | Pda;
+  referredByAuthority?: PublicKey | Pda;
+  referredByDestTa?: PublicKey | Pda;
   referredBySupplyTa?: PublicKey | Pda;
-  solautoPosition: PublicKey | Pda;
-  intermediaryTa: PublicKey | Pda;
-  supplyMint: PublicKey | Pda;
-  positionSupplyTa: PublicKey | Pda;
-  bankSupplyTa: PublicKey | Pda;
-  debtMint: PublicKey | Pda;
-  positionDebtTa: PublicKey | Pda;
-  bankDebtTa: PublicKey | Pda;
+  supplyMint?: PublicKey | Pda;
 };
 
 // Data.
-export type MarginfiRebalanceInstructionData = {
-  discriminator: number;
-  rebalanceArgs: RebalanceArgs;
-};
+export type CreateReferralStatesInstructionData = { discriminator: number };
 
-export type MarginfiRebalanceInstructionDataArgs = {
-  rebalanceArgs: RebalanceArgsArgs;
-};
+export type CreateReferralStatesInstructionDataArgs = {};
 
-export function getMarginfiRebalanceInstructionDataSerializer(): Serializer<
-  MarginfiRebalanceInstructionDataArgs,
-  MarginfiRebalanceInstructionData
+export function getCreateReferralStatesInstructionDataSerializer(): Serializer<
+  CreateReferralStatesInstructionDataArgs,
+  CreateReferralStatesInstructionData
 > {
   return mapSerializer<
-    MarginfiRebalanceInstructionDataArgs,
+    CreateReferralStatesInstructionDataArgs,
     any,
-    MarginfiRebalanceInstructionData
+    CreateReferralStatesInstructionData
   >(
-    struct<MarginfiRebalanceInstructionData>(
-      [
-        ['discriminator', u8()],
-        ['rebalanceArgs', getRebalanceArgsSerializer()],
-      ],
-      { description: 'MarginfiRebalanceInstructionData' }
-    ),
-    (value) => ({ ...value, discriminator: 11 })
+    struct<CreateReferralStatesInstructionData>([['discriminator', u8()]], {
+      description: 'CreateReferralStatesInstructionData',
+    }),
+    (value) => ({ ...value, discriminator: 0 })
   ) as Serializer<
-    MarginfiRebalanceInstructionDataArgs,
-    MarginfiRebalanceInstructionData
+    CreateReferralStatesInstructionDataArgs,
+    CreateReferralStatesInstructionData
   >;
 }
 
-// Args.
-export type MarginfiRebalanceInstructionArgs =
-  MarginfiRebalanceInstructionDataArgs;
-
 // Instruction.
-export function marginfiRebalance(
+export function createReferralStates(
   context: Pick<Context, 'programs'>,
-  input: MarginfiRebalanceInstructionAccounts & MarginfiRebalanceInstructionArgs
+  input: CreateReferralStatesInstructionAccounts
 ): TransactionBuilder {
   // Program ID.
   const programId = context.programs.getPublicKey(
@@ -110,96 +86,63 @@ export function marginfiRebalance(
       isWritable: true as boolean,
       value: input.signer ?? null,
     },
-    marginfiProgram: {
-      index: 1,
-      isWritable: false as boolean,
-      value: input.marginfiProgram ?? null,
-    },
     systemProgram: {
-      index: 2,
+      index: 1,
       isWritable: false as boolean,
       value: input.systemProgram ?? null,
     },
     tokenProgram: {
-      index: 3,
+      index: 2,
       isWritable: false as boolean,
       value: input.tokenProgram ?? null,
     },
     ataProgram: {
-      index: 4,
+      index: 3,
       isWritable: false as boolean,
       value: input.ataProgram ?? null,
     },
-    rent: { index: 5, isWritable: false as boolean, value: input.rent ?? null },
-    ixsSysvar: {
+    rent: { index: 4, isWritable: false as boolean, value: input.rent ?? null },
+    signerReferralState: {
+      index: 5,
+      isWritable: true as boolean,
+      value: input.signerReferralState ?? null,
+    },
+    destReferralFeesMint: {
       index: 6,
       isWritable: false as boolean,
-      value: input.ixsSysvar ?? null,
+      value: input.destReferralFeesMint ?? null,
     },
-    solautoFeesSupplyTa: {
+    signerReferralDestTa: {
       index: 7,
       isWritable: true as boolean,
-      value: input.solautoFeesSupplyTa ?? null,
-    },
-    authorityReferralState: {
-      index: 8,
-      isWritable: false as boolean,
-      value: input.authorityReferralState ?? null,
+      value: input.signerReferralDestTa ?? null,
     },
     referredByState: {
-      index: 9,
-      isWritable: false as boolean,
+      index: 8,
+      isWritable: true as boolean,
       value: input.referredByState ?? null,
     },
-    referredBySupplyTa: {
+    referredByAuthority: {
+      index: 9,
+      isWritable: false as boolean,
+      value: input.referredByAuthority ?? null,
+    },
+    referredByDestTa: {
       index: 10,
+      isWritable: true as boolean,
+      value: input.referredByDestTa ?? null,
+    },
+    referredBySupplyTa: {
+      index: 11,
       isWritable: true as boolean,
       value: input.referredBySupplyTa ?? null,
     },
-    solautoPosition: {
-      index: 11,
-      isWritable: true as boolean,
-      value: input.solautoPosition ?? null,
-    },
-    intermediaryTa: {
-      index: 12,
-      isWritable: true as boolean,
-      value: input.intermediaryTa ?? null,
-    },
     supplyMint: {
-      index: 13,
+      index: 12,
       isWritable: false as boolean,
       value: input.supplyMint ?? null,
     },
-    positionSupplyTa: {
-      index: 14,
-      isWritable: true as boolean,
-      value: input.positionSupplyTa ?? null,
-    },
-    bankSupplyTa: {
-      index: 15,
-      isWritable: true as boolean,
-      value: input.bankSupplyTa ?? null,
-    },
-    debtMint: {
-      index: 16,
-      isWritable: false as boolean,
-      value: input.debtMint ?? null,
-    },
-    positionDebtTa: {
-      index: 17,
-      isWritable: true as boolean,
-      value: input.positionDebtTa ?? null,
-    },
-    bankDebtTa: {
-      index: 18,
-      isWritable: true as boolean,
-      value: input.bankDebtTa ?? null,
-    },
   } satisfies ResolvedAccountsWithIndices;
-
-  // Arguments.
-  const resolvedArgs: MarginfiRebalanceInstructionArgs = { ...input };
 
   // Default values.
   if (!resolvedAccounts.systemProgram.value) {
@@ -242,9 +185,7 @@ export function marginfiRebalance(
   );
 
   // Data.
-  const data = getMarginfiRebalanceInstructionDataSerializer().serialize(
-    resolvedArgs as MarginfiRebalanceInstructionDataArgs
-  );
+  const data = getCreateReferralStatesInstructionDataSerializer().serialize({});
 
   // Bytes Created On Chain.
   const bytesCreatedOnChain = 0;

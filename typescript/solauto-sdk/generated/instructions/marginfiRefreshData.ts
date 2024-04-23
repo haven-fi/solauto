@@ -50,7 +50,7 @@ export function getMarginfiRefreshDataInstructionDataSerializer(): Serializer<
     struct<MarginfiRefreshDataInstructionData>([['discriminator', u8()]], {
       description: 'MarginfiRefreshDataInstructionData',
     }),
-    (value) => ({ ...value, discriminator: 6 })
+    (value) => ({ ...value, discriminator: 7 })
   ) as Serializer<
     MarginfiRefreshDataInstructionDataArgs,
     MarginfiRefreshDataInstructionData

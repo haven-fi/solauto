@@ -1,5 +1,5 @@
-use borsh::{ BorshDeserialize, BorshSerialize };
-use shank::{ ShankContext, ShankInstruction };
+use borsh::{BorshDeserialize, BorshSerialize};
+use shank::{ShankContext, ShankInstruction};
 use solana_program::account_info::AccountInfo;
 
 use super::shared::*;
@@ -7,6 +7,21 @@ use super::shared::*;
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankContext, ShankInstruction)]
 #[rustfmt::skip]
 pub enum Instruction {
+    #[account(signer, mut, name = "signer")]
+    #[account(name = "system_program")]
+    #[account(name = "token_program")]
+    #[account(name = "ata_program")]
+    #[account(name = "rent")]
+    #[account(mut, name = "signer_referral_state")]
+    #[account(name = "dest_referral_fees_mint")]
+    #[account(mut, name = "signer_referral_dest_ta")]
+    #[account(mut, optional, name = "referred_by_state")]
+    #[account(optional, name = "referred_by_authority")]
+    #[account(mut, optional, name = "referred_by_dest_ta")]
+    #[account(mut, optional, name = "referred_by_supply_ta")]
+    #[account(optional, name = "supply_mint")]
+    CreateReferralStates,
+
     /// Moves the referral fees to an intermediary token account, where a jup swap will convert to the destination token mint
     #[account(signer, mut, name = "solauto_manager")]
     #[account(name = "system_program")]
@@ -40,19 +55,15 @@ pub enum Instruction {
     #[account(name = "solauto_fees_wallet")]
     #[account(name = "solauto_fees_supply_ta")]
     #[account(mut, name = "signer_referral_state")]
-    #[account(mut, name = "referral_fees_mint")]
-    #[account(mut, name = "signer_referral_dest_ta")]
     #[account(mut, optional, name = "referred_by_state")]
-    #[account(optional, name = "referred_by_authority")]
-    #[account(mut, optional, name = "referred_by_dest_ta")]
     #[account(mut, optional, name = "referred_by_supply_ta")]
     #[account(mut, name = "solauto_position")]
     #[account(name = "marginfi_group")]
     #[account(mut, name = "marginfi_account")]
-    #[account(mut, optional, name = "signer_debt_ta")]
     #[account(mut, name = "position_supply_ta")]
     #[account(name = "supply_mint")]
-    #[account(mut, name = "position_debt_ta")]
+    #[account(mut, optional, name = "signer_debt_ta")]
+    #[account(mut, name = "position_debt_ta")] // TODO we should make these optional if someone chooses to just simply lend and not take on debt
     #[account(name = "debt_mint")]
     MarginfiOpenPosition(UpdatePositionData),
 
@@ -66,11 +77,7 @@ pub enum Instruction {
     #[account(name = "solauto_fees_wallet")]
     #[account(name = "solauto_fees_supply_ta")]
     #[account(mut, name = "signer_referral_state")]
-    #[account(mut, name = "referral_fees_mint")]
-    #[account(mut, name = "signer_referral_dest_ta")]
     #[account(mut, optional, name = "referred_by_state")]
-    #[account(optional, name = "referred_by_authority")]
-    #[account(mut, optional, name = "referred_by_dest_ta")]
     #[account(mut, optional, name = "referred_by_supply_ta")]
     #[account(mut, name = "solauto_position")]
     #[account(name = "lending_market")]
@@ -229,7 +236,7 @@ pub enum Instruction {
     SolendRebalance(RebalanceArgs),
 }
 
-pub const SOLAUTO_REBALANCE_IX_DISCRIMINATORS: [u64; 2] = [10, 11];
+pub const SOLAUTO_REBALANCE_IX_DISCRIMINATORS: [u64; 2] = [11, 12];
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug)]
 pub struct UpdatePositionData {

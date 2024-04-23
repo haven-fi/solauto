@@ -94,7 +94,7 @@ struct ConvertReferralFeesInstructionData {
 
 impl ConvertReferralFeesInstructionData {
     fn new() -> Self {
-        Self { discriminator: 0 }
+        Self { discriminator: 1 }
     }
 }
 

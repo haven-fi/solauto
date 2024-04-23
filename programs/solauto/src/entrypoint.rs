@@ -17,6 +17,7 @@ pub fn process_instruction<'a>(
 ) -> ProgramResult {
     let instruction = Instruction::try_from_slice(data)?;
     match instruction {
+        Instruction::CreateReferralStates => process_create_referral_states(accounts),
         Instruction::ConvertReferralFees => process_convert_referral_fees(accounts),
         Instruction::ClaimReferralFees => process_claim_referral_fees(accounts),
 
@@ -27,7 +28,9 @@ pub fn process_instruction<'a>(
             process_solend_open_position_instruction(accounts, args)
         }
 
-        Instruction::UpdatePosition(settings) => process_update_position_instruction(accounts, settings),
+        Instruction::UpdatePosition(settings) => {
+            process_update_position_instruction(accounts, settings)
+        }
         Instruction::ClosePosition => process_close_position_instruction(accounts),
 
         Instruction::MarginfiRefreshData => process_marginfi_refresh_data(accounts),

@@ -6,5 +6,5 @@
  * @see https://github.com/metaplex-foundation/kinobi
  */
 
-export * from './position';
-export * from './ReferralStateAccount';
+export * from './positionAccount';
+export * from './referralStateAccount';

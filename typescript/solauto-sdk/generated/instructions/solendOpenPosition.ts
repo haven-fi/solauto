@@ -42,12 +42,8 @@ export type SolendOpenPositionInstructionAccounts = {
   rent?: PublicKey | Pda;
   solautoFeesWallet: PublicKey | Pda;
   solautoFeesSupplyTa: PublicKey | Pda;
-  signerReferralStateAccount: PublicKey | Pda;
-  referralFeesMint: PublicKey | Pda;
-  signerReferralDestTa: PublicKey | Pda;
+  signerReferralState: PublicKey | Pda;
   referredByState?: PublicKey | Pda;
-  referredByAuthority?: PublicKey | Pda;
-  referredByDestTa?: PublicKey | Pda;
   referredBySupplyTa?: PublicKey | Pda;
   solautoPosition: PublicKey | Pda;
   lendingMarket: PublicKey | Pda;
@@ -57,6 +53,7 @@ export type SolendOpenPositionInstructionAccounts = {
   supplyLiquidityMint: PublicKey | Pda;
   positionSupplyCollateralTa: PublicKey | Pda;
   supplyCollateralMint: PublicKey | Pda;
+  signerDebtLiquidityTa?: PublicKey | Pda;
   positionDebtLiquidityTa: PublicKey | Pda;
   debtLiquidityMint: PublicKey | Pda;
 };
@@ -87,7 +84,7 @@ export function getSolendOpenPositionInstructionDataSerializer(): Serializer<
       ],
       { description: 'SolendOpenPositionInstructionData' }
     ),
-    (value) => ({ ...value, discriminator: 3 })
+    (value) => ({ ...value, discriminator: 4 })
   ) as Serializer<
     SolendOpenPositionInstructionDataArgs,
     SolendOpenPositionInstructionData
@@ -148,88 +145,73 @@ export function solendOpenPosition(
       isWritable: false as boolean,
       value: input.solautoFeesSupplyTa ?? null,
     },
-    signerReferralStateAccount: {
+    signerReferralState: {
       index: 8,
       isWritable: true as boolean,
-      value: input.signerReferralStateAccount ?? null,
-    },
-    referralFeesMint: {
-      index: 9,
-      isWritable: true as boolean,
-      value: input.referralFeesMint ?? null,
-    },
-    signerReferralDestTa: {
-      index: 10,
-      isWritable: true as boolean,
-      value: input.signerReferralDestTa ?? null,
+      value: input.signerReferralState ?? null,
     },
     referredByState: {
-      index: 11,
+      index: 9,
       isWritable: true as boolean,
       value: input.referredByState ?? null,
     },
-    referredByAuthority: {
-      index: 12,
-      isWritable: false as boolean,
-      value: input.referredByAuthority ?? null,
-    },
-    referredByDestTa: {
-      index: 13,
-      isWritable: true as boolean,
-      value: input.referredByDestTa ?? null,
-    },
     referredBySupplyTa: {
-      index: 14,
+      index: 10,
       isWritable: true as boolean,
       value: input.referredBySupplyTa ?? null,
     },
     solautoPosition: {
-      index: 15,
+      index: 11,
       isWritable: true as boolean,
       value: input.solautoPosition ?? null,
     },
     lendingMarket: {
-      index: 16,
+      index: 12,
       isWritable: false as boolean,
       value: input.lendingMarket ?? null,
     },
     obligation: {
-      index: 17,
+      index: 13,
       isWritable: true as boolean,
       value: input.obligation ?? null,
     },
     supplyReserve: {
-      index: 18,
+      index: 14,
       isWritable: false as boolean,
       value: input.supplyReserve ?? null,
     },
     positionSupplyLiquidityTa: {
-      index: 19,
+      index: 15,
       isWritable: true as boolean,
       value: input.positionSupplyLiquidityTa ?? null,
     },
     supplyLiquidityMint: {
-      index: 20,
+      index: 16,
       isWritable: false as boolean,
       value: input.supplyLiquidityMint ?? null,
     },
     positionSupplyCollateralTa: {
-      index: 21,
+      index: 17,
       isWritable: true as boolean,
       value: input.positionSupplyCollateralTa ?? null,
     },
     supplyCollateralMint: {
-      index: 22,
+      index: 18,
       isWritable: false as boolean,
       value: input.supplyCollateralMint ?? null,
     },
+    signerDebtLiquidityTa: {
+      index: 19,
+      isWritable: true as boolean,
+      value: input.signerDebtLiquidityTa ?? null,
+    },
     positionDebtLiquidityTa: {
-      index: 23,
+      index: 20,
       isWritable: true as boolean,
       value: input.positionDebtLiquidityTa ?? null,
     },
     debtLiquidityMint: {
-      index: 24,
+      index: 21,
       isWritable: false as boolean,
       value: input.debtLiquidityMint ?? null,
     },

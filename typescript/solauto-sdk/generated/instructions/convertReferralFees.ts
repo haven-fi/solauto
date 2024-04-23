@@ -35,7 +35,7 @@ export type ConvertReferralFeesInstructionAccounts = {
   ataProgram?: PublicKey | Pda;
   rent?: PublicKey | Pda;
   ixsSysvar: PublicKey | Pda;
-  ReferralStateAccount: PublicKey | Pda;
+  referralState: PublicKey | Pda;
   referralFeesTa: PublicKey | Pda;
   intermediaryTa: PublicKey | Pda;
 };
@@ -57,7 +57,7 @@ export function getConvertReferralFeesInstructionDataSerializer(): Serializer<
     struct<ConvertReferralFeesInstructionData>([['discriminator', u8()]], {
       description: 'ConvertReferralFeesInstructionData',
     }),
-    (value) => ({ ...value, discriminator: 0 })
+    (value) => ({ ...value, discriminator: 1 })
   ) as Serializer<
     ConvertReferralFeesInstructionDataArgs,
     ConvertReferralFeesInstructionData
@@ -103,10 +103,10 @@ export function convertReferralFees(
       isWritable: false as boolean,
       value: input.ixsSysvar ?? null,
     },
-    ReferralStateAccount: {
+    referralState: {
       index: 6,
       isWritable: false as boolean,
-      value: input.ReferralStateAccount ?? null,
+      value: input.referralState ?? null,
     },
     referralFeesTa: {
       index: 7,

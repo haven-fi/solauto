@@ -39,44 +39,6 @@ pub fn process_marginfi_open_position_instruction<'a>(
         ctx.accounts.supply_mint,
     )?;
 
-    let authority_referral_state = solauto_utils::get_or_create_referral_state(
-        ctx.accounts.system_program,
-        ctx.accounts.token_program,
-        ctx.accounts.rent,
-        ctx.accounts.signer,
-        ctx.accounts.signer,
-        ctx.accounts.signer_referral_state,
-        ctx.accounts.referral_fees_mint,
-        ctx.accounts.signer_referral_dest_ta,
-        ctx.accounts.referred_by_state,
-        ctx.accounts.referred_by_dest_ta,
-    )?;
-
-    if ctx.accounts.referred_by_state.is_some() {
-        solauto_utils::get_or_create_referral_state(
-            ctx.accounts.system_program,
-            ctx.accounts.token_program,
-            ctx.accounts.rent,
-            ctx.accounts.signer,
-            ctx.accounts.referred_by_authority.unwrap(),
-            ctx.accounts.referred_by_state.unwrap(),
-            ctx.accounts.referral_fees_mint,
-            ctx.accounts.referred_by_dest_ta.unwrap(),
-            None,
-            None,
-        )?;
-
-        solana_utils::init_ata_if_needed(
-            ctx.accounts.token_program,
-            ctx.accounts.system_program,
-            ctx.accounts.rent,
-            ctx.accounts.signer,
-            ctx.accounts.referred_by_state.unwrap(),
-            ctx.accounts.referred_by_supply_ta.unwrap(),
-            ctx.accounts.referral_fees_mint,
-        )?;
-    }
-
     let std_accounts = SolautoStandardAccounts {
         signer: ctx.accounts.signer,
         lending_protocol: ctx.accounts.marginfi_program,
@@ -87,7 +49,9 @@ pub fn process_marginfi_open_position_instruction<'a>(
         ixs_sysvar: None,
         solauto_position,
         solauto_fees_supply_ta: Some(ctx.accounts.solauto_fees_supply_ta),
-        authority_referral_state: Some(authority_referral_state),
+        authority_referral_state: DeserializedAccount::<ReferralStateAccount>::deserialize(Some(
+            ctx.accounts.signer_referral_state,
+        ))?,
         referred_by_state: ctx.accounts.referred_by_state,
         referred_by_supply_ta: ctx.accounts.referred_by_supply_ta,
     };
@@ -118,7 +82,8 @@ pub fn process_marginfi_interaction_instruction<'a>(
 ) -> ProgramResult {
     let ctx = MarginfiProtocolInteractionAccounts::context(accounts)?;
     let solauto_position =
-        DeserializedAccount::<PositionAccount>::deserialize(Some(ctx.accounts.solauto_position))?.unwrap();
+        DeserializedAccount::<PositionAccount>::deserialize(Some(ctx.accounts.solauto_position))?
+            .unwrap();
 
     let std_accounts = SolautoStandardAccounts {
         signer: ctx.accounts.signer,
@@ -151,7 +116,8 @@ pub fn process_marginfi_rebalance<'a>(
 ) -> ProgramResult {
     let ctx = MarginfiRebalanceAccounts::context(accounts)?;
     let solauto_position =
-        DeserializedAccount::<PositionAccount>::deserialize(Some(ctx.accounts.solauto_position))?.unwrap();
+        DeserializedAccount::<PositionAccount>::deserialize(Some(ctx.accounts.solauto_position))?
+            .unwrap();
 
     let std_accounts = SolautoStandardAccounts {
         signer: ctx.accounts.signer,

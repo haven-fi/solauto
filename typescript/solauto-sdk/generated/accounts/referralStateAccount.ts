@@ -56,7 +56,10 @@ export function getReferralStateAccountAccountDataSerializer(): Serializer<
       ['destFeesTa', publicKeySerializer()],
     ],
     { description: 'ReferralStateAccountAccountData' }
-  ) as Serializer<ReferralStateAccountAccountDataArgs, ReferralStateAccountAccountData>;
+  ) as Serializer<
+    ReferralStateAccountAccountDataArgs,
+    ReferralStateAccountAccountData
+  >;
 }
 
 export function deserializeReferralStateAccount(
@@ -90,7 +93,9 @@ export async function safeFetchReferralStateAccount(
     toPublicKey(publicKey, false),
     options
   );
-  return maybeAccount.exists ? deserializeReferralStateAccount(maybeAccount) : null;
+  return maybeAccount.exists
+    ? deserializeReferralStateAccount(maybeAccount)
+    : null;
 }
 
 export async function fetchAllReferralStateAccount(

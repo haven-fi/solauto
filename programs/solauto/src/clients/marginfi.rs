@@ -59,7 +59,7 @@ impl<'a> MarginfiClient<'a> {
 
     pub fn get_max_ltv_and_liq_threshold(&self) -> (f64, f64) {
         // TODO
-        (0.0, 0.0)   
+        (0.0, 0.0)
     }
 
     pub fn get_obligation_position() -> Result<LendingProtocolObligationPosition, ProgramError> {

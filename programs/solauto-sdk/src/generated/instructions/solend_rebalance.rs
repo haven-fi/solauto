@@ -238,7 +238,7 @@ struct SolendRebalanceInstructionData {
 
 impl SolendRebalanceInstructionData {
     fn new() -> Self {
-        Self { discriminator: 11 }
+        Self { discriminator: 12 }
     }
 }
 

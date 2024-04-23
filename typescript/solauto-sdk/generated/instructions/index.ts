@@ -9,6 +9,7 @@
 export * from './claimReferralFees';
 export * from './closePosition';
 export * from './convertReferralFees';
+export * from './createReferralStates';
 export * from './marginfiOpenPosition';
 export * from './marginfiProtocolInteraction';
 export * from './marginfiRebalance';

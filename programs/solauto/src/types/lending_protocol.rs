@@ -1,4 +1,6 @@
-use solana_program::{account_info::AccountInfo, entrypoint::ProgramResult, program_error::ProgramError};
+use solana_program::{
+    account_info::AccountInfo, entrypoint::ProgramResult, program_error::ProgramError,
+};
 use spl_token::state::Account as TokenAccount;
 
 use super::{instruction::SolautoStandardAccounts, shared::DeserializedAccount};

@@ -25,27 +25,30 @@ pub enum SolautoError {
     /// 4 (0x4) - Invalid position data given
     #[error("Invalid position data given")]
     InvalidPositionSettings,
-    /// 5 (0x5) - Stale protocol data. Refresh instruction must be invoked before taking a protocol action
+    /// 5 (0x5) - Invalid DCA data given
+    #[error("Invalid DCA data given")]
+    InvalidDCASettings,
+    /// 6 (0x6) - Stale protocol data. Refresh instruction must be invoked before taking a protocol action
     #[error(
         "Stale protocol data. Refresh instruction must be invoked before taking a protocol action"
     )]
     StaleProtocolData,
-    /// 6 (0x6) - Unable to adjust position to the desired utilization rate
+    /// 7 (0x7) - Unable to adjust position to the desired utilization rate
     #[error("Unable to adjust position to the desired utilization rate")]
     UnableToReposition,
-    /// 7 (0x7) - Desired action brought the utilization rate to an unsafe amount
+    /// 8 (0x8) - Desired action brought the utilization rate to an unsafe amount
     #[error("Desired action brought the utilization rate to an unsafe amount")]
     ExceededValidUtilizationRate,
-    /// 8 (0x8) - Invalid position condition to rebalance
+    /// 9 (0x9) - Invalid position condition to rebalance
     #[error("Invalid position condition to rebalance")]
     InvalidRebalanceCondition,
-    /// 9 (0x9) - Unable to invoke instruciton through a CPI
+    /// 10 (0xA) - Unable to invoke instruciton through a CPI
     #[error("Unable to invoke instruciton through a CPI")]
     InstructionIsCPI,
-    /// 10 (0xA) - Too many rebalance instruction invocations in the same transaction
+    /// 11 (0xB) - Too many rebalance instruction invocations in the same transaction
     #[error("Too many rebalance instruction invocations in the same transaction")]
     RebalanceAbuse,
-    /// 11 (0xB) - Incorrect set of instructions in the transaction
+    /// 12 (0xC) - Incorrect set of instructions in the transaction
     #[error("Incorrect set of instructions in the transaction")]
     IncorrectInstructions,
 }

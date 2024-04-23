@@ -109,7 +109,12 @@ fn protocol_interaction<'a, T: LendingProtocolClient<'a>>(
             std_accounts.rent,
             std_accounts.signer,
             std_accounts.signer,
-            solauto_manager_accounts.supply.as_ref().unwrap().source_ta.account_info,
+            solauto_manager_accounts
+                .supply
+                .as_ref()
+                .unwrap()
+                .source_ta
+                .account_info,
             solauto_manager_accounts.supply.as_ref().unwrap().mint,
         )?;
     } else if let SolautoAction::Borrow(_) = action {
@@ -119,7 +124,12 @@ fn protocol_interaction<'a, T: LendingProtocolClient<'a>>(
             std_accounts.rent,
             std_accounts.signer,
             std_accounts.signer,
-            solauto_manager_accounts.debt.as_ref().unwrap().source_ta.account_info,
+            solauto_manager_accounts
+                .debt
+                .as_ref()
+                .unwrap()
+                .source_ta
+                .account_info,
             solauto_manager_accounts.debt.as_ref().unwrap().mint,
         )?;
     }
@@ -136,7 +146,7 @@ fn protocol_interaction<'a, T: LendingProtocolClient<'a>>(
         &solauto_manager.obligation_position,
         &mut solauto_manager.std_accounts.solauto_position,
         None,
-        None
+        None,
     )?;
     ix_utils::update_data(&mut solauto_manager.std_accounts.solauto_position)
 }

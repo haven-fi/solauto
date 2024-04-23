@@ -68,7 +68,7 @@ pub fn solend_refresh_accounts(
                 &obligation_position,
                 solauto_position.as_mut().unwrap(),
                 ctx.accounts.position_supply_liquidity_ta,
-                ctx.accounts.position_debt_liquidity_ta
+                ctx.accounts.position_debt_liquidity_ta,
             )?;
         }
     }
