@@ -18,9 +18,7 @@ pub enum Instruction {
     #[account(mut, optional, name = "referred_by_state")]
     #[account(optional, name = "referred_by_authority")]
     #[account(mut, optional, name = "referred_by_dest_ta")]
-    #[account(mut, optional, name = "referred_by_supply_ta")]
-    #[account(optional, name = "supply_mint")]
-    CreateReferralStates,
+    UpdateReferralStates,
 
     /// Moves the referral fees to an intermediary token account, where a jup swap will convert to the destination token mint
     #[account(signer, mut, name = "solauto_manager")]
@@ -54,8 +52,8 @@ pub enum Instruction {
     #[account(name = "rent")]
     #[account(name = "solauto_fees_wallet")]
     #[account(name = "solauto_fees_supply_ta")]
-    #[account(mut, name = "signer_referral_state")]
-    #[account(mut, optional, name = "referred_by_state")]
+    #[account(name = "signer_referral_state")]
+    #[account(optional, name = "referred_by_state")]
     #[account(mut, optional, name = "referred_by_supply_ta")]
     #[account(mut, name = "solauto_position")]
     #[account(name = "marginfi_group")]

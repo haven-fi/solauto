@@ -144,12 +144,12 @@ export function marginfiOpenPosition(
     },
     signerReferralState: {
       index: 8,
-      isWritable: true as boolean,
+      isWritable: false as boolean,
       value: input.signerReferralState ?? null,
     },
     referredByState: {
       index: 9,
-      isWritable: true as boolean,
+      isWritable: false as boolean,
       value: input.referredByState ?? null,
     },
     referredBySupplyTa: {

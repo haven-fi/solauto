@@ -304,6 +304,10 @@ pub fn validate_referral_accounts(
         return Err(ProgramError::InvalidAccountData.into());
     }
 
+    if supply_token_mint.is_none() {
+        return Ok(());
+    }
+
     if referred_by_supply_ta.is_none()
         || referred_by_supply_ta.unwrap().key
             != &get_associated_token_address(

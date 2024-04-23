@@ -95,12 +95,12 @@ impl MarginfiOpenPosition {
             self.solauto_fees_supply_ta,
             false,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.signer_referral_state,
             false,
         ));
         if let Some(referred_by_state) = self.referred_by_state {
-            accounts.push(solana_program::instruction::AccountMeta::new(
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
                 referred_by_state,
                 false,
             ));
@@ -204,8 +204,8 @@ pub struct MarginfiOpenPositionInstructionArgs {
 ///   5. `[optional]` rent (default to `SysvarRent111111111111111111111111111111111`)
 ///   6. `[]` solauto_fees_wallet
 ///   7. `[]` solauto_fees_supply_ta
-///   8. `[writable]` signer_referral_state
-///   9. `[writable, optional]` referred_by_state
+///   8. `[]` signer_referral_state
+///   9. `[optional]` referred_by_state
 ///   10. `[writable, optional]` referred_by_supply_ta
 ///   11. `[writable]` solauto_position
 ///   12. `[]` marginfi_group
@@ -635,12 +635,12 @@ impl<'a, 'b> MarginfiOpenPositionCpi<'a, 'b> {
             *self.solauto_fees_supply_ta.key,
             false,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             *self.signer_referral_state.key,
             false,
         ));
         if let Some(referred_by_state) = self.referred_by_state {
-            accounts.push(solana_program::instruction::AccountMeta::new(
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
                 *referred_by_state.key,
                 false,
             ));
@@ -769,8 +769,8 @@ impl<'a, 'b> MarginfiOpenPositionCpi<'a, 'b> {
 ///   5. `[]` rent
 ///   6. `[]` solauto_fees_wallet
 ///   7. `[]` solauto_fees_supply_ta
-///   8. `[writable]` signer_referral_state
-///   9. `[writable, optional]` referred_by_state
+///   8. `[]` signer_referral_state
+///   9. `[optional]` referred_by_state
 ///   10. `[writable, optional]` referred_by_supply_ta
 ///   11. `[writable]` solauto_position
 ///   12. `[]` marginfi_group

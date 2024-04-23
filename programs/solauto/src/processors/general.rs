@@ -17,7 +17,7 @@ use crate::{
         instruction::{
             accounts::{
                 ClaimReferralFeesAccounts, ClosePositionAccounts, ConvertReferralFeesAccounts,
-                CreateReferralStatesAccounts, UpdatePositionAccounts,
+                UpdatePositionAccounts, UpdateReferralStatesAccounts,
             },
             UpdatePositionData,
         },
@@ -27,7 +27,7 @@ use crate::{
 };
 
 pub fn process_create_referral_states<'a>(accounts: &'a [AccountInfo<'a>]) -> ProgramResult {
-    let ctx = CreateReferralStatesAccounts::context(accounts)?;
+    let ctx = UpdateReferralStatesAccounts::context(accounts)?;
 
     if !ctx.accounts.signer.is_signer {
         return Err(ProgramError::MissingRequiredSignature.into());
@@ -59,24 +59,14 @@ pub fn process_create_referral_states<'a>(accounts: &'a [AccountInfo<'a>]) -> Pr
             None,
             None,
         )?;
-
-        solana_utils::init_ata_if_needed(
-            ctx.accounts.token_program,
-            ctx.accounts.system_program,
-            ctx.accounts.rent,
-            ctx.accounts.signer,
-            ctx.accounts.referred_by_state.unwrap(),
-            ctx.accounts.referred_by_supply_ta.unwrap(),
-            ctx.accounts.dest_referral_fees_mint,
-        )?;
     }
 
     validation_utils::validate_referral_accounts(
         &ctx.accounts.signer.key,
         &Some(authority_referral_state),
         ctx.accounts.referred_by_state,
-        ctx.accounts.referred_by_supply_ta,
-        ctx.accounts.supply_mint,
+        None,
+        None,
     )?;
 
     Ok(())

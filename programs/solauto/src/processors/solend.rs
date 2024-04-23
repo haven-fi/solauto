@@ -42,6 +42,18 @@ pub fn process_solend_open_position_instruction<'a>(
         ctx.accounts.supply_liquidity_mint,
     )?;
 
+    if ctx.accounts.referred_by_state.is_some() && ctx.accounts.referred_by_supply_ta.is_some() {
+        solana_utils::init_ata_if_needed(
+            ctx.accounts.token_program,
+            ctx.accounts.system_program,
+            ctx.accounts.rent,
+            ctx.accounts.signer,
+            ctx.accounts.referred_by_state.unwrap(),
+            ctx.accounts.referred_by_supply_ta.unwrap(),
+            ctx.accounts.supply_liquidity_mint,
+        )?;
+    }
+
     let std_accounts = SolautoStandardAccounts {
         signer: ctx.accounts.signer,
         lending_protocol: ctx.accounts.solend_program,

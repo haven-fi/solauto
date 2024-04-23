@@ -28,7 +28,7 @@ import {
 } from '../shared';
 
 // Accounts.
-export type CreateReferralStatesInstructionAccounts = {
+export type UpdateReferralStatesInstructionAccounts = {
   signer: Signer;
   systemProgram?: PublicKey | Pda;
   tokenProgram?: PublicKey | Pda;
@@ -40,38 +40,36 @@ export type CreateReferralStatesInstructionAccounts = {
   referredByState?: PublicKey | Pda;
   referredByAuthority?: PublicKey | Pda;
   referredByDestTa?: PublicKey | Pda;
-  referredBySupplyTa?: PublicKey | Pda;
-  supplyMint?: PublicKey | Pda;
 };
 
 // Data.
-export type CreateReferralStatesInstructionData = { discriminator: number };
+export type UpdateReferralStatesInstructionData = { discriminator: number };
 
-export type CreateReferralStatesInstructionDataArgs = {};
+export type UpdateReferralStatesInstructionDataArgs = {};
 
-export function getCreateReferralStatesInstructionDataSerializer(): Serializer<
-  CreateReferralStatesInstructionDataArgs,
-  CreateReferralStatesInstructionData
+export function getUpdateReferralStatesInstructionDataSerializer(): Serializer<
+  UpdateReferralStatesInstructionDataArgs,
+  UpdateReferralStatesInstructionData
 > {
   return mapSerializer<
-    CreateReferralStatesInstructionDataArgs,
+    UpdateReferralStatesInstructionDataArgs,
     any,
-    CreateReferralStatesInstructionData
+    UpdateReferralStatesInstructionData
   >(
-    struct<CreateReferralStatesInstructionData>([['discriminator', u8()]], {
-      description: 'CreateReferralStatesInstructionData',
+    struct<UpdateReferralStatesInstructionData>([['discriminator', u8()]], {
+      description: 'UpdateReferralStatesInstructionData',
     }),
     (value) => ({ ...value, discriminator: 0 })
   ) as Serializer<
-    CreateReferralStatesInstructionDataArgs,
-    CreateReferralStatesInstructionData
+    UpdateReferralStatesInstructionDataArgs,
+    UpdateReferralStatesInstructionData
   >;
 }
 
 // Instruction.
-export function createReferralStates(
+export function updateReferralStates(
   context: Pick<Context, 'programs'>,
-  input: CreateReferralStatesInstructionAccounts
+  input: UpdateReferralStatesInstructionAccounts
 ): TransactionBuilder {
   // Program ID.
   const programId = context.programs.getPublicKey(
@@ -132,16 +130,6 @@ export function createReferralStates(
       isWritable: true as boolean,
       value: input.referredByDestTa ?? null,
     },
-    referredBySupplyTa: {
-      index: 11,
-      isWritable: true as boolean,
-      value: input.referredBySupplyTa ?? null,
-    },
-    supplyMint: {
-      index: 12,
-      isWritable: false as boolean,
-      value: input.supplyMint ?? null,
-    },
   } satisfies ResolvedAccountsWithIndices;
 
   // Default values.
@@ -185,7 +173,7 @@ export function createReferralStates(
   );
 
   // Data.
-  const data = getCreateReferralStatesInstructionDataSerializer().serialize({});
+  const data = getUpdateReferralStatesInstructionDataSerializer().serialize({});
 
   // Bytes Created On Chain.
   const bytesCreatedOnChain = 0;

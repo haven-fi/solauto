@@ -3,7 +3,7 @@
   "name": "solauto",
   "instructions": [
     {
-      "name": "CreateReferralStates",
+      "name": "UpdateReferralStates",
       "accounts": [
         {
           "name": "signer",
@@ -60,18 +60,6 @@
         {
           "name": "referredByDestTa",
           "isMut": true,
-          "isSigner": false,
-          "isOptional": true
-        },
-        {
-          "name": "referredBySupplyTa",
-          "isMut": true,
-          "isSigner": false,
-          "isOptional": true
-        },
-        {
-          "name": "supplyMint",
-          "isMut": false,
           "isSigner": false,
           "isOptional": true
         }
@@ -233,12 +221,12 @@
         },
         {
           "name": "signerReferralState",
-          "isMut": true,
+          "isMut": false,
           "isSigner": false
         },
         {
           "name": "referredByState",
-          "isMut": true,
+          "isMut": false,
           "isSigner": false,
           "isOptional": true
         },
