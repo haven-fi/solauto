@@ -508,7 +508,7 @@ pub fn initiate_dca_in_if_necessary<'a, 'b>(
         .debt_balance += base_unit_amount;
     solana_utils::spl_token_transfer(
         token_program,
-        signer,
+        signer_debt_ta.unwrap(),
         signer,
         position_debt_ta.unwrap(),
         base_unit_amount,
