@@ -11,17 +11,16 @@ mod open_position {
 
     #[tokio::test]
     async fn marginfi_open_position() {
-        let data = test_utils::MarginfiTestData::new(None, None, None, None);
-        let mut ctx = data.general.get_program().start_with_context().await;
+        let mut data = test_utils::MarginfiTestData::new(None, None, None, None).await;
 
         let tx = Transaction::new_signed_with_payer(
             &[data.general.ix_update_referral_states()],
-            Some(&ctx.payer.pubkey()),
-            &[&ctx.payer, &data.general.signer],
-            ctx.last_blockhash
+            Some(&data.general.ctx.payer.pubkey()),
+            &[&data.general.ctx.payer],
+            data.general.ctx.last_blockhash
         );
 
-        match ctx.banks_client.process_transaction(tx).await {
+        match data.general.ctx.banks_client.process_transaction(tx).await {
             Err(err) => {
                 eprintln!("Transaction failed: {:?}", err);
                 // Throw error?
