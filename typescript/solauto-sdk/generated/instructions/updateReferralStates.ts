@@ -34,8 +34,8 @@ export type UpdateReferralStatesInstructionAccounts = {
   tokenProgram?: PublicKey | Pda;
   ataProgram?: PublicKey | Pda;
   rent?: PublicKey | Pda;
-  signerReferralState: PublicKey | Pda;
   destReferralFeesMint: PublicKey | Pda;
+  signerReferralState: PublicKey | Pda;
   signerReferralDestTa: PublicKey | Pda;
   referredByState?: PublicKey | Pda;
   referredByAuthority?: PublicKey | Pda;
@@ -100,15 +100,15 @@ export function updateReferralStates(
       value: input.ataProgram ?? null,
     },
     rent: { index: 4, isWritable: false as boolean, value: input.rent ?? null },
-    signerReferralState: {
-      index: 5,
-      isWritable: true as boolean,
-      value: input.signerReferralState ?? null,
-    },
     destReferralFeesMint: {
-      index: 6,
+      index: 5,
       isWritable: false as boolean,
       value: input.destReferralFeesMint ?? null,
+    },
+    signerReferralState: {
+      index: 6,
+      isWritable: true as boolean,
+      value: input.signerReferralState ?? null,
     },
     signerReferralDestTa: {
       index: 7,

@@ -31,13 +31,13 @@
           "isSigner": false
         },
         {
-          "name": "signerReferralState",
-          "isMut": true,
+          "name": "destReferralFeesMint",
+          "isMut": false,
           "isSigner": false
         },
         {
-          "name": "destReferralFeesMint",
-          "isMut": false,
+          "name": "signerReferralState",
+          "isMut": true,
           "isSigner": false
         },
         {
@@ -341,7 +341,7 @@
         },
         {
           "name": "referredByState",
-          "isMut": true,
+          "isMut": false,
           "isSigner": false,
           "isOptional": true
         },

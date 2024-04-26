@@ -152,7 +152,7 @@ export function solendOpenPosition(
     },
     referredByState: {
       index: 9,
-      isWritable: true as boolean,
+      isWritable: false as boolean,
       value: input.referredByState ?? null,
     },
     referredBySupplyTa: {

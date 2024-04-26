@@ -106,7 +106,7 @@ impl SolendOpenPosition {
             false,
         ));
         if let Some(referred_by_state) = self.referred_by_state {
-            accounts.push(solana_program::instruction::AccountMeta::new(
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
                 referred_by_state,
                 false,
             ));
@@ -223,7 +223,7 @@ pub struct SolendOpenPositionInstructionArgs {
 ///   6. `[]` solauto_fees_wallet
 ///   7. `[]` solauto_fees_supply_ta
 ///   8. `[writable]` signer_referral_state
-///   9. `[writable, optional]` referred_by_state
+///   9. `[optional]` referred_by_state
 ///   10. `[writable, optional]` referred_by_supply_ta
 ///   11. `[writable]` solauto_position
 ///   12. `[]` lending_market
@@ -713,7 +713,7 @@ impl<'a, 'b> SolendOpenPositionCpi<'a, 'b> {
             false,
         ));
         if let Some(referred_by_state) = self.referred_by_state {
-            accounts.push(solana_program::instruction::AccountMeta::new(
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
                 *referred_by_state.key,
                 false,
             ));
@@ -858,7 +858,7 @@ impl<'a, 'b> SolendOpenPositionCpi<'a, 'b> {
 ///   6. `[]` solauto_fees_wallet
 ///   7. `[]` solauto_fees_supply_ta
 ///   8. `[writable]` signer_referral_state
-///   9. `[writable, optional]` referred_by_state
+///   9. `[optional]` referred_by_state
 ///   10. `[writable, optional]` referred_by_supply_ta
 ///   11. `[writable]` solauto_position
 ///   12. `[]` lending_market

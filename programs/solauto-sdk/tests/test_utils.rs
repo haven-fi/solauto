@@ -1,8 +1,8 @@
 use std::str::FromStr;
 
 use solana_program_test::ProgramTest;
-use solana_sdk::{ instruction::Instruction, pubkey::Pubkey, signature::Keypair, signer::Signer };
-use solauto_sdk::{ generated::instructions::UpdateReferralStatesBuilder, SOLAUTO_ID };
+use solana_sdk::{instruction::Instruction, pubkey::Pubkey, signature::Keypair, signer::Signer};
+use solauto_sdk::{generated::instructions::UpdateReferralStatesBuilder, SOLAUTO_ID};
 use spl_associated_token_account::get_associated_token_address;
 
 #[macro_export]
@@ -26,8 +26,8 @@ pub struct GeneralTestData {
     pub program: Pubkey,
     pub solauto_fees_wallet: Pubkey,
     pub solauto_fees_supply_ta: Pubkey,
-    pub signer_referral_state: Pubkey,
     pub dest_referral_fees_mint: Pubkey,
+    pub signer_referral_state: Pubkey,
     pub signer_referral_dest_ta: Pubkey,
     pub referred_by_state: Option<Pubkey>,
     pub referred_by_authority: Option<Pubkey>,
@@ -47,7 +47,7 @@ impl GeneralTestData {
         pos_id: Option<u8>,
         supply_mint: Option<&Pubkey>,
         debt_mint: Option<&Pubkey>,
-        referred_by_authority: Option<&Pubkey>
+        referred_by_authority: Option<&Pubkey>,
     ) -> Self {
         let wsol_mint = Pubkey::from_str(WSOL_MINT).expect("Should work");
         let usdc_mint = Pubkey::from_str(USDC_MINT).expect("Should work");
@@ -58,78 +58,66 @@ impl GeneralTestData {
             supply_mint.unwrap()
         };
 
-        let debt_liquidity_mint = if debt_mint.is_none() { &usdc_mint } else { debt_mint.unwrap() };
+        let debt_liquidity_mint = if debt_mint.is_none() {
+            &usdc_mint
+        } else {
+            debt_mint.unwrap()
+        };
 
         let position_id = if pos_id.is_none() { 1 } else { pos_id.unwrap() };
 
         let signer = Keypair::new();
         let program = Pubkey::from_str(program).expect("Should work");
         let solauto_fees_wallet = Keypair::new().pubkey();
-        let solauto_fees_supply_ta = get_associated_token_address(
-            &solauto_fees_wallet,
-            &supply_liquidity_mint
-        );
+        let solauto_fees_supply_ta =
+            get_associated_token_address(&solauto_fees_wallet, &supply_liquidity_mint);
+
+        let dest_referral_fees_mint = wsol_mint.clone();
 
         let signer_pubkey = signer.pubkey();
         let signer_referral_state_seeds = &[signer_pubkey.as_ref(), b"referral_state"];
-        let (signer_referral_state, _) = Pubkey::find_program_address(
-            signer_referral_state_seeds,
-            &SOLAUTO_ID
-        );
-        let dest_referral_fees_mint = Pubkey::from_str(WSOL_MINT).expect("Should work");
-        let signer_referral_dest_ta = get_associated_token_address(
-            &signer_referral_state,
-            &dest_referral_fees_mint
-        );
+        let (signer_referral_state, _) =
+            Pubkey::find_program_address(signer_referral_state_seeds, &SOLAUTO_ID);
+        let signer_referral_dest_ta =
+            get_associated_token_address(&signer_referral_state, &dest_referral_fees_mint);
 
-        let (referred_by_state, referred_by_dest_ta, referred_by_supply_ta) = if
-            referred_by_authority.is_some()
-        {
-            let referred_by_state_seeds = &[
-                referred_by_authority.as_ref().unwrap().as_ref(),
-                b"referral_state",
-            ];
-            let (referred_by_state, _) = Pubkey::find_program_address(
-                referred_by_state_seeds,
-                &SOLAUTO_ID
-            );
-            let referred_by_dest_ta = get_associated_token_address(
-                &referred_by_state,
-                &dest_referral_fees_mint
-            );
-            let referred_by_supply_ta = get_associated_token_address(
-                &referred_by_state,
-                supply_liquidity_mint
-            );
-            (Some(referred_by_state), Some(referred_by_dest_ta), Some(referred_by_supply_ta))
-        } else {
-            (None, None, None)
-        };
+        let (referred_by_state, referred_by_dest_ta, referred_by_supply_ta) =
+            if referred_by_authority.is_some() {
+                let referred_by_state_seeds = &[
+                    referred_by_authority.as_ref().unwrap().as_ref(),
+                    b"referral_state",
+                ];
+                let (referred_by_state, _) =
+                    Pubkey::find_program_address(referred_by_state_seeds, &SOLAUTO_ID);
+                let referred_by_dest_ta =
+                    get_associated_token_address(&referred_by_state, &dest_referral_fees_mint);
+                let referred_by_supply_ta =
+                    get_associated_token_address(&referred_by_state, supply_liquidity_mint);
+                (
+                    Some(referred_by_state),
+                    Some(referred_by_dest_ta),
+                    Some(referred_by_supply_ta),
+                )
+            } else {
+                (None, None, None)
+            };
 
-        let (solauto_position, _) = Pubkey::find_program_address(
-            &[&[position_id], signer.pubkey().as_ref()],
-            &SOLAUTO_ID
-        );
-        let position_supply_liquidity_ta = get_associated_token_address(
-            &solauto_position,
-            supply_liquidity_mint
-        );
-        let signer_debt_liquidity_ta = get_associated_token_address(
-            &signer.pubkey(),
-            debt_liquidity_mint
-        );
-        let position_debt_liquidity_ta = get_associated_token_address(
-            &solauto_position,
-            debt_liquidity_mint
-        );
+        let (solauto_position, _) =
+            Pubkey::find_program_address(&[&[position_id], signer.pubkey().as_ref()], &SOLAUTO_ID);
+        let position_supply_liquidity_ta =
+            get_associated_token_address(&solauto_position, supply_liquidity_mint);
+        let signer_debt_liquidity_ta =
+            get_associated_token_address(&signer.pubkey(), debt_liquidity_mint);
+        let position_debt_liquidity_ta =
+            get_associated_token_address(&solauto_position, debt_liquidity_mint);
 
         Self {
             signer,
             program,
             solauto_fees_wallet,
             solauto_fees_supply_ta,
-            signer_referral_state,
             dest_referral_fees_mint,
+            signer_referral_state,
             signer_referral_dest_ta,
             referred_by_state,
             referred_by_authority: referred_by_authority.copied(),
@@ -174,14 +162,14 @@ impl MarginfiTestData {
         position_id: Option<u8>,
         supply_mint: Option<&Pubkey>,
         debt_mint: Option<&Pubkey>,
-        referred_by_authority: Option<&Pubkey>
+        referred_by_authority: Option<&Pubkey>,
     ) -> Self {
         let general = GeneralTestData::new(
             MARGINFI_PROGRAM,
             position_id,
             supply_mint,
             debt_mint,
-            referred_by_authority
+            referred_by_authority,
         );
         let marginfi_group = Keypair::new().pubkey();
         let marginfi_account = Keypair::new().pubkey();
