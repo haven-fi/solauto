@@ -156,7 +156,7 @@ pub fn process_solend_rebalance<'a>(
         authority_referral_state: DeserializedAccount::<ReferralStateAccount>::deserialize(Some(
             ctx.accounts.authority_referral_state,
         ))?,
-        referred_by_state: ctx.accounts.referred_by_state,
+        referred_by_state: None,
         referred_by_supply_ta: ctx.accounts.referred_by_supply_ta,
     };
     validation_utils::generic_instruction_validation(

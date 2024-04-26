@@ -197,7 +197,7 @@ pub fn get_or_create_referral_state<'a>(
             authority: authority.key.clone(),
             referred_by_state: referred_by_state.map_or(None, |r| Some(r.key.clone())),
             dest_fees_ta: referral_dest_ta.key.clone(),
-            fees_mint: WSOL_MINT.clone(),
+            dest_fees_mint: WSOL_MINT.clone(),
         });
 
         let deserialized_account = DeserializedAccount {

@@ -95,7 +95,7 @@ pub const REFERRAL_ACCOUNT_SPACE: usize = 300;
 pub struct ReferralStateAccount {
     pub authority: Pubkey,
     pub referred_by_state: Option<Pubkey>,
-    pub fees_mint: Pubkey,
+    pub dest_fees_mint: Pubkey,
     pub dest_fees_ta: Pubkey,
 }
 
