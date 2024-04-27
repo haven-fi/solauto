@@ -386,11 +386,10 @@ pub fn validate_lending_protocol_accounts(
     debt_mint: Option<&AccountInfo>
 ) -> ProgramResult {
     if !solauto_position.data.self_managed {
-        let protocol_data = solauto_position.data.position
+        let protocol_data = &solauto_position.data.position
             .as_ref()
             .unwrap()
-            .protocol_data.as_ref()
-            .unwrap();
+            .protocol_data;
 
         if protocol_position.key != &protocol_data.protocol_position {
             msg!("Incorrect protocol-owned account");

@@ -30,6 +30,7 @@ pub fn marginfi_open_position<'a>(
         ctx.accounts.position_supply_ta,
         ctx.accounts.supply_mint,
         ctx.accounts.position_debt_ta,
+        ctx.accounts.signer_debt_ta,
         ctx.accounts.debt_mint,
     )?;
 
@@ -65,15 +66,6 @@ pub fn marginfi_open_position<'a>(
         // }
     }
 
-    solauto_utils::initiate_dca_in_if_necessary(
-        ctx.accounts.token_program,
-        &mut solauto_position,
-        Some(ctx.accounts.position_debt_ta),
-        ctx.accounts.signer,
-        ctx.accounts.signer_debt_ta,
-        Some(ctx.accounts.debt_mint),
-    )?;
-
     MarginfiClient::initialize(&ctx, &solauto_position)?;
     ix_utils::update_data(&mut solauto_position)
 }
@@ -91,6 +83,7 @@ pub fn solend_open_position<'a>(
         ctx.accounts.position_supply_liquidity_ta,
         ctx.accounts.supply_liquidity_mint,
         ctx.accounts.position_debt_liquidity_ta,
+        ctx.accounts.signer_debt_liquidity_ta,
         ctx.accounts.debt_liquidity_mint,
     )?;
 
@@ -139,15 +132,6 @@ pub fn solend_open_position<'a>(
         }
     }
 
-    solauto_utils::initiate_dca_in_if_necessary(
-        ctx.accounts.token_program,
-        &mut solauto_position,
-        Some(ctx.accounts.position_debt_liquidity_ta),
-        ctx.accounts.signer,
-        ctx.accounts.signer_debt_liquidity_ta,
-        Some(ctx.accounts.debt_liquidity_mint),
-    )?;
-
     SolendClient::initialize(&ctx, &solauto_position)?;
     ix_utils::update_data(&mut solauto_position)
 }
@@ -158,9 +142,10 @@ fn initialize_solauto_position<'a, 'b>(
     token_program: &'a AccountInfo<'a>,
     rent: &'a AccountInfo<'a>,
     signer: &'a AccountInfo<'a>,
-    supply_ta: &'a AccountInfo<'a>,
+    position_supply_ta: &'a AccountInfo<'a>,
     supply_mint: &'a AccountInfo<'a>,
-    debt_ta: &'a AccountInfo<'a>,
+    position_debt_ta: &'a AccountInfo<'a>,
+    signer_debt_ta: Option<&'a AccountInfo<'a>>,
     debt_mint: &'a AccountInfo<'a>,
 ) -> ProgramResult {
     if !solauto_position.data.self_managed
@@ -183,7 +168,7 @@ fn initialize_solauto_position<'a, 'b>(
         rent,
         signer,
         solauto_position.account_info,
-        supply_ta,
+        position_supply_ta,
         supply_mint,
     )?;
 
@@ -193,8 +178,16 @@ fn initialize_solauto_position<'a, 'b>(
         rent,
         signer,
         solauto_position.account_info,
-        debt_ta,
+        position_debt_ta,
         debt_mint,
+    )?;
+
+    solauto_utils::initiate_dca_in_if_necessary(
+        token_program,
+        solauto_position,
+        Some(position_debt_ta),
+        signer,
+        signer_debt_ta,
     )?;
 
     Ok(())

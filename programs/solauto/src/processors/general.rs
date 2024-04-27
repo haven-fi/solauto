@@ -3,27 +3,30 @@ use std::ops::Div;
 use solana_program::{
     account_info::AccountInfo,
     entrypoint::ProgramResult,
-    instruction::{get_stack_height, TRANSACTION_LEVEL_STACK_HEIGHT},
+    instruction::{ get_stack_height, TRANSACTION_LEVEL_STACK_HEIGHT },
     msg,
     program_error::ProgramError,
-    sysvar::instructions::{load_current_index_checked, load_instruction_at_checked},
+    sysvar::instructions::{ load_current_index_checked, load_instruction_at_checked },
 };
 use spl_associated_token_account::get_associated_token_address;
 
 use crate::{
-    constants::{JUP_PROGRAM, SOLAUTO_MANAGER, WSOL_MINT},
+    constants::{ JUP_PROGRAM, SOLAUTO_MANAGER, WSOL_MINT },
     instructions::referral_fees,
     types::{
         instruction::{
             accounts::{
-                ClaimReferralFeesAccounts, ClosePositionAccounts, ConvertReferralFeesAccounts,
-                UpdatePositionAccounts, UpdateReferralStatesAccounts,
+                ClaimReferralFeesAccounts,
+                ClosePositionAccounts,
+                ConvertReferralFeesAccounts,
+                UpdatePositionAccounts,
+                UpdateReferralStatesAccounts,
             },
             UpdatePositionData,
         },
-        shared::{DeserializedAccount, PositionAccount, ReferralStateAccount, SolautoError},
+        shared::{ DeserializedAccount, PositionAccount, ReferralStateAccount, SolautoError },
     },
-    utils::{ix_utils, solana_utils, solauto_utils, validation_utils},
+    utils::{ ix_utils, solana_utils, solauto_utils, validation_utils },
 };
 
 pub fn process_create_referral_states<'a>(accounts: &'a [AccountInfo<'a>]) -> ProgramResult {
@@ -43,7 +46,7 @@ pub fn process_create_referral_states<'a>(accounts: &'a [AccountInfo<'a>]) -> Pr
         ctx.accounts.signer_referral_state,
         ctx.accounts.signer_referral_dest_ta,
         ctx.accounts.referred_by_state,
-        ctx.accounts.referred_by_dest_ta,
+        ctx.accounts.referred_by_dest_ta
     )?;
 
     if ctx.accounts.referred_by_state.is_some() {
@@ -57,7 +60,7 @@ pub fn process_create_referral_states<'a>(accounts: &'a [AccountInfo<'a>]) -> Pr
             ctx.accounts.referred_by_state.unwrap(),
             ctx.accounts.referred_by_dest_ta.unwrap(),
             None,
-            None,
+            None
         )?;
     }
 
@@ -66,7 +69,7 @@ pub fn process_create_referral_states<'a>(accounts: &'a [AccountInfo<'a>]) -> Pr
         &Some(authority_referral_state),
         ctx.accounts.referred_by_state,
         None,
-        None,
+        None
     )?;
 
     Ok(())
@@ -74,10 +77,9 @@ pub fn process_create_referral_states<'a>(accounts: &'a [AccountInfo<'a>]) -> Pr
 
 pub fn process_convert_referral_fees<'a>(accounts: &'a [AccountInfo<'a>]) -> ProgramResult {
     let ctx = ConvertReferralFeesAccounts::context(accounts)?;
-    let referral_state = DeserializedAccount::<ReferralStateAccount>::deserialize(Some(
-        ctx.accounts.referral_state,
-    ))?
-    .unwrap();
+    let referral_state = DeserializedAccount::<ReferralStateAccount>
+        ::deserialize(Some(ctx.accounts.referral_state))?
+        .unwrap();
 
     if !ctx.accounts.solauto_manager.is_signer {
         return Err(ProgramError::MissingRequiredSignature.into());
@@ -105,14 +107,15 @@ pub fn process_convert_referral_fees<'a>(accounts: &'a [AccountInfo<'a>]) -> Pro
     let jup_swap = solauto_utils::InstructionChecker::from_anchor(
         JUP_PROGRAM,
         "jupiter",
-        vec![
-            "route_with_token_ledger",
-            "shared_accounts_route_with_token_ledger",
-        ],
+        vec!["route_with_token_ledger", "shared_accounts_route_with_token_ledger"]
     );
 
-    let next_ix =
-        solauto_utils::get_relative_instruction(ctx.accounts.ixs_sysvar, current_ix_idx, 1, index)?;
+    let next_ix = solauto_utils::get_relative_instruction(
+        ctx.accounts.ixs_sysvar,
+        current_ix_idx,
+        1,
+        index
+    )?;
 
     if !jup_swap.matches(&next_ix) {
         msg!("Missing Jup swap as next transaction");
@@ -124,10 +127,9 @@ pub fn process_convert_referral_fees<'a>(accounts: &'a [AccountInfo<'a>]) -> Pro
 
 pub fn process_claim_referral_fees<'a>(accounts: &'a [AccountInfo<'a>]) -> ProgramResult {
     let ctx = ClaimReferralFeesAccounts::context(accounts)?;
-    let referral_state = DeserializedAccount::<ReferralStateAccount>::deserialize(Some(
-        ctx.accounts.referral_state,
-    ))?
-    .unwrap();
+    let referral_state = DeserializedAccount::<ReferralStateAccount>
+        ::deserialize(Some(ctx.accounts.referral_state))?
+        .unwrap();
 
     if !ctx.accounts.signer.is_signer {
         return Err(ProgramError::MissingRequiredSignature.into());
@@ -143,10 +145,11 @@ pub fn process_claim_referral_fees<'a>(accounts: &'a [AccountInfo<'a>]) -> Progr
             msg!("Missing destination token account when the token mint is not wSOL");
             return Err(ProgramError::InvalidAccountData.into());
         }
-        if ctx.accounts.dest_ta.unwrap().key
-            != &get_associated_token_address(
+        if
+            ctx.accounts.dest_ta.unwrap().key !=
+            &get_associated_token_address(
                 ctx.accounts.signer.key,
-                ctx.accounts.referral_fees_mint.key,
+                ctx.accounts.referral_fees_mint.key
             )
         {
             msg!(
@@ -161,12 +164,12 @@ pub fn process_claim_referral_fees<'a>(accounts: &'a [AccountInfo<'a>]) -> Progr
 
 pub fn process_update_position_instruction<'a>(
     accounts: &'a [AccountInfo<'a>],
-    new_data: UpdatePositionData,
+    new_data: UpdatePositionData
 ) -> ProgramResult {
     let ctx = UpdatePositionAccounts::context(accounts)?;
-    let mut solauto_position =
-        DeserializedAccount::<PositionAccount>::deserialize(Some(ctx.accounts.solauto_position))?
-            .unwrap();
+    let mut solauto_position = DeserializedAccount::<PositionAccount>
+        ::deserialize(Some(ctx.accounts.solauto_position))?
+        .unwrap();
 
     validation_utils::validate_signer(ctx.accounts.signer, &solauto_position, true)?;
     if solauto_position.data.self_managed {
@@ -179,7 +182,7 @@ pub fn process_update_position_instruction<'a>(
         validation_utils::validate_position_settings(
             new_data.setting_params.as_ref().unwrap(),
             (position_data.state.max_ltv_bps as f64).div(10000.0),
-            (position_data.state.liq_threshold as f64).div(10000.0),
+            (position_data.state.liq_threshold as f64).div(10000.0)
         )?;
         position_data.setting_params = new_data.setting_params.as_ref().unwrap().clone();
     }
@@ -192,8 +195,7 @@ pub fn process_update_position_instruction<'a>(
             &mut solauto_position,
             ctx.accounts.position_debt_ta,
             ctx.accounts.signer,
-            ctx.accounts.signer_debt_ta,
-            ctx.accounts.debt_mint,
+            ctx.accounts.signer_debt_ta
         )?;
     }
 
@@ -202,9 +204,9 @@ pub fn process_update_position_instruction<'a>(
 
 pub fn process_close_position_instruction<'a>(accounts: &'a [AccountInfo<'a>]) -> ProgramResult {
     let ctx = ClosePositionAccounts::context(accounts)?;
-    let solauto_position =
-        DeserializedAccount::<PositionAccount>::deserialize(Some(ctx.accounts.solauto_position))?
-            .unwrap();
+    let solauto_position = DeserializedAccount::<PositionAccount>
+        ::deserialize(Some(ctx.accounts.solauto_position))?
+        .unwrap();
 
     validation_utils::validate_signer(ctx.accounts.signer, &solauto_position, true)?;
     if solauto_position.data.self_managed {
@@ -216,14 +218,14 @@ pub fn process_close_position_instruction<'a>(accounts: &'a [AccountInfo<'a>]) -
         ctx.accounts.token_program,
         ctx.accounts.position_supply_liquidity_ta,
         ctx.accounts.signer,
-        ctx.accounts.solauto_position,
+        ctx.accounts.solauto_position
     )?;
 
     solana_utils::close_token_account(
         ctx.accounts.token_program,
         ctx.accounts.position_debt_liquidity_ta,
         ctx.accounts.signer,
-        ctx.accounts.solauto_position,
+        ctx.accounts.solauto_position
     )?;
 
     if ctx.accounts.position_supply_collateral_ta.is_some() {
@@ -231,17 +233,14 @@ pub fn process_close_position_instruction<'a>(accounts: &'a [AccountInfo<'a>]) -
             ctx.accounts.token_program,
             ctx.accounts.position_supply_collateral_ta.unwrap(),
             ctx.accounts.signer,
-            ctx.accounts.solauto_position,
+            ctx.accounts.solauto_position
         )?;
     }
 
     solana_utils::close_pda(
         ctx.accounts.solauto_position,
         ctx.accounts.signer,
-        vec![
-            &[solauto_position.data.position_id],
-            ctx.accounts.signer.key.as_ref(),
-        ],
+        vec![&[solauto_position.data.position_id], ctx.accounts.signer.key.as_ref()]
     )?;
 
     Ok(())
