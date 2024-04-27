@@ -26,17 +26,15 @@ pub struct SolautoManagerAccounts<'a> {
 }
 impl<'a> SolautoManagerAccounts<'a> {
     pub fn from(
-        supply_mint: Option<&'a AccountInfo<'a>>,
         position_supply_ta: Option<&'a AccountInfo<'a>>,
         bank_supply_ta: Option<&'a AccountInfo<'a>>,
-        debt_mint: Option<&'a AccountInfo<'a>>,
         position_debt_ta: Option<&'a AccountInfo<'a>>,
         bank_debt_ta: Option<&'a AccountInfo<'a>>,
         intermediary_ta: Option<&'a AccountInfo<'a>>,
     ) -> Result<Self, ProgramError> {
         let supply =
-            LendingProtocolTokenAccounts::from(supply_mint, position_supply_ta, bank_supply_ta)?;
-        let debt = LendingProtocolTokenAccounts::from(debt_mint, position_debt_ta, bank_debt_ta)?;
+            LendingProtocolTokenAccounts::from(None, position_supply_ta, bank_supply_ta)?;
+        let debt = LendingProtocolTokenAccounts::from(None, position_debt_ta, bank_debt_ta)?;
         Ok(Self {
             supply,
             debt,
@@ -362,15 +360,13 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
         let debt_adjustment_usd = self.get_debt_adjustment_usd(rebalance_args)?;
         let increasing_leverage = debt_adjustment_usd > 0.0;
 
-        let (token_mint, market_price, decimals) = if increasing_leverage {
+        let (market_price, decimals) = if increasing_leverage {
             (
-                self.accounts.debt.as_ref().unwrap().mint,
                 self.obligation_position.debt.as_ref().unwrap().market_price,
                 self.obligation_position.debt.as_ref().unwrap().decimals,
             )
         } else {
             (
-                self.accounts.supply.as_ref().unwrap().mint,
                 self.obligation_position
                     .supply
                     .as_ref()
@@ -379,15 +375,6 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
                 self.obligation_position.supply.as_ref().unwrap().decimals,
             )
         };
-        solana_utils::init_ata_if_needed(
-            self.std_accounts.token_program,
-            self.std_accounts.system_program,
-            self.std_accounts.rent,
-            self.std_accounts.signer,
-            self.std_accounts.signer,
-            self.accounts.intermediary_ta.unwrap(),
-            token_mint,
-        )?;
 
         let base_unit_amount = math_utils::to_base_unit::<f64, u8, u64>(
             debt_adjustment_usd.div(market_price),

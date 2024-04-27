@@ -23,10 +23,8 @@ pub fn marginfi_interaction<'a, 'b>(
 ) -> ProgramResult {
     let (marginfi_client, obligation_position) = MarginfiClient::from(ctx.accounts.signer)?;
     let solauto_manager_accounts = SolautoManagerAccounts::from(
-        ctx.accounts.supply_mint,
         ctx.accounts.authority_supply_ta,
         ctx.accounts.bank_supply_ta,
-        ctx.accounts.debt_mint,
         ctx.accounts.authority_debt_ta,
         ctx.accounts.bank_debt_ta,
         None,
@@ -52,7 +50,6 @@ pub fn solend_interaction<'a, 'b>(
         ctx.accounts.supply_reserve,
         ctx.accounts.supply_reserve_pyth_price_oracle,
         ctx.accounts.supply_reserve_switchboard_oracle,
-        ctx.accounts.supply_liquidity_mint,
         ctx.accounts.authority_supply_liquidity_ta,
         ctx.accounts.reserve_supply_liquidity_ta,
         ctx.accounts.supply_collateral_mint,
@@ -60,15 +57,12 @@ pub fn solend_interaction<'a, 'b>(
         ctx.accounts.reserve_supply_collateral_ta,
         ctx.accounts.debt_reserve,
         ctx.accounts.debt_reserve_fee_receiver_ta,
-        ctx.accounts.debt_liquidity_mint,
         ctx.accounts.authority_debt_liquidity_ta,
         ctx.accounts.reserve_debt_liquidity_ta,
     )?;
     let solauto_manager_accounts = SolautoManagerAccounts::from(
-        ctx.accounts.supply_liquidity_mint,
         ctx.accounts.authority_supply_liquidity_ta,
         ctx.accounts.reserve_supply_liquidity_ta,
-        ctx.accounts.debt_liquidity_mint,
         ctx.accounts.authority_debt_liquidity_ta,
         ctx.accounts.reserve_debt_liquidity_ta,
         None,
@@ -102,38 +96,6 @@ fn protocol_interaction<'a, T: LendingProtocolClient<'a>>(
     std_accounts: SolautoStandardAccounts<'a>,
     action: SolautoAction,
 ) -> ProgramResult {
-    if let SolautoAction::Withdraw(_) = action {
-        init_ata_if_needed(
-            std_accounts.token_program,
-            std_accounts.system_program,
-            std_accounts.rent,
-            std_accounts.signer,
-            std_accounts.signer,
-            solauto_manager_accounts
-                .supply
-                .as_ref()
-                .unwrap()
-                .source_ta
-                .account_info,
-            solauto_manager_accounts.supply.as_ref().unwrap().mint,
-        )?;
-    } else if let SolautoAction::Borrow(_) = action {
-        init_ata_if_needed(
-            std_accounts.token_program,
-            std_accounts.system_program,
-            std_accounts.rent,
-            std_accounts.signer,
-            std_accounts.signer,
-            solauto_manager_accounts
-                .debt
-                .as_ref()
-                .unwrap()
-                .source_ta
-                .account_info,
-            solauto_manager_accounts.debt.as_ref().unwrap().mint,
-        )?;
-    }
-
     let mut solauto_manager = SolautoManager::from(
         &client,
         &mut obligation_position,

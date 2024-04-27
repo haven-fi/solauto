@@ -1,6 +1,7 @@
 use borsh::{BorshDeserialize, BorshSerialize};
 use shank::{ShankContext, ShankInstruction};
 use solana_program::account_info::AccountInfo;
+use spl_token::state::Account as TokenAccount;
 
 use super::shared::*;
 
@@ -96,7 +97,6 @@ pub enum Instruction {
     #[account(mut, name = "solauto_position")]
     #[account(mut, optional, name = "position_debt_ta")]
     #[account(mut, optional, name = "signer_debt_ta")]
-    #[account(optional, name = "debt_mint")]
     UpdatePosition(UpdatePositionData),
     
     /// Close the Solauto position and return the rent for the various accounts
@@ -143,10 +143,8 @@ pub enum Instruction {
     #[account(mut, name = "solauto_position")]
     #[account(name = "marginfi_group")]
     #[account(mut, name = "marginfi_account")]
-    #[account(optional, name = "supply_mint")]
     #[account(mut, optional, name = "authority_supply_ta")]
     #[account(mut, optional, name = "bank_supply_ta")]
-    #[account(optional, name = "debt_mint")]
     #[account(mut, optional, name = "authority_debt_ta")]
     #[account(mut, optional, name = "bank_debt_ta")]
     // TODO missing accounts
@@ -166,7 +164,6 @@ pub enum Instruction {
     #[account(mut, optional, name = "supply_reserve")]
     #[account(optional, name = "supply_reserve_pyth_price_oracle")]
     #[account(optional, name = "supply_reserve_switchboard_oracle")]
-    #[account(optional, name = "supply_liquidity_mint")]
     #[account(mut, optional, name = "authority_supply_liquidity_ta")]
     #[account(mut, optional, name = "reserve_supply_liquidity_ta")]
     #[account(optional, name = "supply_collateral_mint")]
@@ -174,7 +171,6 @@ pub enum Instruction {
     #[account(mut, optional, name = "reserve_supply_collateral_ta")]
     #[account(mut, optional, name = "debt_reserve")]
     #[account(mut, optional, name = "debt_reserve_fee_receiver_ta")]
-    #[account(optional, name = "debt_liquidity_mint")]
     #[account(mut, optional, name = "authority_debt_liquidity_ta")]
     #[account(mut, optional, name = "reserve_debt_liquidity_ta")]
     SolendProtocolInteraction(SolautoAction),
@@ -194,10 +190,8 @@ pub enum Instruction {
     #[account(name = "marginfi_group")]
     #[account(mut, name = "marginfi_account")]
     #[account(mut, name = "intermediary_ta")]
-    #[account(name = "supply_mint")]
     #[account(mut, name = "position_supply_ta")]
     #[account(mut, name = "bank_supply_ta")]
-    #[account(name = "debt_mint")]
     #[account(mut, name = "position_debt_ta")]
     #[account(mut, name = "bank_debt_ta")]
     // TODO missing accounts
@@ -222,7 +216,6 @@ pub enum Instruction {
     #[account(mut, name = "supply_reserve")]
     #[account(name = "supply_reserve_pyth_price_oracle")]
     #[account(name = "supply_reserve_switchboard_oracle")]
-    #[account(name = "supply_liquidity_mint")]
     #[account(mut, name = "position_supply_liquidity_ta")]
     #[account(mut, name = "reserve_supply_liquidity_ta")]
     #[account(name = "supply_collateral_mint")]
@@ -230,7 +223,6 @@ pub enum Instruction {
     #[account(mut, name = "reserve_supply_collateral_ta")]
     #[account(mut, name = "debt_reserve")]
     #[account(mut, name = "debt_reserve_fee_receiver_ta")]
-    #[account(name = "debt_liquidity_mint")]
     #[account(mut, name = "position_debt_liquidity_ta")]
     #[account(mut, name = "reserve_debt_liquidity_ta")]
     SolendRebalance(RebalanceArgs),

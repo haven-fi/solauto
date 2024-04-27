@@ -29,7 +29,7 @@ use crate::{
     utils::{ ix_utils, solana_utils, solauto_utils, validation_utils },
 };
 
-pub fn process_create_referral_states<'a>(accounts: &'a [AccountInfo<'a>]) -> ProgramResult {
+pub fn process_update_referral_states<'a>(accounts: &'a [AccountInfo<'a>]) -> ProgramResult {
     let ctx = UpdateReferralStatesAccounts::context(accounts)?;
 
     if !ctx.accounts.signer.is_signer {
@@ -64,12 +64,12 @@ pub fn process_create_referral_states<'a>(accounts: &'a [AccountInfo<'a>]) -> Pr
         )?;
     }
 
+    // TODO this will fail if you add a referred_by and then the referred_by_ta is not created and not supplied
     validation_utils::validate_referral_accounts(
         &ctx.accounts.signer.key,
         &Some(authority_referral_state),
         ctx.accounts.referred_by_state,
         None,
-        None
     )?;
 
     Ok(())

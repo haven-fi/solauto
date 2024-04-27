@@ -21,10 +21,8 @@ pub fn marginfi_rebalance<'a, 'b>(
 ) -> ProgramResult {
     let (marginfi_client, obligation_position) = MarginfiClient::from(ctx.accounts.signer)?;
     let solauto_manager_accounts = SolautoManagerAccounts::from(
-        Some(ctx.accounts.supply_mint),
         Some(ctx.accounts.position_supply_ta),
         Some(ctx.accounts.bank_supply_ta),
-        Some(ctx.accounts.debt_mint),
         Some(ctx.accounts.position_debt_ta),
         Some(ctx.accounts.bank_debt_ta),
         Some(ctx.accounts.intermediary_ta),
@@ -49,7 +47,6 @@ pub fn solend_rebalance<'a, 'b>(
         Some(ctx.accounts.supply_reserve),
         Some(ctx.accounts.supply_reserve_pyth_price_oracle),
         Some(ctx.accounts.supply_reserve_switchboard_oracle),
-        Some(ctx.accounts.supply_liquidity_mint),
         Some(ctx.accounts.position_supply_liquidity_ta),
         Some(ctx.accounts.reserve_supply_liquidity_ta),
         Some(ctx.accounts.supply_collateral_mint),
@@ -57,15 +54,12 @@ pub fn solend_rebalance<'a, 'b>(
         Some(ctx.accounts.reserve_supply_collateral_ta),
         Some(ctx.accounts.debt_reserve),
         Some(ctx.accounts.debt_reserve_fee_receiver_ta),
-        Some(ctx.accounts.debt_liquidity_mint),
         Some(ctx.accounts.position_debt_liquidity_ta),
         Some(ctx.accounts.reserve_debt_liquidity_ta),
     )?;
     let solauto_manager_accounts = SolautoManagerAccounts::from(
-        Some(ctx.accounts.supply_liquidity_mint),
         Some(ctx.accounts.position_supply_liquidity_ta),
         Some(ctx.accounts.reserve_supply_liquidity_ta),
-        Some(ctx.accounts.debt_liquidity_mint),
         Some(ctx.accounts.position_debt_liquidity_ta),
         Some(ctx.accounts.reserve_debt_liquidity_ta),
         Some(ctx.accounts.intermediary_ta),

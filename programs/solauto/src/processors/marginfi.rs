@@ -61,9 +61,9 @@ pub fn process_marginfi_open_position_instruction<'a>(
         ixs_sysvar: None,
         solauto_position,
         solauto_fees_supply_ta: Some(ctx.accounts.solauto_fees_supply_ta),
-        authority_referral_state: DeserializedAccount::<ReferralStateAccount>::deserialize(Some(
-            ctx.accounts.signer_referral_state,
-        ))?,
+        authority_referral_state: DeserializedAccount::<ReferralStateAccount>::deserialize(
+            Some(ctx.accounts.signer_referral_state)
+        )?,
         referred_by_state: ctx.accounts.referred_by_state,
         referred_by_supply_ta: ctx.accounts.referred_by_supply_ta,
     };
@@ -71,7 +71,6 @@ pub fn process_marginfi_open_position_instruction<'a>(
         &std_accounts,
         true,
         LendingPlatform::Marginfi,
-        Some(ctx.accounts.supply_mint),
     )?;
 
     open_position::marginfi_open_position(ctx, std_accounts.solauto_position)
@@ -115,7 +114,6 @@ pub fn process_marginfi_interaction_instruction<'a>(
         &std_accounts,
         true,
         LendingPlatform::Marginfi,
-        ctx.accounts.supply_mint,
     )?;
 
     validation_utils::validate_marginfi_protocol_interaction_ix(&ctx, &action)?;
@@ -141,9 +139,9 @@ pub fn process_marginfi_rebalance<'a>(
         ixs_sysvar: Some(ctx.accounts.ixs_sysvar),
         solauto_position,
         solauto_fees_supply_ta: Some(ctx.accounts.solauto_fees_supply_ta),
-        authority_referral_state: DeserializedAccount::<ReferralStateAccount>::deserialize(Some(
-            ctx.accounts.authority_referral_state,
-        ))?,
+        authority_referral_state: DeserializedAccount::<ReferralStateAccount>::deserialize(
+            Some(ctx.accounts.authority_referral_state)
+        )?,
         referred_by_state: None,
         referred_by_supply_ta: ctx.accounts.referred_by_supply_ta,
     };
@@ -151,7 +149,6 @@ pub fn process_marginfi_rebalance<'a>(
         &std_accounts,
         false,
         LendingPlatform::Marginfi,
-        Some(ctx.accounts.supply_mint),
     )?;
 
     rebalance::marginfi_rebalance(ctx, std_accounts, args)

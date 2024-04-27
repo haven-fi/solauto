@@ -98,7 +98,6 @@ impl<'a> SolendClient<'a> {
         supply_reserve: Option<&'a AccountInfo<'a>>,
         supply_reserve_pyth_price_oracle: Option<&'a AccountInfo<'a>>,
         supply_reserve_switchboard_oracle: Option<&'a AccountInfo<'a>>,
-        supply_liquidity_mint: Option<&'a AccountInfo<'a>>,
         position_supply_liquidity: Option<&'a AccountInfo<'a>>,
         reserve_supply_liquidity: Option<&'a AccountInfo<'a>>,
         supply_collateral_mint: Option<&'a AccountInfo<'a>>,
@@ -106,7 +105,6 @@ impl<'a> SolendClient<'a> {
         reserve_supply_collateral: Option<&'a AccountInfo<'a>>,
         debt_reserve: Option<&'a AccountInfo<'a>>,
         debt_reserve_fee_receiver: Option<&'a AccountInfo<'a>>,
-        debt_liquidity_mint: Option<&'a AccountInfo<'a>>,
         position_debt_liquidity: Option<&'a AccountInfo<'a>>,
         reserve_debt_liquidity: Option<&'a AccountInfo<'a>>
     ) -> Result<(Self, LendingProtocolObligationPosition), ProgramError> {
@@ -118,7 +116,7 @@ impl<'a> SolendClient<'a> {
         )?;
 
         let supply_liquidity = LendingProtocolTokenAccounts::from(
-            supply_liquidity_mint,
+            None,
             position_supply_liquidity,
             reserve_supply_liquidity
         )?;
@@ -128,7 +126,7 @@ impl<'a> SolendClient<'a> {
             reserve_supply_collateral
         )?;
         let debt_liquidity = LendingProtocolTokenAccounts::from(
-            debt_liquidity_mint,
+            None,
             position_debt_liquidity,
             reserve_debt_liquidity
         )?;
@@ -333,31 +331,14 @@ impl<'a> LendingProtocolClient<'a> for SolendClient<'a> {
             return Err(SolautoError::StaleProtocolData.into());
         }
 
-        if self.supply_liquidity.is_some() {
-            let supply_liquidity = self.supply_liquidity.as_ref().unwrap();
-            validate_source_token_account(
-                std_accounts,
-                &supply_liquidity.source_ta,
-                supply_liquidity.mint
-            )?;
-        }
-
-        if self.debt_liquidity.is_some() {
-            let debt_liquidity = self.debt_liquidity.as_ref().unwrap();
-            validate_source_token_account(
-                std_accounts,
-                &debt_liquidity.source_ta,
-                debt_liquidity.mint
-            )?;
-        }
-
         validate_lending_protocol_accounts(
+            std_accounts.signer,
             &std_accounts.solauto_position,
             self.data.obligation.account_info,
-            self.supply_liquidity.as_ref().unwrap().mint,
+            self.supply_liquidity.as_ref().unwrap().source_ta.account_info,
             self.debt_liquidity.as_ref().map_or_else(
                 || None,
-                |debt| Some(debt.mint)
+                |debt| Some(debt.source_ta.account_info)
             )
         )?;
 
@@ -392,7 +373,7 @@ impl<'a> LendingProtocolClient<'a> for SolendClient<'a> {
             *supply_collateral.source_ta.account_info.key,
             *supply_reserve.key,
             *supply_liquidity.reserve_ta.key,
-            *supply_collateral.mint.key,
+            *supply_collateral.mint.as_ref().unwrap().key,
             *self.data.lending_market.account_info.key,
             *supply_collateral.reserve_ta.key,
             *self.data.obligation.account_info.key,
@@ -407,7 +388,7 @@ impl<'a> LendingProtocolClient<'a> for SolendClient<'a> {
             supply_collateral.source_ta.account_info.clone(),
             supply_reserve.clone(),
             supply_liquidity.reserve_ta.clone(),
-            supply_collateral.mint.clone(),
+            supply_collateral.mint.unwrap().clone(),
             self.data.lending_market.account_info.clone(),
             supply_collateral.reserve_ta.clone(),
             self.data.obligation.account_info.clone(),

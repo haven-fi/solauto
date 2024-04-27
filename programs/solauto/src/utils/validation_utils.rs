@@ -10,7 +10,7 @@ use spl_associated_token_account::get_associated_token_address;
 use spl_token::state::Account as TokenAccount;
 
 use crate::{
-    constants::SOLAUTO_MANAGER,
+    constants::{ SOLAUTO_FEES_WALLET, SOLAUTO_MANAGER },
     types::{
         instruction::{
             accounts::{
@@ -42,28 +42,23 @@ use crate::constants::{ KAMINO_PROGRAM, MARGINFI_PROGRAM, SOLEND_PROGRAM };
 pub fn generic_instruction_validation(
     accounts: &SolautoStandardAccounts,
     authority_only_ix: bool,
-    lending_platform: LendingPlatform,
-    supply_token_mint: Option<&AccountInfo>
+    lending_platform: LendingPlatform
 ) -> ProgramResult {
     validate_signer(accounts.signer, &accounts.solauto_position, authority_only_ix)?;
     validate_program_account(accounts.lending_protocol, lending_platform)?;
 
-    if supply_token_mint.is_some() {
-        validate_referral_accounts(
-            &accounts.solauto_position.data.authority,
-            &accounts.authority_referral_state,
-            accounts.referred_by_state,
-            accounts.referred_by_supply_ta,
-            supply_token_mint
-        )?;
+    validate_referral_accounts(
+        &accounts.solauto_position.data.authority,
+        &accounts.authority_referral_state,
+        accounts.referred_by_state,
+        accounts.referred_by_supply_ta
+    )?;
 
-        if
-            accounts.solauto_fees_supply_ta.is_some() &&
-            accounts.solauto_fees_supply_ta.unwrap().key !=
-                &get_associated_token_address(&SOLAUTO_MANAGER, supply_token_mint.unwrap().key)
-        {
-            return Err(SolautoError::IncorrectFeesReceiverAccount.into());
-        }
+    if
+        accounts.solauto_fees_supply_ta.is_some() &&
+        accounts.solauto_fees_supply_ta.as_ref().unwrap().owner != &SOLAUTO_FEES_WALLET
+    {
+        return Err(SolautoError::IncorrectFeesReceiverAccount.into());
     }
 
     if accounts.ixs_sysvar.is_some() && accounts.ixs_sysvar.unwrap().key != &ixs_sysvar_id {
@@ -258,10 +253,8 @@ pub fn validate_solend_protocol_interaction_ix(
                 ctx.accounts.supply_reserve,
                 ctx.accounts.supply_reserve_pyth_price_oracle,
                 ctx.accounts.supply_reserve_switchboard_oracle,
-                ctx.accounts.supply_liquidity_mint,
                 ctx.accounts.authority_supply_liquidity_ta,
                 ctx.accounts.reserve_supply_liquidity_ta,
-                ctx.accounts.supply_collateral_mint,
                 ctx.accounts.supply_collateral_mint,
                 ctx.accounts.authority_supply_collateral_ta,
                 ctx.accounts.reserve_supply_collateral_ta,
@@ -274,7 +267,6 @@ pub fn validate_solend_protocol_interaction_ix(
             &[
                 ctx.accounts.debt_reserve,
                 ctx.accounts.debt_reserve_fee_receiver_ta,
-                ctx.accounts.debt_liquidity_mint,
                 ctx.accounts.authority_debt_liquidity_ta,
                 ctx.accounts.reserve_debt_liquidity_ta,
             ]
@@ -303,8 +295,7 @@ pub fn validate_referral_accounts(
     referral_state_authority: &Pubkey,
     authority_referral_state: &Option<DeserializedAccount<ReferralStateAccount>>,
     referred_by_state: Option<&AccountInfo>,
-    referred_by_supply_ta: Option<&AccountInfo>,
-    supply_token_mint: Option<&AccountInfo>
+    referred_by_supply_ta: Option<&AccountInfo>
 ) -> ProgramResult {
     if authority_referral_state.is_none() {
         return Ok(());
@@ -338,17 +329,9 @@ pub fn validate_referral_accounts(
         }
     }
 
-    if supply_token_mint.is_none() {
-        return Ok(());
-    }
-
     if
         (authority_referred_by_state.is_some() && referred_by_supply_ta.is_none()) ||
-        referred_by_supply_ta.unwrap().key !=
-            &get_associated_token_address(
-                authority_referred_by_state.as_ref().unwrap(),
-                supply_token_mint.unwrap().key
-            )
+        referred_by_supply_ta.as_ref().unwrap().owner != referred_by_state.as_ref().unwrap().key
     {
         msg!(
             "Provided incorrect referred_by_supply_ta according to the given authority and token mint"
@@ -359,54 +342,60 @@ pub fn validate_referral_accounts(
     Ok(())
 }
 
-pub fn validate_source_token_account(
-    std_accounts: &SolautoStandardAccounts,
-    source_ta: &DeserializedAccount<TokenAccount>,
-    token_mint: &AccountInfo
-) -> ProgramResult {
-    if
-        source_ta.account_info.key !=
-            &get_associated_token_address(
-                std_accounts.solauto_position.account_info.key,
-                token_mint.key
-            ) &&
-        source_ta.account_info.key !=
-            &get_associated_token_address(std_accounts.signer.key, token_mint.key)
-    {
-        msg!("Invalid source token account provided for the given solauto position & token mint");
-        return Err(ProgramError::InvalidAccountData.into());
-    }
-    Ok(())
-}
+// TODO: remove me?
+// pub fn validate_source_token_account(
+//     std_accounts: &SolautoStandardAccounts,
+//     source_ta: &DeserializedAccount<TokenAccount>
+// ) -> ProgramResult {
+//     if
+//         source_ta.account_info.owner != &std_accounts.solauto_position.data.authority &&
+//         source_ta.account_info.owner != std_accounts.signer.key
+//     {
+//         msg!("Invalid source token account provided for the given solauto position & token mint");
+//         return Err(ProgramError::InvalidAccountData.into());
+//     }
+//     Ok(())
+// }
 
 pub fn validate_lending_protocol_accounts(
+    signer: &AccountInfo,
     solauto_position: &DeserializedAccount<PositionAccount>,
     protocol_position: &AccountInfo,
-    supply_mint: &AccountInfo,
-    debt_mint: Option<&AccountInfo>
+    source_supply_ta: &AccountInfo,
+    source_debt_ta: Option<&AccountInfo>
 ) -> ProgramResult {
     if !solauto_position.data.self_managed {
-        let protocol_data = &solauto_position.data.position
-            .as_ref()
-            .unwrap()
-            .protocol_data;
+        let protocol_data = &solauto_position.data.position.as_ref().unwrap().protocol_data;
 
         if protocol_position.key != &protocol_data.protocol_position {
             msg!("Incorrect protocol-owned account");
             return Err(SolautoError::InvalidSolautoPositionAccount.into());
         }
 
-        if supply_mint.key != &protocol_data.supply_mint {
-            msg!("Incorrect supply mint account");
+        if
+            source_supply_ta.key !=
+                &get_associated_token_address(
+                    &solauto_position.data.authority,
+                    &protocol_data.supply_mint
+                ) &&
+            source_supply_ta.key !=
+                &get_associated_token_address(signer.key, &protocol_data.supply_mint)
+        {
+            msg!("Incorrect supply mint token account");
             return Err(SolautoError::InvalidSolautoPositionAccount.into());
         }
 
         if
-            debt_mint.is_some() &&
-            protocol_data.debt_mint.is_some() &&
-            debt_mint.unwrap().key != &protocol_data.debt_mint.unwrap()
+            source_debt_ta.is_some() &&
+            source_debt_ta.unwrap().key !=
+                &get_associated_token_address(
+                    &solauto_position.data.authority,
+                    &protocol_data.debt_mint.unwrap()
+                ) &&
+            source_debt_ta.unwrap().key !=
+                &get_associated_token_address(signer.key, &protocol_data.debt_mint.unwrap())
         {
-            msg!("Incorrect debt mint account");
+            msg!("Incorrect debt mint token account");
             return Err(SolautoError::InvalidSolautoPositionAccount.into());
         }
     }

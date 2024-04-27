@@ -6,7 +6,7 @@ use spl_token::state::Account as TokenAccount;
 use super::{instruction::SolautoStandardAccounts, shared::DeserializedAccount};
 
 pub struct LendingProtocolTokenAccounts<'a> {
-    pub mint: &'a AccountInfo<'a>,
+    pub mint: Option<&'a AccountInfo<'a>>,
     pub source_ta: DeserializedAccount<'a, TokenAccount>,
     pub reserve_ta: &'a AccountInfo<'a>,
 }
@@ -19,7 +19,7 @@ impl<'a> LendingProtocolTokenAccounts<'a> {
     ) -> Result<Option<Self>, ProgramError> {
         if mint.is_some() && source_ta.is_some() && reserve_ta.is_some() {
             Ok(Some(Self {
-                mint: mint.unwrap(),
+                mint,
                 source_ta: DeserializedAccount::<TokenAccount>::unpack(source_ta)?.unwrap(),
                 reserve_ta: reserve_ta.unwrap(),
             }))

@@ -24,7 +24,7 @@ use super::{
     },
 };
 use crate::{
-    constants::{ JUP_PROGRAM, MARGINFI_PROGRAM, REFERRER_FEE_SPLIT, SOLAUTO_MANAGER, WSOL_MINT },
+    constants::{ JUP_PROGRAM, MARGINFI_PROGRAM, REFERRER_FEE_SPLIT, SOLAUTO_FEES_WALLET, WSOL_MINT },
     types::{
         instruction::{
             RebalanceArgs,
@@ -220,7 +220,7 @@ pub fn init_solauto_fees_supply_ta<'a>(
     solauto_fees_supply_ta: &'a AccountInfo<'a>,
     supply_mint: &'a AccountInfo<'a>
 ) -> ProgramResult {
-    if solauto_fees_wallet.key != &SOLAUTO_MANAGER {
+    if solauto_fees_wallet.key != &SOLAUTO_FEES_WALLET {
         return Err(SolautoError::IncorrectFeesReceiverAccount.into());
     }
     init_ata_if_needed(
