@@ -65,13 +65,14 @@ pub fn process_update_referral_states<'a>(accounts: &'a [AccountInfo<'a>]) -> Pr
     }
 
     // TODO for solauto manager:
-    // solauto manager must have a idempotent create token account instruction (only under condition of a first time rebalance for every unique referred_by_state and supply token  
+    // solauto manager must have a idempotent create token account instruction (only under condition of a first time boost rebalance for every unique referred_by_state and supply token  
 
     validation_utils::validate_referral_accounts(
         &ctx.accounts.signer.key,
         &Some(authority_referral_state),
         ctx.accounts.referred_by_state,
         None,
+        false
     )?;
 
     Ok(())

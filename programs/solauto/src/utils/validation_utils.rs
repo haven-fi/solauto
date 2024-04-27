@@ -50,7 +50,8 @@ pub fn generic_instruction_validation(
         &accounts.solauto_position.data.authority,
         &accounts.authority_referral_state,
         accounts.referred_by_state,
-        accounts.referred_by_supply_ta
+        accounts.referred_by_supply_ta,
+        true
     )?;
 
     if
@@ -294,7 +295,8 @@ pub fn validate_referral_accounts(
     referral_state_authority: &Pubkey,
     authority_referral_state: &Option<DeserializedAccount<ReferralStateAccount>>,
     referred_by_state: Option<&AccountInfo>,
-    referred_by_supply_ta: Option<&AccountInfo>
+    referred_by_supply_ta: Option<&AccountInfo>,
+    check_supply_ta: bool
 ) -> ProgramResult {
     if authority_referral_state.is_none() {
         return Ok(());
@@ -329,7 +331,9 @@ pub fn validate_referral_accounts(
     }
 
     if
-        (authority_referred_by_state.is_some() && referred_by_supply_ta.is_none()) ||
+        (check_supply_ta &&
+            authority_referred_by_state.is_some() &&
+            referred_by_supply_ta.is_none()) ||
         referred_by_supply_ta.as_ref().unwrap().owner != referred_by_state.as_ref().unwrap().key
     {
         msg!(
