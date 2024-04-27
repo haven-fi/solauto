@@ -46,13 +46,15 @@ pub fn generic_instruction_validation(
     validate_signer(accounts.signer, &accounts.solauto_position, authority_only_ix)?;
     validate_program_account(accounts.lending_protocol, lending_platform)?;
 
-    validate_referral_accounts(
-        &accounts.solauto_position.data.authority,
-        &accounts.authority_referral_state,
-        accounts.referred_by_state,
-        accounts.referred_by_supply_ta,
-        true
-    )?;
+    if accounts.authority_referral_state.is_some() {
+        validate_referral_accounts(
+            &accounts.solauto_position.data.authority,
+            accounts.authority_referral_state.as_ref().unwrap(),
+            accounts.referred_by_state,
+            accounts.referred_by_supply_ta,
+            true
+        )?;
+    }
 
     if
         accounts.solauto_fees_supply_ta.is_some() &&
@@ -293,41 +295,26 @@ pub fn validate_solend_protocol_interaction_ix(
 
 pub fn validate_referral_accounts(
     referral_state_authority: &Pubkey,
-    authority_referral_state: &Option<DeserializedAccount<ReferralStateAccount>>,
+    authority_referral_state: &DeserializedAccount<ReferralStateAccount>,
     referred_by_state: Option<&AccountInfo>,
     referred_by_supply_ta: Option<&AccountInfo>,
     check_supply_ta: bool
 ) -> ProgramResult {
-    if authority_referral_state.is_none() {
-        return Ok(());
-    }
-
     let referral_state_seeds = &get_referral_account_seeds(referral_state_authority);
     let (referral_state_pda, _bump) = Pubkey::find_program_address(
         referral_state_seeds,
         &crate::ID
     );
-    if &referral_state_pda != authority_referral_state.as_ref().unwrap().account_info.key {
+    if &referral_state_pda != authority_referral_state.account_info.key {
         msg!("Invalid referral position account given for the provided authority");
         return Err(ProgramError::InvalidAccountData.into());
     }
 
-    let authority_referred_by_state = authority_referral_state
-        .as_ref()
-        .unwrap().data.referred_by_state;
+    let authority_referred_by_state = authority_referral_state.data.referred_by_state;
 
-    if referred_by_state.is_some() {
-        if authority_referral_state.is_none() {
-            msg!(
-                "Provided referred_by_state account when the authority referral state has not been referred"
-            );
-            return Err(ProgramError::InvalidAccountData.into());
-        }
-
-        if referred_by_state.as_ref().unwrap().key != authority_referred_by_state.as_ref().unwrap() {
-            msg!("Provided incorrect referred_by_state account given the authority referral state");
-            return Err(ProgramError::InvalidAccountData.into());
-        }
+    if referred_by_state.is_some() && referred_by_state.as_ref().unwrap().key != authority_referred_by_state.as_ref().unwrap() {
+        msg!("Provided incorrect referred_by_state account given the authority referral state");
+        return Err(ProgramError::InvalidAccountData.into());
     }
 
     if

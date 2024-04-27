@@ -60,7 +60,7 @@ pub fn process_update_referral_states<'a>(accounts: &'a [AccountInfo<'a>], args:
 
     validation_utils::validate_referral_accounts(
         &ctx.accounts.signer.key,
-        &Some(authority_referral_state),
+        &authority_referral_state,
         ctx.accounts.referred_by_state,
         None,
         false
