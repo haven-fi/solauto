@@ -1,9 +1,6 @@
 use solana_program::{entrypoint::ProgramResult, msg, program_error::ProgramError};
 use solend_sdk::{math::BPS_SCALER, state::Reserve};
-use std::{
-    cmp::max,
-    ops::{Div, Mul},
-};
+use std::ops::{Div, Mul};
 
 use crate::{
     constants::USD_DECIMALS,

@@ -104,7 +104,6 @@ pub fn create_new_solauto_position<'a>(
 
 pub fn get_or_create_referral_state<'a>(
     system_program: &'a AccountInfo<'a>,
-    token_program: &'a AccountInfo<'a>,
     rent: &'a AccountInfo<'a>,
     signer: &'a AccountInfo<'a>,
     authority: &'a AccountInfo<'a>,

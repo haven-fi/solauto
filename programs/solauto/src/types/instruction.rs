@@ -9,7 +9,6 @@ use super::shared::*;
 pub enum Instruction {
     #[account(signer, mut, name = "signer")]
     #[account(name = "system_program")]
-    #[account(name = "token_program")]
     #[account(name = "ata_program")]
     #[account(name = "rent")]
     #[account(mut, name = "signer_referral_state")]

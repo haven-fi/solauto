@@ -204,7 +204,7 @@ pub fn require_accounts(accounts: &[Option<&AccountInfo>]) -> ProgramResult {
 }
 
 pub fn validate_marginfi_protocol_interaction_ix(
-    ctx: &Context<MarginfiProtocolInteractionAccounts>,
+    _ctx: &Context<MarginfiProtocolInteractionAccounts>,
     action: &SolautoAction
 ) -> ProgramResult {
     let require_supply_accounts = || {

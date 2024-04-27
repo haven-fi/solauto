@@ -1,7 +1,12 @@
 use std::ops::Div;
 
 use solana_program::{
-    account_info::AccountInfo, entrypoint::ProgramResult, instruction::{ get_stack_height, TRANSACTION_LEVEL_STACK_HEIGHT }, msg, program_error::ProgramError, pubkey::Pubkey, sysvar::instructions::{ load_current_index_checked, load_instruction_at_checked }
+    account_info::AccountInfo,
+    entrypoint::ProgramResult,
+    instruction::{ get_stack_height, TRANSACTION_LEVEL_STACK_HEIGHT },
+    msg,
+    program_error::ProgramError,
+    sysvar::instructions::{ load_current_index_checked, load_instruction_at_checked },
 };
 use spl_associated_token_account::get_associated_token_address;
 
@@ -17,14 +22,18 @@ use crate::{
                 UpdatePositionAccounts,
                 UpdateReferralStatesAccounts,
             },
-            UpdatePositionData, UpdateReferralStatesArgs,
+            UpdatePositionData,
+            UpdateReferralStatesArgs,
         },
         shared::{ DeserializedAccount, PositionAccount, ReferralStateAccount, SolautoError },
     },
     utils::{ ix_utils, solana_utils, solauto_utils, validation_utils },
 };
 
-pub fn process_update_referral_states<'a>(accounts: &'a [AccountInfo<'a>], args: UpdateReferralStatesArgs) -> ProgramResult {
+pub fn process_update_referral_states<'a>(
+    accounts: &'a [AccountInfo<'a>],
+    args: UpdateReferralStatesArgs
+) -> ProgramResult {
     let ctx = UpdateReferralStatesAccounts::context(accounts)?;
 
     if !ctx.accounts.signer.is_signer {
@@ -33,30 +42,28 @@ pub fn process_update_referral_states<'a>(accounts: &'a [AccountInfo<'a>], args:
 
     let authority_referral_state = solauto_utils::get_or_create_referral_state(
         ctx.accounts.system_program,
-        ctx.accounts.token_program,
         ctx.accounts.rent,
         ctx.accounts.signer,
         ctx.accounts.signer,
         ctx.accounts.signer_referral_state,
         args.referral_fees_dest_mint,
-        ctx.accounts.referred_by_state,
+        ctx.accounts.referred_by_state
     )?;
 
     if ctx.accounts.referred_by_state.is_some() {
         solauto_utils::get_or_create_referral_state(
             ctx.accounts.system_program,
-            ctx.accounts.token_program,
             ctx.accounts.rent,
             ctx.accounts.signer,
             ctx.accounts.referred_by_authority.unwrap(),
             ctx.accounts.referred_by_state.unwrap(),
             None,
-            None,
+            None
         )?;
     }
 
     // TODO for solauto manager:
-    // solauto manager must have a idempotent create token account instruction (only under condition of a first time boost rebalance for every unique referred_by_state and supply token  
+    // solauto manager must have a idempotent create token account instruction (only under condition of a first time boost rebalance for every unique referred_by_state and supply token
 
     validation_utils::validate_referral_accounts(
         &ctx.accounts.signer.key,

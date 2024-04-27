@@ -1,5 +1,4 @@
 use solana_program::entrypoint::ProgramResult;
-use spl_token::state::Account as TokenAccount;
 
 use crate::{
     clients::solend::SolendClient,

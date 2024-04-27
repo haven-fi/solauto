@@ -58,7 +58,7 @@ pub fn marginfi_open_position<'a>(
             Obligation::LEN, // TODO: get marginfi account space from MarginfiAccount::LEN from generated code
         )?;
     } else {
-        let owner = get_owner(&solauto_position, ctx.accounts.signer);
+        let _owner = get_owner(&solauto_position, ctx.accounts.signer);
         // TODO deserialize marginfi account to check to make sure the account owner is correct
         // if owner.key != &marginfi_account.owner {
         //     msg!("Provided incorrect marginfi account for the given signer & solauto_position");
