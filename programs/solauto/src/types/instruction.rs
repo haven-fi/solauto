@@ -19,6 +19,8 @@ pub enum Instruction {
     #[account(mut, optional, name = "referred_by_state")]
     #[account(optional, name = "referred_by_authority")]
     #[account(mut, optional, name = "referred_by_dest_ta")]
+    #[account(optional, name = "supply_mint")]
+    #[account(optional, name = "lending_protocol_account")]
     UpdateReferralStates,
 
     /// Moves the referral fees to an intermediary token account, where a jup swap will convert to the destination token mint

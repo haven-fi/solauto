@@ -7,7 +7,6 @@ use solana_program::{
     sysvar::instructions::ID as ixs_sysvar_id,
 };
 use spl_associated_token_account::get_associated_token_address;
-use spl_token::state::Account as TokenAccount;
 
 use crate::{
     constants::{ SOLAUTO_FEES_WALLET, SOLAUTO_MANAGER },
@@ -341,21 +340,6 @@ pub fn validate_referral_accounts(
 
     Ok(())
 }
-
-// TODO: remove me?
-// pub fn validate_source_token_account(
-//     std_accounts: &SolautoStandardAccounts,
-//     source_ta: &DeserializedAccount<TokenAccount>
-// ) -> ProgramResult {
-//     if
-//         source_ta.account_info.owner != &std_accounts.solauto_position.data.authority &&
-//         source_ta.account_info.owner != std_accounts.signer.key
-//     {
-//         msg!("Invalid source token account provided for the given solauto position & token mint");
-//         return Err(ProgramError::InvalidAccountData.into());
-//     }
-//     Ok(())
-// }
 
 pub fn validate_lending_protocol_accounts(
     signer: &AccountInfo,

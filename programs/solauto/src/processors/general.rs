@@ -64,7 +64,9 @@ pub fn process_update_referral_states<'a>(accounts: &'a [AccountInfo<'a>]) -> Pr
         )?;
     }
 
-    // TODO this will fail if you add a referred_by and then the referred_by_ta is not created and not supplied
+    // TODO for solauto manager:
+    // solauto manager must have a idempotent create token account instruction (only under condition of a first time rebalance for every unique referred_by_state and supply token  
+
     validation_utils::validate_referral_accounts(
         &ctx.accounts.signer.key,
         &Some(authority_referral_state),
