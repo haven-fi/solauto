@@ -90,13 +90,12 @@ pub struct PositionAccount {
     pub position: Option<PositionData>,
 }
 
-pub const REFERRAL_ACCOUNT_SPACE: usize = 300;
+pub const REFERRAL_ACCOUNT_SPACE: usize = 200;
 #[derive(ShankAccount, BorshDeserialize, BorshSerialize, Clone, Debug)]
 pub struct ReferralStateAccount {
     pub authority: Pubkey,
     pub referred_by_state: Option<Pubkey>,
     pub dest_fees_mint: Pubkey,
-    pub dest_fees_ta: Pubkey,
 }
 
 #[derive(PartialEq)]

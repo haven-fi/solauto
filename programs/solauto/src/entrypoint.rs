@@ -17,7 +17,7 @@ pub fn process_instruction<'a>(
 ) -> ProgramResult {
     let instruction = Instruction::try_from_slice(data)?;
     match instruction {
-        Instruction::UpdateReferralStates => process_update_referral_states(accounts),
+        Instruction::UpdateReferralStates(args) => process_update_referral_states(accounts, args),
         Instruction::ConvertReferralFees => process_convert_referral_fees(accounts),
         Instruction::ClaimReferralFees => process_claim_referral_fees(accounts),
 

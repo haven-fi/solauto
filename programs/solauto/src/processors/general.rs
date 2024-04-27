@@ -1,12 +1,7 @@
 use std::ops::Div;
 
 use solana_program::{
-    account_info::AccountInfo,
-    entrypoint::ProgramResult,
-    instruction::{ get_stack_height, TRANSACTION_LEVEL_STACK_HEIGHT },
-    msg,
-    program_error::ProgramError,
-    sysvar::instructions::{ load_current_index_checked, load_instruction_at_checked },
+    account_info::AccountInfo, entrypoint::ProgramResult, instruction::{ get_stack_height, TRANSACTION_LEVEL_STACK_HEIGHT }, msg, program_error::ProgramError, pubkey::Pubkey, sysvar::instructions::{ load_current_index_checked, load_instruction_at_checked }
 };
 use spl_associated_token_account::get_associated_token_address;
 
@@ -22,14 +17,14 @@ use crate::{
                 UpdatePositionAccounts,
                 UpdateReferralStatesAccounts,
             },
-            UpdatePositionData,
+            UpdatePositionData, UpdateReferralStatesArgs,
         },
         shared::{ DeserializedAccount, PositionAccount, ReferralStateAccount, SolautoError },
     },
     utils::{ ix_utils, solana_utils, solauto_utils, validation_utils },
 };
 
-pub fn process_update_referral_states<'a>(accounts: &'a [AccountInfo<'a>]) -> ProgramResult {
+pub fn process_update_referral_states<'a>(accounts: &'a [AccountInfo<'a>], args: UpdateReferralStatesArgs) -> ProgramResult {
     let ctx = UpdateReferralStatesAccounts::context(accounts)?;
 
     if !ctx.accounts.signer.is_signer {
@@ -42,11 +37,9 @@ pub fn process_update_referral_states<'a>(accounts: &'a [AccountInfo<'a>]) -> Pr
         ctx.accounts.rent,
         ctx.accounts.signer,
         ctx.accounts.signer,
-        ctx.accounts.dest_referral_fees_mint,
         ctx.accounts.signer_referral_state,
-        ctx.accounts.signer_referral_dest_ta,
+        args.referral_fees_dest_mint,
         ctx.accounts.referred_by_state,
-        ctx.accounts.referred_by_dest_ta
     )?;
 
     if ctx.accounts.referred_by_state.is_some() {
@@ -56,11 +49,9 @@ pub fn process_update_referral_states<'a>(accounts: &'a [AccountInfo<'a>]) -> Pr
             ctx.accounts.rent,
             ctx.accounts.signer,
             ctx.accounts.referred_by_authority.unwrap(),
-            ctx.accounts.dest_referral_fees_mint,
             ctx.accounts.referred_by_state.unwrap(),
-            ctx.accounts.referred_by_dest_ta.unwrap(),
             None,
-            None
+            None,
         )?;
     }
 

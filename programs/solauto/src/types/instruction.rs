@@ -1,6 +1,6 @@
 use borsh::{BorshDeserialize, BorshSerialize};
 use shank::{ShankContext, ShankInstruction};
-use solana_program::account_info::AccountInfo;
+use solana_program::{account_info::AccountInfo, pubkey::Pubkey};
 
 use super::shared::*;
 
@@ -12,13 +12,10 @@ pub enum Instruction {
     #[account(name = "token_program")]
     #[account(name = "ata_program")]
     #[account(name = "rent")]
-    #[account(name = "dest_referral_fees_mint")]
     #[account(mut, name = "signer_referral_state")]
-    #[account(mut, name = "signer_referral_dest_ta")]
     #[account(mut, optional, name = "referred_by_state")]
     #[account(optional, name = "referred_by_authority")]
-    #[account(mut, optional, name = "referred_by_dest_ta")]
-    UpdateReferralStates,
+    UpdateReferralStates(UpdateReferralStatesArgs),
 
     /// Moves the referral fees to an intermediary token account, where a jup swap will convert to the destination token mint
     #[account(signer, mut, name = "solauto_manager")]
@@ -228,6 +225,12 @@ pub enum Instruction {
 }
 
 pub const SOLAUTO_REBALANCE_IX_DISCRIMINATORS: [u64; 2] = [11, 12];
+
+#[derive(BorshSerialize, BorshDeserialize, Clone, Debug)]
+pub struct UpdateReferralStatesArgs {
+    /// The destination token mint to accumulate referral fees in
+    pub referral_fees_dest_mint: Option<Pubkey>
+}
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug)]
 pub struct UpdatePositionData {

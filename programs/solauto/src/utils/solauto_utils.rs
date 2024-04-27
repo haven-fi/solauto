@@ -24,7 +24,13 @@ use super::{
     },
 };
 use crate::{
-    constants::{ JUP_PROGRAM, MARGINFI_PROGRAM, REFERRER_FEE_SPLIT, SOLAUTO_FEES_WALLET, WSOL_MINT },
+    constants::{
+        JUP_PROGRAM,
+        MARGINFI_PROGRAM,
+        REFERRER_FEE_SPLIT,
+        SOLAUTO_FEES_WALLET,
+        WSOL_MINT,
+    },
     types::{
         instruction::{
             RebalanceArgs,
@@ -102,21 +108,10 @@ pub fn get_or_create_referral_state<'a>(
     rent: &'a AccountInfo<'a>,
     signer: &'a AccountInfo<'a>,
     authority: &'a AccountInfo<'a>,
-    referral_fees_mint: &'a AccountInfo<'a>,
     referral_state: &'a AccountInfo<'a>,
-    referral_dest_ta: &'a AccountInfo<'a>,
+    referral_fees_dest_mint: Option<Pubkey>,
     referred_by_state: Option<&'a AccountInfo<'a>>,
-    referred_by_dest_ta: Option<&'a AccountInfo<'a>>
 ) -> Result<DeserializedAccount<'a, ReferralStateAccount>, ProgramError> {
-    let validate_correct_token_account = |wallet: &AccountInfo, token_account: &AccountInfo| {
-        let token_account_pubkey = get_associated_token_address(wallet.key, &WSOL_MINT);
-        if &token_account_pubkey != token_account.key {
-            msg!("Token account is not correct for the given token mint & wallet");
-            return Err(ProgramError::InvalidAccountData);
-        }
-        Ok(())
-    };
-
     let referral_state_seeds = get_referral_account_seeds(authority.key);
     let (referral_state_pda, _bump) = Pubkey::find_program_address(
         referral_state_seeds.as_slice(),
@@ -127,31 +122,21 @@ pub fn get_or_create_referral_state<'a>(
         return Err(ProgramError::InvalidAccountData.into());
     }
 
-    validate_correct_token_account(referral_state, referral_dest_ta)?;
-    if referred_by_state.is_some() && referred_by_dest_ta.is_some() {
-        validate_correct_token_account(referral_state, referral_dest_ta)?;
-        if referred_by_state.unwrap().owner != &crate::ID {
-            msg!("Referred by position account is not owned by Solauto");
-            return Err(ProgramError::InvalidAccountData.into());
-        }
-    }
-
     if account_is_rent_exempt(rent, referral_state)? {
-        let mut referral_state_account = Some(
-            DeserializedAccount::<ReferralStateAccount>::deserialize(Some(referral_state))?.unwrap()
-        );
+        let mut referral_state_account = DeserializedAccount::<ReferralStateAccount>::deserialize(Some(referral_state))?.unwrap();
 
-        if referral_state_account.as_ref().unwrap().data.referred_by_state.is_none() {
-            referral_state_account.as_mut().unwrap().data.referred_by_state = Some(
-                referred_by_dest_ta.unwrap().key.clone()
+        if referral_state_account.data.referred_by_state.is_none() {
+            referral_state_account.data.referred_by_state = Some(
+                referred_by_state.unwrap().key.clone()
             );
         }
 
-        if referral_state_account.is_some() {
-            ix_utils::update_data(referral_state_account.as_mut().unwrap())?;
+        if referral_fees_dest_mint.is_some() && referral_fees_dest_mint.as_ref().unwrap() != &referral_state_account.data.dest_fees_mint {
+            referral_state_account.data.dest_fees_mint = referral_fees_dest_mint.unwrap().clone();
         }
 
-        Ok(referral_state_account.unwrap())
+        ix_utils::update_data(&mut referral_state_account)?;
+        Ok(referral_state_account)
     } else {
         init_new_account(
             system_program,
@@ -163,39 +148,16 @@ pub fn get_or_create_referral_state<'a>(
             REFERRAL_ACCOUNT_SPACE
         )?;
 
-        let fees_mint = referral_fees_mint.key;
-        if fees_mint != &WSOL_MINT {
-            msg!(format!("Referral fees mint must be wSOL {}", WSOL_MINT).as_str());
-            return Err(ProgramError::InvalidAccountData.into());
-        }
-
-        init_ata_if_needed(
-            token_program,
-            system_program,
-            rent,
-            signer,
-            referral_state,
-            referral_dest_ta,
-            referral_fees_mint
-        )?;
-
-        if referred_by_state.is_some() && referred_by_dest_ta.is_some() {
-            init_ata_if_needed(
-                token_program,
-                system_program,
-                rent,
-                signer,
-                referred_by_state.unwrap(),
-                referred_by_dest_ta.unwrap(),
-                referral_fees_mint
-            )?;
-        }
+        let dest_mint = if referral_fees_dest_mint.is_some() {
+            referral_fees_dest_mint.as_ref().unwrap()
+        } else {
+            &WSOL_MINT
+        };
 
         let data = Box::new(ReferralStateAccount {
             authority: authority.key.clone(),
             referred_by_state: referred_by_state.map_or(None, |r| Some(r.key.clone())),
-            dest_fees_ta: referral_dest_ta.key.clone(),
-            dest_fees_mint: WSOL_MINT.clone(),
+            dest_fees_mint: dest_mint.clone(),
         });
 
         let deserialized_account = DeserializedAccount {
