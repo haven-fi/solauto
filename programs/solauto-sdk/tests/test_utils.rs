@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use solana_program_test::{ ProgramTest, ProgramTestContext };
-use solana_sdk::{ instruction::Instruction, pubkey::Pubkey, signature::Keypair, signer::Signer };
+use solana_sdk::{ pubkey::Pubkey, signature::Keypair, signer::Signer };
 use solauto_sdk::{ generated::instructions::UpdateReferralStatesBuilder, SOLAUTO_ID };
 use spl_associated_token_account::get_associated_token_address;
 
@@ -21,8 +21,7 @@ pub const WSOL_MINT: &str = "So11111111111111111111111111111111111111112";
 pub const USDC_MINT: &str = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
 pub const MARGINFI_PROGRAM: &str = "MFv2hWf31Z9kbCa1snEPYctwafyhdvnV7FZnsebVacA";
 
-pub struct GeneralTestData {
-    pub ctx: ProgramTestContext,
+pub struct GeneralTestAccounts {
     pub lending_protocol: Pubkey,
     pub solauto_fees_wallet: Pubkey,
     pub solauto_fees_supply_ta: Pubkey,
@@ -39,6 +38,11 @@ pub struct GeneralTestData {
     pub signer_debt_liquidity_ta: Pubkey,
     pub position_supply_liquidity_ta: Pubkey,
     pub supply_liquidity_mint: Pubkey,
+}
+
+pub struct GeneralTestData {
+    pub ctx: ProgramTestContext,
+    pub accounts: GeneralTestAccounts,
 }
 
 impl GeneralTestData {
@@ -127,42 +131,51 @@ impl GeneralTestData {
 
         Self {
             ctx,
-            lending_protocol,
-            solauto_fees_wallet,
-            solauto_fees_supply_ta,
-            dest_referral_fees_mint,
-            signer_referral_state,
-            signer_referral_dest_ta,
-            referred_by_state,
-            referred_by_authority: referred_by_authority.copied(),
-            referred_by_dest_ta,
-            referred_by_supply_ta,
-            solauto_position,
-            position_supply_liquidity_ta,
-            supply_liquidity_mint: supply_liquidity_mint.clone(),
-            signer_debt_liquidity_ta,
-            position_debt_liquidity_ta,
-            debt_liquidity_mint: debt_liquidity_mint.clone(),
+            accounts: GeneralTestAccounts {
+                lending_protocol,
+                solauto_fees_wallet,
+                solauto_fees_supply_ta,
+                dest_referral_fees_mint,
+                signer_referral_state,
+                signer_referral_dest_ta,
+                referred_by_state,
+                referred_by_authority: referred_by_authority.copied(),
+                referred_by_dest_ta,
+                referred_by_supply_ta,
+                solauto_position,
+                position_supply_liquidity_ta,
+                supply_liquidity_mint: supply_liquidity_mint.clone(),
+                signer_debt_liquidity_ta,
+                position_debt_liquidity_ta,
+                debt_liquidity_mint: debt_liquidity_mint.clone(),
+            },
         }
     }
 
-    pub fn ix_update_referral_states(&self) -> Instruction {
-        UpdateReferralStatesBuilder::new()
+    pub fn update_referral_states(&self) -> UpdateReferralStatesBuilder {
+        let mut builder = UpdateReferralStatesBuilder::new();
+        
+        builder
             .signer(self.ctx.payer.pubkey())
-            .dest_referral_fees_mint(self.dest_referral_fees_mint)
-            .signer_referral_state(self.signer_referral_state)
-            .signer_referral_dest_ta(self.signer_referral_dest_ta)
-            .referred_by_state(self.referred_by_state)
-            .referred_by_authority(self.referred_by_authority)
-            .referred_by_dest_ta(self.referred_by_dest_ta)
-            .instruction()
+            .dest_referral_fees_mint(self.accounts.dest_referral_fees_mint)
+            .signer_referral_state(self.accounts.signer_referral_state)
+            .signer_referral_dest_ta(self.accounts.signer_referral_dest_ta)
+            .referred_by_state(self.accounts.referred_by_state)
+            .referred_by_authority(self.accounts.referred_by_authority)
+            .referred_by_dest_ta(self.accounts.referred_by_dest_ta);
+
+        builder
     }
+}
+
+pub struct MarginfiTestAccounts {
+    pub marginfi_group: Option<Pubkey>,
+    pub marginfi_account: Option<Pubkey>,
 }
 
 pub struct MarginfiTestData {
     pub general: GeneralTestData,
-    pub marginfi_group: Pubkey,
-    pub marginfi_account: Pubkey,
+    pub accounts: MarginfiTestAccounts,
 }
 
 impl MarginfiTestData {
@@ -184,8 +197,10 @@ impl MarginfiTestData {
 
         Self {
             general,
-            marginfi_account,
-            marginfi_group,
+            accounts: MarginfiTestAccounts {
+                marginfi_account: Some(marginfi_account),
+                marginfi_group: Some(marginfi_group),
+            },
         }
     }
 }

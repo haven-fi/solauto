@@ -14,7 +14,7 @@ mod open_position {
         let mut data = test_utils::MarginfiTestData::new(None, None, None, None).await;
 
         let tx = Transaction::new_signed_with_payer(
-            &[data.general.ix_update_referral_states()],
+            &[data.general.update_referral_states().instruction()],
             Some(&data.general.ctx.payer.pubkey()),
             &[&data.general.ctx.payer],
             data.general.ctx.last_blockhash

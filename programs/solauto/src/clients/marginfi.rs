@@ -34,6 +34,7 @@ impl<'a> MarginfiClient<'a> {
         solauto_position: &DeserializedAccount<PositionAccount>,
     ) -> ProgramResult {
         // validate_position_settings(solauto_position.as_ref().unwrap().data.setting_params, max_ltv, liq_threshold)
+        // validate that the supply asset can be used as collateral if debt asset is provided
         // TODO
         Ok(())
     }
