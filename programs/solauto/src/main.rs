@@ -12,7 +12,7 @@ fn main() {
     let pubkey = Pubkey::from_str("CCKtUs6Cgwo4aaQUmBPmyoApH2gUDErxNZCAntD6LYGh").unwrap();
     match client.get_account(&pubkey) {
         Ok(account_info) => {
-            let bank = Bank::from_bytes(account_info.data.as_slice()).unwrap();
+            let bank = Bank::from_bytes(&account_info.data[8..]).unwrap();
             println!("{:?}", bank);
         }
         Err(e) => println!("An error occurred: {}", e),
