@@ -92,6 +92,7 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
         std_accounts: &'b SolautoStandardAccounts<'a>,
     ) -> ProgramResult {
         // TODO
+        // add 4 remaining accounts: supply bank, supply pyth price oracle, debt bank, debt pyth price oracle
         Ok(())
     }
 
@@ -102,6 +103,7 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
         std_accounts: &'b SolautoStandardAccounts<'a>,
     ) -> ProgramResult {
         // TODO
+        // add 4 remaining accounts: supply bank, supply pyth price oracle, debt bank, debt pyth price oracle
         Ok(())
     }
 
