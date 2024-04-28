@@ -25,7 +25,6 @@ pub struct Bank {
         serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
     )]
     pub group: Pubkey,
-    pub auto_padding0: [u8; 7],
     pub asset_share_value: WrappedI80F48,
     pub liability_share_value: WrappedI80F48,
     #[cfg_attr(
@@ -42,7 +41,6 @@ pub struct Bank {
     pub insurance_vault: Pubkey,
     pub insurance_vault_bump: u8,
     pub insurance_vault_authority_bump: u8,
-    pub auto_padding1: [u8; 4],
     pub collected_insurance_fees_outstanding: WrappedI80F48,
     #[cfg_attr(
         feature = "serde",
@@ -51,7 +49,6 @@ pub struct Bank {
     pub fee_vault: Pubkey,
     pub fee_vault_bump: u8,
     pub fee_vault_authority_bump: u8,
-    pub auto_padding2: [u8; 6],
     pub collected_group_fees_outstanding: WrappedI80F48,
     pub total_liability_shares: WrappedI80F48,
     pub total_asset_shares: WrappedI80F48,
