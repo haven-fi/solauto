@@ -16,11 +16,6 @@
           "isSigner": false
         },
         {
-          "name": "tokenProgram",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
           "name": "ataProgram",
           "isMut": false,
           "isSigner": false
@@ -31,17 +26,7 @@
           "isSigner": false
         },
         {
-          "name": "destReferralFeesMint",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
           "name": "signerReferralState",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "signerReferralDestTa",
           "isMut": true,
           "isSigner": false
         },
@@ -56,15 +41,16 @@
           "isMut": false,
           "isSigner": false,
           "isOptional": true
-        },
-        {
-          "name": "referredByDestTa",
-          "isMut": true,
-          "isSigner": false,
-          "isOptional": true
         }
       ],
-      "args": [],
+      "args": [
+        {
+          "name": "updateReferralStatesArgs",
+          "type": {
+            "defined": "UpdateReferralStatesArgs"
+          }
+        }
+      ],
       "discriminant": {
         "type": "u8",
         "value": 0
@@ -450,12 +436,6 @@
           "isMut": true,
           "isSigner": false,
           "isOptional": true
-        },
-        {
-          "name": "debtMint",
-          "isMut": false,
-          "isSigner": false,
-          "isOptional": true
         }
       ],
       "args": [
@@ -669,10 +649,14 @@
           "isSigner": false
         },
         {
-          "name": "supplyMint",
+          "name": "marginfiGroup",
           "isMut": false,
-          "isSigner": false,
-          "isOptional": true
+          "isSigner": false
+        },
+        {
+          "name": "marginfiAccount",
+          "isMut": true,
+          "isSigner": false
         },
         {
           "name": "authoritySupplyTa",
@@ -683,12 +667,6 @@
         {
           "name": "bankSupplyTa",
           "isMut": true,
-          "isSigner": false,
-          "isOptional": true
-        },
-        {
-          "name": "debtMint",
-          "isMut": false,
           "isSigner": false,
           "isOptional": true
         },
@@ -790,12 +768,6 @@
           "isOptional": true
         },
         {
-          "name": "supplyLiquidityMint",
-          "isMut": false,
-          "isSigner": false,
-          "isOptional": true
-        },
-        {
           "name": "authoritySupplyLiquidityTa",
           "isMut": true,
           "isSigner": false,
@@ -834,12 +806,6 @@
         {
           "name": "debtReserveFeeReceiverTa",
           "isMut": true,
-          "isSigner": false,
-          "isOptional": true
-        },
-        {
-          "name": "debtLiquidityMint",
-          "isMut": false,
           "isSigner": false,
           "isOptional": true
         },
@@ -918,12 +884,6 @@
           "isSigner": false
         },
         {
-          "name": "referredByState",
-          "isMut": false,
-          "isSigner": false,
-          "isOptional": true
-        },
-        {
           "name": "referredBySupplyTa",
           "isMut": true,
           "isSigner": false,
@@ -935,13 +895,18 @@
           "isSigner": false
         },
         {
-          "name": "intermediaryTa",
+          "name": "marginfiGroup",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "marginfiAccount",
           "isMut": true,
           "isSigner": false
         },
         {
-          "name": "supplyMint",
-          "isMut": false,
+          "name": "intermediaryTa",
+          "isMut": true,
           "isSigner": false
         },
         {
@@ -952,11 +917,6 @@
         {
           "name": "bankSupplyTa",
           "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "debtMint",
-          "isMut": false,
           "isSigner": false
         },
         {
@@ -1037,12 +997,6 @@
           "isSigner": false
         },
         {
-          "name": "referredByState",
-          "isMut": false,
-          "isSigner": false,
-          "isOptional": true
-        },
-        {
           "name": "referredBySupplyTa",
           "isMut": true,
           "isSigner": false,
@@ -1054,17 +1008,17 @@
           "isSigner": false
         },
         {
-          "name": "intermediaryTa",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
           "name": "lendingMarket",
           "isMut": false,
           "isSigner": false
         },
         {
           "name": "obligation",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "intermediaryTa",
           "isMut": true,
           "isSigner": false
         },
@@ -1080,11 +1034,6 @@
         },
         {
           "name": "supplyReserveSwitchboardOracle",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "supplyLiquidityMint",
           "isMut": false,
           "isSigner": false
         },
@@ -1121,11 +1070,6 @@
         {
           "name": "debtReserveFeeReceiverTa",
           "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "debtLiquidityMint",
-          "isMut": false,
           "isSigner": false
         },
         {
@@ -1198,11 +1142,7 @@
             }
           },
           {
-            "name": "feesMint",
-            "type": "publicKey"
-          },
-          {
-            "name": "destFeesTa",
+            "name": "destFeesMint",
             "type": "publicKey"
           }
         ]
@@ -1210,6 +1150,20 @@
     }
   ],
   "types": [
+    {
+      "name": "UpdateReferralStatesArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "referralFeesDestMint",
+            "type": {
+              "option": "publicKey"
+            }
+          }
+        ]
+      }
+    },
     {
       "name": "UpdatePositionData",
       "type": {
@@ -1398,9 +1352,7 @@
           {
             "name": "protocolData",
             "type": {
-              "option": {
-                "defined": "LendingProtocolPositionData"
-              }
+              "defined": "LendingProtocolPositionData"
             }
           },
           {

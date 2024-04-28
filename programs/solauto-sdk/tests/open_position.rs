@@ -2,16 +2,23 @@ pub mod test_utils;
 
 #[cfg(test)]
 mod open_position {
-    use solana_program_test::tokio;
-    use solana_sdk::{ signature::Signer, transaction::Transaction };
+    use std::str::FromStr;
 
-    use crate::test_utils;
+    use solana_program_test::tokio;
+    use solana_sdk::{ pubkey::Pubkey, signature::Signer, transaction::Transaction };
+
+    use crate::test_utils::*;
 
     // TODO create general test module for testing update referral state tests
 
     #[tokio::test]
     async fn marginfi_open_position() {
-        let mut data = test_utils::MarginfiTestData::new(None, None, None, None).await;
+        let mut data = MarginfiTestData::new(
+            None,
+            None,
+            None,
+            Some(&Pubkey::from_str(USDC_MINT).expect("msg"))
+        ).await;
 
         let tx = Transaction::new_signed_with_payer(
             &[data.general.update_referral_states().instruction()],

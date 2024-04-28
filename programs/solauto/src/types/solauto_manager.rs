@@ -32,8 +32,7 @@ impl<'a> SolautoManagerAccounts<'a> {
         bank_debt_ta: Option<&'a AccountInfo<'a>>,
         intermediary_ta: Option<&'a AccountInfo<'a>>,
     ) -> Result<Self, ProgramError> {
-        let supply =
-            LendingProtocolTokenAccounts::from(None, position_supply_ta, bank_supply_ta)?;
+        let supply = LendingProtocolTokenAccounts::from(None, position_supply_ta, bank_supply_ta)?;
         let debt = LendingProtocolTokenAccounts::from(None, position_debt_ta, bank_debt_ta)?;
         Ok(Self {
             supply,

@@ -25,13 +25,13 @@ pub struct MarginfiProtocolInteraction {
 
     pub solauto_position: solana_program::pubkey::Pubkey,
 
-    pub supply_mint: Option<solana_program::pubkey::Pubkey>,
+    pub marginfi_group: solana_program::pubkey::Pubkey,
+
+    pub marginfi_account: solana_program::pubkey::Pubkey,
 
     pub authority_supply_ta: Option<solana_program::pubkey::Pubkey>,
 
     pub bank_supply_ta: Option<solana_program::pubkey::Pubkey>,
-
-    pub debt_mint: Option<solana_program::pubkey::Pubkey>,
 
     pub authority_debt_ta: Option<solana_program::pubkey::Pubkey>,
 
@@ -79,17 +79,14 @@ impl MarginfiProtocolInteraction {
             self.solauto_position,
             false,
         ));
-        if let Some(supply_mint) = self.supply_mint {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                supply_mint,
-                false,
-            ));
-        } else {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::SOLAUTO_ID,
-                false,
-            ));
-        }
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            self.marginfi_group,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            self.marginfi_account,
+            false,
+        ));
         if let Some(authority_supply_ta) = self.authority_supply_ta {
             accounts.push(solana_program::instruction::AccountMeta::new(
                 authority_supply_ta,
@@ -105,16 +102,6 @@ impl MarginfiProtocolInteraction {
             accounts.push(solana_program::instruction::AccountMeta::new(
                 bank_supply_ta,
                 false,
-            ));
-        } else {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::SOLAUTO_ID,
-                false,
-            ));
-        }
-        if let Some(debt_mint) = self.debt_mint {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                debt_mint, false,
             ));
         } else {
             accounts.push(solana_program::instruction::AccountMeta::new_readonly(
@@ -187,10 +174,10 @@ pub struct MarginfiProtocolInteractionInstructionArgs {
 ///   4. `[optional]` ata_program (default to `ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL`)
 ///   5. `[optional]` rent (default to `SysvarRent111111111111111111111111111111111`)
 ///   6. `[writable]` solauto_position
-///   7. `[optional]` supply_mint
-///   8. `[writable, optional]` authority_supply_ta
-///   9. `[writable, optional]` bank_supply_ta
-///   10. `[optional]` debt_mint
+///   7. `[]` marginfi_group
+///   8. `[writable]` marginfi_account
+///   9. `[writable, optional]` authority_supply_ta
+///   10. `[writable, optional]` bank_supply_ta
 ///   11. `[writable, optional]` authority_debt_ta
 ///   12. `[writable, optional]` bank_debt_ta
 #[derive(Default)]
@@ -202,10 +189,10 @@ pub struct MarginfiProtocolInteractionBuilder {
     ata_program: Option<solana_program::pubkey::Pubkey>,
     rent: Option<solana_program::pubkey::Pubkey>,
     solauto_position: Option<solana_program::pubkey::Pubkey>,
-    supply_mint: Option<solana_program::pubkey::Pubkey>,
+    marginfi_group: Option<solana_program::pubkey::Pubkey>,
+    marginfi_account: Option<solana_program::pubkey::Pubkey>,
     authority_supply_ta: Option<solana_program::pubkey::Pubkey>,
     bank_supply_ta: Option<solana_program::pubkey::Pubkey>,
-    debt_mint: Option<solana_program::pubkey::Pubkey>,
     authority_debt_ta: Option<solana_program::pubkey::Pubkey>,
     bank_debt_ta: Option<solana_program::pubkey::Pubkey>,
     solauto_action: Option<SolautoAction>,
@@ -261,13 +248,17 @@ impl MarginfiProtocolInteractionBuilder {
         self.solauto_position = Some(solauto_position);
         self
     }
-    /// `[optional account]`
     #[inline(always)]
-    pub fn supply_mint(
+    pub fn marginfi_group(&mut self, marginfi_group: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.marginfi_group = Some(marginfi_group);
+        self
+    }
+    #[inline(always)]
+    pub fn marginfi_account(
         &mut self,
-        supply_mint: Option<solana_program::pubkey::Pubkey>,
+        marginfi_account: solana_program::pubkey::Pubkey,
     ) -> &mut Self {
-        self.supply_mint = supply_mint;
+        self.marginfi_account = Some(marginfi_account);
         self
     }
     /// `[optional account]`
@@ -286,12 +277,6 @@ impl MarginfiProtocolInteractionBuilder {
         bank_supply_ta: Option<solana_program::pubkey::Pubkey>,
     ) -> &mut Self {
         self.bank_supply_ta = bank_supply_ta;
-        self
-    }
-    /// `[optional account]`
-    #[inline(always)]
-    pub fn debt_mint(&mut self, debt_mint: Option<solana_program::pubkey::Pubkey>) -> &mut Self {
-        self.debt_mint = debt_mint;
         self
     }
     /// `[optional account]`
@@ -353,10 +338,10 @@ impl MarginfiProtocolInteractionBuilder {
                 "SysvarRent111111111111111111111111111111111"
             )),
             solauto_position: self.solauto_position.expect("solauto_position is not set"),
-            supply_mint: self.supply_mint,
+            marginfi_group: self.marginfi_group.expect("marginfi_group is not set"),
+            marginfi_account: self.marginfi_account.expect("marginfi_account is not set"),
             authority_supply_ta: self.authority_supply_ta,
             bank_supply_ta: self.bank_supply_ta,
-            debt_mint: self.debt_mint,
             authority_debt_ta: self.authority_debt_ta,
             bank_debt_ta: self.bank_debt_ta,
         };
@@ -387,13 +372,13 @@ pub struct MarginfiProtocolInteractionCpiAccounts<'a, 'b> {
 
     pub solauto_position: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub supply_mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    pub marginfi_group: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub marginfi_account: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub authority_supply_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
     pub bank_supply_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-
-    pub debt_mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
     pub authority_debt_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
@@ -419,13 +404,13 @@ pub struct MarginfiProtocolInteractionCpi<'a, 'b> {
 
     pub solauto_position: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub supply_mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    pub marginfi_group: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub marginfi_account: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub authority_supply_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
     pub bank_supply_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-
-    pub debt_mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
     pub authority_debt_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
@@ -449,10 +434,10 @@ impl<'a, 'b> MarginfiProtocolInteractionCpi<'a, 'b> {
             ata_program: accounts.ata_program,
             rent: accounts.rent,
             solauto_position: accounts.solauto_position,
-            supply_mint: accounts.supply_mint,
+            marginfi_group: accounts.marginfi_group,
+            marginfi_account: accounts.marginfi_account,
             authority_supply_ta: accounts.authority_supply_ta,
             bank_supply_ta: accounts.bank_supply_ta,
-            debt_mint: accounts.debt_mint,
             authority_debt_ta: accounts.authority_debt_ta,
             bank_debt_ta: accounts.bank_debt_ta,
             __args: args,
@@ -520,17 +505,14 @@ impl<'a, 'b> MarginfiProtocolInteractionCpi<'a, 'b> {
             *self.solauto_position.key,
             false,
         ));
-        if let Some(supply_mint) = self.supply_mint {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                *supply_mint.key,
-                false,
-            ));
-        } else {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::SOLAUTO_ID,
-                false,
-            ));
-        }
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            *self.marginfi_group.key,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            *self.marginfi_account.key,
+            false,
+        ));
         if let Some(authority_supply_ta) = self.authority_supply_ta {
             accounts.push(solana_program::instruction::AccountMeta::new(
                 *authority_supply_ta.key,
@@ -545,17 +527,6 @@ impl<'a, 'b> MarginfiProtocolInteractionCpi<'a, 'b> {
         if let Some(bank_supply_ta) = self.bank_supply_ta {
             accounts.push(solana_program::instruction::AccountMeta::new(
                 *bank_supply_ta.key,
-                false,
-            ));
-        } else {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::SOLAUTO_ID,
-                false,
-            ));
-        }
-        if let Some(debt_mint) = self.debt_mint {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                *debt_mint.key,
                 false,
             ));
         } else {
@@ -613,17 +584,13 @@ impl<'a, 'b> MarginfiProtocolInteractionCpi<'a, 'b> {
         account_infos.push(self.ata_program.clone());
         account_infos.push(self.rent.clone());
         account_infos.push(self.solauto_position.clone());
-        if let Some(supply_mint) = self.supply_mint {
-            account_infos.push(supply_mint.clone());
-        }
+        account_infos.push(self.marginfi_group.clone());
+        account_infos.push(self.marginfi_account.clone());
         if let Some(authority_supply_ta) = self.authority_supply_ta {
             account_infos.push(authority_supply_ta.clone());
         }
         if let Some(bank_supply_ta) = self.bank_supply_ta {
             account_infos.push(bank_supply_ta.clone());
-        }
-        if let Some(debt_mint) = self.debt_mint {
-            account_infos.push(debt_mint.clone());
         }
         if let Some(authority_debt_ta) = self.authority_debt_ta {
             account_infos.push(authority_debt_ta.clone());
@@ -654,10 +621,10 @@ impl<'a, 'b> MarginfiProtocolInteractionCpi<'a, 'b> {
 ///   4. `[]` ata_program
 ///   5. `[]` rent
 ///   6. `[writable]` solauto_position
-///   7. `[optional]` supply_mint
-///   8. `[writable, optional]` authority_supply_ta
-///   9. `[writable, optional]` bank_supply_ta
-///   10. `[optional]` debt_mint
+///   7. `[]` marginfi_group
+///   8. `[writable]` marginfi_account
+///   9. `[writable, optional]` authority_supply_ta
+///   10. `[writable, optional]` bank_supply_ta
 ///   11. `[writable, optional]` authority_debt_ta
 ///   12. `[writable, optional]` bank_debt_ta
 pub struct MarginfiProtocolInteractionCpiBuilder<'a, 'b> {
@@ -675,10 +642,10 @@ impl<'a, 'b> MarginfiProtocolInteractionCpiBuilder<'a, 'b> {
             ata_program: None,
             rent: None,
             solauto_position: None,
-            supply_mint: None,
+            marginfi_group: None,
+            marginfi_account: None,
             authority_supply_ta: None,
             bank_supply_ta: None,
-            debt_mint: None,
             authority_debt_ta: None,
             bank_debt_ta: None,
             solauto_action: None,
@@ -739,13 +706,20 @@ impl<'a, 'b> MarginfiProtocolInteractionCpiBuilder<'a, 'b> {
         self.instruction.solauto_position = Some(solauto_position);
         self
     }
-    /// `[optional account]`
     #[inline(always)]
-    pub fn supply_mint(
+    pub fn marginfi_group(
         &mut self,
-        supply_mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+        marginfi_group: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
-        self.instruction.supply_mint = supply_mint;
+        self.instruction.marginfi_group = Some(marginfi_group);
+        self
+    }
+    #[inline(always)]
+    pub fn marginfi_account(
+        &mut self,
+        marginfi_account: &'b solana_program::account_info::AccountInfo<'a>,
+    ) -> &mut Self {
+        self.instruction.marginfi_account = Some(marginfi_account);
         self
     }
     /// `[optional account]`
@@ -764,15 +738,6 @@ impl<'a, 'b> MarginfiProtocolInteractionCpiBuilder<'a, 'b> {
         bank_supply_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     ) -> &mut Self {
         self.instruction.bank_supply_ta = bank_supply_ta;
-        self
-    }
-    /// `[optional account]`
-    #[inline(always)]
-    pub fn debt_mint(
-        &mut self,
-        debt_mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    ) -> &mut Self {
-        self.instruction.debt_mint = debt_mint;
         self
     }
     /// `[optional account]`
@@ -878,13 +843,19 @@ impl<'a, 'b> MarginfiProtocolInteractionCpiBuilder<'a, 'b> {
                 .solauto_position
                 .expect("solauto_position is not set"),
 
-            supply_mint: self.instruction.supply_mint,
+            marginfi_group: self
+                .instruction
+                .marginfi_group
+                .expect("marginfi_group is not set"),
+
+            marginfi_account: self
+                .instruction
+                .marginfi_account
+                .expect("marginfi_account is not set"),
 
             authority_supply_ta: self.instruction.authority_supply_ta,
 
             bank_supply_ta: self.instruction.bank_supply_ta,
-
-            debt_mint: self.instruction.debt_mint,
 
             authority_debt_ta: self.instruction.authority_debt_ta,
 
@@ -907,10 +878,10 @@ struct MarginfiProtocolInteractionCpiBuilderInstruction<'a, 'b> {
     ata_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     rent: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     solauto_position: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    supply_mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    marginfi_group: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    marginfi_account: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     authority_supply_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     bank_supply_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    debt_mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     authority_debt_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     bank_debt_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     solauto_action: Option<SolautoAction>,

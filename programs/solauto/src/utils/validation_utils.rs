@@ -312,16 +312,20 @@ pub fn validate_referral_accounts(
 
     let authority_referred_by_state = authority_referral_state.data.referred_by_state;
 
-    if referred_by_state.is_some() && referred_by_state.as_ref().unwrap().key != authority_referred_by_state.as_ref().unwrap() {
+    if
+        referred_by_state.is_some() &&
+        referred_by_state.as_ref().unwrap().key != authority_referred_by_state.as_ref().unwrap()
+    {
         msg!("Provided incorrect referred_by_state account given the authority referral state");
         return Err(ProgramError::InvalidAccountData.into());
     }
 
     if
-        (check_supply_ta &&
-            authority_referred_by_state.is_some() &&
-            referred_by_supply_ta.is_none()) ||
-        referred_by_supply_ta.as_ref().unwrap().owner != referred_by_state.as_ref().unwrap().key
+        check_supply_ta &&
+        authority_referred_by_state.is_some() &&
+        (referred_by_supply_ta.is_none() ||
+            referred_by_supply_ta.as_ref().unwrap().owner !=
+                referred_by_state.as_ref().unwrap().key)
     {
         msg!(
             "Provided incorrect referred_by_supply_ta according to the given authority and token mint"

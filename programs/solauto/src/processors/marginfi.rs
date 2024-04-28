@@ -61,9 +61,9 @@ pub fn process_marginfi_open_position_instruction<'a>(
         ixs_sysvar: None,
         solauto_position,
         solauto_fees_supply_ta: Some(ctx.accounts.solauto_fees_supply_ta),
-        authority_referral_state: DeserializedAccount::<ReferralStateAccount>::deserialize(
-            Some(ctx.accounts.signer_referral_state)
-        )?,
+        authority_referral_state: DeserializedAccount::<ReferralStateAccount>::deserialize(Some(
+            ctx.accounts.signer_referral_state,
+        ))?,
         referred_by_state: ctx.accounts.referred_by_state,
         referred_by_supply_ta: ctx.accounts.referred_by_supply_ta,
     };
@@ -139,9 +139,9 @@ pub fn process_marginfi_rebalance<'a>(
         ixs_sysvar: Some(ctx.accounts.ixs_sysvar),
         solauto_position,
         solauto_fees_supply_ta: Some(ctx.accounts.solauto_fees_supply_ta),
-        authority_referral_state: DeserializedAccount::<ReferralStateAccount>::deserialize(
-            Some(ctx.accounts.authority_referral_state)
-        )?,
+        authority_referral_state: DeserializedAccount::<ReferralStateAccount>::deserialize(Some(
+            ctx.accounts.authority_referral_state,
+        ))?,
         referred_by_state: None,
         referred_by_supply_ta: ctx.accounts.referred_by_supply_ta,
     };

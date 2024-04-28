@@ -21,16 +21,18 @@ pub const WSOL_MINT: &str = "So11111111111111111111111111111111111111112";
 pub const USDC_MINT: &str = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
 pub const MARGINFI_PROGRAM: &str = "MFv2hWf31Z9kbCa1snEPYctwafyhdvnV7FZnsebVacA";
 
-pub struct GeneralTestAccounts {
+pub struct GeneralTestAccounts {}
+
+pub struct GeneralTestData {
+    pub ctx: ProgramTestContext,
     pub lending_protocol: Pubkey,
     pub solauto_fees_wallet: Pubkey,
     pub solauto_fees_supply_ta: Pubkey,
-    pub dest_referral_fees_mint: Pubkey,
+    pub referral_fees_dest_mint: Pubkey,
     pub signer_referral_state: Pubkey,
     pub signer_referral_dest_ta: Pubkey,
     pub referred_by_state: Option<Pubkey>,
     pub referred_by_authority: Option<Pubkey>,
-    pub referred_by_dest_ta: Option<Pubkey>,
     pub referred_by_supply_ta: Option<Pubkey>,
     pub solauto_position: Pubkey,
     pub position_debt_liquidity_ta: Pubkey,
@@ -38,11 +40,6 @@ pub struct GeneralTestAccounts {
     pub signer_debt_liquidity_ta: Pubkey,
     pub position_supply_liquidity_ta: Pubkey,
     pub supply_liquidity_mint: Pubkey,
-}
-
-pub struct GeneralTestData {
-    pub ctx: ProgramTestContext,
-    pub accounts: GeneralTestAccounts,
 }
 
 impl GeneralTestData {
@@ -75,7 +72,7 @@ impl GeneralTestData {
             &supply_liquidity_mint
         );
 
-        let dest_referral_fees_mint = wsol_mint.clone();
+        let referral_fees_dest_mint = wsol_mint.clone();
 
         let signer_pubkey = ctx.payer.pubkey();
         let signer_referral_state_seeds = &[signer_pubkey.as_ref(), b"referral_state"];
@@ -85,12 +82,10 @@ impl GeneralTestData {
         );
         let signer_referral_dest_ta = get_associated_token_address(
             &signer_referral_state,
-            &dest_referral_fees_mint
+            &referral_fees_dest_mint
         );
 
-        let (referred_by_state, referred_by_dest_ta, referred_by_supply_ta) = if
-            referred_by_authority.is_some()
-        {
+        let (referred_by_state, referred_by_supply_ta) = if referred_by_authority.is_some() {
             let referred_by_state_seeds = &[
                 referred_by_authority.as_ref().unwrap().as_ref(),
                 b"referral_state",
@@ -99,17 +94,13 @@ impl GeneralTestData {
                 referred_by_state_seeds,
                 &SOLAUTO_ID
             );
-            let referred_by_dest_ta = get_associated_token_address(
-                &referred_by_state,
-                &dest_referral_fees_mint
-            );
             let referred_by_supply_ta = get_associated_token_address(
                 &referred_by_state,
                 supply_liquidity_mint
             );
-            (Some(referred_by_state), Some(referred_by_dest_ta), Some(referred_by_supply_ta))
+            (Some(referred_by_state), Some(referred_by_supply_ta))
         } else {
-            (None, None, None)
+            (None, None)
         };
 
         let (solauto_position, _) = Pubkey::find_program_address(
@@ -131,51 +122,46 @@ impl GeneralTestData {
 
         Self {
             ctx,
-            accounts: GeneralTestAccounts {
-                lending_protocol,
-                solauto_fees_wallet,
-                solauto_fees_supply_ta,
-                dest_referral_fees_mint,
-                signer_referral_state,
-                signer_referral_dest_ta,
-                referred_by_state,
-                referred_by_authority: referred_by_authority.copied(),
-                referred_by_dest_ta,
-                referred_by_supply_ta,
-                solauto_position,
-                position_supply_liquidity_ta,
-                supply_liquidity_mint: supply_liquidity_mint.clone(),
-                signer_debt_liquidity_ta,
-                position_debt_liquidity_ta,
-                debt_liquidity_mint: debt_liquidity_mint.clone(),
-            },
+            lending_protocol,
+            solauto_fees_wallet,
+            solauto_fees_supply_ta,
+            referral_fees_dest_mint,
+            signer_referral_state,
+            signer_referral_dest_ta,
+            referred_by_state,
+            referred_by_authority: referred_by_authority.copied(),
+            referred_by_supply_ta,
+            solauto_position,
+            position_supply_liquidity_ta,
+            supply_liquidity_mint: supply_liquidity_mint.clone(),
+            signer_debt_liquidity_ta,
+            position_debt_liquidity_ta,
+            debt_liquidity_mint: debt_liquidity_mint.clone(),
         }
     }
 
     pub fn update_referral_states(&self) -> UpdateReferralStatesBuilder {
         let mut builder = UpdateReferralStatesBuilder::new();
-        
+
         builder
             .signer(self.ctx.payer.pubkey())
-            .dest_referral_fees_mint(self.accounts.dest_referral_fees_mint)
-            .signer_referral_state(self.accounts.signer_referral_state)
-            .signer_referral_dest_ta(self.accounts.signer_referral_dest_ta)
-            .referred_by_state(self.accounts.referred_by_state)
-            .referred_by_authority(self.accounts.referred_by_authority)
-            .referred_by_dest_ta(self.accounts.referred_by_dest_ta);
+            .signer_referral_state(self.signer_referral_state)
+            .referred_by_state(self.referred_by_state)
+            .referred_by_authority(self.referred_by_authority)
+            .referral_fees_dest_mint(self.referral_fees_dest_mint);
+
+        // TODO instruction data
 
         builder
     }
 }
 
-pub struct MarginfiTestAccounts {
-    pub marginfi_group: Option<Pubkey>,
-    pub marginfi_account: Option<Pubkey>,
-}
+pub struct MarginfiTestAccounts {}
 
 pub struct MarginfiTestData {
     pub general: GeneralTestData,
-    pub accounts: MarginfiTestAccounts,
+    pub marginfi_group: Option<Pubkey>,
+    pub marginfi_account: Option<Pubkey>,
 }
 
 impl MarginfiTestData {
@@ -197,10 +183,8 @@ impl MarginfiTestData {
 
         Self {
             general,
-            accounts: MarginfiTestAccounts {
-                marginfi_account: Some(marginfi_account),
-                marginfi_group: Some(marginfi_group),
-            },
+            marginfi_account: Some(marginfi_account),
+            marginfi_group: Some(marginfi_group),
         }
     }
 }

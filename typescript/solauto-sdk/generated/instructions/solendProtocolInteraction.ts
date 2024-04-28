@@ -47,7 +47,6 @@ export type SolendProtocolInteractionInstructionAccounts = {
   supplyReserve?: PublicKey | Pda;
   supplyReservePythPriceOracle?: PublicKey | Pda;
   supplyReserveSwitchboardOracle?: PublicKey | Pda;
-  supplyLiquidityMint?: PublicKey | Pda;
   authoritySupplyLiquidityTa?: PublicKey | Pda;
   reserveSupplyLiquidityTa?: PublicKey | Pda;
   supplyCollateralMint?: PublicKey | Pda;
@@ -55,7 +54,6 @@ export type SolendProtocolInteractionInstructionAccounts = {
   reserveSupplyCollateralTa?: PublicKey | Pda;
   debtReserve?: PublicKey | Pda;
   debtReserveFeeReceiverTa?: PublicKey | Pda;
-  debtLiquidityMint?: PublicKey | Pda;
   authorityDebtLiquidityTa?: PublicKey | Pda;
   reserveDebtLiquidityTa?: PublicKey | Pda;
 };
@@ -172,58 +170,48 @@ export function solendProtocolInteraction(
       isWritable: false as boolean,
       value: input.supplyReserveSwitchboardOracle ?? null,
     },
-    supplyLiquidityMint: {
-      index: 13,
-      isWritable: false as boolean,
-      value: input.supplyLiquidityMint ?? null,
-    },
     authoritySupplyLiquidityTa: {
-      index: 14,
+      index: 13,
       isWritable: true as boolean,
       value: input.authoritySupplyLiquidityTa ?? null,
     },
     reserveSupplyLiquidityTa: {
-      index: 15,
+      index: 14,
       isWritable: true as boolean,
       value: input.reserveSupplyLiquidityTa ?? null,
     },
     supplyCollateralMint: {
-      index: 16,
+      index: 15,
       isWritable: false as boolean,
       value: input.supplyCollateralMint ?? null,
     },
     authoritySupplyCollateralTa: {
-      index: 17,
+      index: 16,
       isWritable: true as boolean,
       value: input.authoritySupplyCollateralTa ?? null,
     },
     reserveSupplyCollateralTa: {
-      index: 18,
+      index: 17,
       isWritable: true as boolean,
       value: input.reserveSupplyCollateralTa ?? null,
     },
     debtReserve: {
-      index: 19,
+      index: 18,
       isWritable: true as boolean,
       value: input.debtReserve ?? null,
     },
     debtReserveFeeReceiverTa: {
-      index: 20,
+      index: 19,
       isWritable: true as boolean,
       value: input.debtReserveFeeReceiverTa ?? null,
     },
-    debtLiquidityMint: {
-      index: 21,
-      isWritable: false as boolean,
-      value: input.debtLiquidityMint ?? null,
-    },
     authorityDebtLiquidityTa: {
-      index: 22,
+      index: 20,
       isWritable: true as boolean,
       value: input.authorityDebtLiquidityTa ?? null,
     },
     reserveDebtLiquidityTa: {
-      index: 23,
+      index: 21,
       isWritable: true as boolean,
       value: input.reserveDebtLiquidityTa ?? null,
     },

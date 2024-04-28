@@ -11,7 +11,7 @@ use crate::{
 };
 
 pub fn marginfi_refresh_accounts(
-    ctx: Context<MarginfiRefreshDataAccounts>,
+    _ctx: Context<MarginfiRefreshDataAccounts>,
     mut solauto_position: Option<DeserializedAccount<PositionAccount>>,
 ) -> ProgramResult {
     // TODO

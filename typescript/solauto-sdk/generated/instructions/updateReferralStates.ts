@@ -8,6 +8,8 @@
 
 import {
   Context,
+  Option,
+  OptionOrNullable,
   Pda,
   PublicKey,
   Signer,
@@ -18,6 +20,8 @@ import {
 import {
   Serializer,
   mapSerializer,
+  option,
+  publicKey as publicKeySerializer,
   struct,
   u8,
 } from '@metaplex-foundation/umi/serializers';
@@ -31,21 +35,22 @@ import {
 export type UpdateReferralStatesInstructionAccounts = {
   signer: Signer;
   systemProgram?: PublicKey | Pda;
-  tokenProgram?: PublicKey | Pda;
   ataProgram?: PublicKey | Pda;
   rent?: PublicKey | Pda;
-  destReferralFeesMint: PublicKey | Pda;
   signerReferralState: PublicKey | Pda;
-  signerReferralDestTa: PublicKey | Pda;
   referredByState?: PublicKey | Pda;
   referredByAuthority?: PublicKey | Pda;
-  referredByDestTa?: PublicKey | Pda;
 };
 
 // Data.
-export type UpdateReferralStatesInstructionData = { discriminator: number };
+export type UpdateReferralStatesInstructionData = {
+  discriminator: number;
+  referralFeesDestMint: Option<PublicKey>;
+};
 
-export type UpdateReferralStatesInstructionDataArgs = {};
+export type UpdateReferralStatesInstructionDataArgs = {
+  referralFeesDestMint: OptionOrNullable<PublicKey>;
+};
 
 export function getUpdateReferralStatesInstructionDataSerializer(): Serializer<
   UpdateReferralStatesInstructionDataArgs,
@@ -56,9 +61,13 @@ export function getUpdateReferralStatesInstructionDataSerializer(): Serializer<
     any,
     UpdateReferralStatesInstructionData
   >(
-    struct<UpdateReferralStatesInstructionData>([['discriminator', u8()]], {
-      description: 'UpdateReferralStatesInstructionData',
-    }),
+    struct<UpdateReferralStatesInstructionData>(
+      [
+        ['discriminator', u8()],
+        ['referralFeesDestMint', option(publicKeySerializer())],
+      ],
+      { description: 'UpdateReferralStatesInstructionData' }
+    ),
     (value) => ({ ...value, discriminator: 0 })
   ) as Serializer<
     UpdateReferralStatesInstructionDataArgs,
@@ -66,10 +75,15 @@ export function getUpdateReferralStatesInstructionDataSerializer(): Serializer<
   >;
 }
 
+// Args.
+export type UpdateReferralStatesInstructionArgs =
+  UpdateReferralStatesInstructionDataArgs;
+
 // Instruction.
 export function updateReferralStates(
   context: Pick<Context, 'programs'>,
-  input: UpdateReferralStatesInstructionAccounts
+  input: UpdateReferralStatesInstructionAccounts &
+    UpdateReferralStatesInstructionArgs
 ): TransactionBuilder {
   // Program ID.
   const programId = context.programs.getPublicKey(
@@ -89,48 +103,31 @@ export function updateReferralStates(
       isWritable: false as boolean,
       value: input.systemProgram ?? null,
     },
-    tokenProgram: {
-      index: 2,
-      isWritable: false as boolean,
-      value: input.tokenProgram ?? null,
-    },
     ataProgram: {
-      index: 3,
+      index: 2,
       isWritable: false as boolean,
       value: input.ataProgram ?? null,
     },
-    rent: { index: 4, isWritable: false as boolean, value: input.rent ?? null },
-    destReferralFeesMint: {
-      index: 5,
-      isWritable: false as boolean,
-      value: input.destReferralFeesMint ?? null,
-    },
+    rent: { index: 3, isWritable: false as boolean, value: input.rent ?? null },
     signerReferralState: {
-      index: 6,
+      index: 4,
       isWritable: true as boolean,
       value: input.signerReferralState ?? null,
     },
-    signerReferralDestTa: {
-      index: 7,
-      isWritable: true as boolean,
-      value: input.signerReferralDestTa ?? null,
-    },
     referredByState: {
-      index: 8,
+      index: 5,
       isWritable: true as boolean,
       value: input.referredByState ?? null,
     },
     referredByAuthority: {
-      index: 9,
+      index: 6,
       isWritable: false as boolean,
       value: input.referredByAuthority ?? null,
     },
-    referredByDestTa: {
-      index: 10,
-      isWritable: true as boolean,
-      value: input.referredByDestTa ?? null,
-    },
   } satisfies ResolvedAccountsWithIndices;
+
+  // Arguments.
+  const resolvedArgs: UpdateReferralStatesInstructionArgs = { ...input };
 
   // Default values.
   if (!resolvedAccounts.systemProgram.value) {
@@ -139,13 +136,6 @@ export function updateReferralStates(
       '11111111111111111111111111111111'
     );
     resolvedAccounts.systemProgram.isWritable = false;
-  }
-  if (!resolvedAccounts.tokenProgram.value) {
-    resolvedAccounts.tokenProgram.value = context.programs.getPublicKey(
-      'splToken',
-      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'
-    );
-    resolvedAccounts.tokenProgram.isWritable = false;
   }
   if (!resolvedAccounts.ataProgram.value) {
     resolvedAccounts.ataProgram.value = context.programs.getPublicKey(
@@ -173,7 +163,9 @@ export function updateReferralStates(
   );
 
   // Data.
-  const data = getUpdateReferralStatesInstructionDataSerializer().serialize({});
+  const data = getUpdateReferralStatesInstructionDataSerializer().serialize(
+    resolvedArgs as UpdateReferralStatesInstructionDataArgs
+  );
 
   // Bytes Created On Chain.
   const bytesCreatedOnChain = 0;

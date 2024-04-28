@@ -38,7 +38,6 @@ export type UpdatePositionInstructionAccounts = {
   solautoPosition: PublicKey | Pda;
   positionDebtTa?: PublicKey | Pda;
   signerDebtTa?: PublicKey | Pda;
-  debtMint?: PublicKey | Pda;
 };
 
 // Data.
@@ -114,11 +113,6 @@ export function updatePosition(
       index: 4,
       isWritable: true as boolean,
       value: input.signerDebtTa ?? null,
-    },
-    debtMint: {
-      index: 5,
-      isWritable: false as boolean,
-      value: input.debtMint ?? null,
     },
   } satisfies ResolvedAccountsWithIndices;
 

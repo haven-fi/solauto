@@ -33,15 +33,13 @@ export type ReferralStateAccount = Account<ReferralStateAccountAccountData>;
 export type ReferralStateAccountAccountData = {
   authority: PublicKey;
   referredByState: Option<PublicKey>;
-  feesMint: PublicKey;
-  destFeesTa: PublicKey;
+  destFeesMint: PublicKey;
 };
 
 export type ReferralStateAccountAccountDataArgs = {
   authority: PublicKey;
   referredByState: OptionOrNullable<PublicKey>;
-  feesMint: PublicKey;
-  destFeesTa: PublicKey;
+  destFeesMint: PublicKey;
 };
 
 export function getReferralStateAccountAccountDataSerializer(): Serializer<
@@ -52,8 +50,7 @@ export function getReferralStateAccountAccountDataSerializer(): Serializer<
     [
       ['authority', publicKeySerializer()],
       ['referredByState', option(publicKeySerializer())],
-      ['feesMint', publicKeySerializer()],
-      ['destFeesTa', publicKeySerializer()],
+      ['destFeesMint', publicKeySerializer()],
     ],
     { description: 'ReferralStateAccountAccountData' }
   ) as Serializer<
@@ -140,13 +137,11 @@ export function getReferralStateAccountGpaBuilder(
     .registerFields<{
       authority: PublicKey;
       referredByState: OptionOrNullable<PublicKey>;
-      feesMint: PublicKey;
-      destFeesTa: PublicKey;
+      destFeesMint: PublicKey;
     }>({
       authority: [0, publicKeySerializer()],
       referredByState: [32, option(publicKeySerializer())],
-      feesMint: [null, publicKeySerializer()],
-      destFeesTa: [null, publicKeySerializer()],
+      destFeesMint: [null, publicKeySerializer()],
     })
     .deserializeUsing<ReferralStateAccount>((account) =>
       deserializeReferralStateAccount(account)

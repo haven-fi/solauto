@@ -44,16 +44,14 @@ export type SolendRebalanceInstructionAccounts = {
   ixsSysvar: PublicKey | Pda;
   solautoFeesSupplyTa: PublicKey | Pda;
   authorityReferralState: PublicKey | Pda;
-  referredByState?: PublicKey | Pda;
   referredBySupplyTa?: PublicKey | Pda;
   solautoPosition: PublicKey | Pda;
-  intermediaryTa: PublicKey | Pda;
   lendingMarket: PublicKey | Pda;
   obligation: PublicKey | Pda;
+  intermediaryTa: PublicKey | Pda;
   supplyReserve: PublicKey | Pda;
   supplyReservePythPriceOracle: PublicKey | Pda;
   supplyReserveSwitchboardOracle: PublicKey | Pda;
-  supplyLiquidityMint: PublicKey | Pda;
   positionSupplyLiquidityTa: PublicKey | Pda;
   reserveSupplyLiquidityTa: PublicKey | Pda;
   supplyCollateralMint: PublicKey | Pda;
@@ -61,7 +59,6 @@ export type SolendRebalanceInstructionAccounts = {
   reserveSupplyCollateralTa: PublicKey | Pda;
   debtReserve: PublicKey | Pda;
   debtReserveFeeReceiverTa: PublicKey | Pda;
-  debtLiquidityMint: PublicKey | Pda;
   positionDebtLiquidityTa: PublicKey | Pda;
   reserveDebtLiquidityTa: PublicKey | Pda;
 };
@@ -161,103 +158,88 @@ export function solendRebalance(
       isWritable: false as boolean,
       value: input.authorityReferralState ?? null,
     },
-    referredByState: {
-      index: 10,
-      isWritable: false as boolean,
-      value: input.referredByState ?? null,
-    },
     referredBySupplyTa: {
-      index: 11,
+      index: 10,
       isWritable: true as boolean,
       value: input.referredBySupplyTa ?? null,
     },
     solautoPosition: {
-      index: 12,
+      index: 11,
       isWritable: true as boolean,
       value: input.solautoPosition ?? null,
     },
-    intermediaryTa: {
-      index: 13,
-      isWritable: true as boolean,
-      value: input.intermediaryTa ?? null,
-    },
     lendingMarket: {
-      index: 14,
+      index: 12,
       isWritable: false as boolean,
       value: input.lendingMarket ?? null,
     },
     obligation: {
-      index: 15,
+      index: 13,
       isWritable: true as boolean,
       value: input.obligation ?? null,
     },
+    intermediaryTa: {
+      index: 14,
+      isWritable: true as boolean,
+      value: input.intermediaryTa ?? null,
+    },
     supplyReserve: {
-      index: 16,
+      index: 15,
       isWritable: true as boolean,
       value: input.supplyReserve ?? null,
     },
     supplyReservePythPriceOracle: {
-      index: 17,
+      index: 16,
       isWritable: false as boolean,
       value: input.supplyReservePythPriceOracle ?? null,
     },
     supplyReserveSwitchboardOracle: {
-      index: 18,
+      index: 17,
       isWritable: false as boolean,
       value: input.supplyReserveSwitchboardOracle ?? null,
     },
-    supplyLiquidityMint: {
-      index: 19,
-      isWritable: false as boolean,
-      value: input.supplyLiquidityMint ?? null,
-    },
     positionSupplyLiquidityTa: {
-      index: 20,
+      index: 18,
       isWritable: true as boolean,
       value: input.positionSupplyLiquidityTa ?? null,
     },
     reserveSupplyLiquidityTa: {
-      index: 21,
+      index: 19,
       isWritable: true as boolean,
       value: input.reserveSupplyLiquidityTa ?? null,
     },
     supplyCollateralMint: {
-      index: 22,
+      index: 20,
       isWritable: false as boolean,
       value: input.supplyCollateralMint ?? null,
     },
     positionSupplyCollateralTa: {
-      index: 23,
+      index: 21,
       isWritable: true as boolean,
       value: input.positionSupplyCollateralTa ?? null,
     },
     reserveSupplyCollateralTa: {
-      index: 24,
+      index: 22,
       isWritable: true as boolean,
       value: input.reserveSupplyCollateralTa ?? null,
     },
     debtReserve: {
-      index: 25,
+      index: 23,
       isWritable: true as boolean,
       value: input.debtReserve ?? null,
     },
     debtReserveFeeReceiverTa: {
-      index: 26,
+      index: 24,
       isWritable: true as boolean,
       value: input.debtReserveFeeReceiverTa ?? null,
     },
-    debtLiquidityMint: {
-      index: 27,
-      isWritable: false as boolean,
-      value: input.debtLiquidityMint ?? null,
-    },
     positionDebtLiquidityTa: {
-      index: 28,
+      index: 25,
       isWritable: true as boolean,
       value: input.positionDebtLiquidityTa ?? null,
     },
     reserveDebtLiquidityTa: {
-      index: 29,
+      index: 26,
       isWritable: true as boolean,
       value: input.reserveDebtLiquidityTa ?? null,
     },

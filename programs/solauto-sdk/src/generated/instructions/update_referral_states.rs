@@ -7,6 +7,7 @@
 
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
+use solana_program::pubkey::Pubkey;
 
 /// Accounts.
 pub struct UpdateReferralStates {
@@ -14,35 +15,31 @@ pub struct UpdateReferralStates {
 
     pub system_program: solana_program::pubkey::Pubkey,
 
-    pub token_program: solana_program::pubkey::Pubkey,
-
     pub ata_program: solana_program::pubkey::Pubkey,
 
     pub rent: solana_program::pubkey::Pubkey,
 
-    pub dest_referral_fees_mint: solana_program::pubkey::Pubkey,
-
     pub signer_referral_state: solana_program::pubkey::Pubkey,
-
-    pub signer_referral_dest_ta: solana_program::pubkey::Pubkey,
 
     pub referred_by_state: Option<solana_program::pubkey::Pubkey>,
 
     pub referred_by_authority: Option<solana_program::pubkey::Pubkey>,
-
-    pub referred_by_dest_ta: Option<solana_program::pubkey::Pubkey>,
 }
 
 impl UpdateReferralStates {
-    pub fn instruction(&self) -> solana_program::instruction::Instruction {
-        self.instruction_with_remaining_accounts(&[])
+    pub fn instruction(
+        &self,
+        args: UpdateReferralStatesInstructionArgs,
+    ) -> solana_program::instruction::Instruction {
+        self.instruction_with_remaining_accounts(args, &[])
     }
     #[allow(clippy::vec_init_then_push)]
     pub fn instruction_with_remaining_accounts(
         &self,
+        args: UpdateReferralStatesInstructionArgs,
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
-        let mut accounts = Vec::with_capacity(11 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(7 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.signer,
             true,
@@ -52,26 +49,14 @@ impl UpdateReferralStates {
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.token_program,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.ata_program,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.rent, false,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.dest_referral_fees_mint,
-            false,
-        ));
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.signer_referral_state,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            self.signer_referral_dest_ta,
             false,
         ));
         if let Some(referred_by_state) = self.referred_by_state {
@@ -96,21 +81,12 @@ impl UpdateReferralStates {
                 false,
             ));
         }
-        if let Some(referred_by_dest_ta) = self.referred_by_dest_ta {
-            accounts.push(solana_program::instruction::AccountMeta::new(
-                referred_by_dest_ta,
-                false,
-            ));
-        } else {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::SOLAUTO_ID,
-                false,
-            ));
-        }
         accounts.extend_from_slice(remaining_accounts);
-        let data = UpdateReferralStatesInstructionData::new()
+        let mut data = UpdateReferralStatesInstructionData::new()
             .try_to_vec()
             .unwrap();
+        let mut args = args.try_to_vec().unwrap();
+        data.append(&mut args);
 
         solana_program::instruction::Instruction {
             program_id: crate::SOLAUTO_ID,
@@ -131,34 +107,33 @@ impl UpdateReferralStatesInstructionData {
     }
 }
 
+#[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct UpdateReferralStatesInstructionArgs {
+    pub referral_fees_dest_mint: Option<Pubkey>,
+}
+
 /// Instruction builder for `UpdateReferralStates`.
 ///
 /// ### Accounts:
 ///
 ///   0. `[writable, signer]` signer
 ///   1. `[optional]` system_program (default to `11111111111111111111111111111111`)
-///   2. `[optional]` token_program (default to `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA`)
-///   3. `[optional]` ata_program (default to `ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL`)
-///   4. `[optional]` rent (default to `SysvarRent111111111111111111111111111111111`)
-///   5. `[]` dest_referral_fees_mint
-///   6. `[writable]` signer_referral_state
-///   7. `[writable]` signer_referral_dest_ta
-///   8. `[writable, optional]` referred_by_state
-///   9. `[optional]` referred_by_authority
-///   10. `[writable, optional]` referred_by_dest_ta
+///   2. `[optional]` ata_program (default to `ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL`)
+///   3. `[optional]` rent (default to `SysvarRent111111111111111111111111111111111`)
+///   4. `[writable]` signer_referral_state
+///   5. `[writable, optional]` referred_by_state
+///   6. `[optional]` referred_by_authority
 #[derive(Default)]
 pub struct UpdateReferralStatesBuilder {
     signer: Option<solana_program::pubkey::Pubkey>,
     system_program: Option<solana_program::pubkey::Pubkey>,
-    token_program: Option<solana_program::pubkey::Pubkey>,
     ata_program: Option<solana_program::pubkey::Pubkey>,
     rent: Option<solana_program::pubkey::Pubkey>,
-    dest_referral_fees_mint: Option<solana_program::pubkey::Pubkey>,
     signer_referral_state: Option<solana_program::pubkey::Pubkey>,
-    signer_referral_dest_ta: Option<solana_program::pubkey::Pubkey>,
     referred_by_state: Option<solana_program::pubkey::Pubkey>,
     referred_by_authority: Option<solana_program::pubkey::Pubkey>,
-    referred_by_dest_ta: Option<solana_program::pubkey::Pubkey>,
+    referral_fees_dest_mint: Option<Pubkey>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
 
@@ -177,12 +152,6 @@ impl UpdateReferralStatesBuilder {
         self.system_program = Some(system_program);
         self
     }
-    /// `[optional account, default to 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA']`
-    #[inline(always)]
-    pub fn token_program(&mut self, token_program: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.token_program = Some(token_program);
-        self
-    }
     /// `[optional account, default to 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL']`
     #[inline(always)]
     pub fn ata_program(&mut self, ata_program: solana_program::pubkey::Pubkey) -> &mut Self {
@@ -196,27 +165,11 @@ impl UpdateReferralStatesBuilder {
         self
     }
     #[inline(always)]
-    pub fn dest_referral_fees_mint(
-        &mut self,
-        dest_referral_fees_mint: solana_program::pubkey::Pubkey,
-    ) -> &mut Self {
-        self.dest_referral_fees_mint = Some(dest_referral_fees_mint);
-        self
-    }
-    #[inline(always)]
     pub fn signer_referral_state(
         &mut self,
         signer_referral_state: solana_program::pubkey::Pubkey,
     ) -> &mut Self {
         self.signer_referral_state = Some(signer_referral_state);
-        self
-    }
-    #[inline(always)]
-    pub fn signer_referral_dest_ta(
-        &mut self,
-        signer_referral_dest_ta: solana_program::pubkey::Pubkey,
-    ) -> &mut Self {
-        self.signer_referral_dest_ta = Some(signer_referral_dest_ta);
         self
     }
     /// `[optional account]`
@@ -237,13 +190,10 @@ impl UpdateReferralStatesBuilder {
         self.referred_by_authority = referred_by_authority;
         self
     }
-    /// `[optional account]`
+    /// `[optional argument]`
     #[inline(always)]
-    pub fn referred_by_dest_ta(
-        &mut self,
-        referred_by_dest_ta: Option<solana_program::pubkey::Pubkey>,
-    ) -> &mut Self {
-        self.referred_by_dest_ta = referred_by_dest_ta;
+    pub fn referral_fees_dest_mint(&mut self, referral_fees_dest_mint: Pubkey) -> &mut Self {
+        self.referral_fees_dest_mint = Some(referral_fees_dest_mint);
         self
     }
     /// Add an aditional account to the instruction.
@@ -271,30 +221,23 @@ impl UpdateReferralStatesBuilder {
             system_program: self
                 .system_program
                 .unwrap_or(solana_program::pubkey!("11111111111111111111111111111111")),
-            token_program: self.token_program.unwrap_or(solana_program::pubkey!(
-                "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-            )),
             ata_program: self.ata_program.unwrap_or(solana_program::pubkey!(
                 "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
             )),
             rent: self.rent.unwrap_or(solana_program::pubkey!(
                 "SysvarRent111111111111111111111111111111111"
             )),
-            dest_referral_fees_mint: self
-                .dest_referral_fees_mint
-                .expect("dest_referral_fees_mint is not set"),
             signer_referral_state: self
                 .signer_referral_state
                 .expect("signer_referral_state is not set"),
-            signer_referral_dest_ta: self
-                .signer_referral_dest_ta
-                .expect("signer_referral_dest_ta is not set"),
             referred_by_state: self.referred_by_state,
             referred_by_authority: self.referred_by_authority,
-            referred_by_dest_ta: self.referred_by_dest_ta,
+        };
+        let args = UpdateReferralStatesInstructionArgs {
+            referral_fees_dest_mint: self.referral_fees_dest_mint.clone(),
         };
 
-        accounts.instruction_with_remaining_accounts(&self.__remaining_accounts)
+        accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
     }
 }
 
@@ -304,23 +247,15 @@ pub struct UpdateReferralStatesCpiAccounts<'a, 'b> {
 
     pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub token_program: &'b solana_program::account_info::AccountInfo<'a>,
-
     pub ata_program: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub rent: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub dest_referral_fees_mint: &'b solana_program::account_info::AccountInfo<'a>,
-
     pub signer_referral_state: &'b solana_program::account_info::AccountInfo<'a>,
-
-    pub signer_referral_dest_ta: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub referred_by_state: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
     pub referred_by_authority: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-
-    pub referred_by_dest_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 }
 
 /// `update_referral_states` CPI instruction.
@@ -332,43 +267,35 @@ pub struct UpdateReferralStatesCpi<'a, 'b> {
 
     pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub token_program: &'b solana_program::account_info::AccountInfo<'a>,
-
     pub ata_program: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub rent: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub dest_referral_fees_mint: &'b solana_program::account_info::AccountInfo<'a>,
-
     pub signer_referral_state: &'b solana_program::account_info::AccountInfo<'a>,
-
-    pub signer_referral_dest_ta: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub referred_by_state: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
     pub referred_by_authority: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-
-    pub referred_by_dest_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    /// The arguments for the instruction.
+    pub __args: UpdateReferralStatesInstructionArgs,
 }
 
 impl<'a, 'b> UpdateReferralStatesCpi<'a, 'b> {
     pub fn new(
         program: &'b solana_program::account_info::AccountInfo<'a>,
         accounts: UpdateReferralStatesCpiAccounts<'a, 'b>,
+        args: UpdateReferralStatesInstructionArgs,
     ) -> Self {
         Self {
             __program: program,
             signer: accounts.signer,
             system_program: accounts.system_program,
-            token_program: accounts.token_program,
             ata_program: accounts.ata_program,
             rent: accounts.rent,
-            dest_referral_fees_mint: accounts.dest_referral_fees_mint,
             signer_referral_state: accounts.signer_referral_state,
-            signer_referral_dest_ta: accounts.signer_referral_dest_ta,
             referred_by_state: accounts.referred_by_state,
             referred_by_authority: accounts.referred_by_authority,
-            referred_by_dest_ta: accounts.referred_by_dest_ta,
+            __args: args,
         }
     }
     #[inline(always)]
@@ -404,17 +331,13 @@ impl<'a, 'b> UpdateReferralStatesCpi<'a, 'b> {
             bool,
         )],
     ) -> solana_program::entrypoint::ProgramResult {
-        let mut accounts = Vec::with_capacity(11 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(7 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             *self.signer.key,
             true,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             *self.system_program.key,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.token_program.key,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
@@ -425,16 +348,8 @@ impl<'a, 'b> UpdateReferralStatesCpi<'a, 'b> {
             *self.rent.key,
             false,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.dest_referral_fees_mint.key,
-            false,
-        ));
         accounts.push(solana_program::instruction::AccountMeta::new(
             *self.signer_referral_state.key,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.signer_referral_dest_ta.key,
             false,
         ));
         if let Some(referred_by_state) = self.referred_by_state {
@@ -459,17 +374,6 @@ impl<'a, 'b> UpdateReferralStatesCpi<'a, 'b> {
                 false,
             ));
         }
-        if let Some(referred_by_dest_ta) = self.referred_by_dest_ta {
-            accounts.push(solana_program::instruction::AccountMeta::new(
-                *referred_by_dest_ta.key,
-                false,
-            ));
-        } else {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::SOLAUTO_ID,
-                false,
-            ));
-        }
         remaining_accounts.iter().for_each(|remaining_account| {
             accounts.push(solana_program::instruction::AccountMeta {
                 pubkey: *remaining_account.0.key,
@@ -477,33 +381,29 @@ impl<'a, 'b> UpdateReferralStatesCpi<'a, 'b> {
                 is_writable: remaining_account.2,
             })
         });
-        let data = UpdateReferralStatesInstructionData::new()
+        let mut data = UpdateReferralStatesInstructionData::new()
             .try_to_vec()
             .unwrap();
+        let mut args = self.__args.try_to_vec().unwrap();
+        data.append(&mut args);
 
         let instruction = solana_program::instruction::Instruction {
             program_id: crate::SOLAUTO_ID,
             accounts,
             data,
         };
-        let mut account_infos = Vec::with_capacity(11 + 1 + remaining_accounts.len());
+        let mut account_infos = Vec::with_capacity(7 + 1 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
         account_infos.push(self.signer.clone());
         account_infos.push(self.system_program.clone());
-        account_infos.push(self.token_program.clone());
         account_infos.push(self.ata_program.clone());
         account_infos.push(self.rent.clone());
-        account_infos.push(self.dest_referral_fees_mint.clone());
         account_infos.push(self.signer_referral_state.clone());
-        account_infos.push(self.signer_referral_dest_ta.clone());
         if let Some(referred_by_state) = self.referred_by_state {
             account_infos.push(referred_by_state.clone());
         }
         if let Some(referred_by_authority) = self.referred_by_authority {
             account_infos.push(referred_by_authority.clone());
-        }
-        if let Some(referred_by_dest_ta) = self.referred_by_dest_ta {
-            account_infos.push(referred_by_dest_ta.clone());
         }
         remaining_accounts
             .iter()
@@ -523,15 +423,11 @@ impl<'a, 'b> UpdateReferralStatesCpi<'a, 'b> {
 ///
 ///   0. `[writable, signer]` signer
 ///   1. `[]` system_program
-///   2. `[]` token_program
-///   3. `[]` ata_program
-///   4. `[]` rent
-///   5. `[]` dest_referral_fees_mint
-///   6. `[writable]` signer_referral_state
-///   7. `[writable]` signer_referral_dest_ta
-///   8. `[writable, optional]` referred_by_state
-///   9. `[optional]` referred_by_authority
-///   10. `[writable, optional]` referred_by_dest_ta
+///   2. `[]` ata_program
+///   3. `[]` rent
+///   4. `[writable]` signer_referral_state
+///   5. `[writable, optional]` referred_by_state
+///   6. `[optional]` referred_by_authority
 pub struct UpdateReferralStatesCpiBuilder<'a, 'b> {
     instruction: Box<UpdateReferralStatesCpiBuilderInstruction<'a, 'b>>,
 }
@@ -542,15 +438,12 @@ impl<'a, 'b> UpdateReferralStatesCpiBuilder<'a, 'b> {
             __program: program,
             signer: None,
             system_program: None,
-            token_program: None,
             ata_program: None,
             rent: None,
-            dest_referral_fees_mint: None,
             signer_referral_state: None,
-            signer_referral_dest_ta: None,
             referred_by_state: None,
             referred_by_authority: None,
-            referred_by_dest_ta: None,
+            referral_fees_dest_mint: None,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
@@ -572,14 +465,6 @@ impl<'a, 'b> UpdateReferralStatesCpiBuilder<'a, 'b> {
         self
     }
     #[inline(always)]
-    pub fn token_program(
-        &mut self,
-        token_program: &'b solana_program::account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.token_program = Some(token_program);
-        self
-    }
-    #[inline(always)]
     pub fn ata_program(
         &mut self,
         ata_program: &'b solana_program::account_info::AccountInfo<'a>,
@@ -593,27 +478,11 @@ impl<'a, 'b> UpdateReferralStatesCpiBuilder<'a, 'b> {
         self
     }
     #[inline(always)]
-    pub fn dest_referral_fees_mint(
-        &mut self,
-        dest_referral_fees_mint: &'b solana_program::account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.dest_referral_fees_mint = Some(dest_referral_fees_mint);
-        self
-    }
-    #[inline(always)]
     pub fn signer_referral_state(
         &mut self,
         signer_referral_state: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
         self.instruction.signer_referral_state = Some(signer_referral_state);
-        self
-    }
-    #[inline(always)]
-    pub fn signer_referral_dest_ta(
-        &mut self,
-        signer_referral_dest_ta: &'b solana_program::account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.signer_referral_dest_ta = Some(signer_referral_dest_ta);
         self
     }
     /// `[optional account]`
@@ -634,13 +503,10 @@ impl<'a, 'b> UpdateReferralStatesCpiBuilder<'a, 'b> {
         self.instruction.referred_by_authority = referred_by_authority;
         self
     }
-    /// `[optional account]`
+    /// `[optional argument]`
     #[inline(always)]
-    pub fn referred_by_dest_ta(
-        &mut self,
-        referred_by_dest_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    ) -> &mut Self {
-        self.instruction.referred_by_dest_ta = referred_by_dest_ta;
+    pub fn referral_fees_dest_mint(&mut self, referral_fees_dest_mint: Pubkey) -> &mut Self {
+        self.instruction.referral_fees_dest_mint = Some(referral_fees_dest_mint);
         self
     }
     /// Add an additional account to the instruction.
@@ -684,6 +550,9 @@ impl<'a, 'b> UpdateReferralStatesCpiBuilder<'a, 'b> {
         &self,
         signers_seeds: &[&[&[u8]]],
     ) -> solana_program::entrypoint::ProgramResult {
+        let args = UpdateReferralStatesInstructionArgs {
+            referral_fees_dest_mint: self.instruction.referral_fees_dest_mint.clone(),
+        };
         let instruction = UpdateReferralStatesCpi {
             __program: self.instruction.__program,
 
@@ -694,11 +563,6 @@ impl<'a, 'b> UpdateReferralStatesCpiBuilder<'a, 'b> {
                 .system_program
                 .expect("system_program is not set"),
 
-            token_program: self
-                .instruction
-                .token_program
-                .expect("token_program is not set"),
-
             ata_program: self
                 .instruction
                 .ata_program
@@ -706,26 +570,15 @@ impl<'a, 'b> UpdateReferralStatesCpiBuilder<'a, 'b> {
 
             rent: self.instruction.rent.expect("rent is not set"),
 
-            dest_referral_fees_mint: self
-                .instruction
-                .dest_referral_fees_mint
-                .expect("dest_referral_fees_mint is not set"),
-
             signer_referral_state: self
                 .instruction
                 .signer_referral_state
                 .expect("signer_referral_state is not set"),
 
-            signer_referral_dest_ta: self
-                .instruction
-                .signer_referral_dest_ta
-                .expect("signer_referral_dest_ta is not set"),
-
             referred_by_state: self.instruction.referred_by_state,
 
             referred_by_authority: self.instruction.referred_by_authority,
-
-            referred_by_dest_ta: self.instruction.referred_by_dest_ta,
+            __args: args,
         };
         instruction.invoke_signed_with_remaining_accounts(
             signers_seeds,
@@ -738,15 +591,12 @@ struct UpdateReferralStatesCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_program::account_info::AccountInfo<'a>,
     signer: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     system_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    token_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     ata_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     rent: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    dest_referral_fees_mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     signer_referral_state: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    signer_referral_dest_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     referred_by_state: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     referred_by_authority: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    referred_by_dest_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    referral_fees_dest_mint: Option<Pubkey>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(
         &'b solana_program::account_info::AccountInfo<'a>,

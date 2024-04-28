@@ -37,8 +37,6 @@ pub struct SolendProtocolInteraction {
 
     pub supply_reserve_switchboard_oracle: Option<solana_program::pubkey::Pubkey>,
 
-    pub supply_liquidity_mint: Option<solana_program::pubkey::Pubkey>,
-
     pub authority_supply_liquidity_ta: Option<solana_program::pubkey::Pubkey>,
 
     pub reserve_supply_liquidity_ta: Option<solana_program::pubkey::Pubkey>,
@@ -52,8 +50,6 @@ pub struct SolendProtocolInteraction {
     pub debt_reserve: Option<solana_program::pubkey::Pubkey>,
 
     pub debt_reserve_fee_receiver_ta: Option<solana_program::pubkey::Pubkey>,
-
-    pub debt_liquidity_mint: Option<solana_program::pubkey::Pubkey>,
 
     pub authority_debt_liquidity_ta: Option<solana_program::pubkey::Pubkey>,
 
@@ -73,7 +69,7 @@ impl SolendProtocolInteraction {
         args: SolendProtocolInteractionInstructionArgs,
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
-        let mut accounts = Vec::with_capacity(24 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(22 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.signer,
             true,
@@ -137,17 +133,6 @@ impl SolendProtocolInteraction {
         if let Some(supply_reserve_switchboard_oracle) = self.supply_reserve_switchboard_oracle {
             accounts.push(solana_program::instruction::AccountMeta::new_readonly(
                 supply_reserve_switchboard_oracle,
-                false,
-            ));
-        } else {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::SOLAUTO_ID,
-                false,
-            ));
-        }
-        if let Some(supply_liquidity_mint) = self.supply_liquidity_mint {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                supply_liquidity_mint,
                 false,
             ));
         } else {
@@ -233,17 +218,6 @@ impl SolendProtocolInteraction {
                 false,
             ));
         }
-        if let Some(debt_liquidity_mint) = self.debt_liquidity_mint {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                debt_liquidity_mint,
-                false,
-            ));
-        } else {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::SOLAUTO_ID,
-                false,
-            ));
-        }
         if let Some(authority_debt_liquidity_ta) = self.authority_debt_liquidity_ta {
             accounts.push(solana_program::instruction::AccountMeta::new(
                 authority_debt_liquidity_ta,
@@ -315,17 +289,15 @@ pub struct SolendProtocolInteractionInstructionArgs {
 ///   10. `[writable, optional]` supply_reserve
 ///   11. `[optional]` supply_reserve_pyth_price_oracle
 ///   12. `[optional]` supply_reserve_switchboard_oracle
-///   13. `[optional]` supply_liquidity_mint
-///   14. `[writable, optional]` authority_supply_liquidity_ta
-///   15. `[writable, optional]` reserve_supply_liquidity_ta
-///   16. `[optional]` supply_collateral_mint
-///   17. `[writable, optional]` authority_supply_collateral_ta
-///   18. `[writable, optional]` reserve_supply_collateral_ta
-///   19. `[writable, optional]` debt_reserve
-///   20. `[writable, optional]` debt_reserve_fee_receiver_ta
-///   21. `[optional]` debt_liquidity_mint
-///   22. `[writable, optional]` authority_debt_liquidity_ta
-///   23. `[writable, optional]` reserve_debt_liquidity_ta
+///   13. `[writable, optional]` authority_supply_liquidity_ta
+///   14. `[writable, optional]` reserve_supply_liquidity_ta
+///   15. `[optional]` supply_collateral_mint
+///   16. `[writable, optional]` authority_supply_collateral_ta
+///   17. `[writable, optional]` reserve_supply_collateral_ta
+///   18. `[writable, optional]` debt_reserve
+///   19. `[writable, optional]` debt_reserve_fee_receiver_ta
+///   20. `[writable, optional]` authority_debt_liquidity_ta
+///   21. `[writable, optional]` reserve_debt_liquidity_ta
 #[derive(Default)]
 pub struct SolendProtocolInteractionBuilder {
     signer: Option<solana_program::pubkey::Pubkey>,
@@ -341,7 +313,6 @@ pub struct SolendProtocolInteractionBuilder {
     supply_reserve: Option<solana_program::pubkey::Pubkey>,
     supply_reserve_pyth_price_oracle: Option<solana_program::pubkey::Pubkey>,
     supply_reserve_switchboard_oracle: Option<solana_program::pubkey::Pubkey>,
-    supply_liquidity_mint: Option<solana_program::pubkey::Pubkey>,
     authority_supply_liquidity_ta: Option<solana_program::pubkey::Pubkey>,
     reserve_supply_liquidity_ta: Option<solana_program::pubkey::Pubkey>,
     supply_collateral_mint: Option<solana_program::pubkey::Pubkey>,
@@ -349,7 +320,6 @@ pub struct SolendProtocolInteractionBuilder {
     reserve_supply_collateral_ta: Option<solana_program::pubkey::Pubkey>,
     debt_reserve: Option<solana_program::pubkey::Pubkey>,
     debt_reserve_fee_receiver_ta: Option<solana_program::pubkey::Pubkey>,
-    debt_liquidity_mint: Option<solana_program::pubkey::Pubkey>,
     authority_debt_liquidity_ta: Option<solana_program::pubkey::Pubkey>,
     reserve_debt_liquidity_ta: Option<solana_program::pubkey::Pubkey>,
     solauto_action: Option<SolautoAction>,
@@ -446,15 +416,6 @@ impl SolendProtocolInteractionBuilder {
     }
     /// `[optional account]`
     #[inline(always)]
-    pub fn supply_liquidity_mint(
-        &mut self,
-        supply_liquidity_mint: Option<solana_program::pubkey::Pubkey>,
-    ) -> &mut Self {
-        self.supply_liquidity_mint = supply_liquidity_mint;
-        self
-    }
-    /// `[optional account]`
-    #[inline(always)]
     pub fn authority_supply_liquidity_ta(
         &mut self,
         authority_supply_liquidity_ta: Option<solana_program::pubkey::Pubkey>,
@@ -514,15 +475,6 @@ impl SolendProtocolInteractionBuilder {
         debt_reserve_fee_receiver_ta: Option<solana_program::pubkey::Pubkey>,
     ) -> &mut Self {
         self.debt_reserve_fee_receiver_ta = debt_reserve_fee_receiver_ta;
-        self
-    }
-    /// `[optional account]`
-    #[inline(always)]
-    pub fn debt_liquidity_mint(
-        &mut self,
-        debt_liquidity_mint: Option<solana_program::pubkey::Pubkey>,
-    ) -> &mut Self {
-        self.debt_liquidity_mint = debt_liquidity_mint;
         self
     }
     /// `[optional account]`
@@ -590,7 +542,6 @@ impl SolendProtocolInteractionBuilder {
             supply_reserve: self.supply_reserve,
             supply_reserve_pyth_price_oracle: self.supply_reserve_pyth_price_oracle,
             supply_reserve_switchboard_oracle: self.supply_reserve_switchboard_oracle,
-            supply_liquidity_mint: self.supply_liquidity_mint,
             authority_supply_liquidity_ta: self.authority_supply_liquidity_ta,
             reserve_supply_liquidity_ta: self.reserve_supply_liquidity_ta,
             supply_collateral_mint: self.supply_collateral_mint,
@@ -598,7 +549,6 @@ impl SolendProtocolInteractionBuilder {
             reserve_supply_collateral_ta: self.reserve_supply_collateral_ta,
             debt_reserve: self.debt_reserve,
             debt_reserve_fee_receiver_ta: self.debt_reserve_fee_receiver_ta,
-            debt_liquidity_mint: self.debt_liquidity_mint,
             authority_debt_liquidity_ta: self.authority_debt_liquidity_ta,
             reserve_debt_liquidity_ta: self.reserve_debt_liquidity_ta,
         };
@@ -642,8 +592,6 @@ pub struct SolendProtocolInteractionCpiAccounts<'a, 'b> {
     pub supply_reserve_switchboard_oracle:
         Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
-    pub supply_liquidity_mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-
     pub authority_supply_liquidity_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
     pub reserve_supply_liquidity_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
@@ -657,8 +605,6 @@ pub struct SolendProtocolInteractionCpiAccounts<'a, 'b> {
     pub debt_reserve: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
     pub debt_reserve_fee_receiver_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-
-    pub debt_liquidity_mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
     pub authority_debt_liquidity_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
@@ -697,8 +643,6 @@ pub struct SolendProtocolInteractionCpi<'a, 'b> {
     pub supply_reserve_switchboard_oracle:
         Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
-    pub supply_liquidity_mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-
     pub authority_supply_liquidity_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
     pub reserve_supply_liquidity_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
@@ -712,8 +656,6 @@ pub struct SolendProtocolInteractionCpi<'a, 'b> {
     pub debt_reserve: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
     pub debt_reserve_fee_receiver_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-
-    pub debt_liquidity_mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
     pub authority_debt_liquidity_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
@@ -743,7 +685,6 @@ impl<'a, 'b> SolendProtocolInteractionCpi<'a, 'b> {
             supply_reserve: accounts.supply_reserve,
             supply_reserve_pyth_price_oracle: accounts.supply_reserve_pyth_price_oracle,
             supply_reserve_switchboard_oracle: accounts.supply_reserve_switchboard_oracle,
-            supply_liquidity_mint: accounts.supply_liquidity_mint,
             authority_supply_liquidity_ta: accounts.authority_supply_liquidity_ta,
             reserve_supply_liquidity_ta: accounts.reserve_supply_liquidity_ta,
             supply_collateral_mint: accounts.supply_collateral_mint,
@@ -751,7 +692,6 @@ impl<'a, 'b> SolendProtocolInteractionCpi<'a, 'b> {
             reserve_supply_collateral_ta: accounts.reserve_supply_collateral_ta,
             debt_reserve: accounts.debt_reserve,
             debt_reserve_fee_receiver_ta: accounts.debt_reserve_fee_receiver_ta,
-            debt_liquidity_mint: accounts.debt_liquidity_mint,
             authority_debt_liquidity_ta: accounts.authority_debt_liquidity_ta,
             reserve_debt_liquidity_ta: accounts.reserve_debt_liquidity_ta,
             __args: args,
@@ -790,7 +730,7 @@ impl<'a, 'b> SolendProtocolInteractionCpi<'a, 'b> {
             bool,
         )],
     ) -> solana_program::entrypoint::ProgramResult {
-        let mut accounts = Vec::with_capacity(24 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(22 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             *self.signer.key,
             true,
@@ -856,17 +796,6 @@ impl<'a, 'b> SolendProtocolInteractionCpi<'a, 'b> {
         if let Some(supply_reserve_switchboard_oracle) = self.supply_reserve_switchboard_oracle {
             accounts.push(solana_program::instruction::AccountMeta::new_readonly(
                 *supply_reserve_switchboard_oracle.key,
-                false,
-            ));
-        } else {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::SOLAUTO_ID,
-                false,
-            ));
-        }
-        if let Some(supply_liquidity_mint) = self.supply_liquidity_mint {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                *supply_liquidity_mint.key,
                 false,
             ));
         } else {
@@ -952,17 +881,6 @@ impl<'a, 'b> SolendProtocolInteractionCpi<'a, 'b> {
                 false,
             ));
         }
-        if let Some(debt_liquidity_mint) = self.debt_liquidity_mint {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                *debt_liquidity_mint.key,
-                false,
-            ));
-        } else {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::SOLAUTO_ID,
-                false,
-            ));
-        }
         if let Some(authority_debt_liquidity_ta) = self.authority_debt_liquidity_ta {
             accounts.push(solana_program::instruction::AccountMeta::new(
                 *authority_debt_liquidity_ta.key,
@@ -1003,7 +921,7 @@ impl<'a, 'b> SolendProtocolInteractionCpi<'a, 'b> {
             accounts,
             data,
         };
-        let mut account_infos = Vec::with_capacity(24 + 1 + remaining_accounts.len());
+        let mut account_infos = Vec::with_capacity(22 + 1 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
         account_infos.push(self.signer.clone());
         account_infos.push(self.solend_program.clone());
@@ -1023,9 +941,6 @@ impl<'a, 'b> SolendProtocolInteractionCpi<'a, 'b> {
         }
         if let Some(supply_reserve_switchboard_oracle) = self.supply_reserve_switchboard_oracle {
             account_infos.push(supply_reserve_switchboard_oracle.clone());
-        }
-        if let Some(supply_liquidity_mint) = self.supply_liquidity_mint {
-            account_infos.push(supply_liquidity_mint.clone());
         }
         if let Some(authority_supply_liquidity_ta) = self.authority_supply_liquidity_ta {
             account_infos.push(authority_supply_liquidity_ta.clone());
@@ -1047,9 +962,6 @@ impl<'a, 'b> SolendProtocolInteractionCpi<'a, 'b> {
         }
         if let Some(debt_reserve_fee_receiver_ta) = self.debt_reserve_fee_receiver_ta {
             account_infos.push(debt_reserve_fee_receiver_ta.clone());
-        }
-        if let Some(debt_liquidity_mint) = self.debt_liquidity_mint {
-            account_infos.push(debt_liquidity_mint.clone());
         }
         if let Some(authority_debt_liquidity_ta) = self.authority_debt_liquidity_ta {
             account_infos.push(authority_debt_liquidity_ta.clone());
@@ -1086,17 +998,15 @@ impl<'a, 'b> SolendProtocolInteractionCpi<'a, 'b> {
 ///   10. `[writable, optional]` supply_reserve
 ///   11. `[optional]` supply_reserve_pyth_price_oracle
 ///   12. `[optional]` supply_reserve_switchboard_oracle
-///   13. `[optional]` supply_liquidity_mint
-///   14. `[writable, optional]` authority_supply_liquidity_ta
-///   15. `[writable, optional]` reserve_supply_liquidity_ta
-///   16. `[optional]` supply_collateral_mint
-///   17. `[writable, optional]` authority_supply_collateral_ta
-///   18. `[writable, optional]` reserve_supply_collateral_ta
-///   19. `[writable, optional]` debt_reserve
-///   20. `[writable, optional]` debt_reserve_fee_receiver_ta
-///   21. `[optional]` debt_liquidity_mint
-///   22. `[writable, optional]` authority_debt_liquidity_ta
-///   23. `[writable, optional]` reserve_debt_liquidity_ta
+///   13. `[writable, optional]` authority_supply_liquidity_ta
+///   14. `[writable, optional]` reserve_supply_liquidity_ta
+///   15. `[optional]` supply_collateral_mint
+///   16. `[writable, optional]` authority_supply_collateral_ta
+///   17. `[writable, optional]` reserve_supply_collateral_ta
+///   18. `[writable, optional]` debt_reserve
+///   19. `[writable, optional]` debt_reserve_fee_receiver_ta
+///   20. `[writable, optional]` authority_debt_liquidity_ta
+///   21. `[writable, optional]` reserve_debt_liquidity_ta
 pub struct SolendProtocolInteractionCpiBuilder<'a, 'b> {
     instruction: Box<SolendProtocolInteractionCpiBuilderInstruction<'a, 'b>>,
 }
@@ -1118,7 +1028,6 @@ impl<'a, 'b> SolendProtocolInteractionCpiBuilder<'a, 'b> {
             supply_reserve: None,
             supply_reserve_pyth_price_oracle: None,
             supply_reserve_switchboard_oracle: None,
-            supply_liquidity_mint: None,
             authority_supply_liquidity_ta: None,
             reserve_supply_liquidity_ta: None,
             supply_collateral_mint: None,
@@ -1126,7 +1035,6 @@ impl<'a, 'b> SolendProtocolInteractionCpiBuilder<'a, 'b> {
             reserve_supply_collateral_ta: None,
             debt_reserve: None,
             debt_reserve_fee_receiver_ta: None,
-            debt_liquidity_mint: None,
             authority_debt_liquidity_ta: None,
             reserve_debt_liquidity_ta: None,
             solauto_action: None,
@@ -1239,15 +1147,6 @@ impl<'a, 'b> SolendProtocolInteractionCpiBuilder<'a, 'b> {
     }
     /// `[optional account]`
     #[inline(always)]
-    pub fn supply_liquidity_mint(
-        &mut self,
-        supply_liquidity_mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    ) -> &mut Self {
-        self.instruction.supply_liquidity_mint = supply_liquidity_mint;
-        self
-    }
-    /// `[optional account]`
-    #[inline(always)]
     pub fn authority_supply_liquidity_ta(
         &mut self,
         authority_supply_liquidity_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
@@ -1307,15 +1206,6 @@ impl<'a, 'b> SolendProtocolInteractionCpiBuilder<'a, 'b> {
         debt_reserve_fee_receiver_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     ) -> &mut Self {
         self.instruction.debt_reserve_fee_receiver_ta = debt_reserve_fee_receiver_ta;
-        self
-    }
-    /// `[optional account]`
-    #[inline(always)]
-    pub fn debt_liquidity_mint(
-        &mut self,
-        debt_liquidity_mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    ) -> &mut Self {
-        self.instruction.debt_liquidity_mint = debt_liquidity_mint;
         self
     }
     /// `[optional account]`
@@ -1436,8 +1326,6 @@ impl<'a, 'b> SolendProtocolInteractionCpiBuilder<'a, 'b> {
 
             supply_reserve_switchboard_oracle: self.instruction.supply_reserve_switchboard_oracle,
 
-            supply_liquidity_mint: self.instruction.supply_liquidity_mint,
-
             authority_supply_liquidity_ta: self.instruction.authority_supply_liquidity_ta,
 
             reserve_supply_liquidity_ta: self.instruction.reserve_supply_liquidity_ta,
@@ -1451,8 +1339,6 @@ impl<'a, 'b> SolendProtocolInteractionCpiBuilder<'a, 'b> {
             debt_reserve: self.instruction.debt_reserve,
 
             debt_reserve_fee_receiver_ta: self.instruction.debt_reserve_fee_receiver_ta,
-
-            debt_liquidity_mint: self.instruction.debt_liquidity_mint,
 
             authority_debt_liquidity_ta: self.instruction.authority_debt_liquidity_ta,
 
@@ -1481,7 +1367,6 @@ struct SolendProtocolInteractionCpiBuilderInstruction<'a, 'b> {
     supply_reserve: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     supply_reserve_pyth_price_oracle: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     supply_reserve_switchboard_oracle: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    supply_liquidity_mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     authority_supply_liquidity_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     reserve_supply_liquidity_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     supply_collateral_mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
@@ -1489,7 +1374,6 @@ struct SolendProtocolInteractionCpiBuilderInstruction<'a, 'b> {
     reserve_supply_collateral_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     debt_reserve: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     debt_reserve_fee_receiver_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    debt_liquidity_mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     authority_debt_liquidity_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     reserve_debt_liquidity_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     solauto_action: Option<SolautoAction>,

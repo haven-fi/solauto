@@ -22,12 +22,7 @@ pub struct ReferralStateAccount {
         feature = "serde",
         serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
     )]
-    pub fees_mint: Pubkey,
-    #[cfg_attr(
-        feature = "serde",
-        serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
-    )]
-    pub dest_fees_ta: Pubkey,
+    pub dest_fees_mint: Pubkey,
 }
 
 impl ReferralStateAccount {

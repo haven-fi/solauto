@@ -41,10 +41,10 @@ export type MarginfiProtocolInteractionInstructionAccounts = {
   ataProgram?: PublicKey | Pda;
   rent?: PublicKey | Pda;
   solautoPosition: PublicKey | Pda;
-  supplyMint?: PublicKey | Pda;
+  marginfiGroup: PublicKey | Pda;
+  marginfiAccount: PublicKey | Pda;
   authoritySupplyTa?: PublicKey | Pda;
   bankSupplyTa?: PublicKey | Pda;
-  debtMint?: PublicKey | Pda;
   authorityDebtTa?: PublicKey | Pda;
   bankDebtTa?: PublicKey | Pda;
 };
@@ -131,25 +131,25 @@ export function marginfiProtocolInteraction(
       isWritable: true as boolean,
       value: input.solautoPosition ?? null,
     },
-    supplyMint: {
+    marginfiGroup: {
       index: 7,
       isWritable: false as boolean,
-      value: input.supplyMint ?? null,
+      value: input.marginfiGroup ?? null,
+    },
+    marginfiAccount: {
+      index: 8,
+      isWritable: true as boolean,
+      value: input.marginfiAccount ?? null,
     },
     authoritySupplyTa: {
-      index: 8,
+      index: 9,
       isWritable: true as boolean,
       value: input.authoritySupplyTa ?? null,
     },
     bankSupplyTa: {
-      index: 9,
+      index: 10,
       isWritable: true as boolean,
       value: input.bankSupplyTa ?? null,
-    },
-    debtMint: {
-      index: 10,
-      isWritable: false as boolean,
-      value: input.debtMint ?? null,
     },
     authorityDebtTa: {
       index: 11,

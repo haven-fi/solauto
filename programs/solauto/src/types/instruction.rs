@@ -228,7 +228,7 @@ pub const SOLAUTO_REBALANCE_IX_DISCRIMINATORS: [u64; 2] = [11, 12];
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug)]
 pub struct UpdateReferralStatesArgs {
     /// The destination token mint to accumulate referral fees in
-    pub referral_fees_dest_mint: Option<Pubkey>
+    pub referral_fees_dest_mint: Option<Pubkey>,
 }
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug)]
