@@ -16,14 +16,6 @@ use spl_associated_token_account::{
 };
 use spl_token::instruction as spl_instruction;
 
-pub fn account_is_rent_exempt(
-    rent_sysvar: &AccountInfo,
-    account: &AccountInfo,
-) -> Result<bool, ProgramError> {
-    let rent = Rent::from_account_info(rent_sysvar)?;
-    Ok(rent.is_exempt(account.lamports(), account.data_len()))
-}
-
 pub fn account_has_custom_data(account: &AccountInfo) -> bool {
     !account.data.borrow().is_empty()
 }
@@ -37,7 +29,7 @@ pub fn init_new_account<'a>(
     seed: Vec<&[u8]>,
     space: usize,
 ) -> ProgramResult {
-    if account_is_rent_exempt(rent_sysvar, account)? || account_has_custom_data(account) {
+    if account_has_custom_data(account) {
         msg!("Account already initialized");
         return Err(ProgramError::AccountAlreadyInitialized.into());
     }
@@ -93,7 +85,7 @@ pub fn init_ata_if_needed<'a>(
         return Err(ProgramError::InvalidAccountData.into());
     }
 
-    if account_is_rent_exempt(rent_sysvar, token_account)? {
+    if account_has_custom_data(token_account) {
         return Ok(());
     }
 

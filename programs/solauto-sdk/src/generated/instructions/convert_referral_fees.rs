@@ -39,7 +39,7 @@ impl ConvertReferralFees {
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
         let mut accounts = Vec::with_capacity(9 + remaining_accounts.len());
-        accounts.push(solana_program::instruction::AccountMeta::new(
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.solauto_manager,
             true,
         ));
@@ -102,7 +102,7 @@ impl ConvertReferralFeesInstructionData {
 ///
 /// ### Accounts:
 ///
-///   0. `[writable, signer]` solauto_manager
+///   0. `[signer]` solauto_manager
 ///   1. `[optional]` system_program (default to `11111111111111111111111111111111`)
 ///   2. `[optional]` token_program (default to `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA`)
 ///   3. `[optional]` ata_program (default to `ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL`)
@@ -328,7 +328,7 @@ impl<'a, 'b> ConvertReferralFeesCpi<'a, 'b> {
         )],
     ) -> solana_program::entrypoint::ProgramResult {
         let mut accounts = Vec::with_capacity(9 + remaining_accounts.len());
-        accounts.push(solana_program::instruction::AccountMeta::new(
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             *self.solauto_manager.key,
             true,
         ));
@@ -407,7 +407,7 @@ impl<'a, 'b> ConvertReferralFeesCpi<'a, 'b> {
 ///
 /// ### Accounts:
 ///
-///   0. `[writable, signer]` solauto_manager
+///   0. `[signer]` solauto_manager
 ///   1. `[]` system_program
 ///   2. `[]` token_program
 ///   3. `[]` ata_program

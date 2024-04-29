@@ -15,7 +15,7 @@ use crate::{
     utils::*,
 };
 
-use self::{solana_utils::account_is_rent_exempt, solauto_utils::get_owner};
+use self::{solana_utils::account_has_custom_data, solauto_utils::get_owner};
 
 pub fn marginfi_open_position<'a>(
     ctx: Context<'a, MarginfiOpenPositionAccounts<'a>>,
@@ -47,7 +47,7 @@ pub fn marginfi_open_position<'a>(
         ]
     };
 
-    if !account_is_rent_exempt(ctx.accounts.rent, ctx.accounts.marginfi_account)? {
+    if !account_has_custom_data(ctx.accounts.marginfi_account) {
         solana_utils::init_new_account(
             ctx.accounts.system_program,
             ctx.accounts.rent,
@@ -112,7 +112,7 @@ pub fn solend_open_position<'a>(
         ]
     };
 
-    if !account_is_rent_exempt(ctx.accounts.rent, ctx.accounts.obligation)? {
+    if !account_has_custom_data(ctx.accounts.obligation) {
         solana_utils::init_new_account(
             ctx.accounts.system_program,
             ctx.accounts.rent,
@@ -149,7 +149,7 @@ fn initialize_solauto_position<'a, 'b>(
     debt_mint: &'a AccountInfo<'a>,
 ) -> ProgramResult {
     if !solauto_position.data.self_managed
-        || !account_is_rent_exempt(rent, solauto_position.account_info)?
+        || !account_has_custom_data(solauto_position.account_info)
     {
         solana_utils::init_new_account(
             system_program,

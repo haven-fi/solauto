@@ -7,9 +7,8 @@ use super::shared::*;
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankContext, ShankInstruction)]
 #[rustfmt::skip]
 pub enum Instruction {
-    #[account(signer, mut, name = "signer")]
+    #[account(signer, name = "signer")]
     #[account(name = "system_program")]
-    #[account(name = "ata_program")]
     #[account(name = "rent")]
     #[account(mut, name = "signer_referral_state")]
     #[account(mut, optional, name = "referred_by_state")]
@@ -17,7 +16,7 @@ pub enum Instruction {
     UpdateReferralStates(UpdateReferralStatesArgs),
 
     /// Moves the referral fees to an intermediary token account, where a jup swap will convert to the destination token mint
-    #[account(signer, mut, name = "solauto_manager")]
+    #[account(signer, name = "solauto_manager")]
     #[account(name = "system_program")]
     #[account(name = "token_program")]
     #[account(name = "ata_program")]
@@ -29,7 +28,7 @@ pub enum Instruction {
     ConvertReferralFees,
 
     /// Claim the accumulated fees from referrals
-    #[account(signer, mut, name = "signer")]
+    #[account(signer, name = "signer")]
     #[account(name = "system_program")]
     #[account(name = "token_program")]
     #[account(name = "rent")]
@@ -40,7 +39,7 @@ pub enum Instruction {
     ClaimReferralFees,
 
     /// Open a new Solauto position with Marginfi
-    #[account(signer, mut, name = "signer")]
+    #[account(signer, name = "signer")]
     #[account(name = "marginfi_program")]
     #[account(name = "system_program")]
     #[account(name = "token_program")]
@@ -62,7 +61,7 @@ pub enum Instruction {
     MarginfiOpenPosition(UpdatePositionData),
 
     /// Open a new Solauto position with Solend
-    #[account(signer, mut, name = "signer")]
+    #[account(signer, name = "signer")]
     #[account(name = "solend_program")]
     #[account(name = "system_program")]
     #[account(name = "token_program")]
@@ -95,7 +94,7 @@ pub enum Instruction {
     UpdatePosition(UpdatePositionData),
     
     /// Close the Solauto position and return the rent for the various accounts
-    #[account(signer, mut, name = "signer")]
+    #[account(signer, name = "signer")]
     #[account(name = "system_program")]
     #[account(name = "token_program")]
     #[account(mut, name = "solauto_position")]
@@ -129,7 +128,7 @@ pub enum Instruction {
     SolendRefreshData,
 
     /// Marginfi protocol interaction. Can only be invoked by the authority of the position
-    #[account(signer, mut, name = "signer")]
+    #[account(signer, name = "signer")]
     #[account(name = "marginfi_program")]
     #[account(name = "system_program")]
     #[account(name = "token_program")]
@@ -138,15 +137,18 @@ pub enum Instruction {
     #[account(mut, name = "solauto_position")]
     #[account(name = "marginfi_group")]
     #[account(mut, name = "marginfi_account")]
+    #[account(mut, optional, name = "supply_bank")]
     #[account(mut, optional, name = "authority_supply_ta")]
-    #[account(mut, optional, name = "bank_supply_ta")]
+    #[account(mut, optional, name = "vault_supply_ta")]
+    #[account(optional, name = "supply_vault_authority")]
+    #[account(mut, optional, name = "debt_bank")]
     #[account(mut, optional, name = "authority_debt_ta")]
-    #[account(mut, optional, name = "bank_debt_ta")]
-    // TODO missing accounts
+    #[account(mut, optional, name = "vault_debt_ta")]
+    #[account(optional, name = "debt_vault_authority")]
     MarginfiProtocolInteraction(SolautoAction),
 
     /// Solend protocol interaction. Can only be invoked by the authority of the position
-    #[account(signer, mut, name = "signer")]
+    #[account(signer, name = "signer")]
     #[account(name = "solend_program")]
     #[account(name = "system_program")]
     #[account(name = "token_program")]
@@ -171,7 +173,7 @@ pub enum Instruction {
     SolendProtocolInteraction(SolautoAction),
 
     /// Rebalance the position, can be invoked by the authority or Solauto manager
-    #[account(signer, mut, name = "signer")]
+    #[account(signer, name = "signer")]
     #[account(name = "marginfi_program")]
     #[account(name = "system_program")]
     #[account(name = "token_program")]
@@ -185,15 +187,18 @@ pub enum Instruction {
     #[account(name = "marginfi_group")]
     #[account(mut, name = "marginfi_account")]
     #[account(mut, name = "intermediary_ta")]
+    #[account(mut, name = "supply_bank")]
     #[account(mut, name = "position_supply_ta")]
-    #[account(mut, name = "bank_supply_ta")]
+    #[account(mut, name = "vault_supply_ta")]
+    #[account(optional, name = "supply_vault_authority")]
+    #[account(mut, name = "debt_bank")]
     #[account(mut, name = "position_debt_ta")]
-    #[account(mut, name = "bank_debt_ta")]
-    // TODO missing accounts
+    #[account(mut, name = "vault_debt_ta")]
+    #[account(optional, name = "debt_vault_authority")]
     MarginfiRebalance(RebalanceArgs),
     
     /// Rebalance the position, can be invoked by the authority or Solauto manager
-    #[account(signer, mut, name = "signer")]
+    #[account(signer, name = "signer")]
     #[account(name = "solend_program")]
     #[account(name = "system_program")]
     #[account(name = "token_program")]

@@ -3,7 +3,6 @@ pub mod test_utils;
 #[cfg(test)]
 mod open_position {
     use std::str::FromStr;
-
     use solana_program_test::tokio;
     use solana_sdk::{ pubkey::Pubkey, signature::Signer, transaction::Transaction };
 
@@ -17,7 +16,8 @@ mod open_position {
             None,
             None,
             None,
-            Some(&Pubkey::from_str(USDC_MINT).expect("msg"))
+            Some(&Pubkey::from_str(USDC_MINT).unwrap()),
+            None
         ).await;
 
         let tx = Transaction::new_signed_with_payer(
@@ -26,22 +26,15 @@ mod open_position {
             &[&data.general.ctx.payer],
             data.general.ctx.last_blockhash
         );
+        data.general.ctx.banks_client.process_transaction(tx).await.unwrap();
 
-        match data.general.ctx.banks_client.process_transaction(tx).await {
-            Err(err) => {
-                eprintln!("Transaction failed: {:?}", err);
-                // Throw error?
-            }
-            Ok(_) => {}
-        }
+        // match data.general.ctx.banks_client.process_transaction(tx).await {
+        //     Err(err) => {
+        //         eprintln!("Transaction failed: {:?}", err);
+        //         // Throw error?
+        //     }
+        //     Ok(_) => {}
+        // }
 
-        // let account = context.banks_client.get_account(asset.pubkey()).await.unwrap();
-        // assert!(account.is_some());
-        // let account = account.unwrap();
-
-        // let account_data = account.data.as_ref();
-        // let asset_account = Asset::load(account_data);
-
-        // assert_eq!(1, 2, "should be equal");
     }
 }

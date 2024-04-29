@@ -70,7 +70,7 @@ impl SolendOpenPosition {
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
         let mut accounts = Vec::with_capacity(22 + remaining_accounts.len());
-        accounts.push(solana_program::instruction::AccountMeta::new(
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.signer,
             true,
         ));
@@ -214,7 +214,7 @@ pub struct SolendOpenPositionInstructionArgs {
 ///
 /// ### Accounts:
 ///
-///   0. `[writable, signer]` signer
+///   0. `[signer]` signer
 ///   1. `[]` solend_program
 ///   2. `[optional]` system_program (default to `11111111111111111111111111111111`)
 ///   3. `[optional]` token_program (default to `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA`)
@@ -676,7 +676,7 @@ impl<'a, 'b> SolendOpenPositionCpi<'a, 'b> {
         )],
     ) -> solana_program::entrypoint::ProgramResult {
         let mut accounts = Vec::with_capacity(22 + remaining_accounts.len());
-        accounts.push(solana_program::instruction::AccountMeta::new(
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             *self.signer.key,
             true,
         ));
@@ -849,7 +849,7 @@ impl<'a, 'b> SolendOpenPositionCpi<'a, 'b> {
 ///
 /// ### Accounts:
 ///
-///   0. `[writable, signer]` signer
+///   0. `[signer]` signer
 ///   1. `[]` solend_program
 ///   2. `[]` system_program
 ///   3. `[]` token_program

@@ -8,20 +8,20 @@ use super::{instruction::SolautoStandardAccounts, shared::DeserializedAccount};
 pub struct LendingProtocolTokenAccounts<'a> {
     pub mint: Option<&'a AccountInfo<'a>>,
     pub source_ta: DeserializedAccount<'a, TokenAccount>,
-    pub reserve_ta: &'a AccountInfo<'a>,
+    pub protocol_ta: &'a AccountInfo<'a>,
 }
 
 impl<'a> LendingProtocolTokenAccounts<'a> {
     pub fn from(
         mint: Option<&'a AccountInfo<'a>>,
         source_ta: Option<&'a AccountInfo<'a>>,
-        reserve_ta: Option<&'a AccountInfo<'a>>,
+        protocol_ta: Option<&'a AccountInfo<'a>>,
     ) -> Result<Option<Self>, ProgramError> {
-        if mint.is_some() && source_ta.is_some() && reserve_ta.is_some() {
+        if source_ta.is_some() && protocol_ta.is_some() {
             Ok(Some(Self {
                 mint,
                 source_ta: DeserializedAccount::<TokenAccount>::unpack(source_ta)?.unwrap(),
-                reserve_ta: reserve_ta.unwrap(),
+                protocol_ta: protocol_ta.unwrap(),
             }))
         } else {
             Ok(None)

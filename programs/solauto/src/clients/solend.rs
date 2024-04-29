@@ -96,15 +96,15 @@ impl<'a> SolendClient<'a> {
         supply_reserve: Option<&'a AccountInfo<'a>>,
         supply_reserve_pyth_price_oracle: Option<&'a AccountInfo<'a>>,
         supply_reserve_switchboard_oracle: Option<&'a AccountInfo<'a>>,
-        position_supply_liquidity: Option<&'a AccountInfo<'a>>,
-        reserve_supply_liquidity: Option<&'a AccountInfo<'a>>,
+        position_supply_liquidity_ta: Option<&'a AccountInfo<'a>>,
+        reserve_supply_liquidity_ta: Option<&'a AccountInfo<'a>>,
         supply_collateral_mint: Option<&'a AccountInfo<'a>>,
-        position_supply_collateral: Option<&'a AccountInfo<'a>>,
-        reserve_supply_collateral: Option<&'a AccountInfo<'a>>,
+        position_supply_collateral_ta: Option<&'a AccountInfo<'a>>,
+        reserve_supply_collateral_ta: Option<&'a AccountInfo<'a>>,
         debt_reserve: Option<&'a AccountInfo<'a>>,
         debt_reserve_fee_receiver: Option<&'a AccountInfo<'a>>,
-        position_debt_liquidity: Option<&'a AccountInfo<'a>>,
-        reserve_debt_liquidity: Option<&'a AccountInfo<'a>>,
+        position_debt_liquidity_ta: Option<&'a AccountInfo<'a>>,
+        reserve_debt_liquidity_ta: Option<&'a AccountInfo<'a>>,
     ) -> Result<(Self, LendingProtocolObligationPosition), ProgramError> {
         let mut data_accounts = SolendClient::deserialize_solend_accounts(
             lending_market,
@@ -115,18 +115,18 @@ impl<'a> SolendClient<'a> {
 
         let supply_liquidity = LendingProtocolTokenAccounts::from(
             None,
-            position_supply_liquidity,
-            reserve_supply_liquidity,
+            position_supply_liquidity_ta,
+            reserve_supply_liquidity_ta,
         )?;
         let supply_collateral = LendingProtocolTokenAccounts::from(
             supply_collateral_mint,
-            position_supply_collateral,
-            reserve_supply_collateral,
+            position_supply_collateral_ta,
+            reserve_supply_collateral_ta,
         )?;
         let debt_liquidity = LendingProtocolTokenAccounts::from(
             None,
-            position_debt_liquidity,
-            reserve_debt_liquidity,
+            position_debt_liquidity_ta,
+            reserve_debt_liquidity_ta,
         )?;
 
         let supply_reserve_oracles = if supply_reserve_pyth_price_oracle.is_some()
@@ -391,10 +391,10 @@ impl<'a> LendingProtocolClient<'a> for SolendClient<'a> {
             *supply_liquidity.source_ta.account_info.key,
             *supply_collateral.source_ta.account_info.key,
             *supply_reserve.key,
-            *supply_liquidity.reserve_ta.key,
+            *supply_liquidity.protocol_ta.key,
             *supply_collateral.mint.as_ref().unwrap().key,
             *self.data.lending_market.account_info.key,
-            *supply_collateral.reserve_ta.key,
+            *supply_collateral.protocol_ta.key,
             *self.data.obligation.account_info.key,
             *obligation_owner.key,
             *reserve_oracles.pyth_price.key,
@@ -406,10 +406,10 @@ impl<'a> LendingProtocolClient<'a> for SolendClient<'a> {
             supply_liquidity.source_ta.account_info.clone(),
             supply_collateral.source_ta.account_info.clone(),
             supply_reserve.clone(),
-            supply_liquidity.reserve_ta.clone(),
+            supply_liquidity.protocol_ta.clone(),
             supply_collateral.mint.unwrap().clone(),
             self.data.lending_market.account_info.clone(),
-            supply_collateral.reserve_ta.clone(),
+            supply_collateral.protocol_ta.clone(),
             self.data.obligation.account_info.clone(),
             obligation_owner.clone(),
             reserve_oracles.pyth_price.clone(),
@@ -447,7 +447,7 @@ impl<'a> LendingProtocolClient<'a> for SolendClient<'a> {
         let borrow_instruction = borrow_obligation_liquidity(
             SOLEND_PROGRAM.clone(),
             base_unit_amount,
-            *debt_liquidity.reserve_ta.key,
+            *debt_liquidity.protocol_ta.key,
             *destination.key,
             *debt_reserve.key,
             *self.debt_reserve_fee_receiver.unwrap().key,
@@ -458,7 +458,7 @@ impl<'a> LendingProtocolClient<'a> for SolendClient<'a> {
         );
 
         let account_infos = &[
-            debt_liquidity.reserve_ta.clone(),
+            debt_liquidity.protocol_ta.clone(),
             destination.clone(),
             debt_reserve.clone(),
             self.debt_reserve_fee_receiver.unwrap().clone(),

@@ -19,12 +19,24 @@ pub fn marginfi_rebalance<'a, 'b>(
     std_accounts: SolautoStandardAccounts<'a>,
     args: RebalanceArgs,
 ) -> ProgramResult {
-    let (marginfi_client, obligation_position) = MarginfiClient::from(ctx.accounts.signer)?;
+    let (marginfi_client, obligation_position) = MarginfiClient::from(
+        ctx.accounts.signer,
+        ctx.accounts.marginfi_group,
+        ctx.accounts.marginfi_account,
+        Some(ctx.accounts.supply_bank),
+        Some(ctx.accounts.position_supply_ta),
+        Some(ctx.accounts.vault_supply_ta),
+        ctx.accounts.supply_vault_authority,
+        Some(ctx.accounts.debt_bank),
+        Some(ctx.accounts.position_debt_ta),
+        Some(ctx.accounts.vault_debt_ta),
+        ctx.accounts.debt_vault_authority,
+    )?;
     let solauto_manager_accounts = SolautoManagerAccounts::from(
         Some(ctx.accounts.position_supply_ta),
-        Some(ctx.accounts.bank_supply_ta),
+        Some(ctx.accounts.vault_supply_ta),
         Some(ctx.accounts.position_debt_ta),
-        Some(ctx.accounts.bank_debt_ta),
+        Some(ctx.accounts.vault_debt_ta),
         Some(ctx.accounts.intermediary_ta),
     )?;
     rebalance(

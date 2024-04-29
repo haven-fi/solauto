@@ -1,7 +1,8 @@
 use std::str::FromStr;
 
+use borsh::BorshDeserialize;
 use solana_program_test::{ ProgramTest, ProgramTestContext };
-use solana_sdk::{ pubkey::Pubkey, signature::Keypair, signer::Signer };
+use solana_sdk::{ account::Account, pubkey::Pubkey, signature::Keypair, signer::Signer };
 use solauto_sdk::{ generated::instructions::UpdateReferralStatesBuilder, SOLAUTO_ID };
 use spl_associated_token_account::get_associated_token_address;
 
@@ -20,8 +21,6 @@ macro_rules! assert_instruction_error {
 pub const WSOL_MINT: &str = "So11111111111111111111111111111111111111112";
 pub const USDC_MINT: &str = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
 pub const MARGINFI_PROGRAM: &str = "MFv2hWf31Z9kbCa1snEPYctwafyhdvnV7FZnsebVacA";
-
-pub struct GeneralTestAccounts {}
 
 pub struct GeneralTestData {
     pub ctx: ProgramTestContext,
@@ -48,7 +47,8 @@ impl GeneralTestData {
         pos_id: Option<u8>,
         supply_mint: Option<&Pubkey>,
         debt_mint: Option<&Pubkey>,
-        referred_by_authority: Option<&Pubkey>
+        referred_by_authority: Option<&Pubkey>,
+        ref_fees_dest_mint: Option<&Pubkey>
     ) -> Self {
         let wsol_mint = Pubkey::from_str(WSOL_MINT).expect("Should work");
         let usdc_mint = Pubkey::from_str(USDC_MINT).expect("Should work");
@@ -72,27 +72,23 @@ impl GeneralTestData {
             &supply_liquidity_mint
         );
 
-        let referral_fees_dest_mint = wsol_mint.clone();
+        let referral_fees_dest_mint = if ref_fees_dest_mint.is_some() {
+            ref_fees_dest_mint.unwrap().clone()
+        } else {
+            wsol_mint.clone()
+        };
 
         let signer_pubkey = ctx.payer.pubkey();
-        let signer_referral_state_seeds = &[signer_pubkey.as_ref(), b"referral_state"];
-        let (signer_referral_state, _) = Pubkey::find_program_address(
-            signer_referral_state_seeds,
-            &SOLAUTO_ID
-        );
+        // Tgodo
+        let signer_referral_state = GeneralTestData::get_referral_state(&signer_pubkey);
         let signer_referral_dest_ta = get_associated_token_address(
             &signer_referral_state,
             &referral_fees_dest_mint
         );
 
         let (referred_by_state, referred_by_supply_ta) = if referred_by_authority.is_some() {
-            let referred_by_state_seeds = &[
-                referred_by_authority.as_ref().unwrap().as_ref(),
-                b"referral_state",
-            ];
-            let (referred_by_state, _) = Pubkey::find_program_address(
-                referred_by_state_seeds,
-                &SOLAUTO_ID
+            let referred_by_state = GeneralTestData::get_referral_state(
+                &referred_by_authority.as_ref().unwrap()
             );
             let referred_by_supply_ta = get_associated_token_address(
                 &referred_by_state,
@@ -140,6 +136,18 @@ impl GeneralTestData {
         }
     }
 
+    pub fn get_referral_state(authority: &Pubkey) -> Pubkey {
+        let seeds = &[authority.as_ref(), b"referral_state"];
+        let (referral_state, _) = Pubkey::find_program_address(seeds, &SOLAUTO_ID);
+        referral_state
+    }
+
+    pub async fn get_account_data<T: BorshDeserialize>(&mut self, pubkey: Pubkey) -> T {
+        let account = self.ctx.banks_client.get_account(pubkey).await.unwrap();
+        assert!(account.is_some());
+        T::deserialize(&mut account.unwrap().data.as_slice()).unwrap()
+    }
+
     pub fn update_referral_states(&self) -> UpdateReferralStatesBuilder {
         let mut builder = UpdateReferralStatesBuilder::new();
 
@@ -169,14 +177,16 @@ impl MarginfiTestData {
         position_id: Option<u8>,
         supply_mint: Option<&Pubkey>,
         debt_mint: Option<&Pubkey>,
-        referred_by_authority: Option<&Pubkey>
+        referred_by_authority: Option<&Pubkey>,
+        referral_fees_dest_mint: Option<&Pubkey>
     ) -> Self {
         let general = GeneralTestData::new(
             MARGINFI_PROGRAM,
             position_id,
             supply_mint,
             debt_mint,
-            referred_by_authority
+            referred_by_authority,
+            referral_fees_dest_mint
         ).await;
         let marginfi_group = Keypair::new().pubkey();
         let marginfi_account = Keypair::new().pubkey();

@@ -36,7 +36,7 @@ pub fn process_update_referral_states<'a>(
         return Err(ProgramError::MissingRequiredSignature.into());
     }
 
-    let authority_referral_state = solauto_utils::get_or_create_referral_state(
+    let mut authority_referral_state = solauto_utils::create_or_update_referral_state(
         ctx.accounts.system_program,
         ctx.accounts.rent,
         ctx.accounts.signer,
@@ -45,9 +45,10 @@ pub fn process_update_referral_states<'a>(
         args.referral_fees_dest_mint,
         ctx.accounts.referred_by_state,
     )?;
+    ix_utils::update_data(&mut authority_referral_state)?;
 
     if ctx.accounts.referred_by_state.is_some() {
-        solauto_utils::get_or_create_referral_state(
+        let mut referred_by_state = solauto_utils::create_or_update_referral_state(
             ctx.accounts.system_program,
             ctx.accounts.rent,
             ctx.accounts.signer,
@@ -56,6 +57,7 @@ pub fn process_update_referral_states<'a>(
             None,
             None,
         )?;
+        ix_utils::update_data(&mut referred_by_state)?;
     }
 
     // TODO for solauto manager:

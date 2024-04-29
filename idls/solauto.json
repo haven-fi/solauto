@@ -7,16 +7,11 @@
       "accounts": [
         {
           "name": "signer",
-          "isMut": true,
+          "isMut": false,
           "isSigner": true
         },
         {
           "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "ataProgram",
           "isMut": false,
           "isSigner": false
         },
@@ -61,7 +56,7 @@
       "accounts": [
         {
           "name": "solautoManager",
-          "isMut": true,
+          "isMut": false,
           "isSigner": true
         },
         {
@@ -116,7 +111,7 @@
       "accounts": [
         {
           "name": "signer",
-          "isMut": true,
+          "isMut": false,
           "isSigner": true
         },
         {
@@ -167,7 +162,7 @@
       "accounts": [
         {
           "name": "signer",
-          "isMut": true,
+          "isMut": false,
           "isSigner": true
         },
         {
@@ -282,7 +277,7 @@
       "accounts": [
         {
           "name": "signer",
-          "isMut": true,
+          "isMut": false,
           "isSigner": true
         },
         {
@@ -456,7 +451,7 @@
       "accounts": [
         {
           "name": "signer",
-          "isMut": true,
+          "isMut": false,
           "isSigner": true
         },
         {
@@ -615,7 +610,7 @@
       "accounts": [
         {
           "name": "signer",
-          "isMut": true,
+          "isMut": false,
           "isSigner": true
         },
         {
@@ -659,13 +654,31 @@
           "isSigner": false
         },
         {
+          "name": "supplyBank",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
           "name": "authoritySupplyTa",
           "isMut": true,
           "isSigner": false,
           "isOptional": true
         },
         {
-          "name": "bankSupplyTa",
+          "name": "vaultSupplyTa",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "supplyVaultAuthority",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "debtBank",
           "isMut": true,
           "isSigner": false,
           "isOptional": true
@@ -677,8 +690,14 @@
           "isOptional": true
         },
         {
-          "name": "bankDebtTa",
+          "name": "vaultDebtTa",
           "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "debtVaultAuthority",
+          "isMut": false,
           "isSigner": false,
           "isOptional": true
         }
@@ -701,7 +720,7 @@
       "accounts": [
         {
           "name": "signer",
-          "isMut": true,
+          "isMut": false,
           "isSigner": true
         },
         {
@@ -840,7 +859,7 @@
       "accounts": [
         {
           "name": "signer",
-          "isMut": true,
+          "isMut": false,
           "isSigner": true
         },
         {
@@ -910,12 +929,28 @@
           "isSigner": false
         },
         {
+          "name": "supplyBank",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
           "name": "positionSupplyTa",
           "isMut": true,
           "isSigner": false
         },
         {
-          "name": "bankSupplyTa",
+          "name": "vaultSupplyTa",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "supplyVaultAuthority",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "debtBank",
           "isMut": true,
           "isSigner": false
         },
@@ -925,9 +960,15 @@
           "isSigner": false
         },
         {
-          "name": "bankDebtTa",
+          "name": "vaultDebtTa",
           "isMut": true,
           "isSigner": false
+        },
+        {
+          "name": "debtVaultAuthority",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true
         }
       ],
       "args": [
@@ -948,7 +989,7 @@
       "accounts": [
         {
           "name": "signer",
-          "isMut": true,
+          "isMut": false,
           "isSigner": true
         },
         {

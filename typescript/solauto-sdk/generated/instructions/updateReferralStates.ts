@@ -35,7 +35,6 @@ import {
 export type UpdateReferralStatesInstructionAccounts = {
   signer: Signer;
   systemProgram?: PublicKey | Pda;
-  ataProgram?: PublicKey | Pda;
   rent?: PublicKey | Pda;
   signerReferralState: PublicKey | Pda;
   referredByState?: PublicKey | Pda;
@@ -95,7 +94,7 @@ export function updateReferralStates(
   const resolvedAccounts = {
     signer: {
       index: 0,
-      isWritable: true as boolean,
+      isWritable: false as boolean,
       value: input.signer ?? null,
     },
     systemProgram: {
@@ -103,24 +102,19 @@ export function updateReferralStates(
       isWritable: false as boolean,
       value: input.systemProgram ?? null,
     },
-    ataProgram: {
-      index: 2,
-      isWritable: false as boolean,
-      value: input.ataProgram ?? null,
-    },
-    rent: { index: 3, isWritable: false as boolean, value: input.rent ?? null },
+    rent: { index: 2, isWritable: false as boolean, value: input.rent ?? null },
     signerReferralState: {
-      index: 4,
+      index: 3,
       isWritable: true as boolean,
       value: input.signerReferralState ?? null,
     },
     referredByState: {
-      index: 5,
+      index: 4,
       isWritable: true as boolean,
       value: input.referredByState ?? null,
     },
     referredByAuthority: {
-      index: 6,
+      index: 5,
       isWritable: false as boolean,
       value: input.referredByAuthority ?? null,
     },
@@ -136,13 +130,6 @@ export function updateReferralStates(
       '11111111111111111111111111111111'
     );
     resolvedAccounts.systemProgram.isWritable = false;
-  }
-  if (!resolvedAccounts.ataProgram.value) {
-    resolvedAccounts.ataProgram.value = context.programs.getPublicKey(
-      'splAssociatedToken',
-      'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'
-    );
-    resolvedAccounts.ataProgram.isWritable = false;
   }
   if (!resolvedAccounts.rent.value) {
     resolvedAccounts.rent.value = publicKey(

@@ -78,7 +78,7 @@ export function claimReferralFees(
   const resolvedAccounts = {
     signer: {
       index: 0,
-      isWritable: true as boolean,
+      isWritable: false as boolean,
       value: input.signer ?? null,
     },
     systemProgram: {

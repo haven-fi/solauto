@@ -35,7 +35,7 @@ impl ClosePosition {
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
         let mut accounts = Vec::with_capacity(7 + remaining_accounts.len());
-        accounts.push(solana_program::instruction::AccountMeta::new(
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.signer,
             true,
         ));
@@ -96,7 +96,7 @@ impl ClosePositionInstructionData {
 ///
 /// ### Accounts:
 ///
-///   0. `[writable, signer]` signer
+///   0. `[signer]` signer
 ///   1. `[optional]` system_program (default to `11111111111111111111111111111111`)
 ///   2. `[optional]` token_program (default to `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA`)
 ///   3. `[writable]` solauto_position
@@ -298,7 +298,7 @@ impl<'a, 'b> ClosePositionCpi<'a, 'b> {
         )],
     ) -> solana_program::entrypoint::ProgramResult {
         let mut accounts = Vec::with_capacity(7 + remaining_accounts.len());
-        accounts.push(solana_program::instruction::AccountMeta::new(
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             *self.signer.key,
             true,
         ));
@@ -374,7 +374,7 @@ impl<'a, 'b> ClosePositionCpi<'a, 'b> {
 ///
 /// ### Accounts:
 ///
-///   0. `[writable, signer]` signer
+///   0. `[signer]` signer
 ///   1. `[]` system_program
 ///   2. `[]` token_program
 ///   3. `[writable]` solauto_position

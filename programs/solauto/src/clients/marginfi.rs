@@ -1,7 +1,10 @@
-use solana_program::{
-    account_info::AccountInfo, entrypoint::ProgramResult, program_error::ProgramError,
+use marginfi_sdk::generated::{
+    accounts::{Bank, MarginfiAccount},
+    types::RiskTier,
 };
-// use marginfi_sdk::generated::accounts::{ Bank, MarginfiAccount };
+use solana_program::{
+    account_info::AccountInfo, entrypoint::ProgramResult, msg, program_error::ProgramError,
+};
 
 use crate::{
     types::{
@@ -9,23 +12,25 @@ use crate::{
             accounts::{Context, MarginfiOpenPositionAccounts},
             SolautoStandardAccounts,
         },
-        lending_protocol::LendingProtocolClient,
+        lending_protocol::{LendingProtocolClient, LendingProtocolTokenAccounts},
         obligation_position::LendingProtocolObligationPosition,
         shared::{DeserializedAccount, PositionAccount},
     },
     utils::validation_utils::*,
 };
 
-pub struct MarginfiDataAccounts<'a> {
-    pub temp: &'a AccountInfo<'a>, // TODO remove me
-                                   // pub supply_bank: Option<DeserializedAccount<'a, Bank>>,
-                                   // pub debt_bank: Option<DeserializedAccount<'a, Bank>>,
-                                   // pub marginfi_account: DeserializedAccount<'a, MarginfiAccount>,
+pub struct MarginfiBankAccounts<'a> {
+    pub bank: DeserializedAccount<'a, Bank>,
+    pub vault_authority: Option<&'a AccountInfo<'a>>,
+    pub token_accounts: LendingProtocolTokenAccounts<'a>,
 }
 
 pub struct MarginfiClient<'a> {
     signer: &'a AccountInfo<'a>,
-    // data_accounts: MarginfiDataAccounts<'a>,
+    marginfi_account: DeserializedAccount<'a, MarginfiAccount>,
+    marginfi_group: &'a AccountInfo<'a>,
+    supply: Option<MarginfiBankAccounts<'a>>,
+    debt: Option<MarginfiBankAccounts<'a>>,
 }
 
 impl<'a> MarginfiClient<'a> {
@@ -34,36 +39,111 @@ impl<'a> MarginfiClient<'a> {
         solauto_position: &DeserializedAccount<PositionAccount>,
     ) -> ProgramResult {
         // validate_position_settings(solauto_position.as_ref().unwrap().data.setting_params, max_ltv, liq_threshold)
-        // validate that the supply asset can be used as collateral if debt asset is provided
         // TODO
         Ok(())
     }
 
     pub fn from(
         signer: &'a AccountInfo<'a>,
+        marginfi_group: &'a AccountInfo<'a>,
+        marginfi_account: &'a AccountInfo<'a>,
+        supply_bank: Option<&'a AccountInfo<'a>>,
+        source_supply_ta: Option<&'a AccountInfo<'a>>,
+        vault_supply_ta: Option<&'a AccountInfo<'a>>,
+        supply_vault_authority: Option<&'a AccountInfo<'a>>,
+        debt_bank: Option<&'a AccountInfo<'a>>,
+        source_debt_ta: Option<&'a AccountInfo<'a>>,
+        vault_debt_ta: Option<&'a AccountInfo<'a>>,
+        debt_vault_authority: Option<&'a AccountInfo<'a>>,
     ) -> Result<(Self, LendingProtocolObligationPosition), ProgramError> {
-        let client = Self { signer };
+        let (deserialized_marginfi_account, deserialized_supply_bank, deserialized_debt_bank) =
+            MarginfiClient::deserialize_margfinfi_accounts(
+                marginfi_account,
+                supply_bank,
+                debt_bank,
+            )?;
 
-        let obligation_position = MarginfiClient::get_obligation_position()?;
+        let obligation_position = MarginfiClient::get_obligation_position(
+            &deserialized_marginfi_account.data,
+            deserialized_supply_bank
+                .as_ref()
+                .map_or_else(|| None, |bank| Some(&bank.data)),
+            deserialized_debt_bank
+                .as_ref()
+                .map_or_else(|| None, |bank| Some(&bank.data)),
+        )?;
+
+        let supply = if deserialized_supply_bank.is_some() {
+            Some(MarginfiBankAccounts {
+                bank: deserialized_supply_bank.unwrap(),
+                vault_authority: supply_vault_authority,
+                token_accounts: LendingProtocolTokenAccounts::from(
+                    None,
+                    source_supply_ta,
+                    vault_supply_ta,
+                )?
+                .unwrap(),
+            })
+        } else {
+            None
+        };
+
+        let debt = if deserialized_debt_bank.is_some() {
+            Some(MarginfiBankAccounts {
+                bank: deserialized_debt_bank.unwrap(),
+                vault_authority: debt_vault_authority,
+                token_accounts: LendingProtocolTokenAccounts::from(
+                    None,
+                    source_debt_ta,
+                    vault_debt_ta,
+                )?
+                .unwrap(),
+            })
+        } else {
+            None
+        };
+
+        let client = Self {
+            signer,
+            marginfi_account: deserialized_marginfi_account,
+            marginfi_group,
+            supply,
+            debt,
+        };
 
         return Ok((client, obligation_position));
     }
 
     pub fn deserialize_margfinfi_accounts(
+        marginfi_account: &'a AccountInfo<'a>,
         supply_bank: Option<&'a AccountInfo<'a>>,
         debt_bank: Option<&'a AccountInfo<'a>>,
-        marginfi_account: &'a AccountInfo<'a>,
-    ) -> Result<MarginfiDataAccounts<'a>, ProgramError> {
-        // TODO
-        return Err(ProgramError::Custom(0));
+    ) -> Result<
+        (
+            DeserializedAccount<'a, MarginfiAccount>,
+            Option<DeserializedAccount<'a, Bank>>,
+            Option<DeserializedAccount<'a, Bank>>,
+        ),
+        ProgramError,
+    > {
+        Ok((
+            DeserializedAccount::<MarginfiAccount>::anchor_deserialize(Some(marginfi_account))?
+                .unwrap(),
+            DeserializedAccount::<Bank>::anchor_deserialize(supply_bank)?,
+            DeserializedAccount::<Bank>::anchor_deserialize(debt_bank)?,
+        ))
     }
 
-    pub fn get_max_ltv_and_liq_threshold(&self) -> (f64, f64) {
+    pub fn get_max_ltv_and_liq_threshold(&self, supply_bank: &Box<Bank>) -> (f64, f64) {
         // TODO
         (0.0, 0.0)
     }
 
-    pub fn get_obligation_position() -> Result<LendingProtocolObligationPosition, ProgramError> {
+    pub fn get_obligation_position(
+        marginfi_account: &Box<MarginfiAccount>,
+        supply_bank: Option<&Box<Bank>>,
+        debt_bank: Option<&Box<Bank>>,
+    ) -> Result<LendingProtocolObligationPosition, ProgramError> {
         // TODO
         return Err(ProgramError::Custom(0));
     }
@@ -71,8 +151,29 @@ impl<'a> MarginfiClient<'a> {
 
 impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
     fn validate(&self, std_accounts: &SolautoStandardAccounts) -> ProgramResult {
-        // TODO
-        // TODO: we need to validate the program accounts validate_lending_protocol_accounts
+        validate_lending_protocol_accounts(
+            std_accounts.signer,
+            &std_accounts.solauto_position,
+            self.marginfi_account.account_info,
+            self.supply
+                .as_ref()
+                .unwrap()
+                .token_accounts
+                .source_ta
+                .account_info,
+            self.debt
+                .as_ref()
+                .map_or_else(|| None, |debt| Some(debt.token_accounts.protocol_ta)),
+        )?;
+
+        if self.supply.is_some()
+            && self.debt.is_some()
+            && self.supply.as_ref().unwrap().bank.data.config.risk_tier == RiskTier::Isolated
+        {
+            msg!("Cannot use an isolated asset as collateral");
+            return Err(ProgramError::InvalidAccountData.into());
+        }
+
         Ok(())
     }
 
@@ -82,6 +183,7 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
         std_accounts: &'b SolautoStandardAccounts<'a>,
     ) -> ProgramResult {
         // TODO
+        // marginfi_anchor::marginfi::lending_account_deposit(ctx, base_unit_amount)
         Ok(())
     }
 
@@ -92,7 +194,7 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
         std_accounts: &'b SolautoStandardAccounts<'a>,
     ) -> ProgramResult {
         // TODO
-        // add 4 remaining accounts: supply bank, supply pyth price oracle, debt bank, debt pyth price oracle
+        // add 4 remaining accounts: supply bank, supply pyth price oracle, (if marginfi account has debt position): debt bank, debt pyth price oracle
         Ok(())
     }
 
@@ -103,7 +205,7 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
         std_accounts: &'b SolautoStandardAccounts<'a>,
     ) -> ProgramResult {
         // TODO
-        // add 4 remaining accounts: supply bank, supply pyth price oracle, debt bank, debt pyth price oracle
+        // add 4 remaining accounts: supply bank, supply pyth price oracle, (if marginfi account has debt position): debt bank, debt pyth price oracle
         Ok(())
     }
 

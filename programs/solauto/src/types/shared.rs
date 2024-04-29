@@ -1,16 +1,14 @@
-use borsh::{ BorshDeserialize, BorshSerialize };
-use shank::{ ShankAccount, ShankType };
+use borsh::{BorshDeserialize, BorshSerialize};
+use shank::{ShankAccount, ShankType};
 use solana_program::{
     account_info::AccountInfo,
     program_error::ProgramError,
-    program_pack::{ IsInitialized, Pack },
-    pubkey::Pubkey,
+    program_pack::{IsInitialized, Pack},
+    pubkey::Pubkey, rent::ACCOUNT_STORAGE_OVERHEAD,
 };
-use solana_sdk::account_info;
 use thiserror::Error;
 
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, PartialEq)]
-#[borsh(use_discriminant = true)]
 pub enum LendingPlatform {
     Marginfi,
     Solend,
@@ -82,7 +80,7 @@ pub struct PositionData {
     pub debt_balance: u64,
 }
 
-pub const POSITION_ACCOUNT_SPACE: usize = 500;
+pub const POSITION_ACCOUNT_SPACE: usize = ACCOUNT_STORAGE_OVERHEAD as usize + 500; // TODO fix me
 #[derive(ShankAccount, BorshDeserialize, BorshSerialize, Clone, Debug)]
 pub struct PositionAccount {
     pub position_id: u8,
@@ -91,7 +89,7 @@ pub struct PositionAccount {
     pub position: Option<PositionData>,
 }
 
-pub const REFERRAL_ACCOUNT_SPACE: usize = 200;
+pub const REFERRAL_ACCOUNT_SPACE: usize = ACCOUNT_STORAGE_OVERHEAD as usize + 97; // 32 + 33 + 32
 #[derive(ShankAccount, BorshDeserialize, BorshSerialize, Clone, Debug)]
 pub struct ReferralStateAccount {
     pub authority: Pubkey,
@@ -118,33 +116,27 @@ impl<'a, T: BorshDeserialize> DeserializedAccount<'a, T> {
     pub fn deserialize(account: Option<&'a AccountInfo<'a>>) -> Result<Option<Self>, ProgramError> {
         match account {
             Some(account_info) => {
-                let deserialized_data = T::try_from_slice(&account_info.data.borrow()).map_err(
-                    |_| SolautoError::FailedAccountDeserialization
-                )?;
-                Ok(
-                    Some(Self {
-                        account_info,
-                        data: Box::new(deserialized_data),
-                    })
-                )
+                let deserialized_data = T::try_from_slice(&account_info.data.borrow())
+                    .map_err(|_| SolautoError::FailedAccountDeserialization)?;
+                Ok(Some(Self {
+                    account_info,
+                    data: Box::new(deserialized_data),
+                }))
             }
             None => Ok(None),
         }
     }
     pub fn anchor_deserialize(
-        account: Option<&'a AccountInfo<'a>>
+        account: Option<&'a AccountInfo<'a>>,
     ) -> Result<Option<Self>, ProgramError> {
         match account {
             Some(account_info) => {
-                let deserialized_data = T::try_from_slice(&account_info.data.borrow()[8..]).map_err(
-                    |_| SolautoError::FailedAccountDeserialization
-                )?;
-                Ok(
-                    Some(Self {
-                        account_info,
-                        data: Box::new(deserialized_data),
-                    })
-                )
+                let deserialized_data = T::try_from_slice(&account_info.data.borrow()[8..])
+                    .map_err(|_| SolautoError::FailedAccountDeserialization)?;
+                Ok(Some(Self {
+                    account_info,
+                    data: Box::new(deserialized_data),
+                }))
             }
             None => Ok(None),
         }
@@ -155,15 +147,12 @@ impl<'a, T: Pack + IsInitialized> DeserializedAccount<'a, T> {
     pub fn unpack(account: Option<&'a AccountInfo<'a>>) -> Result<Option<Self>, ProgramError> {
         match account {
             Some(account_info) => {
-                let deserialized_data = T::unpack(&account_info.data.borrow()).map_err(
-                    |_| SolautoError::FailedAccountDeserialization
-                )?;
-                Ok(
-                    Some(Self {
-                        account_info,
-                        data: Box::new(deserialized_data),
-                    })
-                )
+                let deserialized_data = T::unpack(&account_info.data.borrow())
+                    .map_err(|_| SolautoError::FailedAccountDeserialization)?;
+                Ok(Some(Self {
+                    account_info,
+                    data: Box::new(deserialized_data),
+                }))
             }
             None => Ok(None),
         }

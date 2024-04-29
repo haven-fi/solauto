@@ -48,10 +48,14 @@ export type MarginfiRebalanceInstructionAccounts = {
   marginfiGroup: PublicKey | Pda;
   marginfiAccount: PublicKey | Pda;
   intermediaryTa: PublicKey | Pda;
+  supplyBank: PublicKey | Pda;
   positionSupplyTa: PublicKey | Pda;
-  bankSupplyTa: PublicKey | Pda;
+  vaultSupplyTa: PublicKey | Pda;
+  supplyVaultAuthority?: PublicKey | Pda;
+  debtBank: PublicKey | Pda;
   positionDebtTa: PublicKey | Pda;
-  bankDebtTa: PublicKey | Pda;
+  vaultDebtTa: PublicKey | Pda;
+  debtVaultAuthority?: PublicKey | Pda;
 };
 
 // Data.
@@ -106,7 +110,7 @@ export function marginfiRebalance(
   const resolvedAccounts = {
     signer: {
       index: 0,
-      isWritable: true as boolean,
+      isWritable: false as boolean,
       value: input.signer ?? null,
     },
     marginfiProgram: {
@@ -170,25 +174,45 @@ export function marginfiRebalance(
       isWritable: true as boolean,
       value: input.intermediaryTa ?? null,
     },
-    positionSupplyTa: {
+    supplyBank: {
       index: 14,
+      isWritable: true as boolean,
+      value: input.supplyBank ?? null,
+    },
+    positionSupplyTa: {
+      index: 15,
       isWritable: true as boolean,
       value: input.positionSupplyTa ?? null,
     },
-    bankSupplyTa: {
-      index: 15,
+    vaultSupplyTa: {
+      index: 16,
       isWritable: true as boolean,
-      value: input.bankSupplyTa ?? null,
+      value: input.vaultSupplyTa ?? null,
+    },
+    supplyVaultAuthority: {
+      index: 17,
+      isWritable: false as boolean,
+      value: input.supplyVaultAuthority ?? null,
+    },
+    debtBank: {
+      index: 18,
+      isWritable: true as boolean,
+      value: input.debtBank ?? null,
     },
     positionDebtTa: {
-      index: 16,
+      index: 19,
       isWritable: true as boolean,
       value: input.positionDebtTa ?? null,
     },
-    bankDebtTa: {
-      index: 17,
+    vaultDebtTa: {
+      index: 20,
       isWritable: true as boolean,
-      value: input.bankDebtTa ?? null,
+      value: input.vaultDebtTa ?? null,
+    },
+    debtVaultAuthority: {
+      index: 21,
+      isWritable: false as boolean,
+      value: input.debtVaultAuthority ?? null,
     },
   } satisfies ResolvedAccountsWithIndices;
 

@@ -79,7 +79,7 @@ export function convertReferralFees(
   const resolvedAccounts = {
     solautoManager: {
       index: 0,
-      isWritable: true as boolean,
+      isWritable: false as boolean,
       value: input.solautoManager ?? null,
     },
     systemProgram: {
