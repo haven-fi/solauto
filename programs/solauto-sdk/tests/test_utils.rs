@@ -158,8 +158,6 @@ impl GeneralTestData {
             .referred_by_authority(self.referred_by_authority)
             .referral_fees_dest_mint(self.referral_fees_dest_mint);
 
-        // TODO instruction data
-
         builder
     }
 }

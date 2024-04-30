@@ -63,6 +63,10 @@ mod update_referral_states {
         assert!(referred_by_state_data.authority == referred_by_authority);
         assert!(referred_by_state_data.referred_by_state == None);
         assert!(referred_by_state_data.dest_fees_mint == Pubkey::from_str(WSOL_MINT).unwrap());
+
+        let referral_state_data = data.general.get_account_data::<ReferralStateAccount>(
+            data.general.signer_referral_state.clone()
+        ).await;
         assert!(referral_state_data.referred_by_state.as_ref().unwrap() == &referred_by_state);
     }
 
