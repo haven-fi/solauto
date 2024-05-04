@@ -12,7 +12,7 @@ mod update_referral_states {
         signer::Signer,
         transaction::Transaction,
     };
-    use solauto_sdk::generated::{accounts::ReferralStateAccount, errors::SolautoError};
+    use solauto_sdk::generated::accounts::ReferralStateAccount;
 
     use crate::{ assert_instruction_error, test_utils::* };
 
@@ -30,13 +30,14 @@ mod update_referral_states {
         );
         data.general.ctx.banks_client.process_transaction(tx).await.unwrap();
 
-        let referral_state_data = data.general.get_account_data::<ReferralStateAccount>(
+        let signer_referral_state_data = data.general.get_account_data::<ReferralStateAccount>(
             data.general.signer_referral_state.clone()
         ).await;
-        assert!(referral_state_data.authority == data.general.ctx.payer.pubkey());
-        assert!(referral_state_data.referred_by_state == None);
-        assert!(referral_state_data.dest_fees_mint == data.general.referral_fees_dest_mint);
+        assert!(signer_referral_state_data.authority == data.general.ctx.payer.pubkey());
+        assert!(signer_referral_state_data.referred_by_state == None);
+        assert!(signer_referral_state_data.dest_fees_mint == data.general.referral_fees_dest_mint);
 
+        // Able to set the referred_by_state even after referral state has been created
         let referred_by_authority = Keypair::new().pubkey();
         let referred_by_state = GeneralTestData::get_referral_state(&referred_by_authority);
         let tx = Transaction::new_signed_with_payer(
@@ -60,10 +61,28 @@ mod update_referral_states {
         assert!(referred_by_state_data.referred_by_state == None);
         assert!(referred_by_state_data.dest_fees_mint == Pubkey::from_str(WSOL_MINT).unwrap());
 
-        let referral_state_data = data.general.get_account_data::<ReferralStateAccount>(
+        let signer_referral_state_data = data.general.get_account_data::<ReferralStateAccount>(
             data.general.signer_referral_state.clone()
         ).await;
-        assert!(referral_state_data.referred_by_state.as_ref().unwrap() == &referred_by_state);
+        assert!(signer_referral_state_data.referred_by_state.as_ref().unwrap() == &referred_by_state);
+
+        // Ensure referred by cannot be overwritten
+        let referred_by_authority2 = Keypair::new().pubkey();
+        let referred_by_state2 = GeneralTestData::get_referral_state(&referred_by_authority2);
+        let tx = Transaction::new_signed_with_payer(
+            &[
+                data.general
+                    .update_referral_states()
+                    .referred_by_authority(Some(referred_by_authority2))
+                    .referred_by_state(Some(referred_by_state2))
+                    .instruction(),
+            ],
+            Some(&data.general.ctx.payer.pubkey()),
+            &[&data.general.ctx.payer],
+            data.general.ctx.last_blockhash
+        );
+        let err = data.general.ctx.banks_client.process_transaction(tx).await.unwrap_err();
+        assert_instruction_error!(err, InstructionError::Custom(2));
     }
 
     #[tokio::test]
@@ -81,7 +100,7 @@ mod update_referral_states {
         );
 
         let err = data.general.ctx.banks_client.process_transaction(tx).await.unwrap_err();
-        assert_instruction_error!(err, InstructionError::Custom(2))
+        assert_instruction_error!(err, InstructionError::Custom(2));
     }
 
     #[tokio::test]
