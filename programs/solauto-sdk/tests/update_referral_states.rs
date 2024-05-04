@@ -85,7 +85,7 @@ mod update_referral_states {
     }
 
     #[tokio::test]
-    async fn incorrect_accounts() {
+    async fn incorrect_signer_referral_state() {
         let temp_account = Keypair::new();
         let mut data1 = MarginfiTestData::new(
             &GeneralArgs::new().signer(temp_account.pubkey())
