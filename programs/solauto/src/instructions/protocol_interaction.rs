@@ -23,6 +23,7 @@ pub fn marginfi_interaction<'a, 'b>(
 ) -> ProgramResult {
     let (marginfi_client, obligation_position) = MarginfiClient::from(
         ctx.accounts.signer,
+        ctx.accounts.marginfi_program,
         ctx.accounts.marginfi_group,
         ctx.accounts.marginfi_account,
         ctx.accounts.supply_bank,
@@ -84,7 +85,6 @@ pub fn solend_interaction<'a, 'b>(
         init_ata_if_needed(
             ctx.accounts.token_program,
             ctx.accounts.system_program,
-            ctx.accounts.rent,
             ctx.accounts.signer,
             ctx.accounts.signer,
             ctx.accounts.authority_supply_collateral_ta.unwrap(),

@@ -176,8 +176,8 @@ pub enum SolautoError {
     InvalidSolautoPositionAccount,
     #[error("Incorrect fee receiver account provided")]
     IncorrectFeesReceiverAccount,
-    #[error("Missing required accounts for the given instruction")]
-    MissingRequiredAccounts,
+    #[error("Missing or incorrect accounts provided for the given instruction")]
+    IncorrectAccounts,
     #[error("Failed to deserialize account data, incorrect account was likely given")]
     FailedAccountDeserialization,
     #[error("Invalid position data given")]

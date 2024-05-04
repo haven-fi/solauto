@@ -32,7 +32,6 @@ pub fn process_marginfi_open_position_instruction<'a>(
     solauto_utils::init_solauto_fees_supply_ta(
         ctx.accounts.token_program,
         ctx.accounts.system_program,
-        ctx.accounts.rent,
         ctx.accounts.signer,
         ctx.accounts.solauto_fees_wallet,
         ctx.accounts.solauto_fees_supply_ta,
@@ -43,7 +42,6 @@ pub fn process_marginfi_open_position_instruction<'a>(
         solana_utils::init_ata_if_needed(
             ctx.accounts.token_program,
             ctx.accounts.system_program,
-            ctx.accounts.rent,
             ctx.accounts.signer,
             ctx.accounts.referred_by_state.unwrap(),
             ctx.accounts.referred_by_supply_ta.unwrap(),

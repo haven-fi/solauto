@@ -21,6 +21,7 @@ pub fn marginfi_rebalance<'a, 'b>(
 ) -> ProgramResult {
     let (marginfi_client, obligation_position) = MarginfiClient::from(
         ctx.accounts.signer,
+        ctx.accounts.marginfi_program,
         ctx.accounts.marginfi_group,
         ctx.accounts.marginfi_account,
         Some(ctx.accounts.supply_bank),

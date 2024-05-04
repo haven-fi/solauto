@@ -1,12 +1,11 @@
-use solana_program::{entrypoint::ProgramResult, msg, program_error::ProgramError};
+use solana_program::{entrypoint::ProgramResult, msg};
 use solend_sdk::{math::BPS_SCALER, state::Reserve};
 use std::ops::{Div, Mul};
 
 use crate::{
-    constants::USD_DECIMALS,
-    utils::math_utils::{
+    constants::USD_DECIMALS, types::shared::SolautoError, utils::math_utils::{
         base_unit_to_usd_value, decimal_to_f64_div_wad, from_base_unit, to_base_unit,
-    },
+    }
 };
 
 use super::shared::LendingPlatform;
@@ -142,7 +141,7 @@ impl LendingProtocolObligationPosition {
             Ok(())
         } else {
             msg!("Supply not defined when attempting to modify it");
-            return Err(ProgramError::InvalidAccountData.into());
+            return Err(SolautoError::IncorrectAccounts.into());
         }
     }
 
@@ -165,7 +164,7 @@ impl LendingProtocolObligationPosition {
             Ok(())
         } else {
             msg!("Debt not defined when attempting to modify it");
-            return Err(ProgramError::InvalidAccountData.into());
+            return Err(SolautoError::IncorrectAccounts.into());
         }
     }
 }

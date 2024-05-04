@@ -55,7 +55,7 @@ impl<'a> SolendClient<'a> {
             DeserializedAccount::<Reserve>::unpack(Some(ctx.accounts.supply_reserve))?.unwrap();
         if &supply_reserve.data.collateral.mint_pubkey != ctx.accounts.supply_collateral_mint.key {
             msg!("Supply reserve account provided is not for the supply_collateral_mint account");
-            return Err(ProgramError::InvalidAccountData.into());
+            return Err(SolautoError::IncorrectAccounts.into());
         }
 
         let (max_ltv, liq_threshold) =
@@ -368,7 +368,7 @@ impl<'a> LendingProtocolClient<'a> for SolendClient<'a> {
                 == ReserveType::Isolated
         {
             msg!("Cannot use an isolated asset as collateral");
-            return Err(ProgramError::InvalidAccountData.into());
+            return Err(SolautoError::IncorrectAccounts.into());
         }
 
         Ok(())

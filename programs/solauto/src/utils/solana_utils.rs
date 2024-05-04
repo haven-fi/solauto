@@ -16,6 +16,8 @@ use spl_associated_token_account::{
 };
 use spl_token::instruction as spl_instruction;
 
+use crate::types::shared::SolautoError;
+
 pub fn account_has_custom_data(account: &AccountInfo) -> bool {
     !account.data.borrow().is_empty()
 }
@@ -70,19 +72,18 @@ pub fn invoke_signed_with_seed(
 pub fn init_ata_if_needed<'a>(
     token_program: &'a AccountInfo<'a>,
     system_program: &'a AccountInfo<'a>,
-    rent_sysvar: &'a AccountInfo<'a>,
     payer: &'a AccountInfo<'a>,
     wallet: &'a AccountInfo<'a>,
     token_account: &'a AccountInfo<'a>,
     token_mint: &'a AccountInfo<'a>,
-) -> Result<(), ProgramError> {
+) -> ProgramResult {
     if &get_associated_token_address(wallet.key, token_mint.key) != token_account.key {
         msg!(format!(
             "Token account is not correct for the given token mint ({}) & wallet ({})",
             token_mint.key, wallet.key
         )
         .as_str());
-        return Err(ProgramError::InvalidAccountData.into());
+        return Err(SolautoError::IncorrectAccounts.into());
     }
 
     if account_has_custom_data(token_account) {

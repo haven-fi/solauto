@@ -465,7 +465,7 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
             msg!(
                 "Missing referral account(s) when we are boosting leverage. Referral accounts are required"
             );
-            return Err(ProgramError::InvalidAccountData.into());
+            return Err(SolautoError::IncorrectAccounts.into());
         }
 
         let position_supply_ta = &self.accounts.supply.as_ref().unwrap().source_ta;

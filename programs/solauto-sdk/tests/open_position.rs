@@ -12,13 +12,7 @@ mod open_position {
 
     #[tokio::test]
     async fn marginfi_open_position() {
-        let mut data = MarginfiTestData::new(
-            None,
-            None,
-            None,
-            Some(&Pubkey::from_str(USDC_MINT).unwrap()),
-            None
-        ).await;
+        let mut data = MarginfiTestData::new(&GeneralArgs::new()).await;
 
         let tx = Transaction::new_signed_with_payer(
             &[data.general.update_referral_states().instruction()],
@@ -35,6 +29,5 @@ mod open_position {
         //     }
         //     Ok(_) => {}
         // }
-
     }
 }

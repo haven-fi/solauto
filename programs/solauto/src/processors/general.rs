@@ -87,7 +87,7 @@ pub fn process_convert_referral_fees<'a>(accounts: &'a [AccountInfo<'a>]) -> Pro
 
     if ctx.accounts.solauto_manager.key != &SOLAUTO_MANAGER {
         msg!("Instruction can only be invoked by the Solauto manager");
-        return Err(ProgramError::InvalidAccountData.into());
+        return Err(SolautoError::IncorrectAccounts.into());
     }
 
     let current_ix_idx = load_current_index_checked(ctx.accounts.ixs_sysvar)?;
@@ -137,13 +137,13 @@ pub fn process_claim_referral_fees<'a>(accounts: &'a [AccountInfo<'a>]) -> Progr
 
     if ctx.accounts.signer.key != &referral_state.data.authority {
         msg!("Incorrect referral state provided for the given signer");
-        return Err(ProgramError::InvalidAccountData.into());
+        return Err(SolautoError::IncorrectAccounts.into());
     }
 
     if ctx.accounts.referral_fees_mint.key != &referral_state.data.dest_fees_mint {
         if ctx.accounts.dest_ta.is_none() {
             msg!("Missing destination token account when the token mint is not wSOL");
-            return Err(ProgramError::InvalidAccountData.into());
+            return Err(SolautoError::IncorrectAccounts.into());
         }
         if ctx.accounts.dest_ta.unwrap().key
             != &get_associated_token_address(
@@ -154,7 +154,7 @@ pub fn process_claim_referral_fees<'a>(accounts: &'a [AccountInfo<'a>]) -> Progr
             msg!(
                 "Provided incorrect destination token account for the given signer and token mint"
             );
-            return Err(ProgramError::InvalidAccountData.into());
+            return Err(SolautoError::IncorrectAccounts.into());
         }
     }
 
@@ -173,7 +173,7 @@ pub fn process_update_position_instruction<'a>(
     validation_utils::validate_signer(ctx.accounts.signer, &solauto_position, true)?;
     if solauto_position.data.self_managed {
         msg!("Cannot provide setting parameters to a self-managed position");
-        return Err(ProgramError::InvalidAccountData.into());
+        return Err(SolautoError::IncorrectAccounts.into());
     }
 
     let position_data = solauto_position.data.position.as_mut().unwrap();
@@ -210,7 +210,7 @@ pub fn process_close_position_instruction<'a>(accounts: &'a [AccountInfo<'a>]) -
     validation_utils::validate_signer(ctx.accounts.signer, &solauto_position, true)?;
     if solauto_position.data.self_managed {
         msg!("Cannot close a self-managed position");
-        return Err(ProgramError::InvalidAccountData.into());
+        return Err(SolautoError::IncorrectAccounts.into());
     }
 
     solana_utils::close_token_account(

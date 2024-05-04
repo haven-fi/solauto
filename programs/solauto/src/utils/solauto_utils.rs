@@ -115,7 +115,7 @@ pub fn create_or_update_referral_state<'a>(
     );
     if &referral_state_pda != referral_state.key {
         msg!("Invalid referral position account given for the provided authority");
-        return Err(ProgramError::InvalidAccountData.into());
+        return Err(SolautoError::IncorrectAccounts.into());
     }
 
     if account_has_custom_data(referral_state) {
@@ -176,7 +176,6 @@ pub fn get_referral_account_seeds<'a>(authority: &'a Pubkey) -> Vec<&[u8]> {
 pub fn init_solauto_fees_supply_ta<'a>(
     token_program: &'a AccountInfo<'a>,
     system_program: &'a AccountInfo<'a>,
-    rent: &'a AccountInfo<'a>,
     signer: &'a AccountInfo<'a>,
     solauto_fees_wallet: &'a AccountInfo<'a>,
     solauto_fees_supply_ta: &'a AccountInfo<'a>,
@@ -188,7 +187,6 @@ pub fn init_solauto_fees_supply_ta<'a>(
     init_ata_if_needed(
         token_program,
         system_program,
-        rent,
         signer,
         solauto_fees_wallet,
         solauto_fees_supply_ta,
@@ -437,7 +435,7 @@ pub fn initiate_dca_in_if_necessary<'a, 'b>(
 
     if position_debt_ta.is_none() || signer_debt_ta.is_none() {
         msg!("Missing required accounts in order to initiate DCA-in");
-        return Err(ProgramError::InvalidAccountData.into());
+        return Err(SolautoError::IncorrectAccounts.into());
     }
 
     if
@@ -452,7 +450,7 @@ pub fn initiate_dca_in_if_necessary<'a, 'b>(
         )
     {
         msg!("Incorrect position token account provided");
-        return Err(ProgramError::InvalidAccountData.into());
+        return Err(SolautoError::IncorrectAccounts.into());
     }
 
     let balance = TokenAccount::unpack(&signer_debt_ta.unwrap().data.borrow())?.amount;

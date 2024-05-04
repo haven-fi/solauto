@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use borsh::BorshDeserialize;
 use solana_program_test::{ ProgramTest, ProgramTestContext };
-use solana_sdk::{ account::Account, pubkey::Pubkey, signature::Keypair, signer::Signer };
+use solana_sdk::{ pubkey::Pubkey, signature::Keypair, signer::Signer };
 use solauto_sdk::{ generated::instructions::UpdateReferralStatesBuilder, SOLAUTO_ID };
 use spl_associated_token_account::get_associated_token_address;
 
@@ -10,17 +10,71 @@ use spl_associated_token_account::get_associated_token_address;
 macro_rules! assert_instruction_error {
     ($error:expr, $matcher:pat) => {
         match $error {
-            BanksClientError::TransactionError(TransactionError::InstructionError(_, $matcher)) => {
-                assert!(true)
-            }
+            solana_program_test::BanksClientError::TransactionError(
+                solana_sdk::transaction::TransactionError::InstructionError(_, $matcher)
+            ) => {
+                assert!(true);
+            },
             err => assert!(false, "Expected instruction error but got '{:#?}'", err),
-        };
+        }
     };
 }
 
 pub const WSOL_MINT: &str = "So11111111111111111111111111111111111111112";
 pub const USDC_MINT: &str = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
 pub const MARGINFI_PROGRAM: &str = "MFv2hWf31Z9kbCa1snEPYctwafyhdvnV7FZnsebVacA";
+
+pub struct GeneralArgs {
+    signer: Option<Pubkey>,
+    position_id: u8,
+    supply_mint: Pubkey,
+    debt_mint: Pubkey,
+    referred_by_authority: Option<Pubkey>,
+    referral_fees_dest_mint: Pubkey,
+    fund_accounts: Vec<Pubkey>,
+}
+
+impl GeneralArgs {
+    pub fn new() -> Self {
+        Self {
+            signer: None,
+            position_id: 1,
+            supply_mint: Pubkey::from_str(WSOL_MINT).unwrap(),
+            debt_mint: Pubkey::from_str(USDC_MINT).unwrap(),
+            referred_by_authority: None,
+            referral_fees_dest_mint: Pubkey::from_str(WSOL_MINT).unwrap(),
+            fund_accounts: Vec::new(),
+        }
+    }
+    pub fn signer(&mut self, signer: Pubkey) -> &mut Self {
+        self.signer = Some(signer);
+        self
+    }
+    pub fn position_id(&mut self, id: u8) -> &mut Self {
+        self.position_id = id;
+        self
+    }
+    pub fn supply_mint(&mut self, supply_mint: Pubkey) -> &mut Self {
+        self.supply_mint = supply_mint;
+        self
+    }
+    pub fn debt_mint(&mut self, debt_mint: Pubkey) -> &mut Self {
+        self.debt_mint = debt_mint;
+        self
+    }
+    pub fn referred_by_authority(&mut self, referred_by_authority: Option<Pubkey>) -> &mut Self {
+        self.referred_by_authority = referred_by_authority;
+        self
+    }
+    pub fn referral_fees_dest_mint(&mut self, referral_fees_dest_mint: Pubkey) -> &mut Self {
+        self.referral_fees_dest_mint = referral_fees_dest_mint;
+        self
+    }
+    pub fn fund_account(&mut self, account: Pubkey) -> &mut Self {
+        self.fund_accounts.push(account);
+        self
+    }
+}
 
 pub struct GeneralTestData {
     pub ctx: ProgramTestContext,
@@ -42,57 +96,52 @@ pub struct GeneralTestData {
 }
 
 impl GeneralTestData {
-    pub async fn new(
-        lending_protocol: &str,
-        pos_id: Option<u8>,
-        supply_mint: Option<&Pubkey>,
-        debt_mint: Option<&Pubkey>,
-        referred_by_authority: Option<&Pubkey>,
-        ref_fees_dest_mint: Option<&Pubkey>
-    ) -> Self {
-        let wsol_mint = Pubkey::from_str(WSOL_MINT).expect("Should work");
-        let usdc_mint = Pubkey::from_str(USDC_MINT).expect("Should work");
-
-        let lending_protocol = Pubkey::from_str(lending_protocol).expect("Should work");
-        let supply_liquidity_mint = if supply_mint.is_none() {
-            &wsol_mint
-        } else {
-            supply_mint.unwrap()
-        };
-        let debt_liquidity_mint = if debt_mint.is_none() { &usdc_mint } else { debt_mint.unwrap() };
-        let position_id = if pos_id.is_none() { 1 } else { pos_id.unwrap() };
+    pub async fn new(args: &GeneralArgs, lending_protocol: &str) -> Self {
+        let lending_protocol = Pubkey::from_str(lending_protocol).unwrap();
 
         let mut solauto = ProgramTest::new("solauto", SOLAUTO_ID, None);
         solauto.add_program("placeholder", lending_protocol, None);
+
+        for account in &args.fund_accounts {
+            solauto.add_account(*account, solana_sdk::account::Account {
+                lamports: 100_000_000_000,
+                ..Default::default()
+            });
+        }
+
+        if args.signer.is_some() {
+            solauto.add_account(*args.signer.as_ref().unwrap(), solana_sdk::account::Account {
+                lamports: 100_000_000_000,
+                ..Default::default()
+            });
+        }
+
         let ctx = solauto.start_with_context().await;
 
         let solauto_fees_wallet = Keypair::new().pubkey();
         let solauto_fees_supply_ta = get_associated_token_address(
             &solauto_fees_wallet,
-            &supply_liquidity_mint
+            &args.supply_mint
         );
 
-        let referral_fees_dest_mint = if ref_fees_dest_mint.is_some() {
-            ref_fees_dest_mint.unwrap().clone()
+        let signer = if args.signer.is_some() {
+            args.signer.unwrap()
         } else {
-            wsol_mint.clone()
+            ctx.payer.pubkey()
         };
-
-        let signer_pubkey = ctx.payer.pubkey();
-        // Tgodo
-        let signer_referral_state = GeneralTestData::get_referral_state(&signer_pubkey);
+        let signer_referral_state = GeneralTestData::get_referral_state(&signer);
         let signer_referral_dest_ta = get_associated_token_address(
             &signer_referral_state,
-            &referral_fees_dest_mint
+            &args.referral_fees_dest_mint
         );
 
-        let (referred_by_state, referred_by_supply_ta) = if referred_by_authority.is_some() {
+        let (referred_by_state, referred_by_supply_ta) = if args.referred_by_authority.is_some() {
             let referred_by_state = GeneralTestData::get_referral_state(
-                &referred_by_authority.as_ref().unwrap()
+                args.referred_by_authority.as_ref().unwrap()
             );
             let referred_by_supply_ta = get_associated_token_address(
                 &referred_by_state,
-                supply_liquidity_mint
+                &args.supply_mint
             );
             (Some(referred_by_state), Some(referred_by_supply_ta))
         } else {
@@ -100,20 +149,17 @@ impl GeneralTestData {
         };
 
         let (solauto_position, _) = Pubkey::find_program_address(
-            &[&[position_id], ctx.payer.pubkey().as_ref()],
+            &[&[args.position_id], signer.as_ref()],
             &SOLAUTO_ID
         );
         let position_supply_liquidity_ta = get_associated_token_address(
             &solauto_position,
-            supply_liquidity_mint
+            &args.supply_mint
         );
-        let signer_debt_liquidity_ta = get_associated_token_address(
-            &ctx.payer.pubkey(),
-            debt_liquidity_mint
-        );
+        let signer_debt_liquidity_ta = get_associated_token_address(&signer, &args.debt_mint);
         let position_debt_liquidity_ta = get_associated_token_address(
             &solauto_position,
-            debt_liquidity_mint
+            &args.debt_mint
         );
 
         Self {
@@ -121,18 +167,18 @@ impl GeneralTestData {
             lending_protocol,
             solauto_fees_wallet,
             solauto_fees_supply_ta,
-            referral_fees_dest_mint,
+            referral_fees_dest_mint: args.referral_fees_dest_mint,
             signer_referral_state,
             signer_referral_dest_ta,
             referred_by_state,
-            referred_by_authority: referred_by_authority.copied(),
+            referred_by_authority: args.referred_by_authority.clone(),
             referred_by_supply_ta,
             solauto_position,
             position_supply_liquidity_ta,
-            supply_liquidity_mint: supply_liquidity_mint.clone(),
+            supply_liquidity_mint: args.supply_mint.clone(),
             signer_debt_liquidity_ta,
             position_debt_liquidity_ta,
-            debt_liquidity_mint: debt_liquidity_mint.clone(),
+            debt_liquidity_mint: args.debt_mint.clone(),
         }
     }
 
@@ -162,8 +208,6 @@ impl GeneralTestData {
     }
 }
 
-pub struct MarginfiTestAccounts {}
-
 pub struct MarginfiTestData {
     pub general: GeneralTestData,
     pub marginfi_group: Option<Pubkey>,
@@ -171,21 +215,8 @@ pub struct MarginfiTestData {
 }
 
 impl MarginfiTestData {
-    pub async fn new(
-        position_id: Option<u8>,
-        supply_mint: Option<&Pubkey>,
-        debt_mint: Option<&Pubkey>,
-        referred_by_authority: Option<&Pubkey>,
-        referral_fees_dest_mint: Option<&Pubkey>
-    ) -> Self {
-        let general = GeneralTestData::new(
-            MARGINFI_PROGRAM,
-            position_id,
-            supply_mint,
-            debt_mint,
-            referred_by_authority,
-            referral_fees_dest_mint
-        ).await;
+    pub async fn new(args: &GeneralArgs) -> Self {
+        let general = GeneralTestData::new(args, MARGINFI_PROGRAM).await;
         let marginfi_group = Keypair::new().pubkey();
         let marginfi_account = Keypair::new().pubkey();
 

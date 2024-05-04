@@ -55,7 +55,7 @@ pub fn generic_instruction_validation(
 
     if accounts.ixs_sysvar.is_some() && accounts.ixs_sysvar.unwrap().key != &ixs_sysvar_id {
         msg!("Incorrect ixs sysvar account provided");
-        return Err(ProgramError::InvalidAccountData.into());
+        return Err(SolautoError::IncorrectAccounts.into());
     }
     // We don't need to check other standard variables as shank handles system_program, token_program, ata_program, & rent
     // TODO verify the above comment with a test by providing a different account in place of rent account (instruction should fail)
@@ -80,7 +80,7 @@ pub fn validate_signer(
             msg!(
                 "Authority-only instruction, invalid signer for the specified instruction & Solauto position"
             );
-            return Err(ProgramError::InvalidAccountData.into());
+            return Err(SolautoError::IncorrectAccounts.into());
         }
 
         let seeds = &[&[solauto_position.data.position_id], signer.key.as_ref()];
@@ -163,19 +163,19 @@ pub fn validate_program_account(
         LendingPlatform::Solend => {
             if *program.key != SOLEND_PROGRAM {
                 msg!("Incorrect Solend program account");
-                return Err(ProgramError::InvalidAccountData.into());
+                return Err(ProgramError::IncorrectProgramId.into());
             }
         }
         LendingPlatform::Marginfi => {
             if *program.key != MARGINFI_PROGRAM {
                 msg!("Incorrect Marginfi program account");
-                return Err(ProgramError::InvalidAccountData.into());
+                return Err(ProgramError::IncorrectProgramId.into());
             }
         }
         LendingPlatform::Kamino => {
             if *program.key != KAMINO_PROGRAM {
                 msg!("Incorrect Kamino program account");
-                return Err(ProgramError::InvalidAccountData.into());
+                return Err(ProgramError::IncorrectProgramId.into());
             }
         }
     }
@@ -186,7 +186,7 @@ pub fn validate_program_account(
 pub fn require_accounts(accounts: &[Option<&AccountInfo>]) -> ProgramResult {
     for acc in accounts.into_iter() {
         if acc.is_none() {
-            return Err(SolautoError::MissingRequiredAccounts.into());
+            return Err(SolautoError::IncorrectAccounts.into());
         }
     }
     Ok(())
@@ -286,7 +286,7 @@ pub fn validate_referral_accounts(
         Pubkey::find_program_address(referral_state_seeds, &crate::ID);
     if &referral_state_pda != authority_referral_state.account_info.key {
         msg!("Invalid referral position account given for the provided authority");
-        return Err(ProgramError::InvalidAccountData.into());
+        return Err(SolautoError::IncorrectAccounts.into());
     }
 
     let authority_referred_by_state = authority_referral_state.data.referred_by_state;
@@ -295,7 +295,7 @@ pub fn validate_referral_accounts(
         && referred_by_state.as_ref().unwrap().key != authority_referred_by_state.as_ref().unwrap()
     {
         msg!("Provided incorrect referred_by_state account given the authority referral state");
-        return Err(ProgramError::InvalidAccountData.into());
+        return Err(SolautoError::IncorrectAccounts.into());
     }
 
     if check_supply_ta
@@ -307,7 +307,7 @@ pub fn validate_referral_accounts(
         msg!(
             "Provided incorrect referred_by_supply_ta according to the given authority and token mint"
         );
-        return Err(ProgramError::InvalidAccountData.into());
+        return Err(SolautoError::IncorrectAccounts.into());
     }
 
     Ok(())

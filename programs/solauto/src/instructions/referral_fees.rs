@@ -42,7 +42,6 @@ pub fn claim_referral_fees(ctx: Context<ClaimReferralFeesAccounts>) -> ProgramRe
         solana_utils::init_ata_if_needed(
             ctx.accounts.token_program,
             ctx.accounts.system_program,
-            ctx.accounts.rent,
             ctx.accounts.signer,
             ctx.accounts.referral_state,
             ctx.accounts.referral_fees_ta,
@@ -52,7 +51,6 @@ pub fn claim_referral_fees(ctx: Context<ClaimReferralFeesAccounts>) -> ProgramRe
         solana_utils::init_ata_if_needed(
             ctx.accounts.token_program,
             ctx.accounts.system_program,
-            ctx.accounts.rent,
             ctx.accounts.signer,
             ctx.accounts.signer,
             ctx.accounts.dest_ta.unwrap(),

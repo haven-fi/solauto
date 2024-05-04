@@ -1,5 +1,5 @@
 use solana_program::{
-    account_info::AccountInfo, entrypoint::ProgramResult, msg, program_error::ProgramError,
+    account_info::AccountInfo, entrypoint::ProgramResult, msg,
     program_pack::Pack,
 };
 use solend_sdk::state::Obligation;
@@ -62,7 +62,7 @@ pub fn marginfi_open_position<'a>(
         // TODO deserialize marginfi account to check to make sure the account owner is correct
         // if owner.key != &marginfi_account.owner {
         //     msg!("Provided incorrect marginfi account for the given signer & solauto_position");
-        //     return Err(ProgramError::InvalidAccountData.into());
+        //     return Err(SolautoError::IncorrectAccounts.into());
         // }
     }
 
@@ -90,7 +90,6 @@ pub fn solend_open_position<'a>(
     solana_utils::init_ata_if_needed(
         ctx.accounts.token_program,
         ctx.accounts.system_program,
-        ctx.accounts.rent,
         ctx.accounts.signer,
         solauto_position.account_info,
         ctx.accounts.position_supply_collateral_ta,
@@ -128,7 +127,7 @@ pub fn solend_open_position<'a>(
             .map_err(|_| SolautoError::FailedAccountDeserialization)?;
         if owner.key != &obligation.owner {
             msg!("Provided incorrect obligation account for the given signer & solauto_position");
-            return Err(ProgramError::InvalidAccountData.into());
+            return Err(SolautoError::IncorrectAccounts.into());
         }
     }
 
@@ -165,7 +164,6 @@ fn initialize_solauto_position<'a, 'b>(
     solana_utils::init_ata_if_needed(
         token_program,
         system_program,
-        rent,
         signer,
         solauto_position.account_info,
         position_supply_ta,
@@ -175,7 +173,6 @@ fn initialize_solauto_position<'a, 'b>(
     solana_utils::init_ata_if_needed(
         token_program,
         system_program,
-        rent,
         signer,
         solauto_position.account_info,
         position_debt_ta,
