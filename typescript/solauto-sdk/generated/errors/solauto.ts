@@ -51,22 +51,22 @@ nameToErrorMap.set(
   IncorrectFeesReceiverAccountError
 );
 
-/** MissingRequiredAccounts: Missing required accounts for the given instruction */
-export class MissingRequiredAccountsError extends ProgramError {
-  override readonly name: string = 'MissingRequiredAccounts';
+/** IncorrectAccounts: Missing or incorrect accounts provided for the given instruction */
+export class IncorrectAccountsError extends ProgramError {
+  override readonly name: string = 'IncorrectAccounts';
 
   readonly code: number = 0x2; // 2
 
   constructor(program: Program, cause?: Error) {
     super(
-      'Missing required accounts for the given instruction',
+      'Missing or incorrect accounts provided for the given instruction',
       program,
       cause
     );
   }
 }
-codeToErrorMap.set(0x2, MissingRequiredAccountsError);
-nameToErrorMap.set('MissingRequiredAccounts', MissingRequiredAccountsError);
+codeToErrorMap.set(0x2, IncorrectAccountsError);
+nameToErrorMap.set('IncorrectAccounts', IncorrectAccountsError);
 
 /** FailedAccountDeserialization: Failed to deserialize account data, incorrect account was likely given */
 export class FailedAccountDeserializationError extends ProgramError {

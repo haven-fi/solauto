@@ -3,9 +3,11 @@ use solend_sdk::{math::BPS_SCALER, state::Reserve};
 use std::ops::{Div, Mul};
 
 use crate::{
-    constants::USD_DECIMALS, types::shared::SolautoError, utils::math_utils::{
+    constants::USD_DECIMALS,
+    types::shared::SolautoError,
+    utils::math_utils::{
         base_unit_to_usd_value, decimal_to_f64_div_wad, from_base_unit, to_base_unit,
-    }
+    },
 };
 
 use super::shared::LendingPlatform;

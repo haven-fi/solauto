@@ -1,6 +1,5 @@
 use solana_program::{
-    account_info::AccountInfo, entrypoint::ProgramResult, msg,
-    program_pack::Pack,
+    account_info::AccountInfo, entrypoint::ProgramResult, msg, program_pack::Pack,
 };
 use solend_sdk::state::Obligation;
 

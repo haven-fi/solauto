@@ -12,7 +12,7 @@ mod update_referral_states {
         signer::Signer,
         transaction::Transaction,
     };
-    use solauto_sdk::generated::accounts::ReferralStateAccount;
+    use solauto_sdk::generated::{accounts::ReferralStateAccount, errors::SolautoError};
 
     use crate::{ assert_instruction_error, test_utils::* };
 
@@ -81,38 +81,24 @@ mod update_referral_states {
         );
 
         let err = data.general.ctx.banks_client.process_transaction(tx).await.unwrap_err();
-        assert_instruction_error!(err, InstructionError::InvalidAccountData)
+        assert_instruction_error!(err, InstructionError::Custom(2))
     }
 
     #[tokio::test]
     async fn incorrect_signer_referral_state() {
-        let temp_account = Keypair::new();
-        let mut data1 = MarginfiTestData::new(
-            &GeneralArgs::new().signer(temp_account.pubkey())
-        ).await;
-        let tx1 = Transaction::new_signed_with_payer(
-            &[data1.general.update_referral_states().signer(temp_account.pubkey()).instruction()],
-            Some(&temp_account.pubkey()),
-            &[&temp_account],
-            data1.general.ctx.last_blockhash
-        );
-        data1.general.ctx.banks_client.process_transaction(tx1).await.unwrap();
-
-        let mut data2 = MarginfiTestData::new(&GeneralArgs::new()).await;
-        let tx2 = Transaction::new_signed_with_payer(
+        let mut data = MarginfiTestData::new(&GeneralArgs::new()).await;
+        let tx = Transaction::new_signed_with_payer(
             &[
-                data2.general
+                data.general
                     .update_referral_states()
-                    .signer_referral_state(data1.general.signer_referral_state)
+                    .signer_referral_state(Pubkey::default())
                     .instruction(),
             ],
-            Some(&data2.general.ctx.payer.pubkey()),
-            &[&data2.general.ctx.payer],
-            data2.general.ctx.last_blockhash
+            Some(&data.general.ctx.payer.pubkey()),
+            &[&data.general.ctx.payer],
+            data.general.ctx.last_blockhash
         );
-        let err = data2.general.ctx.banks_client.process_transaction(tx2).await.unwrap_err();
-        assert_instruction_error!(err, InstructionError::InvalidAccountData);
+        let err = data.general.ctx.banks_client.process_transaction(tx).await.unwrap_err();
+        assert_instruction_error!(err, InstructionError::Custom(2));
     }
-
-    // For different accounts, used in the instruction, pass in Pubkey::default() (one at a time) and ensure it fails
 }

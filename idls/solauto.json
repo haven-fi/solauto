@@ -1520,8 +1520,8 @@
     },
     {
       "code": 2,
-      "name": "MissingRequiredAccounts",
-      "msg": "Missing required accounts for the given instruction"
+      "name": "IncorrectAccounts",
+      "msg": "Missing or incorrect accounts provided for the given instruction"
     },
     {
       "code": 3,

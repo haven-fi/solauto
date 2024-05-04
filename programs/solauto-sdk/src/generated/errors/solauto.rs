@@ -16,9 +16,9 @@ pub enum SolautoError {
     /// 1 (0x1) - Incorrect fee receiver account provided
     #[error("Incorrect fee receiver account provided")]
     IncorrectFeesReceiverAccount,
-    /// 2 (0x2) - Missing required accounts for the given instruction
-    #[error("Missing required accounts for the given instruction")]
-    MissingRequiredAccounts,
+    /// 2 (0x2) - Missing or incorrect accounts provided for the given instruction
+    #[error("Missing or incorrect accounts provided for the given instruction")]
+    IncorrectAccounts,
     /// 3 (0x3) - Failed to deserialize account data, incorrect account was likely given
     #[error("Failed to deserialize account data, incorrect account was likely given")]
     FailedAccountDeserialization,
