@@ -142,12 +142,12 @@ export function solendOpenPosition(
     },
     solautoFeesSupplyTa: {
       index: 7,
-      isWritable: false as boolean,
+      isWritable: true as boolean,
       value: input.solautoFeesSupplyTa ?? null,
     },
     signerReferralState: {
       index: 8,
-      isWritable: true as boolean,
+      isWritable: false as boolean,
       value: input.signerReferralState ?? null,
     },
     referredByState: {

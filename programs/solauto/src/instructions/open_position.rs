@@ -46,6 +46,8 @@ pub fn marginfi_open_position<'a>(
         ]
     };
 
+    msg!("Hello 6");
+
     if !account_has_custom_data(ctx.accounts.marginfi_account) {
         solana_utils::init_new_account(
             ctx.accounts.system_program,
@@ -54,7 +56,7 @@ pub fn marginfi_open_position<'a>(
             ctx.accounts.marginfi_account,
             ctx.accounts.marginfi_program.key,
             marginfi_account_seeds,
-            Obligation::LEN, // TODO: get marginfi account space from MarginfiAccount::LEN from generated code
+            2304,
         )?;
     } else {
         let _owner = get_owner(&solauto_position, ctx.accounts.signer);
@@ -64,6 +66,8 @@ pub fn marginfi_open_position<'a>(
         //     return Err(SolautoError::IncorrectAccounts.into());
         // }
     }
+
+    msg!("Hello 7");
 
     MarginfiClient::initialize(&ctx, &solauto_position)?;
     ix_utils::update_data(&mut solauto_position)
@@ -146,6 +150,8 @@ fn initialize_solauto_position<'a, 'b>(
     signer_debt_ta: Option<&'a AccountInfo<'a>>,
     debt_mint: Option<&'a AccountInfo<'a>>,
 ) -> ProgramResult {
+    msg!("Hello 1");
+
     if !solauto_position.data.self_managed
         || !account_has_custom_data(solauto_position.account_info)
     {
@@ -160,6 +166,8 @@ fn initialize_solauto_position<'a, 'b>(
         )?;
     }
 
+    msg!("Hello 2");
+
     solana_utils::init_ata_if_needed(
         token_program,
         system_program,
@@ -168,6 +176,8 @@ fn initialize_solauto_position<'a, 'b>(
         position_supply_ta,
         supply_mint,
     )?;
+
+    msg!("Hello 3");
 
     if debt_mint.is_some() {
         solana_utils::init_ata_if_needed(
@@ -180,6 +190,8 @@ fn initialize_solauto_position<'a, 'b>(
         )?;
     }
 
+    msg!("Hello 4");
+
     solauto_utils::initiate_dca_in_if_necessary(
         token_program,
         solauto_position,
@@ -187,6 +199,8 @@ fn initialize_solauto_position<'a, 'b>(
         signer,
         signer_debt_ta,
     )?;
+
+    msg!("Hello 5");
 
     Ok(())
 }

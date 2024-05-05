@@ -3,8 +3,12 @@ use std::str::FromStr;
 use borsh::BorshDeserialize;
 use solana_program_test::{ ProgramTest, ProgramTestContext };
 use solana_sdk::{ pubkey::Pubkey, signature::Keypair, signer::Signer };
+use solauto::constants::{WSOL_MINT, SOLAUTO_FEES_WALLET};
 use solauto_sdk::{
-    generated::instructions::{ MarginfiOpenPositionBuilder, UpdateReferralStatesBuilder },
+    generated::{
+        instructions::{ MarginfiOpenPositionBuilder, UpdateReferralStatesBuilder },
+        types::{ DCASettings, SolautoSettingsParameters, UpdatePositionData },
+    },
     SOLAUTO_ID,
 };
 use spl_associated_token_account::get_associated_token_address;
@@ -23,7 +27,6 @@ macro_rules! assert_instruction_error {
     };
 }
 
-pub const WSOL_MINT: &str = "So11111111111111111111111111111111111111112";
 pub const USDC_MINT: &str = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
 pub const MARGINFI_PROGRAM: &str = "MFv2hWf31Z9kbCa1snEPYctwafyhdvnV7FZnsebVacA";
 
@@ -42,10 +45,10 @@ impl GeneralArgs {
         Self {
             signer: None,
             position_id: 1,
-            supply_mint: Pubkey::from_str(WSOL_MINT).unwrap(),
+            supply_mint: WSOL_MINT,
             debt_mint: Pubkey::from_str(USDC_MINT).unwrap(),
             referred_by_authority: None,
-            referral_fees_dest_mint: Pubkey::from_str(WSOL_MINT).unwrap(),
+            referral_fees_dest_mint: WSOL_MINT,
             fund_accounts: Vec::new(),
         }
     }
@@ -81,6 +84,7 @@ impl GeneralArgs {
 
 pub struct GeneralTestData {
     pub ctx: ProgramTestContext,
+    pub position_id: u8,
     pub lending_protocol: Pubkey,
     pub solauto_fees_wallet: Pubkey,
     pub solauto_fees_supply_ta: Pubkey,
@@ -121,9 +125,8 @@ impl GeneralTestData {
 
         let ctx = solauto.start_with_context().await;
 
-        let solauto_fees_wallet = Keypair::new().pubkey();
         let solauto_fees_supply_ta = get_associated_token_address(
-            &solauto_fees_wallet,
+            &SOLAUTO_FEES_WALLET,
             &args.supply_mint
         );
 
@@ -163,8 +166,9 @@ impl GeneralTestData {
 
         Self {
             ctx,
+            position_id: args.position_id,
             lending_protocol,
-            solauto_fees_wallet,
+            solauto_fees_wallet: SOLAUTO_FEES_WALLET,
             solauto_fees_supply_ta,
             referral_fees_dest_mint: args.referral_fees_dest_mint,
             signer_referral_state,
@@ -207,8 +211,8 @@ impl GeneralTestData {
 
 pub struct MarginfiTestData {
     pub general: GeneralTestData,
-    pub marginfi_group: Option<Pubkey>,
-    pub marginfi_account: Option<Pubkey>,
+    pub marginfi_group: Pubkey,
+    pub marginfi_account: Pubkey,
 }
 
 impl MarginfiTestData {
@@ -219,14 +223,39 @@ impl MarginfiTestData {
 
         Self {
             general,
-            marginfi_account: Some(marginfi_account),
-            marginfi_group: Some(marginfi_group),
+            marginfi_account: marginfi_account,
+            marginfi_group: marginfi_group,
         }
     }
 
-    pub fn open_position(&self) -> MarginfiOpenPositionBuilder {
+    pub fn open_position(
+        &self,
+        setting_params: Option<SolautoSettingsParameters>,
+        active_dca: Option<DCASettings>
+    ) -> MarginfiOpenPositionBuilder {
         let mut builder = MarginfiOpenPositionBuilder::new();
-        // builder.marginfi_program(self.general.lending_protocol);
+        let position_data = UpdatePositionData {
+            position_id: self.general.position_id,
+            setting_params,
+            active_dca
+        };
+        builder
+            .signer(self.general.ctx.payer.pubkey())
+            .marginfi_program(self.general.lending_protocol)
+            .solauto_fees_wallet(self.general.solauto_fees_wallet)
+            .solauto_fees_supply_ta(self.general.solauto_fees_supply_ta)
+            .signer_referral_state(self.general.signer_referral_state)
+            .referred_by_state(self.general.referred_by_state)
+            .referred_by_supply_ta(self.general.referred_by_supply_ta)
+            .solauto_position(self.general.solauto_position)
+            .marginfi_group(self.marginfi_group)
+            .marginfi_account(self.marginfi_account)
+            .position_supply_ta(self.general.position_supply_liquidity_ta)
+            .supply_mint(self.general.supply_liquidity_mint)
+            .signer_debt_ta(Some(self.general.signer_debt_liquidity_ta))
+            .position_debt_ta(Some(self.general.position_debt_liquidity_ta))
+            .debt_mint(Some(self.general.debt_liquidity_mint))
+            .update_position_data(position_data);
         builder
     }
 }

@@ -139,7 +139,7 @@ export function marginfiOpenPosition(
     },
     solautoFeesSupplyTa: {
       index: 7,
-      isWritable: false as boolean,
+      isWritable: true as boolean,
       value: input.solautoFeesSupplyTa ?? null,
     },
     signerReferralState: {

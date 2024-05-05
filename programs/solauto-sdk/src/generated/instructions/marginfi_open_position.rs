@@ -91,7 +91,7 @@ impl MarginfiOpenPosition {
             self.solauto_fees_wallet,
             false,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+        accounts.push(solana_program::instruction::AccountMeta::new(
             self.solauto_fees_supply_ta,
             false,
         ));
@@ -216,7 +216,7 @@ pub struct MarginfiOpenPositionInstructionArgs {
 ///   4. `[optional]` ata_program (default to `ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL`)
 ///   5. `[optional]` rent (default to `SysvarRent111111111111111111111111111111111`)
 ///   6. `[]` solauto_fees_wallet
-///   7. `[]` solauto_fees_supply_ta
+///   7. `[writable]` solauto_fees_supply_ta
 ///   8. `[]` signer_referral_state
 ///   9. `[optional]` referred_by_state
 ///   10. `[writable, optional]` referred_by_supply_ta
@@ -646,7 +646,7 @@ impl<'a, 'b> MarginfiOpenPositionCpi<'a, 'b> {
             *self.solauto_fees_wallet.key,
             false,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+        accounts.push(solana_program::instruction::AccountMeta::new(
             *self.solauto_fees_supply_ta.key,
             false,
         ));
@@ -801,7 +801,7 @@ impl<'a, 'b> MarginfiOpenPositionCpi<'a, 'b> {
 ///   4. `[]` ata_program
 ///   5. `[]` rent
 ///   6. `[]` solauto_fees_wallet
-///   7. `[]` solauto_fees_supply_ta
+///   7. `[writable]` solauto_fees_supply_ta
 ///   8. `[]` signer_referral_state
 ///   9. `[optional]` referred_by_state
 ///   10. `[writable, optional]` referred_by_supply_ta

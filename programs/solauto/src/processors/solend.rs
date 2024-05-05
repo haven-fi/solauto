@@ -1,4 +1,5 @@
 use solana_program::{account_info::AccountInfo, entrypoint::ProgramResult, msg};
+use spl_token::state::Account as TokenAccount;
 
 use crate::{
     instructions::*,
@@ -64,12 +65,16 @@ pub fn process_solend_open_position_instruction<'a>(
         rent: ctx.accounts.rent,
         ixs_sysvar: None,
         solauto_position,
-        solauto_fees_supply_ta: Some(ctx.accounts.solauto_fees_supply_ta),
+        solauto_fees_supply_ta: DeserializedAccount::<TokenAccount>::unpack(
+            Some(ctx.accounts.solauto_fees_supply_ta)
+        )?,
         authority_referral_state: DeserializedAccount::<ReferralStateAccount>::deserialize(Some(
             ctx.accounts.signer_referral_state,
         ))?,
         referred_by_state: ctx.accounts.referred_by_state,
-        referred_by_supply_ta: ctx.accounts.referred_by_supply_ta,
+        referred_by_supply_ta: DeserializedAccount::<TokenAccount>::unpack(
+            ctx.accounts.referred_by_supply_ta
+        )?,
     };
     validation_utils::generic_instruction_validation(&std_accounts, true, LendingPlatform::Solend)?;
 
@@ -143,12 +148,16 @@ pub fn process_solend_rebalance<'a>(
         rent: ctx.accounts.rent,
         ixs_sysvar: Some(ctx.accounts.ixs_sysvar),
         solauto_position,
-        solauto_fees_supply_ta: Some(ctx.accounts.solauto_fees_supply_ta),
+        solauto_fees_supply_ta: DeserializedAccount::<TokenAccount>::unpack(
+            Some(ctx.accounts.solauto_fees_supply_ta)
+        )?,
         authority_referral_state: DeserializedAccount::<ReferralStateAccount>::deserialize(Some(
             ctx.accounts.authority_referral_state,
         ))?,
         referred_by_state: None,
-        referred_by_supply_ta: ctx.accounts.referred_by_supply_ta,
+        referred_by_supply_ta: DeserializedAccount::<TokenAccount>::unpack(
+            ctx.accounts.referred_by_supply_ta
+        )?,
     };
     validation_utils::generic_instruction_validation(
         &std_accounts,

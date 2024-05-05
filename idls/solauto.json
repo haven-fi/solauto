@@ -197,7 +197,7 @@
         },
         {
           "name": "solautoFeesSupplyTa",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         },
         {
@@ -314,12 +314,12 @@
         },
         {
           "name": "solautoFeesSupplyTa",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         },
         {
           "name": "signerReferralState",
-          "isMut": true,
+          "isMut": false,
           "isSigner": false
         },
         {

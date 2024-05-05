@@ -1,40 +1,50 @@
 use solana_program::{
-    account_info::AccountInfo, entrypoint::ProgramResult, msg, program_error::ProgramError,
-    pubkey::Pubkey, sysvar::instructions::ID as ixs_sysvar_id,
+    account_info::AccountInfo,
+    entrypoint::ProgramResult,
+    msg,
+    program_error::ProgramError,
+    pubkey::Pubkey,
+    sysvar::instructions::ID as ixs_sysvar_id,
 };
 use spl_associated_token_account::get_associated_token_address;
+use spl_token::{ ID as token_program_id, state::Account as TokenAccount };
 
 use crate::{
-    constants::{SOLAUTO_FEES_WALLET, SOLAUTO_MANAGER},
+    constants::{ SOLAUTO_FEES_WALLET, SOLAUTO_MANAGER },
     types::{
         instruction::{
             accounts::{
-                Context, MarginfiProtocolInteractionAccounts, SolendProtocolInteractionAccounts,
+                Context,
+                MarginfiProtocolInteractionAccounts,
+                SolendProtocolInteractionAccounts,
             },
-            SolautoAction, SolautoStandardAccounts,
+            SolautoAction,
+            SolautoStandardAccounts,
         },
         shared::{
-            DCASettings, DeserializedAccount, LendingPlatform, PositionAccount,
-            ReferralStateAccount, SolautoError, SolautoSettingsParameters,
+            DCASettings,
+            DeserializedAccount,
+            LendingPlatform,
+            PositionAccount,
+            ReferralStateAccount,
+            SolautoError,
+            SolautoSettingsParameters,
         },
     },
 };
 
 use super::{
-    math_utils::get_maximum_repay_to_bps_param, solauto_utils::get_referral_account_seeds,
+    math_utils::get_maximum_repay_to_bps_param,
+    solauto_utils::get_referral_account_seeds,
 };
-use crate::constants::{KAMINO_PROGRAM, MARGINFI_PROGRAM, SOLEND_PROGRAM};
+use crate::constants::{ KAMINO_PROGRAM, MARGINFI_PROGRAM, SOLEND_PROGRAM };
 
 pub fn generic_instruction_validation(
     accounts: &SolautoStandardAccounts,
     authority_only_ix: bool,
-    lending_platform: LendingPlatform,
+    lending_platform: LendingPlatform
 ) -> ProgramResult {
-    validate_signer(
-        accounts.signer,
-        &accounts.solauto_position,
-        authority_only_ix,
-    )?;
+    validate_signer(accounts.signer, &accounts.solauto_position, authority_only_ix)?;
     validate_program_account(accounts.lending_protocol, lending_platform)?;
 
     if accounts.authority_referral_state.is_some() {
@@ -42,13 +52,15 @@ pub fn generic_instruction_validation(
             &accounts.solauto_position.data.authority,
             accounts.authority_referral_state.as_ref().unwrap(),
             accounts.referred_by_state,
-            accounts.referred_by_supply_ta,
-            true,
+            accounts.referred_by_supply_ta.as_ref(),
+            true
         )?;
     }
 
-    if accounts.solauto_fees_supply_ta.is_some()
-        && accounts.solauto_fees_supply_ta.as_ref().unwrap().owner != &SOLAUTO_FEES_WALLET
+    if
+        accounts.solauto_fees_supply_ta.is_some() &&
+        accounts.solauto_fees_supply_ta.as_ref().unwrap().account_info.owner == &token_program_id &&
+        accounts.solauto_fees_supply_ta.as_ref().unwrap().data.owner != SOLAUTO_FEES_WALLET
     {
         return Err(SolautoError::IncorrectFeesReceiverAccount.into());
     }
@@ -66,7 +78,7 @@ pub fn generic_instruction_validation(
 pub fn validate_signer(
     signer: &AccountInfo,
     solauto_position: &DeserializedAccount<PositionAccount>,
-    authority_only_ix: bool,
+    authority_only_ix: bool
 ) -> ProgramResult {
     if !signer.is_signer {
         msg!("Signer account is not a signer");
@@ -102,17 +114,18 @@ pub fn validate_signer(
 pub fn validate_position_settings(
     settings: &SolautoSettingsParameters,
     max_ltv: f64,
-    liq_threshold: f64,
+    liq_threshold: f64
 ) -> ProgramResult {
     let invalid_params = |error_msg| {
         msg!(error_msg);
         Err(SolautoError::InvalidPositionSettings.into())
     };
 
-    if settings.repay_from_bps != 0
-        && settings.repay_to_bps != 0
-        && settings.boost_from_bps != 0
-        && settings.boost_to_bps != 0
+    if
+        settings.repay_from_bps != 0 &&
+        settings.repay_to_bps != 0 &&
+        settings.boost_from_bps != 0 &&
+        settings.boost_to_bps != 0
     {
         if settings.repay_from_bps <= settings.repay_to_bps {
             return invalid_params("repay_from_bps value must be greater than repay_to_bps value");
@@ -122,12 +135,12 @@ pub fn validate_position_settings(
         }
         if settings.repay_from_bps - settings.repay_to_bps < 50 {
             return invalid_params(
-                "Minimum difference between repay_from_bps and repay_to_bps must be 50 or greater",
+                "Minimum difference between repay_from_bps and repay_to_bps must be 50 or greater"
             );
         }
         if settings.boost_to_bps - settings.boost_from_bps < 50 {
             return invalid_params(
-                "Minimum difference between boost_to_bps to boost_from_bps must be 50 or greater",
+                "Minimum difference between boost_to_bps to boost_from_bps must be 50 or greater"
             );
         }
         if settings.repay_from_bps > 9500 {
@@ -145,7 +158,7 @@ pub fn validate_position_settings(
             settings.repay_from_bps,
             settings.repay_to_bps,
             settings.boost_from_bps,
-            settings.boost_to_bps,
+            settings.boost_to_bps
         ];
         if params.iter().any(|&x| x != 0) {
             return invalid_params("Either all setting parameters should be 0, or none");
@@ -157,7 +170,7 @@ pub fn validate_position_settings(
 
 pub fn validate_program_account(
     program: &AccountInfo,
-    lending_platform: LendingPlatform,
+    lending_platform: LendingPlatform
 ) -> ProgramResult {
     match lending_platform {
         LendingPlatform::Solend => {
@@ -194,21 +207,25 @@ pub fn require_accounts(accounts: &[Option<&AccountInfo>]) -> ProgramResult {
 
 pub fn validate_marginfi_protocol_interaction_ix(
     _ctx: &Context<MarginfiProtocolInteractionAccounts>,
-    action: &SolautoAction,
+    action: &SolautoAction
 ) -> ProgramResult {
     let require_supply_accounts = || {
         return require_accounts(
-            &([
+            &(
+                [
                     // TODO
-                ]),
+                ]
+            )
         );
     };
 
     let require_debt_accounts = || {
         return require_accounts(
-            &([
+            &(
+                [
                     // TODO
-                ]),
+                ]
+            )
         );
     };
 
@@ -232,28 +249,32 @@ pub fn validate_marginfi_protocol_interaction_ix(
 
 pub fn validate_solend_protocol_interaction_ix(
     ctx: &Context<SolendProtocolInteractionAccounts>,
-    action: &SolautoAction,
+    action: &SolautoAction
 ) -> ProgramResult {
     let require_supply_accounts = || {
-        return require_accounts(&[
-            ctx.accounts.supply_reserve,
-            ctx.accounts.supply_reserve_pyth_price_oracle,
-            ctx.accounts.supply_reserve_switchboard_oracle,
-            ctx.accounts.authority_supply_liquidity_ta,
-            ctx.accounts.reserve_supply_liquidity_ta,
-            ctx.accounts.supply_collateral_mint,
-            ctx.accounts.authority_supply_collateral_ta,
-            ctx.accounts.reserve_supply_collateral_ta,
-        ]);
+        return require_accounts(
+            &[
+                ctx.accounts.supply_reserve,
+                ctx.accounts.supply_reserve_pyth_price_oracle,
+                ctx.accounts.supply_reserve_switchboard_oracle,
+                ctx.accounts.authority_supply_liquidity_ta,
+                ctx.accounts.reserve_supply_liquidity_ta,
+                ctx.accounts.supply_collateral_mint,
+                ctx.accounts.authority_supply_collateral_ta,
+                ctx.accounts.reserve_supply_collateral_ta,
+            ]
+        );
     };
 
     let require_debt_accounts = || {
-        return require_accounts(&[
-            ctx.accounts.debt_reserve,
-            ctx.accounts.debt_reserve_fee_receiver_ta,
-            ctx.accounts.authority_debt_liquidity_ta,
-            ctx.accounts.reserve_debt_liquidity_ta,
-        ]);
+        return require_accounts(
+            &[
+                ctx.accounts.debt_reserve,
+                ctx.accounts.debt_reserve_fee_receiver_ta,
+                ctx.accounts.authority_debt_liquidity_ta,
+                ctx.accounts.reserve_debt_liquidity_ta,
+            ]
+        );
     };
 
     match action {
@@ -278,12 +299,14 @@ pub fn validate_referral_accounts(
     referral_state_authority: &Pubkey,
     authority_referral_state: &DeserializedAccount<ReferralStateAccount>,
     referred_by_state: Option<&AccountInfo>,
-    referred_by_supply_ta: Option<&AccountInfo>,
-    check_supply_ta: bool,
+    referred_by_supply_ta: Option<&DeserializedAccount<TokenAccount>>,
+    check_supply_ta: bool
 ) -> ProgramResult {
     let referral_state_seeds = &get_referral_account_seeds(referral_state_authority);
-    let (referral_state_pda, _bump) =
-        Pubkey::find_program_address(referral_state_seeds, &crate::ID);
+    let (referral_state_pda, _bump) = Pubkey::find_program_address(
+        referral_state_seeds,
+        &crate::ID
+    );
     if &referral_state_pda != authority_referral_state.account_info.key {
         msg!("Invalid referral position account given for the provided authority");
         return Err(SolautoError::IncorrectAccounts.into());
@@ -291,18 +314,21 @@ pub fn validate_referral_accounts(
 
     let authority_referred_by_state = authority_referral_state.data.referred_by_state;
 
-    if referred_by_state.is_some()
-        && referred_by_state.as_ref().unwrap().key != authority_referred_by_state.as_ref().unwrap()
+    if
+        referred_by_state.is_some() &&
+        referred_by_state.as_ref().unwrap().key != authority_referred_by_state.as_ref().unwrap()
     {
         msg!("Provided incorrect referred_by_state account given the authority referral state");
         return Err(SolautoError::IncorrectAccounts.into());
     }
 
-    if check_supply_ta
-        && authority_referred_by_state.is_some()
-        && (referred_by_supply_ta.is_none()
-            || referred_by_supply_ta.as_ref().unwrap().owner
-                != referred_by_state.as_ref().unwrap().key)
+    if
+        check_supply_ta &&
+        authority_referred_by_state.is_some() &&
+        (referred_by_supply_ta.is_none() ||
+            referred_by_supply_ta.as_ref().unwrap().account_info.owner != &token_program_id ||
+            &referred_by_supply_ta.as_ref().unwrap().data.owner !=
+                referred_by_state.as_ref().unwrap().key)
     {
         msg!(
             "Provided incorrect referred_by_supply_ta according to the given authority and token mint"
@@ -318,41 +344,38 @@ pub fn validate_lending_protocol_accounts(
     solauto_position: &DeserializedAccount<PositionAccount>,
     protocol_position: &AccountInfo,
     source_supply_ta: &AccountInfo,
-    source_debt_ta: Option<&AccountInfo>,
+    source_debt_ta: Option<&AccountInfo>
 ) -> ProgramResult {
     if !solauto_position.data.self_managed {
-        let protocol_data = &solauto_position
-            .data
-            .position
-            .as_ref()
-            .unwrap()
-            .protocol_data;
+        let protocol_data = &solauto_position.data.position.as_ref().unwrap().protocol_data;
 
         if protocol_position.key != &protocol_data.protocol_account {
             msg!("Incorrect protocol-owned account");
             return Err(SolautoError::InvalidSolautoPositionAccount.into());
         }
 
-        if source_supply_ta.key
-            != &get_associated_token_address(
-                &solauto_position.data.authority,
-                &protocol_data.supply_mint,
-            )
-            && source_supply_ta.key
-                != &get_associated_token_address(signer.key, &protocol_data.supply_mint)
+        if
+            source_supply_ta.key !=
+                &get_associated_token_address(
+                    &solauto_position.data.authority,
+                    &protocol_data.supply_mint
+                ) &&
+            source_supply_ta.key !=
+                &get_associated_token_address(signer.key, &protocol_data.supply_mint)
         {
             msg!("Incorrect supply mint token account");
             return Err(SolautoError::InvalidSolautoPositionAccount.into());
         }
 
-        if source_debt_ta.is_some()
-            && source_debt_ta.unwrap().key
-                != &get_associated_token_address(
+        if
+            source_debt_ta.is_some() &&
+            source_debt_ta.unwrap().key !=
+                &get_associated_token_address(
                     &solauto_position.data.authority,
-                    &protocol_data.debt_mint.unwrap(),
-                )
-            && source_debt_ta.unwrap().key
-                != &get_associated_token_address(signer.key, &protocol_data.debt_mint.unwrap())
+                    &protocol_data.debt_mint.unwrap()
+                ) &&
+            source_debt_ta.unwrap().key !=
+                &get_associated_token_address(signer.key, &protocol_data.debt_mint.unwrap())
         {
             msg!("Incorrect debt mint token account");
             return Err(SolautoError::InvalidSolautoPositionAccount.into());

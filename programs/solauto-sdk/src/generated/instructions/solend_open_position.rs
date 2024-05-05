@@ -97,11 +97,11 @@ impl SolendOpenPosition {
             self.solauto_fees_wallet,
             false,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+        accounts.push(solana_program::instruction::AccountMeta::new(
             self.solauto_fees_supply_ta,
             false,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.signer_referral_state,
             false,
         ));
@@ -235,8 +235,8 @@ pub struct SolendOpenPositionInstructionArgs {
 ///   4. `[optional]` ata_program (default to `ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL`)
 ///   5. `[optional]` rent (default to `SysvarRent111111111111111111111111111111111`)
 ///   6. `[]` solauto_fees_wallet
-///   7. `[]` solauto_fees_supply_ta
-///   8. `[writable]` signer_referral_state
+///   7. `[writable]` solauto_fees_supply_ta
+///   8. `[]` signer_referral_state
 ///   9. `[optional]` referred_by_state
 ///   10. `[writable, optional]` referred_by_supply_ta
 ///   11. `[writable]` solauto_position
@@ -716,11 +716,11 @@ impl<'a, 'b> SolendOpenPositionCpi<'a, 'b> {
             *self.solauto_fees_wallet.key,
             false,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+        accounts.push(solana_program::instruction::AccountMeta::new(
             *self.solauto_fees_supply_ta.key,
             false,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             *self.signer_referral_state.key,
             false,
         ));
@@ -886,8 +886,8 @@ impl<'a, 'b> SolendOpenPositionCpi<'a, 'b> {
 ///   4. `[]` ata_program
 ///   5. `[]` rent
 ///   6. `[]` solauto_fees_wallet
-///   7. `[]` solauto_fees_supply_ta
-///   8. `[writable]` signer_referral_state
+///   7. `[writable]` solauto_fees_supply_ta
+///   8. `[]` signer_referral_state
 ///   9. `[optional]` referred_by_state
 ///   10. `[writable, optional]` referred_by_supply_ta
 ///   11. `[writable]` solauto_position

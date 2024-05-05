@@ -478,7 +478,7 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
             self.std_accounts.token_program,
             position_supply_ta.account_info,
             self.std_accounts.solauto_position.account_info,
-            self.std_accounts.solauto_fees_supply_ta.unwrap(),
+            self.std_accounts.solauto_fees_supply_ta.as_ref().unwrap().account_info,
             solauto_fees,
             Some(vec![
                 &[self.std_accounts.solauto_position.data.position_id],
@@ -495,7 +495,7 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
                 self.std_accounts.token_program,
                 position_supply_ta.account_info,
                 self.std_accounts.solauto_position.account_info,
-                self.std_accounts.referred_by_supply_ta.unwrap(),
+                self.std_accounts.referred_by_supply_ta.as_ref().unwrap().account_info,
                 referrer_fees,
                 Some(vec![
                     &[self.std_accounts.solauto_position.data.position_id],

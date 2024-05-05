@@ -12,6 +12,7 @@ mod update_referral_states {
         signer::Signer,
         transaction::Transaction,
     };
+    use solauto::constants::WSOL_MINT;
     use solauto_sdk::generated::accounts::ReferralStateAccount;
 
     use crate::{ assert_instruction_error, test_utils::* };
@@ -60,7 +61,7 @@ mod update_referral_states {
         ).await;
         assert!(referred_by_state_data.authority == referred_by_authority);
         assert!(referred_by_state_data.referred_by_state == None);
-        assert!(referred_by_state_data.dest_fees_mint == Pubkey::from_str(WSOL_MINT).unwrap());
+        assert!(referred_by_state_data.dest_fees_mint == WSOL_MINT);
 
         let signer_referral_state_data = data.general.get_account_data::<ReferralStateAccount>(
             data.general.signer_referral_state.clone()

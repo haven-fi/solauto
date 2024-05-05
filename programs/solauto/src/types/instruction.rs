@@ -1,6 +1,7 @@
 use borsh::{BorshDeserialize, BorshSerialize};
 use shank::{ShankContext, ShankInstruction};
 use solana_program::{account_info::AccountInfo, pubkey::Pubkey};
+use spl_token::state::Account as TokenAccount;
 
 use super::shared::*;
 
@@ -46,7 +47,7 @@ pub enum Instruction {
     #[account(name = "ata_program")]
     #[account(name = "rent")]
     #[account(name = "solauto_fees_wallet")]
-    #[account(name = "solauto_fees_supply_ta")]
+    #[account(mut, name = "solauto_fees_supply_ta")]
     #[account(name = "signer_referral_state")]
     #[account(optional, name = "referred_by_state")]
     #[account(mut, optional, name = "referred_by_supply_ta")]
@@ -68,8 +69,8 @@ pub enum Instruction {
     #[account(name = "ata_program")]
     #[account(name = "rent")]
     #[account(name = "solauto_fees_wallet")]
-    #[account(name = "solauto_fees_supply_ta")]
-    #[account(mut, name = "signer_referral_state")]
+    #[account(mut, name = "solauto_fees_supply_ta")]
+    #[account(name = "signer_referral_state")]
     #[account(optional, name = "referred_by_state")]
     #[account(mut, optional, name = "referred_by_supply_ta")]
     #[account(mut, name = "solauto_position")]
@@ -282,8 +283,8 @@ pub struct SolautoStandardAccounts<'a> {
     pub rent: &'a AccountInfo<'a>,
     pub ixs_sysvar: Option<&'a AccountInfo<'a>>,
     pub solauto_position: DeserializedAccount<'a, PositionAccount>,
-    pub solauto_fees_supply_ta: Option<&'a AccountInfo<'a>>,
+    pub solauto_fees_supply_ta: Option<DeserializedAccount<'a, TokenAccount>>,
     pub authority_referral_state: Option<DeserializedAccount<'a, ReferralStateAccount>>,
     pub referred_by_state: Option<&'a AccountInfo<'a>>,
-    pub referred_by_supply_ta: Option<&'a AccountInfo<'a>>,
+    pub referred_by_supply_ta: Option<DeserializedAccount<'a, TokenAccount>>,
 }
