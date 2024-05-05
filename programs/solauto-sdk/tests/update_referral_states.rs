@@ -18,6 +18,7 @@ mod update_referral_states {
 
     #[tokio::test]
     async fn update_referral_states() {
+        // Create referral state for signer
         let mut data = MarginfiTestData::new(
             GeneralArgs::new().referral_fees_dest_mint(Pubkey::from_str(USDC_MINT).unwrap())
         ).await;
@@ -37,7 +38,7 @@ mod update_referral_states {
         assert!(signer_referral_state_data.referred_by_state == None);
         assert!(signer_referral_state_data.dest_fees_mint == data.general.referral_fees_dest_mint);
 
-        // Able to set the referred_by_state even after referral state has been created
+        // Check if able to set the referred_by_state even after signer referral state has been created
         let referred_by_authority = Keypair::new().pubkey();
         let referred_by_state = GeneralTestData::get_referral_state(&referred_by_authority);
         let tx = Transaction::new_signed_with_payer(
@@ -66,7 +67,7 @@ mod update_referral_states {
         ).await;
         assert!(signer_referral_state_data.referred_by_state.as_ref().unwrap() == &referred_by_state);
 
-        // Ensure referred by cannot be overwritten
+        // Ensure referred_by_state cannot be overwritten after it has been set
         let referred_by_authority2 = Keypair::new().pubkey();
         let referred_by_state2 = GeneralTestData::get_referral_state(&referred_by_authority2);
         let tx = Transaction::new_signed_with_payer(

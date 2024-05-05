@@ -142,9 +142,9 @@ fn initialize_solauto_position<'a, 'b>(
     signer: &'a AccountInfo<'a>,
     position_supply_ta: &'a AccountInfo<'a>,
     supply_mint: &'a AccountInfo<'a>,
-    position_debt_ta: &'a AccountInfo<'a>,
+    position_debt_ta: Option<&'a AccountInfo<'a>>,
     signer_debt_ta: Option<&'a AccountInfo<'a>>,
-    debt_mint: &'a AccountInfo<'a>,
+    debt_mint: Option<&'a AccountInfo<'a>>,
 ) -> ProgramResult {
     if !solauto_position.data.self_managed
         || !account_has_custom_data(solauto_position.account_info)
@@ -169,19 +169,21 @@ fn initialize_solauto_position<'a, 'b>(
         supply_mint,
     )?;
 
-    solana_utils::init_ata_if_needed(
-        token_program,
-        system_program,
-        signer,
-        solauto_position.account_info,
-        position_debt_ta,
-        debt_mint,
-    )?;
-
+    if debt_mint.is_some() {
+        solana_utils::init_ata_if_needed(
+            token_program,
+            system_program,
+            signer,
+            solauto_position.account_info,
+            position_debt_ta.unwrap(),
+            debt_mint.unwrap(),
+        )?;
+    }
+    
     solauto_utils::initiate_dca_in_if_necessary(
         token_program,
         solauto_position,
-        Some(position_debt_ta),
+        position_debt_ta,
         signer,
         signer_debt_ta,
     )?;

@@ -1,6 +1,6 @@
-use borsh::{BorshDeserialize, BorshSerialize};
-use shank::{ShankContext, ShankInstruction};
-use solana_program::{account_info::AccountInfo, pubkey::Pubkey};
+use borsh::{ BorshDeserialize, BorshSerialize };
+use shank::{ ShankContext, ShankInstruction };
+use solana_program::{ account_info::AccountInfo, pubkey::Pubkey };
 
 use super::shared::*;
 
@@ -56,8 +56,8 @@ pub enum Instruction {
     #[account(mut, name = "position_supply_ta")]
     #[account(name = "supply_mint")]
     #[account(mut, optional, name = "signer_debt_ta")]
-    #[account(mut, name = "position_debt_ta")] // TODO we should make these optional if someone chooses to just simply lend and not take on debt
-    #[account(name = "debt_mint")]
+    #[account(mut, optional, name = "position_debt_ta")]
+    #[account(optional, name = "debt_mint")]
     MarginfiOpenPosition(UpdatePositionData),
 
     /// Open a new Solauto position with Solend
@@ -81,8 +81,8 @@ pub enum Instruction {
     #[account(mut, name = "position_supply_collateral_ta")]
     #[account(name = "supply_collateral_mint")]
     #[account(mut, optional, name = "signer_debt_liquidity_ta")]
-    #[account(mut, name = "position_debt_liquidity_ta")]
-    #[account(name = "debt_liquidity_mint")]
+    #[account(mut, optional, name = "position_debt_liquidity_ta")]
+    #[account(optional, name = "debt_liquidity_mint")]
     SolendOpenPosition(UpdatePositionData),
 
     /// Update solauto position settings. Can only be invoked by position authority
@@ -242,8 +242,6 @@ pub struct UpdatePositionData {
     pub position_id: u8,
     /// Setting parameters for the position
     pub setting_params: Option<SolautoSettingsParameters>,
-    /// Protocol-specific data for the position
-    pub protocol_data: Option<LendingProtocolPositionData>,
     /// New DCA data to initiate on the position
     pub active_dca: Option<DCASettings>,
 }

@@ -328,7 +328,7 @@ pub fn validate_lending_protocol_accounts(
             .unwrap()
             .protocol_data;
 
-        if protocol_position.key != &protocol_data.protocol_position {
+        if protocol_position.key != &protocol_data.protocol_account {
             msg!("Incorrect protocol-owned account");
             return Err(SolautoError::InvalidSolautoPositionAccount.into());
         }

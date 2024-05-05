@@ -3,7 +3,10 @@ use std::str::FromStr;
 use borsh::BorshDeserialize;
 use solana_program_test::{ ProgramTest, ProgramTestContext };
 use solana_sdk::{ pubkey::Pubkey, signature::Keypair, signer::Signer };
-use solauto_sdk::{ generated::instructions::UpdateReferralStatesBuilder, SOLAUTO_ID };
+use solauto_sdk::{
+    generated::instructions::{ MarginfiOpenPositionBuilder, UpdateReferralStatesBuilder },
+    SOLAUTO_ID,
+};
 use spl_associated_token_account::get_associated_token_address;
 
 #[macro_export]
@@ -124,11 +127,7 @@ impl GeneralTestData {
             &args.supply_mint
         );
 
-        let signer = if args.signer.is_some() {
-            args.signer.unwrap()
-        } else {
-            ctx.payer.pubkey()
-        };
+        let signer = if args.signer.is_some() { args.signer.unwrap() } else { ctx.payer.pubkey() };
         let signer_referral_state = GeneralTestData::get_referral_state(&signer);
         let signer_referral_dest_ta = get_associated_token_address(
             &signer_referral_state,
@@ -196,14 +195,12 @@ impl GeneralTestData {
 
     pub fn update_referral_states(&self) -> UpdateReferralStatesBuilder {
         let mut builder = UpdateReferralStatesBuilder::new();
-
         builder
             .signer(self.ctx.payer.pubkey())
             .signer_referral_state(self.signer_referral_state)
             .referred_by_state(self.referred_by_state)
             .referred_by_authority(self.referred_by_authority)
             .referral_fees_dest_mint(self.referral_fees_dest_mint);
-
         builder
     }
 }
@@ -225,5 +222,11 @@ impl MarginfiTestData {
             marginfi_account: Some(marginfi_account),
             marginfi_group: Some(marginfi_group),
         }
+    }
+
+    pub fn open_position(&self) -> MarginfiOpenPositionBuilder {
+        let mut builder = MarginfiOpenPositionBuilder::new();
+        // builder.marginfi_program(self.general.lending_protocol);
+        builder
     }
 }

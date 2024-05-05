@@ -27,6 +27,9 @@ pub fn process_marginfi_open_position_instruction<'a>(
         ctx.accounts.solauto_position,
         position_data,
         LendingPlatform::Marginfi,
+        ctx.accounts.supply_mint,
+        ctx.accounts.debt_mint,
+        ctx.accounts.marginfi_account
     )?;
 
     solauto_utils::init_solauto_fees_supply_ta(

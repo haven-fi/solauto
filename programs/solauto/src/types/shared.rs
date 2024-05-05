@@ -52,7 +52,7 @@ pub struct SolautoSettingsParameters {
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType)]
 pub struct LendingProtocolPositionData {
     /// Marginfi: "marginfi_account", Solend: "obligation", Kamino: "obligation"
-    pub protocol_position: Pubkey,
+    pub protocol_account: Pubkey,
     /// The supply token mint
     pub supply_mint: Pubkey,
     /// The debt token mint
