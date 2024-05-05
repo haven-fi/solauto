@@ -168,6 +168,21 @@ pub fn get_referral_account_seeds<'a>(authority: &'a Pubkey) -> Vec<&[u8]> {
     vec![authority.as_ref(), b"referral_state"]
 }
 
+pub fn get_marginfi_account_seeds<'a>(position_id: u8, solauto_position: Option<&'a Pubkey>, signer: &'a Pubkey, marginfi_program: &'a Pubkey) -> Vec<&'a [u8]> {
+    if position_id != 0 {
+        vec![
+            solauto_position.unwrap().as_ref(),
+            signer.as_ref(),
+            marginfi_program.as_ref(),
+        ]
+    } else {
+        vec![
+            signer.as_ref(),
+            marginfi_program.as_ref(),
+        ]
+    }
+}
+
 pub fn init_solauto_fees_supply_ta<'a>(
     token_program: &'a AccountInfo<'a>,
     system_program: &'a AccountInfo<'a>,

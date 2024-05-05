@@ -1,24 +1,30 @@
 use solana_program::{
-    account_info::AccountInfo, entrypoint::ProgramResult, msg, program_pack::Pack,
+    account_info::AccountInfo,
+    entrypoint::ProgramResult,
+    msg,
+    program_pack::Pack,
 };
 use solend_sdk::state::Obligation;
 
 use crate::{
-    clients::{marginfi::MarginfiClient, solend::SolendClient},
+    clients::{ marginfi::MarginfiClient, solend::SolendClient },
+    instructions::open_position::solauto_utils::get_marginfi_account_seeds,
     types::{
         instruction::accounts::{
-            Context, MarginfiOpenPositionAccounts, SolendOpenPositionAccounts,
+            Context,
+            MarginfiOpenPositionAccounts,
+            SolendOpenPositionAccounts,
         },
-        shared::{DeserializedAccount, PositionAccount, SolautoError, POSITION_ACCOUNT_SPACE},
+        shared::{ DeserializedAccount, PositionAccount, SolautoError, POSITION_ACCOUNT_SPACE },
     },
     utils::*,
 };
 
-use self::{solana_utils::account_has_custom_data, solauto_utils::get_owner};
+use self::{ solana_utils::account_has_custom_data, solauto_utils::get_owner };
 
 pub fn marginfi_open_position<'a>(
     ctx: Context<'a, MarginfiOpenPositionAccounts<'a>>,
-    mut solauto_position: DeserializedAccount<'a, PositionAccount>,
+    mut solauto_position: DeserializedAccount<'a, PositionAccount>
 ) -> ProgramResult {
     initialize_solauto_position(
         &mut solauto_position,
@@ -30,23 +36,8 @@ pub fn marginfi_open_position<'a>(
         ctx.accounts.supply_mint,
         ctx.accounts.position_debt_ta,
         ctx.accounts.signer_debt_ta,
-        ctx.accounts.debt_mint,
+        ctx.accounts.debt_mint
     )?;
-
-    let marginfi_account_seeds = if !solauto_position.data.self_managed {
-        vec![
-            solauto_position.account_info.key.as_ref(),
-            ctx.accounts.signer.key.as_ref(),
-            ctx.accounts.marginfi_program.key.as_ref(),
-        ]
-    } else {
-        vec![
-            ctx.accounts.signer.key.as_ref(),
-            ctx.accounts.marginfi_program.key.as_ref(),
-        ]
-    };
-
-    msg!("Hello 6");
 
     if !account_has_custom_data(ctx.accounts.marginfi_account) {
         solana_utils::init_new_account(
@@ -55,8 +46,13 @@ pub fn marginfi_open_position<'a>(
             ctx.accounts.signer,
             ctx.accounts.marginfi_account,
             ctx.accounts.marginfi_program.key,
-            marginfi_account_seeds,
-            2304,
+            get_marginfi_account_seeds(
+                solauto_position.data.position_id,
+                Some(solauto_position.account_info.key),
+                ctx.accounts.signer.key,
+                ctx.accounts.marginfi_program.key
+            ),
+            2304
         )?;
     } else {
         let _owner = get_owner(&solauto_position, ctx.accounts.signer);
@@ -67,15 +63,13 @@ pub fn marginfi_open_position<'a>(
         // }
     }
 
-    msg!("Hello 7");
-
     MarginfiClient::initialize(&ctx, &solauto_position)?;
     ix_utils::update_data(&mut solauto_position)
 }
 
 pub fn solend_open_position<'a>(
     ctx: Context<'a, SolendOpenPositionAccounts<'a>>,
-    mut solauto_position: DeserializedAccount<'a, PositionAccount>,
+    mut solauto_position: DeserializedAccount<'a, PositionAccount>
 ) -> ProgramResult {
     initialize_solauto_position(
         &mut solauto_position,
@@ -87,7 +81,7 @@ pub fn solend_open_position<'a>(
         ctx.accounts.supply_liquidity_mint,
         ctx.accounts.position_debt_liquidity_ta,
         ctx.accounts.signer_debt_liquidity_ta,
-        ctx.accounts.debt_liquidity_mint,
+        ctx.accounts.debt_liquidity_mint
     )?;
 
     solana_utils::init_ata_if_needed(
@@ -96,7 +90,7 @@ pub fn solend_open_position<'a>(
         ctx.accounts.signer,
         solauto_position.account_info,
         ctx.accounts.position_supply_collateral_ta,
-        ctx.accounts.supply_collateral_mint,
+        ctx.accounts.supply_collateral_mint
     )?;
 
     let obligation_seeds = if !solauto_position.data.self_managed {
@@ -104,13 +98,13 @@ pub fn solend_open_position<'a>(
             solauto_position.account_info.key.as_ref(),
             ctx.accounts.signer.key.as_ref(),
             ctx.accounts.lending_market.key.as_ref(),
-            ctx.accounts.solend_program.key.as_ref(),
+            ctx.accounts.solend_program.key.as_ref()
         ]
     } else {
         vec![
             ctx.accounts.signer.key.as_ref(),
             ctx.accounts.lending_market.key.as_ref(),
-            ctx.accounts.solend_program.key.as_ref(),
+            ctx.accounts.solend_program.key.as_ref()
         ]
     };
 
@@ -122,12 +116,13 @@ pub fn solend_open_position<'a>(
             ctx.accounts.obligation,
             ctx.accounts.solend_program.key,
             obligation_seeds,
-            Obligation::LEN,
+            Obligation::LEN
         )?;
     } else {
         let owner = get_owner(&solauto_position, ctx.accounts.signer);
-        let obligation = Obligation::unpack(&ctx.accounts.obligation.data.borrow())
-            .map_err(|_| SolautoError::FailedAccountDeserialization)?;
+        let obligation = Obligation::unpack(&ctx.accounts.obligation.data.borrow()).map_err(
+            |_| SolautoError::FailedAccountDeserialization
+        )?;
         if owner.key != &obligation.owner {
             msg!("Provided incorrect obligation account for the given signer & solauto_position");
             return Err(SolautoError::IncorrectAccounts.into());
@@ -148,12 +143,13 @@ fn initialize_solauto_position<'a, 'b>(
     supply_mint: &'a AccountInfo<'a>,
     position_debt_ta: Option<&'a AccountInfo<'a>>,
     signer_debt_ta: Option<&'a AccountInfo<'a>>,
-    debt_mint: Option<&'a AccountInfo<'a>>,
+    debt_mint: Option<&'a AccountInfo<'a>>
 ) -> ProgramResult {
     msg!("Hello 1");
 
-    if !solauto_position.data.self_managed
-        || !account_has_custom_data(solauto_position.account_info)
+    if
+        !solauto_position.data.self_managed ||
+        !account_has_custom_data(solauto_position.account_info)
     {
         solana_utils::init_new_account(
             system_program,
@@ -162,7 +158,7 @@ fn initialize_solauto_position<'a, 'b>(
             solauto_position.account_info,
             &crate::ID,
             vec![&[solauto_position.data.position_id], signer.key.as_ref()],
-            POSITION_ACCOUNT_SPACE,
+            POSITION_ACCOUNT_SPACE
         )?;
     }
 
@@ -174,21 +170,21 @@ fn initialize_solauto_position<'a, 'b>(
         signer,
         solauto_position.account_info,
         position_supply_ta,
-        supply_mint,
+        supply_mint
     )?;
 
     msg!("Hello 3");
 
-    if debt_mint.is_some() {
-        solana_utils::init_ata_if_needed(
-            token_program,
-            system_program,
-            signer,
-            solauto_position.account_info,
-            position_debt_ta.unwrap(),
-            debt_mint.unwrap(),
-        )?;
-    }
+    // if debt_mint.is_some() {
+    //     solana_utils::init_ata_if_needed(
+    //         token_program,
+    //         system_program,
+    //         signer,
+    //         solauto_position.account_info,
+    //         position_debt_ta.unwrap(),
+    //         debt_mint.unwrap(),
+    //     )?;
+    // }
 
     msg!("Hello 4");
 
@@ -197,7 +193,7 @@ fn initialize_solauto_position<'a, 'b>(
         solauto_position,
         position_debt_ta,
         signer,
-        signer_debt_ta,
+        signer_debt_ta
     )?;
 
     msg!("Hello 5");

@@ -3,7 +3,10 @@ use std::str::FromStr;
 use borsh::BorshDeserialize;
 use solana_program_test::{ ProgramTest, ProgramTestContext };
 use solana_sdk::{ pubkey::Pubkey, signature::Keypair, signer::Signer };
-use solauto::constants::{WSOL_MINT, SOLAUTO_FEES_WALLET};
+use solauto::{
+    constants::{ SOLAUTO_FEES_WALLET, WSOL_MINT },
+    utils::solauto_utils::{ get_marginfi_account_seeds, get_referral_account_seeds },
+};
 use solauto_sdk::{
     generated::{
         instructions::{ MarginfiOpenPositionBuilder, UpdateReferralStatesBuilder },
@@ -84,6 +87,7 @@ impl GeneralArgs {
 
 pub struct GeneralTestData {
     pub ctx: ProgramTestContext,
+    pub signer: Pubkey,
     pub position_id: u8,
     pub lending_protocol: Pubkey,
     pub solauto_fees_wallet: Pubkey,
@@ -130,7 +134,11 @@ impl GeneralTestData {
             &args.supply_mint
         );
 
-        let signer = if args.signer.is_some() { args.signer.unwrap() } else { ctx.payer.pubkey() };
+        let signer = if args.signer.is_some() {
+            *args.signer.as_ref().unwrap()
+        } else {
+            ctx.payer.pubkey()
+        };
         let signer_referral_state = GeneralTestData::get_referral_state(&signer);
         let signer_referral_dest_ta = get_associated_token_address(
             &signer_referral_state,
@@ -166,6 +174,7 @@ impl GeneralTestData {
 
         Self {
             ctx,
+            signer,
             position_id: args.position_id,
             lending_protocol,
             solauto_fees_wallet: SOLAUTO_FEES_WALLET,
@@ -186,8 +195,8 @@ impl GeneralTestData {
     }
 
     pub fn get_referral_state(authority: &Pubkey) -> Pubkey {
-        let seeds = &[authority.as_ref(), b"referral_state"];
-        let (referral_state, _) = Pubkey::find_program_address(seeds, &SOLAUTO_ID);
+        let seeds = get_referral_account_seeds(authority);
+        let (referral_state, _) = Pubkey::find_program_address(&seeds, &SOLAUTO_ID);
         referral_state
     }
 
@@ -219,7 +228,17 @@ impl MarginfiTestData {
     pub async fn new(args: &GeneralArgs) -> Self {
         let general = GeneralTestData::new(args, MARGINFI_PROGRAM).await;
         let marginfi_group = Keypair::new().pubkey();
-        let marginfi_account = Keypair::new().pubkey();
+
+        let marginfi_account_seeds = get_marginfi_account_seeds(
+            general.position_id,
+            Some(&general.solauto_position),
+            &general.signer,
+            &general.lending_protocol
+        );
+        let (marginfi_account, _) = Pubkey::find_program_address(
+            marginfi_account_seeds.as_slice(),
+            &SOLAUTO_ID
+        );
 
         Self {
             general,
@@ -237,7 +256,7 @@ impl MarginfiTestData {
         let position_data = UpdatePositionData {
             position_id: self.general.position_id,
             setting_params,
-            active_dca
+            active_dca,
         };
         builder
             .signer(self.general.ctx.payer.pubkey())
