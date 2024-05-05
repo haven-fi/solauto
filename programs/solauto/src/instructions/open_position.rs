@@ -179,7 +179,7 @@ fn initialize_solauto_position<'a, 'b>(
             debt_mint.unwrap(),
         )?;
     }
-    
+
     solauto_utils::initiate_dca_in_if_necessary(
         token_program,
         solauto_position,

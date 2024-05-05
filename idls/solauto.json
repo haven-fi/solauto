@@ -251,12 +251,14 @@
         {
           "name": "positionDebtTa",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "isOptional": true
         },
         {
           "name": "debtMint",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "isOptional": true
         }
       ],
       "args": [
@@ -381,12 +383,14 @@
         {
           "name": "positionDebtLiquidityTa",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "isOptional": true
         },
         {
           "name": "debtLiquidityMint",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "isOptional": true
         }
       ],
       "args": [
@@ -1223,14 +1227,6 @@
             }
           },
           {
-            "name": "protocolData",
-            "type": {
-              "option": {
-                "defined": "LendingProtocolPositionData"
-              }
-            }
-          },
-          {
             "name": "activeDca",
             "type": {
               "option": {
@@ -1321,7 +1317,7 @@
         "kind": "struct",
         "fields": [
           {
-            "name": "protocolPosition",
+            "name": "protocolAccount",
             "type": "publicKey"
           },
           {

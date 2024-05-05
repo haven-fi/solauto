@@ -32,7 +32,7 @@ pub fn process_solend_open_position_instruction<'a>(
         LendingPlatform::Solend,
         ctx.accounts.supply_liquidity_mint,
         ctx.accounts.debt_liquidity_mint,
-        ctx.accounts.obligation
+        ctx.accounts.obligation,
     )?;
 
     solauto_utils::init_solauto_fees_supply_ta(

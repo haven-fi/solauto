@@ -45,9 +45,9 @@ pub struct MarginfiOpenPosition {
 
     pub signer_debt_ta: Option<solana_program::pubkey::Pubkey>,
 
-    pub position_debt_ta: solana_program::pubkey::Pubkey,
+    pub position_debt_ta: Option<solana_program::pubkey::Pubkey>,
 
-    pub debt_mint: solana_program::pubkey::Pubkey,
+    pub debt_mint: Option<solana_program::pubkey::Pubkey>,
 }
 
 impl MarginfiOpenPosition {
@@ -152,14 +152,27 @@ impl MarginfiOpenPosition {
                 false,
             ));
         }
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            self.position_debt_ta,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.debt_mint,
-            false,
-        ));
+        if let Some(position_debt_ta) = self.position_debt_ta {
+            accounts.push(solana_program::instruction::AccountMeta::new(
+                position_debt_ta,
+                false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::SOLAUTO_ID,
+                false,
+            ));
+        }
+        if let Some(debt_mint) = self.debt_mint {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                debt_mint, false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::SOLAUTO_ID,
+                false,
+            ));
+        }
         accounts.extend_from_slice(remaining_accounts);
         let mut data = MarginfiOpenPositionInstructionData::new()
             .try_to_vec()
@@ -213,8 +226,8 @@ pub struct MarginfiOpenPositionInstructionArgs {
 ///   14. `[writable]` position_supply_ta
 ///   15. `[]` supply_mint
 ///   16. `[writable, optional]` signer_debt_ta
-///   17. `[writable]` position_debt_ta
-///   18. `[]` debt_mint
+///   17. `[writable, optional]` position_debt_ta
+///   18. `[optional]` debt_mint
 #[derive(Default)]
 pub struct MarginfiOpenPositionBuilder {
     signer: Option<solana_program::pubkey::Pubkey>,
@@ -366,17 +379,19 @@ impl MarginfiOpenPositionBuilder {
         self.signer_debt_ta = signer_debt_ta;
         self
     }
+    /// `[optional account]`
     #[inline(always)]
     pub fn position_debt_ta(
         &mut self,
-        position_debt_ta: solana_program::pubkey::Pubkey,
+        position_debt_ta: Option<solana_program::pubkey::Pubkey>,
     ) -> &mut Self {
-        self.position_debt_ta = Some(position_debt_ta);
+        self.position_debt_ta = position_debt_ta;
         self
     }
+    /// `[optional account]`
     #[inline(always)]
-    pub fn debt_mint(&mut self, debt_mint: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.debt_mint = Some(debt_mint);
+    pub fn debt_mint(&mut self, debt_mint: Option<solana_program::pubkey::Pubkey>) -> &mut Self {
+        self.debt_mint = debt_mint;
         self
     }
     #[inline(always)]
@@ -438,8 +453,8 @@ impl MarginfiOpenPositionBuilder {
                 .expect("position_supply_ta is not set"),
             supply_mint: self.supply_mint.expect("supply_mint is not set"),
             signer_debt_ta: self.signer_debt_ta,
-            position_debt_ta: self.position_debt_ta.expect("position_debt_ta is not set"),
-            debt_mint: self.debt_mint.expect("debt_mint is not set"),
+            position_debt_ta: self.position_debt_ta,
+            debt_mint: self.debt_mint,
         };
         let args = MarginfiOpenPositionInstructionArgs {
             update_position_data: self
@@ -488,9 +503,9 @@ pub struct MarginfiOpenPositionCpiAccounts<'a, 'b> {
 
     pub signer_debt_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
-    pub position_debt_ta: &'b solana_program::account_info::AccountInfo<'a>,
+    pub position_debt_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
-    pub debt_mint: &'b solana_program::account_info::AccountInfo<'a>,
+    pub debt_mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 }
 
 /// `marginfi_open_position` CPI instruction.
@@ -532,9 +547,9 @@ pub struct MarginfiOpenPositionCpi<'a, 'b> {
 
     pub signer_debt_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
-    pub position_debt_ta: &'b solana_program::account_info::AccountInfo<'a>,
+    pub position_debt_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
-    pub debt_mint: &'b solana_program::account_info::AccountInfo<'a>,
+    pub debt_mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The arguments for the instruction.
     pub __args: MarginfiOpenPositionInstructionArgs,
 }
@@ -692,14 +707,28 @@ impl<'a, 'b> MarginfiOpenPositionCpi<'a, 'b> {
                 false,
             ));
         }
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.position_debt_ta.key,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.debt_mint.key,
-            false,
-        ));
+        if let Some(position_debt_ta) = self.position_debt_ta {
+            accounts.push(solana_program::instruction::AccountMeta::new(
+                *position_debt_ta.key,
+                false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::SOLAUTO_ID,
+                false,
+            ));
+        }
+        if let Some(debt_mint) = self.debt_mint {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                *debt_mint.key,
+                false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::SOLAUTO_ID,
+                false,
+            ));
+        }
         remaining_accounts.iter().for_each(|remaining_account| {
             accounts.push(solana_program::instruction::AccountMeta {
                 pubkey: *remaining_account.0.key,
@@ -743,8 +772,12 @@ impl<'a, 'b> MarginfiOpenPositionCpi<'a, 'b> {
         if let Some(signer_debt_ta) = self.signer_debt_ta {
             account_infos.push(signer_debt_ta.clone());
         }
-        account_infos.push(self.position_debt_ta.clone());
-        account_infos.push(self.debt_mint.clone());
+        if let Some(position_debt_ta) = self.position_debt_ta {
+            account_infos.push(position_debt_ta.clone());
+        }
+        if let Some(debt_mint) = self.debt_mint {
+            account_infos.push(debt_mint.clone());
+        }
         remaining_accounts
             .iter()
             .for_each(|remaining_account| account_infos.push(remaining_account.0.clone()));
@@ -778,8 +811,8 @@ impl<'a, 'b> MarginfiOpenPositionCpi<'a, 'b> {
 ///   14. `[writable]` position_supply_ta
 ///   15. `[]` supply_mint
 ///   16. `[writable, optional]` signer_debt_ta
-///   17. `[writable]` position_debt_ta
-///   18. `[]` debt_mint
+///   17. `[writable, optional]` position_debt_ta
+///   18. `[optional]` debt_mint
 pub struct MarginfiOpenPositionCpiBuilder<'a, 'b> {
     instruction: Box<MarginfiOpenPositionCpiBuilderInstruction<'a, 'b>>,
 }
@@ -948,20 +981,22 @@ impl<'a, 'b> MarginfiOpenPositionCpiBuilder<'a, 'b> {
         self.instruction.signer_debt_ta = signer_debt_ta;
         self
     }
+    /// `[optional account]`
     #[inline(always)]
     pub fn position_debt_ta(
         &mut self,
-        position_debt_ta: &'b solana_program::account_info::AccountInfo<'a>,
+        position_debt_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     ) -> &mut Self {
-        self.instruction.position_debt_ta = Some(position_debt_ta);
+        self.instruction.position_debt_ta = position_debt_ta;
         self
     }
+    /// `[optional account]`
     #[inline(always)]
     pub fn debt_mint(
         &mut self,
-        debt_mint: &'b solana_program::account_info::AccountInfo<'a>,
+        debt_mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     ) -> &mut Self {
-        self.instruction.debt_mint = Some(debt_mint);
+        self.instruction.debt_mint = debt_mint;
         self
     }
     #[inline(always)]
@@ -1090,12 +1125,9 @@ impl<'a, 'b> MarginfiOpenPositionCpiBuilder<'a, 'b> {
 
             signer_debt_ta: self.instruction.signer_debt_ta,
 
-            position_debt_ta: self
-                .instruction
-                .position_debt_ta
-                .expect("position_debt_ta is not set"),
+            position_debt_ta: self.instruction.position_debt_ta,
 
-            debt_mint: self.instruction.debt_mint.expect("debt_mint is not set"),
+            debt_mint: self.instruction.debt_mint,
             __args: args,
         };
         instruction.invoke_signed_with_remaining_accounts(

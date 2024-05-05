@@ -1,6 +1,6 @@
-use borsh::{ BorshDeserialize, BorshSerialize };
-use shank::{ ShankContext, ShankInstruction };
-use solana_program::{ account_info::AccountInfo, pubkey::Pubkey };
+use borsh::{BorshDeserialize, BorshSerialize};
+use shank::{ShankContext, ShankInstruction};
+use solana_program::{account_info::AccountInfo, pubkey::Pubkey};
 
 use super::shared::*;
 

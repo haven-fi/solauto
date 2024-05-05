@@ -54,8 +54,8 @@ export type SolendOpenPositionInstructionAccounts = {
   positionSupplyCollateralTa: PublicKey | Pda;
   supplyCollateralMint: PublicKey | Pda;
   signerDebtLiquidityTa?: PublicKey | Pda;
-  positionDebtLiquidityTa: PublicKey | Pda;
-  debtLiquidityMint: PublicKey | Pda;
+  positionDebtLiquidityTa?: PublicKey | Pda;
+  debtLiquidityMint?: PublicKey | Pda;
 };
 
 // Data.

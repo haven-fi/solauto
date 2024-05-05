@@ -51,8 +51,8 @@ export type MarginfiOpenPositionInstructionAccounts = {
   positionSupplyTa: PublicKey | Pda;
   supplyMint: PublicKey | Pda;
   signerDebtTa?: PublicKey | Pda;
-  positionDebtTa: PublicKey | Pda;
-  debtMint: PublicKey | Pda;
+  positionDebtTa?: PublicKey | Pda;
+  debtMint?: PublicKey | Pda;
 };
 
 // Data.

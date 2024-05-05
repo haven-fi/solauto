@@ -15,13 +15,13 @@ import {
 } from '@metaplex-foundation/umi/serializers';
 
 export type LendingProtocolPositionData = {
-  protocolPosition: PublicKey;
+  protocolAccount: PublicKey;
   supplyMint: PublicKey;
   debtMint: Option<PublicKey>;
 };
 
 export type LendingProtocolPositionDataArgs = {
-  protocolPosition: PublicKey;
+  protocolAccount: PublicKey;
   supplyMint: PublicKey;
   debtMint: OptionOrNullable<PublicKey>;
 };
@@ -32,7 +32,7 @@ export function getLendingProtocolPositionDataSerializer(): Serializer<
 > {
   return struct<LendingProtocolPositionData>(
     [
-      ['protocolPosition', publicKeySerializer()],
+      ['protocolAccount', publicKeySerializer()],
       ['supplyMint', publicKeySerializer()],
       ['debtMint', option(publicKeySerializer())],
     ],

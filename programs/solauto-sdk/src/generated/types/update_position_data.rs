@@ -6,7 +6,6 @@
 //!
 
 use crate::generated::types::DCASettings;
-use crate::generated::types::LendingProtocolPositionData;
 use crate::generated::types::SolautoSettingsParameters;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
@@ -16,6 +15,5 @@ use borsh::BorshSerialize;
 pub struct UpdatePositionData {
     pub position_id: u8,
     pub setting_params: Option<SolautoSettingsParameters>,
-    pub protocol_data: Option<LendingProtocolPositionData>,
     pub active_dca: Option<DCASettings>,
 }

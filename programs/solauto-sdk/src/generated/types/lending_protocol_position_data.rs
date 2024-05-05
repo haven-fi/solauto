@@ -16,7 +16,7 @@ pub struct LendingProtocolPositionData {
         feature = "serde",
         serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
     )]
-    pub protocol_position: Pubkey,
+    pub protocol_account: Pubkey,
     #[cfg_attr(
         feature = "serde",
         serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
