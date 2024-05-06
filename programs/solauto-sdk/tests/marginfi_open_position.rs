@@ -9,6 +9,7 @@ mod open_position {
         accounts::PositionAccount,
         types::{ DCADirection, DCASettings, LendingPlatform, SolautoSettingsParameters },
     };
+    use spl_token::state::Account as TokenAccount;
 
     use crate::{ assert_instruction_error, test_utils::* };
 
@@ -30,7 +31,7 @@ mod open_position {
         };
         data.open_position(Some(setting_params.clone()), None).await.unwrap();
 
-        let solauto_position = data.general.get_account_data::<PositionAccount>(
+        let solauto_position = data.general.deserialize_account_data::<PositionAccount>(
             data.general.solauto_position
         ).await;
 
@@ -81,13 +82,17 @@ mod open_position {
         };
         data.open_position(None, Some(active_dca.clone())).await.unwrap();
 
-        let position_account = data.general.get_account_data::<PositionAccount>(
+        let position_account = data.general.deserialize_account_data::<PositionAccount>(
             data.general.solauto_position
         ).await;
         let position = position_account.position.as_ref().unwrap();
-
         assert!(
             position.active_dca.is_some() && position.active_dca.as_ref().unwrap() == &active_dca
         );
+
+        let position_debt_ta = data.general.unpack_account_data::<TokenAccount>(
+            data.general.position_debt_liquidity_ta.as_ref().unwrap().clone()
+        ).await;
+        assert!(position_debt_ta.amount == dca_amount);
     }
 }

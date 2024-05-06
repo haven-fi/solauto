@@ -377,8 +377,8 @@ pub fn validate_dca_settings(settings: &Option<DCASettings>) -> ProgramResult {
         return Err(SolautoError::InvalidDCASettings.into());
     }
 
-    if dca_settings.unix_dca_interval > 60 * 60 * 24 * 30 {
-        msg!("DCA interval period cannot be greater than 1 month");
+    if dca_settings.unix_dca_interval < 60 * 10 || dca_settings.unix_dca_interval > 60 * 60 * 24 * 30 {
+        msg!("DCA interval period must be between 10 minutes and 1 month");
         return Err(SolautoError::InvalidDCASettings.into());
     }
 

@@ -32,7 +32,7 @@ mod update_referral_states {
         );
         data.general.ctx.banks_client.process_transaction(tx).await.unwrap();
 
-        let signer_referral_state_data = data.general.get_account_data::<ReferralStateAccount>(
+        let signer_referral_state_data = data.general.deserialize_account_data::<ReferralStateAccount>(
             data.general.signer_referral_state.clone()
         ).await;
         assert!(signer_referral_state_data.authority == data.general.ctx.payer.pubkey());
@@ -56,14 +56,14 @@ mod update_referral_states {
         );
         data.general.ctx.banks_client.process_transaction(tx).await.unwrap();
 
-        let referred_by_state_data = data.general.get_account_data::<ReferralStateAccount>(
+        let referred_by_state_data = data.general.deserialize_account_data::<ReferralStateAccount>(
             referred_by_state.clone()
         ).await;
         assert!(referred_by_state_data.authority == referred_by_authority);
         assert!(referred_by_state_data.referred_by_state == None);
         assert!(referred_by_state_data.dest_fees_mint == WSOL_MINT);
 
-        let signer_referral_state_data = data.general.get_account_data::<ReferralStateAccount>(
+        let signer_referral_state_data = data.general.deserialize_account_data::<ReferralStateAccount>(
             data.general.signer_referral_state.clone()
         ).await;
         assert!(

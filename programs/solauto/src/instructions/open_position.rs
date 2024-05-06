@@ -180,7 +180,7 @@ fn initialize_solauto_position<'a, 'b>(
         )?;
     }
 
-    msg!("HELLLLLLLLOOOOOOOOOOO 0000000000");
+    msg!("HELLLLLLLLOOOOOOOOOOO 0000000000"); // TODO
 
     solauto_utils::initiate_dca_in_if_necessary(
         token_program,

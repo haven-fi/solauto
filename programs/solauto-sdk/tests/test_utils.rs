@@ -3,7 +3,7 @@ use std::str::FromStr;
 use borsh::BorshDeserialize;
 use solana_program_test::{ BanksClientError, ProgramTest, ProgramTestContext };
 use solana_sdk::{
-    program_pack::Pack,
+    program_pack::{IsInitialized, Pack},
     pubkey::Pubkey,
     rent::Rent,
     signature::Keypair,
@@ -226,10 +226,16 @@ impl<'a> GeneralTestData<'a> {
         referral_state
     }
 
-    pub async fn get_account_data<T: BorshDeserialize>(&mut self, pubkey: Pubkey) -> T {
+    pub async fn deserialize_account_data<T: BorshDeserialize>(&mut self, pubkey: Pubkey) -> T {
         let account = self.ctx.banks_client.get_account(pubkey).await.unwrap();
         assert!(account.is_some());
         T::deserialize(&mut account.unwrap().data.as_slice()).unwrap()
+    }
+
+    pub async fn unpack_account_data<T: Pack + IsInitialized>(&mut self, pubkey: Pubkey) -> T {
+        let account = self.ctx.banks_client.get_account(pubkey).await.unwrap();
+        assert!(account.is_some());
+        T::unpack(&mut account.unwrap().data.as_slice()).unwrap()
     }
 
     pub async fn test_prefixtures(&mut self) -> Result<&mut Self, BanksClientError> {
