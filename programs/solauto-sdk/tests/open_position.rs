@@ -12,7 +12,7 @@ mod open_position {
     async fn marginfi_open_position() {
         let args = GeneralArgs::new();
         let mut data = MarginfiTestData::new(&args).await;
-        data.general.prefixtures().await.unwrap();
+        data.general.test_prefixtures().await.unwrap();
 
         let setting_params = SolautoSettingsParameters {
             repay_from_bps: 95,

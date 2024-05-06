@@ -12,7 +12,7 @@ use solana_sdk::{
     transaction::Transaction,
 };
 use solauto::{
-    constants::{ SOLAUTO_FEES_WALLET, USD_DECIMALS, WSOL_MINT },
+    constants::{ SOLAUTO_FEES_WALLET, WSOL_MINT },
     utils::solauto_utils::{ get_marginfi_account_seeds, get_referral_account_seeds },
 };
 use solauto_sdk::{
@@ -226,7 +226,7 @@ impl<'a> GeneralTestData<'a> {
         T::deserialize(&mut account.unwrap().data.as_slice()).unwrap()
     }
 
-    pub async fn prefixtures(&mut self) -> Result<&mut Self, BanksClientError> {
+    pub async fn test_prefixtures(&mut self) -> Result<&mut Self, BanksClientError> {
         // Create debt token mint account if necessary
         if self.debt_liquidity_mint.is_some() {
             let rent = Rent::default();
@@ -244,7 +244,7 @@ impl<'a> GeneralTestData<'a> {
                         &self.debt_liquidity_mint.as_ref().unwrap().pubkey(),
                         &self.ctx.payer.pubkey(),
                         None,
-                        USD_DECIMALS as u8
+                        6
                     ).unwrap(),
                 ],
                 Some(&self.ctx.payer.pubkey()),
