@@ -40,7 +40,7 @@ pub fn marginfi_open_position<'a>(
     )?;
 
     if !account_has_custom_data(ctx.accounts.marginfi_account) {
-        solana_utils::init_new_account(
+        solana_utils::init_account(
             ctx.accounts.system_program,
             ctx.accounts.rent,
             ctx.accounts.signer,
@@ -109,7 +109,7 @@ pub fn solend_open_position<'a>(
     };
 
     if !account_has_custom_data(ctx.accounts.obligation) {
-        solana_utils::init_new_account(
+        solana_utils::init_account(
             ctx.accounts.system_program,
             ctx.accounts.rent,
             ctx.accounts.signer,
@@ -149,7 +149,7 @@ fn initialize_solauto_position<'a, 'b>(
         !solauto_position.data.self_managed ||
         !account_has_custom_data(solauto_position.account_info)
     {
-        solana_utils::init_new_account(
+        solana_utils::init_account(
             system_program,
             rent,
             signer,
@@ -179,8 +179,6 @@ fn initialize_solauto_position<'a, 'b>(
             debt_mint.unwrap(),
         )?;
     }
-
-    msg!("HELLLLLLLLOOOOOOOOOOO 0000000000"); // TODO
 
     solauto_utils::initiate_dca_in_if_necessary(
         token_program,

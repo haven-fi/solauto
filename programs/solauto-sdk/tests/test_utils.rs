@@ -3,7 +3,7 @@ use std::str::FromStr;
 use borsh::BorshDeserialize;
 use solana_program_test::{ BanksClientError, ProgramTest, ProgramTestContext };
 use solana_sdk::{
-    program_pack::{IsInitialized, Pack},
+    program_pack::{ IsInitialized, Pack },
     pubkey::Pubkey,
     rent::Rent,
     signature::Keypair,
@@ -182,7 +182,12 @@ impl<'a> GeneralTestData<'a> {
         );
 
         let signer_debt_liquidity_ta = if args.debt_mint.is_some() {
-            Some(get_associated_token_address(&signer_pubkey, &args.debt_mint.as_ref().unwrap().pubkey()))
+            Some(
+                get_associated_token_address(
+                    &signer_pubkey,
+                    &args.debt_mint.as_ref().unwrap().pubkey()
+                )
+            )
         } else {
             None
         };
@@ -288,12 +293,6 @@ impl<'a> GeneralTestData<'a> {
     ) -> Result<&mut Self, BanksClientError> {
         let tx = Transaction::new_signed_with_payer(
             &[
-                ata_instruction::create_associated_token_account_idempotent(
-                    &self.ctx.payer.pubkey(),
-                    token_account.as_ref().unwrap(),
-                    &token_mint.as_ref().unwrap().pubkey(),
-                    &spl_token::id()
-                ),
                 token_instruction
                     ::mint_to(
                         &spl_token::id(),

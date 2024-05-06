@@ -4,12 +4,14 @@ pub mod test_utils;
 mod open_position {
     use chrono::Utc;
     use solana_program_test::tokio;
-    use solana_sdk::{ instruction::InstructionError, signature::Signer, transaction::Transaction };
-    use solauto_sdk::generated::{
+    use solana_sdk::{
+        instruction::InstructionError, rent::Rent, signature::Signer, system_instruction::{self, create_account}, system_program, transaction::Transaction
+    };
+    use solauto_sdk::{generated::{
         accounts::PositionAccount,
         types::{ DCADirection, DCASettings, LendingPlatform, SolautoSettingsParameters },
-    };
-    use spl_token::state::Account as TokenAccount;
+    }, SOLAUTO_ID};
+    use spl_token::{instruction, state::Account as TokenAccount};
 
     use crate::{ assert_instruction_error, test_utils::* };
 
@@ -95,4 +97,38 @@ mod open_position {
         ).await;
         assert!(position_debt_ta.amount == dca_amount);
     }
+
+    // #[tokio::test]
+    // async fn test() {
+    //     let args = GeneralArgs::new();
+    //     let mut data = MarginfiTestData::new(&args).await;
+    //     data.general
+    //         .test_prefixtures().await
+    //         .unwrap()
+    //         .create_referral_state_accounts().await
+    //         .unwrap();
+
+    //     let rent = Rent::default();
+    //     let space = 200;
+
+    //     let tx = Transaction::new_signed_with_payer(
+    //         &[
+    //             system_instruction::transfer(
+    //                 &data.general.ctx.payer.pubkey(),
+    //                 &data.general.position_supply_liquidity_ta,
+    //                 rent.minimum_balance(space),
+    //             ),
+    //         ],
+    //         Some(&data.general.ctx.payer.pubkey()),
+    //         &[&data.general.ctx.payer],
+    //         data.general.ctx.last_blockhash
+    //     );
+    //     data.general.ctx.banks_client.process_transaction(tx).await.unwrap();
+
+    //     // let position_supply_ta = data.general.unpack_account_data::<TokenAccount>(
+    //     //     data.general.position_debt_liquidity_ta.as_ref().unwrap().clone()
+    //     // ).await;
+
+    //     data.open_position(None, None).await.unwrap();
+    // }
 }

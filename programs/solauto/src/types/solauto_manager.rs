@@ -189,7 +189,7 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
                 ]
             )
         )?;
-        position.debt_balance -= amount;
+        position.debt_ta_balance -= amount;
 
         if dca_settings.dca_periods_passed == dca_settings.target_dca_periods - 1 {
             position.active_dca = None;
@@ -377,14 +377,14 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
             position_supply_ta.amount
         } else {
             position_supply_ta.amount -
-                self.std_accounts.solauto_position.data.position.as_ref().unwrap().supply_balance
+                self.std_accounts.solauto_position.data.position.as_ref().unwrap().supply_ta_balance
         };
 
         let available_debt_balance = if self.std_accounts.solauto_position.data.self_managed {
             position_debt_ta.amount
         } else {
             position_debt_ta.amount -
-                self.std_accounts.solauto_position.data.position.as_ref().unwrap().debt_balance
+                self.std_accounts.solauto_position.data.position.as_ref().unwrap().debt_ta_balance
         };
 
         if position_supply_ta.amount > 0 {
@@ -487,13 +487,11 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
 
         if position_supply_ta.is_some() {
             let account = DeserializedAccount::<TokenAccount>::unpack(position_supply_ta)?.unwrap();
-            position.supply_balance = account.data.amount;
+            position.supply_ta_balance = account.data.amount;
         }
         if position_debt_ta.is_some() {
-            let account: DeserializedAccount<'_, TokenAccount> = DeserializedAccount::<TokenAccount>
-                ::unpack(position_debt_ta)?
-                .unwrap();
-            position.debt_balance = account.data.amount;
+            let account = DeserializedAccount::<TokenAccount>::unpack(position_debt_ta)?.unwrap();
+            position.debt_ta_balance = account.data.amount;
         }
 
         Ok(())

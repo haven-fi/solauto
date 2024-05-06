@@ -77,8 +77,8 @@ pub struct PositionData {
     pub protocol_data: LendingProtocolPositionData,
     pub setting_params: SolautoSettingsParameters,
     pub active_dca: Option<DCASettings>,
-    pub supply_balance: u64,
-    pub debt_balance: u64,
+    pub supply_ta_balance: u64,
+    pub debt_ta_balance: u64,
 }
 
 pub const POSITION_ACCOUNT_SPACE: usize = (ACCOUNT_STORAGE_OVERHEAD as usize) + 500; // TODO fix me

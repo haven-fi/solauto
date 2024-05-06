@@ -15,7 +15,7 @@ use std::ops::{ Add, Mul };
 
 use super::{
     ix_utils::{ get_relative_instruction, InstructionChecker },
-    solana_utils::{ self, account_has_custom_data, init_ata_if_needed, init_new_account },
+    solana_utils::{ self, account_has_custom_data, init_ata_if_needed, init_account },
 };
 use crate::{
     constants::{
@@ -88,8 +88,8 @@ pub fn create_new_solauto_position<'a>(
                     ),
                 },
                 active_dca: update_position_data.active_dca.clone(),
-                supply_balance: 0,
-                debt_balance: 0,
+                supply_ta_balance: 0,
+                debt_ta_balance: 0,
             }),
         }
     } else {
@@ -146,7 +146,7 @@ pub fn create_or_update_referral_state<'a>(
 
         Ok(referral_state_account)
     } else {
-        init_new_account(
+        init_account(
             system_program,
             rent,
             signer,
@@ -418,8 +418,7 @@ pub fn initiate_dca_in_if_necessary<'a, 'b>(
         return Err(ProgramError::InvalidInstructionData.into());
     }
 
-    msg!("HELLLLLLLLOOOOOOOOOOOOOOO 111111111111111111"); // TODO
-    solauto_position.data.position.as_mut().unwrap().debt_balance += base_unit_amount;
+    solauto_position.data.position.as_mut().unwrap().debt_ta_balance += base_unit_amount;
     solana_utils::spl_token_transfer(
         token_program,
         signer_debt_ta.unwrap(),
