@@ -52,35 +52,4 @@ mod open_position {
         assert!(position.protocol_data.protocol_account == data.marginfi_account);
     }
 
-    // pub async fn test_invalid_settings<'a, 'b>(
-    //     data: &'b mut MarginfiTestData<'a>,
-    //     settings: SolautoSettingsParameters
-    // ) {
-    //     let tx = Transaction::new_signed_with_payer(
-    //         &[data.open_position(Some(settings.clone()), None).instruction()],
-    //         Some(&data.general.ctx.payer.pubkey()),
-    //         &[&data.general.ctx.payer],
-    //         data.general.ctx.last_blockhash
-    //     );
-    //     let err = data.general.ctx.banks_client.process_transaction(tx).await.unwrap_err();
-    //     assert_instruction_error!(err, InstructionError::Custom(4));
-    // }
-
-    // #[tokio::test]
-    // async fn invalid_setting_params() {
-    //     let args = GeneralArgs::new();
-    //     let mut data = MarginfiTestData::new(&args).await;
-    //     data.general
-    //         .test_prefixtures().await
-    //         .unwrap()
-    //         .create_referral_state_accounts().await
-    //         .unwrap();
-
-    //     test_invalid_settings(&mut data, SolautoSettingsParameters {
-    //         repay_from_bps: 1001,
-    //         repay_to_bps: 9000,
-    //         boost_from_bps: 4500,
-    //         boost_to_bps: 5000,
-    //     }).await;
-    // }
 }
