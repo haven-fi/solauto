@@ -121,48 +121,28 @@ pub fn validate_position_settings(
         Err(SolautoError::InvalidPositionSettings.into())
     };
 
-    if
-        settings.repay_from_bps != 0 &&
-        settings.repay_to_bps != 0 &&
-        settings.boost_from_bps != 0 &&
-        settings.boost_to_bps != 0
-    {
-        if settings.repay_from_bps <= settings.repay_to_bps {
-            return invalid_params("repay_from_bps value must be greater than repay_to_bps value");
-        }
-        if settings.boost_from_bps >= settings.boost_to_bps {
-            return invalid_params("boost_from_bps value must be less than boost_to_bps value");
-        }
-        if settings.repay_from_bps - settings.repay_to_bps < 50 {
-            return invalid_params(
-                "Minimum difference between repay_from_bps and repay_to_bps must be 50 or greater"
-            );
-        }
-        if settings.boost_to_bps - settings.boost_from_bps < 50 {
-            return invalid_params(
-                "Minimum difference between boost_to_bps to boost_from_bps must be 50 or greater"
-            );
-        }
-        if settings.repay_from_bps > 9500 {
-            return invalid_params("repay_from_bps must be lower or equal to 9500");
-        }
+    if settings.repay_from_bps != 0 && settings.repay_from_bps <= settings.repay_to_bps {
+        return invalid_params("repay_from_bps value must be greater than repay_to_bps value");
+    }
+    if settings.boost_from_bps != 0 && settings.boost_from_bps >= settings.boost_to_bps {
+        return invalid_params("boost_from_bps value must be less than boost_to_bps value");
+    }
+    if settings.repay_from_bps != 0 && settings.repay_from_bps - settings.repay_to_bps < 50 {
+        return invalid_params(
+            "Minimum difference between repay_from_bps and repay_to_bps must be 50 or greater"
+        );
+    }
+    if settings.boost_to_bps != 0 && settings.boost_to_bps - settings.boost_from_bps < 50 {
+        return invalid_params(
+            "Minimum difference between boost_to_bps to boost_from_bps must be 50 or greater"
+        );
+    }
 
-        let maximum_repay_to_bps = get_maximum_repay_to_bps_param(max_ltv, liq_threshold);
-        if settings.repay_to_bps > maximum_repay_to_bps {
-            return invalid_params(
-                format!("For the given max_ltv and liq_threshold of the supplied asset, repay_to_bps must be lower or equal to {} in order to bring the utilization rate to an allowed position", maximum_repay_to_bps).as_str()
-            );
-        }
-    } else {
-        let params = vec![
-            settings.repay_from_bps,
-            settings.repay_to_bps,
-            settings.boost_from_bps,
-            settings.boost_to_bps
-        ];
-        if params.iter().any(|&x| x != 0) {
-            return invalid_params("Either all setting parameters should be 0, or none");
-        }
+    let maximum_repay_to_bps = get_maximum_repay_to_bps_param(max_ltv, liq_threshold);
+    if settings.repay_to_bps > maximum_repay_to_bps {
+        return invalid_params(
+            format!("For the given max_ltv and liq_threshold of the supplied asset, repay_to_bps must be lower or equal to {} in order to bring the utilization rate to an allowed position", maximum_repay_to_bps).as_str()
+        );
     }
 
     Ok(())

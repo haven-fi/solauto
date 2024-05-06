@@ -25,7 +25,7 @@ mod update_referral_states {
         let mut data = MarginfiTestData::new(&args).await;
 
         let tx = Transaction::new_signed_with_payer(
-            &[data.general.update_referral_states().instruction()],
+            &[data.general.update_referral_states_ix().instruction()],
             Some(&data.general.ctx.payer.pubkey()),
             &[&data.general.ctx.payer],
             data.general.ctx.last_blockhash
@@ -45,7 +45,7 @@ mod update_referral_states {
         let tx = Transaction::new_signed_with_payer(
             &[
                 data.general
-                    .update_referral_states()
+                    .update_referral_states_ix()
                     .referred_by_authority(Some(referred_by_authority))
                     .referred_by_state(Some(referred_by_state))
                     .instruction(),
@@ -76,7 +76,7 @@ mod update_referral_states {
         let tx = Transaction::new_signed_with_payer(
             &[
                 data.general
-                    .update_referral_states()
+                    .update_referral_states_ix()
                     .referred_by_authority(Some(referred_by_authority2))
                     .referred_by_state(Some(referred_by_state2))
                     .instruction(),
@@ -97,7 +97,7 @@ mod update_referral_states {
         let mut data = MarginfiTestData::new(&args).await;
 
         let tx = Transaction::new_signed_with_payer(
-            &[data.general.update_referral_states().signer(temp_account.pubkey()).instruction()],
+            &[data.general.update_referral_states_ix().signer(temp_account.pubkey()).instruction()],
             Some(&temp_account.pubkey()),
             &[&temp_account],
             data.general.ctx.last_blockhash
@@ -114,7 +114,7 @@ mod update_referral_states {
         let tx = Transaction::new_signed_with_payer(
             &[
                 data.general
-                    .update_referral_states()
+                    .update_referral_states_ix()
                     .signer_referral_state(Pubkey::default())
                     .instruction(),
             ],

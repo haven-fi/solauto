@@ -227,36 +227,54 @@ impl<'a> GeneralTestData<'a> {
     }
 
     pub async fn test_prefixtures(&mut self) -> Result<&mut Self, BanksClientError> {
-        // Create debt token mint account if necessary
         if self.debt_liquidity_mint.is_some() {
-            let rent = Rent::default();
-            let tx = Transaction::new_signed_with_payer(
-                &[
-                    system_instruction::create_account(
-                        &self.ctx.payer.pubkey(),
-                        &self.debt_liquidity_mint.as_ref().unwrap().pubkey(),
-                        rent.minimum_balance(Mint::LEN),
-                        Mint::LEN as u64,
-                        &spl_token::id()
-                    ),
-                    token_instruction::initialize_mint(
+            self.create_debt_mint_account().await.unwrap();
+        }
+
+        Ok(self)
+    }
+
+    pub async fn create_debt_mint_account(&mut self) -> Result<&mut Self, BanksClientError> {
+        let rent = Rent::default();
+        let tx = Transaction::new_signed_with_payer(
+            &[
+                system_instruction::create_account(
+                    &self.ctx.payer.pubkey(),
+                    &self.debt_liquidity_mint.as_ref().unwrap().pubkey(),
+                    rent.minimum_balance(Mint::LEN),
+                    Mint::LEN as u64,
+                    &spl_token::id()
+                ),
+                token_instruction
+                    ::initialize_mint(
                         &spl_token::id(),
                         &self.debt_liquidity_mint.as_ref().unwrap().pubkey(),
                         &self.ctx.payer.pubkey(),
                         None,
                         6
-                    ).unwrap(),
-                ],
-                Some(&self.ctx.payer.pubkey()),
-                &[&self.ctx.payer, self.debt_liquidity_mint.as_ref().unwrap()],
-                self.ctx.last_blockhash
-            );
-            self.ctx.banks_client.process_transaction(tx).await?;
-        }
+                    )
+                    .unwrap(),
+            ],
+            Some(&self.ctx.payer.pubkey()),
+            &[&self.ctx.payer, self.debt_liquidity_mint.as_ref().unwrap()],
+            self.ctx.last_blockhash
+        );
+        self.ctx.banks_client.process_transaction(tx).await.unwrap();
         Ok(self)
     }
 
-    pub fn update_referral_states(&self) -> UpdateReferralStatesBuilder {
+    pub async fn create_referral_state_accounts(&mut self) -> Result<&mut Self, BanksClientError> {
+        let tx = Transaction::new_signed_with_payer(
+            &[self.update_referral_states_ix().instruction()],
+            Some(&self.ctx.payer.pubkey()),
+            &[&self.ctx.payer],
+            self.ctx.last_blockhash
+        );
+        self.ctx.banks_client.process_transaction(tx).await.unwrap();
+        Ok(self)
+    }
+
+    pub fn update_referral_states_ix(&self) -> UpdateReferralStatesBuilder {
         let mut builder = UpdateReferralStatesBuilder::new();
         builder
             .signer(self.ctx.payer.pubkey())
@@ -297,7 +315,32 @@ impl<'a> MarginfiTestData<'a> {
         }
     }
 
-    pub fn open_position(
+    pub async fn open_position(
+        &mut self,
+        settings: Option<SolautoSettingsParameters>,
+        active_dca: Option<DCASettings>
+    ) -> Result<&mut Self, BanksClientError> {
+        let setting_params = if settings.is_some() {
+            settings.unwrap()
+        } else {
+            SolautoSettingsParameters {
+                repay_from_bps: 9500,
+                repay_to_bps: 9000,
+                boost_from_bps: 4500,
+                boost_to_bps: 5000,
+            }
+        };
+        let tx = Transaction::new_signed_with_payer(
+            &[self.open_position_ix(Some(setting_params.clone()), active_dca).instruction()],
+            Some(&self.general.ctx.payer.pubkey()),
+            &[&self.general.ctx.payer],
+            self.general.ctx.last_blockhash
+        );
+        self.general.ctx.banks_client.process_transaction(tx).await.unwrap();
+        Ok(self)
+    }
+
+    pub fn open_position_ix(
         &self,
         setting_params: Option<SolautoSettingsParameters>,
         active_dca: Option<DCASettings>
