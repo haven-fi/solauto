@@ -5221,6 +5221,7 @@ name = "solauto-sdk"
 version = "0.1.0"
 dependencies = [
  "borsh 0.10.3",
+ "chrono",
  "num-derive 0.4.2",
  "num-traits",
  "solana-program",

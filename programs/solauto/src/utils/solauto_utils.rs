@@ -67,7 +67,7 @@ pub fn create_new_solauto_position<'a>(
 ) -> Result<DeserializedAccount<'a, PositionAccount>, ProgramError> {
     let data = if update_position_data.setting_params.is_some() {
         if update_position_data.position_id == 0 {
-            msg!("Position ID 0 is reserved for self managed positions");
+            msg!("Position ID 0 is reserved for self-managed positions");
             return Err(ProgramError::InvalidInstructionData.into());
         }
 
@@ -369,7 +369,7 @@ pub fn initiate_dca_in_if_necessary<'a, 'b>(
     signer: &'a AccountInfo<'a>,
     signer_debt_ta: Option<&'a AccountInfo<'a>>
 ) -> ProgramResult {
-    if !solauto_position.data.self_managed {
+    if solauto_position.data.self_managed {
         return Ok(());
     }
 
@@ -418,6 +418,7 @@ pub fn initiate_dca_in_if_necessary<'a, 'b>(
         return Err(ProgramError::InvalidInstructionData.into());
     }
 
+    msg!("HELLLLLLLLOOOOOOOOOOOOOOO 111111111111111111");
     solauto_position.data.position.as_mut().unwrap().debt_balance += base_unit_amount;
     solana_utils::spl_token_transfer(
         token_program,

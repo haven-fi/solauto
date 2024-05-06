@@ -25,7 +25,7 @@ pub fn process_solend_open_position_instruction<'a>(
 
     let ctx = SolendOpenPositionAccounts::context(accounts)?;
 
-    validation_utils::validate_dca_settings(&position_data.active_dca)?;
+    validation_utils::validate_dca_settings( &position_data.active_dca)?;
     let solauto_position = solauto_utils::create_new_solauto_position(
         ctx.accounts.signer,
         ctx.accounts.solauto_position,

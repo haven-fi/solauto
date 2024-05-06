@@ -2,17 +2,18 @@ pub mod test_utils;
 
 #[cfg(test)]
 mod open_position {
+    use chrono::Utc;
     use solana_program_test::tokio;
     use solana_sdk::{ instruction::InstructionError, signature::Signer, transaction::Transaction };
     use solauto_sdk::generated::{
         accounts::PositionAccount,
-        types::{ LendingPlatform, SolautoSettingsParameters },
+        types::{ DCADirection, DCASettings, LendingPlatform, SolautoSettingsParameters },
     };
 
     use crate::{ assert_instruction_error, test_utils::* };
 
     #[tokio::test]
-    async fn standard_open_position() {
+    async fn std_open_position() {
         let args = GeneralArgs::new();
         let mut data = MarginfiTestData::new(&args).await;
         data.general
@@ -41,7 +42,7 @@ mod open_position {
         assert!(position.setting_params == setting_params);
         assert!(position.active_dca == None);
         assert!(position.lending_platform == LendingPlatform::Marginfi);
-        assert!(position.protocol_data.supply_mint == data.general.supply_liquidity_mint);
+        assert!(position.protocol_data.supply_mint == data.general.supply_liquidity_mint.pubkey());
         assert!(
             position.protocol_data.debt_mint ==
                 data.general.debt_liquidity_mint.map_or_else(
@@ -52,4 +53,41 @@ mod open_position {
         assert!(position.protocol_data.protocol_account == data.marginfi_account);
     }
 
+    #[tokio::test]
+    async fn std_open_position_with_dca() {
+        let args = GeneralArgs::new();
+        let mut data = MarginfiTestData::new(&args).await;
+        data.general
+            .test_prefixtures().await
+            .unwrap()
+            .create_referral_state_accounts().await
+            .unwrap();
+
+        let dca_amount = 50_000;
+        data.general
+            .mint_tokens_to_ta(
+                data.general.debt_liquidity_mint,
+                data.general.signer_debt_liquidity_ta,
+                dca_amount
+            ).await
+            .unwrap();
+
+        let active_dca = DCASettings {
+            unix_start_date: Utc::now().timestamp() as u64,
+            unix_dca_interval: 60 * 60 * 24,
+            dca_periods_passed: 0,
+            target_dca_periods: 5,
+            dca_direction: DCADirection::In(dca_amount),
+        };
+        data.open_position(None, Some(active_dca.clone())).await.unwrap();
+
+        let position_account = data.general.get_account_data::<PositionAccount>(
+            data.general.solauto_position
+        ).await;
+        let position = position_account.position.as_ref().unwrap();
+
+        assert!(
+            position.active_dca.is_some() && position.active_dca.as_ref().unwrap() == &active_dca
+        );
+    }
 }

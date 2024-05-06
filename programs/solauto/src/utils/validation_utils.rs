@@ -382,5 +382,10 @@ pub fn validate_dca_settings(settings: &Option<DCASettings>) -> ProgramResult {
         return Err(SolautoError::InvalidDCASettings.into());
     }
 
+    if dca_settings.target_dca_periods == 0 {
+        msg!("DCA periods must be greater than or equal to 1");
+        return Err(SolautoError::InvalidDCASettings.into());
+    }
+
     Ok(())
 }

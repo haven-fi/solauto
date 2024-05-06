@@ -244,7 +244,7 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
         let current_liq_utilization_rate_bps =
             self.obligation_position.current_liq_utilization_rate_bps();
 
-        let result: Result<u16, SolautoError> = if
+        let target_rate_bps: Result<u16, SolautoError> = if
             rebalance_args.target_liq_utilization_rate_bps.is_none()
         {
             let setting_params = &self.std_accounts.solauto_position.data.position
@@ -265,8 +265,7 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
             Ok(rebalance_args.target_liq_utilization_rate_bps.unwrap())
         };
 
-        let target_rate_bps = result.unwrap();
-        Ok(target_rate_bps)
+        Ok(target_rate_bps.unwrap())
     }
 
     fn get_debt_adjustment_usd(
