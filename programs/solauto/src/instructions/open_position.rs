@@ -145,8 +145,6 @@ fn initialize_solauto_position<'a, 'b>(
     signer_debt_ta: Option<&'a AccountInfo<'a>>,
     debt_mint: Option<&'a AccountInfo<'a>>
 ) -> ProgramResult {
-    msg!("Hello 1");
-
     if
         !solauto_position.data.self_managed ||
         !account_has_custom_data(solauto_position.account_info)
@@ -162,8 +160,6 @@ fn initialize_solauto_position<'a, 'b>(
         )?;
     }
 
-    msg!("Hello 2");
-
     solana_utils::init_ata_if_needed(
         token_program,
         system_program,
@@ -173,20 +169,16 @@ fn initialize_solauto_position<'a, 'b>(
         supply_mint
     )?;
 
-    msg!("Hello 3");
-
-    // if debt_mint.is_some() {
-    //     solana_utils::init_ata_if_needed(
-    //         token_program,
-    //         system_program,
-    //         signer,
-    //         solauto_position.account_info,
-    //         position_debt_ta.unwrap(),
-    //         debt_mint.unwrap(),
-    //     )?;
-    // }
-
-    msg!("Hello 4");
+    if debt_mint.is_some() {
+        solana_utils::init_ata_if_needed(
+            token_program,
+            system_program,
+            signer,
+            solauto_position.account_info,
+            position_debt_ta.unwrap(),
+            debt_mint.unwrap(),
+        )?;
+    }
 
     solauto_utils::initiate_dca_in_if_necessary(
         token_program,
@@ -195,8 +187,6 @@ fn initialize_solauto_position<'a, 'b>(
         signer,
         signer_debt_ta
     )?;
-
-    msg!("Hello 5");
 
     Ok(())
 }

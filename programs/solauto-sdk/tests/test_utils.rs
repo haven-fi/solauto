@@ -1,10 +1,18 @@
 use std::str::FromStr;
 
 use borsh::BorshDeserialize;
-use solana_program_test::{ ProgramTest, ProgramTestContext };
-use solana_sdk::{ pubkey::Pubkey, signature::Keypair, signer::Signer };
+use solana_program_test::{ BanksClientError, ProgramTest, ProgramTestContext };
+use solana_sdk::{
+    program_pack::Pack,
+    pubkey::Pubkey,
+    rent::Rent,
+    signature::Keypair,
+    signer::Signer,
+    system_instruction,
+    transaction::Transaction,
+};
 use solauto::{
-    constants::{ SOLAUTO_FEES_WALLET, WSOL_MINT },
+    constants::{ SOLAUTO_FEES_WALLET, USD_DECIMALS, WSOL_MINT },
     utils::solauto_utils::{ get_marginfi_account_seeds, get_referral_account_seeds },
 };
 use solauto_sdk::{
@@ -15,6 +23,7 @@ use solauto_sdk::{
     SOLAUTO_ID,
 };
 use spl_associated_token_account::get_associated_token_address;
+use spl_token::{ instruction as token_instruction, state::Mint };
 
 #[macro_export]
 macro_rules! assert_instruction_error {
@@ -37,7 +46,7 @@ pub struct GeneralArgs {
     signer: Option<Pubkey>,
     position_id: u8,
     supply_mint: Pubkey,
-    debt_mint: Pubkey,
+    debt_mint: Option<Keypair>,
     referred_by_authority: Option<Pubkey>,
     referral_fees_dest_mint: Pubkey,
     fund_accounts: Vec<Pubkey>,
@@ -49,7 +58,7 @@ impl GeneralArgs {
             signer: None,
             position_id: 1,
             supply_mint: WSOL_MINT,
-            debt_mint: Pubkey::from_str(USDC_MINT).unwrap(),
+            debt_mint: Some(Keypair::new()),
             referred_by_authority: None,
             referral_fees_dest_mint: WSOL_MINT,
             fund_accounts: Vec::new(),
@@ -67,7 +76,7 @@ impl GeneralArgs {
         self.supply_mint = supply_mint;
         self
     }
-    pub fn debt_mint(&mut self, debt_mint: Pubkey) -> &mut Self {
+    pub fn debt_mint(&mut self, debt_mint: Option<Keypair>) -> &mut Self {
         self.debt_mint = debt_mint;
         self
     }
@@ -85,7 +94,7 @@ impl GeneralArgs {
     }
 }
 
-pub struct GeneralTestData {
+pub struct GeneralTestData<'a> {
     pub ctx: ProgramTestContext,
     pub signer: Pubkey,
     pub position_id: u8,
@@ -99,15 +108,15 @@ pub struct GeneralTestData {
     pub referred_by_authority: Option<Pubkey>,
     pub referred_by_supply_ta: Option<Pubkey>,
     pub solauto_position: Pubkey,
-    pub position_debt_liquidity_ta: Pubkey,
-    pub debt_liquidity_mint: Pubkey,
-    pub signer_debt_liquidity_ta: Pubkey,
-    pub position_supply_liquidity_ta: Pubkey,
     pub supply_liquidity_mint: Pubkey,
+    pub position_supply_liquidity_ta: Pubkey,
+    pub debt_liquidity_mint: Option<&'a Keypair>,
+    pub position_debt_liquidity_ta: Option<Pubkey>,
+    pub signer_debt_liquidity_ta: Option<Pubkey>,
 }
 
-impl GeneralTestData {
-    pub async fn new(args: &GeneralArgs, lending_protocol: &str) -> Self {
+impl<'a> GeneralTestData<'a> {
+    pub async fn new<'b>(args: &'a GeneralArgs, lending_protocol: &'b str) -> Self {
         let lending_protocol = Pubkey::from_str(lending_protocol).unwrap();
 
         let mut solauto = ProgramTest::new("solauto", SOLAUTO_ID, None);
@@ -166,11 +175,22 @@ impl GeneralTestData {
             &solauto_position,
             &args.supply_mint
         );
-        let signer_debt_liquidity_ta = get_associated_token_address(&signer, &args.debt_mint);
-        let position_debt_liquidity_ta = get_associated_token_address(
-            &solauto_position,
-            &args.debt_mint
-        );
+
+        let signer_debt_liquidity_ta = if args.debt_mint.is_some() {
+            Some(get_associated_token_address(&signer, &args.debt_mint.as_ref().unwrap().pubkey()))
+        } else {
+            None
+        };
+        let position_debt_liquidity_ta = if args.debt_mint.is_some() {
+            Some(
+                get_associated_token_address(
+                    &solauto_position,
+                    &args.debt_mint.as_ref().unwrap().pubkey()
+                )
+            )
+        } else {
+            None
+        };
 
         Self {
             ctx,
@@ -190,7 +210,7 @@ impl GeneralTestData {
             supply_liquidity_mint: args.supply_mint.clone(),
             signer_debt_liquidity_ta,
             position_debt_liquidity_ta,
-            debt_liquidity_mint: args.debt_mint.clone(),
+            debt_liquidity_mint: args.debt_mint.as_ref(),
         }
     }
 
@@ -206,6 +226,36 @@ impl GeneralTestData {
         T::deserialize(&mut account.unwrap().data.as_slice()).unwrap()
     }
 
+    pub async fn prefixtures(&mut self) -> Result<&mut Self, BanksClientError> {
+        // Create debt token mint account if necessary
+        if self.debt_liquidity_mint.is_some() {
+            let rent = Rent::default();
+            let tx = Transaction::new_signed_with_payer(
+                &[
+                    system_instruction::create_account(
+                        &self.ctx.payer.pubkey(),
+                        &self.debt_liquidity_mint.as_ref().unwrap().pubkey(),
+                        rent.minimum_balance(Mint::LEN),
+                        Mint::LEN as u64,
+                        &spl_token::id()
+                    ),
+                    token_instruction::initialize_mint(
+                        &spl_token::id(),
+                        &self.debt_liquidity_mint.as_ref().unwrap().pubkey(),
+                        &self.ctx.payer.pubkey(),
+                        None,
+                        USD_DECIMALS as u8
+                    ).unwrap(),
+                ],
+                Some(&self.ctx.payer.pubkey()),
+                &[&self.ctx.payer, self.debt_liquidity_mint.as_ref().unwrap()],
+                self.ctx.last_blockhash
+            );
+            self.ctx.banks_client.process_transaction(tx).await?;
+        }
+        Ok(self)
+    }
+
     pub fn update_referral_states(&self) -> UpdateReferralStatesBuilder {
         let mut builder = UpdateReferralStatesBuilder::new();
         builder
@@ -218,14 +268,14 @@ impl GeneralTestData {
     }
 }
 
-pub struct MarginfiTestData {
-    pub general: GeneralTestData,
+pub struct MarginfiTestData<'a> {
+    pub general: GeneralTestData<'a>,
     pub marginfi_group: Pubkey,
     pub marginfi_account: Pubkey,
 }
 
-impl MarginfiTestData {
-    pub async fn new(args: &GeneralArgs) -> Self {
+impl<'a> MarginfiTestData<'a> {
+    pub async fn new(args: &'a GeneralArgs) -> Self {
         let general = GeneralTestData::new(args, MARGINFI_PROGRAM).await;
         let marginfi_group = Keypair::new().pubkey();
 
@@ -271,9 +321,14 @@ impl MarginfiTestData {
             .marginfi_account(self.marginfi_account)
             .position_supply_ta(self.general.position_supply_liquidity_ta)
             .supply_mint(self.general.supply_liquidity_mint)
-            .signer_debt_ta(Some(self.general.signer_debt_liquidity_ta))
-            .position_debt_ta(Some(self.general.position_debt_liquidity_ta))
-            .debt_mint(Some(self.general.debt_liquidity_mint))
+            .signer_debt_ta(self.general.signer_debt_liquidity_ta)
+            .position_debt_ta(self.general.position_debt_liquidity_ta)
+            .debt_mint(
+                self.general.debt_liquidity_mint.map_or_else(
+                    || None,
+                    |mint| Some(mint.pubkey())
+                )
+            )
             .update_position_data(position_data);
         builder
     }

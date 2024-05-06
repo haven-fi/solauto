@@ -20,9 +20,9 @@ mod update_referral_states {
     #[tokio::test]
     async fn update_referral_states() {
         // Create referral state for signer
-        let mut data = MarginfiTestData::new(
-            GeneralArgs::new().referral_fees_dest_mint(Pubkey::from_str(USDC_MINT).unwrap())
-        ).await;
+        let mut args = GeneralArgs::new();
+        args.referral_fees_dest_mint(Pubkey::from_str(USDC_MINT).unwrap());
+        let mut data = MarginfiTestData::new(&args).await;
 
         let tx = Transaction::new_signed_with_payer(
             &[data.general.update_referral_states().instruction()],
@@ -66,7 +66,9 @@ mod update_referral_states {
         let signer_referral_state_data = data.general.get_account_data::<ReferralStateAccount>(
             data.general.signer_referral_state.clone()
         ).await;
-        assert!(signer_referral_state_data.referred_by_state.as_ref().unwrap() == &referred_by_state);
+        assert!(
+            signer_referral_state_data.referred_by_state.as_ref().unwrap() == &referred_by_state
+        );
 
         // Ensure referred_by_state cannot be overwritten after it has been set
         let referred_by_authority2 = Keypair::new().pubkey();
@@ -90,9 +92,9 @@ mod update_referral_states {
     #[tokio::test]
     async fn incorrect_signer() {
         let temp_account = Keypair::new();
-        let mut data = MarginfiTestData::new(
-            &GeneralArgs::new().fund_account(temp_account.pubkey())
-        ).await;
+        let mut args = GeneralArgs::new();
+        args.fund_account(temp_account.pubkey());
+        let mut data = MarginfiTestData::new(&args).await;
 
         let tx = Transaction::new_signed_with_payer(
             &[data.general.update_referral_states().signer(temp_account.pubkey()).instruction()],
@@ -107,7 +109,8 @@ mod update_referral_states {
 
     #[tokio::test]
     async fn incorrect_signer_referral_state() {
-        let mut data = MarginfiTestData::new(&GeneralArgs::new()).await;
+        let args = GeneralArgs::new();
+        let mut data = MarginfiTestData::new(&args).await;
         let tx = Transaction::new_signed_with_payer(
             &[
                 data.general

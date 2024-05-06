@@ -10,7 +10,9 @@ mod open_position {
 
     #[tokio::test]
     async fn marginfi_open_position() {
-        let mut data = MarginfiTestData::new(&GeneralArgs::new()).await;
+        let args = GeneralArgs::new();
+        let mut data = MarginfiTestData::new(&args).await;
+        data.general.prefixtures().await.unwrap();
 
         let setting_params = SolautoSettingsParameters {
             repay_from_bps: 95,
