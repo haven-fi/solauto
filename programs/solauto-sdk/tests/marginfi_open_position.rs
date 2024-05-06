@@ -3,10 +3,10 @@ pub mod test_utils;
 #[cfg(test)]
 mod open_position {
     use solana_program_test::tokio;
-    use solana_sdk::{ signature::Signer, transaction::Transaction };
+    use solana_sdk::{ instruction::InstructionError, signature::Signer, transaction::Transaction };
     use solauto_sdk::generated::{ accounts::PositionAccount, types::{LendingPlatform, SolautoSettingsParameters} };
 
-    use crate::test_utils::*;
+    use crate::{assert_instruction_error, test_utils::*};
 
     #[tokio::test]
     async fn standard_open_position() {
@@ -46,5 +46,32 @@ mod open_position {
         assert!(position.protocol_data.supply_mint == data.general.supply_liquidity_mint);
         assert!(position.protocol_data.debt_mint == data.general.debt_liquidity_mint.map_or_else(|| None, |mint| Some(mint.pubkey())));
         assert!(position.protocol_data.protocol_account == data.marginfi_account);
+    }
+
+    pub async fn test_invalid_settings(settings: SolautoSettingsParameters) {
+        let args = GeneralArgs::new();
+        let mut data = MarginfiTestData::new(&args).await;
+
+        let tx = Transaction::new_signed_with_payer(
+            &[
+                data.general.update_referral_states().instruction(),
+                data.open_position(Some(settings.clone()), None).instruction(),
+            ],
+            Some(&data.general.ctx.payer.pubkey()),
+            &[&data.general.ctx.payer],
+            data.general.ctx.last_blockhash
+        );
+        let err = data.general.ctx.banks_client.process_transaction(tx).await.unwrap_err();
+        assert_instruction_error!(err, InstructionError::Custom(4));
+    }
+
+    #[tokio::test]
+    async fn invalid_setting_params() {
+        test_invalid_settings(SolautoSettingsParameters {
+            repay_from_bps: 101,
+            repay_to_bps: 90,
+            boost_from_bps: 45,
+            boost_to_bps: 50
+        }).await;
     }
 }
