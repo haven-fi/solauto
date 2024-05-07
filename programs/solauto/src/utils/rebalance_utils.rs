@@ -171,7 +171,9 @@ pub fn get_rebalance_step(
     }
 }
 
-fn get_additional_amount_to_dca_in(position_account: &mut PositionAccount) -> Result<u64, ProgramError> {
+fn get_additional_amount_to_dca_in(
+    position_account: &mut PositionAccount
+) -> Result<u64, ProgramError> {
     let position = position_account.position.as_mut().unwrap();
 
     let dca_settings = position.active_dca.as_ref().unwrap();
@@ -261,8 +263,6 @@ pub fn get_rebalance_values(
     rebalance_args: &RebalanceArgs,
     solauto_fees_bps: &SolautoFeesBps
 ) -> Result<(f64, Option<u64>), ProgramError> {
-    let mut total_supply_usd = obligation_position.supply.as_ref().unwrap().amount_used.usd_value;
-
     let (target_liq_utilization_rate_bps, amount_to_dca_in) = match
         solauto_utils::is_dca_instruction(position_account, obligation_position)?
     {
@@ -270,10 +270,7 @@ pub fn get_rebalance_values(
             match direction {
                 DCADirection::In(_) => {
                     let amount_to_dca_in = get_additional_amount_to_dca_in(position_account)?;
-                    (
-                        obligation_position.current_liq_utilization_rate_bps(),
-                        Some(amount_to_dca_in),
-                    )
+                    (obligation_position.current_liq_utilization_rate_bps(), Some(amount_to_dca_in))
                 }
                 DCADirection::Out =>
                     (
@@ -295,13 +292,6 @@ pub fn get_rebalance_values(
             ),
     };
 
-    let debt = obligation_position.debt.as_ref().unwrap();
-    if amount_to_dca_in.is_some() {
-        total_supply_usd += math_utils
-            ::from_base_unit::<u64, u8, f64>(amount_to_dca_in.unwrap(), debt.decimals)
-            .mul(debt.market_price);
-    }
-
     let max_price_slippage_bps = if rebalance_args.max_price_slippage_bps.is_some() {
         rebalance_args.max_price_slippage_bps.unwrap()
     } else {
@@ -309,9 +299,22 @@ pub fn get_rebalance_values(
     };
 
     let increasing_leverage =
-        obligation_position.current_liq_utilization_rate_bps() < target_liq_utilization_rate_bps;
+        obligation_position.current_liq_utilization_rate_bps() <= target_liq_utilization_rate_bps;
 
-    let adjustment_fee_bps = if increasing_leverage { Some(solauto_fees_bps.total) } else { None };
+    let adjustment_fee_bps = if increasing_leverage { solauto_fees_bps.total } else { 0 };
+
+    let debt = obligation_position.debt.as_ref().unwrap();
+    let amount_usd_to_dca_in = if amount_to_dca_in.is_some() {
+        let amount = math_utils
+            ::from_base_unit::<u64, u8, f64>(amount_to_dca_in.unwrap(), debt.decimals)
+            .mul(debt.market_price);
+
+        amount.sub(amount.mul((adjustment_fee_bps as f64).div(10000.0)))
+    } else {
+        0.0
+    };
+    let total_supply_usd =
+        obligation_position.supply.as_ref().unwrap().amount_used.usd_value + amount_usd_to_dca_in;
 
     let mut debt_adjustment_usd = math_utils::calculate_debt_adjustment_usd(
         obligation_position.liq_threshold,
@@ -320,7 +323,9 @@ pub fn get_rebalance_values(
         target_liq_utilization_rate_bps,
         adjustment_fee_bps
     );
-    debt_adjustment_usd += debt_adjustment_usd.mul((max_price_slippage_bps as f64).div(10000.0));
+    debt_adjustment_usd +=
+        debt_adjustment_usd.mul((max_price_slippage_bps as f64).div(10000.0)) +
+        amount_usd_to_dca_in.mul((max_price_slippage_bps as f64).div(10000.0));
 
     Ok((debt_adjustment_usd, amount_to_dca_in))
 }

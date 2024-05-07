@@ -253,8 +253,6 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
                 self.std_accounts.solauto_position.data.position.as_ref().unwrap().debt_ta_balance
         };
 
-        // TODO validate that it is the correct amount?
-
         if position_supply_ta.amount > 0 {
             let amount_after_fees = self.payout_fees(available_supply_balance)?;
             self.deposit(amount_after_fees)?;
