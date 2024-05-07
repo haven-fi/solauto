@@ -2,7 +2,6 @@ use std::{ cmp::min, ops::{ Div, Mul, Sub } };
 
 use solana_program::{
     instruction::{ get_stack_height, TRANSACTION_LEVEL_STACK_HEIGHT },
-    msg,
     program_error::ProgramError,
     sysvar::instructions::{ load_current_index_checked, load_instruction_at_checked },
 };
@@ -27,8 +26,7 @@ use super::{
 };
 
 pub fn get_rebalance_step(
-    std_accounts: &SolautoStandardAccounts,
-    args: &RebalanceArgs
+    std_accounts: &SolautoStandardAccounts
 ) -> Result<SolautoRebalanceStep, ProgramError> {
     // TODO notes for typescript client
     // max_price_slippage = 0.05 (500bps) (5%)
@@ -77,15 +75,6 @@ pub fn get_rebalance_step(
     // end flash loan
 
     let ixs_sysvar = std_accounts.ixs_sysvar.unwrap();
-    if
-        args.target_liq_utilization_rate_bps.is_some() &&
-        std_accounts.signer.key != &std_accounts.solauto_position.data.authority
-    {
-        msg!(
-            "Cannot provide a target liquidation utilization rate if the instruction is not signed by the position authority"
-        );
-        return Err(ProgramError::InvalidInstructionData.into());
-    }
 
     let current_ix_idx = load_current_index_checked(ixs_sysvar)?;
     let current_ix = load_instruction_at_checked(current_ix_idx as usize, ixs_sysvar)?;

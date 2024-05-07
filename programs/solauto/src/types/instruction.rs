@@ -268,10 +268,14 @@ pub enum WithdrawParams {
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug)]
 pub struct RebalanceArgs {
-    /// Target liq utilization rate. Only used/allowed if rebalancing a self-managed position
+    /// Target liq utilization rate. Only used/allowed if signed by the position authority.
     pub target_liq_utilization_rate_bps: Option<u16>,
-    /// Max price slippage bps. Only used/allowed by the Solauto rebalancer account or position authority
+    /// Max price slippage bps for token swapping. Defaults to 300 (3%).
+    /// Can increase this amount if prices are volatile and swaps are not successful.
     pub max_price_slippage_bps: Option<u16>,
+    /// Gap basis points between what is allowed to be borrowed/withdrawn and what we are trying to borrow/withdraw. Defaults to 1000 (10%).
+    /// Can increase this amount if lending protocol activity is hyper and we are close to limits.
+    pub limit_gap_bps: Option<u16>,
 }
 
 pub struct SolautoStandardAccounts<'a> {
