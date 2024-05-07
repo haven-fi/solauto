@@ -30,9 +30,9 @@ pub fn get_rebalance_step(
     std_accounts: &SolautoStandardAccounts,
 ) -> Result<SolautoRebalanceStep, ProgramError> {
     // TODO notes for typescript client
-    // max_price_slippage = 0.05 (500bps) (5%)
+    // max_price_slippage = 0.03 (300bps) (3%)
     // random_price_volatility = 0.03 (300bps) (3%)
-    // 1 - max_price_slippage - random_price_volatility = buffer_room = 92%
+    // 1 - max_price_slippage - random_price_volatility = buffer_room = 94%
     // if transaction fails default to flash loan instruction route and increase max slippage if needed
 
     // increasing leverage:
@@ -42,18 +42,19 @@ pub fn get_rebalance_step(
     // jup swap - swap debt token to supply token
     // solauto rebalance - payout solauto fees & deposit supply token
     // -
-    // if debt + debt adjustment brings utilization rate above buffer_room, instructions are:
-    // take out flash loan in debt token (+ solauto fees)
-    // jup swap - swap debt token to supply token
-    // solauto rebalance - payout solauto fees & deposit supply token, borrow equivalent debt token amount from flash borrow ix + flash loan fee
-    // repay flash loan in debt token
-    // -
     // IF MARGINFI:
     // start flash loan
     // solauto rebalance - borrow debt token worth debt_adjustment_usd
     // jup swap - swap debt token to supply token
     // solauto rebalance - payout solauto fees & deposit supply token
     // end flash loan
+    // -
+    // TODO (Kamino/Solend)
+    // if debt + debt adjustment brings utilization rate above buffer_room, instructions are:
+    // take out flash loan in debt token (+ solauto fees)
+    // jup swap - swap debt token to supply token
+    // solauto rebalance - payout solauto fees & deposit supply token, borrow equivalent debt token amount from flash borrow ix + flash loan fee
+    // repay flash loan in debt token
 
     // deleveraging:
     // -
@@ -62,18 +63,19 @@ pub fn get_rebalance_step(
     // jup swap - swap supply token to debt token
     // solauto rebalance - repay debt with debt token
     // -
-    // if supply - debt adjustment brings utilization rate over buffer_room, instructions are:
-    // take out flash loan in supply token
-    // jup swap - swap supply token to debt token
-    // solauto rebalance - repay debt token, & withdraw equivalent supply token amount from flash borrow ix + flash loan fee
-    // repay flash loan in supply token
-    // -
     // IF MARGINFI:
     // start flash loan
     // solauto rebalance - withdraw supply token worth debt_adjustment_usd
     // jup swap - swap supply token to debt token
     // solauto rebalance - repay debt token
     // end flash loan
+    // -
+    // TODO (Kamino/Solend)
+    // if supply - debt adjustment brings utilization rate over buffer_room, instructions are:
+    // take out flash loan in supply token
+    // jup swap - swap supply token to debt token
+    // solauto rebalance - repay debt token, & withdraw equivalent supply token amount from flash borrow ix + flash loan fee
+    // repay flash loan in supply token
 
     let ixs_sysvar = std_accounts.ixs_sysvar.unwrap();
 
