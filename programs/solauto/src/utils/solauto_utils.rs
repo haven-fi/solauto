@@ -45,6 +45,11 @@ pub fn create_new_solauto_position<'a>(
             msg!("Position ID 0 is reserved for self-managed positions");
             return Err(ProgramError::InvalidInstructionData.into());
         }
+        
+        if account_has_data(solauto_position) {
+            msg!("Cannot use open position instruction on an existing Solauto position");
+            return Err(SolautoError::IncorrectAccounts.into());
+        }
 
         PositionAccount {
             position_id: update_position_data.position_id,

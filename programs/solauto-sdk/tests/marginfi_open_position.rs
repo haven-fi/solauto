@@ -108,7 +108,10 @@ mod open_position {
             dca_direction: DCADirection::In(dca_amount),
             dca_risk_aversion_bps: None,
         };
-        data.open_position(None, Some(active_dca.clone())).await.unwrap();
+        data.open_position(
+            Some(data.general.default_setting_params.clone()),
+            Some(active_dca.clone())
+        ).await.unwrap();
 
         let position_account = data.general.deserialize_account_data::<PositionAccount>(
             data.general.solauto_position

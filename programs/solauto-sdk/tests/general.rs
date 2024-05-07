@@ -37,6 +37,6 @@ mod general {
         );
         data.general.ctx.banks_client.process_transaction(tx).await.unwrap();
 
-        data.open_position(None, None).await.unwrap();
+        data.open_position(Some(data.general.default_setting_params.clone()), None).await.unwrap();
     }
 }

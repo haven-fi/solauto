@@ -107,6 +107,8 @@ pub struct GeneralTestData<'a> {
     pub debt_liquidity_mint: Option<&'a Keypair>,
     pub position_debt_liquidity_ta: Option<Pubkey>,
     pub signer_debt_liquidity_ta: Option<Pubkey>,
+
+    pub default_setting_params: SolautoSettingsParameters,
 }
 
 impl<'a> GeneralTestData<'a> {
@@ -203,6 +205,13 @@ impl<'a> GeneralTestData<'a> {
             debt_liquidity_mint: args.debt_mint.as_ref(),
             position_debt_liquidity_ta,
             signer_debt_liquidity_ta,
+
+            default_setting_params: SolautoSettingsParameters {
+                repay_from_bps: 9500,
+                repay_to_bps: 9000,
+                boost_from_bps: 4500,
+                boost_to_bps: 5000,
+            },
         }
     }
 
@@ -381,22 +390,12 @@ impl<'a> MarginfiTestData<'a> {
         settings: Option<SolautoSettingsParameters>,
         active_dca: Option<DCASettings>
     ) -> Result<&mut Self, BanksClientError> {
-        let setting_params = if settings.is_some() || self.general.position_id == 0 {
-            settings.unwrap()
-        } else {
-            SolautoSettingsParameters {
-                repay_from_bps: 9500,
-                repay_to_bps: 9000,
-                boost_from_bps: 4500,
-                boost_to_bps: 5000,
-            }
-        };
         let mut signers = vec![&self.general.ctx.payer];
-        if self.general.position_id != 0 {
+        if self.general.position_id == 0 {
             signers.push(self.marginfi_account_keypair.as_ref().unwrap());
         }
         let tx = Transaction::new_signed_with_payer(
-            &[self.open_position_ix(Some(setting_params.clone()), active_dca).instruction()],
+            &[self.open_position_ix(settings, active_dca).instruction()],
             Some(&self.general.ctx.payer.pubkey()),
             signers.as_slice(),
             self.general.ctx.last_blockhash
