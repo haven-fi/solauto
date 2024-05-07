@@ -22,7 +22,7 @@ use crate::{
 use super::{
     ix_utils::{ get_relative_instruction, InstructionChecker },
     math_utils,
-    solauto_utils::{ self, SolautoFeesBps },
+    solauto_utils::{ is_dca_instruction, SolautoFeesBps },
 };
 
 pub fn get_rebalance_step(
@@ -253,7 +253,7 @@ pub fn get_rebalance_values(
     solauto_fees_bps: &SolautoFeesBps
 ) -> Result<(f64, Option<u64>), ProgramError> {
     let (target_liq_utilization_rate_bps, amount_to_dca_in) = match
-        solauto_utils::is_dca_instruction(position_account, obligation_position)?
+        is_dca_instruction(position_account, obligation_position)?
     {
         Some(direction) =>
             match direction {
