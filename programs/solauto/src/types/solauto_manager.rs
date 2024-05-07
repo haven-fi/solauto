@@ -166,20 +166,20 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
     }
 
     fn begin_rebalance(&mut self, rebalance_args: &RebalanceArgs) -> ProgramResult {
-        let (debt_adjustment_usd, debt_addition_from_dca) = rebalance_utils::get_rebalance_values(
+        let (debt_adjustment_usd, amount_to_dca_in) = rebalance_utils::get_rebalance_values(
             &mut self.std_accounts.solauto_position.data,
             &mut self.obligation_position,
             rebalance_args,
             &self.solauto_fees_bps
         )?;
 
-        if debt_addition_from_dca.is_some() {
+        if amount_to_dca_in.is_some() {
             solana_utils::spl_token_transfer(
                 self.std_accounts.token_program,
                 self.accounts.debt.as_ref().unwrap().source_ta.account_info,
                 self.std_accounts.solauto_position.account_info,
                 self.accounts.intermediary_ta.unwrap(),
-                debt_addition_from_dca.unwrap(),
+                amount_to_dca_in.unwrap(),
                 Some(
                     vec![
                         &[self.std_accounts.solauto_position.data.position_id],

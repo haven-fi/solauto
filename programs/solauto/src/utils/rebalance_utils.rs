@@ -171,7 +171,7 @@ pub fn get_rebalance_step(
     }
 }
 
-fn debt_addition_from_dca_in(position_account: &mut PositionAccount) -> Result<u64, ProgramError> {
+fn get_additional_amount_to_dca_in(position_account: &mut PositionAccount) -> Result<u64, ProgramError> {
     let position = position_account.position.as_mut().unwrap();
 
     let dca_settings = position.active_dca.as_ref().unwrap();
@@ -263,16 +263,16 @@ pub fn get_rebalance_values(
 ) -> Result<(f64, Option<u64>), ProgramError> {
     let mut total_supply_usd = obligation_position.supply.as_ref().unwrap().amount_used.usd_value;
 
-    let (target_liq_utilization_rate_bps, debt_addition_from_dca) = match
+    let (target_liq_utilization_rate_bps, amount_to_dca_in) = match
         solauto_utils::is_dca_instruction(position_account, obligation_position)?
     {
         Some(direction) =>
             match direction {
                 DCADirection::In(_) => {
-                    let debt_addition_from_dca = debt_addition_from_dca_in(position_account)?;
+                    let amount_to_dca_in = get_additional_amount_to_dca_in(position_account)?;
                     (
                         obligation_position.current_liq_utilization_rate_bps(),
-                        Some(debt_addition_from_dca),
+                        Some(amount_to_dca_in),
                     )
                 }
                 DCADirection::Out =>
@@ -296,9 +296,9 @@ pub fn get_rebalance_values(
     };
 
     let debt = obligation_position.debt.as_ref().unwrap();
-    if debt_addition_from_dca.is_some() {
+    if amount_to_dca_in.is_some() {
         total_supply_usd += math_utils
-            ::from_base_unit::<u64, u8, f64>(debt_addition_from_dca.unwrap(), debt.decimals)
+            ::from_base_unit::<u64, u8, f64>(amount_to_dca_in.unwrap(), debt.decimals)
             .mul(debt.market_price);
     }
 
@@ -322,5 +322,5 @@ pub fn get_rebalance_values(
     );
     debt_adjustment_usd += debt_adjustment_usd.mul((max_price_slippage_bps as f64).div(10000.0));
 
-    Ok((debt_adjustment_usd, debt_addition_from_dca))
+    Ok((debt_adjustment_usd, amount_to_dca_in))
 }
