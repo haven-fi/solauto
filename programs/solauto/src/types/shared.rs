@@ -38,7 +38,7 @@ pub struct DCASettings {
     /// Only used when DCAing-in. A value to determine whether or not to increase leverage, or simply swap and deposit supply,
     /// depending on the distance from `current_liq_utilization_rate` to `repay_from` parameter.
     /// e.g. a lower value will mean the DCA will more likely increase leverage than not, and vice-versa.
-    /// Defaults to 1000.
+    /// Defaults to 1500.
     pub dca_risk_aversion_bps: Option<u16>,
 }
 
