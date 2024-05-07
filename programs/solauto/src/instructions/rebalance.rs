@@ -11,7 +11,7 @@ use crate::{
         obligation_position::LendingProtocolObligationPosition,
         solauto_manager::{SolautoManager, SolautoManagerAccounts},
     },
-    utils::{ix_utils, solauto_utils},
+    utils::{ix_utils, rebalance_utils},
 };
 
 pub fn marginfi_rebalance<'a, 'b>(
@@ -93,7 +93,7 @@ fn rebalance<'a, T: LendingProtocolClient<'a>>(
     std_accounts: SolautoStandardAccounts<'a>,
     args: RebalanceArgs,
 ) -> ProgramResult {
-    let solauto_rebalance_step = solauto_utils::get_rebalance_step(&std_accounts, &args)?;
+    let solauto_rebalance_step = rebalance_utils::get_rebalance_step(&std_accounts, &args)?;
 
     let mut solauto_manager = SolautoManager::from(
         &client,
