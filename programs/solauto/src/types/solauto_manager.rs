@@ -253,10 +253,10 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
                 self.std_accounts.solauto_position.data.position.as_ref().unwrap().debt_ta_balance
         };
 
-        if position_supply_ta.amount > 0 {
+        if available_supply_balance > 0 {
             let amount_after_fees = self.payout_fees(available_supply_balance)?;
             self.deposit(amount_after_fees)?;
-        } else if position_debt_ta.amount > 0 {
+        } else if available_debt_balance > 0 {
             self.repay(available_debt_balance)?;
         } else {
             msg!("Missing required position liquidity to rebalance position");
