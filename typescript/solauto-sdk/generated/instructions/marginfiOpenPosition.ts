@@ -47,7 +47,7 @@ export type MarginfiOpenPositionInstructionAccounts = {
   referredBySupplyTa?: PublicKey | Pda;
   solautoPosition: PublicKey | Pda;
   marginfiGroup: PublicKey | Pda;
-  marginfiAccount: PublicKey | Pda;
+  marginfiAccount: PublicKey | Pda | Signer;
   positionSupplyTa: PublicKey | Pda;
   supplyMint: PublicKey | Pda;
   signerDebtTa?: PublicKey | Pda;

@@ -230,7 +230,8 @@
         {
           "name": "marginfiAccount",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "isOptionalSigner": true
         },
         {
           "name": "positionSupplyTa",

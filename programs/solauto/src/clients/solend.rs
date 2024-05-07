@@ -22,7 +22,7 @@ use crate::{
         obligation_position::*,
         shared::{DeserializedAccount, LendingPlatform, PositionAccount, SolautoError},
     },
-    utils::{ix_utils::*, solauto_utils::*, validation_utils::*},
+    utils::{ix_utils::*, solana_utils::account_has_data, solauto_utils::*, validation_utils::*},
 };
 
 pub struct ReserveOracleAccounts<'a> {
@@ -70,6 +70,10 @@ impl<'a> SolendClient<'a> {
             max_ltv,
             liq_threshold,
         )?;
+
+        if account_has_data(ctx.accounts.obligation) {
+            return Ok(());
+        }
 
         let obligation_owner = get_owner(solauto_position, ctx.accounts.signer);
         invoke_instruction(

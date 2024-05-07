@@ -17,7 +17,7 @@ use spl_token::instruction as spl_instruction;
 
 use crate::types::shared::SolautoError;
 
-pub fn account_has_custom_data(account: &AccountInfo) -> bool {
+pub fn account_has_data(account: &AccountInfo) -> bool {
     !account.data.borrow().is_empty()
 }
 
@@ -27,10 +27,10 @@ pub fn init_account<'a>(
     payer: &'a AccountInfo<'a>,
     account: &'a AccountInfo<'a>,
     new_owner: &Pubkey,
-    seed: Vec<&[u8]>,
+    seed: Option<Vec<&[u8]>>,
     space: usize,
 ) -> ProgramResult {
-    if account_has_custom_data(account) {
+    if account_has_data(account) {
         return Err(SolautoError::IncorrectAccounts.into());
     }
 
@@ -46,16 +46,20 @@ pub fn init_account<'a>(
     }
 
     let accounts = &[account.clone(), system_program.clone()];
-    invoke_signed_with_seed(
-        &system_instruction::allocate(account.key, space.try_into().unwrap()),
-        accounts,
-        seed.clone(),
-    )?;
-    invoke_signed_with_seed(
-        &system_instruction::assign(account.key, &new_owner),
-        accounts,
-        seed,
-    )?;
+
+    let allocate_ix = &system_instruction::allocate(account.key, space.try_into().unwrap());
+    if seed.is_some() {
+        invoke_signed_with_seed(allocate_ix, accounts, seed.as_ref().unwrap().clone())?;
+    } else {
+        invoke(allocate_ix, accounts)?;
+    }
+
+    let assign_ix = &system_instruction::assign(account.key, &new_owner);
+    if seed.is_some() {
+        invoke_signed_with_seed(assign_ix, accounts, seed.unwrap())?;
+    } else {
+        invoke(assign_ix, accounts)?;
+    }
 
     Ok(())
 }
@@ -94,7 +98,7 @@ pub fn init_ata_if_needed<'a>(
         return Err(SolautoError::IncorrectAccounts.into());
     }
 
-    if account_has_custom_data(token_account) {
+    if account_has_data(token_account) {
         return Ok(());
     }
 

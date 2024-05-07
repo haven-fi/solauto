@@ -13,7 +13,7 @@ use solana_sdk::{
 };
 use solauto::{
     constants::{ SOLAUTO_FEES_WALLET, WSOL_MINT },
-    utils::solauto_utils::{ get_marginfi_account_seeds, get_referral_account_seeds },
+    utils::solauto_utils::get_referral_account_seeds,
 };
 use solauto_sdk::{
     generated::{
@@ -22,10 +22,7 @@ use solauto_sdk::{
     },
     SOLAUTO_ID,
 };
-use spl_associated_token_account::{
-    get_associated_token_address,
-    instruction as ata_instruction,
-};
+use spl_associated_token_account::{ get_associated_token_address, instruction as ata_instruction };
 use spl_token::{ instruction as token_instruction, state::Mint };
 
 #[macro_export]
@@ -353,17 +350,21 @@ impl<'a> MarginfiTestData<'a> {
         let general = GeneralTestData::new(args, MARGINFI_PROGRAM).await;
         let marginfi_group = Keypair::new().pubkey();
 
-        let signer_pubkey = general.ctx.payer.pubkey();
-        let marginfi_account_seeds = get_marginfi_account_seeds(
-            general.position_id,
-            Some(&general.solauto_position),
-            &signer_pubkey,
-            &general.lending_protocol
-        );
-        let (marginfi_account, _) = Pubkey::find_program_address(
-            marginfi_account_seeds.as_slice(),
-            &SOLAUTO_ID
-        );
+        let marginfi_account = if args.position_id != 0 {
+            let signer_pubkey = general.ctx.payer.pubkey();
+            let marginfi_account_seeds = &[
+                general.solauto_position.as_ref(),
+                signer_pubkey.as_ref(),
+                general.lending_protocol.as_ref(),
+            ];
+            let (marginfi_account, _) = Pubkey::find_program_address(
+                marginfi_account_seeds.as_slice(),
+                &SOLAUTO_ID
+            );
+            marginfi_account
+        } else {
+            Keypair::new().pubkey()
+        };
 
         Self {
             general,
@@ -418,7 +419,7 @@ impl<'a> MarginfiTestData<'a> {
             .referred_by_supply_ta(self.general.referred_by_supply_ta)
             .solauto_position(self.general.solauto_position)
             .marginfi_group(self.marginfi_group)
-            .marginfi_account(self.marginfi_account)
+            .marginfi_account(self.marginfi_account, false)
             .position_supply_ta(self.general.position_supply_liquidity_ta)
             .supply_mint(self.general.supply_liquidity_mint.pubkey())
             .signer_debt_ta(self.general.signer_debt_liquidity_ta)

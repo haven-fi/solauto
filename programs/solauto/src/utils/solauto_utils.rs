@@ -6,9 +6,7 @@ use spl_associated_token_account::get_associated_token_address;
 use spl_token::state::Account as TokenAccount;
 use std::ops::{Add, Mul};
 
-use super::solana_utils::{
-    account_has_custom_data, init_account, init_ata_if_needed, spl_token_transfer,
-};
+use super::solana_utils::{account_has_data, init_account, init_ata_if_needed, spl_token_transfer};
 use crate::{
     constants::{REFERRER_FEE_SPLIT, SOLAUTO_FEES_WALLET, WSOL_MINT},
     types::{
@@ -98,7 +96,7 @@ pub fn create_or_update_referral_state<'a>(
         return Err(SolautoError::IncorrectAccounts.into());
     }
 
-    if account_has_custom_data(referral_state) {
+    if account_has_data(referral_state) {
         let mut referral_state_account =
             DeserializedAccount::<ReferralStateAccount>::deserialize(Some(referral_state))?
                 .unwrap();
@@ -123,7 +121,7 @@ pub fn create_or_update_referral_state<'a>(
             signer,
             referral_state,
             &crate::ID,
-            referral_state_seeds[..].to_vec(),
+            Some(referral_state_seeds[..].to_vec()),
             REFERRAL_ACCOUNT_SPACE,
         )?;
 
@@ -150,25 +148,6 @@ pub fn create_or_update_referral_state<'a>(
 
 pub fn get_referral_account_seeds<'a>(authority: &'a Pubkey) -> Vec<&[u8]> {
     vec![authority.as_ref(), b"referral_state"]
-}
-
-pub fn get_marginfi_account_seeds<'a>(
-    position_id: u8,
-    solauto_position: Option<&'a Pubkey>,
-    signer: &'a Pubkey,
-    marginfi_program: &'a Pubkey,
-) -> Vec<&'a [u8]> {
-    if position_id != 0 {
-        vec![
-            solauto_position.unwrap().as_ref(),
-            signer.as_ref(),
-            marginfi_program.as_ref(),
-        ]
-    } else {
-        // TODO you will only be able to make 1 self managed marginfi account like this. We need to do Keypair::new() for each self managed marginfi account
-        // so we also need to change the create_account function to support creating non-pda accounts as well
-        vec![signer.as_ref(), marginfi_program.as_ref()]
-    }
 }
 
 pub fn init_solauto_fees_supply_ta<'a>(

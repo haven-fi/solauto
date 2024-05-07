@@ -17,7 +17,7 @@ use crate::{
         obligation_position::LendingProtocolObligationPosition,
         shared::{DeserializedAccount, PositionAccount, SolautoError},
     },
-    utils::validation_utils::*,
+    utils::{solana_utils::account_has_data, validation_utils::*},
 };
 
 pub struct MarginfiBankAccounts<'a> {
@@ -41,7 +41,12 @@ impl<'a> MarginfiClient<'a> {
         solauto_position: &DeserializedAccount<PositionAccount>,
     ) -> ProgramResult {
         // validate_position_settings(solauto_position.as_ref().unwrap().data.setting_params, max_ltv, liq_threshold)
-        // TODO
+
+        if account_has_data(ctx.accounts.marginfi_account) {
+            return Ok(());
+        }
+
+        // TODO initialize marginfi account with cpi
         Ok(())
     }
 

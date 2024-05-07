@@ -1,21 +1,18 @@
-use solana_program::{
-    account_info::AccountInfo, entrypoint::ProgramResult, msg, program_pack::Pack,
-};
+use solana_program::{account_info::AccountInfo, entrypoint::ProgramResult, program_pack::Pack};
 use solend_sdk::state::Obligation;
 
 use crate::{
     clients::{marginfi::MarginfiClient, solend::SolendClient},
-    instructions::open_position::solauto_utils::get_marginfi_account_seeds,
     types::{
         instruction::accounts::{
             Context, MarginfiOpenPositionAccounts, SolendOpenPositionAccounts,
         },
-        shared::{DeserializedAccount, PositionAccount, SolautoError, POSITION_ACCOUNT_SPACE},
+        shared::{DeserializedAccount, PositionAccount, POSITION_ACCOUNT_SPACE},
     },
     utils::*,
 };
 
-use self::{solana_utils::account_has_custom_data, solauto_utils::get_owner};
+use self::solana_utils::account_has_data;
 
 pub fn marginfi_open_position<'a>(
     ctx: Context<'a, MarginfiOpenPositionAccounts<'a>>,
@@ -33,30 +30,6 @@ pub fn marginfi_open_position<'a>(
         ctx.accounts.signer_debt_ta,
         ctx.accounts.debt_mint,
     )?;
-
-    if !account_has_custom_data(ctx.accounts.marginfi_account) {
-        solana_utils::init_account(
-            ctx.accounts.system_program,
-            ctx.accounts.rent,
-            ctx.accounts.signer,
-            ctx.accounts.marginfi_account,
-            ctx.accounts.marginfi_program.key,
-            get_marginfi_account_seeds(
-                solauto_position.data.position_id,
-                Some(solauto_position.account_info.key),
-                ctx.accounts.signer.key,
-                ctx.accounts.marginfi_program.key,
-            ),
-            2304,
-        )?;
-    } else {
-        let _owner = get_owner(&solauto_position, ctx.accounts.signer);
-        // TODO deserialize marginfi account to check to make sure the account owner is correct
-        // if owner.key != &marginfi_account.owner {
-        //     msg!("Provided incorrect marginfi account for the given signer & solauto_position");
-        //     return Err(SolautoError::IncorrectAccounts.into());
-        // }
-    }
 
     MarginfiClient::initialize(&ctx, &solauto_position)?;
     ix_utils::update_data(&mut solauto_position)
@@ -103,24 +76,16 @@ pub fn solend_open_position<'a>(
         ]
     };
 
-    if !account_has_custom_data(ctx.accounts.obligation) {
+    if !account_has_data(ctx.accounts.obligation) {
         solana_utils::init_account(
             ctx.accounts.system_program,
             ctx.accounts.rent,
             ctx.accounts.signer,
             ctx.accounts.obligation,
             ctx.accounts.solend_program.key,
-            obligation_seeds,
+            Some(obligation_seeds),
             Obligation::LEN,
         )?;
-    } else {
-        let owner = get_owner(&solauto_position, ctx.accounts.signer);
-        let obligation = Obligation::unpack(&ctx.accounts.obligation.data.borrow())
-            .map_err(|_| SolautoError::FailedAccountDeserialization)?;
-        if owner.key != &obligation.owner {
-            msg!("Provided incorrect obligation account for the given signer & solauto_position");
-            return Err(SolautoError::IncorrectAccounts.into());
-        }
     }
 
     SolendClient::initialize(&ctx, &solauto_position)?;
@@ -139,16 +104,17 @@ fn initialize_solauto_position<'a, 'b>(
     signer_debt_ta: Option<&'a AccountInfo<'a>>,
     debt_mint: Option<&'a AccountInfo<'a>>,
 ) -> ProgramResult {
-    if !solauto_position.data.self_managed
-        || !account_has_custom_data(solauto_position.account_info)
-    {
+    if !solauto_position.data.self_managed || !account_has_data(solauto_position.account_info) {
         solana_utils::init_account(
             system_program,
             rent,
             signer,
             solauto_position.account_info,
             &crate::ID,
-            vec![&[solauto_position.data.position_id], signer.key.as_ref()],
+            Some(vec![
+                &[solauto_position.data.position_id],
+                signer.key.as_ref(),
+            ]),
             POSITION_ACCOUNT_SPACE,
         )?;
     }
