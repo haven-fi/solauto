@@ -251,10 +251,9 @@ pub fn get_rebalance_values(
     obligation_position: &LendingProtocolObligationPosition,
     rebalance_args: &RebalanceArgs,
     solauto_fees_bps: &SolautoFeesBps
-) -> Result<(f64, Option<u64>), ProgramError> {
-    let (target_liq_utilization_rate_bps, amount_to_dca_in) = match
-        is_dca_instruction(position_account, obligation_position)?
-    {
+) -> Result<(Option<f64>, Option<u64>), ProgramError> {
+    let dca_instruction = is_dca_instruction(position_account, obligation_position)?;
+    let (target_liq_utilization_rate_bps, amount_to_dca_in) = match dca_instruction {
         Some(direction) =>
             match direction {
                 DCADirection::In(_) => {
@@ -316,5 +315,22 @@ pub fn get_rebalance_values(
         debt_adjustment_usd.mul((max_price_slippage_bps as f64).div(10000.0)) +
         amount_usd_to_dca_in.mul((max_price_slippage_bps as f64).div(10000.0));
 
-    Ok((debt_adjustment_usd, amount_to_dca_in))
+    if let Some(DCADirection::In(_)) = dca_instruction {
+        let setting_params = &position_account.position.as_ref().unwrap().setting_params;
+        let dca_settings = position_account.position.as_ref().unwrap().active_dca.as_ref().unwrap();
+        let maximum_liq_utilization_rate_bps = setting_params.repay_from_bps.sub(
+            (setting_params.repay_from_bps as f64).mul(
+                (dca_settings.dca_risk_aversion_bps.unwrap() as f64).div(10000.0)
+            ) as u16
+        );
+
+        if
+            obligation_position.current_liq_utilization_rate_bps() >
+            maximum_liq_utilization_rate_bps
+        {
+            return Ok((None, amount_to_dca_in));
+        }
+    }
+
+    Ok((Some(debt_adjustment_usd), amount_to_dca_in))
 }

@@ -189,7 +189,11 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
             )?;
         }
 
-        let increasing_leverage = debt_adjustment_usd > 0.0;
+        if debt_adjustment_usd.is_none() {
+            return Ok(());
+        }
+
+        let increasing_leverage = debt_adjustment_usd.unwrap() > 0.0;
 
         let (market_price, decimals) = if increasing_leverage {
             (
@@ -204,7 +208,7 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
         };
 
         let base_unit_amount = math_utils::to_base_unit::<f64, u8, u64>(
-            debt_adjustment_usd.div(market_price),
+            debt_adjustment_usd.unwrap().div(market_price),
             decimals
         );
 
