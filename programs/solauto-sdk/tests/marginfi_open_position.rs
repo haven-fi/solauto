@@ -4,7 +4,7 @@ pub mod test_utils;
 mod open_position {
     use chrono::Utc;
     use solana_program_test::tokio;
-    use solana_sdk::signature::Signer;
+    use solana_sdk::{ signature::Signer, transaction::Transaction };
     use solauto_sdk::generated::{
         accounts::PositionAccount,
         types::{ DCADirection, DCASettings, LendingPlatform, SolautoSettingsParameters },
@@ -55,7 +55,39 @@ mod open_position {
     }
 
     #[tokio::test]
-    async fn std_update_position_with_dca() {
+    async fn open_self_managed_position() {
+        let mut args = GeneralArgs::new();
+        args.position_id(0);
+
+        let mut data = MarginfiTestData::new(&args).await;
+        data.general
+            .test_prefixtures().await
+            .unwrap()
+            .create_referral_state_accounts().await
+            .unwrap();
+
+        let tx = Transaction::new_signed_with_payer(
+            &[
+                data
+                    .open_position_ix(None, None)
+                    .marginfi_account(data.marginfi_account, true)
+                    .instruction(),
+            ],
+            Some(&data.general.ctx.payer.pubkey()),
+            &[&data.general.ctx.payer, data.marginfi_account_keypair.as_ref().unwrap()],
+            data.general.ctx.last_blockhash
+        );
+        data.general.ctx.banks_client.process_transaction(tx).await.unwrap();
+
+        let solauto_position = data.general.deserialize_account_data::<PositionAccount>(
+            data.general.solauto_position
+        ).await;
+        assert!(solauto_position.self_managed == true);
+        assert!(solauto_position.position.is_none());
+    }
+
+    #[tokio::test]
+    async fn std_open_position_with_dca() {
         let args = GeneralArgs::new();
         let mut data = MarginfiTestData::new(&args).await;
         data.general

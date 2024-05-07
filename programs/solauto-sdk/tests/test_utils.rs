@@ -341,8 +341,9 @@ impl<'a> GeneralTestData<'a> {
 
 pub struct MarginfiTestData<'a> {
     pub general: GeneralTestData<'a>,
-    pub marginfi_group: Pubkey,
     pub marginfi_account: Pubkey,
+    pub marginfi_account_keypair: Option<Keypair>,
+    pub marginfi_group: Pubkey,
 }
 
 impl<'a> MarginfiTestData<'a> {
@@ -350,7 +351,7 @@ impl<'a> MarginfiTestData<'a> {
         let general = GeneralTestData::new(args, MARGINFI_PROGRAM).await;
         let marginfi_group = Keypair::new().pubkey();
 
-        let marginfi_account = if args.position_id != 0 {
+        let (marginfi_account, keypair) = if args.position_id != 0 {
             let signer_pubkey = general.ctx.payer.pubkey();
             let marginfi_account_seeds = &[
                 general.solauto_position.as_ref(),
@@ -361,14 +362,16 @@ impl<'a> MarginfiTestData<'a> {
                 marginfi_account_seeds.as_slice(),
                 &SOLAUTO_ID
             );
-            marginfi_account
+            (marginfi_account, None)
         } else {
-            Keypair::new().pubkey()
+            let keypair = Keypair::new();
+            (keypair.pubkey(), Some(keypair))
         };
 
         Self {
             general,
             marginfi_account: marginfi_account,
+            marginfi_account_keypair: keypair,
             marginfi_group: marginfi_group,
         }
     }
