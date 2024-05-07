@@ -58,7 +58,6 @@ mod open_position {
     async fn open_self_managed_position() {
         let mut args = GeneralArgs::new();
         args.position_id(0);
-
         let mut data = MarginfiTestData::new(&args).await;
         data.general
             .test_prefixtures().await
@@ -66,18 +65,7 @@ mod open_position {
             .create_referral_state_accounts().await
             .unwrap();
 
-        let tx = Transaction::new_signed_with_payer(
-            &[
-                data
-                    .open_position_ix(None, None)
-                    .marginfi_account(data.marginfi_account, true)
-                    .instruction(),
-            ],
-            Some(&data.general.ctx.payer.pubkey()),
-            &[&data.general.ctx.payer, data.marginfi_account_keypair.as_ref().unwrap()],
-            data.general.ctx.last_blockhash
-        );
-        data.general.ctx.banks_client.process_transaction(tx).await.unwrap();
+        data.open_position(None, None).await.unwrap();
 
         let solauto_position = data.general.deserialize_account_data::<PositionAccount>(
             data.general.solauto_position

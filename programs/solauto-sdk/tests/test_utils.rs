@@ -381,7 +381,7 @@ impl<'a> MarginfiTestData<'a> {
         settings: Option<SolautoSettingsParameters>,
         active_dca: Option<DCASettings>
     ) -> Result<&mut Self, BanksClientError> {
-        let setting_params = if settings.is_some() {
+        let setting_params = if settings.is_some() || self.general.position_id == 0 {
             settings.unwrap()
         } else {
             SolautoSettingsParameters {
@@ -391,10 +391,14 @@ impl<'a> MarginfiTestData<'a> {
                 boost_to_bps: 5000,
             }
         };
+        let mut signers = vec![&self.general.ctx.payer];
+        if self.general.position_id != 0 {
+            signers.push(self.marginfi_account_keypair.as_ref().unwrap());
+        }
         let tx = Transaction::new_signed_with_payer(
             &[self.open_position_ix(Some(setting_params.clone()), active_dca).instruction()],
             Some(&self.general.ctx.payer.pubkey()),
-            &[&self.general.ctx.payer],
+            signers.as_slice(),
             self.general.ctx.last_blockhash
         );
         self.general.ctx.banks_client.process_transaction(tx).await.unwrap();
@@ -422,7 +426,7 @@ impl<'a> MarginfiTestData<'a> {
             .referred_by_supply_ta(self.general.referred_by_supply_ta)
             .solauto_position(self.general.solauto_position)
             .marginfi_group(self.marginfi_group)
-            .marginfi_account(self.marginfi_account, false)
+            .marginfi_account(self.marginfi_account, self.general.position_id == 0)
             .position_supply_ta(self.general.position_supply_liquidity_ta)
             .supply_mint(self.general.supply_liquidity_mint.pubkey())
             .signer_debt_ta(self.general.signer_debt_liquidity_ta)
