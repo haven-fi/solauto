@@ -1253,6 +1253,12 @@
             "type": {
               "option": "u16"
             }
+          },
+          {
+            "name": "limitGapBps",
+            "type": {
+              "option": "u16"
+            }
           }
         ]
       }
@@ -1282,6 +1288,12 @@
             "name": "dcaDirection",
             "type": {
               "defined": "DCADirection"
+            }
+          },
+          {
+            "name": "dcaRiskAversionBps",
+            "type": {
+              "option": "u16"
             }
           }
         ]

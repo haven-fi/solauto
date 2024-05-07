@@ -13,4 +13,5 @@ use borsh::BorshSerialize;
 pub struct RebalanceArgs {
     pub target_liq_utilization_rate_bps: Option<u16>,
     pub max_price_slippage_bps: Option<u16>,
+    pub limit_gap_bps: Option<u16>,
 }

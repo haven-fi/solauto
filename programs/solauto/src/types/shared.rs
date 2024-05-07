@@ -39,7 +39,7 @@ pub struct DCASettings {
     /// depending on the distance from `current_liq_utilization_rate` to `repay_from` parameter.
     /// e.g. a lower value will mean the DCA will more likely increase leverage than not, and vice-versa.
     /// Defaults to 1000.
-    pub dca_risk_aversion_bps: Option<u16>
+    pub dca_risk_aversion_bps: Option<u16>,
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType)]

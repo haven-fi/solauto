@@ -6,9 +6,12 @@
  * @see https://github.com/metaplex-foundation/kinobi
  */
 
+import { Option, OptionOrNullable } from '@metaplex-foundation/umi';
 import {
   Serializer,
+  option,
   struct,
+  u16,
   u64,
   u8,
 } from '@metaplex-foundation/umi/serializers';
@@ -20,6 +23,7 @@ export type DCASettings = {
   dcaPeriodsPassed: number;
   targetDcaPeriods: number;
   dcaDirection: DCADirection;
+  dcaRiskAversionBps: Option<number>;
 };
 
 export type DCASettingsArgs = {
@@ -28,6 +32,7 @@ export type DCASettingsArgs = {
   dcaPeriodsPassed: number;
   targetDcaPeriods: number;
   dcaDirection: DCADirectionArgs;
+  dcaRiskAversionBps: OptionOrNullable<number>;
 };
 
 export function getDCASettingsSerializer(): Serializer<
@@ -41,6 +46,7 @@ export function getDCASettingsSerializer(): Serializer<
       ['dcaPeriodsPassed', u8()],
       ['targetDcaPeriods', u8()],
       ['dcaDirection', getDCADirectionSerializer()],
+      ['dcaRiskAversionBps', option(u16())],
     ],
     { description: 'DCASettings' }
   ) as Serializer<DCASettingsArgs, DCASettings>;

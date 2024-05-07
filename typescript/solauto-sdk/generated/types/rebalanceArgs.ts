@@ -17,11 +17,13 @@ import {
 export type RebalanceArgs = {
   targetLiqUtilizationRateBps: Option<number>;
   maxPriceSlippageBps: Option<number>;
+  limitGapBps: Option<number>;
 };
 
 export type RebalanceArgsArgs = {
   targetLiqUtilizationRateBps: OptionOrNullable<number>;
   maxPriceSlippageBps: OptionOrNullable<number>;
+  limitGapBps: OptionOrNullable<number>;
 };
 
 export function getRebalanceArgsSerializer(): Serializer<
@@ -32,6 +34,7 @@ export function getRebalanceArgsSerializer(): Serializer<
     [
       ['targetLiqUtilizationRateBps', option(u16())],
       ['maxPriceSlippageBps', option(u16())],
+      ['limitGapBps', option(u16())],
     ],
     { description: 'RebalanceArgs' }
   ) as Serializer<RebalanceArgsArgs, RebalanceArgs>;

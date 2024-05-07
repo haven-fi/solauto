@@ -15,7 +15,8 @@ use crate::{
             SolautoAction, SolautoStandardAccounts,
         },
         shared::{
-            DCADirection, DCASettings, DeserializedAccount, LendingPlatform, PositionAccount, ReferralStateAccount, SolautoError, SolautoSettingsParameters
+            DCADirection, DCASettings, DeserializedAccount, LendingPlatform, PositionAccount,
+            ReferralStateAccount, SolautoError, SolautoSettingsParameters,
         },
     },
 };
@@ -375,7 +376,9 @@ pub fn validate_dca_settings(settings: &Option<DCASettings>) -> ProgramResult {
         return Err(SolautoError::InvalidDCASettings.into());
     }
 
-    if dca_settings.dca_direction == DCADirection::Out && dca_settings.dca_risk_aversion_bps.is_some() {
+    if dca_settings.dca_direction == DCADirection::Out
+        && dca_settings.dca_risk_aversion_bps.is_some()
+    {
         msg!("DCA confidence BPS parameter is only for when DCAing-in");
         return Err(SolautoError::InvalidDCASettings.into());
     }

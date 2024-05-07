@@ -86,6 +86,7 @@ mod open_position {
             dca_periods_passed: 0,
             target_dca_periods: 5,
             dca_direction: DCADirection::In(dca_amount),
+            dca_risk_aversion_bps: None,
         };
         data.open_position(None, Some(active_dca.clone())).await.unwrap();
 
