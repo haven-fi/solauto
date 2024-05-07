@@ -4,7 +4,7 @@ pub mod test_utils;
 mod open_position {
     use chrono::Utc;
     use solana_program_test::tokio;
-    use solana_sdk::{ signature::Signer, transaction::Transaction };
+    use solana_sdk::signature::Signer;
     use solauto_sdk::generated::{
         accounts::PositionAccount,
         types::{ DCADirection, DCASettings, LendingPlatform, SolautoSettingsParameters },
@@ -70,6 +70,7 @@ mod open_position {
         let solauto_position = data.general.deserialize_account_data::<PositionAccount>(
             data.general.solauto_position
         ).await;
+        assert!(solauto_position.position_id == 0);
         assert!(solauto_position.self_managed == true);
         assert!(solauto_position.position.is_none());
     }
