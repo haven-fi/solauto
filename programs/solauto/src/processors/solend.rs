@@ -11,7 +11,7 @@ use crate::{
             },
             RebalanceArgs, SolautoAction, SolautoStandardAccounts, UpdatePositionData,
         },
-        shared::{DeserializedAccount, LendingPlatform, PositionAccount, ReferralStateAccount},
+        shared::{DeserializedAccount, LendingPlatform, ReferralStateAccount, SolautoPosition},
     },
     utils::*,
 };
@@ -87,7 +87,7 @@ pub fn process_solend_refresh_data<'a>(accounts: &'a [AccountInfo<'a>]) -> Progr
 
     let ctx = SolendRefreshDataAccounts::context(accounts)?;
     let solauto_position =
-        DeserializedAccount::<PositionAccount>::deserialize(ctx.accounts.solauto_position)?;
+        DeserializedAccount::<SolautoPosition>::deserialize(ctx.accounts.solauto_position)?;
     validation_utils::validate_program_account(
         &ctx.accounts.solend_program,
         LendingPlatform::Solend,
@@ -104,7 +104,7 @@ pub fn process_solend_interaction_instruction<'a>(
 
     let ctx = SolendProtocolInteractionAccounts::context(accounts)?;
     let solauto_position =
-        DeserializedAccount::<PositionAccount>::deserialize(Some(ctx.accounts.solauto_position))?
+        DeserializedAccount::<SolautoPosition>::deserialize(Some(ctx.accounts.solauto_position))?
             .unwrap();
 
     let std_accounts = SolautoStandardAccounts {
@@ -136,7 +136,7 @@ pub fn process_solend_rebalance<'a>(
 
     let ctx = SolendRebalanceAccounts::context(accounts)?;
     let solauto_position =
-        DeserializedAccount::<PositionAccount>::deserialize(Some(ctx.accounts.solauto_position))?
+        DeserializedAccount::<SolautoPosition>::deserialize(Some(ctx.accounts.solauto_position))?
             .unwrap();
 
     let std_accounts = SolautoStandardAccounts {

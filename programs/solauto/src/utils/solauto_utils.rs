@@ -14,14 +14,14 @@ use crate::{
         obligation_position::LendingProtocolObligationPosition,
         shared::{
             DCADirection, DeserializedAccount, LendingPlatform, LendingProtocolPositionData,
-            PositionAccount, PositionData, PositionState, ReferralStateAccount, SolautoError,
+            PositionData, PositionState, ReferralStateAccount, SolautoError, SolautoPosition,
             REFERRAL_ACCOUNT_SPACE,
         },
     },
 };
 
 pub fn get_owner<'a, 'b>(
-    solauto_position: &'b DeserializedAccount<'a, PositionAccount>,
+    solauto_position: &'b DeserializedAccount<'a, SolautoPosition>,
     signer: &'a AccountInfo<'a>,
 ) -> &'a AccountInfo<'a> {
     if solauto_position.data.self_managed {
@@ -39,24 +39,24 @@ pub fn create_new_solauto_position<'a>(
     supply_mint: &'a AccountInfo<'a>,
     debt_mint: Option<&'a AccountInfo<'a>>,
     lending_protocol_account: &'a AccountInfo<'a>,
-) -> Result<DeserializedAccount<'a, PositionAccount>, ProgramError> {
+) -> Result<DeserializedAccount<'a, SolautoPosition>, ProgramError> {
     let data = if update_position_data.setting_params.is_some() {
         if update_position_data.position_id == 0 {
             msg!("Position ID 0 is reserved for self-managed positions");
             return Err(ProgramError::InvalidInstructionData.into());
         }
-        
+
         if account_has_data(solauto_position) {
             msg!("Cannot use open position instruction on an existing Solauto position");
             return Err(SolautoError::IncorrectAccounts.into());
         }
 
-        PositionAccount {
+        SolautoPosition {
             position_id: update_position_data.position_id,
             authority: *signer.key,
             self_managed: false,
             position: Some(PositionData {
-                setting_params: update_position_data.setting_params.unwrap().clone(),
+                setting_params: update_position_data.setting_params.clone(),
                 state: PositionState::default(),
                 lending_platform,
                 protocol_data: LendingProtocolPositionData {
@@ -70,7 +70,7 @@ pub fn create_new_solauto_position<'a>(
             }),
         }
     } else {
-        PositionAccount {
+        SolautoPosition {
             position_id: 0,
             authority: *signer.key,
             self_managed: true,
@@ -78,7 +78,7 @@ pub fn create_new_solauto_position<'a>(
         }
     };
 
-    Ok(DeserializedAccount::<PositionAccount> {
+    Ok(DeserializedAccount::<SolautoPosition> {
         account_info: solauto_position,
         data: Box::new(data),
     })
@@ -178,7 +178,7 @@ pub fn init_solauto_fees_supply_ta<'a>(
 
 pub fn initiate_dca_in_if_necessary<'a, 'b>(
     token_program: &'a AccountInfo<'a>,
-    solauto_position: &'b mut DeserializedAccount<'a, PositionAccount>,
+    solauto_position: &'b mut DeserializedAccount<'a, SolautoPosition>,
     position_debt_ta: Option<&'a AccountInfo<'a>>,
     signer: &'a AccountInfo<'a>,
     signer_debt_ta: Option<&'a AccountInfo<'a>>,
@@ -252,10 +252,18 @@ pub fn initiate_dca_in_if_necessary<'a, 'b>(
 }
 
 pub fn is_dca_instruction(
-    solauto_position: &PositionAccount,
+    solauto_position: &SolautoPosition,
     obligation_position: &LendingProtocolObligationPosition,
 ) -> Result<Option<DCADirection>, ProgramError> {
-    if solauto_position.self_managed {
+    if solauto_position.self_managed
+        || solauto_position
+            .position
+            .as_ref()
+            .unwrap()
+            .protocol_data
+            .debt_mint
+            .is_none()
+    {
         return Ok(None);
     }
 
@@ -265,6 +273,8 @@ pub fn is_dca_instruction(
             .as_ref()
             .unwrap()
             .setting_params
+            .as_ref()
+            .unwrap()
             .repay_from_bps
     {
         return Ok(None);

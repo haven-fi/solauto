@@ -21,7 +21,7 @@ use crate::{
             },
             UpdatePositionData, UpdateReferralStatesArgs,
         },
-        shared::{DeserializedAccount, PositionAccount, ReferralStateAccount, SolautoError},
+        shared::{DeserializedAccount, ReferralStateAccount, SolautoError, SolautoPosition},
     },
     utils::{ix_utils, solana_utils, solauto_utils, validation_utils},
 };
@@ -167,7 +167,7 @@ pub fn process_update_position_instruction<'a>(
 ) -> ProgramResult {
     let ctx = UpdatePositionAccounts::context(accounts)?;
     let mut solauto_position =
-        DeserializedAccount::<PositionAccount>::deserialize(Some(ctx.accounts.solauto_position))?
+        DeserializedAccount::<SolautoPosition>::deserialize(Some(ctx.accounts.solauto_position))?
             .unwrap();
 
     validation_utils::validate_signer(ctx.accounts.signer, &solauto_position, true)?;
@@ -176,19 +176,24 @@ pub fn process_update_position_instruction<'a>(
         return Err(SolautoError::IncorrectAccounts.into());
     }
 
-    let position_data = solauto_position.data.position.as_mut().unwrap();
     if new_data.setting_params.is_some() {
+        let position_data = solauto_position.data.position.as_ref().unwrap();
         validation_utils::validate_position_settings(
-            new_data.setting_params.as_ref().unwrap(),
+            &solauto_position,
             (position_data.state.max_ltv_bps as f64).div(10000.0),
             (position_data.state.liq_threshold as f64).div(10000.0),
         )?;
-        position_data.setting_params = new_data.setting_params.as_ref().unwrap().clone();
+        solauto_position
+            .data
+            .position
+            .as_mut()
+            .unwrap()
+            .setting_params = new_data.setting_params.clone();
     }
 
     if new_data.active_dca.is_some() {
         validation_utils::validate_dca_settings(&new_data.active_dca)?;
-        position_data.active_dca = new_data.active_dca.clone();
+        solauto_position.data.position.as_mut().unwrap().active_dca = new_data.active_dca.clone();
         solauto_utils::initiate_dca_in_if_necessary(
             ctx.accounts.token_program,
             &mut solauto_position,
@@ -204,7 +209,7 @@ pub fn process_update_position_instruction<'a>(
 pub fn process_close_position_instruction<'a>(accounts: &'a [AccountInfo<'a>]) -> ProgramResult {
     let ctx = ClosePositionAccounts::context(accounts)?;
     let solauto_position =
-        DeserializedAccount::<PositionAccount>::deserialize(Some(ctx.accounts.solauto_position))?
+        DeserializedAccount::<SolautoPosition>::deserialize(Some(ctx.accounts.solauto_position))?
             .unwrap();
 
     validation_utils::validate_signer(ctx.accounts.signer, &solauto_position, true)?;

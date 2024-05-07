@@ -7,7 +7,7 @@ use crate::{
         instruction::accounts::{
             Context, MarginfiOpenPositionAccounts, SolendOpenPositionAccounts,
         },
-        shared::{DeserializedAccount, PositionAccount, POSITION_ACCOUNT_SPACE},
+        shared::{DeserializedAccount, SolautoPosition, POSITION_ACCOUNT_SPACE},
     },
     utils::*,
 };
@@ -16,7 +16,7 @@ use self::solana_utils::account_has_data;
 
 pub fn marginfi_open_position<'a>(
     ctx: Context<'a, MarginfiOpenPositionAccounts<'a>>,
-    mut solauto_position: DeserializedAccount<'a, PositionAccount>,
+    mut solauto_position: DeserializedAccount<'a, SolautoPosition>,
 ) -> ProgramResult {
     initialize_solauto_position(
         &mut solauto_position,
@@ -37,7 +37,7 @@ pub fn marginfi_open_position<'a>(
 
 pub fn solend_open_position<'a>(
     ctx: Context<'a, SolendOpenPositionAccounts<'a>>,
-    mut solauto_position: DeserializedAccount<'a, PositionAccount>,
+    mut solauto_position: DeserializedAccount<'a, SolautoPosition>,
 ) -> ProgramResult {
     initialize_solauto_position(
         &mut solauto_position,
@@ -93,7 +93,7 @@ pub fn solend_open_position<'a>(
 }
 
 fn initialize_solauto_position<'a, 'b>(
-    solauto_position: &'b mut DeserializedAccount<'a, PositionAccount>,
+    solauto_position: &'b mut DeserializedAccount<'a, SolautoPosition>,
     system_program: &'a AccountInfo<'a>,
     token_program: &'a AccountInfo<'a>,
     rent: &'a AccountInfo<'a>,

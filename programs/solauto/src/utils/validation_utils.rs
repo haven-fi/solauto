@@ -15,8 +15,8 @@ use crate::{
             SolautoAction, SolautoStandardAccounts,
         },
         shared::{
-            DCADirection, DCASettings, DeserializedAccount, LendingPlatform, PositionAccount,
-            ReferralStateAccount, SolautoError, SolautoSettingsParameters,
+            DCADirection, DCASettings, DeserializedAccount, LendingPlatform, ReferralStateAccount,
+            SolautoError, SolautoPosition,
         },
     },
 };
@@ -73,7 +73,7 @@ pub fn generic_instruction_validation(
 
 pub fn validate_signer(
     signer: &AccountInfo,
-    solauto_position: &DeserializedAccount<PositionAccount>,
+    solauto_position: &DeserializedAccount<SolautoPosition>,
     authority_only_ix: bool,
 ) -> ProgramResult {
     if !signer.is_signer {
@@ -108,27 +108,44 @@ pub fn validate_signer(
 }
 
 pub fn validate_position_settings(
-    settings: &SolautoSettingsParameters,
+    solauto_position: &DeserializedAccount<SolautoPosition>,
     max_ltv: f64,
     liq_threshold: f64,
 ) -> ProgramResult {
+    if solauto_position.data.self_managed {
+        return Ok(());
+    }
+
+    let position_data = solauto_position.data.position.as_ref().unwrap();
+
+    if position_data.protocol_data.debt_mint.is_none() && position_data.setting_params.is_some() {
+        msg!("Cannot provide setting parameters when not borrowing debt");
+        return Err(SolautoError::InvalidPositionSettings.into());
+    }
+
+    if position_data.protocol_data.debt_mint.is_some() && position_data.setting_params.is_none() {
+        msg!("Must provide setting parameters if position is borrowing debt");
+        return Err(SolautoError::InvalidPositionSettings.into());
+    }
+
+    let settings = position_data.setting_params.as_ref().unwrap();
     let invalid_params = |error_msg| {
         msg!(error_msg);
         Err(SolautoError::InvalidPositionSettings.into())
     };
 
-    if settings.repay_from_bps != 0 && settings.repay_from_bps <= settings.repay_to_bps {
+    if settings.repay_from_bps <= settings.repay_to_bps {
         return invalid_params("repay_from_bps value must be greater than repay_to_bps value");
     }
-    if settings.boost_from_bps != 0 && settings.boost_from_bps >= settings.boost_to_bps {
+    if settings.boost_from_bps >= settings.boost_to_bps {
         return invalid_params("boost_from_bps value must be less than boost_to_bps value");
     }
-    if settings.repay_from_bps != 0 && settings.repay_from_bps - settings.repay_to_bps < 50 {
+    if settings.repay_from_bps - settings.repay_to_bps < 50 {
         return invalid_params(
             "Minimum difference between repay_from_bps and repay_to_bps must be 50 or greater",
         );
     }
-    if settings.boost_to_bps != 0 && settings.boost_to_bps - settings.boost_from_bps < 50 {
+    if settings.boost_to_bps - settings.boost_from_bps < 50 {
         return invalid_params(
             "Minimum difference between boost_to_bps to boost_from_bps must be 50 or greater",
         );
@@ -305,7 +322,7 @@ pub fn validate_referral_accounts(
 
 pub fn validate_lending_protocol_accounts(
     signer: &AccountInfo,
-    solauto_position: &DeserializedAccount<PositionAccount>,
+    solauto_position: &DeserializedAccount<SolautoPosition>,
     protocol_position: &AccountInfo,
     source_supply_ta: &AccountInfo,
     source_debt_ta: Option<&AccountInfo>,

@@ -1145,7 +1145,7 @@
   ],
   "accounts": [
     {
-      "name": "PositionAccount",
+      "name": "SolautoPosition",
       "type": {
         "kind": "struct",
         "fields": [
@@ -1408,7 +1408,9 @@
           {
             "name": "settingParams",
             "type": {
-              "defined": "SolautoSettingsParameters"
+              "option": {
+                "defined": "SolautoSettingsParameters"
+              }
             }
           },
           {

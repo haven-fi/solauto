@@ -11,7 +11,7 @@ use super::{
     instruction::{RebalanceArgs, SolautoAction, SolautoStandardAccounts, WithdrawParams},
     lending_protocol::{LendingProtocolClient, LendingProtocolTokenAccounts},
     obligation_position::LendingProtocolObligationPosition,
-    shared::{DeserializedAccount, PositionAccount, SolautoError, SolautoRebalanceStep},
+    shared::{DeserializedAccount, SolautoError, SolautoPosition, SolautoRebalanceStep},
 };
 use crate::utils::*;
 
@@ -113,6 +113,8 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
                 .as_ref()
                 .unwrap()
                 .setting_params
+                .as_ref()
+                .unwrap()
                 .repay_from_bps;
             if self.obligation_position.current_liq_utilization_rate_bps() > repay_from_bps {
                 return Err(SolautoError::ExceededValidUtilizationRate.into());
@@ -360,7 +362,7 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
 
     pub fn refresh_position(
         obligation_position: &LendingProtocolObligationPosition,
-        solauto_position: &mut DeserializedAccount<PositionAccount>,
+        solauto_position: &mut DeserializedAccount<SolautoPosition>,
         position_supply_ta: Option<&'a AccountInfo<'a>>,
         position_debt_ta: Option<&'a AccountInfo<'a>>,
     ) -> ProgramResult {

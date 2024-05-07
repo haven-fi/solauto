@@ -6,7 +6,7 @@ mod open_position {
     use solana_program_test::tokio;
     use solana_sdk::signature::Signer;
     use solauto_sdk::generated::{
-        accounts::PositionAccount,
+        accounts::SolautoPosition,
         types::{ DCADirection, DCASettings, LendingPlatform, SolautoSettingsParameters },
     };
     use spl_token::state::Account as TokenAccount;
@@ -31,7 +31,7 @@ mod open_position {
         };
         data.open_position(Some(setting_params.clone()), None).await.unwrap();
 
-        let solauto_position = data.general.deserialize_account_data::<PositionAccount>(
+        let solauto_position = data.general.deserialize_account_data::<SolautoPosition>(
             data.general.solauto_position
         ).await;
 
@@ -40,7 +40,7 @@ mod open_position {
         assert!(solauto_position.authority == data.general.ctx.payer.pubkey());
 
         let position = solauto_position.position.as_ref().unwrap();
-        assert!(position.setting_params == setting_params);
+        assert!(position.setting_params == Some(setting_params));
         assert!(position.active_dca == None);
         assert!(position.lending_platform == LendingPlatform::Marginfi);
         assert!(position.protocol_data.supply_mint == data.general.supply_liquidity_mint.pubkey());
@@ -67,7 +67,7 @@ mod open_position {
 
         data.open_position(None, None).await.unwrap();
 
-        let solauto_position = data.general.deserialize_account_data::<PositionAccount>(
+        let solauto_position = data.general.deserialize_account_data::<SolautoPosition>(
             data.general.solauto_position
         ).await;
         assert!(solauto_position.position_id == 0);
@@ -114,7 +114,7 @@ mod open_position {
             Some(active_dca.clone())
         ).await.unwrap();
 
-        let position_account = data.general.deserialize_account_data::<PositionAccount>(
+        let position_account = data.general.deserialize_account_data::<SolautoPosition>(
             data.general.solauto_position
         ).await;
         let position = position_account.position.as_ref().unwrap();

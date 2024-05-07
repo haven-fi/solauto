@@ -11,7 +11,7 @@ use crate::{
             },
             RebalanceArgs, SolautoAction, SolautoStandardAccounts, UpdatePositionData,
         },
-        shared::{DeserializedAccount, LendingPlatform, PositionAccount, ReferralStateAccount},
+        shared::{DeserializedAccount, LendingPlatform, ReferralStateAccount, SolautoPosition},
     },
     utils::*,
 };
@@ -85,7 +85,7 @@ pub fn process_marginfi_open_position_instruction<'a>(
 pub fn process_marginfi_refresh_data<'a>(accounts: &'a [AccountInfo<'a>]) -> ProgramResult {
     let ctx = MarginfiRefreshDataAccounts::context(accounts)?;
     let solauto_position =
-        DeserializedAccount::<PositionAccount>::deserialize(ctx.accounts.solauto_position)?;
+        DeserializedAccount::<SolautoPosition>::deserialize(ctx.accounts.solauto_position)?;
     validation_utils::validate_program_account(
         &ctx.accounts.marginfi_program,
         LendingPlatform::Marginfi,
@@ -99,7 +99,7 @@ pub fn process_marginfi_interaction_instruction<'a>(
 ) -> ProgramResult {
     let ctx = MarginfiProtocolInteractionAccounts::context(accounts)?;
     let solauto_position =
-        DeserializedAccount::<PositionAccount>::deserialize(Some(ctx.accounts.solauto_position))?
+        DeserializedAccount::<SolautoPosition>::deserialize(Some(ctx.accounts.solauto_position))?
             .unwrap();
 
     let std_accounts = SolautoStandardAccounts {
@@ -132,7 +132,7 @@ pub fn process_marginfi_rebalance<'a>(
 ) -> ProgramResult {
     let ctx = MarginfiRebalanceAccounts::context(accounts)?;
     let solauto_position =
-        DeserializedAccount::<PositionAccount>::deserialize(Some(ctx.accounts.solauto_position))?
+        DeserializedAccount::<SolautoPosition>::deserialize(Some(ctx.accounts.solauto_position))?
             .unwrap();
 
     let std_accounts = SolautoStandardAccounts {

@@ -16,7 +16,7 @@ use crate::{
             RebalanceArgs, SolautoStandardAccounts, SOLAUTO_REBALANCE_IX_DISCRIMINATORS,
         },
         obligation_position::LendingProtocolObligationPosition,
-        shared::{DCADirection, PositionAccount, SolautoError, SolautoRebalanceStep},
+        shared::{DCADirection, SolautoError, SolautoPosition, SolautoRebalanceStep},
     },
 };
 
@@ -163,7 +163,7 @@ pub fn get_rebalance_step(
 }
 
 fn get_additional_amount_to_dca_in(
-    position_account: &mut PositionAccount,
+    position_account: &mut SolautoPosition,
 ) -> Result<u64, ProgramError> {
     let position = position_account.position.as_mut().unwrap();
 
@@ -182,7 +182,7 @@ fn get_additional_amount_to_dca_in(
 }
 
 fn target_liq_utilization_rate_bps_from_dca_out(
-    position_account: &mut PositionAccount,
+    position_account: &mut SolautoPosition,
     obligation_position: &LendingProtocolObligationPosition,
 ) -> Result<u16, ProgramError> {
     let position = position_account.position.as_mut().unwrap();
@@ -191,7 +191,7 @@ fn target_liq_utilization_rate_bps_from_dca_out(
     let percent = (1.0)
         .div((dca_settings.target_dca_periods as f64).sub(dca_settings.dca_periods_passed as f64));
 
-    let setting_params = &mut position.setting_params;
+    let setting_params = position.setting_params.as_mut().unwrap();
 
     let new_boost_from_bps = (setting_params.boost_from_bps as f64)
         .sub((setting_params.boost_from_bps as f64).mul(percent))
@@ -218,7 +218,7 @@ fn target_liq_utilization_rate_bps_from_dca_out(
 }
 
 fn get_std_target_liq_utilization_rate_bps(
-    position_account: &mut PositionAccount,
+    position_account: &mut SolautoPosition,
     obligation_position: &LendingProtocolObligationPosition,
     rebalance_args: &RebalanceArgs,
 ) -> Result<u16, SolautoError> {
@@ -226,7 +226,13 @@ fn get_std_target_liq_utilization_rate_bps(
 
     let target_rate_bps: Result<u16, SolautoError> =
         if rebalance_args.target_liq_utilization_rate_bps.is_none() {
-            let setting_params = &position_account.position.as_ref().unwrap().setting_params;
+            let setting_params = &position_account
+                .position
+                .as_ref()
+                .unwrap()
+                .setting_params
+                .as_ref()
+                .unwrap();
             if current_liq_utilization_rate_bps > setting_params.repay_from_bps {
                 let maximum_repay_to_bps = math_utils::get_maximum_repay_to_bps_param(
                     obligation_position.max_ltv,
@@ -246,7 +252,7 @@ fn get_std_target_liq_utilization_rate_bps(
 }
 
 pub fn get_rebalance_values(
-    position_account: &mut PositionAccount,
+    position_account: &mut SolautoPosition,
     obligation_position: &LendingProtocolObligationPosition,
     rebalance_args: &RebalanceArgs,
     solauto_fees_bps: &SolautoFeesBps,
@@ -328,7 +334,13 @@ pub fn get_rebalance_values(
         + amount_usd_to_dca_in.mul((max_price_slippage_bps as f64).div(10000.0));
 
     if let Some(DCADirection::In(_)) = dca_instruction {
-        let setting_params = &position_account.position.as_ref().unwrap().setting_params;
+        let setting_params = &position_account
+            .position
+            .as_ref()
+            .unwrap()
+            .setting_params
+            .as_ref()
+            .unwrap();
         let dca_settings = position_account
             .position
             .as_ref()

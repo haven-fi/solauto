@@ -20,7 +20,7 @@ use crate::{
         },
         lending_protocol::*,
         obligation_position::*,
-        shared::{DeserializedAccount, LendingPlatform, PositionAccount, SolautoError},
+        shared::{DeserializedAccount, LendingPlatform, SolautoError, SolautoPosition},
     },
     utils::{ix_utils::*, solana_utils::account_has_data, solauto_utils::*, validation_utils::*},
 };
@@ -49,7 +49,7 @@ pub struct SolendClient<'a> {
 impl<'a> SolendClient<'a> {
     pub fn initialize<'b>(
         ctx: &'b Context<'a, SolendOpenPositionAccounts<'a>>,
-        solauto_position: &'b DeserializedAccount<'a, PositionAccount>,
+        solauto_position: &'b DeserializedAccount<'a, SolautoPosition>,
     ) -> ProgramResult {
         let supply_reserve =
             DeserializedAccount::<Reserve>::unpack(Some(ctx.accounts.supply_reserve))?.unwrap();
@@ -60,16 +60,7 @@ impl<'a> SolendClient<'a> {
 
         let (max_ltv, liq_threshold) =
             SolendClient::get_max_ltv_and_liq_threshold(&supply_reserve.data);
-        validate_position_settings(
-            &solauto_position
-                .data
-                .position
-                .as_ref()
-                .unwrap()
-                .setting_params,
-            max_ltv,
-            liq_threshold,
-        )?;
+        validate_position_settings(&solauto_position, max_ltv, liq_threshold)?;
 
         if account_has_data(ctx.accounts.obligation) {
             return Ok(());

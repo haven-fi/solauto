@@ -6,7 +6,7 @@ use solana_program::{
 };
 
 use super::solana_utils::{get_anchor_ix_discriminator, invoke_signed_with_seed};
-use crate::types::shared::{DeserializedAccount, PositionAccount};
+use crate::types::shared::{DeserializedAccount, SolautoPosition};
 
 pub fn update_data<T: BorshSerialize>(account: &mut DeserializedAccount<T>) -> ProgramResult {
     account
@@ -18,7 +18,7 @@ pub fn update_data<T: BorshSerialize>(account: &mut DeserializedAccount<T>) -> P
 pub fn invoke_instruction(
     instruction: Instruction,
     account_infos: &[AccountInfo],
-    solauto_position: &DeserializedAccount<PositionAccount>,
+    solauto_position: &DeserializedAccount<SolautoPosition>,
 ) -> ProgramResult {
     if solauto_position.data.self_managed {
         invoke(&instruction, account_infos)?;

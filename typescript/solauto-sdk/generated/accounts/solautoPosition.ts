@@ -35,91 +35,91 @@ import {
   getPositionDataSerializer,
 } from '../types';
 
-export type PositionAccount = Account<PositionAccountAccountData>;
+export type SolautoPosition = Account<SolautoPositionAccountData>;
 
-export type PositionAccountAccountData = {
+export type SolautoPositionAccountData = {
   positionId: number;
   authority: PublicKey;
   selfManaged: boolean;
   position: Option<PositionData>;
 };
 
-export type PositionAccountAccountDataArgs = {
+export type SolautoPositionAccountDataArgs = {
   positionId: number;
   authority: PublicKey;
   selfManaged: boolean;
   position: OptionOrNullable<PositionDataArgs>;
 };
 
-export function getPositionAccountAccountDataSerializer(): Serializer<
-  PositionAccountAccountDataArgs,
-  PositionAccountAccountData
+export function getSolautoPositionAccountDataSerializer(): Serializer<
+  SolautoPositionAccountDataArgs,
+  SolautoPositionAccountData
 > {
-  return struct<PositionAccountAccountData>(
+  return struct<SolautoPositionAccountData>(
     [
       ['positionId', u8()],
       ['authority', publicKeySerializer()],
       ['selfManaged', bool()],
       ['position', option(getPositionDataSerializer())],
     ],
-    { description: 'PositionAccountAccountData' }
-  ) as Serializer<PositionAccountAccountDataArgs, PositionAccountAccountData>;
+    { description: 'SolautoPositionAccountData' }
+  ) as Serializer<SolautoPositionAccountDataArgs, SolautoPositionAccountData>;
 }
 
-export function deserializePositionAccount(
+export function deserializeSolautoPosition(
   rawAccount: RpcAccount
-): PositionAccount {
+): SolautoPosition {
   return deserializeAccount(
     rawAccount,
-    getPositionAccountAccountDataSerializer()
+    getSolautoPositionAccountDataSerializer()
   );
 }
 
-export async function fetchPositionAccount(
+export async function fetchSolautoPosition(
   context: Pick<Context, 'rpc'>,
   publicKey: PublicKey | Pda,
   options?: RpcGetAccountOptions
-): Promise<PositionAccount> {
+): Promise<SolautoPosition> {
   const maybeAccount = await context.rpc.getAccount(
     toPublicKey(publicKey, false),
     options
   );
-  assertAccountExists(maybeAccount, 'PositionAccount');
-  return deserializePositionAccount(maybeAccount);
+  assertAccountExists(maybeAccount, 'SolautoPosition');
+  return deserializeSolautoPosition(maybeAccount);
 }
 
-export async function safeFetchPositionAccount(
+export async function safeFetchSolautoPosition(
   context: Pick<Context, 'rpc'>,
   publicKey: PublicKey | Pda,
   options?: RpcGetAccountOptions
-): Promise<PositionAccount | null> {
+): Promise<SolautoPosition | null> {
   const maybeAccount = await context.rpc.getAccount(
     toPublicKey(publicKey, false),
     options
   );
-  return maybeAccount.exists ? deserializePositionAccount(maybeAccount) : null;
+  return maybeAccount.exists ? deserializeSolautoPosition(maybeAccount) : null;
 }
 
-export async function fetchAllPositionAccount(
+export async function fetchAllSolautoPosition(
   context: Pick<Context, 'rpc'>,
   publicKeys: Array<PublicKey | Pda>,
   options?: RpcGetAccountsOptions
-): Promise<PositionAccount[]> {
+): Promise<SolautoPosition[]> {
   const maybeAccounts = await context.rpc.getAccounts(
     publicKeys.map((key) => toPublicKey(key, false)),
     options
   );
   return maybeAccounts.map((maybeAccount) => {
-    assertAccountExists(maybeAccount, 'PositionAccount');
-    return deserializePositionAccount(maybeAccount);
+    assertAccountExists(maybeAccount, 'SolautoPosition');
+    return deserializeSolautoPosition(maybeAccount);
   });
 }
 
-export async function safeFetchAllPositionAccount(
+export async function safeFetchAllSolautoPosition(
   context: Pick<Context, 'rpc'>,
   publicKeys: Array<PublicKey | Pda>,
   options?: RpcGetAccountsOptions
-): Promise<PositionAccount[]> {
+): Promise<SolautoPosition[]> {
   const maybeAccounts = await context.rpc.getAccounts(
     publicKeys.map((key) => toPublicKey(key, false)),
     options
@@ -127,11 +127,11 @@ export async function safeFetchAllPositionAccount(
   return maybeAccounts
     .filter((maybeAccount) => maybeAccount.exists)
     .map((maybeAccount) =>
-      deserializePositionAccount(maybeAccount as RpcAccount)
+      deserializeSolautoPosition(maybeAccount as RpcAccount)
     );
 }
 
-export function getPositionAccountGpaBuilder(
+export function getSolautoPositionGpaBuilder(
   context: Pick<Context, 'rpc' | 'programs'>
 ) {
   const programId = context.programs.getPublicKey(
@@ -150,7 +150,7 @@ export function getPositionAccountGpaBuilder(
       selfManaged: [33, bool()],
       position: [34, option(getPositionDataSerializer())],
     })
-    .deserializeUsing<PositionAccount>((account) =>
-      deserializePositionAccount(account)
+    .deserializeUsing<SolautoPosition>((account) =>
+      deserializeSolautoPosition(account)
     );
 }
