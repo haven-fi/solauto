@@ -22,7 +22,10 @@ use solauto_sdk::{
     },
     SOLAUTO_ID,
 };
-use spl_associated_token_account::{ get_associated_token_address, instruction as ata_instruction };
+use spl_associated_token_account::{
+    get_associated_token_address,
+    instruction as ata_instruction,
+};
 use spl_token::{ instruction as token_instruction, state::Mint };
 
 #[macro_export]
@@ -43,7 +46,6 @@ pub const USDC_MINT: &str = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
 pub const MARGINFI_PROGRAM: &str = "MFv2hWf31Z9kbCa1snEPYctwafyhdvnV7FZnsebVacA";
 
 pub struct GeneralArgs {
-    signer: Option<Pubkey>,
     position_id: u8,
     supply_mint: Keypair,
     debt_mint: Option<Keypair>,
@@ -55,7 +57,6 @@ pub struct GeneralArgs {
 impl GeneralArgs {
     pub fn new() -> Self {
         Self {
-            signer: None,
             position_id: 1,
             supply_mint: Keypair::new(),
             debt_mint: Some(Keypair::new()),
@@ -63,10 +64,6 @@ impl GeneralArgs {
             referral_fees_dest_mint: WSOL_MINT,
             fund_accounts: Vec::new(),
         }
-    }
-    pub fn signer(&mut self, signer: Pubkey) -> &mut Self {
-        self.signer = Some(signer);
-        self
     }
     pub fn position_id(&mut self, id: u8) -> &mut Self {
         self.position_id = id;
@@ -96,7 +93,6 @@ impl GeneralArgs {
 
 pub struct GeneralTestData<'a> {
     pub ctx: ProgramTestContext,
-    pub signer_pubkey: Pubkey,
     pub position_id: u8,
     pub lending_protocol: Pubkey,
     pub solauto_fees_wallet: Pubkey,
@@ -130,13 +126,6 @@ impl<'a> GeneralTestData<'a> {
             });
         }
 
-        if args.signer.is_some() {
-            solauto.add_account(*args.signer.as_ref().unwrap(), solana_sdk::account::Account {
-                lamports: 100_000_000_000,
-                ..Default::default()
-            });
-        }
-
         let ctx = solauto.start_with_context().await;
 
         let solauto_fees_supply_ta = get_associated_token_address(
@@ -144,11 +133,7 @@ impl<'a> GeneralTestData<'a> {
             &args.supply_mint.pubkey()
         );
 
-        let signer_pubkey = if args.signer.is_some() {
-            *args.signer.as_ref().unwrap()
-        } else {
-            ctx.payer.pubkey()
-        };
+        let signer_pubkey = ctx.payer.pubkey();
         let signer_referral_state = GeneralTestData::get_referral_state(&signer_pubkey);
         let signer_referral_dest_ta = get_associated_token_address(
             &signer_referral_state,
@@ -204,7 +189,6 @@ impl<'a> GeneralTestData<'a> {
 
         Self {
             ctx,
-            signer_pubkey,
             position_id: args.position_id,
             lending_protocol,
             solauto_fees_wallet: SOLAUTO_FEES_WALLET,
@@ -285,10 +269,33 @@ impl<'a> GeneralTestData<'a> {
         Ok(self)
     }
 
+    pub async fn create_ata(
+        &mut self,
+        wallet: Pubkey,
+        token_mint: &Keypair
+    ) -> Result<&mut Self, BanksClientError> {
+        let tx = Transaction::new_signed_with_payer(
+            &[
+                ata_instruction::create_associated_token_account(
+                    &self.ctx.payer.pubkey(),
+                    &wallet,
+                    &token_mint.pubkey(),
+                    &spl_token::id()
+                ),
+            ],
+            Some(&self.ctx.payer.pubkey()),
+            &[&self.ctx.payer],
+            self.ctx.last_blockhash
+        );
+        self.ctx.banks_client.process_transaction(tx).await.unwrap();
+        Ok(self)
+    }
+
     pub async fn mint_tokens_to_ta(
         &mut self,
-        token_mint: Option<&Keypair>,
-        token_account: Option<Pubkey>,
+        token_mint: &Keypair,
+        token_account: Pubkey,
+        ta_owner: Pubkey,
         amount: u64
     ) -> Result<&mut Self, BanksClientError> {
         let tx = Transaction::new_signed_with_payer(
@@ -296,9 +303,9 @@ impl<'a> GeneralTestData<'a> {
                 token_instruction
                     ::mint_to(
                         &spl_token::id(),
-                        &token_mint.as_ref().unwrap().pubkey(),
-                        token_account.as_ref().unwrap(),
-                        &self.ctx.payer.pubkey(),
+                        &token_mint.pubkey(),
+                        &token_account,
+                        &ta_owner,
                         &[&self.ctx.payer.pubkey()],
                         amount
                     )
@@ -346,10 +353,11 @@ impl<'a> MarginfiTestData<'a> {
         let general = GeneralTestData::new(args, MARGINFI_PROGRAM).await;
         let marginfi_group = Keypair::new().pubkey();
 
+        let signer_pubkey = general.ctx.payer.pubkey();
         let marginfi_account_seeds = get_marginfi_account_seeds(
             general.position_id,
             Some(&general.solauto_position),
-            &general.signer_pubkey,
+            &signer_pubkey,
             &general.lending_protocol
         );
         let (marginfi_account, _) = Pubkey::find_program_address(

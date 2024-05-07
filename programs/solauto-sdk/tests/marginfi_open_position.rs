@@ -4,14 +4,12 @@ pub mod test_utils;
 mod open_position {
     use chrono::Utc;
     use solana_program_test::tokio;
-    use solana_sdk::{
-        instruction::InstructionError, rent::Rent, signature::Signer, system_instruction::{self, create_account}, system_program, transaction::Transaction
-    };
-    use solauto_sdk::{generated::{
+    use solana_sdk::signature::Signer;
+    use solauto_sdk::generated::{
         accounts::PositionAccount,
         types::{ DCADirection, DCASettings, LendingPlatform, SolautoSettingsParameters },
-    }, SOLAUTO_ID};
-    use spl_token::{instruction, state::Account as TokenAccount};
+    };
+    use spl_token::state::Account as TokenAccount;
 
     use crate::{ assert_instruction_error, test_utils::* };
 
@@ -57,7 +55,7 @@ mod open_position {
     }
 
     #[tokio::test]
-    async fn std_open_position_with_dca() {
+    async fn std_update_position_with_dca() {
         let args = GeneralArgs::new();
         let mut data = MarginfiTestData::new(&args).await;
         data.general
@@ -65,12 +63,19 @@ mod open_position {
             .unwrap()
             .create_referral_state_accounts().await
             .unwrap();
+        data.general
+            .create_ata(
+                data.general.ctx.payer.pubkey(),
+                data.general.debt_liquidity_mint.unwrap()
+            ).await
+            .unwrap();
 
         let dca_amount = 50_000;
         data.general
             .mint_tokens_to_ta(
-                data.general.debt_liquidity_mint,
-                data.general.signer_debt_liquidity_ta,
+                data.general.debt_liquidity_mint.unwrap(),
+                data.general.signer_debt_liquidity_ta.unwrap(),
+                data.general.ctx.payer.pubkey(),
                 dca_amount
             ).await
             .unwrap();
@@ -91,44 +96,11 @@ mod open_position {
         assert!(
             position.active_dca.is_some() && position.active_dca.as_ref().unwrap() == &active_dca
         );
+        assert!(position.debt_ta_balance == dca_amount);
 
         let position_debt_ta = data.general.unpack_account_data::<TokenAccount>(
             data.general.position_debt_liquidity_ta.as_ref().unwrap().clone()
         ).await;
         assert!(position_debt_ta.amount == dca_amount);
     }
-
-    // #[tokio::test]
-    // async fn test() {
-    //     let args = GeneralArgs::new();
-    //     let mut data = MarginfiTestData::new(&args).await;
-    //     data.general
-    //         .test_prefixtures().await
-    //         .unwrap()
-    //         .create_referral_state_accounts().await
-    //         .unwrap();
-
-    //     let rent = Rent::default();
-    //     let space = 200;
-
-    //     let tx = Transaction::new_signed_with_payer(
-    //         &[
-    //             system_instruction::transfer(
-    //                 &data.general.ctx.payer.pubkey(),
-    //                 &data.general.position_supply_liquidity_ta,
-    //                 rent.minimum_balance(space),
-    //             ),
-    //         ],
-    //         Some(&data.general.ctx.payer.pubkey()),
-    //         &[&data.general.ctx.payer],
-    //         data.general.ctx.last_blockhash
-    //     );
-    //     data.general.ctx.banks_client.process_transaction(tx).await.unwrap();
-
-    //     // let position_supply_ta = data.general.unpack_account_data::<TokenAccount>(
-    //     //     data.general.position_debt_liquidity_ta.as_ref().unwrap().clone()
-    //     // ).await;
-
-    //     data.open_position(None, None).await.unwrap();
-    // }
 }

@@ -1407,11 +1407,11 @@
             }
           },
           {
-            "name": "supplyBalance",
+            "name": "supplyTaBalance",
             "type": "u64"
           },
           {
-            "name": "debtBalance",
+            "name": "debtTaBalance",
             "type": "u64"
           }
         ]

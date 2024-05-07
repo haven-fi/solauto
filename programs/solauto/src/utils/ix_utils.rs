@@ -1,26 +1,24 @@
 use borsh::BorshSerialize;
 use solana_program::{
-    account_info::AccountInfo,
-    entrypoint::ProgramResult,
-    instruction::Instruction,
-    program::invoke,
-    program_error::ProgramError,
-    pubkey::Pubkey,
+    account_info::AccountInfo, entrypoint::ProgramResult, instruction::Instruction,
+    program::invoke, program_error::ProgramError, pubkey::Pubkey,
     sysvar::instructions::load_instruction_at_checked,
 };
 
-use super::solana_utils::{ invoke_signed_with_seed, get_anchor_ix_discriminator };
-use crate::types::shared::{ DeserializedAccount, PositionAccount };
+use super::solana_utils::{get_anchor_ix_discriminator, invoke_signed_with_seed};
+use crate::types::shared::{DeserializedAccount, PositionAccount};
 
 pub fn update_data<T: BorshSerialize>(account: &mut DeserializedAccount<T>) -> ProgramResult {
-    account.data.serialize(&mut &mut account.account_info.data.borrow_mut()[..])?;
+    account
+        .data
+        .serialize(&mut &mut account.account_info.data.borrow_mut()[..])?;
     Ok(())
 }
 
 pub fn invoke_instruction(
     instruction: Instruction,
     account_infos: &[AccountInfo],
-    solauto_position: &DeserializedAccount<PositionAccount>
+    solauto_position: &DeserializedAccount<PositionAccount>,
 ) -> ProgramResult {
     if solauto_position.data.self_managed {
         invoke(&instruction, account_infos)?;
@@ -28,7 +26,10 @@ pub fn invoke_instruction(
         invoke_signed_with_seed(
             &instruction,
             account_infos,
-            vec![&[solauto_position.data.position_id], solauto_position.data.authority.as_ref()]
+            vec![
+                &[solauto_position.data.position_id],
+                solauto_position.data.authority.as_ref(),
+            ],
         )?;
     }
     Ok(())
@@ -38,20 +39,15 @@ pub fn get_relative_instruction(
     ixs_sysvar: &AccountInfo,
     current_ix_idx: u16,
     relative_idx: i16,
-    total_ix_in_tx: u16
+    total_ix_in_tx: u16,
 ) -> Result<Option<Instruction>, ProgramError> {
-    if
-        (current_ix_idx as i16) + relative_idx > 0 &&
-        (current_ix_idx as i16) + relative_idx < (total_ix_in_tx as i16)
+    if (current_ix_idx as i16) + relative_idx > 0
+        && (current_ix_idx as i16) + relative_idx < (total_ix_in_tx as i16)
     {
-        Ok(
-            Some(
-                load_instruction_at_checked(
-                    ((current_ix_idx as i16) + relative_idx) as usize,
-                    ixs_sysvar
-                )?
-            )
-        )
+        Ok(Some(load_instruction_at_checked(
+            ((current_ix_idx as i16) + relative_idx) as usize,
+            ixs_sysvar,
+        )?))
     } else {
         Ok(None)
     }
@@ -90,9 +86,9 @@ impl InstructionChecker {
                     .try_into()
                     .expect("Slice with incorrect length");
 
-                if
-                    self.ix_discriminators.is_none() ||
-                    self.ix_discriminators
+                if self.ix_discriminators.is_none()
+                    || self
+                        .ix_discriminators
                         .as_ref()
                         .unwrap()
                         .iter()

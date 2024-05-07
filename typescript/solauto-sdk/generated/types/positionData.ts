@@ -37,8 +37,8 @@ export type PositionData = {
   protocolData: LendingProtocolPositionData;
   settingParams: SolautoSettingsParameters;
   activeDca: Option<DCASettings>;
-  supplyBalance: bigint;
-  debtBalance: bigint;
+  supplyTaBalance: bigint;
+  debtTaBalance: bigint;
 };
 
 export type PositionDataArgs = {
@@ -47,8 +47,8 @@ export type PositionDataArgs = {
   protocolData: LendingProtocolPositionDataArgs;
   settingParams: SolautoSettingsParametersArgs;
   activeDca: OptionOrNullable<DCASettingsArgs>;
-  supplyBalance: number | bigint;
-  debtBalance: number | bigint;
+  supplyTaBalance: number | bigint;
+  debtTaBalance: number | bigint;
 };
 
 export function getPositionDataSerializer(): Serializer<
@@ -62,8 +62,8 @@ export function getPositionDataSerializer(): Serializer<
       ['protocolData', getLendingProtocolPositionDataSerializer()],
       ['settingParams', getSolautoSettingsParametersSerializer()],
       ['activeDca', option(getDCASettingsSerializer())],
-      ['supplyBalance', u64()],
-      ['debtBalance', u64()],
+      ['supplyTaBalance', u64()],
+      ['debtTaBalance', u64()],
     ],
     { description: 'PositionData' }
   ) as Serializer<PositionDataArgs, PositionData>;

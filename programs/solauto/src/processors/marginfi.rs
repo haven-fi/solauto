@@ -1,29 +1,24 @@
-use solana_program::{ account_info::AccountInfo, entrypoint::ProgramResult, msg };
+use solana_program::{account_info::AccountInfo, entrypoint::ProgramResult};
 use spl_token::state::Account as TokenAccount;
 
 use crate::{
-    instructions::{ open_position, protocol_interaction, rebalance, refresh },
+    instructions::{open_position, protocol_interaction, rebalance, refresh},
     types::{
         instruction::{
             accounts::{
-                MarginfiOpenPositionAccounts,
-                MarginfiProtocolInteractionAccounts,
-                MarginfiRebalanceAccounts,
-                MarginfiRefreshDataAccounts,
+                MarginfiOpenPositionAccounts, MarginfiProtocolInteractionAccounts,
+                MarginfiRebalanceAccounts, MarginfiRefreshDataAccounts,
             },
-            RebalanceArgs,
-            SolautoAction,
-            SolautoStandardAccounts,
-            UpdatePositionData,
+            RebalanceArgs, SolautoAction, SolautoStandardAccounts, UpdatePositionData,
         },
-        shared::{ DeserializedAccount, LendingPlatform, PositionAccount, ReferralStateAccount },
+        shared::{DeserializedAccount, LendingPlatform, PositionAccount, ReferralStateAccount},
     },
     utils::*,
 };
 
 pub fn process_marginfi_open_position_instruction<'a>(
     accounts: &'a [AccountInfo<'a>],
-    position_data: UpdatePositionData
+    position_data: UpdatePositionData,
 ) -> ProgramResult {
     let ctx = MarginfiOpenPositionAccounts::context(accounts)?;
 
@@ -35,7 +30,7 @@ pub fn process_marginfi_open_position_instruction<'a>(
         LendingPlatform::Marginfi,
         ctx.accounts.supply_mint,
         ctx.accounts.debt_mint,
-        ctx.accounts.marginfi_account
+        ctx.accounts.marginfi_account,
     )?;
 
     solauto_utils::init_solauto_fees_supply_ta(
@@ -44,7 +39,7 @@ pub fn process_marginfi_open_position_instruction<'a>(
         ctx.accounts.signer,
         ctx.accounts.solauto_fees_wallet,
         ctx.accounts.solauto_fees_supply_ta,
-        ctx.accounts.supply_mint
+        ctx.accounts.supply_mint,
     )?;
 
     if ctx.accounts.referred_by_state.is_some() && ctx.accounts.referred_by_supply_ta.is_some() {
@@ -54,7 +49,7 @@ pub fn process_marginfi_open_position_instruction<'a>(
             ctx.accounts.signer,
             ctx.accounts.referred_by_state.unwrap(),
             ctx.accounts.referred_by_supply_ta.unwrap(),
-            ctx.accounts.supply_mint
+            ctx.accounts.supply_mint,
         )?;
     }
 
@@ -67,21 +62,21 @@ pub fn process_marginfi_open_position_instruction<'a>(
         rent: ctx.accounts.rent,
         ixs_sysvar: None,
         solauto_position,
-        solauto_fees_supply_ta: DeserializedAccount::<TokenAccount>::unpack(
-            Some(ctx.accounts.solauto_fees_supply_ta)
-        )?,
-        authority_referral_state: DeserializedAccount::<ReferralStateAccount>::deserialize(
-            Some(ctx.accounts.signer_referral_state)
-        )?,
+        solauto_fees_supply_ta: DeserializedAccount::<TokenAccount>::unpack(Some(
+            ctx.accounts.solauto_fees_supply_ta,
+        ))?,
+        authority_referral_state: DeserializedAccount::<ReferralStateAccount>::deserialize(Some(
+            ctx.accounts.signer_referral_state,
+        ))?,
         referred_by_state: ctx.accounts.referred_by_state,
         referred_by_supply_ta: DeserializedAccount::<TokenAccount>::unpack(
-            ctx.accounts.referred_by_supply_ta
+            ctx.accounts.referred_by_supply_ta,
         )?,
     };
     validation_utils::generic_instruction_validation(
         &std_accounts,
         true,
-        LendingPlatform::Marginfi
+        LendingPlatform::Marginfi,
     )?;
 
     open_position::marginfi_open_position(ctx, std_accounts.solauto_position)
@@ -89,24 +84,23 @@ pub fn process_marginfi_open_position_instruction<'a>(
 
 pub fn process_marginfi_refresh_data<'a>(accounts: &'a [AccountInfo<'a>]) -> ProgramResult {
     let ctx = MarginfiRefreshDataAccounts::context(accounts)?;
-    let solauto_position = DeserializedAccount::<PositionAccount>::deserialize(
-        ctx.accounts.solauto_position
-    )?;
+    let solauto_position =
+        DeserializedAccount::<PositionAccount>::deserialize(ctx.accounts.solauto_position)?;
     validation_utils::validate_program_account(
         &ctx.accounts.marginfi_program,
-        LendingPlatform::Marginfi
+        LendingPlatform::Marginfi,
     )?;
     refresh::marginfi_refresh_accounts(ctx, solauto_position)
 }
 
 pub fn process_marginfi_interaction_instruction<'a>(
     accounts: &'a [AccountInfo<'a>],
-    action: SolautoAction
+    action: SolautoAction,
 ) -> ProgramResult {
     let ctx = MarginfiProtocolInteractionAccounts::context(accounts)?;
-    let solauto_position = DeserializedAccount::<PositionAccount>
-        ::deserialize(Some(ctx.accounts.solauto_position))?
-        .unwrap();
+    let solauto_position =
+        DeserializedAccount::<PositionAccount>::deserialize(Some(ctx.accounts.solauto_position))?
+            .unwrap();
 
     let std_accounts = SolautoStandardAccounts {
         signer: ctx.accounts.signer,
@@ -125,7 +119,7 @@ pub fn process_marginfi_interaction_instruction<'a>(
     validation_utils::generic_instruction_validation(
         &std_accounts,
         true,
-        LendingPlatform::Marginfi
+        LendingPlatform::Marginfi,
     )?;
 
     validation_utils::validate_marginfi_protocol_interaction_ix(&ctx, &action)?;
@@ -134,12 +128,12 @@ pub fn process_marginfi_interaction_instruction<'a>(
 
 pub fn process_marginfi_rebalance<'a>(
     accounts: &'a [AccountInfo<'a>],
-    args: RebalanceArgs
+    args: RebalanceArgs,
 ) -> ProgramResult {
     let ctx = MarginfiRebalanceAccounts::context(accounts)?;
-    let solauto_position = DeserializedAccount::<PositionAccount>
-        ::deserialize(Some(ctx.accounts.solauto_position))?
-        .unwrap();
+    let solauto_position =
+        DeserializedAccount::<PositionAccount>::deserialize(Some(ctx.accounts.solauto_position))?
+            .unwrap();
 
     let std_accounts = SolautoStandardAccounts {
         signer: ctx.accounts.signer,
@@ -150,21 +144,21 @@ pub fn process_marginfi_rebalance<'a>(
         rent: ctx.accounts.rent,
         ixs_sysvar: Some(ctx.accounts.ixs_sysvar),
         solauto_position,
-        solauto_fees_supply_ta: DeserializedAccount::<TokenAccount>::unpack(
-            Some(ctx.accounts.solauto_fees_supply_ta)
-        )?,
-        authority_referral_state: DeserializedAccount::<ReferralStateAccount>::deserialize(
-            Some(ctx.accounts.authority_referral_state)
-        )?,
+        solauto_fees_supply_ta: DeserializedAccount::<TokenAccount>::unpack(Some(
+            ctx.accounts.solauto_fees_supply_ta,
+        ))?,
+        authority_referral_state: DeserializedAccount::<ReferralStateAccount>::deserialize(Some(
+            ctx.accounts.authority_referral_state,
+        ))?,
         referred_by_state: None,
         referred_by_supply_ta: DeserializedAccount::<TokenAccount>::unpack(
-            ctx.accounts.referred_by_supply_ta
+            ctx.accounts.referred_by_supply_ta,
         )?,
     };
     validation_utils::generic_instruction_validation(
         &std_accounts,
         false,
-        LendingPlatform::Marginfi
+        LendingPlatform::Marginfi,
     )?;
 
     rebalance::marginfi_rebalance(ctx, std_accounts, args)
