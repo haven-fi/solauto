@@ -61,12 +61,11 @@ pub fn generic_instruction_validation(
         return Err(SolautoError::IncorrectFeesReceiverAccount.into());
     }
 
+    // TODO add standard program address validation for all instructions
     if accounts.ixs_sysvar.is_some() && accounts.ixs_sysvar.unwrap().key != &ixs_sysvar_id {
         msg!("Incorrect ixs sysvar account provided");
         return Err(SolautoError::IncorrectAccounts.into());
     }
-    // We don't need to check other standard variables as shank handles system_program, token_program, ata_program, & rent
-    // TODO verify the above comment with a test by providing a different account in place of rent account (instruction should fail)
 
     Ok(())
 }
