@@ -24,17 +24,17 @@ mod update_referral_states {
         args.referral_fees_dest_mint(Pubkey::from_str(USDC_MINT).unwrap());
         let mut data = MarginfiTestData::new(&args).await;
 
-        let tx = Transaction::new_signed_with_payer(
-            &[data.general.update_referral_states_ix().instruction()],
-            Some(&data.general.ctx.payer.pubkey()),
-            &[&data.general.ctx.payer],
-            data.general.ctx.last_blockhash
-        );
-        data.general.ctx.banks_client.process_transaction(tx).await.unwrap();
+        data.general
+            .execute_instructions(
+                &[data.general.update_referral_states_ix().instruction()],
+                None
+            ).await
+            .unwrap();
 
-        let signer_referral_state_data = data.general.deserialize_account_data::<ReferralStateAccount>(
-            data.general.signer_referral_state.clone()
-        ).await;
+        let signer_referral_state_data =
+            data.general.deserialize_account_data::<ReferralStateAccount>(
+                data.general.signer_referral_state.clone()
+            ).await;
         assert!(signer_referral_state_data.authority == data.general.ctx.payer.pubkey());
         assert!(signer_referral_state_data.referred_by_state == None);
         assert!(signer_referral_state_data.dest_fees_mint == data.general.referral_fees_dest_mint);
@@ -42,19 +42,19 @@ mod update_referral_states {
         // Check if able to set the referred_by_state even after signer referral state has been created
         let referred_by_authority = Keypair::new().pubkey();
         let referred_by_state = GeneralTestData::get_referral_state(&referred_by_authority);
-        let tx = Transaction::new_signed_with_payer(
-            &[
-                data.general
-                    .update_referral_states_ix()
-                    .referred_by_authority(Some(referred_by_authority))
-                    .referred_by_state(Some(referred_by_state))
-                    .instruction(),
-            ],
-            Some(&data.general.ctx.payer.pubkey()),
-            &[&data.general.ctx.payer],
-            data.general.ctx.last_blockhash
-        );
-        data.general.ctx.banks_client.process_transaction(tx).await.unwrap();
+
+        data.general
+            .execute_instructions(
+                &[
+                    data.general
+                        .update_referral_states_ix()
+                        .referred_by_authority(Some(referred_by_authority))
+                        .referred_by_state(Some(referred_by_state))
+                        .instruction(),
+                ],
+                None
+            ).await
+            .unwrap();
 
         let referred_by_state_data = data.general.deserialize_account_data::<ReferralStateAccount>(
             referred_by_state.clone()
@@ -63,9 +63,10 @@ mod update_referral_states {
         assert!(referred_by_state_data.referred_by_state == None);
         assert!(referred_by_state_data.dest_fees_mint == WSOL_MINT);
 
-        let signer_referral_state_data = data.general.deserialize_account_data::<ReferralStateAccount>(
-            data.general.signer_referral_state.clone()
-        ).await;
+        let signer_referral_state_data =
+            data.general.deserialize_account_data::<ReferralStateAccount>(
+                data.general.signer_referral_state.clone()
+            ).await;
         assert!(
             signer_referral_state_data.referred_by_state.as_ref().unwrap() == &referred_by_state
         );
@@ -73,19 +74,20 @@ mod update_referral_states {
         // Ensure referred_by_state cannot be overwritten after it has been set
         let referred_by_authority2 = Keypair::new().pubkey();
         let referred_by_state2 = GeneralTestData::get_referral_state(&referred_by_authority2);
-        let tx = Transaction::new_signed_with_payer(
-            &[
-                data.general
-                    .update_referral_states_ix()
-                    .referred_by_authority(Some(referred_by_authority2))
-                    .referred_by_state(Some(referred_by_state2))
-                    .instruction(),
-            ],
-            Some(&data.general.ctx.payer.pubkey()),
-            &[&data.general.ctx.payer],
-            data.general.ctx.last_blockhash
-        );
-        let err = data.general.ctx.banks_client.process_transaction(tx).await.unwrap_err();
+
+        let err = data.general
+            .execute_instructions(
+                &[
+                    data.general
+                        .update_referral_states_ix()
+                        .referred_by_authority(Some(referred_by_authority2))
+                        .referred_by_state(Some(referred_by_state2))
+                        .instruction(),
+                ],
+                None
+            ).await
+            .unwrap_err();
+
         assert_instruction_error!(err, InstructionError::Custom(2));
     }
 
@@ -111,18 +113,19 @@ mod update_referral_states {
     async fn incorrect_signer_referral_state() {
         let args = GeneralArgs::new();
         let mut data = MarginfiTestData::new(&args).await;
-        let tx = Transaction::new_signed_with_payer(
-            &[
-                data.general
-                    .update_referral_states_ix()
-                    .signer_referral_state(Pubkey::default())
-                    .instruction(),
-            ],
-            Some(&data.general.ctx.payer.pubkey()),
-            &[&data.general.ctx.payer],
-            data.general.ctx.last_blockhash
-        );
-        let err = data.general.ctx.banks_client.process_transaction(tx).await.unwrap_err();
+
+        let err = data.general
+            .execute_instructions(
+                &[
+                    data.general
+                        .update_referral_states_ix()
+                        .signer_referral_state(Pubkey::default())
+                        .instruction(),
+                ],
+                None
+            ).await
+            .unwrap_err();
+
         assert_instruction_error!(err, InstructionError::Custom(2));
     }
 }

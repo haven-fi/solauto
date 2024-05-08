@@ -3,6 +3,7 @@ use std::str::FromStr;
 use borsh::BorshDeserialize;
 use solana_program_test::{ BanksClientError, ProgramTest, ProgramTestContext };
 use solana_sdk::{
+    instruction::Instruction,
     program_pack::{ IsInitialized, Pack },
     pubkey::Pubkey,
     rent::Rent,
@@ -233,6 +234,29 @@ impl<'a> GeneralTestData<'a> {
         T::unpack(&mut account.unwrap().data.as_slice()).unwrap()
     }
 
+    pub async fn execute_instructions(
+        &mut self,
+        instructions: &[Instruction],
+        additional_signers: Option<&[&Keypair]>
+    ) -> Result<(), BanksClientError> {
+        let mut signers = Vec::new();
+        signers.push(&self.ctx.payer);
+
+        if additional_signers.is_some() {
+            for signer in additional_signers.unwrap() {
+                signers.push(*signer);
+            }
+        }
+
+        let tx = Transaction::new_signed_with_payer(
+            instructions,
+            Some(&self.ctx.payer.pubkey()),
+            signers.as_slice(),
+            self.ctx.last_blockhash
+        );
+        self.ctx.banks_client.process_transaction(tx).await
+    }
+
     pub async fn test_prefixtures(&mut self) -> Result<&mut Self, BanksClientError> {
         self.create_token_mint_account(self.supply_liquidity_mint).await.unwrap();
 
@@ -248,7 +272,7 @@ impl<'a> GeneralTestData<'a> {
         token_mint: &Keypair
     ) -> Result<&mut Self, BanksClientError> {
         let rent = Rent::default();
-        let tx = Transaction::new_signed_with_payer(
+        self.execute_instructions(
             &[
                 system_instruction::create_account(
                     &self.ctx.payer.pubkey(),
@@ -267,11 +291,8 @@ impl<'a> GeneralTestData<'a> {
                     )
                     .unwrap(),
             ],
-            Some(&self.ctx.payer.pubkey()),
-            &[&self.ctx.payer, token_mint],
-            self.ctx.last_blockhash
-        );
-        self.ctx.banks_client.process_transaction(tx).await.unwrap();
+            Some(&[token_mint])
+        ).await.unwrap();
         Ok(self)
     }
 
@@ -280,7 +301,7 @@ impl<'a> GeneralTestData<'a> {
         wallet: Pubkey,
         token_mint: &Keypair
     ) -> Result<&mut Self, BanksClientError> {
-        let tx = Transaction::new_signed_with_payer(
+        self.execute_instructions(
             &[
                 ata_instruction::create_associated_token_account(
                     &self.ctx.payer.pubkey(),
@@ -289,11 +310,8 @@ impl<'a> GeneralTestData<'a> {
                     &spl_token::id()
                 ),
             ],
-            Some(&self.ctx.payer.pubkey()),
-            &[&self.ctx.payer],
-            self.ctx.last_blockhash
-        );
-        self.ctx.banks_client.process_transaction(tx).await.unwrap();
+            None
+        ).await.unwrap();
         Ok(self)
     }
 
@@ -304,7 +322,7 @@ impl<'a> GeneralTestData<'a> {
         ta_owner: Pubkey,
         amount: u64
     ) -> Result<&mut Self, BanksClientError> {
-        let tx = Transaction::new_signed_with_payer(
+        self.execute_instructions(
             &[
                 token_instruction
                     ::mint_to(
@@ -317,11 +335,8 @@ impl<'a> GeneralTestData<'a> {
                     )
                     .unwrap(),
             ],
-            Some(&self.ctx.payer.pubkey()),
-            &[&self.ctx.payer],
-            self.ctx.last_blockhash
-        );
-        self.ctx.banks_client.process_transaction(tx).await.unwrap();
+            None
+        ).await.unwrap();
         Ok(self)
     }
 

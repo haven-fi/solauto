@@ -13,6 +13,7 @@ mod open_position {
         accounts::SolautoPosition,
         types::{ DCADirection, DCASettings, LendingPlatform, SolautoSettingsParameters },
     };
+    use spl_associated_token_account::get_associated_token_address;
     use spl_token::state::Account as TokenAccount;
 
     use crate::{ assert_instruction_error, test_utils::* };
@@ -159,6 +160,74 @@ mod open_position {
 
         let err = data.general.ctx.banks_client.process_transaction(tx).await.unwrap_err();
         assert_instruction_error!(err, InstructionError::MissingRequiredSignature);
+    }
+
+    #[tokio::test]
+    async fn incorrect_token_accounts() {
+        let args = GeneralArgs::new();
+        let mut data = MarginfiTestData::new(&args).await;
+        data.general
+            .test_prefixtures().await
+            .unwrap()
+            .create_referral_state_accounts().await
+            .unwrap();
+
+        let mut open_position_ix = data.open_position_ix(
+            Some(data.general.default_setting_params.clone()),
+            None
+        );
+
+        // Correct mint, incorrect wallet
+        let fake_supply_ta = get_associated_token_address(
+            &data.general.ctx.payer.pubkey(),
+            &data.general.supply_liquidity_mint.pubkey()
+        );
+        let err = data.general
+            .execute_instructions(
+                &[open_position_ix.position_supply_ta(fake_supply_ta).instruction()],
+                None
+            ).await
+            .unwrap_err();
+        assert_instruction_error!(err, InstructionError::Custom(2));
+
+        // Correct wallet, incorrect mint
+        let fake_supply_ta = get_associated_token_address(
+            &data.general.solauto_position,
+            &data.general.debt_liquidity_mint.unwrap().pubkey()
+        );
+        let err = data.general
+            .execute_instructions(
+                &[open_position_ix.position_supply_ta(fake_supply_ta).instruction()],
+                None
+            ).await
+            .unwrap_err();
+        assert_instruction_error!(err, InstructionError::Custom(2));
+
+        // Correct mint, incorrect wallet
+        let fake_debt_ta = get_associated_token_address(
+            &data.general.ctx.payer.pubkey(),
+            &data.general.debt_liquidity_mint.unwrap().pubkey()
+        );
+        let err = data.general
+            .execute_instructions(
+                &[open_position_ix.position_debt_ta(Some(fake_debt_ta)).instruction()],
+                None
+            ).await
+            .unwrap_err();
+        assert_instruction_error!(err, InstructionError::Custom(2));
+
+        // Correct wallet, incorrect mint
+        let fake_debt_ta = get_associated_token_address(
+            &data.general.solauto_position,
+            &data.general.supply_liquidity_mint.pubkey()
+        );
+        let err = data.general
+            .execute_instructions(
+                &[open_position_ix.position_debt_ta(Some(fake_debt_ta)).instruction()],
+                None
+            ).await
+            .unwrap_err();
+        assert_instruction_error!(err, InstructionError::Custom(2));
     }
 
     // pub async fn test_settings(data: &mut MarginfiTestData<'_>, settings: SolautoSettingsParameters) {
