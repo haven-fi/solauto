@@ -318,7 +318,7 @@ pub struct SolautoFeesBps {
 }
 impl SolautoFeesBps {
     pub fn from(has_been_referred: bool) -> Self {
-        let solauto = 80;
+        let solauto = 100;
         let referrer = if has_been_referred {
             ((solauto as f64) * REFERRER_FEE_SPLIT) as u16
         } else {

@@ -44,4 +44,4 @@ pub const WSOL_MINT: Pubkey = Pubkey::new_from_array([
 
 pub const USD_DECIMALS: u32 = 6;
 
-pub const REFERRER_FEE_SPLIT: f64 = 0.15; // 15%
+pub const REFERRER_FEE_SPLIT: f64 = 0.3; // 30%
