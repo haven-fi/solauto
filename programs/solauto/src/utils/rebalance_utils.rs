@@ -256,8 +256,9 @@ pub fn get_rebalance_values(
     obligation_position: &LendingProtocolObligationPosition,
     rebalance_args: &RebalanceArgs,
     solauto_fees_bps: &SolautoFeesBps,
+    current_unix_timestamp: u64
 ) -> Result<(Option<f64>, Option<u64>), ProgramError> {
-    let dca_instruction = is_dca_instruction(position_account, obligation_position)?;
+    let dca_instruction = is_dca_instruction(position_account, obligation_position, current_unix_timestamp)?;
     let (target_liq_utilization_rate_bps, amount_to_dca_in) = match dca_instruction {
         Some(direction) => match direction {
             DCADirection::In(_) => {
