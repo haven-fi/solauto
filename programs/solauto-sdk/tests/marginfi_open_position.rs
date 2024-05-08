@@ -4,7 +4,11 @@ pub mod test_utils;
 mod open_position {
     use chrono::Utc;
     use solana_program_test::tokio;
-    use solana_sdk::signature::Signer;
+    use solana_sdk::{
+        instruction::InstructionError,
+        signature::{ Keypair, Signer },
+        transaction::Transaction,
+    };
     use solauto_sdk::generated::{
         accounts::SolautoPosition,
         types::{ DCADirection, DCASettings, LendingPlatform, SolautoSettingsParameters },
@@ -128,4 +132,98 @@ mod open_position {
         ).await;
         assert!(position_debt_ta.amount == dca_amount);
     }
+
+    #[tokio::test]
+    async fn incorrect_signer() {
+        let temp_account = Keypair::new();
+        let mut args = GeneralArgs::new();
+        args.fund_account(temp_account.pubkey());
+        let mut data = MarginfiTestData::new(&args).await;
+        data.general
+            .test_prefixtures().await
+            .unwrap()
+            .create_referral_state_accounts().await
+            .unwrap();
+
+        let tx = Transaction::new_signed_with_payer(
+            &[
+                data
+                    .open_position_ix(Some(data.general.default_setting_params.clone()), None)
+                    .signer(temp_account.pubkey())
+                    .instruction(),
+            ],
+            Some(&temp_account.pubkey()),
+            &[&temp_account],
+            data.general.ctx.last_blockhash
+        );
+
+        let err = data.general.ctx.banks_client.process_transaction(tx).await.unwrap_err();
+        assert_instruction_error!(err, InstructionError::MissingRequiredSignature);
+    }
+
+    #[tokio::test]
+    async fn incorrect_solauto_position() {
+        let args = GeneralArgs::new();
+        let mut data = MarginfiTestData::new(&args).await;
+        data.general
+            .test_prefixtures().await
+            .unwrap()
+            .create_referral_state_accounts().await
+            .unwrap();
+
+        data.open_position(Some(data.general.default_setting_params.clone()), None).await.unwrap();
+        let solauto_position = data.general.solauto_position.clone();
+        
+        let mut data = MarginfiTestData::new(&args).await;
+        data.general
+            .test_prefixtures().await
+            .unwrap()
+            .create_referral_state_accounts().await
+            .unwrap();
+
+        let tx = Transaction::new_signed_with_payer(
+            &[
+                data
+                    .open_position_ix(Some(data.general.default_setting_params.clone()), None)
+                    // Pass incorrect solauto position for the given signer
+                    .solauto_position(solauto_position)
+                    .instruction(),
+            ],
+            Some(&data.general.ctx.payer.pubkey()),
+            &[&data.general.ctx.payer],
+            data.general.ctx.last_blockhash
+        );
+
+        let err = data.general.ctx.banks_client.process_transaction(tx).await.unwrap_err();
+        assert_instruction_error!(err, InstructionError::MissingRequiredSignature);
+    }
+
+    // pub async fn test_settings(data: &mut MarginfiTestData<'_>, settings: SolautoSettingsParameters) {
+    //     let tx = Transaction::new_signed_with_payer(
+    //         &[data.open_position_ix(Some(settings), None).instruction()],
+    //         Some(&data.general.ctx.payer.pubkey()),
+    //         &[&data.general.ctx.payer],
+    //         data.general.ctx.last_blockhash
+    //     );
+    //     let err = data.general.ctx.banks_client.process_transaction(tx).await.unwrap_err();
+    //     assert_instruction_error!(err, InstructionError::Custom(4));
+    // }
+
+    // #[tokio::test]
+    // async fn invalid_settings() {
+    //     let args = GeneralArgs::new();
+    //     let mut data = MarginfiTestData::new(&args).await;
+    //     data.general
+    //         .test_prefixtures().await
+    //         .unwrap()
+    //         .create_referral_state_accounts().await
+    //         .unwrap();
+
+    //     test_settings(&mut data, SolautoSettingsParameters {
+    //         repay_from_bps: 9500,
+    //         repay_to_bps: 9000,
+    //         boost_from_bps: 4500,
+    //         boost_to_bps: 4499,
+    //     }).await;
+    // }
 }
