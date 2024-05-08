@@ -58,7 +58,7 @@ pub fn generic_instruction_validation(
             == &token_program_id
         && accounts.solauto_fees_supply_ta.as_ref().unwrap().data.owner != SOLAUTO_FEES_WALLET
     {
-        return Err(SolautoError::IncorrectFeesReceiverAccount.into());
+        return Err(SolautoError::IncorrectAccounts.into());
     }
 
     // TODO add standard program address validation for all instructions
@@ -336,7 +336,7 @@ pub fn validate_lending_protocol_accounts(
 
         if protocol_position.key != &protocol_data.protocol_account {
             msg!("Incorrect protocol-owned account");
-            return Err(SolautoError::InvalidSolautoPositionAccount.into());
+            return Err(SolautoError::IncorrectAccounts.into());
         }
 
         if source_supply_ta.key
@@ -348,7 +348,7 @@ pub fn validate_lending_protocol_accounts(
                 != &get_associated_token_address(signer.key, &protocol_data.supply_mint)
         {
             msg!("Incorrect supply mint token account");
-            return Err(SolautoError::InvalidSolautoPositionAccount.into());
+            return Err(SolautoError::IncorrectAccounts.into());
         }
 
         if source_debt_ta.is_some()
@@ -361,7 +361,7 @@ pub fn validate_lending_protocol_accounts(
                 != &get_associated_token_address(signer.key, &protocol_data.debt_mint.unwrap())
         {
             msg!("Incorrect debt mint token account");
-            return Err(SolautoError::InvalidSolautoPositionAccount.into());
+            return Err(SolautoError::IncorrectAccounts.into());
         }
     }
 

@@ -168,10 +168,6 @@ impl<'a, T: Pack + IsInitialized> DeserializedAccount<'a, T> {
 
 #[derive(Error, Debug)]
 pub enum SolautoError {
-    #[error("Incorrect Solauto position given the other accounts provided")]
-    InvalidSolautoPositionAccount,
-    #[error("Incorrect fee receiver account provided")]
-    IncorrectFeesReceiverAccount,
     #[error("Missing or incorrect accounts provided for the given instruction")]
     IncorrectAccounts,
     #[error("Failed to deserialize account data, incorrect account was likely given")]

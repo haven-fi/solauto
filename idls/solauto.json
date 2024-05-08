@@ -1521,66 +1521,56 @@
   "errors": [
     {
       "code": 0,
-      "name": "InvalidSolautoPositionAccount",
-      "msg": "Incorrect Solauto position given the other accounts provided"
-    },
-    {
-      "code": 1,
-      "name": "IncorrectFeesReceiverAccount",
-      "msg": "Incorrect fee receiver account provided"
-    },
-    {
-      "code": 2,
       "name": "IncorrectAccounts",
       "msg": "Missing or incorrect accounts provided for the given instruction"
     },
     {
-      "code": 3,
+      "code": 1,
       "name": "FailedAccountDeserialization",
       "msg": "Failed to deserialize account data, incorrect account was likely given"
     },
     {
-      "code": 4,
+      "code": 2,
       "name": "InvalidPositionSettings",
       "msg": "Invalid position data given"
     },
     {
-      "code": 5,
+      "code": 3,
       "name": "InvalidDCASettings",
       "msg": "Invalid DCA data given"
     },
     {
-      "code": 6,
+      "code": 4,
       "name": "StaleProtocolData",
       "msg": "Stale protocol data. Refresh instruction must be invoked before taking a protocol action"
     },
     {
-      "code": 7,
+      "code": 5,
       "name": "UnableToReposition",
       "msg": "Unable to adjust position to the desired utilization rate"
     },
     {
-      "code": 8,
+      "code": 6,
       "name": "ExceededValidUtilizationRate",
       "msg": "Desired action brought the utilization rate to an unsafe amount"
     },
     {
-      "code": 9,
+      "code": 7,
       "name": "InvalidRebalanceCondition",
       "msg": "Invalid position condition to rebalance"
     },
     {
-      "code": 10,
+      "code": 8,
       "name": "InstructionIsCPI",
       "msg": "Unable to invoke instruciton through a CPI"
     },
     {
-      "code": 11,
+      "code": 9,
       "name": "RebalanceAbuse",
       "msg": "Too many rebalance instruction invocations in the same transaction"
     },
     {
-      "code": 12,
+      "code": 10,
       "name": "IncorrectInstructions",
       "msg": "Incorrect set of instructions in the transaction"
     }

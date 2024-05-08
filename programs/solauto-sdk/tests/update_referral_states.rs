@@ -88,7 +88,7 @@ mod update_referral_states {
             ).await
             .unwrap_err();
 
-        assert_instruction_error!(err, InstructionError::Custom(2));
+        assert_instruction_error!(err, InstructionError::Custom(0));
     }
 
     #[tokio::test]
@@ -106,7 +106,7 @@ mod update_referral_states {
         );
 
         let err = data.general.ctx.banks_client.process_transaction(tx).await.unwrap_err();
-        assert_instruction_error!(err, InstructionError::Custom(2));
+        assert_instruction_error!(err, InstructionError::Custom(0));
     }
 
     #[tokio::test]
@@ -126,6 +126,6 @@ mod update_referral_states {
             ).await
             .unwrap_err();
 
-        assert_instruction_error!(err, InstructionError::Custom(2));
+        assert_instruction_error!(err, InstructionError::Custom(0));
     }
 }

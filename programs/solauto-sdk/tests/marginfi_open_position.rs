@@ -188,7 +188,7 @@ mod open_position {
                 None
             ).await
             .unwrap_err();
-        assert_instruction_error!(err, InstructionError::Custom(2));
+        assert_instruction_error!(err, InstructionError::Custom(0));
 
         // Correct wallet, incorrect mint
         let fake_supply_ta = get_associated_token_address(
@@ -201,7 +201,7 @@ mod open_position {
                 None
             ).await
             .unwrap_err();
-        assert_instruction_error!(err, InstructionError::Custom(2));
+        assert_instruction_error!(err, InstructionError::Custom(0));
 
         // Correct mint, incorrect wallet
         let fake_debt_ta = get_associated_token_address(
@@ -214,7 +214,7 @@ mod open_position {
                 None
             ).await
             .unwrap_err();
-        assert_instruction_error!(err, InstructionError::Custom(2));
+        assert_instruction_error!(err, InstructionError::Custom(0));
 
         // Correct wallet, incorrect mint
         let fake_debt_ta = get_associated_token_address(
@@ -227,7 +227,7 @@ mod open_position {
                 None
             ).await
             .unwrap_err();
-        assert_instruction_error!(err, InstructionError::Custom(2));
+        assert_instruction_error!(err, InstructionError::Custom(0));
     }
 
     // pub async fn test_settings(data: &mut MarginfiTestData<'_>, settings: SolautoSettingsParameters) {

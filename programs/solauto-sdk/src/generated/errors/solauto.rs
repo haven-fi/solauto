@@ -10,45 +10,39 @@ use thiserror::Error;
 
 #[derive(Clone, Debug, Eq, Error, FromPrimitive, PartialEq)]
 pub enum SolautoError {
-    /// 0 (0x0) - Incorrect Solauto position given the other accounts provided
-    #[error("Incorrect Solauto position given the other accounts provided")]
-    InvalidSolautoPositionAccount,
-    /// 1 (0x1) - Incorrect fee receiver account provided
-    #[error("Incorrect fee receiver account provided")]
-    IncorrectFeesReceiverAccount,
-    /// 2 (0x2) - Missing or incorrect accounts provided for the given instruction
+    /// 0 (0x0) - Missing or incorrect accounts provided for the given instruction
     #[error("Missing or incorrect accounts provided for the given instruction")]
     IncorrectAccounts,
-    /// 3 (0x3) - Failed to deserialize account data, incorrect account was likely given
+    /// 1 (0x1) - Failed to deserialize account data, incorrect account was likely given
     #[error("Failed to deserialize account data, incorrect account was likely given")]
     FailedAccountDeserialization,
-    /// 4 (0x4) - Invalid position data given
+    /// 2 (0x2) - Invalid position data given
     #[error("Invalid position data given")]
     InvalidPositionSettings,
-    /// 5 (0x5) - Invalid DCA data given
+    /// 3 (0x3) - Invalid DCA data given
     #[error("Invalid DCA data given")]
     InvalidDCASettings,
-    /// 6 (0x6) - Stale protocol data. Refresh instruction must be invoked before taking a protocol action
+    /// 4 (0x4) - Stale protocol data. Refresh instruction must be invoked before taking a protocol action
     #[error(
         "Stale protocol data. Refresh instruction must be invoked before taking a protocol action"
     )]
     StaleProtocolData,
-    /// 7 (0x7) - Unable to adjust position to the desired utilization rate
+    /// 5 (0x5) - Unable to adjust position to the desired utilization rate
     #[error("Unable to adjust position to the desired utilization rate")]
     UnableToReposition,
-    /// 8 (0x8) - Desired action brought the utilization rate to an unsafe amount
+    /// 6 (0x6) - Desired action brought the utilization rate to an unsafe amount
     #[error("Desired action brought the utilization rate to an unsafe amount")]
     ExceededValidUtilizationRate,
-    /// 9 (0x9) - Invalid position condition to rebalance
+    /// 7 (0x7) - Invalid position condition to rebalance
     #[error("Invalid position condition to rebalance")]
     InvalidRebalanceCondition,
-    /// 10 (0xA) - Unable to invoke instruciton through a CPI
+    /// 8 (0x8) - Unable to invoke instruciton through a CPI
     #[error("Unable to invoke instruciton through a CPI")]
     InstructionIsCPI,
-    /// 11 (0xB) - Too many rebalance instruction invocations in the same transaction
+    /// 9 (0x9) - Too many rebalance instruction invocations in the same transaction
     #[error("Too many rebalance instruction invocations in the same transaction")]
     RebalanceAbuse,
-    /// 12 (0xC) - Incorrect set of instructions in the transaction
+    /// 10 (0xA) - Incorrect set of instructions in the transaction
     #[error("Incorrect set of instructions in the transaction")]
     IncorrectInstructions,
 }

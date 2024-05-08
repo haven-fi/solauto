@@ -164,7 +164,7 @@ pub fn init_solauto_fees_supply_ta<'a>(
     supply_mint: &'a AccountInfo<'a>,
 ) -> ProgramResult {
     if solauto_fees_wallet.key != &SOLAUTO_FEES_WALLET {
-        return Err(SolautoError::IncorrectFeesReceiverAccount.into());
+        return Err(SolautoError::IncorrectAccounts.into());
     }
     init_ata_if_needed(
         token_program,
