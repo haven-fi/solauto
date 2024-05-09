@@ -2,7 +2,6 @@ use solana_program::{
     account_info::AccountInfo, clock::Clock, entrypoint::ProgramResult, msg,
     program_error::ProgramError, sysvar::Sysvar,
 };
-use spl_token::state::Account as TokenAccount;
 use std::{
     cmp::min,
     ops::{Div, Mul},
