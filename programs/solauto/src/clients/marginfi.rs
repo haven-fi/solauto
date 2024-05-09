@@ -20,7 +20,7 @@ use crate::{
         obligation_position::LendingProtocolObligationPosition,
         shared::{ DeserializedAccount, SolautoError, SolautoPosition },
     },
-    utils::{ solana_utils, solauto_utils, validation_utils::* },
+    utils::{ solana_utils, solauto_utils, validation_utils },
 };
 
 pub struct MarginfiBankAccounts<'a> {
@@ -55,7 +55,7 @@ impl<'a> MarginfiClient<'a> {
         let (max_ltv, liq_threshold) = MarginfiClient::get_max_ltv_and_liq_threshold(
             &supply_bank.data
         );
-        validate_position_settings(solauto_position, max_ltv, liq_threshold)?;
+        validation_utils::validate_position_settings(solauto_position, max_ltv, liq_threshold)?;
 
         if solana_utils::account_has_data(ctx.accounts.marginfi_account) {
             return Ok(());
@@ -202,7 +202,7 @@ impl<'a> MarginfiClient<'a> {
 
 impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
     fn validate(&self, std_accounts: &SolautoStandardAccounts) -> ProgramResult {
-        validate_lending_protocol_accounts(
+        validation_utils::validate_lending_protocol_accounts(
             std_accounts.signer,
             &std_accounts.solauto_position,
             self.marginfi_account.account_info,
