@@ -145,7 +145,7 @@
           "isSigner": false
         },
         {
-          "name": "destTa",
+          "name": "feesDestinationTa",
           "isMut": true,
           "isSigner": false,
           "isOptional": true

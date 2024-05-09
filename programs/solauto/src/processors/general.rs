@@ -144,12 +144,13 @@ pub fn process_claim_referral_fees<'a>(accounts: &'a [AccountInfo<'a>]) -> Progr
         return Err(SolautoError::IncorrectAccounts.into());
     }
 
-    if ctx.accounts.referral_fees_mint.key != &referral_state.data.dest_fees_mint {
-        if ctx.accounts.dest_ta.is_none() {
-            msg!("Missing destination token account when the token mint is not wSOL");
+    if referral_state.data.dest_fees_mint != WSOL_MINT {
+        if ctx.accounts.fees_destination_ta.is_none() {
+            msg!("Missing fees destination token account when the token mint is not wSOL");
             return Err(SolautoError::IncorrectAccounts.into());
         }
-        if ctx.accounts.dest_ta.unwrap().key
+
+        if ctx.accounts.fees_destination_ta.unwrap().key
             != &get_associated_token_address(
                 referral_state.account_info.key,
                 ctx.accounts.referral_fees_mint.key,
@@ -195,6 +196,8 @@ pub fn process_update_position_instruction<'a>(
             .setting_params = new_data.setting_params.clone();
     }
 
+    // TODO: what if already an active DCA? Should we fail it? Should we add instruction to close current DCA, or just make
+    // necessary modifications to the DCA here?
     if new_data.active_dca.is_some() {
         validation_utils::validate_dca_settings(&new_data.active_dca)?;
         solauto_position.data.position.as_mut().unwrap().active_dca = new_data.active_dca.clone();

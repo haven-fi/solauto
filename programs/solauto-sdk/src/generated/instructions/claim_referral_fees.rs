@@ -24,7 +24,7 @@ pub struct ClaimReferralFees {
 
     pub referral_fees_mint: solana_program::pubkey::Pubkey,
 
-    pub dest_ta: Option<solana_program::pubkey::Pubkey>,
+    pub fees_destination_ta: Option<solana_program::pubkey::Pubkey>,
 }
 
 impl ClaimReferralFees {
@@ -64,9 +64,10 @@ impl ClaimReferralFees {
             self.referral_fees_mint,
             false,
         ));
-        if let Some(dest_ta) = self.dest_ta {
+        if let Some(fees_destination_ta) = self.fees_destination_ta {
             accounts.push(solana_program::instruction::AccountMeta::new(
-                dest_ta, false,
+                fees_destination_ta,
+                false,
             ));
         } else {
             accounts.push(solana_program::instruction::AccountMeta::new_readonly(
@@ -109,7 +110,7 @@ impl ClaimReferralFeesInstructionData {
 ///   4. `[]` referral_state
 ///   5. `[writable]` referral_fees_ta
 ///   6. `[writable]` referral_fees_mint
-///   7. `[writable, optional]` dest_ta
+///   7. `[writable, optional]` fees_destination_ta
 #[derive(Default)]
 pub struct ClaimReferralFeesBuilder {
     signer: Option<solana_program::pubkey::Pubkey>,
@@ -119,7 +120,7 @@ pub struct ClaimReferralFeesBuilder {
     referral_state: Option<solana_program::pubkey::Pubkey>,
     referral_fees_ta: Option<solana_program::pubkey::Pubkey>,
     referral_fees_mint: Option<solana_program::pubkey::Pubkey>,
-    dest_ta: Option<solana_program::pubkey::Pubkey>,
+    fees_destination_ta: Option<solana_program::pubkey::Pubkey>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
 
@@ -173,8 +174,11 @@ impl ClaimReferralFeesBuilder {
     }
     /// `[optional account]`
     #[inline(always)]
-    pub fn dest_ta(&mut self, dest_ta: Option<solana_program::pubkey::Pubkey>) -> &mut Self {
-        self.dest_ta = dest_ta;
+    pub fn fees_destination_ta(
+        &mut self,
+        fees_destination_ta: Option<solana_program::pubkey::Pubkey>,
+    ) -> &mut Self {
+        self.fees_destination_ta = fees_destination_ta;
         self
     }
     /// Add an aditional account to the instruction.
@@ -213,7 +217,7 @@ impl ClaimReferralFeesBuilder {
             referral_fees_mint: self
                 .referral_fees_mint
                 .expect("referral_fees_mint is not set"),
-            dest_ta: self.dest_ta,
+            fees_destination_ta: self.fees_destination_ta,
         };
 
         accounts.instruction_with_remaining_accounts(&self.__remaining_accounts)
@@ -236,7 +240,7 @@ pub struct ClaimReferralFeesCpiAccounts<'a, 'b> {
 
     pub referral_fees_mint: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub dest_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    pub fees_destination_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 }
 
 /// `claim_referral_fees` CPI instruction.
@@ -258,7 +262,7 @@ pub struct ClaimReferralFeesCpi<'a, 'b> {
 
     pub referral_fees_mint: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub dest_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    pub fees_destination_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 }
 
 impl<'a, 'b> ClaimReferralFeesCpi<'a, 'b> {
@@ -275,7 +279,7 @@ impl<'a, 'b> ClaimReferralFeesCpi<'a, 'b> {
             referral_state: accounts.referral_state,
             referral_fees_ta: accounts.referral_fees_ta,
             referral_fees_mint: accounts.referral_fees_mint,
-            dest_ta: accounts.dest_ta,
+            fees_destination_ta: accounts.fees_destination_ta,
         }
     }
     #[inline(always)]
@@ -340,9 +344,9 @@ impl<'a, 'b> ClaimReferralFeesCpi<'a, 'b> {
             *self.referral_fees_mint.key,
             false,
         ));
-        if let Some(dest_ta) = self.dest_ta {
+        if let Some(fees_destination_ta) = self.fees_destination_ta {
             accounts.push(solana_program::instruction::AccountMeta::new(
-                *dest_ta.key,
+                *fees_destination_ta.key,
                 false,
             ));
         } else {
@@ -376,8 +380,8 @@ impl<'a, 'b> ClaimReferralFeesCpi<'a, 'b> {
         account_infos.push(self.referral_state.clone());
         account_infos.push(self.referral_fees_ta.clone());
         account_infos.push(self.referral_fees_mint.clone());
-        if let Some(dest_ta) = self.dest_ta {
-            account_infos.push(dest_ta.clone());
+        if let Some(fees_destination_ta) = self.fees_destination_ta {
+            account_infos.push(fees_destination_ta.clone());
         }
         remaining_accounts
             .iter()
@@ -402,7 +406,7 @@ impl<'a, 'b> ClaimReferralFeesCpi<'a, 'b> {
 ///   4. `[]` referral_state
 ///   5. `[writable]` referral_fees_ta
 ///   6. `[writable]` referral_fees_mint
-///   7. `[writable, optional]` dest_ta
+///   7. `[writable, optional]` fees_destination_ta
 pub struct ClaimReferralFeesCpiBuilder<'a, 'b> {
     instruction: Box<ClaimReferralFeesCpiBuilderInstruction<'a, 'b>>,
 }
@@ -418,7 +422,7 @@ impl<'a, 'b> ClaimReferralFeesCpiBuilder<'a, 'b> {
             referral_state: None,
             referral_fees_ta: None,
             referral_fees_mint: None,
-            dest_ta: None,
+            fees_destination_ta: None,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
@@ -478,11 +482,11 @@ impl<'a, 'b> ClaimReferralFeesCpiBuilder<'a, 'b> {
     }
     /// `[optional account]`
     #[inline(always)]
-    pub fn dest_ta(
+    pub fn fees_destination_ta(
         &mut self,
-        dest_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+        fees_destination_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     ) -> &mut Self {
-        self.instruction.dest_ta = dest_ta;
+        self.instruction.fees_destination_ta = fees_destination_ta;
         self
     }
     /// Add an additional account to the instruction.
@@ -558,7 +562,7 @@ impl<'a, 'b> ClaimReferralFeesCpiBuilder<'a, 'b> {
                 .referral_fees_mint
                 .expect("referral_fees_mint is not set"),
 
-            dest_ta: self.instruction.dest_ta,
+            fees_destination_ta: self.instruction.fees_destination_ta,
         };
         instruction.invoke_signed_with_remaining_accounts(
             signers_seeds,
@@ -576,7 +580,7 @@ struct ClaimReferralFeesCpiBuilderInstruction<'a, 'b> {
     referral_state: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     referral_fees_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     referral_fees_mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    dest_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    fees_destination_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(
         &'b solana_program::account_info::AccountInfo<'a>,

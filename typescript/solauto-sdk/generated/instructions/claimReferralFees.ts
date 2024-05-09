@@ -36,7 +36,7 @@ export type ClaimReferralFeesInstructionAccounts = {
   referralState: PublicKey | Pda;
   referralFeesTa: PublicKey | Pda;
   referralFeesMint: PublicKey | Pda;
-  destTa?: PublicKey | Pda;
+  feesDestinationTa?: PublicKey | Pda;
 };
 
 // Data.
@@ -107,10 +107,10 @@ export function claimReferralFees(
       isWritable: true as boolean,
       value: input.referralFeesMint ?? null,
     },
-    destTa: {
+    feesDestinationTa: {
       index: 7,
       isWritable: true as boolean,
-      value: input.destTa ?? null,
+      value: input.feesDestinationTa ?? null,
     },
   } satisfies ResolvedAccountsWithIndices;
 

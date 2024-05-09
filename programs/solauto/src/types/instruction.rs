@@ -36,7 +36,7 @@ pub enum Instruction {
     #[account(name = "referral_state")]
     #[account(mut, name = "referral_fees_ta")]
     #[account(mut, name = "referral_fees_mint")]
-    #[account(mut, optional, name = "dest_ta")]
+    #[account(mut, optional, name = "fees_destination_ta")]
     ClaimReferralFees,
 
     /// Open a new Solauto position with Marginfi

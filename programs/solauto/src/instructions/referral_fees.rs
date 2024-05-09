@@ -53,7 +53,7 @@ pub fn claim_referral_fees(ctx: Context<ClaimReferralFeesAccounts>) -> ProgramRe
             ctx.accounts.system_program,
             ctx.accounts.signer,
             ctx.accounts.signer,
-            ctx.accounts.dest_ta.unwrap(),
+            ctx.accounts.fees_destination_ta.unwrap(),
             ctx.accounts.referral_fees_mint,
         )?;
 
@@ -63,7 +63,7 @@ pub fn claim_referral_fees(ctx: Context<ClaimReferralFeesAccounts>) -> ProgramRe
             ctx.accounts.token_program,
             ctx.accounts.referral_fees_ta,
             ctx.accounts.referral_state,
-            ctx.accounts.dest_ta.unwrap(),
+            ctx.accounts.fees_destination_ta.unwrap(),
             balance,
             Some(solauto_utils::get_referral_account_seeds(
                 ctx.accounts.signer.key,
