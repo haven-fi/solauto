@@ -13,6 +13,7 @@ use solana_program::pubkey::Pubkey;
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct MarginfiAccount {
+    pub discriminator: [u8; 8],
     #[cfg_attr(
         feature = "serde",
         serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
@@ -36,7 +37,7 @@ pub struct MarginfiAccount {
 }
 
 impl MarginfiAccount {
-    pub const LEN: usize = 2304;
+    pub const LEN: usize = 2312;
 
     #[inline(always)]
     pub fn from_bytes(data: &[u8]) -> Result<Self, std::io::Error> {

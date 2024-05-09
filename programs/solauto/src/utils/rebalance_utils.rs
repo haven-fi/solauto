@@ -90,17 +90,14 @@ pub fn get_rebalance_step(
     );
     let jup_swap = InstructionChecker::from_anchor(
         JUP_PROGRAM,
-        "jupiter",
         vec!["route_with_token_ledger", "shared_accounts_route_with_token_ledger"]
     );
     let marginfi_start_fl = InstructionChecker::from_anchor(
         MARGINFI_PROGRAM,
-        "marginfi",
         vec!["lending_account_start_flashloan"]
     );
     let marginfi_end_fl = InstructionChecker::from_anchor(
         MARGINFI_PROGRAM,
-        "marginfi",
         vec!["lending_account_end_flashloan"]
     );
 

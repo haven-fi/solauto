@@ -76,11 +76,15 @@ impl LendingPoolCollectBankFees {
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
-struct LendingPoolCollectBankFeesInstructionData {}
+struct LendingPoolCollectBankFeesInstructionData {
+    discriminator: [u8; 8],
+}
 
 impl LendingPoolCollectBankFeesInstructionData {
     fn new() -> Self {
-        Self {}
+        Self {
+            discriminator: [201, 5, 215, 116, 230, 92, 75, 150],
+        }
     }
 }
 

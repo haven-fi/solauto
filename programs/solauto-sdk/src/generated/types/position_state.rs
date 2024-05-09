@@ -18,4 +18,5 @@ pub struct PositionState {
     pub base_amount_borrowed: u64,
     pub max_ltv_bps: u64,
     pub liq_threshold: u64,
+    pub last_updated: u64,
 }

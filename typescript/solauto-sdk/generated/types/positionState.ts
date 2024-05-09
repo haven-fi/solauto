@@ -21,6 +21,7 @@ export type PositionState = {
   baseAmountBorrowed: bigint;
   maxLtvBps: bigint;
   liqThreshold: bigint;
+  lastUpdated: bigint;
 };
 
 export type PositionStateArgs = {
@@ -31,6 +32,7 @@ export type PositionStateArgs = {
   baseAmountBorrowed: number | bigint;
   maxLtvBps: number | bigint;
   liqThreshold: number | bigint;
+  lastUpdated: number | bigint;
 };
 
 export function getPositionStateSerializer(): Serializer<
@@ -46,6 +48,7 @@ export function getPositionStateSerializer(): Serializer<
       ['baseAmountBorrowed', u64()],
       ['maxLtvBps', u64()],
       ['liqThreshold', u64()],
+      ['lastUpdated', u64()],
     ],
     { description: 'PositionState' }
   ) as Serializer<PositionStateArgs, PositionState>;

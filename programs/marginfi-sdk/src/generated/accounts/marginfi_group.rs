@@ -12,6 +12,7 @@ use solana_program::pubkey::Pubkey;
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct MarginfiGroup {
+    pub discriminator: [u8; 8],
     #[cfg_attr(
         feature = "serde",
         serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
@@ -22,7 +23,7 @@ pub struct MarginfiGroup {
 }
 
 impl MarginfiGroup {
-    pub const LEN: usize = 1056;
+    pub const LEN: usize = 1064;
 
     #[inline(always)]
     pub fn from_bytes(data: &[u8]) -> Result<Self, std::io::Error> {

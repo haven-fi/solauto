@@ -56,11 +56,15 @@ impl SetAccountFlag {
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
-struct SetAccountFlagInstructionData {}
+struct SetAccountFlagInstructionData {
+    discriminator: [u8; 8],
+}
 
 impl SetAccountFlagInstructionData {
     fn new() -> Self {
-        Self {}
+        Self {
+            discriminator: [56, 238, 18, 207, 193, 82, 138, 174],
+        }
     }
 }
 

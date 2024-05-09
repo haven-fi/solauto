@@ -1,4 +1,3 @@
-use anchor_lang::{accounts::signer::Signer, context::CpiContext};
 use marginfi_sdk::generated::{
     accounts::{Bank, MarginfiAccount},
     types::RiskTier,
@@ -193,33 +192,6 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
     ) -> ProgramResult {
         let supply = self.supply.as_ref().unwrap();
         // TODO
-
-        // let cpi_accounts = marginfi_anchor::ix_accounts::LendingAccountDeposit {
-        //     token_program: std_accounts.token_program.clone(),
-        //     marginfi_group: self.marginfi_group.clone(),
-        //     marginfi_account: self.marginfi_account.account_info.clone(),
-        //     signer: std_accounts.solauto_position.account_info.clone(),
-        //     bank: supply.bank.account_info.clone(),
-        //     signer_token_account: supply.token_accounts.source_ta.account_info.clone(),
-        //     bank_liquidity_vault: supply.token_accounts.protocol_ta.clone(),
-        // };
-        // // let cpi_accounts = marginfi_anchor::accounts::LendingAccountDeposit {
-        // //     token_program: *std_accounts.token_program.key,
-        // //     marginfi_group: *self.marginfi_group.key,
-        // //     marginfi_account: *self.marginfi_account.account_info.key,
-        // //     signer: *std_accounts.solauto_position.account_info.key,
-        // //     bank: *supply.bank.account_info.key,
-        // //     signer_token_account: *supply.token_accounts.source_ta.account_info.key,
-        // //     bank_liquidity_vault: *supply.token_accounts.protocol_ta.key,
-        // // };
-        // // CpiContext::new_with_signer(self.program.clone(), cpi_accounts, &[&[]]);
-
-        // // let cpi_ctx = CpiContext::<LendingAccountDeposit>::new(
-        // //     self.program.clone(),
-
-        // // );
-
-        // marginfi_anchor::marginfi::lending_account_deposit(ctx, amount)
         Ok(())
     }
 

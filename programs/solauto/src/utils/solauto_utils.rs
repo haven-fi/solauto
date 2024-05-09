@@ -1,6 +1,6 @@
 use solana_program::{
-    account_info::AccountInfo, entrypoint::ProgramResult, msg,
-    program_error::ProgramError, program_pack::Pack, pubkey::Pubkey,
+    account_info::AccountInfo, entrypoint::ProgramResult, msg, program_error::ProgramError,
+    program_pack::Pack, pubkey::Pubkey,
 };
 use spl_associated_token_account::get_associated_token_address;
 use spl_token::state::Account as TokenAccount;
@@ -254,7 +254,7 @@ pub fn initiate_dca_in_if_necessary<'a, 'b>(
 pub fn is_dca_instruction(
     solauto_position: &SolautoPosition,
     obligation_position: &LendingProtocolObligationPosition,
-    current_unix_timestamp: u64
+    current_unix_timestamp: u64,
 ) -> Result<Option<DCADirection>, ProgramError> {
     if solauto_position.self_managed
         || solauto_position

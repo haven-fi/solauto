@@ -1378,6 +1378,10 @@
           {
             "name": "liqThreshold",
             "type": "u64"
+          },
+          {
+            "name": "lastUpdated",
+            "type": "u64"
           }
         ]
       }

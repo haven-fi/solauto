@@ -88,11 +88,15 @@ impl LendingAccountWithdrawEmissions {
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
-struct LendingAccountWithdrawEmissionsInstructionData {}
+struct LendingAccountWithdrawEmissionsInstructionData {
+    discriminator: [u8; 8],
+}
 
 impl LendingAccountWithdrawEmissionsInstructionData {
     fn new() -> Self {
-        Self {}
+        Self {
+            discriminator: [234, 22, 84, 214, 118, 176, 140, 170],
+        }
     }
 }
 

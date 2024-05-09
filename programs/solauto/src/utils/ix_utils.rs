@@ -1,11 +1,11 @@
 use borsh::BorshSerialize;
 use solana_program::{
-    account_info::AccountInfo, entrypoint::ProgramResult, instruction::Instruction,
+    account_info::AccountInfo, entrypoint::ProgramResult, hash::hash, instruction::Instruction,
     program::invoke, program_error::ProgramError, pubkey::Pubkey,
     sysvar::instructions::load_instruction_at_checked,
 };
 
-use super::solana_utils::{get_anchor_ix_discriminator, invoke_signed_with_seed};
+use super::solana_utils::invoke_signed_with_seed;
 use crate::types::shared::{DeserializedAccount, SolautoPosition};
 
 pub fn update_data<T: BorshSerialize>(account: &mut DeserializedAccount<T>) -> ProgramResult {
@@ -53,6 +53,14 @@ pub fn get_relative_instruction(
     }
 }
 
+pub fn get_anchor_ix_discriminator(instruction_name: &str) -> u64 {
+    let concatenated = format!("global:{}", instruction_name.to_lowercase());
+    let mut sighash = [0u8; 8];
+    sighash.copy_from_slice(&hash(concatenated.as_bytes()).to_bytes()[..8]);
+    println!("{:?}", sighash);
+    u64::from_le_bytes(sighash)
+}
+
 pub struct InstructionChecker {
     program_id: Pubkey,
     ix_discriminators: Option<Vec<u64>>,
@@ -64,10 +72,10 @@ impl InstructionChecker {
             ix_discriminators,
         }
     }
-    pub fn from_anchor(program_id: Pubkey, namespace: &str, ix_names: Vec<&str>) -> Self {
+    pub fn from_anchor(program_id: Pubkey, ix_names: Vec<&str>) -> Self {
         let mut ix_discriminators: Vec<u64> = Vec::new();
         for name in ix_names.iter() {
-            ix_discriminators.push(get_anchor_ix_discriminator(namespace, name));
+            ix_discriminators.push(get_anchor_ix_discriminator(name));
         }
         Self {
             program_id,

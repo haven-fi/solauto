@@ -58,11 +58,15 @@ impl LendingAccountCloseBalance {
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
-struct LendingAccountCloseBalanceInstructionData {}
+struct LendingAccountCloseBalanceInstructionData {
+    discriminator: [u8; 8],
+}
 
 impl LendingAccountCloseBalanceInstructionData {
     fn new() -> Self {
-        Self {}
+        Self {
+            discriminator: [245, 54, 41, 4, 243, 202, 31, 17],
+        }
     }
 }
 

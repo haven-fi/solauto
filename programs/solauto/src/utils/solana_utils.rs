@@ -1,7 +1,6 @@
 use solana_program::{
     account_info::AccountInfo,
     entrypoint::ProgramResult,
-    hash::hash,
     instruction::Instruction,
     msg,
     program::{invoke, invoke_signed},
@@ -152,13 +151,6 @@ pub fn close_pda<'a, 'b>(
         &[account.clone(), sol_destination.clone()],
         pda_seeds,
     )
-}
-
-pub fn get_anchor_ix_discriminator(namespace: &str, instruction_name: &str) -> u64 {
-    let concatenated = format!("{}:{}", namespace, instruction_name);
-    let mut sighash = [0u8; 8];
-    sighash.copy_from_slice(&hash(concatenated.as_bytes()).to_bytes()[..8]);
-    u64::from_le_bytes(sighash)
 }
 
 pub fn spl_token_transfer<'a, 'b>(

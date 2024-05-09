@@ -56,11 +56,15 @@ impl UnsetAccountFlag {
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
-struct UnsetAccountFlagInstructionData {}
+struct UnsetAccountFlagInstructionData {
+    discriminator: [u8; 8],
+}
 
 impl UnsetAccountFlagInstructionData {
     fn new() -> Self {
-        Self {}
+        Self {
+            discriminator: [56, 81, 56, 85, 92, 49, 255, 70],
+        }
     }
 }
 

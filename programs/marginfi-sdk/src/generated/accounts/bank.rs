@@ -14,6 +14,7 @@ use solana_program::pubkey::Pubkey;
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Bank {
+    pub discriminator: [u8; 8],
     #[cfg_attr(
         feature = "serde",
         serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
@@ -77,7 +78,7 @@ pub struct Bank {
 }
 
 impl Bank {
-    pub const LEN: usize = 1856;
+    pub const LEN: usize = 1864;
 
     #[inline(always)]
     pub fn from_bytes(data: &[u8]) -> Result<Self, std::io::Error> {

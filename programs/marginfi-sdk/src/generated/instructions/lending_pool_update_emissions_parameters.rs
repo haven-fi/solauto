@@ -81,11 +81,15 @@ impl LendingPoolUpdateEmissionsParameters {
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
-struct LendingPoolUpdateEmissionsParametersInstructionData {}
+struct LendingPoolUpdateEmissionsParametersInstructionData {
+    discriminator: [u8; 8],
+}
 
 impl LendingPoolUpdateEmissionsParametersInstructionData {
     fn new() -> Self {
-        Self {}
+        Self {
+            discriminator: [55, 213, 224, 168, 153, 53, 197, 40],
+        }
     }
 }
 
