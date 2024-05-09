@@ -65,7 +65,6 @@ pub fn create_new_solauto_position<'a>(
                     debt_mint: debt_mint.map_or_else(|| None, |mint| Some(mint.key.clone())),
                 },
                 active_dca: update_position_data.active_dca.clone(),
-                supply_ta_balance: 0,
                 debt_ta_balance: 0,
             }),
         }
@@ -244,6 +243,7 @@ pub fn initiate_dca_in_if_necessary<'a, 'b>(
         return Err(ProgramError::InvalidInstructionData.into());
     }
 
+    // TODO: deduct rent exemption if this is a wSOL token account, because we don't want to close the account when finishing the DCA.
     solauto_position
         .data
         .position

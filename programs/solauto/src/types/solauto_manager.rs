@@ -268,19 +268,7 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
         let position_supply_ta = &self.accounts.supply.as_ref().unwrap().source_ta.data;
         let position_debt_ta = &self.accounts.debt.as_ref().unwrap().source_ta.data;
 
-        let available_supply_balance = if self.std_accounts.solauto_position.data.self_managed {
-            position_supply_ta.amount
-        } else {
-            position_supply_ta.amount
-                - self
-                    .std_accounts
-                    .solauto_position
-                    .data
-                    .position
-                    .as_ref()
-                    .unwrap()
-                    .supply_ta_balance
-        };
+        let available_supply_balance = position_supply_ta.amount;
 
         let available_debt_balance = if self.std_accounts.solauto_position.data.self_managed {
             position_debt_ta.amount
@@ -373,8 +361,6 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
     pub fn refresh_position(
         obligation_position: &LendingProtocolObligationPosition,
         solauto_position: &mut DeserializedAccount<SolautoPosition>,
-        position_supply_ta: Option<&'a AccountInfo<'a>>,
-        position_debt_ta: Option<&'a AccountInfo<'a>>,
     ) -> ProgramResult {
         if solauto_position.data.self_managed {
             return Ok(());
@@ -411,15 +397,6 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
 
         position.state.max_ltv_bps = obligation_position.max_ltv.mul(10000.0) as u64;
         position.state.liq_threshold = obligation_position.liq_threshold.mul(10000.0) as u64;
-
-        if position_supply_ta.is_some() {
-            let account = DeserializedAccount::<TokenAccount>::unpack(position_supply_ta)?.unwrap();
-            position.supply_ta_balance = account.data.amount;
-        }
-        if position_debt_ta.is_some() {
-            let account = DeserializedAccount::<TokenAccount>::unpack(position_debt_ta)?.unwrap();
-            position.debt_ta_balance = account.data.amount;
-        }
 
         Ok(())
     }

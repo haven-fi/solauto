@@ -108,8 +108,11 @@ pub enum Instruction {
     /// Refresh Marginfi accounts & position data
     #[account(signer, name = "signer")]
     #[account(name = "marginfi_program")]
+    #[account(name = "marginfi_group")]
+    #[account(optional, name = "marginfi_account")]
+    #[account(mut, name = "supply_bank")]
+    #[account(mut, optional, name = "debt_bank")]
     #[account(mut, optional, name = "solauto_position")]
-    // TODO missing accounts
     MarginfiRefreshData,
 
     /// Refresh Solend accounts & position data

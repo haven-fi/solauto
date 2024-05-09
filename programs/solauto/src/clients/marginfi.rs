@@ -198,6 +198,18 @@ impl<'a> MarginfiClient<'a> {
         // TODO
         return Err(ProgramError::Custom(0));
     }
+
+    pub fn refresh_bank(
+        program: &'a AccountInfo<'a>,
+        marginfi_group: &'a AccountInfo<'a>,
+        bank: &'a AccountInfo<'a>
+    ) -> ProgramResult {
+        let cpi = LendingPoolAccrueBankInterestCpi::new(
+            program,
+            LendingPoolAccrueBankInterestCpiAccounts { marginfi_group, bank }
+        );
+        cpi.invoke()
+    }
 }
 
 impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
