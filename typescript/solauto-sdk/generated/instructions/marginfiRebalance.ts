@@ -49,10 +49,12 @@ export type MarginfiRebalanceInstructionAccounts = {
   marginfiAccount: PublicKey | Pda;
   intermediaryTa: PublicKey | Pda;
   supplyBank: PublicKey | Pda;
+  supplyPythPriceOracle: PublicKey | Pda;
   positionSupplyTa: PublicKey | Pda;
   vaultSupplyTa: PublicKey | Pda;
   supplyVaultAuthority?: PublicKey | Pda;
   debtBank: PublicKey | Pda;
+  debtPythPriceOracle: PublicKey | Pda;
   positionDebtTa: PublicKey | Pda;
   vaultDebtTa: PublicKey | Pda;
   debtVaultAuthority?: PublicKey | Pda;
@@ -179,39 +181,49 @@ export function marginfiRebalance(
       isWritable: true as boolean,
       value: input.supplyBank ?? null,
     },
-    positionSupplyTa: {
+    supplyPythPriceOracle: {
       index: 15,
+      isWritable: false as boolean,
+      value: input.supplyPythPriceOracle ?? null,
+    },
+    positionSupplyTa: {
+      index: 16,
       isWritable: true as boolean,
       value: input.positionSupplyTa ?? null,
     },
     vaultSupplyTa: {
-      index: 16,
+      index: 17,
       isWritable: true as boolean,
       value: input.vaultSupplyTa ?? null,
     },
     supplyVaultAuthority: {
-      index: 17,
-      isWritable: false as boolean,
+      index: 18,
+      isWritable: true as boolean,
       value: input.supplyVaultAuthority ?? null,
     },
     debtBank: {
-      index: 18,
+      index: 19,
       isWritable: true as boolean,
       value: input.debtBank ?? null,
     },
+    debtPythPriceOracle: {
+      index: 20,
+      isWritable: false as boolean,
+      value: input.debtPythPriceOracle ?? null,
+    },
     positionDebtTa: {
-      index: 19,
+      index: 21,
       isWritable: true as boolean,
       value: input.positionDebtTa ?? null,
     },
     vaultDebtTa: {
-      index: 20,
+      index: 22,
       isWritable: true as boolean,
       value: input.vaultDebtTa ?? null,
     },
     debtVaultAuthority: {
-      index: 21,
-      isWritable: false as boolean,
+      index: 23,
+      isWritable: true as boolean,
       value: input.debtVaultAuthority ?? null,
     },
   } satisfies ResolvedAccountsWithIndices;

@@ -234,14 +234,25 @@
           "isOptionalSigner": true
         },
         {
+          "name": "supplyMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "supplyBank",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
           "name": "positionSupplyTa",
           "isMut": true,
           "isSigner": false
         },
         {
-          "name": "supplyMint",
+          "name": "debtMint",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "isOptional": true
         },
         {
           "name": "signerDebtTa",
@@ -252,12 +263,6 @@
         {
           "name": "positionDebtTa",
           "isMut": true,
-          "isSigner": false,
-          "isOptional": true
-        },
-        {
-          "name": "debtMint",
-          "isMut": false,
           "isSigner": false,
           "isOptional": true
         }
@@ -665,6 +670,12 @@
           "isOptional": true
         },
         {
+          "name": "supplyPythPriceOracle",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
           "name": "authoritySupplyTa",
           "isMut": true,
           "isSigner": false,
@@ -678,13 +689,19 @@
         },
         {
           "name": "supplyVaultAuthority",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false,
           "isOptional": true
         },
         {
           "name": "debtBank",
           "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "debtPythPriceOracle",
+          "isMut": false,
           "isSigner": false,
           "isOptional": true
         },
@@ -702,7 +719,7 @@
         },
         {
           "name": "debtVaultAuthority",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false,
           "isOptional": true
         }
@@ -939,6 +956,11 @@
           "isSigner": false
         },
         {
+          "name": "supplyPythPriceOracle",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
           "name": "positionSupplyTa",
           "isMut": true,
           "isSigner": false
@@ -950,13 +972,18 @@
         },
         {
           "name": "supplyVaultAuthority",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false,
           "isOptional": true
         },
         {
           "name": "debtBank",
           "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "debtPythPriceOracle",
+          "isMut": false,
           "isSigner": false
         },
         {
@@ -971,7 +998,7 @@
         },
         {
           "name": "debtVaultAuthority",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false,
           "isOptional": true
         }

@@ -22,10 +22,9 @@ mod open_position {
     async fn std_open_position() {
         let args = GeneralArgs::new();
         let mut data = MarginfiTestData::new(&args).await;
-        data.general
-            .test_prefixtures().await
+        data.test_prefixtures().await
             .unwrap()
-            .create_referral_state_accounts().await
+            .general.create_referral_state_accounts().await
             .unwrap();
 
         let setting_params = SolautoSettingsParameters {
@@ -64,10 +63,9 @@ mod open_position {
         let mut args = GeneralArgs::new();
         args.position_id(0);
         let mut data = MarginfiTestData::new(&args).await;
-        data.general
-            .test_prefixtures().await
+        data.test_prefixtures().await
             .unwrap()
-            .create_referral_state_accounts().await
+            .general.create_referral_state_accounts().await
             .unwrap();
 
         data.open_position(None, None).await.unwrap();
@@ -84,10 +82,9 @@ mod open_position {
     async fn std_open_position_with_dca() {
         let args = GeneralArgs::new();
         let mut data = MarginfiTestData::new(&args).await;
-        data.general
-            .test_prefixtures().await
+        data.test_prefixtures().await
             .unwrap()
-            .create_referral_state_accounts().await
+            .general.create_referral_state_accounts().await
             .unwrap();
         data.general
             .create_ata(
@@ -140,10 +137,9 @@ mod open_position {
         let mut args = GeneralArgs::new();
         args.fund_account(temp_account.pubkey());
         let mut data = MarginfiTestData::new(&args).await;
-        data.general
-            .test_prefixtures().await
+        data.test_prefixtures().await
             .unwrap()
-            .create_referral_state_accounts().await
+            .general.create_referral_state_accounts().await
             .unwrap();
 
         let tx = Transaction::new_signed_with_payer(
@@ -166,10 +162,9 @@ mod open_position {
     async fn incorrect_token_accounts() {
         let args = GeneralArgs::new();
         let mut data = MarginfiTestData::new(&args).await;
-        data.general
-            .test_prefixtures().await
+        data.test_prefixtures().await
             .unwrap()
-            .create_referral_state_accounts().await
+            .general.create_referral_state_accounts().await
             .unwrap();
 
         let mut open_position_ix = data.open_position_ix(
@@ -245,7 +240,7 @@ mod open_position {
     // async fn invalid_settings() {
     //     let args = GeneralArgs::new();
     //     let mut data = MarginfiTestData::new(&args).await;
-    //     data.general
+    //     data
     //         .test_prefixtures().await
     //         .unwrap()
     //         .create_referral_state_accounts().await

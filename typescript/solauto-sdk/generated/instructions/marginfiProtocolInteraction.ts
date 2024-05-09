@@ -44,10 +44,12 @@ export type MarginfiProtocolInteractionInstructionAccounts = {
   marginfiGroup: PublicKey | Pda;
   marginfiAccount: PublicKey | Pda;
   supplyBank?: PublicKey | Pda;
+  supplyPythPriceOracle?: PublicKey | Pda;
   authoritySupplyTa?: PublicKey | Pda;
   vaultSupplyTa?: PublicKey | Pda;
   supplyVaultAuthority?: PublicKey | Pda;
   debtBank?: PublicKey | Pda;
+  debtPythPriceOracle?: PublicKey | Pda;
   authorityDebtTa?: PublicKey | Pda;
   vaultDebtTa?: PublicKey | Pda;
   debtVaultAuthority?: PublicKey | Pda;
@@ -150,39 +152,49 @@ export function marginfiProtocolInteraction(
       isWritable: true as boolean,
       value: input.supplyBank ?? null,
     },
-    authoritySupplyTa: {
+    supplyPythPriceOracle: {
       index: 10,
+      isWritable: false as boolean,
+      value: input.supplyPythPriceOracle ?? null,
+    },
+    authoritySupplyTa: {
+      index: 11,
       isWritable: true as boolean,
       value: input.authoritySupplyTa ?? null,
     },
     vaultSupplyTa: {
-      index: 11,
+      index: 12,
       isWritable: true as boolean,
       value: input.vaultSupplyTa ?? null,
     },
     supplyVaultAuthority: {
-      index: 12,
-      isWritable: false as boolean,
+      index: 13,
+      isWritable: true as boolean,
       value: input.supplyVaultAuthority ?? null,
     },
     debtBank: {
-      index: 13,
+      index: 14,
       isWritable: true as boolean,
       value: input.debtBank ?? null,
     },
+    debtPythPriceOracle: {
+      index: 15,
+      isWritable: false as boolean,
+      value: input.debtPythPriceOracle ?? null,
+    },
     authorityDebtTa: {
-      index: 14,
+      index: 16,
       isWritable: true as boolean,
       value: input.authorityDebtTa ?? null,
     },
     vaultDebtTa: {
-      index: 15,
+      index: 17,
       isWritable: true as boolean,
       value: input.vaultDebtTa ?? null,
     },
     debtVaultAuthority: {
-      index: 16,
-      isWritable: false as boolean,
+      index: 18,
+      isWritable: true as boolean,
       value: input.debtVaultAuthority ?? null,
     },
   } satisfies ResolvedAccountsWithIndices;

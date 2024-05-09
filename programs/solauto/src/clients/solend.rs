@@ -54,7 +54,9 @@ impl<'a> SolendClient<'a> {
         let supply_reserve =
             DeserializedAccount::<Reserve>::unpack(Some(ctx.accounts.supply_reserve))?.unwrap();
         if &supply_reserve.data.collateral.mint_pubkey != ctx.accounts.supply_collateral_mint.key {
-            msg!("Supply reserve account provided does not match the supply_collateral_mint account");
+            msg!(
+                "Supply reserve account provided does not match the supply_collateral_mint account"
+            );
             return Err(SolautoError::IncorrectAccounts.into());
         }
 

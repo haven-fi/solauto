@@ -48,11 +48,12 @@ export type MarginfiOpenPositionInstructionAccounts = {
   solautoPosition: PublicKey | Pda;
   marginfiGroup: PublicKey | Pda;
   marginfiAccount: PublicKey | Pda | Signer;
-  positionSupplyTa: PublicKey | Pda;
   supplyMint: PublicKey | Pda;
+  supplyBank: PublicKey | Pda;
+  positionSupplyTa: PublicKey | Pda;
+  debtMint?: PublicKey | Pda;
   signerDebtTa?: PublicKey | Pda;
   positionDebtTa?: PublicKey | Pda;
-  debtMint?: PublicKey | Pda;
 };
 
 // Data.
@@ -172,30 +173,35 @@ export function marginfiOpenPosition(
       isWritable: true as boolean,
       value: input.marginfiAccount ?? null,
     },
-    positionSupplyTa: {
-      index: 14,
-      isWritable: true as boolean,
-      value: input.positionSupplyTa ?? null,
-    },
     supplyMint: {
-      index: 15,
+      index: 14,
       isWritable: false as boolean,
       value: input.supplyMint ?? null,
     },
-    signerDebtTa: {
+    supplyBank: {
+      index: 15,
+      isWritable: false as boolean,
+      value: input.supplyBank ?? null,
+    },
+    positionSupplyTa: {
       index: 16,
+      isWritable: true as boolean,
+      value: input.positionSupplyTa ?? null,
+    },
+    debtMint: {
+      index: 17,
+      isWritable: false as boolean,
+      value: input.debtMint ?? null,
+    },
+    signerDebtTa: {
+      index: 18,
       isWritable: true as boolean,
       value: input.signerDebtTa ?? null,
     },
     positionDebtTa: {
-      index: 17,
+      index: 19,
       isWritable: true as boolean,
       value: input.positionDebtTa ?? null,
-    },
-    debtMint: {
-      index: 18,
-      isWritable: false as boolean,
-      value: input.debtMint ?? null,
     },
   } satisfies ResolvedAccountsWithIndices;
 

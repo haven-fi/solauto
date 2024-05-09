@@ -19,10 +19,9 @@ mod general {
     async fn test_solauto_position_dos_attack() {
         let args = GeneralArgs::new();
         let mut data = MarginfiTestData::new(&args).await;
-        data.general
-            .test_prefixtures().await
+        data.test_prefixtures().await
             .unwrap()
-            .create_referral_state_accounts().await
+            .general.create_referral_state_accounts().await
             .unwrap();
 
         let rent = Rent::default();
@@ -50,20 +49,18 @@ mod general {
     async fn incorrect_solauto_position() {
         let args = GeneralArgs::new();
         let mut data = MarginfiTestData::new(&args).await;
-        data.general
-            .test_prefixtures().await
+        data.test_prefixtures().await
             .unwrap()
-            .create_referral_state_accounts().await
+            .general.create_referral_state_accounts().await
             .unwrap();
 
         data.open_position(Some(data.general.default_setting_params.clone()), None).await.unwrap();
         let solauto_position = data.general.solauto_position.clone();
 
         let mut data = MarginfiTestData::new(&args).await;
-        data.general
-            .test_prefixtures().await
+        data.test_prefixtures().await
             .unwrap()
-            .create_referral_state_accounts().await
+            .general.create_referral_state_accounts().await
             .unwrap();
 
         let err = data.general
@@ -86,10 +83,9 @@ mod general {
     async fn incorrect_solauto_fee_accounts() {
         let args = GeneralArgs::new();
         let mut data = MarginfiTestData::new(&args).await;
-        data.general
-            .test_prefixtures().await
+        data.test_prefixtures().await
             .unwrap()
-            .create_referral_state_accounts().await
+            .general.create_referral_state_accounts().await
             .unwrap();
 
         let err = data.general

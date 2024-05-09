@@ -368,14 +368,16 @@ pub struct MarginfiTestData<'a> {
     pub marginfi_account: Pubkey,
     pub marginfi_account_keypair: Option<Keypair>,
     pub marginfi_group: Pubkey,
+    pub supply_bank: Pubkey,
 }
 
 impl<'a> MarginfiTestData<'a> {
     pub async fn new(args: &'a GeneralArgs) -> Self {
         let general = GeneralTestData::new(args, MARGINFI_PROGRAM).await;
         let marginfi_group = Keypair::new().pubkey();
+        let supply_bank = Keypair::new().pubkey();
 
-        let (marginfi_account, keypair) = if args.position_id != 0 {
+        let (marginfi_account, marginfi_account_keypair) = if args.position_id != 0 {
             let signer_pubkey = general.ctx.payer.pubkey();
             let marginfi_account_seeds = &[
                 general.solauto_position.as_ref(),
@@ -394,10 +396,16 @@ impl<'a> MarginfiTestData<'a> {
 
         Self {
             general,
-            marginfi_account: marginfi_account,
-            marginfi_account_keypair: keypair,
-            marginfi_group: marginfi_group,
+            marginfi_account,
+            marginfi_account_keypair,
+            marginfi_group,
+            supply_bank
         }
+    }
+
+    pub async fn test_prefixtures(&mut self) -> Result<&mut Self, BanksClientError> {
+        self.general.test_prefixtures().await?;
+        Ok(self)
     }
 
     pub async fn open_position(
@@ -441,16 +449,17 @@ impl<'a> MarginfiTestData<'a> {
             .solauto_position(self.general.solauto_position)
             .marginfi_group(self.marginfi_group)
             .marginfi_account(self.marginfi_account, self.general.position_id == 0)
-            .position_supply_ta(self.general.position_supply_liquidity_ta)
+            .supply_bank(self.supply_bank)
             .supply_mint(self.general.supply_liquidity_mint.pubkey())
-            .signer_debt_ta(self.general.signer_debt_liquidity_ta)
-            .position_debt_ta(self.general.position_debt_liquidity_ta)
+            .position_supply_ta(self.general.position_supply_liquidity_ta)
             .debt_mint(
                 self.general.debt_liquidity_mint.map_or_else(
                     || None,
                     |mint| Some(mint.pubkey())
                 )
             )
+            .signer_debt_ta(self.general.signer_debt_liquidity_ta)
+            .position_debt_ta(self.general.position_debt_liquidity_ta)
             .update_position_data(position_data);
         builder
     }
