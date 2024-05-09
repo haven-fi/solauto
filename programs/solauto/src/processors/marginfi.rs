@@ -122,7 +122,6 @@ pub fn process_marginfi_interaction_instruction<'a>(
         LendingPlatform::Marginfi,
     )?;
 
-    validation_utils::validate_marginfi_protocol_interaction_ix(&ctx, &action)?;
     protocol_interaction::marginfi_interaction(ctx, std_accounts, action)
 }
 

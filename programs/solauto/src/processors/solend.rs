@@ -123,7 +123,6 @@ pub fn process_solend_interaction_instruction<'a>(
     };
     validation_utils::generic_instruction_validation(&std_accounts, true, LendingPlatform::Solend)?;
 
-    validation_utils::validate_solend_protocol_interaction_ix(&ctx, &action)?;
     protocol_interaction::solend_interaction(ctx, std_accounts, action)
 }
 
