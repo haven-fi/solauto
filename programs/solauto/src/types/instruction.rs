@@ -54,11 +54,12 @@ pub enum Instruction {
     #[account(mut, name = "solauto_position")]
     #[account(name = "marginfi_group")]
     #[account(mut, optional_signer, name = "marginfi_account")]
-    #[account(mut, name = "position_supply_ta")]
     #[account(name = "supply_mint")]
+    #[account(name = "supply_bank")]
+    #[account(mut, name = "position_supply_ta")]
+    #[account(optional, name = "debt_mint")]
     #[account(mut, optional, name = "signer_debt_ta")]
     #[account(mut, optional, name = "position_debt_ta")]
-    #[account(optional, name = "debt_mint")]
     MarginfiOpenPosition(UpdatePositionData),
 
     /// Open a new Solauto position with Solend

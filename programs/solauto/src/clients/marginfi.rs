@@ -61,7 +61,18 @@ impl<'a> MarginfiClient<'a> {
         ctx: &'b Context<'a, MarginfiOpenPositionAccounts<'a>>,
         solauto_position: &'b DeserializedAccount<'a, SolautoPosition>
     ) -> ProgramResult {
-        // validate_position_settings(solauto_position.as_ref().unwrap().data.setting_params, max_ltv, liq_threshold)
+        let supply_bank = DeserializedAccount::<Bank>
+            ::anchor_deserialize(Some(ctx.accounts.supply_bank))?
+            .unwrap();
+        if &supply_bank.data.mint != ctx.accounts.supply_mint.key {
+            msg!("Supply bank account provided does not match the supply_mint account");
+            return Err(SolautoError::IncorrectAccounts.into());
+        }
+
+        let (max_ltv, liq_threshold) = MarginfiClient::get_max_ltv_and_liq_threshold(
+            &supply_bank.data
+        );
+        validate_position_settings(solauto_position, max_ltv, liq_threshold)?;
 
         if solana_utils::account_has_data(ctx.accounts.marginfi_account) {
             return Ok(());
@@ -191,7 +202,7 @@ impl<'a> MarginfiClient<'a> {
         ))
     }
 
-    pub fn get_max_ltv_and_liq_threshold(&self, supply_bank: &Box<Bank>) -> (f64, f64) {
+    pub fn get_max_ltv_and_liq_threshold(supply_bank: &Box<Bank>) -> (f64, f64) {
         // TODO
         (0.0, 0.0)
     }
@@ -351,10 +362,10 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
         );
 
         let mut remaining_accounts = Vec::new();
-        remaining_accounts.push((debt.bank.account_info, false, true));
-        remaining_accounts.push((debt.pyth_price_oracle, false, false));
         remaining_accounts.push((supply.bank.account_info, false, false));
         remaining_accounts.push((supply.pyth_price_oracle, false, false));
+        remaining_accounts.push((debt.bank.account_info, false, true));
+        remaining_accounts.push((debt.pyth_price_oracle, false, false));
 
         if authority.key == std_accounts.solauto_position.account_info.key {
             let position_seeds = solauto_utils::get_solauto_position_seeds(
