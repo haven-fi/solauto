@@ -2,18 +2,12 @@ use solana_program::{
     account_info::AccountInfo, entrypoint::ProgramResult, msg, program_error::ProgramError,
     pubkey::Pubkey, sysvar::instructions::ID as ixs_sysvar_id,
 };
-use spl_associated_token_account::get_associated_token_address;
 use spl_token::{state::Account as TokenAccount, ID as token_program_id};
 
 use crate::{
     constants::{SOLAUTO_FEES_WALLET, SOLAUTO_MANAGER},
     types::{
-        instruction::{
-            accounts::{
-                Context, MarginfiProtocolInteractionAccounts, SolendProtocolInteractionAccounts,
-            },
-            SolautoAction, SolautoStandardAccounts,
-        },
+        instruction::SolautoStandardAccounts,
         shared::{
             DCADirection, DCASettings, DeserializedAccount, LendingPlatform, ReferralStateAccount,
             SolautoError, SolautoPosition,
@@ -237,12 +231,10 @@ pub fn validate_referral_accounts(
     Ok(())
 }
 
-pub fn validate_lending_protocol_accounts(
+pub fn validate_lending_protocol_account(
     signer: &AccountInfo,
     solauto_position: &DeserializedAccount<SolautoPosition>,
     protocol_position: &AccountInfo,
-    source_supply_ta: &AccountInfo,
-    source_debt_ta: Option<&AccountInfo>,
 ) -> ProgramResult {
     if !solauto_position.data.self_managed {
         let protocol_data = &solauto_position
@@ -256,29 +248,45 @@ pub fn validate_lending_protocol_accounts(
             msg!("Incorrect protocol-owned account");
             return Err(SolautoError::IncorrectAccounts.into());
         }
+    }
 
-        if source_supply_ta.key
-            != &get_associated_token_address(
-                &solauto_position.data.authority,
-                &protocol_data.supply_mint,
-            )
-            && source_supply_ta.key
-                != &get_associated_token_address(signer.key, &protocol_data.supply_mint)
-        {
-            msg!("Incorrect supply mint token account");
+    Ok(())
+}
+
+pub fn validate_token_accounts(
+    signer: &AccountInfo,
+    solauto_position: &DeserializedAccount<SolautoPosition>,
+    source_supply_ta: &DeserializedAccount<TokenAccount>,
+    source_debt_ta: Option<&DeserializedAccount<TokenAccount>>,
+) -> ProgramResult {
+    if &source_supply_ta.data.owner != signer.key
+        && &source_supply_ta.data.owner != solauto_position.account_info.key
+    {
+        msg!("Incorrect supply token account");
+        return Err(SolautoError::IncorrectAccounts.into());
+    }
+
+    if source_debt_ta.is_some()
+        && &source_debt_ta.as_ref().unwrap().data.owner != signer.key
+        && &source_debt_ta.as_ref().unwrap().data.owner != solauto_position.account_info.key
+    {
+        msg!("Incorrect debt token account");
+        return Err(SolautoError::IncorrectAccounts.into());
+    }
+
+    if !solauto_position.data.self_managed {
+        let position = solauto_position.data.position.as_ref().unwrap();
+
+        if source_supply_ta.data.mint != position.protocol_data.supply_mint {
+            msg!("Incorrect supply token account");
             return Err(SolautoError::IncorrectAccounts.into());
         }
 
         if source_debt_ta.is_some()
-            && source_debt_ta.unwrap().key
-                != &get_associated_token_address(
-                    &solauto_position.data.authority,
-                    &protocol_data.debt_mint.unwrap(),
-                )
-            && source_debt_ta.unwrap().key
-                != &get_associated_token_address(signer.key, &protocol_data.debt_mint.unwrap())
+            && source_debt_ta.as_ref().unwrap().data.mint
+                != position.protocol_data.debt_mint.unwrap()
         {
-            msg!("Incorrect debt mint token account");
+            msg!("Incorrect debt token account");
             return Err(SolautoError::IncorrectAccounts.into());
         }
     }

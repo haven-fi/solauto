@@ -100,9 +100,10 @@ pub enum Instruction {
     #[account(name = "system_program")]
     #[account(name = "token_program")]
     #[account(mut, name = "solauto_position")]
+    #[account(mut, name = "signer_supply_liquidity_ta")]
     #[account(mut, name = "position_supply_liquidity_ta")]
     #[account(optional, mut, name = "position_supply_collateral_ta")]
-    #[account(mut, name = "position_debt_liquidity_ta")]
+    #[account(mut, optional, name = "position_debt_liquidity_ta")]
     ClosePosition,
 
     /// Refresh Marginfi accounts & position data

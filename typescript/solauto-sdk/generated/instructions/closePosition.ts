@@ -32,9 +32,10 @@ export type ClosePositionInstructionAccounts = {
   systemProgram?: PublicKey | Pda;
   tokenProgram?: PublicKey | Pda;
   solautoPosition: PublicKey | Pda;
+  signerSupplyLiquidityTa: PublicKey | Pda;
   positionSupplyLiquidityTa: PublicKey | Pda;
   positionSupplyCollateralTa?: PublicKey | Pda;
-  positionDebtLiquidityTa: PublicKey | Pda;
+  positionDebtLiquidityTa?: PublicKey | Pda;
 };
 
 // Data.
@@ -94,18 +95,23 @@ export function closePosition(
       isWritable: true as boolean,
       value: input.solautoPosition ?? null,
     },
-    positionSupplyLiquidityTa: {
+    signerSupplyLiquidityTa: {
       index: 4,
+      isWritable: true as boolean,
+      value: input.signerSupplyLiquidityTa ?? null,
+    },
+    positionSupplyLiquidityTa: {
+      index: 5,
       isWritable: true as boolean,
       value: input.positionSupplyLiquidityTa ?? null,
     },
     positionSupplyCollateralTa: {
-      index: 5,
+      index: 6,
       isWritable: true as boolean,
       value: input.positionSupplyCollateralTa ?? null,
     },
     positionDebtLiquidityTa: {
-      index: 6,
+      index: 7,
       isWritable: true as boolean,
       value: input.positionDebtLiquidityTa ?? null,
     },

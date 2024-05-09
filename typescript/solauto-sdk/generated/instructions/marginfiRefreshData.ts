@@ -30,6 +30,10 @@ import {
 export type MarginfiRefreshDataInstructionAccounts = {
   signer: Signer;
   marginfiProgram: PublicKey | Pda;
+  marginfiGroup: PublicKey | Pda;
+  marginfiAccount?: PublicKey | Pda;
+  supplyBank: PublicKey | Pda;
+  debtBank?: PublicKey | Pda;
   solautoPosition?: PublicKey | Pda;
 };
 
@@ -80,8 +84,28 @@ export function marginfiRefreshData(
       isWritable: false as boolean,
       value: input.marginfiProgram ?? null,
     },
-    solautoPosition: {
+    marginfiGroup: {
       index: 2,
+      isWritable: false as boolean,
+      value: input.marginfiGroup ?? null,
+    },
+    marginfiAccount: {
+      index: 3,
+      isWritable: false as boolean,
+      value: input.marginfiAccount ?? null,
+    },
+    supplyBank: {
+      index: 4,
+      isWritable: true as boolean,
+      value: input.supplyBank ?? null,
+    },
+    debtBank: {
+      index: 5,
+      isWritable: true as boolean,
+      value: input.debtBank ?? null,
+    },
+    solautoPosition: {
+      index: 6,
       isWritable: true as boolean,
       value: input.solautoPosition ?? null,
     },

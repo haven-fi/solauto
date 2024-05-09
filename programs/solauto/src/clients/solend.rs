@@ -22,7 +22,7 @@ use crate::{
         obligation_position::*,
         shared::{DeserializedAccount, LendingPlatform, SolautoError, SolautoPosition},
     },
-    utils::{ix_utils::*, solana_utils::account_has_data, solauto_utils::*, validation_utils::*},
+    utils::{ix_utils::*, solana_utils::*, solauto_utils::*, validation_utils::*},
 };
 
 pub struct ReserveOracleAccounts<'a> {
@@ -338,18 +338,19 @@ impl<'a> LendingProtocolClient<'a> for SolendClient<'a> {
             return Err(SolautoError::StaleProtocolData.into());
         }
 
-        validate_lending_protocol_accounts(
+        validate_lending_protocol_account(
             std_accounts.signer,
             &std_accounts.solauto_position,
             self.data.obligation.account_info,
-            self.supply_liquidity
-                .as_ref()
-                .unwrap()
-                .source_ta
-                .account_info,
+        )?;
+
+        validate_token_accounts(
+            std_accounts.signer,
+            &std_accounts.solauto_position,
+            &self.supply_liquidity.as_ref().unwrap().source_ta,
             self.debt_liquidity
                 .as_ref()
-                .map_or_else(|| None, |debt| Some(debt.source_ta.account_info)),
+                .map_or_else(|| None, |debt| Some(&debt.source_ta)),
         )?;
 
         if self.data.supply_reserve.is_some()

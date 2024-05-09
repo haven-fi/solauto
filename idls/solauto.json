@@ -480,6 +480,11 @@
           "isSigner": false
         },
         {
+          "name": "signerSupplyLiquidityTa",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
           "name": "positionSupplyLiquidityTa",
           "isMut": true,
           "isSigner": false
@@ -493,7 +498,8 @@
         {
           "name": "positionDebtLiquidityTa",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "isOptional": true
         }
       ],
       "args": [],
@@ -514,6 +520,28 @@
           "name": "marginfiProgram",
           "isMut": false,
           "isSigner": false
+        },
+        {
+          "name": "marginfiGroup",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "marginfiAccount",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "supplyBank",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "debtBank",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
         },
         {
           "name": "solautoPosition",
@@ -1451,10 +1479,6 @@
                 "defined": "DCASettings"
               }
             }
-          },
-          {
-            "name": "supplyTaBalance",
-            "type": "u64"
           },
           {
             "name": "debtTaBalance",

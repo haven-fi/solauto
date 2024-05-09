@@ -9,9 +9,10 @@ use solana_program::{
     sysvar::instructions::{load_current_index_checked, load_instruction_at_checked},
 };
 use spl_associated_token_account::get_associated_token_address;
+use spl_token::state::Account as TokenAccount;
 
 use crate::{
-    constants::{JUP_PROGRAM, SOLAUTO_MANAGER},
+    constants::{JUP_PROGRAM, SOLAUTO_MANAGER, WSOL_MINT},
     instructions::referral_fees,
     types::{
         instruction::{
@@ -23,7 +24,11 @@ use crate::{
         },
         shared::{DeserializedAccount, ReferralStateAccount, SolautoError, SolautoPosition},
     },
-    utils::{ix_utils, solana_utils, solauto_utils, validation_utils},
+    utils::{
+        ix_utils, solana_utils,
+        solauto_utils::{self, get_solauto_position_seeds},
+        validation_utils,
+    },
 };
 
 pub fn process_update_referral_states<'a>(
@@ -210,11 +215,46 @@ pub fn process_close_position_instruction<'a>(accounts: &'a [AccountInfo<'a>]) -
     let solauto_position =
         DeserializedAccount::<SolautoPosition>::deserialize(Some(ctx.accounts.solauto_position))?
             .unwrap();
+    let position_supply_ta = DeserializedAccount::<TokenAccount>::unpack(Some(
+        ctx.accounts.position_supply_liquidity_ta,
+    ))?
+    .unwrap();
 
     validation_utils::validate_signer(ctx.accounts.signer, &solauto_position, true)?;
     if solauto_position.data.self_managed {
         msg!("Cannot close a self-managed position");
         return Err(SolautoError::IncorrectAccounts.into());
+    }
+
+    validation_utils::validate_token_accounts(
+        ctx.accounts.signer,
+        &solauto_position,
+        &position_supply_ta,
+        DeserializedAccount::<TokenAccount>::unpack(ctx.accounts.position_debt_liquidity_ta)?
+            .as_ref(),
+    )?;
+
+    if ctx.accounts.signer_supply_liquidity_ta.key
+        != &get_associated_token_address(ctx.accounts.signer.key, &position_supply_ta.data.mint)
+    {
+        msg!("Incorrect signer supply liquidity token account");
+        return Err(SolautoError::IncorrectAccounts.into());
+    }
+
+    if position_supply_ta.data.mint != WSOL_MINT && position_supply_ta.data.amount > 0 {
+        solana_utils::spl_token_transfer(
+            ctx.accounts.token_program,
+            ctx.accounts.position_supply_liquidity_ta,
+            solauto_position.account_info,
+            ctx.accounts.signer_supply_liquidity_ta,
+            position_supply_ta.data.amount,
+            Some(
+                get_solauto_position_seeds(&solauto_position)
+                    .iter()
+                    .map(|v| v.as_slice())
+                    .collect(),
+            ),
+        )?;
     }
 
     solana_utils::close_token_account(
@@ -224,12 +264,14 @@ pub fn process_close_position_instruction<'a>(accounts: &'a [AccountInfo<'a>]) -
         ctx.accounts.solauto_position,
     )?;
 
-    solana_utils::close_token_account(
-        ctx.accounts.token_program,
-        ctx.accounts.position_debt_liquidity_ta,
-        ctx.accounts.signer,
-        ctx.accounts.solauto_position,
-    )?;
+    if ctx.accounts.position_debt_liquidity_ta.is_some() {
+        solana_utils::close_token_account(
+            ctx.accounts.token_program,
+            ctx.accounts.position_debt_liquidity_ta.unwrap(),
+            ctx.accounts.signer,
+            ctx.accounts.solauto_position,
+        )?;
+    }
 
     if ctx.accounts.position_supply_collateral_ta.is_some() {
         solana_utils::close_token_account(
