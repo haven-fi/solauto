@@ -1,10 +1,24 @@
 use marginfi_sdk::generated::{
     accounts::{ Bank, MarginfiAccount },
     instructions::{
+        LendingAccountBorrowCpi,
+        LendingAccountBorrowCpiAccounts,
+        LendingAccountBorrowInstructionArgs,
+        LendingAccountDeposit,
+        LendingAccountDepositCpi,
+        LendingAccountDepositCpiAccounts,
+        LendingAccountDepositInstructionArgs,
+        LendingAccountRepayCpi,
+        LendingAccountRepayCpiAccounts,
+        LendingAccountRepayInstructionArgs,
+        LendingAccountWithdraw,
+        LendingAccountWithdrawCpi,
+        LendingAccountWithdrawCpiAccounts,
+        LendingAccountWithdrawInstructionArgs,
         MarginfiAccountInitializeCpi,
         MarginfiAccountInitializeCpiAccounts,
     },
-    types::RiskTier,
+    types::{ LendingAccount, RiskTier },
 };
 use solana_program::{
     account_info::AccountInfo,
@@ -28,6 +42,7 @@ use crate::{
 
 pub struct MarginfiBankAccounts<'a> {
     pub bank: DeserializedAccount<'a, Bank>,
+    pub pyth_price_oracle: &'a AccountInfo<'a>,
     pub vault_authority: Option<&'a AccountInfo<'a>>,
     pub token_accounts: LendingProtocolTokenAccounts<'a>,
 }
@@ -84,10 +99,12 @@ impl<'a> MarginfiClient<'a> {
         marginfi_group: &'a AccountInfo<'a>,
         marginfi_account: &'a AccountInfo<'a>,
         supply_bank: Option<&'a AccountInfo<'a>>,
+        supply_pyth_price_oracle: Option<&'a AccountInfo<'a>>,
         source_supply_ta: Option<&'a AccountInfo<'a>>,
         vault_supply_ta: Option<&'a AccountInfo<'a>>,
         supply_vault_authority: Option<&'a AccountInfo<'a>>,
         debt_bank: Option<&'a AccountInfo<'a>>,
+        debt_pyth_price_oracle: Option<&'a AccountInfo<'a>>,
         source_debt_ta: Option<&'a AccountInfo<'a>>,
         vault_debt_ta: Option<&'a AccountInfo<'a>>,
         debt_vault_authority: Option<&'a AccountInfo<'a>>
@@ -114,6 +131,7 @@ impl<'a> MarginfiClient<'a> {
         let supply = if deserialized_supply_bank.is_some() {
             Some(MarginfiBankAccounts {
                 bank: deserialized_supply_bank.unwrap(),
+                pyth_price_oracle: supply_pyth_price_oracle.unwrap(),
                 vault_authority: supply_vault_authority,
                 token_accounts: LendingProtocolTokenAccounts::from(
                     None,
@@ -128,6 +146,7 @@ impl<'a> MarginfiClient<'a> {
         let debt = if deserialized_debt_bank.is_some() {
             Some(MarginfiBankAccounts {
                 bank: deserialized_debt_bank.unwrap(),
+                pyth_price_oracle: debt_pyth_price_oracle.unwrap(),
                 vault_authority: debt_vault_authority,
                 token_accounts: LendingProtocolTokenAccounts::from(
                     None,
@@ -217,9 +236,37 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
         base_unit_amount: u64,
         std_accounts: &'b SolautoStandardAccounts<'a>
     ) -> ProgramResult {
+        let authority = solauto_utils::get_owner(&std_accounts.solauto_position, self.signer);
         let supply = self.supply.as_ref().unwrap();
-        // TODO
-        Ok(())
+
+        let cpi = LendingAccountDepositCpi::new(
+            self.program,
+            LendingAccountDepositCpiAccounts {
+                marginfi_group: self.marginfi_group,
+                marginfi_account: self.marginfi_account.account_info,
+                signer: authority,
+                bank: supply.bank.account_info,
+                signer_token_account: supply.token_accounts.source_ta.account_info,
+                bank_liquidity_vault: supply.token_accounts.protocol_ta,
+                token_program: std_accounts.token_program,
+            },
+            LendingAccountDepositInstructionArgs {
+                amount: base_unit_amount,
+            }
+        );
+
+        if authority.key == std_accounts.solauto_position.account_info.key {
+            let position_seeds = solauto_utils::get_solauto_position_seeds(
+                &std_accounts.solauto_position
+            );
+            let transformed: Vec<&[u8]> = position_seeds
+                .iter()
+                .map(|v| v.as_slice())
+                .collect();
+            cpi.invoke_signed(&[transformed.as_slice()])
+        } else {
+            cpi.invoke()
+        }
     }
 
     fn withdraw<'b>(
@@ -228,9 +275,52 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
         destination: &'a AccountInfo<'a>,
         std_accounts: &'b SolautoStandardAccounts<'a>
     ) -> ProgramResult {
-        // TODO
-        // add 4 remaining accounts: supply bank, supply pyth price oracle, (if marginfi account has debt position): debt bank, debt pyth price oracle
-        Ok(())
+        let authority = solauto_utils::get_owner(&std_accounts.solauto_position, self.signer);
+        let supply = self.supply.as_ref().unwrap();
+
+        let cpi = LendingAccountWithdrawCpi::new(
+            self.program,
+            LendingAccountWithdrawCpiAccounts {
+                marginfi_group: self.marginfi_group,
+                marginfi_account: self.marginfi_account.account_info,
+                signer: authority,
+                bank: supply.bank.account_info,
+                destination_token_account: destination,
+                bank_liquidity_vault_authority: supply.vault_authority.unwrap(),
+                bank_liquidity_vault: supply.token_accounts.protocol_ta,
+                token_program: std_accounts.token_program,
+            },
+            LendingAccountWithdrawInstructionArgs {
+                amount: base_unit_amount,
+                withdraw_all: Some(false), // TODO
+            }
+        );
+
+        let mut remaining_accounts = Vec::new();
+        remaining_accounts.push((supply.bank.account_info, false, true));
+        remaining_accounts.push((supply.pyth_price_oracle, false, false));
+
+        if self.debt.is_some() {
+            let debt = self.debt.as_ref().unwrap();
+            remaining_accounts.push((debt.bank.account_info, false, false));
+            remaining_accounts.push((debt.pyth_price_oracle, false, false));
+        }
+
+        if authority.key == std_accounts.solauto_position.account_info.key {
+            let position_seeds = solauto_utils::get_solauto_position_seeds(
+                &std_accounts.solauto_position
+            );
+            let transformed: Vec<&[u8]> = position_seeds
+                .iter()
+                .map(|v| v.as_slice())
+                .collect();
+            cpi.invoke_signed_with_remaining_accounts(
+                &[transformed.as_slice()],
+                remaining_accounts.as_slice()
+            )
+        } else {
+            cpi.invoke_with_remaining_accounts(remaining_accounts.as_slice())
+        }
     }
 
     fn borrow<'b>(
@@ -239,9 +329,48 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
         destination: &'a AccountInfo<'a>,
         std_accounts: &'b SolautoStandardAccounts<'a>
     ) -> ProgramResult {
-        // TODO
-        // add 4 remaining accounts: supply bank, supply pyth price oracle, (if marginfi account has debt position): debt bank, debt pyth price oracle
-        Ok(())
+        let authority = solauto_utils::get_owner(&std_accounts.solauto_position, self.signer);
+        let supply = self.supply.as_ref().unwrap();
+        let debt = self.debt.as_ref().unwrap();
+
+        let cpi = LendingAccountBorrowCpi::new(
+            self.program,
+            LendingAccountBorrowCpiAccounts {
+                marginfi_group: self.marginfi_group,
+                marginfi_account: self.marginfi_account.account_info,
+                signer: authority,
+                bank: debt.bank.account_info,
+                destination_token_account: destination,
+                bank_liquidity_vault_authority: debt.vault_authority.unwrap(),
+                bank_liquidity_vault: debt.token_accounts.protocol_ta,
+                token_program: std_accounts.token_program,
+            },
+            LendingAccountBorrowInstructionArgs {
+                amount: base_unit_amount,
+            }
+        );
+
+        let mut remaining_accounts = Vec::new();
+        remaining_accounts.push((debt.bank.account_info, false, true));
+        remaining_accounts.push((debt.pyth_price_oracle, false, false));
+        remaining_accounts.push((supply.bank.account_info, false, false));
+        remaining_accounts.push((supply.pyth_price_oracle, false, false));
+
+        if authority.key == std_accounts.solauto_position.account_info.key {
+            let position_seeds = solauto_utils::get_solauto_position_seeds(
+                &std_accounts.solauto_position
+            );
+            let transformed: Vec<&[u8]> = position_seeds
+                .iter()
+                .map(|v| v.as_slice())
+                .collect();
+            cpi.invoke_signed_with_remaining_accounts(
+                &[transformed.as_slice()],
+                remaining_accounts.as_slice()
+            )
+        } else {
+            cpi.invoke_with_remaining_accounts(remaining_accounts.as_slice())
+        }
     }
 
     fn repay<'b>(
@@ -249,7 +378,37 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
         base_unit_amount: u64,
         std_accounts: &'b SolautoStandardAccounts<'a>
     ) -> ProgramResult {
-        // TODO
-        Ok(())
+        let authority = solauto_utils::get_owner(&std_accounts.solauto_position, self.signer);
+        let debt = self.debt.as_ref().unwrap();
+
+        let cpi = LendingAccountRepayCpi::new(
+            self.program,
+            LendingAccountRepayCpiAccounts {
+                marginfi_group: self.marginfi_group,
+                marginfi_account: self.marginfi_account.account_info,
+                signer: authority,
+                bank: debt.bank.account_info,
+                signer_token_account: debt.token_accounts.source_ta.account_info,
+                bank_liquidity_vault: debt.token_accounts.protocol_ta,
+                token_program: std_accounts.token_program,
+            },
+            LendingAccountRepayInstructionArgs {
+                amount: base_unit_amount,
+                repay_all: Some(false), // TODO: support this on our side for withdraw and repay
+            }
+        );
+
+        if authority.key == std_accounts.solauto_position.account_info.key {
+            let position_seeds = solauto_utils::get_solauto_position_seeds(
+                &std_accounts.solauto_position
+            );
+            let transformed: Vec<&[u8]> = position_seeds
+                .iter()
+                .map(|v| v.as_slice())
+                .collect();
+            cpi.invoke_signed(&[transformed.as_slice()])
+        } else {
+            cpi.invoke()
+        }
     }
 }

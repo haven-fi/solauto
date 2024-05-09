@@ -139,13 +139,15 @@ pub enum Instruction {
     #[account(name = "marginfi_group")]
     #[account(mut, name = "marginfi_account")]
     #[account(mut, optional, name = "supply_bank")]
+    #[account(optional, name = "supply_pyth_price_oracle")]
     #[account(mut, optional, name = "authority_supply_ta")]
     #[account(mut, optional, name = "vault_supply_ta")]
-    #[account(optional, name = "supply_vault_authority")]
+    #[account(mut, optional, name = "supply_vault_authority")]
     #[account(mut, optional, name = "debt_bank")]
+    #[account(optional, name = "debt_pyth_price_oracle")]
     #[account(mut, optional, name = "authority_debt_ta")]
     #[account(mut, optional, name = "vault_debt_ta")]
-    #[account(optional, name = "debt_vault_authority")]
+    #[account(mut, optional, name = "debt_vault_authority")]
     MarginfiProtocolInteraction(SolautoAction),
 
     /// Solend protocol interaction. Can only be invoked by the authority of the position
@@ -189,13 +191,15 @@ pub enum Instruction {
     #[account(mut, name = "marginfi_account")]
     #[account(mut, name = "intermediary_ta")]
     #[account(mut, name = "supply_bank")]
+    #[account(name = "supply_pyth_price_oracle")]
     #[account(mut, name = "position_supply_ta")]
     #[account(mut, name = "vault_supply_ta")]
-    #[account(optional, name = "supply_vault_authority")]
+    #[account(mut, optional, name = "supply_vault_authority")]
     #[account(mut, name = "debt_bank")]
+    #[account(name = "debt_pyth_price_oracle")]
     #[account(mut, name = "position_debt_ta")]
     #[account(mut, name = "vault_debt_ta")]
-    #[account(optional, name = "debt_vault_authority")]
+    #[account(mut, optional, name = "debt_vault_authority")]
     MarginfiRebalance(RebalanceArgs),
     
     /// Rebalance the position, can be invoked by the authority or Solauto manager
