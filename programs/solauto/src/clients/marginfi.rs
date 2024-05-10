@@ -1,23 +1,28 @@
 use marginfi_sdk::generated::{
-    accounts::{Bank, MarginfiAccount},
+    accounts::{ Bank, MarginfiAccount },
     instructions::*,
     types::RiskTier,
 };
 use solana_program::{
-    account_info::AccountInfo, entrypoint::ProgramResult, msg, program_error::ProgramError,
+    account_info::AccountInfo,
+    entrypoint::ProgramResult,
+    msg,
+    program_error::ProgramError,
 };
+use fixed::types::I80F48;
+use std::ops::{ Mul, Sub };
 
 use crate::{
     types::{
         instruction::{
-            accounts::{Context, MarginfiOpenPositionAccounts},
+            accounts::{ Context, MarginfiOpenPositionAccounts },
             SolautoStandardAccounts,
         },
-        lending_protocol::{LendingProtocolClient, LendingProtocolTokenAccounts},
-        obligation_position::{LendingProtocolObligationPosition, PositionTokenUsage},
-        shared::{DeserializedAccount, SolautoError, SolautoPosition},
+        lending_protocol::{ LendingProtocolClient, LendingProtocolTokenAccounts },
+        obligation_position::{ LendingProtocolObligationPosition, PositionTokenUsage },
+        shared::{ DeserializedAccount, LendingPlatform, SolautoError, SolautoPosition },
     },
-    utils::{solana_utils::*, solauto_utils::*, validation_utils::*},
+    utils::{ solana_utils::*, solauto_utils::*, validation_utils::* },
 };
 
 pub struct MarginfiBankAccounts<'a> {
@@ -39,18 +44,19 @@ pub struct MarginfiClient<'a> {
 impl<'a> MarginfiClient<'a> {
     pub fn initialize<'b>(
         ctx: &'b Context<'a, MarginfiOpenPositionAccounts<'a>>,
-        solauto_position: &'b DeserializedAccount<'a, SolautoPosition>,
+        solauto_position: &'b DeserializedAccount<'a, SolautoPosition>
     ) -> ProgramResult {
-        let supply_bank =
-            DeserializedAccount::<Bank>::deserialize(Some(ctx.accounts.supply_bank))?
-                .unwrap();
+        let supply_bank = DeserializedAccount::<Bank>
+            ::deserialize(Some(ctx.accounts.supply_bank))?
+            .unwrap();
         if &supply_bank.data.mint != ctx.accounts.supply_mint.key {
             msg!("Supply bank account provided does not match the supply_mint account");
             return Err(SolautoError::IncorrectAccounts.into());
         }
 
-        let (max_ltv, liq_threshold) =
-            MarginfiClient::get_max_ltv_and_liq_threshold(&supply_bank.data);
+        let (max_ltv, liq_threshold) = MarginfiClient::get_max_ltv_and_liq_threshold(
+            &supply_bank.data
+        );
         validate_position_settings(solauto_position, max_ltv, liq_threshold)?;
 
         if account_has_data(ctx.accounts.marginfi_account) {
@@ -66,11 +72,14 @@ impl<'a> MarginfiClient<'a> {
                 authority: marginfi_account_owner,
                 fee_payer: ctx.accounts.signer,
                 system_program: ctx.accounts.system_program,
-            },
+            }
         );
         if marginfi_account_owner.key == solauto_position.account_info.key {
             let position_seeds = get_solauto_position_seeds(solauto_position);
-            let transformed: Vec<&[u8]> = position_seeds.iter().map(|v| v.as_slice()).collect();
+            let transformed: Vec<&[u8]> = position_seeds
+                .iter()
+                .map(|v| v.as_slice())
+                .collect();
             cpi.invoke_signed(&[transformed.as_slice()])
         } else {
             cpi.invoke()
@@ -91,23 +100,19 @@ impl<'a> MarginfiClient<'a> {
         debt_pyth_price_oracle: Option<&'a AccountInfo<'a>>,
         source_debt_ta: Option<&'a AccountInfo<'a>>,
         vault_debt_ta: Option<&'a AccountInfo<'a>>,
-        debt_vault_authority: Option<&'a AccountInfo<'a>>,
+        debt_vault_authority: Option<&'a AccountInfo<'a>>
     ) -> Result<(Self, LendingProtocolObligationPosition), ProgramError> {
         let (deserialized_marginfi_account, deserialized_supply_bank, deserialized_debt_bank) =
             MarginfiClient::deserialize_margfinfi_accounts(
                 marginfi_account,
                 supply_bank,
-                debt_bank,
+                debt_bank
             )?;
 
         let obligation_position = MarginfiClient::get_obligation_position(
-            &deserialized_marginfi_account.data,
-            deserialized_supply_bank
-                .as_ref()
-                .map_or_else(|| None, |bank| Some(&bank.data)),
-            deserialized_debt_bank
-                .as_ref()
-                .map_or_else(|| None, |bank| Some(&bank.data)),
+            &deserialized_marginfi_account,
+            deserialized_supply_bank.as_ref(),
+            deserialized_debt_bank.as_ref()
         )?;
 
         let supply = if deserialized_supply_bank.is_some() {
@@ -118,9 +123,8 @@ impl<'a> MarginfiClient<'a> {
                 token_accounts: LendingProtocolTokenAccounts::from(
                     None,
                     source_supply_ta,
-                    vault_supply_ta,
-                )?
-                .unwrap(),
+                    vault_supply_ta
+                )?.unwrap(),
             })
         } else {
             None
@@ -134,9 +138,8 @@ impl<'a> MarginfiClient<'a> {
                 token_accounts: LendingProtocolTokenAccounts::from(
                     None,
                     source_debt_ta,
-                    vault_debt_ta,
-                )?
-                .unwrap(),
+                    vault_debt_ta
+                )?.unwrap(),
             })
         } else {
             None
@@ -157,18 +160,17 @@ impl<'a> MarginfiClient<'a> {
     pub fn deserialize_margfinfi_accounts(
         marginfi_account: &'a AccountInfo<'a>,
         supply_bank: Option<&'a AccountInfo<'a>>,
-        debt_bank: Option<&'a AccountInfo<'a>>,
+        debt_bank: Option<&'a AccountInfo<'a>>
     ) -> Result<
         (
             DeserializedAccount<'a, MarginfiAccount>,
             Option<DeserializedAccount<'a, Bank>>,
             Option<DeserializedAccount<'a, Bank>>,
         ),
-        ProgramError,
+        ProgramError
     > {
         Ok((
-            DeserializedAccount::<MarginfiAccount>::deserialize(Some(marginfi_account))?
-                .unwrap(),
+            DeserializedAccount::<MarginfiAccount>::deserialize(Some(marginfi_account))?.unwrap(),
             DeserializedAccount::<Bank>::deserialize(supply_bank)?,
             DeserializedAccount::<Bank>::deserialize(debt_bank)?,
         ))
@@ -180,43 +182,104 @@ impl<'a> MarginfiClient<'a> {
     }
 
     pub fn get_obligation_position(
-        marginfi_account: &Box<MarginfiAccount>,
-        supply_bank: Option<&Box<Bank>>,
-        debt_bank: Option<&Box<Bank>>,
+        marginfi_account: &DeserializedAccount<MarginfiAccount>,
+        supply_bank: Option<&DeserializedAccount<Bank>>,
+        debt_bank: Option<&DeserializedAccount<Bank>>
     ) -> Result<LendingProtocolObligationPosition, ProgramError> {
-        // let supply = if let Some(supply) = supply_bank {
-        //     let deposit_limit = supply.config.deposit_limit; // 2M in base unit
-        //     let borrow_limit = supply.config.borrow_limit; // 500K in base unit
-        //     Some(PositionTokenUsage {
-        //         // amount_used: ,
-        //         // amount_can_be_used: ,
-        //         decimals: supply.mint_decimals,
-        //         borrow_fee_bps: 0,
-        //         flash_loan_fee_bps: 0,
-        //     })
-        // } else {
-        //     None
-        // };
+        // Need to also factor into account the total_asset_value_init_limit, as if the total asset value in USD deposited in the bank exceeds this,
+        // it modifies the ltv and liq threshold (total_asset_value_init_limit / total_asset_value_deposited_usd) = new max_ltv/liq_threshold
+        // min(normal_liq_threshold/normal_max_ltv, new_liq_threshold/new_max_ltv)
 
-        // // TODO
-        // return Ok(LendingProtocolObligationPosition {
-        //     supply
-        // });
+        let balances = &marginfi_account.data.lending_account.balances;
 
-        return Err(ProgramError::Custom(1));
+        let get_balance = |bank: &DeserializedAccount<Bank>, is_asset: bool| {
+            balances.iter().find_map(|balance| {
+                if &balance.bank_pk == bank.account_info.key {
+                    let shares = if is_asset {
+                        balance.asset_shares.value
+                    } else {
+                        balance.liability_shares.value
+                    };
+                    Some(I80F48::from_le_bytes(shares))
+                } else {
+                    None
+                }
+            })
+        };
+
+        let supply = if let Some(bank) = supply_bank {
+            let share_value = I80F48::from_le_bytes(bank.data.asset_share_value.value);
+            let supply_balance = get_balance(bank, true);
+            let base_unit_amount_used = if supply_balance.is_some() {
+                supply_balance.unwrap().mul(share_value) as u64
+            } else {
+                0
+            };
+
+            let total_deposited = I80F48::from_le_bytes(bank.data.total_asset_shares.value).mul(
+                share_value
+            );
+            let base_unit_amount_can_be_used = I80F48::from(bank.data.config.deposit_limit).sub(
+                total_deposited
+            );
+
+            let market_price = 0.0; // TODO
+            Some(
+                PositionTokenUsage::from_marginfi_data(
+                    base_unit_amount_used,
+                    base_unit_amount_can_be_used as u64,
+                    market_price,
+                    bank.data.mint_decimals
+                )
+            )
+        } else {
+            None
+        };
+
+        let debt = if let Some(bank) = debt_bank {
+            let share_value = I80F48::from_le_bytes(bank.data.liability_share_value.value);
+            let total_deposited = I80F48::from_le_bytes(bank.data.total_asset_shares.value).mul(
+                I80F48::from_le_bytes(bank.data.asset_share_value.value)
+            );
+            let bank_borrow_limit = total_deposited.sub(
+                I80F48::from_le_bytes(bank.data.total_liability_shares.value).mul(share_value)
+            );
+            // TODO
+
+            None
+        } else {
+            None
+        };
+
+        let (max_ltv, liq_threshold) = if supply_bank.is_some() {
+            let value = I80F48::from(supply_bank.unwrap().data.config.asset_weight_init.value).mul(
+                I80F48::from(10000)
+            ) as u64;
+            (value, value)
+        } else {
+            (0, 0)
+        };
+
+        return Ok(LendingProtocolObligationPosition {
+            max_ltv,
+            liq_threshold,
+            supply,
+            debt,
+            lending_platform: LendingPlatform::Marginfi,
+        });
     }
 
     pub fn refresh_bank(
         program: &'a AccountInfo<'a>,
         marginfi_group: &'a AccountInfo<'a>,
-        bank: &'a AccountInfo<'a>,
+        bank: &'a AccountInfo<'a>
     ) -> ProgramResult {
         let cpi = LendingPoolAccrueBankInterestCpi::new(
             program,
             LendingPoolAccrueBankInterestCpiAccounts {
                 marginfi_group,
                 bank,
-            },
+            }
         );
         cpi.invoke()
     }
@@ -226,36 +289,45 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
     fn validate(&self, std_accounts: &SolautoStandardAccounts) -> ProgramResult {
         if !std_accounts.solauto_position.data.self_managed {
             let position = std_accounts.solauto_position.data.position.as_ref().unwrap();
-            
-            if self.supply.is_some() && self.supply.as_ref().unwrap().bank.data.mint != position.protocol_data.supply_mint {
+
+            if
+                self.supply.is_some() &&
+                self.supply.as_ref().unwrap().bank.data.mint != position.protocol_data.supply_mint
+            {
                 msg!("Incorrect supply bank provided for the current position");
                 return Err(SolautoError::IncorrectAccounts.into());
             }
 
-            if self.debt.is_some() && self.debt.as_ref().unwrap().bank.data.mint != position.protocol_data.debt_mint.unwrap() {
+            if
+                self.debt.is_some() &&
+                self.debt.as_ref().unwrap().bank.data.mint !=
+                    position.protocol_data.debt_mint.unwrap()
+            {
                 msg!("Incorrect debt bank provided for the current position");
                 return Err(SolautoError::IncorrectAccounts.into());
             }
-        } 
+        }
 
         validate_lending_protocol_account(
             std_accounts.signer,
             &std_accounts.solauto_position,
-            self.marginfi_account.account_info,
+            self.marginfi_account.account_info
         )?;
 
         validate_token_accounts(
             std_accounts.signer,
             &std_accounts.solauto_position,
             &self.supply.as_ref().unwrap().token_accounts.source_ta,
-            self.debt
-                .as_ref()
-                .map_or_else(|| None, |debt| Some(&debt.token_accounts.source_ta)),
+            self.debt.as_ref().map_or_else(
+                || None,
+                |debt| Some(&debt.token_accounts.source_ta)
+            )
         )?;
 
-        if self.supply.is_some()
-            && self.debt.is_some()
-            && self.supply.as_ref().unwrap().bank.data.config.risk_tier == RiskTier::Isolated
+        if
+            self.supply.is_some() &&
+            self.debt.is_some() &&
+            self.supply.as_ref().unwrap().bank.data.config.risk_tier == RiskTier::Isolated
         {
             msg!("Cannot use an isolated asset as collateral");
             return Err(SolautoError::IncorrectAccounts.into());
@@ -267,7 +339,7 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
     fn deposit<'b>(
         &self,
         base_unit_amount: u64,
-        std_accounts: &'b SolautoStandardAccounts<'a>,
+        std_accounts: &'b SolautoStandardAccounts<'a>
     ) -> ProgramResult {
         let authority = get_owner(&std_accounts.solauto_position, self.signer);
         let supply = self.supply.as_ref().unwrap();
@@ -285,12 +357,15 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
             },
             LendingAccountDepositInstructionArgs {
                 amount: base_unit_amount,
-            },
+            }
         );
 
         if authority.key == std_accounts.solauto_position.account_info.key {
             let position_seeds = get_solauto_position_seeds(&std_accounts.solauto_position);
-            let transformed: Vec<&[u8]> = position_seeds.iter().map(|v| v.as_slice()).collect();
+            let transformed: Vec<&[u8]> = position_seeds
+                .iter()
+                .map(|v| v.as_slice())
+                .collect();
             cpi.invoke_signed(&[transformed.as_slice()])
         } else {
             cpi.invoke()
@@ -301,7 +376,7 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
         &self,
         base_unit_amount: u64,
         destination: &'a AccountInfo<'a>,
-        std_accounts: &'b SolautoStandardAccounts<'a>,
+        std_accounts: &'b SolautoStandardAccounts<'a>
     ) -> ProgramResult {
         let authority = get_owner(&std_accounts.solauto_position, self.signer);
         let supply = self.supply.as_ref().unwrap();
@@ -321,7 +396,7 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
             LendingAccountWithdrawInstructionArgs {
                 amount: base_unit_amount,
                 withdraw_all: Some(false), // TODO
-            },
+            }
         );
 
         let mut remaining_accounts = Vec::new();
@@ -336,10 +411,13 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
 
         if authority.key == std_accounts.solauto_position.account_info.key {
             let position_seeds = get_solauto_position_seeds(&std_accounts.solauto_position);
-            let transformed: Vec<&[u8]> = position_seeds.iter().map(|v| v.as_slice()).collect();
+            let transformed: Vec<&[u8]> = position_seeds
+                .iter()
+                .map(|v| v.as_slice())
+                .collect();
             cpi.invoke_signed_with_remaining_accounts(
                 &[transformed.as_slice()],
-                remaining_accounts.as_slice(),
+                remaining_accounts.as_slice()
             )
         } else {
             cpi.invoke_with_remaining_accounts(remaining_accounts.as_slice())
@@ -350,7 +428,7 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
         &self,
         base_unit_amount: u64,
         destination: &'a AccountInfo<'a>,
-        std_accounts: &'b SolautoStandardAccounts<'a>,
+        std_accounts: &'b SolautoStandardAccounts<'a>
     ) -> ProgramResult {
         let authority = get_owner(&std_accounts.solauto_position, self.signer);
         let supply = self.supply.as_ref().unwrap();
@@ -370,7 +448,7 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
             },
             LendingAccountBorrowInstructionArgs {
                 amount: base_unit_amount,
-            },
+            }
         );
 
         let mut remaining_accounts = Vec::new();
@@ -381,10 +459,13 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
 
         if authority.key == std_accounts.solauto_position.account_info.key {
             let position_seeds = get_solauto_position_seeds(&std_accounts.solauto_position);
-            let transformed: Vec<&[u8]> = position_seeds.iter().map(|v| v.as_slice()).collect();
+            let transformed: Vec<&[u8]> = position_seeds
+                .iter()
+                .map(|v| v.as_slice())
+                .collect();
             cpi.invoke_signed_with_remaining_accounts(
                 &[transformed.as_slice()],
-                remaining_accounts.as_slice(),
+                remaining_accounts.as_slice()
             )
         } else {
             cpi.invoke_with_remaining_accounts(remaining_accounts.as_slice())
@@ -394,7 +475,7 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
     fn repay<'b>(
         &self,
         base_unit_amount: u64,
-        std_accounts: &'b SolautoStandardAccounts<'a>,
+        std_accounts: &'b SolautoStandardAccounts<'a>
     ) -> ProgramResult {
         let authority = get_owner(&std_accounts.solauto_position, self.signer);
         let debt = self.debt.as_ref().unwrap();
@@ -413,12 +494,15 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
             LendingAccountRepayInstructionArgs {
                 amount: base_unit_amount,
                 repay_all: Some(false), // TODO: support this on our side for withdraw and repay
-            },
+            }
         );
 
         if authority.key == std_accounts.solauto_position.account_info.key {
             let position_seeds = get_solauto_position_seeds(&std_accounts.solauto_position);
-            let transformed: Vec<&[u8]> = position_seeds.iter().map(|v| v.as_slice()).collect();
+            let transformed: Vec<&[u8]> = position_seeds
+                .iter()
+                .map(|v| v.as_slice())
+                .collect();
             cpi.invoke_signed(&[transformed.as_slice()])
         } else {
             cpi.invoke()
