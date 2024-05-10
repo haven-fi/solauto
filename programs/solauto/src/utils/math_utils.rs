@@ -1,6 +1,7 @@
 use num_traits::{FromPrimitive, ToPrimitive};
 use solend_sdk::math::{Decimal, WAD};
 use std::ops::{Div, Mul};
+use fixed::types::I80F48;
 
 pub fn decimal_to_f64(decimal: Decimal) -> f64 {
     u128::try_from(decimal.0).unwrap() as f64
@@ -71,4 +72,9 @@ pub fn calculate_debt_adjustment_usd(
 
 pub fn get_maximum_repay_to_bps_param(max_ltv: f64, liq_threshold: f64) -> u16 {
     (max_ltv - 0.01).div(liq_threshold).mul(10000.0) as u16
+}
+
+pub fn convert_i80f48_to_u64(value: I80F48) -> u64 {
+    let shifted: I80F48 = value >> 48;
+    shifted.to_num::<u64>()
 }

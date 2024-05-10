@@ -22,7 +22,7 @@ use crate::{
         obligation_position::{ LendingProtocolObligationPosition, PositionTokenUsage },
         shared::{ DeserializedAccount, LendingPlatform, SolautoError, SolautoPosition },
     },
-    utils::{ solana_utils::*, solauto_utils::*, validation_utils::* },
+    utils::{ math_utils, solana_utils::*, solauto_utils::*, validation_utils::* },
 };
 
 pub struct MarginfiBankAccounts<'a> {
@@ -211,7 +211,7 @@ impl<'a> MarginfiClient<'a> {
             let share_value = I80F48::from_le_bytes(bank.data.asset_share_value.value);
             let supply_balance = get_balance(bank, true);
             let base_unit_amount_used = if supply_balance.is_some() {
-                supply_balance.unwrap().mul(share_value) as u64
+                math_utils::convert_i80f48_to_u64(supply_balance.unwrap().mul(share_value))
             } else {
                 0
             };
@@ -227,7 +227,7 @@ impl<'a> MarginfiClient<'a> {
             Some(
                 PositionTokenUsage::from_marginfi_data(
                     base_unit_amount_used,
-                    base_unit_amount_can_be_used as u64,
+                    math_utils::convert_i80f48_to_u64(base_unit_amount_can_be_used),
                     market_price,
                     bank.data.mint_decimals
                 )
@@ -252,9 +252,11 @@ impl<'a> MarginfiClient<'a> {
         };
 
         let (max_ltv, liq_threshold) = if supply_bank.is_some() {
-            let value = I80F48::from(supply_bank.unwrap().data.config.asset_weight_init.value).mul(
-                I80F48::from(10000)
-            ) as u64;
+            let value = math_utils::convert_i80f48_to_u64(
+                I80F48::from_le_bytes(supply_bank.unwrap().data.config.asset_weight_init.value).mul(
+                    I80F48::from(10000)
+                )
+            );
             (value, value)
         } else {
             (0, 0)
