@@ -14,6 +14,8 @@ pub fn marginfi_refresh_accounts(
     ctx: Context<MarginfiRefreshDataAccounts>,
     mut solauto_position: Option<DeserializedAccount<SolautoPosition>>,
 ) -> ProgramResult {
+    // TODO: don't need to refresh bank interest?
+    
     MarginfiClient::refresh_bank(
         ctx.accounts.marginfi_program,
         ctx.accounts.marginfi_group,

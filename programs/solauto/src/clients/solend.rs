@@ -338,6 +338,8 @@ impl<'a> LendingProtocolClient<'a> for SolendClient<'a> {
             return Err(SolautoError::StaleProtocolData.into());
         }
 
+        // TODO: validate supply & debt reserve match the mints in the solauto position
+
         validate_lending_protocol_account(
             std_accounts.signer,
             &std_accounts.solauto_position,

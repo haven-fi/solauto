@@ -133,21 +133,6 @@ impl<'a, T: BorshDeserialize> DeserializedAccount<'a, T> {
             None => Ok(None),
         }
     }
-    pub fn anchor_deserialize(
-        account: Option<&'a AccountInfo<'a>>,
-    ) -> Result<Option<Self>, ProgramError> {
-        match account {
-            Some(account_info) => {
-                let deserialized_data = T::try_from_slice(&account_info.data.borrow()[8..])
-                    .map_err(|_| SolautoError::FailedAccountDeserialization)?;
-                Ok(Some(Self {
-                    account_info,
-                    data: Box::new(deserialized_data),
-                }))
-            }
-            None => Ok(None),
-        }
-    }
 }
 
 impl<'a, T: Pack + IsInitialized> DeserializedAccount<'a, T> {

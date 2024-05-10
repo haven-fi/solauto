@@ -200,6 +200,7 @@ fn target_liq_utilization_rate_bps_from_dca_out(
 
     if dca_settings.dca_periods_passed == dca_settings.target_dca_periods - 1 {
         position.active_dca = None;
+        position.setting_params = None;
     }
 
     let current_liq_utilization_rate_bps = obligation_position.current_liq_utilization_rate_bps();

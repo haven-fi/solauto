@@ -14,7 +14,7 @@ use crate::{
             SolautoStandardAccounts,
         },
         lending_protocol::{LendingProtocolClient, LendingProtocolTokenAccounts},
-        obligation_position::LendingProtocolObligationPosition,
+        obligation_position::{LendingProtocolObligationPosition, PositionTokenUsage},
         shared::{DeserializedAccount, SolautoError, SolautoPosition},
     },
     utils::{solana_utils::*, solauto_utils::*, validation_utils::*},
@@ -42,7 +42,7 @@ impl<'a> MarginfiClient<'a> {
         solauto_position: &'b DeserializedAccount<'a, SolautoPosition>,
     ) -> ProgramResult {
         let supply_bank =
-            DeserializedAccount::<Bank>::anchor_deserialize(Some(ctx.accounts.supply_bank))?
+            DeserializedAccount::<Bank>::deserialize(Some(ctx.accounts.supply_bank))?
                 .unwrap();
         if &supply_bank.data.mint != ctx.accounts.supply_mint.key {
             msg!("Supply bank account provided does not match the supply_mint account");
@@ -167,10 +167,10 @@ impl<'a> MarginfiClient<'a> {
         ProgramError,
     > {
         Ok((
-            DeserializedAccount::<MarginfiAccount>::anchor_deserialize(Some(marginfi_account))?
+            DeserializedAccount::<MarginfiAccount>::deserialize(Some(marginfi_account))?
                 .unwrap(),
-            DeserializedAccount::<Bank>::anchor_deserialize(supply_bank)?,
-            DeserializedAccount::<Bank>::anchor_deserialize(debt_bank)?,
+            DeserializedAccount::<Bank>::deserialize(supply_bank)?,
+            DeserializedAccount::<Bank>::deserialize(debt_bank)?,
         ))
     }
 
@@ -184,8 +184,26 @@ impl<'a> MarginfiClient<'a> {
         supply_bank: Option<&Box<Bank>>,
         debt_bank: Option<&Box<Bank>>,
     ) -> Result<LendingProtocolObligationPosition, ProgramError> {
-        // TODO
-        return Err(ProgramError::Custom(0));
+        // let supply = if let Some(supply) = supply_bank {
+        //     let deposit_limit = supply.config.deposit_limit; // 2M in base unit
+        //     let borrow_limit = supply.config.borrow_limit; // 500K in base unit
+        //     Some(PositionTokenUsage {
+        //         // amount_used: ,
+        //         // amount_can_be_used: ,
+        //         decimals: supply.mint_decimals,
+        //         borrow_fee_bps: 0,
+        //         flash_loan_fee_bps: 0,
+        //     })
+        // } else {
+        //     None
+        // };
+
+        // // TODO
+        // return Ok(LendingProtocolObligationPosition {
+        //     supply
+        // });
+
+        return Err(ProgramError::Custom(1));
     }
 
     pub fn refresh_bank(
@@ -206,6 +224,20 @@ impl<'a> MarginfiClient<'a> {
 
 impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
     fn validate(&self, std_accounts: &SolautoStandardAccounts) -> ProgramResult {
+        if !std_accounts.solauto_position.data.self_managed {
+            let position = std_accounts.solauto_position.data.position.as_ref().unwrap();
+            
+            if self.supply.is_some() && self.supply.as_ref().unwrap().bank.data.mint != position.protocol_data.supply_mint {
+                msg!("Incorrect supply bank provided for the current position");
+                return Err(SolautoError::IncorrectAccounts.into());
+            }
+
+            if self.debt.is_some() && self.debt.as_ref().unwrap().bank.data.mint != position.protocol_data.debt_mint.unwrap() {
+                msg!("Incorrect debt bank provided for the current position");
+                return Err(SolautoError::IncorrectAccounts.into());
+            }
+        } 
+
         validate_lending_protocol_account(
             std_accounts.signer,
             &std_accounts.solauto_position,
