@@ -74,7 +74,15 @@ pub fn get_maximum_repay_to_bps_param(max_ltv: f64, liq_threshold: f64) -> u16 {
     (max_ltv - 0.01).div(liq_threshold).mul(10000.0) as u16
 }
 
+// TODO: test these locally in main.rs
+
 pub fn convert_i80f48_to_u64(value: I80F48) -> u64 {
     let shifted: I80F48 = value >> 48;
     shifted.to_num::<u64>()
+}
+
+pub fn convert_i80f48_to_f64(value: I80F48) -> f64 {
+    let divisor = I80F48::from_num(1u64 << 48);
+    let float_value = value / divisor;
+    float_value.to_num::<f64>()
 }

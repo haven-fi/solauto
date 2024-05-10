@@ -177,8 +177,12 @@ impl<'a> MarginfiClient<'a> {
     }
 
     pub fn get_max_ltv_and_liq_threshold(supply_bank: &Box<Bank>) -> (f64, f64) {
-        // TODO
-        (0.0, 0.0)
+        let value = math_utils::convert_i80f48_to_f64(
+            I80F48::from_le_bytes(supply_bank.config.asset_weight_init.value).mul(
+                I80F48::from(10000)
+            )
+        );
+        (value, value)
     }
 
     pub fn get_obligation_position(
@@ -189,6 +193,12 @@ impl<'a> MarginfiClient<'a> {
         // Need to also factor into account the total_asset_value_init_limit, as if the total asset value in USD deposited in the bank exceeds this,
         // it modifies the ltv and liq threshold (total_asset_value_init_limit / total_asset_value_deposited_usd) = new max_ltv/liq_threshold
         // min(normal_liq_threshold/normal_max_ltv, new_liq_threshold/new_max_ltv)
+
+        let (max_ltv, liq_threshold) = if supply_bank.is_some() {
+            MarginfiClient::get_max_ltv_and_liq_threshold(&supply_bank.unwrap().data)
+        } else {
+            (0.0, 0.0)
+        };
 
         let balances = &marginfi_account.data.lending_account.balances;
 
@@ -244,22 +254,11 @@ impl<'a> MarginfiClient<'a> {
             let bank_borrow_limit = total_deposited.sub(
                 I80F48::from_le_bytes(bank.data.total_liability_shares.value).mul(share_value)
             );
+            
             // TODO
-
             None
         } else {
             None
-        };
-
-        let (max_ltv, liq_threshold) = if supply_bank.is_some() {
-            let value = math_utils::convert_i80f48_to_u64(
-                I80F48::from_le_bytes(supply_bank.unwrap().data.config.asset_weight_init.value).mul(
-                    I80F48::from(10000)
-                )
-            );
-            (value, value)
-        } else {
-            (0, 0)
         };
 
         return Ok(LendingProtocolObligationPosition {
