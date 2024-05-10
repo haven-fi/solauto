@@ -178,9 +178,7 @@ impl<'a> MarginfiClient<'a> {
 
     pub fn get_max_ltv_and_liq_threshold(supply_bank: &Box<Bank>) -> (f64, f64) {
         let value = math_utils::convert_i80f48_to_f64(
-            I80F48::from_le_bytes(supply_bank.config.asset_weight_init.value).mul(
-                I80F48::from(10000)
-            )
+            I80F48::from_le_bytes(supply_bank.config.asset_weight_init.value)
         );
         (value, value)
     }
@@ -254,7 +252,7 @@ impl<'a> MarginfiClient<'a> {
             let bank_borrow_limit = total_deposited.sub(
                 I80F48::from_le_bytes(bank.data.total_liability_shares.value).mul(share_value)
             );
-            
+
             // TODO
             None
         } else {
