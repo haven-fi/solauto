@@ -14,7 +14,7 @@ use solana_program::{
 };
 use fixed::types::I80F48;
 use switchboard_v2::AggregatorAccountData;
-use std::ops::{ Mul, Sub };
+use std::ops::{ Div, Mul, Sub };
 
 use crate::{
     types::{
@@ -201,7 +201,7 @@ impl<'a> MarginfiClient<'a> {
         // it modifies the ltv and liq threshold (total_asset_value_init_limit / total_asset_value_deposited_usd) = new max_ltv/liq_threshold
         // min(normal_liq_threshold/normal_max_ltv, new_liq_threshold/new_max_ltv)
 
-        let (max_ltv, liq_threshold) = if supply_bank.is_some() {
+        let (mut max_ltv, mut liq_threshold) = if supply_bank.is_some() {
             MarginfiClient::get_max_ltv_and_liq_threshold(&supply_bank.unwrap().data)
         } else {
             (0.0, 0.0)
@@ -226,6 +226,9 @@ impl<'a> MarginfiClient<'a> {
 
         let supply = if let Some(bank) = supply_bank {
             let asset_share_value = I80F48::from_le_bytes(bank.data.asset_share_value.value);
+
+            let market_price = MarginfiClient::load_price(bank, supply_price_oracle.unwrap())?;
+
             let supply_balance = get_balance(bank, true);
             let base_unit_account_deposits = if supply_balance.is_some() {
                 math_utils::convert_i80f48_to_u64(supply_balance.unwrap().mul(asset_share_value))
@@ -240,7 +243,20 @@ impl<'a> MarginfiClient<'a> {
                 total_deposited
             );
 
-            let market_price = MarginfiClient::load_price(bank, supply_price_oracle.unwrap())?;
+            let bank_deposits_usd_value = math_utils
+                ::from_base_unit::<f64, u8, f64>(
+                    math_utils::convert_i80f48_to_f64(total_deposited),
+                    bank.data.mint_decimals
+                )
+                .mul(market_price);
+            if
+                bank.data.config.total_asset_value_init_limit != 0 &&
+                bank_deposits_usd_value > bank.data.config.total_asset_value_init_limit as f64
+            {
+                let discount_factor = bank_deposits_usd_value.div(bank.data.config.total_asset_value_init_limit as f64);
+                max_ltv = max_ltv * discount_factor;
+                liq_threshold = liq_threshold * discount_factor;
+            }
 
             Some(
                 PositionTokenUsage::from_marginfi_data(
@@ -258,6 +274,9 @@ impl<'a> MarginfiClient<'a> {
             let liability_share_value = I80F48::from_le_bytes(
                 bank.data.liability_share_value.value
             );
+
+            let market_price = MarginfiClient::load_price(bank, debt_price_oracle.unwrap())?;
+
             let debt_balance = get_balance(bank, false);
             let base_unit_account_debt = if debt_balance.is_some() {
                 math_utils::convert_i80f48_to_u64(debt_balance.unwrap().mul(liability_share_value))
@@ -273,8 +292,6 @@ impl<'a> MarginfiClient<'a> {
                     liability_share_value
                 )
             );
-
-            let market_price = MarginfiClient::load_price(bank, debt_price_oracle.unwrap())?;
 
             Some(
                 PositionTokenUsage::from_marginfi_data(
@@ -345,7 +362,7 @@ impl<'a> MarginfiClient<'a> {
                         sw_decimal.scale
                     )
                 };
-                
+
                 Ok(price)
             }
         }
