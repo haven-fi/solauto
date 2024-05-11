@@ -3,7 +3,7 @@ use marginfi_sdk::generated::{
     instructions::*,
     types::{ OracleSetup, RiskTier },
 };
-use pyth_sdk_solana::load_price_feed_from_account_info;
+use pyth_sdk_solana::state::SolanaPriceAccount;
 use solana_program::{
     account_info::AccountInfo,
     clock::Clock,
@@ -310,7 +310,7 @@ impl<'a> MarginfiClient<'a> {
         match bank.data.config.oracle_setup {
             OracleSetup::None => { Err(SolautoError::IncorrectAccounts.into()) }
             OracleSetup::PythEma => {
-                let price_feed = load_price_feed_from_account_info(price_oracle)?;
+                let price_feed = SolanaPriceAccount::account_info_to_feed(price_oracle)?;
                 let price_result = price_feed
                     .get_ema_price_no_older_than(clock.unix_timestamp, max_price_age)
                     .unwrap();
