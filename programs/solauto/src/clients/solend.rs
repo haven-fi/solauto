@@ -192,16 +192,19 @@ impl<'a> SolendClient<'a> {
             let supply_exchange_rate = supply.collateral_exchange_rate().unwrap();
             let deposited_liquidity = supply_exchange_rate
                 .collateral_to_liquidity(supply.collateral.mint_total_supply)?;
-            let base_unit_max_depositable = supply.config.deposit_limit.sub(deposited_liquidity);
-            let base_unit_deposited_amount = if obligation.deposits.len() > 0 {
+
+            let base_unit_obligation_deposits = if obligation.deposits.len() > 0 {
                 supply_exchange_rate
                     .collateral_to_liquidity(obligation.deposits[0].deposited_amount)?
             } else {
                 0
             };
+                
+            let base_unit_deposit_room_available = supply.config.deposit_limit.sub(deposited_liquidity);
+
             Some(PositionTokenUsage::from_solend_data(
-                base_unit_deposited_amount,
-                base_unit_max_depositable,
+                base_unit_obligation_deposits,
+                base_unit_deposit_room_available,
                 supply,
             ))
         } else {
@@ -210,14 +213,8 @@ impl<'a> SolendClient<'a> {
 
         let debt_liquidity = if let Some(debt) = debt_reserve {
             let reserve_borrow_limit = debt.liquidity.available_amount;
-            let lending_market_borrow_limit = lending_market
-                .rate_limiter
-                .remaining_outflow(Clock::get()?.slot)
-                .unwrap()
-                .try_round_u64()?;
-            let base_unit_max_borrowable = lending_market_borrow_limit.min(reserve_borrow_limit);
-
-            let base_amount_used = if obligation.borrows.len() > 0 {
+            
+            let base_unit_obligation_debts = if obligation.borrows.len() > 0 {
                 obligation.borrows[0]
                     .borrowed_amount_wads
                     .try_round_u64()
@@ -226,9 +223,16 @@ impl<'a> SolendClient<'a> {
                 0
             };
 
+            let lending_market_borrow_limit = lending_market
+                .rate_limiter
+                .remaining_outflow(Clock::get()?.slot)
+                .unwrap()
+                .try_round_u64()?;
+            let base_unit_debt_available = lending_market_borrow_limit.min(reserve_borrow_limit);
+
             Some(PositionTokenUsage::from_solend_data(
-                base_amount_used,
-                base_unit_max_borrowable,
+                base_unit_obligation_debts,
+                base_unit_debt_available,
                 debt,
             ))
         } else {
