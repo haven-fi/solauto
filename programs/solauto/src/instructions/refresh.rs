@@ -41,7 +41,9 @@ pub fn marginfi_refresh_accounts(
         let obligation_position = MarginfiClient::get_obligation_position(
             &marginfi_account,
             supply_bank.as_ref(),
+            Some(ctx.accounts.supply_price_oracle),
             debt_bank.as_ref(),
+            ctx.accounts.debt_price_oracle
         )?;
 
         SolautoManager::refresh_position(&obligation_position, solauto_position.as_mut().unwrap())?;

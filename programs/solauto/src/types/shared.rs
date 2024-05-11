@@ -23,6 +23,7 @@ pub enum DCADirection {
     Out,
 }
 
+// TODO: what about DCAing-in when you already have supply in there, and we instead dial-up the boost parameters?
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType)]
 pub struct DCASettings {
     /// The unix timestamp (in seconds) start date of DCA

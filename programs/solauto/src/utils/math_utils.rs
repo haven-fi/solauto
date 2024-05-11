@@ -18,7 +18,7 @@ where
     V: FromPrimitive,
 {
     let factor = (10u64).pow(decimals.into()) as f64;
-    let value = base_units.to_f64().unwrap_or(0.0) / factor;
+    let value = base_units.to_f64().unwrap_or(0.0).div(factor);
     V::from_f64(value).unwrap()
 }
 
@@ -29,7 +29,7 @@ where
     V: FromPrimitive,
 {
     let factor = (10u64).pow(decimals.into()) as f64;
-    let base_units = value.to_f64().unwrap_or(0.0) * factor;
+    let base_units = value.to_f64().unwrap_or(0.0).mul(factor);
     V::from_f64(base_units).unwrap()
 }
 

@@ -1,15 +1,19 @@
 use marginfi_sdk::generated::{
     accounts::{ Bank, MarginfiAccount },
     instructions::*,
-    types::RiskTier,
+    types::{ OracleSetup, RiskTier },
 };
+use pyth_sdk_solana::load_price_feed_from_account_info;
 use solana_program::{
     account_info::AccountInfo,
+    clock::Clock,
     entrypoint::ProgramResult,
     msg,
     program_error::ProgramError,
+    sysvar::Sysvar,
 };
 use fixed::types::I80F48;
+use switchboard_v2::AggregatorAccountData;
 use std::ops::{ Mul, Sub };
 
 use crate::{
@@ -27,7 +31,7 @@ use crate::{
 
 pub struct MarginfiBankAccounts<'a> {
     pub bank: DeserializedAccount<'a, Bank>,
-    pub pyth_price_oracle: &'a AccountInfo<'a>,
+    pub price_oracle: &'a AccountInfo<'a>,
     pub vault_authority: Option<&'a AccountInfo<'a>>,
     pub token_accounts: LendingProtocolTokenAccounts<'a>,
 }
@@ -92,12 +96,12 @@ impl<'a> MarginfiClient<'a> {
         marginfi_group: &'a AccountInfo<'a>,
         marginfi_account: &'a AccountInfo<'a>,
         supply_bank: Option<&'a AccountInfo<'a>>,
-        supply_pyth_price_oracle: Option<&'a AccountInfo<'a>>,
+        supply_price_oracle: Option<&'a AccountInfo<'a>>,
         source_supply_ta: Option<&'a AccountInfo<'a>>,
         vault_supply_ta: Option<&'a AccountInfo<'a>>,
         supply_vault_authority: Option<&'a AccountInfo<'a>>,
         debt_bank: Option<&'a AccountInfo<'a>>,
-        debt_pyth_price_oracle: Option<&'a AccountInfo<'a>>,
+        debt_price_oracle: Option<&'a AccountInfo<'a>>,
         source_debt_ta: Option<&'a AccountInfo<'a>>,
         vault_debt_ta: Option<&'a AccountInfo<'a>>,
         debt_vault_authority: Option<&'a AccountInfo<'a>>
@@ -112,13 +116,15 @@ impl<'a> MarginfiClient<'a> {
         let obligation_position = MarginfiClient::get_obligation_position(
             &deserialized_marginfi_account,
             deserialized_supply_bank.as_ref(),
-            deserialized_debt_bank.as_ref()
+            supply_price_oracle,
+            deserialized_debt_bank.as_ref(),
+            debt_price_oracle
         )?;
 
         let supply = if deserialized_supply_bank.is_some() {
             Some(MarginfiBankAccounts {
                 bank: deserialized_supply_bank.unwrap(),
-                pyth_price_oracle: supply_pyth_price_oracle.unwrap(),
+                price_oracle: supply_price_oracle.unwrap(),
                 vault_authority: supply_vault_authority,
                 token_accounts: LendingProtocolTokenAccounts::from(
                     None,
@@ -133,7 +139,7 @@ impl<'a> MarginfiClient<'a> {
         let debt = if deserialized_debt_bank.is_some() {
             Some(MarginfiBankAccounts {
                 bank: deserialized_debt_bank.unwrap(),
-                pyth_price_oracle: debt_pyth_price_oracle.unwrap(),
+                price_oracle: debt_price_oracle.unwrap(),
                 vault_authority: debt_vault_authority,
                 token_accounts: LendingProtocolTokenAccounts::from(
                     None,
@@ -186,8 +192,11 @@ impl<'a> MarginfiClient<'a> {
     pub fn get_obligation_position(
         marginfi_account: &DeserializedAccount<MarginfiAccount>,
         supply_bank: Option<&DeserializedAccount<Bank>>,
-        debt_bank: Option<&DeserializedAccount<Bank>>
+        supply_price_oracle: Option<&AccountInfo>,
+        debt_bank: Option<&DeserializedAccount<Bank>>,
+        debt_price_oracle: Option<&AccountInfo>
     ) -> Result<LendingProtocolObligationPosition, ProgramError> {
+        // TODO
         // Need to also factor into account the total_asset_value_init_limit, as if the total asset value in USD deposited in the bank exceeds this,
         // it modifies the ltv and liq threshold (total_asset_value_init_limit / total_asset_value_deposited_usd) = new max_ltv/liq_threshold
         // min(normal_liq_threshold/normal_max_ltv, new_liq_threshold/new_max_ltv)
@@ -231,7 +240,8 @@ impl<'a> MarginfiClient<'a> {
                 total_deposited
             );
 
-            let market_price = 0.0; // TODO
+            let market_price = MarginfiClient::load_price(bank, supply_price_oracle.unwrap())?;
+
             Some(
                 PositionTokenUsage::from_marginfi_data(
                     base_unit_account_deposits,
@@ -264,7 +274,8 @@ impl<'a> MarginfiClient<'a> {
                 )
             );
 
-            let market_price = 0.0; // TODO
+            let market_price = MarginfiClient::load_price(bank, debt_price_oracle.unwrap())?;
+
             Some(
                 PositionTokenUsage::from_marginfi_data(
                     base_unit_account_debt,
@@ -284,6 +295,60 @@ impl<'a> MarginfiClient<'a> {
             debt,
             lending_platform: LendingPlatform::Marginfi,
         });
+    }
+
+    pub fn load_price(
+        bank: &DeserializedAccount<Bank>,
+        price_oracle: &AccountInfo
+    ) -> Result<f64, ProgramError> {
+        let clock = Clock::get()?;
+        let max_price_age = 90; // Default used by Marginfi is 60
+
+        // We don't need to check confidence intervals, since Marginfi will already throw stale orcale errors
+        // when we take actions like withdrawing or borrowing
+
+        match bank.data.config.oracle_setup {
+            OracleSetup::None => { Err(SolautoError::IncorrectAccounts.into()) }
+            OracleSetup::PythEma => {
+                let price_feed = load_price_feed_from_account_info(price_oracle)?;
+                let price_result = price_feed
+                    .get_ema_price_no_older_than(clock.unix_timestamp, max_price_age)
+                    .unwrap();
+
+                let price = if price_result.expo == 0 {
+                    price_result.price as f64
+                } else if price_result.expo < 0 {
+                    math_utils::from_base_unit::<i64, u32, f64>(
+                        price_result.price,
+                        price_result.expo.unsigned_abs()
+                    )
+                } else {
+                    math_utils::to_base_unit::<i64, u32, f64>(
+                        price_result.price,
+                        price_result.expo.unsigned_abs()
+                    )
+                };
+
+                Ok(price)
+            }
+            OracleSetup::SwitchboardV2 => {
+                let data = price_oracle.data.borrow();
+                let aggregator_account = AggregatorAccountData::new_from_bytes(&data)?;
+                aggregator_account.check_staleness(clock.unix_timestamp, max_price_age as i64)?;
+                let sw_decimal = aggregator_account.get_result()?;
+
+                let price = if sw_decimal.scale == 0 {
+                    sw_decimal.mantissa as f64
+                } else {
+                    math_utils::from_base_unit::<i128, u32, f64>(
+                        sw_decimal.mantissa,
+                        sw_decimal.scale
+                    )
+                };
+                
+                Ok(price)
+            }
+        }
     }
 
     pub fn refresh_bank(
@@ -418,12 +483,12 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
 
         let mut remaining_accounts = Vec::new();
         remaining_accounts.push((supply.bank.account_info, false, true));
-        remaining_accounts.push((supply.pyth_price_oracle, false, false));
+        remaining_accounts.push((supply.price_oracle, false, false));
 
         if self.debt.is_some() {
             let debt = self.debt.as_ref().unwrap();
             remaining_accounts.push((debt.bank.account_info, false, false));
-            remaining_accounts.push((debt.pyth_price_oracle, false, false));
+            remaining_accounts.push((debt.price_oracle, false, false));
         }
 
         if authority.key == std_accounts.solauto_position.account_info.key {
@@ -470,9 +535,9 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
 
         let mut remaining_accounts = Vec::new();
         remaining_accounts.push((supply.bank.account_info, false, false));
-        remaining_accounts.push((supply.pyth_price_oracle, false, false));
+        remaining_accounts.push((supply.price_oracle, false, false));
         remaining_accounts.push((debt.bank.account_info, false, true));
-        remaining_accounts.push((debt.pyth_price_oracle, false, false));
+        remaining_accounts.push((debt.price_oracle, false, false));
 
         if authority.key == std_accounts.solauto_position.account_info.key {
             let position_seeds = get_solauto_position_seeds(&std_accounts.solauto_position);

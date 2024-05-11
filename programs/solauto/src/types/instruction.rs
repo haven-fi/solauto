@@ -112,7 +112,9 @@ pub enum Instruction {
     #[account(name = "marginfi_group")]
     #[account(optional, name = "marginfi_account")]
     #[account(mut, name = "supply_bank")]
+    #[account(name = "supply_price_oracle")]
     #[account(mut, optional, name = "debt_bank")]
+    #[account(optional, name = "debt_price_oracle")]
     #[account(mut, optional, name = "solauto_position")]
     MarginfiRefreshData,
 
