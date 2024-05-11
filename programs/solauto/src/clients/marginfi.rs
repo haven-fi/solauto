@@ -216,26 +216,26 @@ impl<'a> MarginfiClient<'a> {
         };
 
         let supply = if let Some(bank) = supply_bank {
-            let share_value = I80F48::from_le_bytes(bank.data.asset_share_value.value);
+            let asset_share_value = I80F48::from_le_bytes(bank.data.asset_share_value.value);
             let supply_balance = get_balance(bank, true);
-            let base_unit_amount_used = if supply_balance.is_some() {
-                math_utils::convert_i80f48_to_u64(supply_balance.unwrap().mul(share_value))
+            let base_unit_account_deposits = if supply_balance.is_some() {
+                math_utils::convert_i80f48_to_u64(supply_balance.unwrap().mul(asset_share_value))
             } else {
                 0
             };
 
             let total_deposited = I80F48::from_le_bytes(bank.data.total_asset_shares.value).mul(
-                share_value
+                asset_share_value
             );
-            let base_unit_amount_can_be_used = I80F48::from(bank.data.config.deposit_limit).sub(
+            let base_unit_deposit_room_available = I80F48::from(bank.data.config.deposit_limit).sub(
                 total_deposited
             );
 
             let market_price = 0.0; // TODO
             Some(
                 PositionTokenUsage::from_marginfi_data(
-                    base_unit_amount_used,
-                    math_utils::convert_i80f48_to_u64(base_unit_amount_can_be_used),
+                    base_unit_account_deposits,
+                    math_utils::convert_i80f48_to_u64(base_unit_deposit_room_available),
                     market_price,
                     bank.data.mint_decimals
                 )
@@ -245,16 +245,34 @@ impl<'a> MarginfiClient<'a> {
         };
 
         let debt = if let Some(bank) = debt_bank {
-            let share_value = I80F48::from_le_bytes(bank.data.liability_share_value.value);
+            let liability_share_value = I80F48::from_le_bytes(
+                bank.data.liability_share_value.value
+            );
+            let debt_balance = get_balance(bank, false);
+            let base_unit_account_debt = if debt_balance.is_some() {
+                math_utils::convert_i80f48_to_u64(debt_balance.unwrap().mul(liability_share_value))
+            } else {
+                0
+            };
+
             let total_deposited = I80F48::from_le_bytes(bank.data.total_asset_shares.value).mul(
                 I80F48::from_le_bytes(bank.data.asset_share_value.value)
             );
-            let bank_borrow_limit = total_deposited.sub(
-                I80F48::from_le_bytes(bank.data.total_liability_shares.value).mul(share_value)
+            let base_unit_debt_available = total_deposited.sub(
+                I80F48::from_le_bytes(bank.data.total_liability_shares.value).mul(
+                    liability_share_value
+                )
             );
 
-            // TODO
-            None
+            let market_price = 0.0; // TODO
+            Some(
+                PositionTokenUsage::from_marginfi_data(
+                    base_unit_account_debt,
+                    math_utils::convert_i80f48_to_u64(base_unit_debt_available),
+                    market_price,
+                    bank.data.mint_decimals
+                )
+            )
         } else {
             None
         };
