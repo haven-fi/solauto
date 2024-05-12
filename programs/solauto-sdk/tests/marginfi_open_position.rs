@@ -9,6 +9,7 @@ mod open_position {
         signature::{ Keypair, Signer },
         transaction::Transaction,
     };
+    use solauto::constants::WSOL_MINT;
     use solauto_sdk::generated::{
         accounts::SolautoPosition,
         types::{ DCADirection, DCASettings, LendingPlatform, SolautoSettingsParameters },

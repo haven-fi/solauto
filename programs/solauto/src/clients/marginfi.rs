@@ -4,12 +4,12 @@ use marginfi_sdk::generated::{
     instructions::*,
     types::{OracleSetup, RiskTier},
 };
-use pyth_sdk_solana::state::SolanaPriceAccount;
 use solana_program::{
     account_info::AccountInfo, clock::Clock, entrypoint::ProgramResult, msg,
     program_error::ProgramError, sysvar::Sysvar,
 };
 use std::ops::{Div, Mul, Sub};
+use pyth_sdk_solana::state::SolanaPriceAccount;
 use switchboard_v2::AggregatorAccountData;
 
 use crate::{
@@ -46,21 +46,18 @@ impl<'a> MarginfiClient<'a> {
         ctx: &'b Context<'a, MarginfiOpenPositionAccounts<'a>>,
         solauto_position: &'b DeserializedAccount<'a, SolautoPosition>,
     ) -> ProgramResult {
-        // let supply_bank = DeserializedAccount::<Bank>
-        //     ::deserialize(Some(ctx.accounts.supply_bank))?
-        //     .unwrap();
-        // if &supply_bank.data.mint != ctx.accounts.supply_mint.key {
-        //     msg!("Supply bank account provided does not match the supply_mint account");
-        //     return Err(SolautoError::IncorrectAccounts.into());
-        // }
+        let supply_bank = DeserializedAccount::<Bank>
+            ::deserialize(Some(ctx.accounts.supply_bank))?
+            .unwrap();
+        if &supply_bank.data.mint != ctx.accounts.supply_mint.key {
+            msg!("Supply bank account provided does not match the supply_mint account");
+            return Err(SolautoError::IncorrectAccounts.into());
+        }
 
-        // let (max_ltv, liq_threshold) = MarginfiClient::get_max_ltv_and_liq_threshold(
-        //     &supply_bank.data
-        // );
-        // validate_position_settings(solauto_position, max_ltv, liq_threshold)?;
-
-        // TODO remove me
-        return Ok(());
+        let (max_ltv, liq_threshold) = MarginfiClient::get_max_ltv_and_liq_threshold(
+            &supply_bank.data
+        );
+        validate_position_settings(solauto_position, max_ltv, liq_threshold)?;
 
         if account_has_data(ctx.accounts.marginfi_account) {
             return Ok(());
