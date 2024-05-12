@@ -84,7 +84,7 @@ export function getSolendProtocolInteractionInstructionDataSerializer(): Seriali
       ],
       { description: 'SolendProtocolInteractionInstructionData' }
     ),
-    (value) => ({ ...value, discriminator: 10 })
+    (value) => ({ ...value, discriminator: 11 })
   ) as Serializer<
     SolendProtocolInteractionInstructionDataArgs,
     SolendProtocolInteractionInstructionData

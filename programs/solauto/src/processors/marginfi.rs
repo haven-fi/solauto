@@ -77,8 +77,9 @@ pub fn process_marginfi_open_position_instruction<'a>(
     };
     validation_utils::generic_instruction_validation(
         &std_accounts,
-        true,
         LendingPlatform::Marginfi,
+        true,
+        false,
     )?;
 
     open_position::marginfi_open_position(ctx, std_accounts.solauto_position)
@@ -120,8 +121,9 @@ pub fn process_marginfi_interaction_instruction<'a>(
     };
     validation_utils::generic_instruction_validation(
         &std_accounts,
-        true,
         LendingPlatform::Marginfi,
+        true,
+        false,
     )?;
 
     protocol_interaction::marginfi_interaction(ctx, std_accounts, action)
@@ -158,8 +160,9 @@ pub fn process_marginfi_rebalance<'a>(
     };
     validation_utils::generic_instruction_validation(
         &std_accounts,
-        false,
         LendingPlatform::Marginfi,
+        false,
+        false,
     )?;
 
     rebalance::marginfi_rebalance(ctx, std_accounts, args)

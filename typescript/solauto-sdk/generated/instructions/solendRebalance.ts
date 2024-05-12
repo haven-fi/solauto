@@ -89,7 +89,7 @@ export function getSolendRebalanceInstructionDataSerializer(): Serializer<
       ],
       { description: 'SolendRebalanceInstructionData' }
     ),
-    (value) => ({ ...value, discriminator: 12 })
+    (value) => ({ ...value, discriminator: 13 })
   ) as Serializer<
     SolendRebalanceInstructionDataArgs,
     SolendRebalanceInstructionData

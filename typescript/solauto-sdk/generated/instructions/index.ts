@@ -6,6 +6,7 @@
  * @see https://github.com/metaplex-foundation/kinobi
  */
 
+export * from './cancelDCA';
 export * from './claimReferralFees';
 export * from './closePosition';
 export * from './convertReferralFees';

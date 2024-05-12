@@ -78,7 +78,12 @@ pub fn process_solend_open_position_instruction<'a>(
             ctx.accounts.referred_by_supply_ta,
         )?,
     };
-    validation_utils::generic_instruction_validation(&std_accounts, true, LendingPlatform::Solend)?;
+    validation_utils::generic_instruction_validation(
+        &std_accounts,
+        LendingPlatform::Solend,
+        true,
+        false,
+    )?;
 
     open_position::solend_open_position(ctx, std_accounts.solauto_position)
 }
@@ -123,7 +128,12 @@ pub fn process_solend_interaction_instruction<'a>(
         referred_by_state: None,
         referred_by_supply_ta: None,
     };
-    validation_utils::generic_instruction_validation(&std_accounts, true, LendingPlatform::Solend)?;
+    validation_utils::generic_instruction_validation(
+        &std_accounts,
+        LendingPlatform::Solend,
+        true,
+        false,
+    )?;
 
     protocol_interaction::solend_interaction(ctx, std_accounts, action)
 }
@@ -162,8 +172,9 @@ pub fn process_solend_rebalance<'a>(
     };
     validation_utils::generic_instruction_validation(
         &std_accounts,
-        false,
         LendingPlatform::Solend,
+        false,
+        false,
     )?;
 
     rebalance::solend_rebalance(ctx, std_accounts, args)

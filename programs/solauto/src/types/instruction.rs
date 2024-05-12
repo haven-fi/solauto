@@ -108,6 +108,12 @@ pub enum Instruction {
     #[account(mut, optional, name = "position_debt_liquidity_ta")]
     ClosePosition,
 
+    #[account(signer, name = "signer")]
+    #[account(name = "system_program")]
+    #[account(name = "token_program")]
+    #[account(mut, name = "solauto_position")]
+    CancelDCA,
+
     /// Refresh Marginfi accounts & position data
     #[account(signer, name = "signer")]
     #[account(name = "marginfi_program")]
@@ -242,7 +248,7 @@ pub enum Instruction {
     SolendRebalance(RebalanceArgs),
 }
 
-pub const SOLAUTO_REBALANCE_IX_DISCRIMINATORS: [u64; 2] = [11, 12];
+pub const SOLAUTO_REBALANCE_IX_DISCRIMINATORS: [u64; 2] = [12, 13];
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug)]
 pub struct UpdateReferralStatesArgs {

@@ -86,7 +86,7 @@ export function getMarginfiRebalanceInstructionDataSerializer(): Serializer<
       ],
       { description: 'MarginfiRebalanceInstructionData' }
     ),
-    (value) => ({ ...value, discriminator: 11 })
+    (value) => ({ ...value, discriminator: 12 })
   ) as Serializer<
     MarginfiRebalanceInstructionDataArgs,
     MarginfiRebalanceInstructionData

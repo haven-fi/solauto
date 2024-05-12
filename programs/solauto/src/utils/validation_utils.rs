@@ -22,13 +22,15 @@ use crate::constants::{KAMINO_PROGRAM, MARGINFI_PROGRAM, SOLEND_PROGRAM};
 
 pub fn generic_instruction_validation(
     accounts: &SolautoStandardAccounts,
-    authority_only_ix: bool,
     lending_platform: LendingPlatform,
+    authority_signer_only_ix: bool,
+    solauto_managed_only_ix: bool,
 ) -> ProgramResult {
-    validate_signer(
+    validate_position(
         accounts.signer,
         &accounts.solauto_position,
-        authority_only_ix,
+        authority_signer_only_ix,
+        solauto_managed_only_ix,
     )?;
     validate_program_account(accounts.lending_protocol, lending_platform)?;
 
@@ -64,10 +66,11 @@ pub fn generic_instruction_validation(
     Ok(())
 }
 
-pub fn validate_signer(
+pub fn validate_position(
     signer: &AccountInfo,
     solauto_position: &DeserializedAccount<SolautoPosition>,
-    authority_only_ix: bool,
+    authority_signer_only_ix: bool,
+    solauto_managed_only_ix: bool,
 ) -> ProgramResult {
     if !signer.is_signer {
         msg!("Signer account is not a signer");
@@ -76,7 +79,7 @@ pub fn validate_signer(
 
     let position_authority = solauto_position.data.authority;
 
-    if authority_only_ix {
+    if authority_signer_only_ix {
         if signer.key != &position_authority {
             msg!(
                 "Authority-only instruction, invalid signer for the specified instruction & Solauto position"
@@ -84,17 +87,20 @@ pub fn validate_signer(
             return Err(SolautoError::IncorrectAccounts.into());
         }
 
-        let seeds = &[&[solauto_position.data.position_id], signer.key.as_ref()];
-        let (pda, _bump) = Pubkey::find_program_address(seeds, &crate::ID);
+        let (pda, _) =
+            Pubkey::find_program_address(solauto_position.data.seeds().as_slice(), &crate::ID);
         if &pda != solauto_position.account_info.key {
             msg!("Invalid position specified for the current signer");
             return Err(ProgramError::MissingRequiredSignature.into());
         }
     } else if signer.key != &SOLAUTO_MANAGER {
-        msg!(
-            "Rebalance instruction can only be done by the position authority or Solauto rebalancer"
-        );
+        msg!("Solauto instruction can only be signed by the position authority or Solauto manager");
         return Err(ProgramError::MissingRequiredSignature.into());
+    }
+
+    if solauto_managed_only_ix && solauto_position.data.self_managed {
+        msg!("Cannot perform the desired instruction on a self-managed position");
+        return Err(SolautoError::IncorrectAccounts.into());
     }
 
     Ok(())

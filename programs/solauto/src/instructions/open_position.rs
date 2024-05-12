@@ -111,10 +111,7 @@ fn initialize_solauto_position<'a, 'b>(
             signer,
             solauto_position.account_info,
             &crate::ID,
-            Some(vec![
-                &[solauto_position.data.position_id],
-                signer.key.as_ref(),
-            ]),
+            Some(solauto_position.data.seeds()),
             POSITION_ACCOUNT_SPACE,
         )?;
     }

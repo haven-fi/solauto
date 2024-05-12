@@ -294,7 +294,9 @@ pub fn is_dca_instruction(
     Ok(Some(dca_settings.dca_direction))
 }
 
-pub fn cancel_active_dca<'a, 'b>(solauto_position: &mut DeserializedAccount<'a, SolautoPosition>) -> ProgramResult {
+pub fn cancel_active_dca<'a, 'b>(
+    solauto_position: &mut DeserializedAccount<'a, SolautoPosition>,
+) -> ProgramResult {
     let position_data = solauto_position.data.position.as_mut().unwrap();
     let active_dca = position_data.active_dca.as_ref().unwrap();
 
@@ -303,7 +305,7 @@ pub fn cancel_active_dca<'a, 'b>(solauto_position: &mut DeserializedAccount<'a, 
             // TODO: Return remaining debt balance
         }
     }
-    
+
     position_data.active_dca = None;
 
     Ok(())
