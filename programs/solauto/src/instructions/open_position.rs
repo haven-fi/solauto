@@ -1,13 +1,20 @@
-use solana_program::{account_info::AccountInfo, entrypoint::ProgramResult, program_pack::Pack, msg};
+use solana_program::{
+    account_info::AccountInfo,
+    entrypoint::ProgramResult,
+    msg,
+    program_pack::Pack,
+};
 use solend_sdk::state::Obligation;
 
 use crate::{
-    clients::{marginfi::MarginfiClient, solend::SolendClient},
+    clients::{ marginfi::MarginfiClient, solend::SolendClient },
     types::{
         instruction::accounts::{
-            Context, MarginfiOpenPositionAccounts, SolendOpenPositionAccounts,
+            Context,
+            MarginfiOpenPositionAccounts,
+            SolendOpenPositionAccounts,
         },
-        shared::{DeserializedAccount, SolautoError, SolautoPosition, POSITION_ACCOUNT_SPACE},
+        shared::{ DeserializedAccount, SolautoError, SolautoPosition, POSITION_ACCOUNT_SPACE },
     },
     utils::*,
 };
@@ -16,7 +23,7 @@ use self::solana_utils::account_has_data;
 
 pub fn marginfi_open_position<'a>(
     ctx: Context<'a, MarginfiOpenPositionAccounts<'a>>,
-    mut solauto_position: DeserializedAccount<'a, SolautoPosition>,
+    mut solauto_position: DeserializedAccount<'a, SolautoPosition>
 ) -> ProgramResult {
     initialize_solauto_position(
         &mut solauto_position,
@@ -28,7 +35,7 @@ pub fn marginfi_open_position<'a>(
         ctx.accounts.supply_mint,
         ctx.accounts.position_debt_ta,
         ctx.accounts.signer_debt_ta,
-        ctx.accounts.debt_mint,
+        ctx.accounts.debt_mint
     )?;
 
     MarginfiClient::initialize(&ctx, &solauto_position)?;
@@ -37,7 +44,7 @@ pub fn marginfi_open_position<'a>(
 
 pub fn solend_open_position<'a>(
     ctx: Context<'a, SolendOpenPositionAccounts<'a>>,
-    mut solauto_position: DeserializedAccount<'a, SolautoPosition>,
+    mut solauto_position: DeserializedAccount<'a, SolautoPosition>
 ) -> ProgramResult {
     initialize_solauto_position(
         &mut solauto_position,
@@ -49,7 +56,7 @@ pub fn solend_open_position<'a>(
         ctx.accounts.supply_liquidity_mint,
         ctx.accounts.position_debt_liquidity_ta,
         ctx.accounts.signer_debt_liquidity_ta,
-        ctx.accounts.debt_liquidity_mint,
+        ctx.accounts.debt_liquidity_mint
     )?;
 
     solana_utils::init_ata_if_needed(
@@ -68,13 +75,13 @@ pub fn solend_open_position<'a>(
             solauto_position.account_info.key.as_ref(),
             ctx.accounts.signer.key.as_ref(),
             ctx.accounts.lending_market.key.as_ref(),
-            ctx.accounts.solend_program.key.as_ref(),
+            ctx.accounts.solend_program.key.as_ref()
         ]
     } else {
         vec![
             ctx.accounts.signer.key.as_ref(),
             ctx.accounts.lending_market.key.as_ref(),
-            ctx.accounts.solend_program.key.as_ref(),
+            ctx.accounts.solend_program.key.as_ref()
         ]
     };
 
@@ -86,7 +93,7 @@ pub fn solend_open_position<'a>(
             ctx.accounts.obligation,
             ctx.accounts.solend_program.key,
             Some(obligation_seeds),
-            Obligation::LEN,
+            Obligation::LEN
         )?;
     }
 
@@ -104,7 +111,7 @@ fn initialize_solauto_position<'a, 'b>(
     supply_mint: &'a AccountInfo<'a>,
     position_debt_ta: Option<&'a AccountInfo<'a>>,
     signer_debt_ta: Option<&'a AccountInfo<'a>>,
-    debt_mint: Option<&'a AccountInfo<'a>>,
+    debt_mint: Option<&'a AccountInfo<'a>>
 ) -> ProgramResult {
     if !solauto_position.data.self_managed || !account_has_data(solauto_position.account_info) {
         solana_utils::init_account(
@@ -113,11 +120,8 @@ fn initialize_solauto_position<'a, 'b>(
             signer,
             solauto_position.account_info,
             &crate::ID,
-            Some(vec![
-                &[solauto_position.data.position_id],
-                signer.key.as_ref(),
-            ]),
-            POSITION_ACCOUNT_SPACE,
+            Some(vec![&[solauto_position.data.position_id], signer.key.as_ref()]),
+            POSITION_ACCOUNT_SPACE
         )?;
     }
 
@@ -128,19 +132,22 @@ fn initialize_solauto_position<'a, 'b>(
         solauto_position.account_info,
         position_supply_ta,
         supply_mint,
-        true,
+        false,
         Some(&solauto_position.data.seeds())
     )?;
 
-    let began_dca = solauto_utils::initiate_dca_in_if_necessary(
-        system_program,
-        token_program,
-        rent,
-        solauto_position,
-        position_debt_ta,
-        signer,
-        signer_debt_ta,
-    )?;
+    if signer_debt_ta.is_some() {
+        solana_utils::init_ata_if_needed(
+            token_program,
+            system_program,
+            signer,
+            signer,
+            signer_debt_ta.unwrap(),
+            debt_mint.unwrap(),
+            true,
+            None
+        )?;
+    }
 
     if debt_mint.is_some() {
         solana_utils::init_ata_if_needed(
@@ -150,13 +157,20 @@ fn initialize_solauto_position<'a, 'b>(
             solauto_position.account_info,
             position_debt_ta.unwrap(),
             debt_mint.unwrap(),
-            true,
+            false,
             Some(&solauto_position.data.seeds())
         )?;
-    } else if began_dca {
-        msg!("Missing position debt token account when initiating a DCA-in from debt token");
-        return Err(SolautoError::IncorrectAccounts.into());
     }
+
+    solauto_utils::initiate_dca_in_if_necessary(
+        system_program,
+        token_program,
+        rent,
+        solauto_position,
+        position_debt_ta,
+        signer,
+        signer_debt_ta
+    )?;
 
     Ok(())
 }

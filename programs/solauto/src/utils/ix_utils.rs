@@ -5,7 +5,7 @@ use solana_program::{
     sysvar::instructions::load_instruction_at_checked,
 };
 
-use super::solana_utils::invoke_signed_with_seed;
+use super::solana_utils::invoke_instruction;
 use crate::types::shared::{DeserializedAccount, SolautoPosition};
 
 pub fn update_data<T: BorshSerialize>(account: &mut DeserializedAccount<T>) -> ProgramResult {
@@ -15,21 +15,20 @@ pub fn update_data<T: BorshSerialize>(account: &mut DeserializedAccount<T>) -> P
     Ok(())
 }
 
-pub fn invoke_instruction(
+pub fn solauto_invoke_instruction(
     instruction: Instruction,
     account_infos: &[AccountInfo],
     solauto_position: &DeserializedAccount<SolautoPosition>,
 ) -> ProgramResult {
     if solauto_position.data.self_managed {
-        invoke(&instruction, account_infos)?;
+        invoke(&instruction, account_infos)
     } else {
-        invoke_signed_with_seed(
+        invoke_instruction(
             &instruction,
             account_infos,
-            &solauto_position.data.seeds(),
-        )?;
+            Some(&solauto_position.data.seeds()),
+        )
     }
-    Ok(())
 }
 
 pub fn get_relative_instruction(

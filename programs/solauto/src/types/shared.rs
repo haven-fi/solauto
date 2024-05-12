@@ -1,14 +1,14 @@
-use borsh::{ BorshDeserialize, BorshSerialize };
-use shank::{ ShankAccount, ShankType };
+use borsh::{BorshDeserialize, BorshSerialize};
+use shank::{ShankAccount, ShankType};
 use solana_program::{
     account_info::AccountInfo,
     program_error::ProgramError,
-    program_pack::{ IsInitialized, Pack },
+    program_pack::{IsInitialized, Pack},
     pubkey::Pubkey,
     rent::ACCOUNT_STORAGE_OVERHEAD,
 };
-use thiserror::Error;
 use std::fmt;
+use thiserror::Error;
 
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, PartialEq)]
 pub enum LendingPlatform {
@@ -34,12 +34,16 @@ impl fmt::Display for TokenType {
 
 #[derive(BorshDeserialize, BorshSerialize, Clone, Copy, Debug, ShankType, PartialEq)]
 pub enum DCADirection {
-    /// Base unit amount to DCA-in with
+    /// Base unit amount of debt to DCA-in with
     In(u64),
     Out,
 }
 
 // TODO: what about DCAing-in when you already have supply in there, and we instead dial-up the boost parameters?
+// TODO: also dial-up the boost_to parameter gradually when doing a DCA-in. Change boost_from and repay_from parameters to boost_gap and repay_gap,
+// so all we need to provide here is a target boost_to parameter (when DCAing-in)
+// When validating DCA settings ensure if DCAing-in that the current boost to parameter is lower than target boost to parameter
+// We can use this "target boost to parameter" in a DCA-out too ^^^ 
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType)]
 pub struct DCASettings {
     /// The unix timestamp (in seconds) start date of DCA
@@ -104,8 +108,7 @@ pub struct PositionData {
 }
 
 pub const POSITION_ACCOUNT_SPACE: usize = (ACCOUNT_STORAGE_OVERHEAD as usize) + 500; // TODO fix me
-#[derive(BorshDeserialize, BorshSerialize, Clone, Debug)]
-#[derive(ShankAccount)]
+#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankAccount)]
 pub struct SolautoPosition {
     pub position_id: u8,
     _position_id_arr: [u8; 1],
@@ -157,15 +160,12 @@ impl<'a, T: BorshDeserialize> DeserializedAccount<'a, T> {
         match account {
             Some(account_info) => {
                 let mut data: &[u8] = &(*account_info.data).borrow();
-                let deserialized_data = T::deserialize(&mut data).map_err(
-                    |_| SolautoError::FailedAccountDeserialization
-                )?;
-                Ok(
-                    Some(Self {
-                        account_info,
-                        data: Box::new(deserialized_data),
-                    })
-                )
+                let deserialized_data = T::deserialize(&mut data)
+                    .map_err(|_| SolautoError::FailedAccountDeserialization)?;
+                Ok(Some(Self {
+                    account_info,
+                    data: Box::new(deserialized_data),
+                }))
             }
             None => Ok(None),
         }
@@ -176,15 +176,12 @@ impl<'a, T: Pack + IsInitialized> DeserializedAccount<'a, T> {
     pub fn unpack(account: Option<&'a AccountInfo<'a>>) -> Result<Option<Self>, ProgramError> {
         match account {
             Some(account_info) => {
-                let deserialized_data = T::unpack(&account_info.data.borrow()).map_err(
-                    |_| SolautoError::FailedAccountDeserialization
-                )?;
-                Ok(
-                    Some(Self {
-                        account_info,
-                        data: Box::new(deserialized_data),
-                    })
-                )
+                let deserialized_data = T::unpack(&account_info.data.borrow())
+                    .map_err(|_| SolautoError::FailedAccountDeserialization)?;
+                Ok(Some(Self {
+                    account_info,
+                    data: Box::new(deserialized_data),
+                }))
             }
             None => Ok(None),
         }

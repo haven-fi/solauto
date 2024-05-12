@@ -21,21 +21,25 @@ pub fn account_has_data(account: &AccountInfo) -> bool {
     !account.data.borrow().is_empty()
 }
 
-pub fn invoke_signed_with_seed(
+pub fn invoke_instruction(
     instruction: &Instruction,
     account_infos: &[AccountInfo],
-    seed: &Vec<&[u8]>
+    seed: Option<&Vec<&[u8]>>
 ) -> ProgramResult {
-    let (_, bump) = Pubkey::find_program_address(seed.as_slice(), &crate::ID);
+    if seed.is_some() {
+        let (_, bump) = Pubkey::find_program_address(seed.unwrap().as_slice(), &crate::ID);
 
-    let mut flat_seeds: Vec<&[u8]> = Vec::new();
-    for s in seed {
-        flat_seeds.extend_from_slice(&[s]);
+        let mut flat_seeds: Vec<&[u8]> = Vec::new();
+        for s in seed.unwrap() {
+            flat_seeds.extend_from_slice(&[s]);
+        }
+        let binding = [bump];
+        flat_seeds.push(&binding);
+
+        invoke_signed(instruction, account_infos, &[flat_seeds.as_slice()])
+    } else {
+        invoke(instruction, account_infos)
     }
-    let binding = [bump];
-    flat_seeds.push(&binding);
-
-    invoke_signed(instruction, account_infos, &[flat_seeds.as_slice()])
 }
 
 pub fn init_account<'a>(
@@ -44,7 +48,7 @@ pub fn init_account<'a>(
     payer: &'a AccountInfo<'a>,
     account: &'a AccountInfo<'a>,
     new_owner: &Pubkey,
-    seed: Option<Vec<&[u8]>>,
+    account_seed: Option<Vec<&[u8]>>,
     space: usize
 ) -> ProgramResult {
     if account_has_data(account) {
@@ -59,19 +63,17 @@ pub fn init_account<'a>(
 
     let accounts = &[account.clone(), system_program.clone()];
 
-    let allocate_ix = &system_instruction::allocate(account.key, space.try_into().unwrap());
-    if seed.is_some() {
-        invoke_signed_with_seed(allocate_ix, accounts, seed.as_ref().unwrap())?;
-    } else {
-        invoke(allocate_ix, accounts)?;
-    }
+    invoke_instruction(
+        &system_instruction::allocate(account.key, space.try_into().unwrap()),
+        accounts,
+        account_seed.as_ref()
+    )?;
 
-    let assign_ix = &system_instruction::assign(account.key, &new_owner);
-    if seed.is_some() {
-        invoke_signed_with_seed(assign_ix, accounts, &seed.unwrap())?;
-    } else {
-        invoke(assign_ix, accounts)?;
-    }
+    invoke_instruction(
+        &system_instruction::assign(account.key, &new_owner),
+        accounts,
+        account_seed.as_ref()
+    )?;
 
     Ok(())
 }
@@ -83,25 +85,24 @@ pub fn init_ata_if_needed<'a, 'b>(
     wallet: &'a AccountInfo<'a>,
     token_account: &'a AccountInfo<'a>,
     token_mint: &'a AccountInfo<'a>,
-    reinitialize_if_needed: bool,
+    reinitialize_if_wsol: bool,
     owner_seeds: Option<&Vec<&[u8]>>
 ) -> ProgramResult {
     if &get_associated_token_address(wallet.key, token_mint.key) != token_account.key {
         msg!(
-            format!(
-                "Token account is not correct for the given token mint ({}) & wallet ({})",
-                token_mint.key,
-                wallet.key
-            ).as_str()
+            "Token account {} is not correct for the given token mint ({}) & wallet ({})",
+            token_account.key,
+            token_mint.key,
+            wallet.key
         );
         return Err(SolautoError::IncorrectAccounts.into());
     }
 
     if account_has_data(token_account) {
-        if token_mint.key == &WSOL_MINT && reinitialize_if_needed {
+        if reinitialize_if_wsol && token_mint.key == &WSOL_MINT {
             let token_account_lamports = token_account.lamports();
             close_token_account(token_program, token_account, payer, wallet, owner_seeds)?;
-            system_transfer(system_program, payer, token_account, token_account_lamports, owner_seeds)?;
+            system_transfer(system_program, payer, token_account, token_account_lamports, None)?;
         } else {
             return Ok(());
         }
@@ -125,46 +126,35 @@ pub fn system_transfer<'a>(
     source: &'a AccountInfo<'a>,
     destination: &'a AccountInfo<'a>,
     lamports: u64,
-    signer_seeds: Option<&Vec<&[u8]>>
+    source_seeds: Option<&Vec<&[u8]>>
 ) -> ProgramResult {
-    let instruction = &system_instruction::transfer(source.key, destination.key, lamports);
-    let account_infos = &[source.clone(), destination.clone(), system_program.clone()];
-    if signer_seeds.is_some() {
-        invoke_signed_with_seed(instruction, account_infos, signer_seeds.unwrap())
-    } else {
-        invoke(instruction, account_infos)
-    }
+    invoke_instruction(
+        &system_instruction::transfer(source.key, destination.key, lamports),
+        &[source.clone(), destination.clone(), system_program.clone()],
+        source_seeds
+    )
 }
 
 pub fn spl_token_transfer<'a>(
     token_program: &'a AccountInfo<'a>,
-    sender: &'a AccountInfo<'a>,
+    source: &'a AccountInfo<'a>,
     authority: &'a AccountInfo<'a>,
     recipient: &'a AccountInfo<'a>,
     amount: u64,
-    pda_seeds: Option<&Vec<&[u8]>>
+    authority_seeds: Option<&Vec<&[u8]>>
 ) -> ProgramResult {
-    let transfer_instruction = spl_instruction::transfer(
-        token_program.key,
-        sender.key,
-        recipient.key,
-        &authority.key,
-        &[],
-        amount
-    )?;
-
-    if pda_seeds.is_some() {
-        invoke_signed_with_seed(
-            &transfer_instruction,
-            &[sender.clone(), recipient.clone(), token_program.clone()],
-            pda_seeds.unwrap()
-        )
-    } else {
-        invoke(
-            &transfer_instruction,
-            &[sender.clone(), recipient.clone(), authority.clone(), token_program.clone()]
-        )
-    }
+    invoke_instruction(
+        &spl_instruction::transfer(
+            token_program.key,
+            source.key,
+            recipient.key,
+            authority.key,
+            &[],
+            amount
+        )?,
+        &[source.clone(), recipient.clone(), authority.clone()],
+        authority_seeds
+    )
 }
 
 pub fn close_token_account<'a, 'b>(
@@ -174,31 +164,24 @@ pub fn close_token_account<'a, 'b>(
     account_owner: &'a AccountInfo<'a>,
     owner_seeds: Option<&Vec<&[u8]>>
 ) -> ProgramResult {
-    let instruction = &spl_instruction::close_account(
-        token_program.key,
-        account.key,
-        sol_destination.key,
-        account_owner.key,
-        &[account_owner.key]
-    )?;
-    let account_infos = &[
-        account.clone(),
-        sol_destination.clone(),
-        account_owner.clone(),
-        token_program.clone(),
-    ];
-    if owner_seeds.is_some() {
-        invoke_signed_with_seed(instruction, account_infos, owner_seeds.unwrap())
-    } else {
-        invoke(instruction, account_infos)
-    }
+    invoke_instruction(
+        &spl_instruction::close_account(
+            token_program.key,
+            account.key,
+            sol_destination.key,
+            account_owner.key,
+            &[]
+        )?,
+        &[account.clone(), sol_destination.clone(), account_owner.clone()],
+        owner_seeds
+    )
 }
 
-pub fn close_account<'a>(
+pub fn close_pda<'a>(
     system_program: &'a AccountInfo<'a>,
-    account: &'a AccountInfo<'a>,
+    pda: &'a AccountInfo<'a>,
     sol_destination: &'a AccountInfo<'a>,
-    owner_seeds: Option<&Vec<&[u8]>>
+    pda_seeds: Option<&Vec<&[u8]>>
 ) -> ProgramResult {
-    system_transfer(system_program, account, sol_destination, **account.lamports.borrow(), owner_seeds)
+    system_transfer(system_program, pda, sol_destination, **pda.lamports.borrow(), pda_seeds)
 }

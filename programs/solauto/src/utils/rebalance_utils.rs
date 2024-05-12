@@ -262,16 +262,29 @@ pub fn get_rebalance_values(
         Some(direction) => match direction {
             DCADirection::In(_) => {
                 let amount_to_dca_in = get_additional_amount_to_dca_in(position_account)?;
-                let boost_to_param = if position_account.position.as_ref().unwrap().setting_params.is_some() {
-                    position_account.position.as_ref().unwrap().setting_params.as_ref().unwrap().boost_to_bps
+                let boost_to_param = if position_account
+                    .position
+                    .as_ref()
+                    .unwrap()
+                    .setting_params
+                    .is_some()
+                {
+                    position_account
+                        .position
+                        .as_ref()
+                        .unwrap()
+                        .setting_params
+                        .as_ref()
+                        .unwrap()
+                        .boost_to_bps
                 } else {
                     0
                 };
-                let target_rate = max(obligation_position.current_liq_utilization_rate_bps(), boost_to_param);
-                (
-                    target_rate,
-                    Some(amount_to_dca_in),
-                )
+                let target_rate = max(
+                    obligation_position.current_liq_utilization_rate_bps(),
+                    boost_to_param,
+                );
+                (target_rate, Some(amount_to_dca_in))
             }
             DCADirection::Out => (
                 target_liq_utilization_rate_bps_from_dca_out(

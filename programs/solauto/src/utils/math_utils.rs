@@ -1,7 +1,7 @@
+use fixed::types::I80F48;
 use num_traits::{FromPrimitive, ToPrimitive};
 use solend_sdk::math::{Decimal, WAD};
 use std::ops::{Div, Mul};
-use fixed::types::I80F48;
 
 pub fn decimal_to_f64(decimal: Decimal) -> f64 {
     u128::try_from(decimal.0).unwrap() as f64

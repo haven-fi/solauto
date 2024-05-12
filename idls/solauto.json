@@ -421,7 +421,17 @@
           "isSigner": true
         },
         {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
           "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
           "isMut": false,
           "isSigner": false
         },
@@ -429,6 +439,12 @@
           "name": "solautoPosition",
           "isMut": true,
           "isSigner": false
+        },
+        {
+          "name": "debtMint",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true
         },
         {
           "name": "positionDebtTa",
@@ -538,8 +554,19 @@
           "isSigner": false
         },
         {
+          "name": "supplyPriceOracle",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
           "name": "debtBank",
           "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "debtPriceOracle",
+          "isMut": false,
           "isSigner": false,
           "isOptional": true
         },
@@ -1207,6 +1234,15 @@
           {
             "name": "positionId",
             "type": "u8"
+          },
+          {
+            "name": "positionIdArr",
+            "type": {
+              "array": [
+                "u8",
+                1
+              ]
+            }
           },
           {
             "name": "authority",

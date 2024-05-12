@@ -33,7 +33,9 @@ export type MarginfiRefreshDataInstructionAccounts = {
   marginfiGroup: PublicKey | Pda;
   marginfiAccount?: PublicKey | Pda;
   supplyBank: PublicKey | Pda;
+  supplyPriceOracle: PublicKey | Pda;
   debtBank?: PublicKey | Pda;
+  debtPriceOracle?: PublicKey | Pda;
   solautoPosition?: PublicKey | Pda;
 };
 
@@ -99,13 +101,23 @@ export function marginfiRefreshData(
       isWritable: true as boolean,
       value: input.supplyBank ?? null,
     },
-    debtBank: {
+    supplyPriceOracle: {
       index: 5,
+      isWritable: false as boolean,
+      value: input.supplyPriceOracle ?? null,
+    },
+    debtBank: {
+      index: 6,
       isWritable: true as boolean,
       value: input.debtBank ?? null,
     },
+    debtPriceOracle: {
+      index: 7,
+      isWritable: false as boolean,
+      value: input.debtPriceOracle ?? null,
+    },
     solautoPosition: {
-      index: 6,
+      index: 8,
       isWritable: true as boolean,
       value: input.solautoPosition ?? null,
     },

@@ -1,43 +1,32 @@
-
 use solana_program::{
     account_info::AccountInfo,
     entrypoint::ProgramResult,
-    instruction::{ get_stack_height, TRANSACTION_LEVEL_STACK_HEIGHT },
+    instruction::{get_stack_height, TRANSACTION_LEVEL_STACK_HEIGHT},
     msg,
     program_error::ProgramError,
-    sysvar::instructions::{ load_current_index_checked, load_instruction_at_checked },
+    sysvar::instructions::{load_current_index_checked, load_instruction_at_checked},
 };
 use spl_associated_token_account::get_associated_token_address;
 
 use crate::{
-    constants::{ JUP_PROGRAM, SOLAUTO_MANAGER, WSOL_MINT },
+    constants::{JUP_PROGRAM, SOLAUTO_MANAGER, WSOL_MINT},
     instructions::referral_fees,
     types::{
         instruction::{
             accounts::{
-                ClaimReferralFeesAccounts,
-                ConvertReferralFeesAccounts,
+                ClaimReferralFeesAccounts, ConvertReferralFeesAccounts,
                 UpdateReferralStatesAccounts,
             },
             UpdateReferralStatesArgs,
         },
-        shared::{
-            DeserializedAccount,
-            ReferralStateAccount,
-            SolautoError,
-        },
+        shared::{DeserializedAccount, ReferralStateAccount, SolautoError},
     },
-    utils::{
-        ix_utils,
-        solauto_utils,
-        validation_utils,
-    },
+    utils::{ix_utils, solauto_utils, validation_utils},
 };
-
 
 pub fn process_update_referral_states<'a>(
     accounts: &'a [AccountInfo<'a>],
-    args: UpdateReferralStatesArgs
+    args: UpdateReferralStatesArgs,
 ) -> ProgramResult {
     let ctx = UpdateReferralStatesAccounts::context(accounts)?;
 
@@ -52,7 +41,7 @@ pub fn process_update_referral_states<'a>(
         ctx.accounts.signer,
         ctx.accounts.signer_referral_state,
         args.referral_fees_dest_mint,
-        ctx.accounts.referred_by_state
+        ctx.accounts.referred_by_state,
     )?;
     ix_utils::update_data(&mut authority_referral_state)?;
 
@@ -64,7 +53,7 @@ pub fn process_update_referral_states<'a>(
             ctx.accounts.referred_by_authority.unwrap(),
             ctx.accounts.referred_by_state.unwrap(),
             None,
-            None
+            None,
         )?;
         ix_utils::update_data(&mut referred_by_state)?;
     }
@@ -77,7 +66,7 @@ pub fn process_update_referral_states<'a>(
         &authority_referral_state,
         ctx.accounts.referred_by_state,
         None,
-        false
+        false,
     )?;
 
     Ok(())
@@ -85,9 +74,10 @@ pub fn process_update_referral_states<'a>(
 
 pub fn process_convert_referral_fees<'a>(accounts: &'a [AccountInfo<'a>]) -> ProgramResult {
     let ctx = ConvertReferralFeesAccounts::context(accounts)?;
-    let referral_state = DeserializedAccount::<ReferralStateAccount>
-        ::deserialize(Some(ctx.accounts.referral_state))?
-        .unwrap();
+    let referral_state = DeserializedAccount::<ReferralStateAccount>::deserialize(Some(
+        ctx.accounts.referral_state,
+    ))?
+    .unwrap();
 
     if !ctx.accounts.solauto_manager.is_signer {
         return Err(ProgramError::MissingRequiredSignature.into());
@@ -114,15 +104,14 @@ pub fn process_convert_referral_fees<'a>(accounts: &'a [AccountInfo<'a>]) -> Pro
 
     let jup_swap = ix_utils::InstructionChecker::from_anchor(
         JUP_PROGRAM,
-        vec!["route_with_token_ledger", "shared_accounts_route_with_token_ledger"]
+        vec![
+            "route_with_token_ledger",
+            "shared_accounts_route_with_token_ledger",
+        ],
     );
 
-    let next_ix = ix_utils::get_relative_instruction(
-        ctx.accounts.ixs_sysvar,
-        current_ix_idx,
-        1,
-        index
-    )?;
+    let next_ix =
+        ix_utils::get_relative_instruction(ctx.accounts.ixs_sysvar, current_ix_idx, 1, index)?;
 
     if !jup_swap.matches(&next_ix) {
         msg!("Missing Jup swap as next transaction");
@@ -134,9 +123,10 @@ pub fn process_convert_referral_fees<'a>(accounts: &'a [AccountInfo<'a>]) -> Pro
 
 pub fn process_claim_referral_fees<'a>(accounts: &'a [AccountInfo<'a>]) -> ProgramResult {
     let ctx = ClaimReferralFeesAccounts::context(accounts)?;
-    let referral_state = DeserializedAccount::<ReferralStateAccount>
-        ::deserialize(Some(ctx.accounts.referral_state))?
-        .unwrap();
+    let referral_state = DeserializedAccount::<ReferralStateAccount>::deserialize(Some(
+        ctx.accounts.referral_state,
+    ))?
+    .unwrap();
 
     if !ctx.accounts.signer.is_signer {
         return Err(ProgramError::MissingRequiredSignature.into());
@@ -153,11 +143,10 @@ pub fn process_claim_referral_fees<'a>(accounts: &'a [AccountInfo<'a>]) -> Progr
             return Err(SolautoError::IncorrectAccounts.into());
         }
 
-        if
-            ctx.accounts.fees_destination_ta.unwrap().key !=
-            &get_associated_token_address(
+        if ctx.accounts.fees_destination_ta.unwrap().key
+            != &get_associated_token_address(
                 referral_state.account_info.key,
-                ctx.accounts.referral_fees_mint.key
+                ctx.accounts.referral_fees_mint.key,
             )
         {
             msg!(

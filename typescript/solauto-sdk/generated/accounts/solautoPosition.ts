@@ -23,6 +23,7 @@ import {
 } from '@metaplex-foundation/umi';
 import {
   Serializer,
+  array,
   bool,
   option,
   publicKey as publicKeySerializer,
@@ -39,6 +40,7 @@ export type SolautoPosition = Account<SolautoPositionAccountData>;
 
 export type SolautoPositionAccountData = {
   positionId: number;
+  positionIdArr: Array<number>;
   authority: PublicKey;
   selfManaged: boolean;
   position: Option<PositionData>;
@@ -46,6 +48,7 @@ export type SolautoPositionAccountData = {
 
 export type SolautoPositionAccountDataArgs = {
   positionId: number;
+  positionIdArr: Array<number>;
   authority: PublicKey;
   selfManaged: boolean;
   position: OptionOrNullable<PositionDataArgs>;
@@ -58,6 +61,7 @@ export function getSolautoPositionAccountDataSerializer(): Serializer<
   return struct<SolautoPositionAccountData>(
     [
       ['positionId', u8()],
+      ['positionIdArr', array(u8(), { size: 1 })],
       ['authority', publicKeySerializer()],
       ['selfManaged', bool()],
       ['position', option(getPositionDataSerializer())],
@@ -141,14 +145,16 @@ export function getSolautoPositionGpaBuilder(
   return gpaBuilder(context, programId)
     .registerFields<{
       positionId: number;
+      positionIdArr: Array<number>;
       authority: PublicKey;
       selfManaged: boolean;
       position: OptionOrNullable<PositionDataArgs>;
     }>({
       positionId: [0, u8()],
-      authority: [1, publicKeySerializer()],
-      selfManaged: [33, bool()],
-      position: [34, option(getPositionDataSerializer())],
+      positionIdArr: [1, array(u8(), { size: 1 })],
+      authority: [2, publicKeySerializer()],
+      selfManaged: [34, bool()],
+      position: [35, option(getPositionDataSerializer())],
     })
     .deserializeUsing<SolautoPosition>((account) =>
       deserializeSolautoPosition(account)

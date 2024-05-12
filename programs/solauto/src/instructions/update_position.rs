@@ -1,23 +1,12 @@
+use solana_program::{ entrypoint::ProgramResult, msg };
 use std::ops::Div;
-use solana_program::entrypoint::ProgramResult;
 
 use crate::{
     types::{
-        instruction::{
-            accounts::{Context, UpdatePositionAccounts},
-            UpdatePositionData,
-        },
-        shared::{
-            DeserializedAccount,
-            SolautoPosition,
-        },
+        instruction::{ accounts::{ Context, UpdatePositionAccounts }, UpdatePositionData },
+        shared::{ DCADirection, DeserializedAccount, SolautoError, SolautoPosition },
     },
-    utils::{
-        ix_utils,
-        solana_utils,
-        solauto_utils,
-        validation_utils,
-    },
+    utils::{ ix_utils, solana_utils, solauto_utils, validation_utils },
 };
 
 pub fn update_position<'a>(
@@ -36,24 +25,30 @@ pub fn update_position<'a>(
             new_data.setting_params.clone();
     }
 
-    // TODO: what if already an active DCA? Should we fail it? Should we add instruction to close current DCA, or just make
-    // necessary modifications to the DCA here?
+    // TODO: add cancel DCA instruction
     if new_data.active_dca.is_some() {
-        validation_utils::validate_dca_settings(&new_data.active_dca)?;
-        solauto_position.data.position.as_mut().unwrap().active_dca = new_data.active_dca.clone();
-        let began_dca_in = solauto_utils::initiate_dca_in_if_necessary(
-            ctx.accounts.system_program,
-            ctx.accounts.token_program,
-            ctx.accounts.rent,
-            &mut solauto_position,
-            ctx.accounts.position_debt_ta,
-            ctx.accounts.signer,
-            ctx.accounts.signer_debt_ta
-        )?;
-        if began_dca_in {
-            solauto_position.data.position.as_mut().unwrap().protocol_data.debt_mint = Some(
-                *ctx.accounts.debt_mint.unwrap().key
+        let position_data = solauto_position.data.position.as_mut().unwrap();
+
+        if position_data.active_dca.is_some() {
+            msg!(
+                "Cannot modify DCA settings when there is a current on-going DCA. Cancel active DCA first."
             );
+            return Err(SolautoError::InvalidDCASettings.into());
+        }
+
+        validation_utils::validate_dca_settings(&new_data.active_dca)?;
+        position_data.active_dca = new_data.active_dca.clone();
+
+        if let DCADirection::In(_) = new_data.active_dca.as_ref().unwrap().dca_direction {
+            if
+                position_data.protocol_data.debt_mint.is_some() &&
+                position_data.protocol_data.debt_mint.unwrap() !=
+                    *ctx.accounts.debt_mint.unwrap().key
+            {
+                msg!("Cannot change debt mint account on an active position");
+                return Err(SolautoError::IncorrectAccounts.into());
+            }
+            position_data.protocol_data.debt_mint = Some(*ctx.accounts.debt_mint.unwrap().key);
 
             solana_utils::init_ata_if_needed(
                 ctx.accounts.token_program,
@@ -64,6 +59,16 @@ pub fn update_position<'a>(
                 ctx.accounts.debt_mint.unwrap(),
                 true,
                 Some(&solauto_position.data.seeds())
+            )?;
+
+            solauto_utils::initiate_dca_in_if_necessary(
+                ctx.accounts.system_program,
+                ctx.accounts.token_program,
+                ctx.accounts.rent,
+                &mut solauto_position,
+                ctx.accounts.position_debt_ta,
+                ctx.accounts.signer,
+                ctx.accounts.signer_debt_ta
             )?;
         }
     }

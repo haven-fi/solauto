@@ -69,7 +69,7 @@ impl<'a> SolendClient<'a> {
         }
 
         let obligation_owner = get_owner(solauto_position, ctx.accounts.signer);
-        invoke_instruction(
+        solauto_invoke_instruction(
             init_obligation(
                 SOLEND_PROGRAM,
                 *ctx.accounts.obligation.key,
@@ -199,8 +199,9 @@ impl<'a> SolendClient<'a> {
             } else {
                 0
             };
-                
-            let base_unit_deposit_room_available = supply.config.deposit_limit.sub(deposited_liquidity);
+
+            let base_unit_deposit_room_available =
+                supply.config.deposit_limit.sub(deposited_liquidity);
 
             Some(PositionTokenUsage::from_solend_data(
                 base_unit_obligation_deposits,
@@ -213,7 +214,7 @@ impl<'a> SolendClient<'a> {
 
         let debt_liquidity = if let Some(debt) = debt_reserve {
             let reserve_borrow_limit = debt.liquidity.available_amount;
-            
+
             let base_unit_obligation_debts = if obligation.borrows.len() > 0 {
                 obligation.borrows[0]
                     .borrowed_amount_wads
@@ -421,7 +422,7 @@ impl<'a> LendingProtocolClient<'a> for SolendClient<'a> {
             std_accounts.token_program.clone(),
         ];
 
-        invoke_instruction(
+        solauto_invoke_instruction(
             deposit_instruction,
             account_infos,
             &std_accounts.solauto_position,
@@ -473,7 +474,7 @@ impl<'a> LendingProtocolClient<'a> for SolendClient<'a> {
             std_accounts.token_program.clone(),
         ];
 
-        invoke_instruction(
+        solauto_invoke_instruction(
             borrow_instruction,
             account_infos,
             &std_accounts.solauto_position,

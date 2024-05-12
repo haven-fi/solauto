@@ -12,6 +12,7 @@ import {
   PublicKey,
   Signer,
   TransactionBuilder,
+  publicKey,
   transactionBuilder,
 } from '@metaplex-foundation/umi';
 import {
@@ -34,8 +35,11 @@ import {
 // Accounts.
 export type UpdatePositionInstructionAccounts = {
   signer: Signer;
+  systemProgram?: PublicKey | Pda;
   tokenProgram?: PublicKey | Pda;
+  rent?: PublicKey | Pda;
   solautoPosition: PublicKey | Pda;
+  debtMint?: PublicKey | Pda;
   positionDebtTa?: PublicKey | Pda;
   signerDebtTa?: PublicKey | Pda;
 };
@@ -94,23 +98,34 @@ export function updatePosition(
       isWritable: false as boolean,
       value: input.signer ?? null,
     },
-    tokenProgram: {
+    systemProgram: {
       index: 1,
+      isWritable: false as boolean,
+      value: input.systemProgram ?? null,
+    },
+    tokenProgram: {
+      index: 2,
       isWritable: false as boolean,
       value: input.tokenProgram ?? null,
     },
+    rent: { index: 3, isWritable: false as boolean, value: input.rent ?? null },
     solautoPosition: {
-      index: 2,
+      index: 4,
       isWritable: true as boolean,
       value: input.solautoPosition ?? null,
     },
+    debtMint: {
+      index: 5,
+      isWritable: false as boolean,
+      value: input.debtMint ?? null,
+    },
     positionDebtTa: {
-      index: 3,
+      index: 6,
       isWritable: true as boolean,
       value: input.positionDebtTa ?? null,
     },
     signerDebtTa: {
-      index: 4,
+      index: 7,
       isWritable: true as boolean,
       value: input.signerDebtTa ?? null,
     },
@@ -120,12 +135,24 @@ export function updatePosition(
   const resolvedArgs: UpdatePositionInstructionArgs = { ...input };
 
   // Default values.
+  if (!resolvedAccounts.systemProgram.value) {
+    resolvedAccounts.systemProgram.value = context.programs.getPublicKey(
+      'splSystem',
+      '11111111111111111111111111111111'
+    );
+    resolvedAccounts.systemProgram.isWritable = false;
+  }
   if (!resolvedAccounts.tokenProgram.value) {
     resolvedAccounts.tokenProgram.value = context.programs.getPublicKey(
       'splToken',
       'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'
     );
     resolvedAccounts.tokenProgram.isWritable = false;
+  }
+  if (!resolvedAccounts.rent.value) {
+    resolvedAccounts.rent.value = publicKey(
+      'SysvarRent111111111111111111111111111111111'
+    );
   }
 
   // Accounts in order.
