@@ -17,21 +17,21 @@ pub fn close_position<'a>(
 ) -> ProgramResult {
     let solauto_position_seeds = &solauto_position.data.seeds();
 
-    solana_utils::close_pda_token_account(
+    solana_utils::close_token_account(
         ctx.accounts.token_program,
         ctx.accounts.position_supply_liquidity_ta,
         ctx.accounts.signer,
         ctx.accounts.solauto_position,
-        solauto_position_seeds
+        Some(solauto_position_seeds)
     )?;
 
     if ctx.accounts.position_supply_collateral_ta.is_some() {
-        solana_utils::close_pda_token_account(
+        solana_utils::close_token_account(
             ctx.accounts.token_program,
             ctx.accounts.position_supply_collateral_ta.unwrap(),
             ctx.accounts.signer,
             ctx.accounts.solauto_position,
-            solauto_position_seeds
+            Some(solauto_position_seeds)
         )?;
     }
 
@@ -51,18 +51,19 @@ pub fn close_position<'a>(
     }
 
     if ctx.accounts.position_debt_liquidity_ta.is_some() {
-        solana_utils::close_pda_token_account(
+        solana_utils::close_token_account(
             ctx.accounts.token_program,
             ctx.accounts.position_debt_liquidity_ta.unwrap(),
             ctx.accounts.signer,
             ctx.accounts.solauto_position,
-            solauto_position_seeds
+            Some(solauto_position_seeds)
         )?;
     }
 
-    solana_utils::close_pda(
+    solana_utils::close_account(
+        ctx.accounts.system_program,
         ctx.accounts.solauto_position,
         ctx.accounts.signer,
-        solauto_position_seeds
+        Some(solauto_position_seeds)
     )
 }

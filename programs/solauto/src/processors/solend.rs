@@ -53,6 +53,8 @@ pub fn process_solend_open_position_instruction<'a>(
             ctx.accounts.referred_by_state.unwrap(),
             ctx.accounts.referred_by_supply_ta.unwrap(),
             ctx.accounts.supply_liquidity_mint,
+        false,
+            None
         )?;
     }
 

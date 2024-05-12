@@ -1,20 +1,39 @@
 use solana_program::{
-    account_info::AccountInfo, entrypoint::ProgramResult, msg, program_error::ProgramError,
-    program_pack::Pack, pubkey::Pubkey,
+    account_info::AccountInfo,
+    entrypoint::ProgramResult,
+    msg,
+    program_error::ProgramError,
+    program_pack::Pack,
+    pubkey::Pubkey,
+    rent::{ Rent, ACCOUNT_STORAGE_OVERHEAD },
+    sysvar::Sysvar,
 };
 use spl_associated_token_account::get_associated_token_address;
 use spl_token::state::Account as TokenAccount;
-use std::ops::{Add, Mul};
+use std::ops::{ Add, Mul };
 
-use super::solana_utils::{account_has_data, init_account, init_ata_if_needed, spl_token_transfer};
+use super::solana_utils::{
+    account_has_data,
+    init_account,
+    init_ata_if_needed,
+    spl_token_transfer,
+    system_transfer,
+};
 use crate::{
-    constants::{REFERRER_FEE_SPLIT, SOLAUTO_FEES_WALLET, WSOL_MINT},
+    constants::{ REFERRER_FEE_SPLIT, SOLAUTO_FEES_WALLET, WSOL_MINT },
     types::{
         instruction::UpdatePositionData,
         obligation_position::LendingProtocolObligationPosition,
         shared::{
-            DCADirection, DeserializedAccount, LendingPlatform, LendingProtocolPositionData,
-            PositionData, PositionState, ReferralStateAccount, SolautoError, SolautoPosition,
+            DCADirection,
+            DeserializedAccount,
+            LendingPlatform,
+            LendingProtocolPositionData,
+            PositionData,
+            PositionState,
+            ReferralStateAccount,
+            SolautoError,
+            SolautoPosition,
             REFERRAL_ACCOUNT_SPACE,
         },
     },
@@ -22,13 +41,9 @@ use crate::{
 
 pub fn get_owner<'a, 'b>(
     solauto_position: &'b DeserializedAccount<'a, SolautoPosition>,
-    signer: &'a AccountInfo<'a>,
+    signer: &'a AccountInfo<'a>
 ) -> &'a AccountInfo<'a> {
-    if solauto_position.data.self_managed {
-        signer
-    } else {
-        solauto_position.account_info
-    }
+    if solauto_position.data.self_managed { signer } else { solauto_position.account_info }
 }
 
 pub fn create_new_solauto_position<'a>(
@@ -38,7 +53,7 @@ pub fn create_new_solauto_position<'a>(
     lending_platform: LendingPlatform,
     supply_mint: &'a AccountInfo<'a>,
     debt_mint: Option<&'a AccountInfo<'a>>,
-    lending_protocol_account: &'a AccountInfo<'a>,
+    lending_protocol_account: &'a AccountInfo<'a>
 ) -> Result<DeserializedAccount<'a, SolautoPosition>, ProgramError> {
     let data = if update_position_data.setting_params.is_some() {
         if update_position_data.position_id == 0 {
@@ -61,14 +76,17 @@ pub fn create_new_solauto_position<'a>(
                 protocol_data: LendingProtocolPositionData {
                     protocol_account: lending_protocol_account.key.clone(),
                     supply_mint: supply_mint.key.clone(),
-                    debt_mint: debt_mint.map_or_else(|| None, |mint| Some(mint.key.clone())),
+                    debt_mint: debt_mint.map_or_else(
+                        || None,
+                        |mint| Some(mint.key.clone())
+                    ),
                 },
                 active_dca: update_position_data.active_dca.clone(),
                 debt_ta_balance: 0,
-            }),
+            })
         )
     } else {
-        SolautoPosition::new( 0, *signer.key, None)
+        SolautoPosition::new(0, *signer.key, None)
     };
 
     Ok(DeserializedAccount::<SolautoPosition> {
@@ -84,29 +102,32 @@ pub fn create_or_update_referral_state<'a>(
     authority: &'a AccountInfo<'a>,
     referral_state: &'a AccountInfo<'a>,
     referral_fees_dest_mint: Option<Pubkey>,
-    referred_by_state: Option<&'a AccountInfo<'a>>,
+    referred_by_state: Option<&'a AccountInfo<'a>>
 ) -> Result<DeserializedAccount<'a, ReferralStateAccount>, ProgramError> {
     let referral_state_seeds = get_referral_account_seeds(authority.key);
-    let (referral_state_pda, _) =
-        Pubkey::find_program_address(referral_state_seeds.as_slice(), &crate::ID);
+    let (referral_state_pda, _) = Pubkey::find_program_address(
+        referral_state_seeds.as_slice(),
+        &crate::ID
+    );
     if &referral_state_pda != referral_state.key {
         msg!("Invalid referral position account given for the provided authority");
         return Err(SolautoError::IncorrectAccounts.into());
     }
 
     if account_has_data(referral_state) {
-        let mut referral_state_account =
-            DeserializedAccount::<ReferralStateAccount>::deserialize(Some(referral_state))?
-                .unwrap();
+        let mut referral_state_account = DeserializedAccount::<ReferralStateAccount>
+            ::deserialize(Some(referral_state))?
+            .unwrap();
 
         if referral_state_account.data.referred_by_state.is_none() && referred_by_state.is_some() {
-            referral_state_account.data.referred_by_state =
-                Some(referred_by_state.unwrap().key.clone());
+            referral_state_account.data.referred_by_state = Some(
+                referred_by_state.unwrap().key.clone()
+            );
         }
 
-        if referral_fees_dest_mint.is_some()
-            && referral_fees_dest_mint.as_ref().unwrap()
-                != &referral_state_account.data.dest_fees_mint
+        if
+            referral_fees_dest_mint.is_some() &&
+            referral_fees_dest_mint.as_ref().unwrap() != &referral_state_account.data.dest_fees_mint
         {
             referral_state_account.data.dest_fees_mint = referral_fees_dest_mint.unwrap().clone();
         }
@@ -120,7 +141,7 @@ pub fn create_or_update_referral_state<'a>(
             referral_state,
             &crate::ID,
             Some(referral_state_seeds[..].to_vec()),
-            REFERRAL_ACCOUNT_SPACE,
+            REFERRAL_ACCOUNT_SPACE
         )?;
 
         let dest_mint = if referral_fees_dest_mint.is_some() {
@@ -148,23 +169,13 @@ pub fn get_referral_account_seeds<'a>(authority: &'a Pubkey) -> Vec<&[u8]> {
     vec![authority.as_ref(), b"referral_state"]
 }
 
-// pub fn test<'a, 'b, 'c>(solauto_position: &'b DeserializedAccount<'a, SolautoPosition>) -> Vec<&'c [u8]> {
-//     let position_seeds = get_solauto_position_seeds(solauto_position);
-//     let transformed: Vec<&[u8]> = position_seeds
-//         .iter()
-//         .map(|v| v.as_slice())
-//         .collect();
-
-//     transformed
-// }
-
 pub fn init_solauto_fees_supply_ta<'a>(
     token_program: &'a AccountInfo<'a>,
     system_program: &'a AccountInfo<'a>,
     signer: &'a AccountInfo<'a>,
     solauto_fees_wallet: &'a AccountInfo<'a>,
     solauto_fees_supply_ta: &'a AccountInfo<'a>,
-    supply_mint: &'a AccountInfo<'a>,
+    supply_mint: &'a AccountInfo<'a>
 ) -> ProgramResult {
     if solauto_fees_wallet.key != &SOLAUTO_FEES_WALLET {
         return Err(SolautoError::IncorrectAccounts.into());
@@ -176,15 +187,19 @@ pub fn init_solauto_fees_supply_ta<'a>(
         solauto_fees_wallet,
         solauto_fees_supply_ta,
         supply_mint,
+        false,
+        None
     )
 }
 
 pub fn initiate_dca_in_if_necessary<'a, 'b>(
+    system_program: &'a AccountInfo<'a>,
     token_program: &'a AccountInfo<'a>,
+    rent_sysvar: &'a AccountInfo<'a>,
     solauto_position: &'b mut DeserializedAccount<'a, SolautoPosition>,
     position_debt_ta: Option<&'a AccountInfo<'a>>,
     signer: &'a AccountInfo<'a>,
-    signer_debt_ta: Option<&'a AccountInfo<'a>>,
+    signer_debt_ta: Option<&'a AccountInfo<'a>>
 ) -> Result<bool, ProgramError> {
     if solauto_position.data.self_managed {
         return Ok(false);
@@ -205,31 +220,29 @@ pub fn initiate_dca_in_if_necessary<'a, 'b>(
         return Err(SolautoError::IncorrectAccounts.into());
     }
 
-    if position_debt_ta.unwrap().key
-        != &get_associated_token_address(
+    if
+        position_debt_ta.unwrap().key !=
+        &get_associated_token_address(
             solauto_position.account_info.key,
-            solauto_position
-                .data
-                .position
+            solauto_position.data.position
                 .as_ref()
                 .unwrap()
-                .protocol_data
-                .debt_mint
-                .as_ref()
-                .unwrap(),
+                .protocol_data.debt_mint.as_ref()
+                .unwrap()
         )
     {
         msg!("Incorrect position token account provided");
         return Err(SolautoError::IncorrectAccounts.into());
     }
 
-    let balance = TokenAccount::unpack(&signer_debt_ta.unwrap().data.borrow())?.amount;
+    let signer_token_account = TokenAccount::unpack(&signer_debt_ta.unwrap().data.borrow())?;
+    let balance = signer_token_account.amount;
     if balance == 0 {
         msg!("Unable to initiate DCA with a lack of funds in the signer debt token account");
         return Err(ProgramError::InvalidInstructionData.into());
     }
 
-    let DCADirection::In(base_unit_amount) = active_dca.dca_direction else {
+    let DCADirection::In(mut base_unit_amount) = active_dca.dca_direction else {
         panic!("Expected DCADirection::In variant");
     };
 
@@ -238,21 +251,34 @@ pub fn initiate_dca_in_if_necessary<'a, 'b>(
         return Err(ProgramError::InvalidInstructionData.into());
     }
 
+    solauto_position.data.position.as_mut().unwrap().debt_ta_balance += base_unit_amount;
 
-    // TODO should be a system transfer (+ rent exemption on base_unit_amount) if debt token is SOL
-    solauto_position
-    .data
-    .position
-    .as_mut()
-    .unwrap()
-    .debt_ta_balance += base_unit_amount;
+    // If wSOL & position_debt_ta (destination) still needs to be initialized, we add rent exemption to the amount to send
+    // so that when DCA begins it has the correct amount set in the token account data
+    if signer_token_account.mint == WSOL_MINT && !account_has_data(position_debt_ta.unwrap()) {
+        let rent = &Rent::from_account_info(rent_sysvar)?;
+        let required_lamports = rent
+            .minimum_balance((ACCOUNT_STORAGE_OVERHEAD as usize) + TokenAccount::LEN)
+            .saturating_sub(position_debt_ta.unwrap().lamports());
+        if required_lamports > 0 {
+            system_transfer(
+                system_program,
+                signer,
+                position_debt_ta.unwrap(),
+                required_lamports,
+                None
+            )?;
+            base_unit_amount += required_lamports;
+        }
+    }
+
     spl_token_transfer(
         token_program,
         signer_debt_ta.unwrap(),
         signer,
         position_debt_ta.unwrap(),
         base_unit_amount,
-        None,
+        None
     )?;
 
     Ok(true)
@@ -261,56 +287,32 @@ pub fn initiate_dca_in_if_necessary<'a, 'b>(
 pub fn is_dca_instruction(
     solauto_position: &SolautoPosition,
     obligation_position: &LendingProtocolObligationPosition,
-    current_unix_timestamp: u64,
+    current_unix_timestamp: u64
 ) -> Result<Option<DCADirection>, ProgramError> {
-    if solauto_position.self_managed
-        || solauto_position
-            .position
-            .as_ref()
-            .unwrap()
-            .protocol_data
-            .debt_mint
-            .is_none()
+    if
+        solauto_position.self_managed ||
+        solauto_position.position.as_ref().unwrap().protocol_data.debt_mint.is_none()
     {
         return Ok(None);
     }
 
-    if obligation_position.current_liq_utilization_rate_bps()
-        >= solauto_position
-            .position
-            .as_ref()
-            .unwrap()
-            .setting_params
-            .as_ref()
-            .unwrap()
-            .repay_from_bps
+    if
+        obligation_position.current_liq_utilization_rate_bps() >=
+        solauto_position.position.as_ref().unwrap().setting_params.as_ref().unwrap().repay_from_bps
     {
         return Ok(None);
     }
 
-    if solauto_position
-        .position
-        .as_ref()
-        .unwrap()
-        .active_dca
-        .is_none()
-    {
+    if solauto_position.position.as_ref().unwrap().active_dca.is_none() {
         return Ok(None);
     }
 
-    let dca_settings = solauto_position
-        .position
-        .as_ref()
-        .unwrap()
-        .active_dca
-        .as_ref()
-        .unwrap();
+    let dca_settings = solauto_position.position.as_ref().unwrap().active_dca.as_ref().unwrap();
 
-    if dca_settings.unix_start_date.add(
-        dca_settings
-            .unix_dca_interval
-            .mul(dca_settings.dca_periods_passed as u64),
-    ) < current_unix_timestamp
+    if
+        dca_settings.unix_start_date.add(
+            dca_settings.unix_dca_interval.mul(dca_settings.dca_periods_passed as u64)
+        ) < current_unix_timestamp
     {
         return Ok(None);
     }

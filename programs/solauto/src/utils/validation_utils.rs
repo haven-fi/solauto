@@ -69,7 +69,7 @@ pub fn generic_instruction_validation(
 pub fn validate_signer(
     signer: &AccountInfo,
     solauto_position: &DeserializedAccount<SolautoPosition>,
-    authority_only_ix: bool,
+    authority_only_ix: bool
 ) -> ProgramResult {
     if !signer.is_signer {
         msg!("Signer account is not a signer");

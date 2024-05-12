@@ -59,6 +59,8 @@ pub fn solend_open_position<'a>(
         solauto_position.account_info,
         ctx.accounts.position_supply_collateral_ta,
         ctx.accounts.supply_collateral_mint,
+        false,
+        Some(&solauto_position.data.seeds())
     )?;
 
     let obligation_seeds = if !solauto_position.data.self_managed {
@@ -126,10 +128,14 @@ fn initialize_solauto_position<'a, 'b>(
         solauto_position.account_info,
         position_supply_ta,
         supply_mint,
+        true,
+        Some(&solauto_position.data.seeds())
     )?;
 
     let began_dca = solauto_utils::initiate_dca_in_if_necessary(
+        system_program,
         token_program,
+        rent,
         solauto_position,
         position_debt_ta,
         signer,
@@ -144,6 +150,8 @@ fn initialize_solauto_position<'a, 'b>(
             solauto_position.account_info,
             position_debt_ta.unwrap(),
             debt_mint.unwrap(),
+            true,
+            Some(&solauto_position.data.seeds())
         )?;
     } else if began_dca {
         msg!("Missing position debt token account when initiating a DCA-in from debt token");

@@ -31,12 +31,12 @@ pub fn convert_referral_fees(
 pub fn claim_referral_fees(ctx: Context<ClaimReferralFeesAccounts>) -> ProgramResult {
     let referral_account_seeds = &solauto_utils::get_referral_account_seeds(ctx.accounts.signer.key);
     if ctx.accounts.referral_fees_mint.key == &WSOL_MINT {
-        solana_utils::close_pda_token_account(
+        solana_utils::close_token_account(
             ctx.accounts.token_program,
             ctx.accounts.referral_fees_ta,
             ctx.accounts.signer,
             ctx.accounts.referral_state,
-            referral_account_seeds
+            Some(referral_account_seeds)
         )?;
 
         solana_utils::init_ata_if_needed(
@@ -45,7 +45,9 @@ pub fn claim_referral_fees(ctx: Context<ClaimReferralFeesAccounts>) -> ProgramRe
             ctx.accounts.signer,
             ctx.accounts.referral_state,
             ctx.accounts.referral_fees_ta,
-            ctx.accounts.referral_fees_mint
+            ctx.accounts.referral_fees_mint,
+            false,
+            None
         )?;
     } else {
         solana_utils::init_ata_if_needed(
@@ -54,7 +56,9 @@ pub fn claim_referral_fees(ctx: Context<ClaimReferralFeesAccounts>) -> ProgramRe
             ctx.accounts.signer,
             ctx.accounts.signer,
             ctx.accounts.fees_destination_ta.unwrap(),
-            ctx.accounts.referral_fees_mint
+            ctx.accounts.referral_fees_mint,
+            false,
+            None
         )?;
 
         let balance = TokenAccount::unpack(&ctx.accounts.referral_fees_ta.data.borrow())?.amount;

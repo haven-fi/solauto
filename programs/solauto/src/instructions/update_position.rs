@@ -42,7 +42,9 @@ pub fn update_position<'a>(
         validation_utils::validate_dca_settings(&new_data.active_dca)?;
         solauto_position.data.position.as_mut().unwrap().active_dca = new_data.active_dca.clone();
         let began_dca_in = solauto_utils::initiate_dca_in_if_necessary(
+            ctx.accounts.system_program,
             ctx.accounts.token_program,
+            ctx.accounts.rent,
             &mut solauto_position,
             ctx.accounts.position_debt_ta,
             ctx.accounts.signer,
@@ -59,7 +61,9 @@ pub fn update_position<'a>(
                 ctx.accounts.signer,
                 solauto_position.account_info,
                 ctx.accounts.position_debt_ta.unwrap(),
-                ctx.accounts.debt_mint.unwrap()
+                ctx.accounts.debt_mint.unwrap(),
+                true,
+                Some(&solauto_position.data.seeds())
             )?;
         }
     }
