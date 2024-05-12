@@ -68,9 +68,7 @@ pub fn update_position<'a>(
             )?;
 
             solauto_utils::initiate_dca_in_if_necessary(
-                ctx.accounts.system_program,
                 ctx.accounts.token_program,
-                ctx.accounts.rent,
                 &mut solauto_position,
                 ctx.accounts.position_debt_ta,
                 ctx.accounts.signer,

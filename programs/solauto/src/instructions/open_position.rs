@@ -1,6 +1,4 @@
-use solana_program::{
-    account_info::AccountInfo, entrypoint::ProgramResult, msg, program_pack::Pack,
-};
+use solana_program::{account_info::AccountInfo, entrypoint::ProgramResult, program_pack::Pack};
 use solend_sdk::state::Obligation;
 
 use crate::{
@@ -9,7 +7,7 @@ use crate::{
         instruction::accounts::{
             Context, MarginfiOpenPositionAccounts, SolendOpenPositionAccounts,
         },
-        shared::{DeserializedAccount, SolautoError, SolautoPosition, POSITION_ACCOUNT_SPACE},
+        shared::{DeserializedAccount, SolautoPosition, POSITION_ACCOUNT_SPACE},
     },
     utils::*,
 };
@@ -134,19 +132,6 @@ fn initialize_solauto_position<'a, 'b>(
         Some(&solauto_position.data.seeds()),
     )?;
 
-    if signer_debt_ta.is_some() {
-        solana_utils::init_ata_if_needed(
-            token_program,
-            system_program,
-            signer,
-            signer,
-            signer_debt_ta.unwrap(),
-            debt_mint.unwrap(),
-            true,
-            None,
-        )?;
-    }
-
     if debt_mint.is_some() {
         solana_utils::init_ata_if_needed(
             token_program,
@@ -161,9 +146,7 @@ fn initialize_solauto_position<'a, 'b>(
     }
 
     solauto_utils::initiate_dca_in_if_necessary(
-        system_program,
         token_program,
-        rent,
         solauto_position,
         position_debt_ta,
         signer,

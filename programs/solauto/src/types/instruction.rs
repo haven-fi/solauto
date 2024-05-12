@@ -91,7 +91,6 @@ pub enum Instruction {
     #[account(signer, name = "signer")]
     #[account(name = "system_program")]
     #[account(name = "token_program")]
-    #[account(name = "rent")]
     #[account(mut, name = "solauto_position")]
     #[account(optional, name = "debt_mint")]
     #[account(mut, optional, name = "position_debt_ta")]

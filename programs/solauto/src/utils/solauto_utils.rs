@@ -1,20 +1,12 @@
 use solana_program::{
-    account_info::AccountInfo,
-    entrypoint::ProgramResult,
-    msg,
-    program_error::ProgramError,
-    program_pack::Pack,
-    pubkey::Pubkey,
-    rent::{Rent, ACCOUNT_STORAGE_OVERHEAD},
-    sysvar::Sysvar,
+    account_info::AccountInfo, entrypoint::ProgramResult, msg, program_error::ProgramError,
+    program_pack::Pack, pubkey::Pubkey,
 };
 use spl_associated_token_account::get_associated_token_address;
 use spl_token::state::Account as TokenAccount;
 use std::ops::{Add, Mul};
 
-use super::solana_utils::{
-    account_has_data, init_account, init_ata_if_needed, spl_token_transfer, system_transfer,
-};
+use super::solana_utils::{account_has_data, init_account, init_ata_if_needed, spl_token_transfer};
 use crate::{
     constants::{REFERRER_FEE_SPLIT, SOLAUTO_FEES_WALLET, WSOL_MINT},
     types::{
@@ -180,9 +172,7 @@ pub fn init_solauto_fees_supply_ta<'a>(
 }
 
 pub fn initiate_dca_in_if_necessary<'a, 'b>(
-    system_program: &'a AccountInfo<'a>,
     token_program: &'a AccountInfo<'a>,
-    rent_sysvar: &'a AccountInfo<'a>,
     solauto_position: &'b mut DeserializedAccount<'a, SolautoPosition>,
     position_debt_ta: Option<&'a AccountInfo<'a>>,
     signer: &'a AccountInfo<'a>,
@@ -224,7 +214,7 @@ pub fn initiate_dca_in_if_necessary<'a, 'b>(
         return Err(ProgramError::InvalidInstructionData.into());
     }
 
-    let DCADirection::In(mut base_unit_amount) = active_dca.dca_direction else {
+    let DCADirection::In(base_unit_amount) = active_dca.dca_direction else {
         panic!("Expected DCADirection::In variant");
     };
 
@@ -234,30 +224,6 @@ pub fn initiate_dca_in_if_necessary<'a, 'b>(
     }
 
     position.debt_ta_balance += base_unit_amount;
-
-    msg!("Hello dca.1");
-
-    // If wSOL & position_debt_ta (destination) still needs to be initialized, we add rent exemption to the amount to send
-    // so that when DCA begins it has the correct amount set in the token account data
-    if signer_token_account.mint == WSOL_MINT && !account_has_data(position_debt_ta.unwrap()) {
-        let rent = &Rent::from_account_info(rent_sysvar)?;
-        let required_lamports = rent
-            .minimum_balance((ACCOUNT_STORAGE_OVERHEAD as usize) + TokenAccount::LEN)
-            .saturating_sub(position_debt_ta.unwrap().lamports());
-        if required_lamports > 0 {
-            system_transfer(
-                system_program,
-                signer,
-                position_debt_ta.unwrap(),
-                required_lamports,
-                None,
-            )?;
-            base_unit_amount += required_lamports;
-        }
-    }
-
-    msg!("Hello dca.2");
-
     spl_token_transfer(
         token_program,
         signer_debt_ta.unwrap(),
@@ -266,8 +232,6 @@ pub fn initiate_dca_in_if_necessary<'a, 'b>(
         base_unit_amount,
         None,
     )?;
-
-    msg!("Hello dca.3");
 
     Ok(())
 }

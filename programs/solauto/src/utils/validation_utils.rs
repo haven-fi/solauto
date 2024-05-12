@@ -9,9 +9,8 @@ use crate::{
     types::{
         instruction::SolautoStandardAccounts,
         shared::{
-            DCADirection, DCASettings, DeserializedAccount, LendingPlatform, PositionData,
-            ReferralStateAccount, SolautoError, SolautoPosition, SolautoSettingsParameters,
-            TokenType,
+            DCADirection, DeserializedAccount, LendingPlatform, PositionData, ReferralStateAccount,
+            SolautoError, SolautoPosition, TokenType,
         },
     },
 };
