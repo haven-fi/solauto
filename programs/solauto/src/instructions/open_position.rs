@@ -1,5 +1,4 @@
-use solana_program::{account_info::AccountInfo, entrypoint::ProgramResult, program_pack::Pack};
-use solana_sdk::msg;
+use solana_program::{account_info::AccountInfo, entrypoint::ProgramResult, program_pack::Pack, msg};
 use solend_sdk::state::Obligation;
 
 use crate::{
