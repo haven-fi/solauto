@@ -59,8 +59,6 @@ pub fn solend_open_position<'a>(
         solauto_position.account_info,
         ctx.accounts.position_supply_collateral_ta,
         ctx.accounts.supply_collateral_mint,
-        false,
-        Some(&solauto_position.data.seeds()),
     )?;
 
     let obligation_seeds = if !solauto_position.data.self_managed {
@@ -128,8 +126,6 @@ fn initialize_solauto_position<'a, 'b>(
         solauto_position.account_info,
         position_supply_ta,
         supply_mint,
-        false,
-        Some(&solauto_position.data.seeds()),
     )?;
 
     if debt_mint.is_some() {
@@ -140,8 +136,6 @@ fn initialize_solauto_position<'a, 'b>(
             solauto_position.account_info,
             position_debt_ta.unwrap(),
             debt_mint.unwrap(),
-            false,
-            Some(&solauto_position.data.seeds()),
         )?;
     }
 

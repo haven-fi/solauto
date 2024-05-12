@@ -166,8 +166,6 @@ pub fn init_solauto_fees_supply_ta<'a>(
         solauto_fees_wallet,
         solauto_fees_supply_ta,
         supply_mint,
-        false,
-        None,
     )
 }
 
@@ -294,6 +292,21 @@ pub fn is_dca_instruction(
     }
 
     Ok(Some(dca_settings.dca_direction))
+}
+
+pub fn cancel_active_dca<'a, 'b>(solauto_position: &mut DeserializedAccount<'a, SolautoPosition>) -> ProgramResult {
+    let position_data = solauto_position.data.position.as_mut().unwrap();
+    let active_dca = position_data.active_dca.as_ref().unwrap();
+
+    if let DCADirection::In(_) = active_dca.dca_direction {
+        if position_data.debt_ta_balance > 0 {
+            // TODO: Return remaining debt balance
+        }
+    }
+    
+    position_data.active_dca = None;
+
+    Ok(())
 }
 
 pub struct SolautoFeesBps {

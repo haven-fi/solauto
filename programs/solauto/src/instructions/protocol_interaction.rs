@@ -91,8 +91,6 @@ pub fn solend_interaction<'a, 'b>(
             ctx.accounts.signer,
             ctx.accounts.authority_supply_collateral_ta.unwrap(),
             ctx.accounts.supply_collateral_mint.unwrap(),
-            false,
-            None,
         )?;
     }
 

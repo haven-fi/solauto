@@ -49,8 +49,6 @@ pub fn claim_referral_fees(ctx: Context<ClaimReferralFeesAccounts>) -> ProgramRe
             ctx.accounts.referral_state,
             ctx.accounts.referral_fees_ta,
             ctx.accounts.referral_fees_mint,
-            false,
-            None,
         )?;
     } else {
         solana_utils::init_ata_if_needed(
@@ -60,8 +58,6 @@ pub fn claim_referral_fees(ctx: Context<ClaimReferralFeesAccounts>) -> ProgramRe
             ctx.accounts.signer,
             ctx.accounts.fees_destination_ta.unwrap(),
             ctx.accounts.referral_fees_mint,
-            false,
-            None,
         )?;
 
         let balance = TokenAccount::unpack(&ctx.accounts.referral_fees_ta.data.borrow())?.amount;

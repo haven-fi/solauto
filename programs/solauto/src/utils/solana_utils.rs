@@ -14,7 +14,7 @@ use spl_associated_token_account::{
 };
 use spl_token::instruction as spl_instruction;
 
-use crate::{constants::WSOL_MINT, types::shared::SolautoError};
+use crate::types::shared::SolautoError;
 
 pub fn account_has_data(account: &AccountInfo) -> bool {
     !account.data.borrow().is_empty()
@@ -86,8 +86,6 @@ pub fn init_ata_if_needed<'a, 'b>(
     wallet: &'a AccountInfo<'a>,
     token_account: &'a AccountInfo<'a>,
     token_mint: &'a AccountInfo<'a>,
-    reinitialize_if_wsol: bool,
-    owner_seeds: Option<&Vec<&[u8]>>,
 ) -> ProgramResult {
     if &get_associated_token_address(wallet.key, token_mint.key) != token_account.key {
         msg!(
@@ -100,19 +98,7 @@ pub fn init_ata_if_needed<'a, 'b>(
     }
 
     if account_has_data(token_account) {
-        if reinitialize_if_wsol && token_mint.key == &WSOL_MINT {
-            let token_account_lamports = token_account.lamports();
-            close_token_account(token_program, token_account, payer, wallet, owner_seeds)?;
-            system_transfer(
-                system_program,
-                payer,
-                token_account,
-                token_account_lamports,
-                None,
-            )?;
-        } else {
-            return Ok(());
-        }
+        return Ok(());
     }
 
     invoke(
