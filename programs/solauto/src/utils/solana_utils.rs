@@ -9,12 +9,13 @@ use solana_program::{
     system_instruction,
     sysvar::Sysvar,
 };
+use solana_sdk::program_pack::Pack;
 use spl_associated_token_account::{
     get_associated_token_address, instruction::create_associated_token_account,
 };
-use spl_token::instruction as spl_instruction;
+use spl_token::{instruction as spl_instruction, state::Account as TokenAccount};
 
-use crate::types::shared::SolautoError;
+use crate::{constants::WSOL_MINT, types::shared::SolautoError};
 
 pub fn account_has_data(account: &AccountInfo) -> bool {
     !account.data.borrow().is_empty()
@@ -48,14 +49,14 @@ pub fn init_account<'a>(
 
     let allocate_ix = &system_instruction::allocate(account.key, space.try_into().unwrap());
     if seed.is_some() {
-        invoke_signed_with_seed(allocate_ix, accounts, seed.as_ref().unwrap().clone())?;
+        invoke_signed_with_seed(allocate_ix, accounts, seed.as_ref().unwrap())?;
     } else {
         invoke(allocate_ix, accounts)?;
     }
 
     let assign_ix = &system_instruction::assign(account.key, &new_owner);
     if seed.is_some() {
-        invoke_signed_with_seed(assign_ix, accounts, seed.unwrap())?;
+        invoke_signed_with_seed(assign_ix, accounts, &seed.unwrap())?;
     } else {
         invoke(assign_ix, accounts)?;
     }
@@ -66,7 +67,7 @@ pub fn init_account<'a>(
 pub fn invoke_signed_with_seed(
     instruction: &Instruction,
     account_infos: &[AccountInfo],
-    seed: Vec<&[u8]>,
+    seed: &Vec<&[u8]>,
 ) -> ProgramResult {
     let (_, bump) = Pubkey::find_program_address(seed.as_slice(), &crate::ID);
 
@@ -98,6 +99,12 @@ pub fn init_ata_if_needed<'a>(
     }
 
     if account_has_data(token_account) {
+        // TODO if wSOL, we need to close existing account, and then system transfer what existed the balance previously back into position_debt_ta
+        if token_mint.key == &WSOL_MINT {
+            let token_account_lamports = token_account.lamports();
+            // TODO
+        }
+
         return Ok(());
     }
 
@@ -114,19 +121,21 @@ pub fn init_ata_if_needed<'a>(
     )
 }
 
-pub fn close_token_account<'a>(
+pub fn close_pda_token_account<'a, 'b>(
     token_program: &'a AccountInfo<'a>,
     account: &'a AccountInfo<'a>,
     sol_destination: &'a AccountInfo<'a>,
     account_owner: &'a AccountInfo<'a>,
+    owner_seeds: &Vec<&'b [u8]>
 ) -> ProgramResult {
-    invoke(
+    
+    invoke_signed_with_seed(
         &spl_instruction::close_account(
             token_program.key,
             account.key,
             sol_destination.key,
             account_owner.key,
-            &[],
+            &[account_owner.key],
         )?,
         &[
             account.clone(),
@@ -134,13 +143,14 @@ pub fn close_token_account<'a>(
             account_owner.clone(),
             token_program.clone(),
         ],
+        owner_seeds
     )
 }
 
 pub fn close_pda<'a, 'b>(
     account: &'a AccountInfo<'a>,
     sol_destination: &'a AccountInfo<'a>,
-    pda_seeds: Vec<&'b [u8]>,
+    pda_seeds: &Vec<&'b [u8]>,
 ) -> ProgramResult {
     invoke_signed_with_seed(
         &system_instruction::transfer(
@@ -159,7 +169,7 @@ pub fn spl_token_transfer<'a, 'b>(
     authority: &'a AccountInfo<'a>,
     recipient: &'a AccountInfo<'a>,
     amount: u64,
-    pda_seeds: Option<Vec<&'b [u8]>>,
+    pda_seeds: Option<&Vec<&'b [u8]>>,
 ) -> ProgramResult {
     let transfer_instruction = spl_instruction::transfer(
         token_program.key,

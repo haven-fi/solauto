@@ -51,11 +51,10 @@ pub fn create_new_solauto_position<'a>(
             return Err(SolautoError::IncorrectAccounts.into());
         }
 
-        SolautoPosition {
-            position_id: update_position_data.position_id,
-            authority: *signer.key,
-            self_managed: false,
-            position: Some(PositionData {
+        SolautoPosition::new(
+            update_position_data.position_id,
+            *signer.key,
+            Some(PositionData {
                 setting_params: update_position_data.setting_params.clone(),
                 state: PositionState::default(),
                 lending_platform,
@@ -67,14 +66,9 @@ pub fn create_new_solauto_position<'a>(
                 active_dca: update_position_data.active_dca.clone(),
                 debt_ta_balance: 0,
             }),
-        }
+        )
     } else {
-        SolautoPosition {
-            position_id: 0,
-            authority: *signer.key,
-            self_managed: true,
-            position: None,
-        }
+        SolautoPosition::new( 0, *signer.key, None)
     };
 
     Ok(DeserializedAccount::<SolautoPosition> {
@@ -154,14 +148,15 @@ pub fn get_referral_account_seeds<'a>(authority: &'a Pubkey) -> Vec<&[u8]> {
     vec![authority.as_ref(), b"referral_state"]
 }
 
-pub fn get_solauto_position_seeds<'a, 'b>(
-    solauto_position: &'b DeserializedAccount<'a, SolautoPosition>,
-) -> Vec<Vec<u8>> {
-    vec![
-        solauto_position.data.position_id.to_be_bytes().to_vec(),
-        solauto_position.data.authority.to_bytes().to_vec(),
-    ]
-}
+// pub fn test<'a, 'b, 'c>(solauto_position: &'b DeserializedAccount<'a, SolautoPosition>) -> Vec<&'c [u8]> {
+//     let position_seeds = get_solauto_position_seeds(solauto_position);
+//     let transformed: Vec<&[u8]> = position_seeds
+//         .iter()
+//         .map(|v| v.as_slice())
+//         .collect();
+
+//     transformed
+// }
 
 pub fn init_solauto_fees_supply_ta<'a>(
     token_program: &'a AccountInfo<'a>,
@@ -190,19 +185,19 @@ pub fn initiate_dca_in_if_necessary<'a, 'b>(
     position_debt_ta: Option<&'a AccountInfo<'a>>,
     signer: &'a AccountInfo<'a>,
     signer_debt_ta: Option<&'a AccountInfo<'a>>,
-) -> ProgramResult {
+) -> Result<bool, ProgramError> {
     if solauto_position.data.self_managed {
-        return Ok(());
+        return Ok(false);
     }
 
     let position = solauto_position.data.position.as_ref().unwrap();
     if position.active_dca.is_none() {
-        return Ok(());
+        return Ok(false);
     }
 
     let active_dca = position.active_dca.as_ref().unwrap();
     if active_dca.dca_direction == DCADirection::Out {
-        return Ok(());
+        return Ok(false);
     }
 
     if position_debt_ta.is_none() || signer_debt_ta.is_none() {
@@ -243,13 +238,14 @@ pub fn initiate_dca_in_if_necessary<'a, 'b>(
         return Err(ProgramError::InvalidInstructionData.into());
     }
 
-    // TODO: deduct rent exemption if this is a wSOL token account, because we don't want to close the account when finishing the DCA.
+
+    // TODO should be a system transfer (+ rent exemption on base_unit_amount) if debt token is SOL
     solauto_position
-        .data
-        .position
-        .as_mut()
-        .unwrap()
-        .debt_ta_balance += base_unit_amount;
+    .data
+    .position
+    .as_mut()
+    .unwrap()
+    .debt_ta_balance += base_unit_amount;
     spl_token_transfer(
         token_program,
         signer_debt_ta.unwrap(),
@@ -257,7 +253,9 @@ pub fn initiate_dca_in_if_necessary<'a, 'b>(
         position_debt_ta.unwrap(),
         base_unit_amount,
         None,
-    )
+    )?;
+
+    Ok(true)
 }
 
 pub fn is_dca_instruction(

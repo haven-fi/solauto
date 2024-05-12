@@ -13,7 +13,7 @@ use crate::{
         obligation_position::LendingProtocolObligationPosition,
         solauto_manager::{SolautoManager, SolautoManagerAccounts},
     },
-    utils::{ix_utils, solana_utils::init_ata_if_needed},
+    utils::{ix_utils, solana_utils},
 };
 
 pub fn marginfi_interaction<'a, 'b>(
@@ -84,7 +84,7 @@ pub fn solend_interaction<'a, 'b>(
     )?;
 
     if ctx.accounts.authority_supply_collateral_ta.is_some() {
-        init_ata_if_needed(
+        solana_utils::init_ata_if_needed(
             ctx.accounts.token_program,
             ctx.accounts.system_program,
             ctx.accounts.signer,

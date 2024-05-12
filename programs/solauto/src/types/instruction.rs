@@ -89,8 +89,10 @@ pub enum Instruction {
 
     /// Update solauto position settings. Can only be invoked by position authority
     #[account(signer, name = "signer")]
+    #[account(name = "system_program")]
     #[account(name = "token_program")]
     #[account(mut, name = "solauto_position")]
+    #[account(optional, name = "debt_mint")]
     #[account(mut, optional, name = "position_debt_ta")]
     #[account(mut, optional, name = "signer_debt_ta")]
     UpdatePosition(UpdatePositionData),

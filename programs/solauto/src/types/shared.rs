@@ -1,19 +1,35 @@
-use borsh::{BorshDeserialize, BorshSerialize};
-use shank::{ShankAccount, ShankType};
+use borsh::{ BorshDeserialize, BorshSerialize };
+use shank::{ ShankAccount, ShankType };
 use solana_program::{
     account_info::AccountInfo,
     program_error::ProgramError,
-    program_pack::{IsInitialized, Pack},
+    program_pack::{ IsInitialized, Pack },
     pubkey::Pubkey,
     rent::ACCOUNT_STORAGE_OVERHEAD,
 };
 use thiserror::Error;
+use std::fmt;
 
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, PartialEq)]
 pub enum LendingPlatform {
     Marginfi,
     Solend,
     Kamino,
+}
+
+#[derive(PartialEq)]
+pub enum TokenType {
+    Supply,
+    Debt,
+}
+
+impl fmt::Display for TokenType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            TokenType::Supply => write!(f, "supply"),
+            TokenType::Debt => write!(f, "debt"),
+        }
+    }
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Clone, Copy, Debug, ShankType, PartialEq)]
@@ -88,12 +104,29 @@ pub struct PositionData {
 }
 
 pub const POSITION_ACCOUNT_SPACE: usize = (ACCOUNT_STORAGE_OVERHEAD as usize) + 500; // TODO fix me
-#[derive(ShankAccount, BorshDeserialize, BorshSerialize, Clone, Debug)]
+#[derive(BorshDeserialize, BorshSerialize, Clone, Debug)]
+#[derive(ShankAccount)]
 pub struct SolautoPosition {
     pub position_id: u8,
+    _position_id_arr: [u8; 1],
     pub authority: Pubkey,
     pub self_managed: bool,
     pub position: Option<PositionData>,
+}
+
+impl SolautoPosition {
+    pub fn new(position_id: u8, authority: Pubkey, position: Option<PositionData>) -> Self {
+        Self {
+            position_id,
+            _position_id_arr: [position_id],
+            authority,
+            self_managed: position_id == 0,
+            position,
+        }
+    }
+    pub fn seeds<'a, 'b>(&'a self) -> Vec<&'a [u8]> {
+        vec![&self._position_id_arr, self.authority.as_ref()]
+    }
 }
 
 pub const REFERRAL_ACCOUNT_SPACE: usize = (ACCOUNT_STORAGE_OVERHEAD as usize) + 97; // 32 + 33 + 32
@@ -124,12 +157,15 @@ impl<'a, T: BorshDeserialize> DeserializedAccount<'a, T> {
         match account {
             Some(account_info) => {
                 let mut data: &[u8] = &(*account_info.data).borrow();
-                let deserialized_data = T::deserialize(&mut data)
-                    .map_err(|_| SolautoError::FailedAccountDeserialization)?;
-                Ok(Some(Self {
-                    account_info,
-                    data: Box::new(deserialized_data),
-                }))
+                let deserialized_data = T::deserialize(&mut data).map_err(
+                    |_| SolautoError::FailedAccountDeserialization
+                )?;
+                Ok(
+                    Some(Self {
+                        account_info,
+                        data: Box::new(deserialized_data),
+                    })
+                )
             }
             None => Ok(None),
         }
@@ -140,12 +176,15 @@ impl<'a, T: Pack + IsInitialized> DeserializedAccount<'a, T> {
     pub fn unpack(account: Option<&'a AccountInfo<'a>>) -> Result<Option<Self>, ProgramError> {
         match account {
             Some(account_info) => {
-                let deserialized_data = T::unpack(&account_info.data.borrow())
-                    .map_err(|_| SolautoError::FailedAccountDeserialization)?;
-                Ok(Some(Self {
-                    account_info,
-                    data: Box::new(deserialized_data),
-                }))
+                let deserialized_data = T::unpack(&account_info.data.borrow()).map_err(
+                    |_| SolautoError::FailedAccountDeserialization
+                )?;
+                Ok(
+                    Some(Self {
+                        account_info,
+                        data: Box::new(deserialized_data),
+                    })
+                )
             }
             None => Ok(None),
         }

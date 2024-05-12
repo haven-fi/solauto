@@ -220,7 +220,7 @@ fn get_std_target_liq_utilization_rate_bps(
 
     let target_rate_bps: Result<u16, SolautoError> =
         if rebalance_args.target_liq_utilization_rate_bps.is_none() {
-            let setting_params = &position_account
+            let setting_params = position_account
                 .position
                 .as_ref()
                 .unwrap()

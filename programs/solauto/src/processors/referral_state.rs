@@ -1,4 +1,3 @@
-use std::ops::Div;
 
 use solana_program::{
     account_info::AccountInfo,
@@ -9,7 +8,6 @@ use solana_program::{
     sysvar::instructions::{ load_current_index_checked, load_instruction_at_checked },
 };
 use spl_associated_token_account::get_associated_token_address;
-use spl_token::state::Account as TokenAccount;
 
 use crate::{
     constants::{ JUP_PROGRAM, SOLAUTO_MANAGER, WSOL_MINT },
@@ -18,23 +16,24 @@ use crate::{
         instruction::{
             accounts::{
                 ClaimReferralFeesAccounts,
-                ClosePositionAccounts,
                 ConvertReferralFeesAccounts,
-                UpdatePositionAccounts,
                 UpdateReferralStatesAccounts,
             },
-            UpdatePositionData,
             UpdateReferralStatesArgs,
         },
-        shared::{ DeserializedAccount, ReferralStateAccount, SolautoError, SolautoPosition },
+        shared::{
+            DeserializedAccount,
+            ReferralStateAccount,
+            SolautoError,
+        },
     },
     utils::{
         ix_utils,
-        solana_utils,
-        solauto_utils::{ self, get_solauto_position_seeds },
+        solauto_utils,
         validation_utils,
     },
 };
+
 
 pub fn process_update_referral_states<'a>(
     accounts: &'a [AccountInfo<'a>],
@@ -169,130 +168,4 @@ pub fn process_claim_referral_fees<'a>(accounts: &'a [AccountInfo<'a>]) -> Progr
     }
 
     referral_fees::claim_referral_fees(ctx)
-}
-
-pub fn process_update_position_instruction<'a>(
-    accounts: &'a [AccountInfo<'a>],
-    new_data: UpdatePositionData
-) -> ProgramResult {
-    let ctx = UpdatePositionAccounts::context(accounts)?;
-    let mut solauto_position = DeserializedAccount::<SolautoPosition>
-        ::deserialize(Some(ctx.accounts.solauto_position))?
-        .unwrap();
-
-    validation_utils::validate_signer(ctx.accounts.signer, &solauto_position, true)?;
-    if solauto_position.data.self_managed {
-        msg!("Cannot provide setting parameters to a self-managed position");
-        return Err(SolautoError::IncorrectAccounts.into());
-    }
-
-    if new_data.setting_params.is_some() {
-        let position_data = solauto_position.data.position.as_ref().unwrap();
-        validation_utils::validate_position_settings(
-            &solauto_position,
-            (position_data.state.max_ltv_bps as f64).div(10000.0),
-            (position_data.state.liq_threshold as f64).div(10000.0)
-        )?;
-        solauto_position.data.position.as_mut().unwrap().setting_params =
-            new_data.setting_params.clone();
-    }
-
-    // TODO: what if already an active DCA? Should we fail it? Should we add instruction to close current DCA, or just make
-    // necessary modifications to the DCA here?
-    if new_data.active_dca.is_some() {
-        validation_utils::validate_dca_settings(&new_data.active_dca)?;
-        solauto_position.data.position.as_mut().unwrap().active_dca = new_data.active_dca.clone();
-        solauto_utils::initiate_dca_in_if_necessary(
-            ctx.accounts.token_program,
-            &mut solauto_position,
-            ctx.accounts.position_debt_ta,
-            ctx.accounts.signer,
-            ctx.accounts.signer_debt_ta
-        )?;
-    }
-
-    ix_utils::update_data(&mut solauto_position)
-}
-
-pub fn process_close_position_instruction<'a>(accounts: &'a [AccountInfo<'a>]) -> ProgramResult {
-    let ctx = ClosePositionAccounts::context(accounts)?;
-    let solauto_position = DeserializedAccount::<SolautoPosition>
-        ::deserialize(Some(ctx.accounts.solauto_position))?
-        .unwrap();
-    let position_supply_ta = DeserializedAccount::<TokenAccount>
-        ::unpack(Some(ctx.accounts.position_supply_liquidity_ta))?
-        .unwrap();
-
-    validation_utils::validate_signer(ctx.accounts.signer, &solauto_position, true)?;
-    if solauto_position.data.self_managed {
-        msg!("Cannot close a self-managed position");
-        return Err(SolautoError::IncorrectAccounts.into());
-    }
-
-    validation_utils::validate_token_accounts(
-        ctx.accounts.signer,
-        &solauto_position,
-        &position_supply_ta,
-        DeserializedAccount::<TokenAccount>
-            ::unpack(ctx.accounts.position_debt_liquidity_ta)?
-            .as_ref()
-    )?;
-
-    if
-        ctx.accounts.signer_supply_liquidity_ta.key !=
-        &get_associated_token_address(ctx.accounts.signer.key, &position_supply_ta.data.mint)
-    {
-        msg!("Incorrect signer supply liquidity token account");
-        return Err(SolautoError::IncorrectAccounts.into());
-    }
-
-    let seeds = get_solauto_position_seeds(&solauto_position);
-    let solauto_position_seeds: Vec<&[u8]> = seeds
-        .iter()
-        .map(|v| v.as_slice())
-        .collect();
-
-    if position_supply_ta.data.mint != WSOL_MINT && position_supply_ta.data.amount > 0 {
-        solana_utils::spl_token_transfer(
-            ctx.accounts.token_program,
-            ctx.accounts.position_supply_liquidity_ta,
-            solauto_position.account_info,
-            ctx.accounts.signer_supply_liquidity_ta,
-            position_supply_ta.data.amount,
-            Some(solauto_position_seeds.clone())
-        )?;
-    }
-
-    solana_utils::close_token_account(
-        ctx.accounts.token_program,
-        ctx.accounts.position_supply_liquidity_ta,
-        ctx.accounts.signer,
-        ctx.accounts.solauto_position
-    )?;
-
-    if ctx.accounts.position_debt_liquidity_ta.is_some() {
-        solana_utils::close_token_account(
-            ctx.accounts.token_program,
-            ctx.accounts.position_debt_liquidity_ta.unwrap(),
-            ctx.accounts.signer,
-            ctx.accounts.solauto_position
-        )?;
-    }
-
-    if ctx.accounts.position_supply_collateral_ta.is_some() {
-        solana_utils::close_token_account(
-            ctx.accounts.token_program,
-            ctx.accounts.position_supply_collateral_ta.unwrap(),
-            ctx.accounts.signer,
-            ctx.accounts.solauto_position
-        )?;
-    }
-
-    solana_utils::close_pda(
-        ctx.accounts.solauto_position,
-        ctx.accounts.signer,
-        solauto_position_seeds
-    )?;
-
-    Ok(())
 }

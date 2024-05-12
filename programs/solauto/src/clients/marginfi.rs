@@ -79,12 +79,7 @@ impl<'a> MarginfiClient<'a> {
             }
         );
         if marginfi_account_owner.key == solauto_position.account_info.key {
-            let position_seeds = get_solauto_position_seeds(solauto_position);
-            let transformed: Vec<&[u8]> = position_seeds
-                .iter()
-                .map(|v| v.as_slice())
-                .collect();
-            cpi.invoke_signed(&[transformed.as_slice()])
+            cpi.invoke_signed(&[solauto_position.data.seeds().as_slice()])
         } else {
             cpi.invoke()
         }
@@ -196,11 +191,6 @@ impl<'a> MarginfiClient<'a> {
         debt_bank: Option<&DeserializedAccount<Bank>>,
         debt_price_oracle: Option<&AccountInfo>
     ) -> Result<LendingProtocolObligationPosition, ProgramError> {
-        // TODO
-        // Need to also factor into account the total_asset_value_init_limit, as if the total asset value in USD deposited in the bank exceeds this,
-        // it modifies the ltv and liq threshold (total_asset_value_init_limit / total_asset_value_deposited_usd) = new max_ltv/liq_threshold
-        // min(normal_liq_threshold/normal_max_ltv, new_liq_threshold/new_max_ltv)
-
         let (mut max_ltv, mut liq_threshold) = if supply_bank.is_some() {
             MarginfiClient::get_max_ltv_and_liq_threshold(&supply_bank.unwrap().data)
         } else {
@@ -460,12 +450,7 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
         );
 
         if authority.key == std_accounts.solauto_position.account_info.key {
-            let position_seeds = get_solauto_position_seeds(&std_accounts.solauto_position);
-            let transformed: Vec<&[u8]> = position_seeds
-                .iter()
-                .map(|v| v.as_slice())
-                .collect();
-            cpi.invoke_signed(&[transformed.as_slice()])
+            cpi.invoke_signed(&[std_accounts.solauto_position.data.seeds().as_slice()])
         } else {
             cpi.invoke()
         }
@@ -509,13 +494,8 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
         }
 
         if authority.key == std_accounts.solauto_position.account_info.key {
-            let position_seeds = get_solauto_position_seeds(&std_accounts.solauto_position);
-            let transformed: Vec<&[u8]> = position_seeds
-                .iter()
-                .map(|v| v.as_slice())
-                .collect();
             cpi.invoke_signed_with_remaining_accounts(
-                &[transformed.as_slice()],
+                &[std_accounts.solauto_position.data.seeds().as_slice()],
                 remaining_accounts.as_slice()
             )
         } else {
@@ -557,13 +537,8 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
         remaining_accounts.push((debt.price_oracle, false, false));
 
         if authority.key == std_accounts.solauto_position.account_info.key {
-            let position_seeds = get_solauto_position_seeds(&std_accounts.solauto_position);
-            let transformed: Vec<&[u8]> = position_seeds
-                .iter()
-                .map(|v| v.as_slice())
-                .collect();
             cpi.invoke_signed_with_remaining_accounts(
-                &[transformed.as_slice()],
+                &[std_accounts.solauto_position.data.seeds().as_slice()],
                 remaining_accounts.as_slice()
             )
         } else {
@@ -597,12 +572,7 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
         );
 
         if authority.key == std_accounts.solauto_position.account_info.key {
-            let position_seeds = get_solauto_position_seeds(&std_accounts.solauto_position);
-            let transformed: Vec<&[u8]> = position_seeds
-                .iter()
-                .map(|v| v.as_slice())
-                .collect();
-            cpi.invoke_signed(&[transformed.as_slice()])
+            cpi.invoke_signed(&[std_accounts.solauto_position.data.seeds().as_slice()])
         } else {
             cpi.invoke()
         }

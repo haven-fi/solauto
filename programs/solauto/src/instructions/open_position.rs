@@ -1,4 +1,5 @@
 use solana_program::{account_info::AccountInfo, entrypoint::ProgramResult, program_pack::Pack};
+use solana_sdk::msg;
 use solend_sdk::state::Obligation;
 
 use crate::{
@@ -7,7 +8,7 @@ use crate::{
         instruction::accounts::{
             Context, MarginfiOpenPositionAccounts, SolendOpenPositionAccounts,
         },
-        shared::{DeserializedAccount, SolautoPosition, POSITION_ACCOUNT_SPACE},
+        shared::{DeserializedAccount, SolautoError, SolautoPosition, POSITION_ACCOUNT_SPACE},
     },
     utils::*,
 };
@@ -128,6 +129,14 @@ fn initialize_solauto_position<'a, 'b>(
         supply_mint,
     )?;
 
+    let began_dca = solauto_utils::initiate_dca_in_if_necessary(
+        token_program,
+        solauto_position,
+        position_debt_ta,
+        signer,
+        signer_debt_ta,
+    )?;
+
     if debt_mint.is_some() {
         solana_utils::init_ata_if_needed(
             token_program,
@@ -137,15 +146,10 @@ fn initialize_solauto_position<'a, 'b>(
             position_debt_ta.unwrap(),
             debt_mint.unwrap(),
         )?;
+    } else if began_dca {
+        msg!("Missing position debt token account when initiating a DCA-in from debt token");
+        return Err(SolautoError::IncorrectAccounts.into());
     }
-
-    solauto_utils::initiate_dca_in_if_necessary(
-        token_program,
-        solauto_position,
-        position_debt_ta,
-        signer,
-        signer_debt_ta,
-    )?;
 
     Ok(())
 }
