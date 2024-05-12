@@ -1387,6 +1387,12 @@
             "type": {
               "option": "u16"
             }
+          },
+          {
+            "name": "targetBoostToBps",
+            "type": {
+              "option": "u16"
+            }
           }
         ]
       }
@@ -1397,7 +1403,11 @@
         "kind": "struct",
         "fields": [
           {
-            "name": "repayFromBps",
+            "name": "boostToBps",
+            "type": "u16"
+          },
+          {
+            "name": "boostGap",
             "type": "u16"
           },
           {
@@ -1405,11 +1415,7 @@
             "type": "u16"
           },
           {
-            "name": "boostFromBps",
-            "type": "u16"
-          },
-          {
-            "name": "boostToBps",
+            "name": "repayGap",
             "type": "u16"
           }
         ]

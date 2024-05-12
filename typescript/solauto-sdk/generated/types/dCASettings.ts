@@ -24,6 +24,7 @@ export type DCASettings = {
   targetDcaPeriods: number;
   dcaDirection: DCADirection;
   dcaRiskAversionBps: Option<number>;
+  targetBoostToBps: Option<number>;
 };
 
 export type DCASettingsArgs = {
@@ -33,6 +34,7 @@ export type DCASettingsArgs = {
   targetDcaPeriods: number;
   dcaDirection: DCADirectionArgs;
   dcaRiskAversionBps: OptionOrNullable<number>;
+  targetBoostToBps: OptionOrNullable<number>;
 };
 
 export function getDCASettingsSerializer(): Serializer<
@@ -47,6 +49,7 @@ export function getDCASettingsSerializer(): Serializer<
       ['targetDcaPeriods', u8()],
       ['dcaDirection', getDCADirectionSerializer()],
       ['dcaRiskAversionBps', option(u16())],
+      ['targetBoostToBps', option(u16())],
     ],
     { description: 'DCASettings' }
   ) as Serializer<DCASettingsArgs, DCASettings>;

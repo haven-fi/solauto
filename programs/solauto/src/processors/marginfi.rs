@@ -22,7 +22,6 @@ pub fn process_marginfi_open_position_instruction<'a>(
 ) -> ProgramResult {
     let ctx = MarginfiOpenPositionAccounts::context(accounts)?;
 
-    validation_utils::validate_dca_settings(&position_data.active_dca)?;
     let solauto_position = solauto_utils::create_new_solauto_position(
         ctx.accounts.signer,
         ctx.accounts.solauto_position,
@@ -32,6 +31,9 @@ pub fn process_marginfi_open_position_instruction<'a>(
         ctx.accounts.debt_mint,
         ctx.accounts.marginfi_account,
     )?;
+    if solauto_position.data.position.is_some() {
+        validation_utils::validate_dca_settings(solauto_position.data.position.as_ref().unwrap())?;
+    }
 
     solauto_utils::init_solauto_fees_supply_ta(
         ctx.accounts.token_program,

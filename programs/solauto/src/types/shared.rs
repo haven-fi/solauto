@@ -7,7 +7,7 @@ use solana_program::{
     pubkey::Pubkey,
     rent::ACCOUNT_STORAGE_OVERHEAD,
 };
-use std::fmt;
+use std::{cmp::min, fmt, ops::Add};
 use thiserror::Error;
 
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, PartialEq)]
@@ -39,11 +39,6 @@ pub enum DCADirection {
     Out,
 }
 
-// TODO: what about DCAing-in when you already have supply in there, and we instead dial-up the boost parameters?
-// TODO: also dial-up the boost_to parameter gradually when doing a DCA-in. Change boost_from and repay_from parameters to boost_gap and repay_gap,
-// so all we need to provide here is a target boost_to parameter (when DCAing-in)
-// When validating DCA settings ensure if DCAing-in that the current boost to parameter is lower than target boost to parameter
-// We can use this "target boost to parameter" in a DCA-out too ^^^ 
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType)]
 pub struct DCASettings {
     /// The unix timestamp (in seconds) start date of DCA
@@ -56,23 +51,34 @@ pub struct DCASettings {
     pub target_dca_periods: u8,
     /// Whether to DCA-in or DCA-out
     pub dca_direction: DCADirection,
-    /// Only used when DCAing-in. A value to determine whether or not to increase leverage, or simply swap and deposit supply,
-    /// depending on the distance from `current_liq_utilization_rate` to `repay_from` parameter.
+    /// Only used when DCAing-in and DCADirection::In value > 0. This value is used to determine whether or not to increase leverage,
+    /// or simply swap and deposit supply, depending on the distance from `current_liq_utilization_rate` to `repay_from` parameter.
     /// e.g. a lower value will mean the DCA will more likely increase leverage than not, and vice-versa.
     /// Defaults to 1500.
     pub dca_risk_aversion_bps: Option<u16>,
+    /// The taget boost_to_bps parameter to reach at the end of the DCA. Applicable for both DCA directions.
+    pub target_boost_to_bps: Option<u16>,
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType)]
 pub struct SolautoSettingsParameters {
-    /// At which liquidation utilization rate or higher to begin a rebalance
-    pub repay_from_bps: u16,
-    /// At which liquidation utilization rate to finish a rebalance
-    pub repay_to_bps: u16,
-    /// At which liquidation utilization rate or lower to begin boosting leverage
-    pub boost_from_bps: u16,
     /// At which liquidation utilization rate to boost leverage to
     pub boost_to_bps: u16,
+    /// boost_gap basis points below boost_to_bps is the liquidation utilization rate at which to begin a rebalance
+    pub boost_gap: u16,
+    /// At which liquidation utilization rate to finish a rebalance
+    pub repay_to_bps: u16,
+    /// repay_gap basis points above repay_to_bps is the liquidation utilization rate at which to begin a rebalance
+    pub repay_gap: u16,
+}
+
+impl SolautoSettingsParameters {
+    pub fn boost_from_bps(&self) -> u16 {
+        self.boost_to_bps.saturating_sub(self.boost_gap)
+    }
+    pub fn repay_from_bps(&self) -> u16 {
+        min(9800, self.repay_to_bps.add(self.repay_gap))
+    }
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType)]

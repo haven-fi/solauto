@@ -210,11 +210,7 @@ pub fn initiate_dca_in_if_necessary<'a, 'b>(
     if position_debt_ta.unwrap().key
         != &get_associated_token_address(
             solauto_position.account_info.key,
-            position
-                .protocol_data
-                .debt_mint
-                .as_ref()
-                .unwrap(),
+            position.protocol_data.debt_mint.as_ref().unwrap(),
         )
     {
         msg!("Incorrect position token account provided");
@@ -301,7 +297,7 @@ pub fn is_dca_instruction(
             .setting_params
             .as_ref()
             .unwrap()
-            .repay_from_bps
+            .repay_from_bps()
     {
         return Ok(None);
     }

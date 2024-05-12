@@ -11,8 +11,8 @@ use borsh::BorshSerialize;
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SolautoSettingsParameters {
-    pub repay_from_bps: u16,
-    pub repay_to_bps: u16,
-    pub boost_from_bps: u16,
     pub boost_to_bps: u16,
+    pub boost_gap: u16,
+    pub repay_to_bps: u16,
+    pub repay_gap: u16,
 }

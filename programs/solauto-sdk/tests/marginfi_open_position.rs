@@ -9,7 +9,6 @@ mod open_position {
         signature::{ Keypair, Signer },
         transaction::Transaction,
     };
-    use solauto::constants::WSOL_MINT;
     use solauto_sdk::generated::{
         accounts::SolautoPosition,
         types::{ DCADirection, DCASettings, LendingPlatform, SolautoSettingsParameters },
@@ -29,10 +28,10 @@ mod open_position {
             .unwrap();
 
         let setting_params = SolautoSettingsParameters {
-            repay_from_bps: 9500,
-            repay_to_bps: 9000,
-            boost_from_bps: 4500,
             boost_to_bps: 5000,
+            boost_gap: 500,
+            repay_to_bps: 9000,
+            repay_gap: 500,
         };
         data.open_position(Some(setting_params.clone()), None).await.unwrap();
 
@@ -111,6 +110,7 @@ mod open_position {
             target_dca_periods: 5,
             dca_direction: DCADirection::In(dca_amount),
             dca_risk_aversion_bps: None,
+            target_boost_to_bps: None,
         };
         data.open_position(
             Some(data.general.default_setting_params.clone()),
@@ -248,10 +248,10 @@ mod open_position {
     //         .unwrap();
 
     //     test_settings(&mut data, SolautoSettingsParameters {
-    //         repay_from_bps: 9500,
-    //         repay_to_bps: 9000,
-    //         boost_from_bps: 4500,
     //         boost_to_bps: 4499,
+    //         boost_from_bps: 4500,
+    //         repay_to_bps: 9000,
+    //         repay_from_bps: 9500,
     //     }).await;
     // }
 }

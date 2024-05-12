@@ -208,10 +208,10 @@ impl<'a> GeneralTestData<'a> {
             signer_debt_liquidity_ta,
 
             default_setting_params: SolautoSettingsParameters {
-                repay_from_bps: 9500,
-                repay_to_bps: 9000,
-                boost_from_bps: 4500,
                 boost_to_bps: 5000,
+                boost_gap: 500,
+                repay_to_bps: 9000,
+                repay_gap: 500,
             },
         }
     }

@@ -167,16 +167,11 @@ fn get_additional_amount_to_dca_in(
     let base_unit_amount = (position.debt_ta_balance as f64).mul(percent) as u64;
     position.debt_ta_balance -= base_unit_amount;
 
-    if dca_settings.dca_periods_passed == dca_settings.target_dca_periods - 1 {
-        position.active_dca = None;
-    }
-
     Ok(base_unit_amount)
 }
 
-fn target_liq_utilization_rate_bps_from_dca_out(
+fn get_adjusted_boost_to_bps_from_dca(
     position_account: &mut SolautoPosition,
-    obligation_position: &LendingProtocolObligationPosition,
 ) -> Result<u16, ProgramError> {
     let position = position_account.position.as_mut().unwrap();
 
@@ -186,29 +181,32 @@ fn target_liq_utilization_rate_bps_from_dca_out(
 
     let setting_params = position.setting_params.as_mut().unwrap();
 
-    let new_boost_from_bps = (setting_params.boost_from_bps as f64)
-        .sub((setting_params.boost_from_bps as f64).mul(percent))
-        as u16;
-    let new_boost_to_bps = if new_boost_from_bps == 0 {
-        0
+    let target_boost_to_bps = if dca_settings.target_boost_to_bps.is_some() {
+        dca_settings.target_boost_to_bps.unwrap()
     } else {
-        let diff = setting_params.boost_from_bps - new_boost_from_bps;
-        setting_params.boost_to_bps - diff
+        if let DCADirection::In(_) = dca_settings.dca_direction {
+            setting_params.boost_to_bps
+        } else {
+            0
+        }
     };
-    setting_params.boost_from_bps = new_boost_from_bps;
+
+    let boost_bps_diff = setting_params.boost_to_bps.sub(target_boost_to_bps);
+
+    let new_boost_to_bps =
+        (setting_params.boost_to_bps as f64).sub((boost_bps_diff as f64).mul(percent)) as u16;
+
     setting_params.boost_to_bps = new_boost_to_bps;
 
     if dca_settings.dca_periods_passed == dca_settings.target_dca_periods - 1 {
         position.active_dca = None;
+    }
+
+    if new_boost_to_bps == 0 {
         position.setting_params = None;
     }
 
-    let current_liq_utilization_rate_bps = obligation_position.current_liq_utilization_rate_bps();
-    let target_liq_utilization_rate_bps = (current_liq_utilization_rate_bps as f64)
-        .sub((current_liq_utilization_rate_bps as f64).mul(percent))
-        as u16;
-
-    Ok(target_liq_utilization_rate_bps)
+    Ok(new_boost_to_bps)
 }
 
 fn get_std_target_liq_utilization_rate_bps(
@@ -227,14 +225,14 @@ fn get_std_target_liq_utilization_rate_bps(
                 .setting_params
                 .as_ref()
                 .unwrap();
-            if current_liq_utilization_rate_bps > setting_params.repay_from_bps {
+            if current_liq_utilization_rate_bps > setting_params.repay_from_bps() {
                 let maximum_repay_to_bps = math_utils::get_maximum_repay_to_bps_param(
                     obligation_position.max_ltv,
                     obligation_position.liq_threshold,
                 );
                 Ok(min(setting_params.repay_to_bps, maximum_repay_to_bps))
-            } else if current_liq_utilization_rate_bps < setting_params.boost_from_bps {
-                Ok(setting_params.boost_from_bps)
+            } else if current_liq_utilization_rate_bps < setting_params.boost_from_bps() {
+                Ok(setting_params.boost_to_bps)
             } else {
                 return Err(SolautoError::InvalidRebalanceCondition.into());
             }
@@ -262,37 +260,13 @@ pub fn get_rebalance_values(
         Some(direction) => match direction {
             DCADirection::In(_) => {
                 let amount_to_dca_in = get_additional_amount_to_dca_in(position_account)?;
-                let boost_to_param = if position_account
-                    .position
-                    .as_ref()
-                    .unwrap()
-                    .setting_params
-                    .is_some()
-                {
-                    position_account
-                        .position
-                        .as_ref()
-                        .unwrap()
-                        .setting_params
-                        .as_ref()
-                        .unwrap()
-                        .boost_to_bps
-                } else {
-                    0
-                };
                 let target_rate = max(
                     obligation_position.current_liq_utilization_rate_bps(),
-                    boost_to_param,
+                    get_adjusted_boost_to_bps_from_dca(position_account)?,
                 );
                 (target_rate, Some(amount_to_dca_in))
             }
-            DCADirection::Out => (
-                target_liq_utilization_rate_bps_from_dca_out(
-                    position_account,
-                    obligation_position,
-                )?,
-                None,
-            ),
+            DCADirection::Out => (get_adjusted_boost_to_bps_from_dca(position_account)?, None),
         },
         None => (
             get_std_target_liq_utilization_rate_bps(
@@ -361,8 +335,8 @@ pub fn get_rebalance_values(
         } else {
             1500
         };
-        let maximum_liq_utilization_rate_bps = setting_params.repay_from_bps.sub(
-            (setting_params.repay_from_bps as f64).mul((risk_aversion_bps as f64).div(10000.0))
+        let maximum_liq_utilization_rate_bps = setting_params.repay_from_bps().sub(
+            (setting_params.repay_from_bps() as f64).mul((risk_aversion_bps as f64).div(10000.0))
                 as u16,
         );
 

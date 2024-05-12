@@ -115,7 +115,7 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
                 .setting_params
                 .as_ref()
                 .unwrap()
-                .repay_from_bps;
+                .repay_from_bps();
             if self.obligation_position.current_liq_utilization_rate_bps() > repay_from_bps {
                 return Err(SolautoError::ExceededValidUtilizationRate.into());
             }

@@ -346,7 +346,6 @@ impl<'a> LendingProtocolClient<'a> for SolendClient<'a> {
         // TODO: validate supply & debt reserve match the mints in the solauto position
 
         validate_lending_protocol_account(
-            std_accounts.signer,
             &std_accounts.solauto_position,
             self.data.obligation.account_info,
         )?;

@@ -18,4 +18,5 @@ pub struct DCASettings {
     pub target_dca_periods: u8,
     pub dca_direction: DCADirection,
     pub dca_risk_aversion_bps: Option<u16>,
+    pub target_boost_to_bps: Option<u16>,
 }

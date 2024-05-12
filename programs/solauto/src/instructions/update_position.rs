@@ -1,28 +1,35 @@
-use solana_program::{ entrypoint::ProgramResult, msg };
+use solana_program::{entrypoint::ProgramResult, msg};
 use std::ops::Div;
 
 use crate::{
     types::{
-        instruction::{ accounts::{ Context, UpdatePositionAccounts }, UpdatePositionData },
-        shared::{ DCADirection, DeserializedAccount, SolautoError, SolautoPosition },
+        instruction::{
+            accounts::{Context, UpdatePositionAccounts},
+            UpdatePositionData,
+        },
+        shared::{DCADirection, DeserializedAccount, SolautoError, SolautoPosition},
     },
-    utils::{ ix_utils, solana_utils, solauto_utils, validation_utils },
+    utils::{ix_utils, solana_utils, solauto_utils, validation_utils},
 };
 
 pub fn update_position<'a>(
     ctx: Context<UpdatePositionAccounts<'a>>,
     mut solauto_position: DeserializedAccount<'a, SolautoPosition>,
-    new_data: UpdatePositionData
+    new_data: UpdatePositionData,
 ) -> ProgramResult {
     if new_data.setting_params.is_some() {
         let position_data = solauto_position.data.position.as_ref().unwrap();
         validation_utils::validate_position_settings(
             &solauto_position,
             (position_data.state.max_ltv_bps as f64).div(10000.0),
-            (position_data.state.liq_threshold as f64).div(10000.0)
+            (position_data.state.liq_threshold as f64).div(10000.0),
         )?;
-        solauto_position.data.position.as_mut().unwrap().setting_params =
-            new_data.setting_params.clone();
+        solauto_position
+            .data
+            .position
+            .as_mut()
+            .unwrap()
+            .setting_params = new_data.setting_params.clone();
     }
 
     // TODO: add cancel DCA instruction
@@ -36,16 +43,15 @@ pub fn update_position<'a>(
             return Err(SolautoError::InvalidDCASettings.into());
         }
 
-        validation_utils::validate_dca_settings(&new_data.active_dca)?;
         position_data.active_dca = new_data.active_dca.clone();
+        validation_utils::validate_dca_settings(&position_data)?;
 
         if let DCADirection::In(_) = new_data.active_dca.as_ref().unwrap().dca_direction {
-            if
-                position_data.protocol_data.debt_mint.is_some() &&
-                position_data.protocol_data.debt_mint.unwrap() !=
-                    *ctx.accounts.debt_mint.unwrap().key
+            if position_data.protocol_data.debt_mint.is_some()
+                && position_data.protocol_data.debt_mint.unwrap()
+                    != *ctx.accounts.debt_mint.unwrap().key
             {
-                msg!("Cannot change debt mint account on an active position");
+                msg!("Cannot change debt token on an active Solauto position that currently has debt");
                 return Err(SolautoError::IncorrectAccounts.into());
             }
             position_data.protocol_data.debt_mint = Some(*ctx.accounts.debt_mint.unwrap().key);
@@ -58,7 +64,7 @@ pub fn update_position<'a>(
                 ctx.accounts.position_debt_ta.unwrap(),
                 ctx.accounts.debt_mint.unwrap(),
                 true,
-                Some(&solauto_position.data.seeds())
+                Some(&solauto_position.data.seeds()),
             )?;
 
             solauto_utils::initiate_dca_in_if_necessary(
@@ -68,7 +74,7 @@ pub fn update_position<'a>(
                 &mut solauto_position,
                 ctx.accounts.position_debt_ta,
                 ctx.accounts.signer,
-                ctx.accounts.signer_debt_ta
+                ctx.accounts.signer_debt_ta,
             )?;
         }
     }

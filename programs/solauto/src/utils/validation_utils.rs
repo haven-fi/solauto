@@ -9,8 +9,9 @@ use crate::{
     types::{
         instruction::SolautoStandardAccounts,
         shared::{
-            DCADirection, DCASettings, DeserializedAccount, LendingPlatform, ReferralStateAccount,
-            SolautoError, SolautoPosition, TokenType,
+            DCADirection, DCASettings, DeserializedAccount, LendingPlatform, PositionData,
+            ReferralStateAccount, SolautoError, SolautoPosition, SolautoSettingsParameters,
+            TokenType,
         },
     },
 };
@@ -127,21 +128,17 @@ pub fn validate_position_settings(
         Err(SolautoError::InvalidPositionSettings.into())
     };
 
-    if settings.repay_from_bps <= settings.repay_to_bps {
-        return invalid_params("repay_from_bps value must be greater than repay_to_bps value");
+    if settings.repay_to_bps < settings.boost_to_bps {
+        return invalid_params("repay_to_bps value must be greater than boost_to_bps value");
     }
-    if settings.boost_from_bps >= settings.boost_to_bps {
-        return invalid_params("boost_from_bps value must be less than boost_to_bps value");
+    if settings.repay_from_bps() > 9800 {
+        return invalid_params("repay_to_bps + repay_gap must be equal-to or below 9800");
     }
-    if settings.repay_from_bps - settings.repay_to_bps < 50 {
-        return invalid_params(
-            "Minimum difference between repay_from_bps and repay_to_bps must be 50 or greater",
-        );
+    if settings.repay_gap < 50 {
+        return invalid_params("repay_gap must be 50 or greater");
     }
-    if settings.boost_to_bps - settings.boost_from_bps < 50 {
-        return invalid_params(
-            "Minimum difference between boost_to_bps to boost_from_bps must be 50 or greater",
-        );
+    if settings.boost_gap < 50 {
+        return invalid_params("boost_gap must be 50 or greater");
     }
 
     let maximum_repay_to_bps = get_maximum_repay_to_bps_param(max_ltv, liq_threshold);
@@ -232,7 +229,6 @@ pub fn validate_referral_accounts(
 }
 
 pub fn validate_lending_protocol_account(
-    signer: &AccountInfo,
     solauto_position: &DeserializedAccount<SolautoPosition>,
     protocol_position: &AccountInfo,
 ) -> ProgramResult {
@@ -312,43 +308,67 @@ pub fn validate_token_account(
     Ok(())
 }
 
-pub fn validate_dca_settings(settings: &Option<DCASettings>) -> ProgramResult {
-    if settings.is_none() {
+pub fn validate_dca_settings(position_data: &PositionData) -> ProgramResult {
+    if position_data.active_dca.is_none() {
         return Ok(());
     }
 
-    let dca_settings = settings.as_ref().unwrap();
+    if position_data.setting_params.is_none() {
+        msg!("Position settings must be set if you are providing DCA settings");
+        return Err(SolautoError::InvalidPositionSettings.into());
+    }
+
+    // TODO: what about DCAing-in when you already have supply in there, and we instead dial-up the boost parameters?
+    // When validating DCA settings ensure if DCAing-in that the current boost to parameter is lower than target boost to parameter
+
+    let dca = position_data.active_dca.as_ref().unwrap();
+    let settings = position_data.setting_params.as_ref().unwrap();
     let invalid_params = |error_msg| {
         msg!(error_msg);
         Err(SolautoError::InvalidDCASettings.into())
     };
 
-    if dca_settings.dca_periods_passed > 0 {
+    if dca.dca_periods_passed > 0 {
         return invalid_params(
             "DCA periods passed cannot be anything other than 0 when first being set",
         );
     }
 
-    if dca_settings.unix_dca_interval < 60 * 10
-        || dca_settings.unix_dca_interval > 60 * 60 * 24 * 30
-    {
+    if dca.unix_dca_interval < 60 * 10 || dca.unix_dca_interval > 60 * 60 * 24 * 30 {
         return invalid_params("DCA interval period must be between 10 minutes and 1 month");
     }
 
-    if dca_settings.target_dca_periods == 0 {
+    if dca.target_dca_periods == 0 {
         return invalid_params("DCA periods must be greater than or equal to 1");
     }
 
-    if dca_settings.dca_direction == DCADirection::Out
-        && dca_settings.dca_risk_aversion_bps.is_some()
-    {
+    if dca.dca_direction == DCADirection::Out && dca.dca_risk_aversion_bps.is_some() {
         return invalid_params("DCA risk aversion BPS parameter is only for when DCAing-in");
     }
 
-    if dca_settings.dca_risk_aversion_bps.is_some()
-        && dca_settings.dca_risk_aversion_bps.unwrap() > 10000
-    {
+    if dca.dca_risk_aversion_bps.is_some() && dca.dca_risk_aversion_bps.unwrap() > 10000 {
         return invalid_params("DCA risk aversion BPS must be between 0 and 10000");
+    }
+
+    if let DCADirection::Out = dca.dca_direction {
+        if settings.boost_to_bps == 0 {
+            return invalid_params("Cannot DCA-out of a position with a boost-to parameter of 0");
+        }
+    }
+
+    if dca.target_boost_to_bps.is_some() {
+        match dca.dca_direction {
+            DCADirection::In(_) => {
+                if dca.target_boost_to_bps.unwrap() <= settings.boost_to_bps {
+                    return invalid_params("When DCAing-in, target boost-to parameter must be greater than current setting's boost to value");
+                }
+            }
+            DCADirection::Out => {
+                if dca.target_boost_to_bps.unwrap() >= settings.boost_to_bps {
+                    return invalid_params("When DCAing-out, target boost-to parameter must be less than current setting's boost to value");
+                }
+            }
+        }
     }
 
     Ok(())

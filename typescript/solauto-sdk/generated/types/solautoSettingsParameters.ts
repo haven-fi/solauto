@@ -9,10 +9,10 @@
 import { Serializer, struct, u16 } from '@metaplex-foundation/umi/serializers';
 
 export type SolautoSettingsParameters = {
-  repayFromBps: number;
-  repayToBps: number;
-  boostFromBps: number;
   boostToBps: number;
+  boostGap: number;
+  repayToBps: number;
+  repayGap: number;
 };
 
 export type SolautoSettingsParametersArgs = SolautoSettingsParameters;
@@ -23,10 +23,10 @@ export function getSolautoSettingsParametersSerializer(): Serializer<
 > {
   return struct<SolautoSettingsParameters>(
     [
-      ['repayFromBps', u16()],
-      ['repayToBps', u16()],
-      ['boostFromBps', u16()],
       ['boostToBps', u16()],
+      ['boostGap', u16()],
+      ['repayToBps', u16()],
+      ['repayGap', u16()],
     ],
     { description: 'SolautoSettingsParameters' }
   ) as Serializer<SolautoSettingsParametersArgs, SolautoSettingsParameters>;
