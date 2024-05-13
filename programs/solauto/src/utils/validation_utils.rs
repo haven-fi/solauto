@@ -264,9 +264,10 @@ pub fn validate_token_accounts(
         signer,
         solauto_position,
         Some(source_supply_ta),
-        TokenType::Supply,
+        Some(TokenType::Supply),
+        None
     )?;
-    validate_token_account(signer, solauto_position, source_debt_ta, TokenType::Debt)?;
+    validate_token_account(signer, solauto_position, source_debt_ta, Some(TokenType::Debt), None)?;
     Ok(())
 }
 
@@ -274,38 +275,35 @@ pub fn validate_token_account(
     signer: &AccountInfo,
     solauto_position: &DeserializedAccount<SolautoPosition>,
     source_ta: Option<&DeserializedAccount<TokenAccount>>,
-    token_type: TokenType,
+    token_type: Option<TokenType>,
+    token_mint: Option<&Pubkey>
 ) -> ProgramResult {
     if source_ta.is_some()
         && &source_ta.as_ref().unwrap().data.owner != signer.key
         && &source_ta.as_ref().unwrap().data.owner != solauto_position.account_info.key
     {
-        msg!("Incorrect {} token account", token_type);
+        msg!("Incorrect token account {}", source_ta.unwrap().account_info.key);
         return Err(SolautoError::IncorrectAccounts.into());
     }
 
     if !solauto_position.data.self_managed {
         let position = solauto_position.data.position.as_ref().unwrap();
 
-        let mint_data_on_position = if token_type == TokenType::Supply {
-            Some(position.protocol_data.supply_mint)
+        let token_mint = if token_type.is_some() {
+            if token_type.unwrap() == TokenType::Supply {
+                Some(&position.protocol_data.supply_mint)
+            } else {
+                position.protocol_data.debt_mint.as_ref()
+            }
         } else {
-            position.protocol_data.debt_mint
+            token_mint
         };
 
-        if source_ta.is_some() && mint_data_on_position.is_none() {
-            msg!(
-                "Provided {} token account when the position does not use this token",
-                token_type
-            );
-            return Err(SolautoError::IncorrectAccounts.into());
-        }
-
         if source_ta.is_some()
-            && mint_data_on_position.is_some()
-            && source_ta.as_ref().unwrap().data.mint != mint_data_on_position.unwrap()
+            && token_mint.is_some()
+            && &source_ta.as_ref().unwrap().data.mint != token_mint.unwrap()
         {
-            msg!("Incorrect {} token account", token_type);
+            msg!("Incorrect token account {}", source_ta.unwrap().account_info.key);
             return Err(SolautoError::IncorrectAccounts.into());
         }
     }

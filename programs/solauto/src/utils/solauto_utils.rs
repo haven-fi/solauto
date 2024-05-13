@@ -10,7 +10,10 @@ use spl_associated_token_account::get_associated_token_address;
 use spl_token::state::Account as TokenAccount;
 use std::ops::{ Add, Mul };
 
-use super::solana_utils::{ account_has_data, init_account, init_ata_if_needed, spl_token_transfer };
+use super::{
+    solana_utils::{ account_has_data, init_account, init_ata_if_needed, spl_token_transfer },
+    validation_utils::validate_token_account,
+};
 use crate::{
     constants::{ REFERRER_FEE_SPLIT, SOLAUTO_FEES_WALLET, WSOL_MINT },
     types::{
@@ -26,6 +29,7 @@ use crate::{
             ReferralStateAccount,
             SolautoError,
             SolautoPosition,
+            TokenType,
             REFERRAL_ACCOUNT_SPACE,
         },
     },
@@ -298,6 +302,26 @@ pub fn cancel_active_dca<'a, 'b>(
     position_debt_ta: Option<&'a AccountInfo<'a>>,
     signer_debt_ta: Option<&'a AccountInfo<'a>>
 ) -> ProgramResult {
+    let mint_key = debt_mint.map_or_else(|| None, |mint| Some(mint.key));
+    
+    let position_ta = DeserializedAccount::<TokenAccount>::unpack(position_debt_ta)?;
+    validate_token_account(
+        signer,
+        solauto_position,
+        position_ta.as_ref(),
+        None,
+        mint_key
+    )?;
+
+    let signer_ta = DeserializedAccount::<TokenAccount>::unpack(position_debt_ta)?;
+    validate_token_account(
+        signer,
+        solauto_position,
+        signer_ta.as_ref(),
+        None,
+        mint_key
+    )?;
+
     let position_account = &mut solauto_position.data;
     let active_dca = position_account.position.as_ref().unwrap().active_dca.as_ref().unwrap();
 
@@ -325,7 +349,7 @@ pub fn cancel_active_dca<'a, 'b>(
                 position_debt_ta.unwrap(),
                 solauto_position.account_info,
                 signer_debt_ta.unwrap(),
-                TokenAccount::unpack(&position_debt_ta.unwrap().data.borrow())?.amount,
+                position_ta.as_ref().unwrap().data.amount,
                 Some(&position_account.seeds())
             )?;
         }
