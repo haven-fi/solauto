@@ -302,26 +302,6 @@ pub fn cancel_active_dca<'a, 'b>(
     position_debt_ta: Option<&'a AccountInfo<'a>>,
     signer_debt_ta: Option<&'a AccountInfo<'a>>
 ) -> ProgramResult {
-    let mint_key = debt_mint.map_or_else(|| None, |mint| Some(mint.key));
-    
-    let position_ta = DeserializedAccount::<TokenAccount>::unpack(position_debt_ta)?;
-    validate_token_account(
-        signer,
-        solauto_position,
-        position_ta.as_ref(),
-        None,
-        mint_key
-    )?;
-
-    let signer_ta = DeserializedAccount::<TokenAccount>::unpack(position_debt_ta)?;
-    validate_token_account(
-        signer,
-        solauto_position,
-        signer_ta.as_ref(),
-        None,
-        mint_key
-    )?;
-
     let position_account = &mut solauto_position.data;
     let active_dca = position_account.position.as_ref().unwrap().active_dca.as_ref().unwrap();
 
@@ -349,7 +329,7 @@ pub fn cancel_active_dca<'a, 'b>(
                 position_debt_ta.unwrap(),
                 solauto_position.account_info,
                 signer_debt_ta.unwrap(),
-                position_ta.as_ref().unwrap().data.amount,
+                TokenAccount::unpack(&position_debt_ta.unwrap().data.borrow())?.amount,
                 Some(&position_account.seeds())
             )?;
         }

@@ -24,6 +24,25 @@ pub fn process_update_position_instruction<'a>(
 
     validation_utils::validate_position(ctx.accounts.signer, &solauto_position, true, true)?;
 
+    let debt_mint_pubkey = ctx.accounts.debt_mint.map_or_else(
+        || None,
+        |mint| Some(mint.key)
+    );
+    validation_utils::validate_token_account(
+        ctx.accounts.signer,
+        &solauto_position,
+        DeserializedAccount::<TokenAccount>::unpack(ctx.accounts.position_debt_ta)?.as_ref(),
+        None,
+        debt_mint_pubkey
+    )?;
+    validation_utils::validate_token_account(
+        ctx.accounts.signer,
+        &solauto_position,
+        DeserializedAccount::<TokenAccount>::unpack(ctx.accounts.signer_debt_ta)?.as_ref(),
+        None,
+        debt_mint_pubkey
+    )?;
+
     update_position::update_position(ctx, solauto_position, new_data)
 }
 
@@ -62,6 +81,25 @@ pub fn process_cancel_dca<'a>(accounts: &'a [AccountInfo<'a>]) -> ProgramResult 
         msg!("No active DCA exists on the provided Solauto position");
         return Err(SolautoError::IncorrectAccounts.into());
     }
+
+    let debt_mint_pubkey = ctx.accounts.debt_mint.map_or_else(
+        || None,
+        |mint| Some(mint.key)
+    );
+    validation_utils::validate_token_account(
+        ctx.accounts.signer,
+        &solauto_position,
+        DeserializedAccount::<TokenAccount>::unpack(ctx.accounts.position_debt_ta)?.as_ref(),
+        None,
+        debt_mint_pubkey
+    )?;
+    validation_utils::validate_token_account(
+        ctx.accounts.signer,
+        &solauto_position,
+        DeserializedAccount::<TokenAccount>::unpack(ctx.accounts.signer_debt_ta)?.as_ref(),
+        None,
+        debt_mint_pubkey
+    )?;
 
     solauto_utils::cancel_active_dca(
         ctx.accounts.signer,
