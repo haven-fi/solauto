@@ -31,6 +31,7 @@ export type ClosePositionInstructionAccounts = {
   signer: Signer;
   systemProgram?: PublicKey | Pda;
   tokenProgram?: PublicKey | Pda;
+  ataProgram?: PublicKey | Pda;
   solautoPosition: PublicKey | Pda;
   signerSupplyLiquidityTa: PublicKey | Pda;
   positionSupplyLiquidityTa: PublicKey | Pda;
@@ -90,28 +91,33 @@ export function closePosition(
       isWritable: false as boolean,
       value: input.tokenProgram ?? null,
     },
-    solautoPosition: {
+    ataProgram: {
       index: 3,
+      isWritable: false as boolean,
+      value: input.ataProgram ?? null,
+    },
+    solautoPosition: {
+      index: 4,
       isWritable: true as boolean,
       value: input.solautoPosition ?? null,
     },
     signerSupplyLiquidityTa: {
-      index: 4,
+      index: 5,
       isWritable: true as boolean,
       value: input.signerSupplyLiquidityTa ?? null,
     },
     positionSupplyLiquidityTa: {
-      index: 5,
+      index: 6,
       isWritable: true as boolean,
       value: input.positionSupplyLiquidityTa ?? null,
     },
     positionSupplyCollateralTa: {
-      index: 6,
+      index: 7,
       isWritable: true as boolean,
       value: input.positionSupplyCollateralTa ?? null,
     },
     positionDebtLiquidityTa: {
-      index: 7,
+      index: 8,
       isWritable: true as boolean,
       value: input.positionDebtLiquidityTa ?? null,
     },
@@ -131,6 +137,13 @@ export function closePosition(
       'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'
     );
     resolvedAccounts.tokenProgram.isWritable = false;
+  }
+  if (!resolvedAccounts.ataProgram.value) {
+    resolvedAccounts.ataProgram.value = context.programs.getPublicKey(
+      'splAssociatedToken',
+      'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'
+    );
+    resolvedAccounts.ataProgram.isWritable = false;
   }
 
   // Accounts in order.

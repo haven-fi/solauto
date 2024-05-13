@@ -265,9 +265,15 @@ pub fn validate_token_accounts(
         solauto_position,
         Some(source_supply_ta),
         Some(TokenType::Supply),
-        None
+        None,
     )?;
-    validate_token_account(signer, solauto_position, source_debt_ta, Some(TokenType::Debt), None)?;
+    validate_token_account(
+        signer,
+        solauto_position,
+        source_debt_ta,
+        Some(TokenType::Debt),
+        None,
+    )?;
     Ok(())
 }
 
@@ -276,13 +282,16 @@ pub fn validate_token_account(
     solauto_position: &DeserializedAccount<SolautoPosition>,
     source_ta: Option<&DeserializedAccount<TokenAccount>>,
     token_type: Option<TokenType>,
-    token_mint: Option<&Pubkey>
+    token_mint: Option<&Pubkey>,
 ) -> ProgramResult {
     if source_ta.is_some()
         && &source_ta.as_ref().unwrap().data.owner != signer.key
         && &source_ta.as_ref().unwrap().data.owner != solauto_position.account_info.key
     {
-        msg!("Incorrect token account {}", source_ta.unwrap().account_info.key);
+        msg!(
+            "Incorrect token account {}",
+            source_ta.unwrap().account_info.key
+        );
         return Err(SolautoError::IncorrectAccounts.into());
     }
 
@@ -303,7 +312,10 @@ pub fn validate_token_account(
             && token_mint.is_some()
             && &source_ta.as_ref().unwrap().data.mint != token_mint.unwrap()
         {
-            msg!("Incorrect token account {}", source_ta.unwrap().account_info.key);
+            msg!(
+                "Incorrect token account {}",
+                source_ta.unwrap().account_info.key
+            );
             return Err(SolautoError::IncorrectAccounts.into());
         }
     }

@@ -3,7 +3,11 @@ use solana_program::{
 };
 use spl_token::state::Account as TokenAccount;
 
-use super::{instruction::SolautoStandardAccounts, shared::DeserializedAccount};
+use super::{
+    instruction::SolautoStandardAccounts,
+    obligation_position::LendingProtocolObligationPosition,
+    shared::{DeserializedAccount, TokenBalanceAmount},
+};
 
 pub struct LendingProtocolTokenAccounts<'a> {
     pub mint: Option<&'a AccountInfo<'a>>,
@@ -44,13 +48,15 @@ pub trait LendingProtocolClient<'a> {
     ) -> ProgramResult;
     fn withdraw<'b>(
         &self,
-        base_unit_amount: u64,
+        amount: TokenBalanceAmount,
         destination: &'a AccountInfo<'a>,
         std_accounts: &'b SolautoStandardAccounts<'a>,
+        obligation_position: &LendingProtocolObligationPosition,
     ) -> ProgramResult;
     fn repay<'b>(
         &self,
-        base_unit_amount: u64,
+        amount: TokenBalanceAmount,
         std_accounts: &'b SolautoStandardAccounts<'a>,
+        obligation_position: &LendingProtocolObligationPosition,
     ) -> ProgramResult;
 }

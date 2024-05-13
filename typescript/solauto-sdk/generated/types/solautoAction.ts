@@ -16,22 +16,22 @@ import {
   u64,
 } from '@metaplex-foundation/umi/serializers';
 import {
-  WithdrawParams,
-  WithdrawParamsArgs,
-  getWithdrawParamsSerializer,
+  TokenBalanceAmount,
+  TokenBalanceAmountArgs,
+  getTokenBalanceAmountSerializer,
 } from '.';
 
 export type SolautoAction =
   | { __kind: 'Deposit'; fields: [bigint] }
   | { __kind: 'Borrow'; fields: [bigint] }
-  | { __kind: 'Repay'; fields: [bigint] }
-  | { __kind: 'Withdraw'; fields: [WithdrawParams] };
+  | { __kind: 'Repay'; fields: [TokenBalanceAmount] }
+  | { __kind: 'Withdraw'; fields: [TokenBalanceAmount] };
 
 export type SolautoActionArgs =
   | { __kind: 'Deposit'; fields: [number | bigint] }
   | { __kind: 'Borrow'; fields: [number | bigint] }
-  | { __kind: 'Repay'; fields: [number | bigint] }
-  | { __kind: 'Withdraw'; fields: [WithdrawParamsArgs] };
+  | { __kind: 'Repay'; fields: [TokenBalanceAmountArgs] }
+  | { __kind: 'Withdraw'; fields: [TokenBalanceAmountArgs] };
 
 export function getSolautoActionSerializer(): Serializer<
   SolautoActionArgs,
@@ -54,13 +54,13 @@ export function getSolautoActionSerializer(): Serializer<
       [
         'Repay',
         struct<GetDataEnumKindContent<SolautoAction, 'Repay'>>([
-          ['fields', tuple([u64()])],
+          ['fields', tuple([getTokenBalanceAmountSerializer()])],
         ]),
       ],
       [
         'Withdraw',
         struct<GetDataEnumKindContent<SolautoAction, 'Withdraw'>>([
-          ['fields', tuple([getWithdrawParamsSerializer()])],
+          ['fields', tuple([getTokenBalanceAmountSerializer()])],
         ]),
       ],
     ],

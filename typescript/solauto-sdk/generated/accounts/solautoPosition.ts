@@ -44,6 +44,7 @@ export type SolautoPositionAccountData = {
   authority: PublicKey;
   selfManaged: boolean;
   position: Option<PositionData>;
+  padding: Array<number>;
 };
 
 export type SolautoPositionAccountDataArgs = {
@@ -52,6 +53,7 @@ export type SolautoPositionAccountDataArgs = {
   authority: PublicKey;
   selfManaged: boolean;
   position: OptionOrNullable<PositionDataArgs>;
+  padding: Array<number>;
 };
 
 export function getSolautoPositionAccountDataSerializer(): Serializer<
@@ -65,6 +67,7 @@ export function getSolautoPositionAccountDataSerializer(): Serializer<
       ['authority', publicKeySerializer()],
       ['selfManaged', bool()],
       ['position', option(getPositionDataSerializer())],
+      ['padding', array(u8(), { size: 128 })],
     ],
     { description: 'SolautoPositionAccountData' }
   ) as Serializer<SolautoPositionAccountDataArgs, SolautoPositionAccountData>;
@@ -149,12 +152,14 @@ export function getSolautoPositionGpaBuilder(
       authority: PublicKey;
       selfManaged: boolean;
       position: OptionOrNullable<PositionDataArgs>;
+      padding: Array<number>;
     }>({
       positionId: [0, u8()],
       positionIdArr: [1, array(u8(), { size: 1 })],
       authority: [2, publicKeySerializer()],
       selfManaged: [34, bool()],
       position: [35, option(getPositionDataSerializer())],
+      padding: [null, array(u8(), { size: 128 })],
     })
     .deserializeUsing<SolautoPosition>((account) =>
       deserializeSolautoPosition(account)

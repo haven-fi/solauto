@@ -15,5 +15,5 @@ export * from './positionState';
 export * from './rebalanceArgs';
 export * from './solautoAction';
 export * from './solautoSettingsParameters';
+export * from './tokenBalanceAmount';
 export * from './updatePositionData';
-export * from './withdrawParams';

@@ -19,8 +19,10 @@ use crate::{
             SolautoStandardAccounts,
         },
         lending_protocol::{LendingProtocolClient, LendingProtocolTokenAccounts},
-        obligation_position::{LendingProtocolObligationPosition, PositionTokenUsage},
-        shared::{DeserializedAccount, LendingPlatform, SolautoError, SolautoPosition},
+        obligation_position::{self, LendingProtocolObligationPosition, PositionTokenUsage},
+        shared::{
+            DeserializedAccount, LendingPlatform, SolautoError, SolautoPosition, TokenBalanceAmount,
+        },
     },
     utils::{math_utils, solana_utils::*, solauto_utils::*, validation_utils::*},
 };
@@ -445,12 +447,19 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
 
     fn withdraw<'b>(
         &self,
-        base_unit_amount: u64,
+        amount: TokenBalanceAmount,
         destination: &'a AccountInfo<'a>,
         std_accounts: &'b SolautoStandardAccounts<'a>,
+        _obligation_position: &LendingProtocolObligationPosition,
     ) -> ProgramResult {
         let authority = get_owner(&std_accounts.solauto_position, self.signer);
         let supply = self.supply.as_ref().unwrap();
+
+        let base_unit_amount = if let TokenBalanceAmount::Some(num) = amount {
+            num
+        } else {
+            0
+        };
 
         let cpi = LendingAccountWithdrawCpi::new(
             self.program,
@@ -466,7 +475,7 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
             },
             LendingAccountWithdrawInstructionArgs {
                 amount: base_unit_amount,
-                withdraw_all: Some(false), // TODO
+                withdraw_all: Some(amount == TokenBalanceAmount::All),
             },
         );
 
@@ -535,11 +544,18 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
 
     fn repay<'b>(
         &self,
-        base_unit_amount: u64,
+        amount: TokenBalanceAmount,
         std_accounts: &'b SolautoStandardAccounts<'a>,
+        _obligation_position: &LendingProtocolObligationPosition,
     ) -> ProgramResult {
         let authority = get_owner(&std_accounts.solauto_position, self.signer);
         let debt = self.debt.as_ref().unwrap();
+
+        let base_unit_amount = if let TokenBalanceAmount::Some(num) = amount {
+            num
+        } else {
+            0
+        };
 
         let cpi = LendingAccountRepayCpi::new(
             self.program,
@@ -554,7 +570,7 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
             },
             LendingAccountRepayInstructionArgs {
                 amount: base_unit_amount,
-                repay_all: Some(false), // TODO: support this on our side for withdraw and repay
+                repay_all: Some(amount == TokenBalanceAmount::All),
             },
         );
 

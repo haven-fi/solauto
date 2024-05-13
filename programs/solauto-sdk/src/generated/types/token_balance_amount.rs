@@ -10,7 +10,7 @@ use borsh::BorshSerialize;
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub enum WithdrawParams {
+pub enum TokenBalanceAmount {
+    Some(u64),
     All,
-    Partial(u64),
 }

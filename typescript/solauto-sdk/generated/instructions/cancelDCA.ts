@@ -31,7 +31,11 @@ export type CancelDCAInstructionAccounts = {
   signer: Signer;
   systemProgram?: PublicKey | Pda;
   tokenProgram?: PublicKey | Pda;
+  ataProgram?: PublicKey | Pda;
   solautoPosition: PublicKey | Pda;
+  debtMint?: PublicKey | Pda;
+  positionDebtTa?: PublicKey | Pda;
+  signerDebtTa?: PublicKey | Pda;
 };
 
 // Data.
@@ -83,10 +87,30 @@ export function cancelDCA(
       isWritable: false as boolean,
       value: input.tokenProgram ?? null,
     },
-    solautoPosition: {
+    ataProgram: {
       index: 3,
+      isWritable: false as boolean,
+      value: input.ataProgram ?? null,
+    },
+    solautoPosition: {
+      index: 4,
       isWritable: true as boolean,
       value: input.solautoPosition ?? null,
+    },
+    debtMint: {
+      index: 5,
+      isWritable: true as boolean,
+      value: input.debtMint ?? null,
+    },
+    positionDebtTa: {
+      index: 6,
+      isWritable: true as boolean,
+      value: input.positionDebtTa ?? null,
+    },
+    signerDebtTa: {
+      index: 7,
+      isWritable: true as boolean,
+      value: input.signerDebtTa ?? null,
     },
   } satisfies ResolvedAccountsWithIndices;
 
@@ -104,6 +128,13 @@ export function cancelDCA(
       'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'
     );
     resolvedAccounts.tokenProgram.isWritable = false;
+  }
+  if (!resolvedAccounts.ataProgram.value) {
+    resolvedAccounts.ataProgram.value = context.programs.getPublicKey(
+      'splAssociatedToken',
+      'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'
+    );
+    resolvedAccounts.ataProgram.isWritable = false;
   }
 
   // Accounts in order.

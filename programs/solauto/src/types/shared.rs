@@ -39,6 +39,12 @@ pub enum DCADirection {
     Out,
 }
 
+#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, PartialEq)]
+pub enum TokenBalanceAmount {
+    Some(u64),
+    All,
+}
+
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType)]
 pub struct DCASettings {
     /// The unix timestamp (in seconds) start date of DCA
@@ -113,7 +119,8 @@ pub struct PositionData {
     pub debt_ta_balance: u64,
 }
 
-pub const POSITION_ACCOUNT_SPACE: usize = (ACCOUNT_STORAGE_OVERHEAD as usize) + 500; // TODO fix me
+// pub const POSITION_ACCOUNT_SPACE: usize = (ACCOUNT_STORAGE_OVERHEAD as usize) + 243;
+pub const POSITION_ACCOUNT_SPACE: usize = (ACCOUNT_STORAGE_OVERHEAD as usize) + 371;
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankAccount)]
 pub struct SolautoPosition {
     pub position_id: u8,
@@ -121,6 +128,7 @@ pub struct SolautoPosition {
     pub authority: Pubkey,
     pub self_managed: bool,
     pub position: Option<PositionData>,
+    _padding: [u8; 128],
 }
 
 impl SolautoPosition {
@@ -131,6 +139,7 @@ impl SolautoPosition {
             authority,
             self_managed: position_id == 0,
             position,
+            _padding: [0; 128],
         }
     }
     pub fn seeds<'a, 'b>(&'a self) -> Vec<&'a [u8]> {

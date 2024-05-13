@@ -58,8 +58,8 @@ pub fn process_update_referral_states<'a>(
         ix_utils::update_data(&mut referred_by_state)?;
     }
 
-    // TODO for solauto manager:
-    // solauto manager must have a idempotent create token account instruction (only under condition of a first time boost rebalance for every unique referred_by_state and supply token
+    // TODO for client:
+    // client must include a idempotent create token account instruction (only under condition of a first time boost rebalance for every unique referred_by_state and supply token
 
     validation_utils::validate_referral_accounts(
         &ctx.accounts.signer.key,

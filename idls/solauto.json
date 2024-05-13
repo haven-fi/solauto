@@ -486,6 +486,11 @@
           "isSigner": false
         },
         {
+          "name": "ataProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
           "name": "solautoPosition",
           "isMut": true,
           "isSigner": false
@@ -538,9 +543,32 @@
           "isSigner": false
         },
         {
+          "name": "ataProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
           "name": "solautoPosition",
           "isMut": true,
           "isSigner": false
+        },
+        {
+          "name": "debtMint",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "positionDebtTa",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "signerDebtTa",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
         }
       ],
       "args": [],
@@ -1284,6 +1312,15 @@
                 "defined": "PositionData"
               }
             }
+          },
+          {
+            "name": "padding",
+            "type": {
+              "array": [
+                "u8",
+                128
+              ]
+            }
           }
         ]
       }
@@ -1574,32 +1611,17 @@
           {
             "name": "Repay",
             "fields": [
-              "u64"
+              {
+                "defined": "TokenBalanceAmount"
+              }
             ]
           },
           {
             "name": "Withdraw",
             "fields": [
               {
-                "defined": "WithdrawParams"
+                "defined": "TokenBalanceAmount"
               }
-            ]
-          }
-        ]
-      }
-    },
-    {
-      "name": "WithdrawParams",
-      "type": {
-        "kind": "enum",
-        "variants": [
-          {
-            "name": "All"
-          },
-          {
-            "name": "Partial",
-            "fields": [
-              "u64"
             ]
           }
         ]
@@ -1635,6 +1657,23 @@
           },
           {
             "name": "Out"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TokenBalanceAmount",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Some",
+            "fields": [
+              "u64"
+            ]
+          },
+          {
+            "name": "All"
           }
         ]
       }

@@ -5,7 +5,7 @@
 //! [https://github.com/metaplex-foundation/kinobi]
 //!
 
-use crate::generated::types::WithdrawParams;
+use crate::generated::types::TokenBalanceAmount;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 
@@ -14,6 +14,6 @@ use borsh::BorshSerialize;
 pub enum SolautoAction {
     Deposit(u64),
     Borrow(u64),
-    Repay(u64),
-    Withdraw(WithdrawParams),
+    Repay(TokenBalanceAmount),
+    Withdraw(TokenBalanceAmount),
 }

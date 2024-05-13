@@ -22,6 +22,8 @@ pub struct SolautoPosition {
     pub authority: Pubkey,
     pub self_managed: bool,
     pub position: Option<PositionData>,
+    #[cfg_attr(feature = "serde", serde(with = "serde_with::As::<serde_with::Bytes>"))]
+    pub padding: [u8; 128],
 }
 
 impl SolautoPosition {

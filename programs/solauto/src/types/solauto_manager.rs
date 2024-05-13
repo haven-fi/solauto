@@ -8,10 +8,13 @@ use std::{
 };
 
 use super::{
-    instruction::{RebalanceArgs, SolautoAction, SolautoStandardAccounts, WithdrawParams},
+    instruction::{RebalanceArgs, SolautoAction, SolautoStandardAccounts},
     lending_protocol::{LendingProtocolClient, LendingProtocolTokenAccounts},
     obligation_position::LendingProtocolObligationPosition,
-    shared::{DeserializedAccount, SolautoError, SolautoPosition, SolautoRebalanceStep},
+    shared::{
+        DeserializedAccount, SolautoError, SolautoPosition, SolautoRebalanceStep,
+        TokenBalanceAmount,
+    },
 };
 use crate::utils::*;
 
@@ -77,31 +80,20 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
                     self.accounts.debt.as_ref().unwrap().source_ta.account_info,
                 )?;
             }
-            SolautoAction::Repay(base_unit_amount) => {
-                self.repay(base_unit_amount)?;
+            SolautoAction::Repay(amount) => {
+                self.repay(amount)?;
             }
-            SolautoAction::Withdraw(params) => match params {
-                WithdrawParams::All => {
-                    self.withdraw(
-                        self.obligation_position.net_worth_base_amount(),
-                        self.accounts
-                            .supply
-                            .as_ref()
-                            .unwrap()
-                            .source_ta
-                            .account_info,
-                    )?;
-                }
-                WithdrawParams::Partial(base_unit_amount) => self.withdraw(
-                    base_unit_amount,
+            SolautoAction::Withdraw(amount) => {
+                self.withdraw(
+                    amount,
                     self.accounts
                         .supply
                         .as_ref()
                         .unwrap()
                         .source_ta
                         .account_info,
-                )?,
-            },
+                )?;
+            }
         }
 
         if !self.std_accounts.solauto_position.data.self_managed {
@@ -141,17 +133,46 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
 
     fn withdraw(
         &mut self,
-        base_unit_amount: u64,
+        amount: TokenBalanceAmount,
         destination: &'a AccountInfo<'a>,
     ) -> ProgramResult {
-        self.client
-            .withdraw(base_unit_amount, destination, &self.std_accounts)?;
+        let base_unit_amount = match amount {
+            TokenBalanceAmount::All => {
+                self.obligation_position
+                    .supply
+                    .as_ref()
+                    .unwrap()
+                    .amount_used
+                    .base_unit
+            }
+            TokenBalanceAmount::Some(num) => num,
+        };
+
+        self.client.withdraw(
+            amount,
+            destination,
+            &self.std_accounts,
+            &self.obligation_position,
+        )?;
         self.obligation_position
             .supply_lent_update((base_unit_amount as i64) * -1)
     }
 
-    fn repay(&mut self, base_unit_amount: u64) -> ProgramResult {
-        self.client.repay(base_unit_amount, &self.std_accounts)?;
+    fn repay(&mut self, amount: TokenBalanceAmount) -> ProgramResult {
+        let base_unit_amount = match amount {
+            TokenBalanceAmount::All => {
+                self.obligation_position
+                    .debt
+                    .as_ref()
+                    .unwrap()
+                    .amount_used
+                    .base_unit
+            }
+            TokenBalanceAmount::Some(num) => num,
+        };
+
+        self.client
+            .repay(amount, &self.std_accounts, &self.obligation_position)?;
         self.obligation_position
             .debt_borrowed_update((base_unit_amount as i64) * -1)
     }
@@ -170,7 +191,7 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
         {
             self.finish_rebalance()
         } else {
-            // TODO
+            // TODO (Kamino/Solend)
             msg!("Rebalance currently unsupported for this");
             return Err(SolautoError::InvalidRebalanceCondition.into());
         }
@@ -240,7 +261,7 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
             )
         } else {
             self.withdraw(
-                min(
+                TokenBalanceAmount::Some(min(
                     base_unit_amount,
                     ((self
                         .obligation_position
@@ -250,7 +271,7 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
                         .amount_can_be_used
                         .base_unit as f64)
                         * 0.9) as u64,
-                ),
+                )),
                 self.accounts.intermediary_ta.unwrap(),
             )
         }
@@ -280,7 +301,7 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
             let amount_after_fees = self.payout_fees(available_supply_balance)?;
             self.deposit(amount_after_fees)?;
         } else if available_debt_balance > 0 {
-            self.repay(available_debt_balance)?;
+            self.repay(TokenBalanceAmount::Some(available_debt_balance))?;
         } else {
             msg!("Missing required position liquidity to rebalance position");
             return Err(SolautoError::UnableToReposition.into());

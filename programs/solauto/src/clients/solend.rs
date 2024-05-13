@@ -20,7 +20,9 @@ use crate::{
         },
         lending_protocol::*,
         obligation_position::*,
-        shared::{DeserializedAccount, LendingPlatform, SolautoError, SolautoPosition},
+        shared::{
+            DeserializedAccount, LendingPlatform, SolautoError, SolautoPosition, TokenBalanceAmount,
+        },
     },
     utils::{ix_utils::*, solana_utils::*, solauto_utils::*, validation_utils::*},
 };
@@ -430,9 +432,10 @@ impl<'a> LendingProtocolClient<'a> for SolendClient<'a> {
 
     fn withdraw<'b>(
         &self,
-        base_unit_amount: u64,
+        amount: TokenBalanceAmount,
         destination: &'a AccountInfo<'a>,
         std_accounts: &'b SolautoStandardAccounts<'a>,
+        obligation_position: &LendingProtocolObligationPosition,
     ) -> ProgramResult {
         // TODO
         Ok(())
@@ -482,8 +485,9 @@ impl<'a> LendingProtocolClient<'a> for SolendClient<'a> {
 
     fn repay<'b>(
         &self,
-        base_unit_amount: u64,
+        amount: TokenBalanceAmount,
         std_accounts: &'b SolautoStandardAccounts<'a>,
+        obligation_position: &LendingProtocolObligationPosition,
     ) -> ProgramResult {
         // TODO
         Ok(())

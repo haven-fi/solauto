@@ -13,9 +13,23 @@ use crate::{
 pub fn close_position<'a>(
     ctx: Context<ClosePositionAccounts<'a>>,
     solauto_position: DeserializedAccount<'a, SolautoPosition>,
+    position_supply_liquidity_ta: DeserializedAccount<'a, TokenAccount>,
     position_debt_liquidity_ta: Option<DeserializedAccount<'a, TokenAccount>>,
 ) -> ProgramResult {
     let solauto_position_seeds = &solauto_position.data.seeds();
+
+    if position_supply_liquidity_ta.data.amount > 0
+        && position_supply_liquidity_ta.data.mint != WSOL_MINT
+    {
+        solana_utils::spl_token_transfer(
+            ctx.accounts.token_program,
+            ctx.accounts.position_supply_liquidity_ta,
+            solauto_position.account_info,
+            ctx.accounts.signer_supply_liquidity_ta,
+            position_supply_liquidity_ta.data.amount,
+            Some(solauto_position_seeds),
+        )?;
+    }
 
     solana_utils::close_token_account(
         ctx.accounts.token_program,

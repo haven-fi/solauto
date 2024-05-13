@@ -8,6 +8,7 @@ use super::shared::*;
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankContext, ShankInstruction)]
 #[rustfmt::skip]
 pub enum Instruction {
+    /// Create or update referral state data
     #[account(signer, name = "signer")]
     #[account(name = "system_program")]
     #[account(name = "rent")]
@@ -109,6 +110,7 @@ pub enum Instruction {
     #[account(mut, optional, name = "position_debt_liquidity_ta")]
     ClosePosition,
 
+    /// Cancel an active DCA on a Solauto position
     #[account(signer, name = "signer")]
     #[account(name = "system_program")]
     #[account(name = "token_program")]
@@ -278,16 +280,9 @@ pub enum SolautoAction {
     /// Provide the base unit amount to borrow
     Borrow(u64),
     /// Provide the base unit amount to repay
-    Repay(u64),
+    Repay(TokenBalanceAmount),
     /// Provide the amount to withdraw. Can withdraw partial or all
-    Withdraw(WithdrawParams),
-}
-
-#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, PartialEq)]
-pub enum WithdrawParams {
-    All,
-    /// Provide the amount to withdraw in the base unit
-    Partial(u64),
+    Withdraw(TokenBalanceAmount),
 }
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug)]
