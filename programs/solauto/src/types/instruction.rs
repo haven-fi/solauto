@@ -101,6 +101,7 @@ pub enum Instruction {
     #[account(signer, name = "signer")]
     #[account(name = "system_program")]
     #[account(name = "token_program")]
+    #[account(name = "ata_program")]
     #[account(mut, name = "solauto_position")]
     #[account(mut, name = "signer_supply_liquidity_ta")]
     #[account(mut, name = "position_supply_liquidity_ta")]
@@ -111,7 +112,11 @@ pub enum Instruction {
     #[account(signer, name = "signer")]
     #[account(name = "system_program")]
     #[account(name = "token_program")]
+    #[account(name = "ata_program")]
     #[account(mut, name = "solauto_position")]
+    #[account(mut, optional, name = "debt_mint")]
+    #[account(mut, optional, name = "position_debt_ta")]
+    #[account(mut, optional, name = "signer_debt_ta")]
     CancelDCA,
 
     /// Refresh Marginfi accounts & position data

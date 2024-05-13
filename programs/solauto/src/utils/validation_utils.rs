@@ -323,9 +323,6 @@ pub fn validate_dca_settings(position_data: &PositionData) -> ProgramResult {
         return Err(SolautoError::InvalidPositionSettings.into());
     }
 
-    // TODO: what about DCAing-in when you already have supply in there, and we instead dial-up the boost parameters?
-    // When validating DCA settings ensure if DCAing-in that the current boost to parameter is lower than target boost to parameter
-
     let dca = position_data.active_dca.as_ref().unwrap();
     let settings = position_data.setting_params.as_ref().unwrap();
     let invalid_params = |error_msg| {
