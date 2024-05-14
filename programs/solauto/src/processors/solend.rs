@@ -1,7 +1,9 @@
 use solana_program::{account_info::AccountInfo, entrypoint::ProgramResult, msg};
+use solend_sdk::state::Reserve;
 use spl_token::state::Account as TokenAccount;
 
 use crate::{
+    clients::solend::SolendClient,
     instructions::*,
     types::{
         instruction::{
@@ -25,6 +27,11 @@ pub fn process_solend_open_position_instruction<'a>(
 
     let ctx = SolendOpenPositionAccounts::context(accounts)?;
 
+    let supply_reserve =
+        DeserializedAccount::<Reserve>::unpack(Some(ctx.accounts.supply_reserve))?.unwrap();
+    let (max_ltv, liq_threshold) =
+        SolendClient::get_max_ltv_and_liq_threshold(&supply_reserve.data);
+
     let solauto_position = solauto_utils::create_new_solauto_position(
         ctx.accounts.signer,
         ctx.accounts.solauto_position,
@@ -33,7 +40,10 @@ pub fn process_solend_open_position_instruction<'a>(
         ctx.accounts.supply_liquidity_mint,
         ctx.accounts.debt_liquidity_mint,
         ctx.accounts.obligation,
+        Some(max_ltv),
+        Some(liq_threshold),
     )?;
+    validation_utils::validate_position_settings(&solauto_position)?;
     if solauto_position.data.position.is_some() {
         validation_utils::validate_dca_settings(solauto_position.data.position.as_ref().unwrap())?;
     }

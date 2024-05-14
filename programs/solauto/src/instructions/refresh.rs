@@ -10,7 +10,7 @@ use crate::{
     utils::ix_utils,
 };
 
-// TODO: on client side, avoid adding a refresh ix on a rebalance transaction if position has been last updated in the last 1 day
+// TODO: for client: avoid adding a refresh ix on a rebalance transaction if position has been last updated in the last 1 day
 pub fn marginfi_refresh_accounts(
     ctx: Context<MarginfiRefreshDataAccounts>,
     mut solauto_position: Option<DeserializedAccount<SolautoPosition>>,

@@ -65,7 +65,7 @@ mod general {
 
         let err = data.general
             .execute_instructions(
-                &[
+                vec![
                     data
                         .open_position_ix(Some(data.general.default_setting_params.clone()), None)
                         // Pass incorrect solauto position for the given signer
@@ -90,7 +90,7 @@ mod general {
 
         let err = data.general
             .execute_instructions(
-                &[
+                vec![
                     data
                         .open_position_ix(Some(data.general.default_setting_params.clone()), None)
                         .solauto_fees_wallet(Pubkey::default())
@@ -108,7 +108,7 @@ mod general {
         );
         let err = data.general
             .execute_instructions(
-                &[
+                vec![
                     data
                         .open_position_ix(Some(data.general.default_setting_params.clone()), None)
                         .solauto_fees_supply_ta(fake_solauto_fees_supply_ta)
@@ -126,7 +126,7 @@ mod general {
         );
         let err = data.general
             .execute_instructions(
-                &[
+                vec![
                     data
                         .open_position_ix(Some(data.general.default_setting_params.clone()), None)
                         .solauto_fees_supply_ta(fake_solauto_fees_supply_ta)

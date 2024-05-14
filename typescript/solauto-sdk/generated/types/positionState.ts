@@ -6,8 +6,10 @@
  * @see https://github.com/metaplex-foundation/kinobi
  */
 
+import { Option, OptionOrNullable } from '@metaplex-foundation/umi';
 import {
   Serializer,
+  option,
   struct,
   u16,
   u64,
@@ -19,8 +21,8 @@ export type PositionState = {
   baseAmountLiquidityNetWorth: bigint;
   baseAmountSupplied: bigint;
   baseAmountBorrowed: bigint;
-  maxLtvBps: bigint;
-  liqThreshold: bigint;
+  maxLtvBps: Option<number>;
+  liqThresholdBps: number;
   lastUpdated: bigint;
 };
 
@@ -30,8 +32,8 @@ export type PositionStateArgs = {
   baseAmountLiquidityNetWorth: number | bigint;
   baseAmountSupplied: number | bigint;
   baseAmountBorrowed: number | bigint;
-  maxLtvBps: number | bigint;
-  liqThreshold: number | bigint;
+  maxLtvBps: OptionOrNullable<number>;
+  liqThresholdBps: number;
   lastUpdated: number | bigint;
 };
 
@@ -46,8 +48,8 @@ export function getPositionStateSerializer(): Serializer<
       ['baseAmountLiquidityNetWorth', u64()],
       ['baseAmountSupplied', u64()],
       ['baseAmountBorrowed', u64()],
-      ['maxLtvBps', u64()],
-      ['liqThreshold', u64()],
+      ['maxLtvBps', option(u16())],
+      ['liqThresholdBps', u16()],
       ['lastUpdated', u64()],
     ],
     { description: 'PositionState' }

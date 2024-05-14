@@ -5,7 +5,6 @@ use solana_program::{
     program_error::ProgramError,
     program_pack::{IsInitialized, Pack},
     pubkey::Pubkey,
-    rent::ACCOUNT_STORAGE_OVERHEAD,
 };
 use std::{cmp::min, fmt, ops::Add};
 use thiserror::Error;
@@ -32,17 +31,17 @@ impl fmt::Display for TokenType {
     }
 }
 
+#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, PartialEq)]
+pub enum TokenBalanceAmount {
+    Some(u64),
+    All,
+}
+
 #[derive(BorshDeserialize, BorshSerialize, Clone, Copy, Debug, ShankType, PartialEq)]
 pub enum DCADirection {
     /// Base unit amount of debt to DCA-in with
     In(u64),
     Out,
-}
-
-#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, PartialEq)]
-pub enum TokenBalanceAmount {
-    Some(u64),
-    All,
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType)]
@@ -104,8 +103,8 @@ pub struct PositionState {
     pub base_amount_liquidity_net_worth: u64,
     pub base_amount_supplied: u64,
     pub base_amount_borrowed: u64,
-    pub max_ltv_bps: u64,
-    pub liq_threshold: u64,
+    pub max_ltv_bps: Option<u16>,
+    pub liq_threshold_bps: u16,
     pub last_updated: u64,
 }
 
@@ -119,8 +118,6 @@ pub struct PositionData {
     pub debt_ta_balance: u64,
 }
 
-// pub const POSITION_ACCOUNT_SPACE: usize = (ACCOUNT_STORAGE_OVERHEAD as usize) + 243;
-pub const POSITION_ACCOUNT_SPACE: usize = (ACCOUNT_STORAGE_OVERHEAD as usize) + 371;
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankAccount)]
 pub struct SolautoPosition {
     pub position_id: u8,
@@ -132,6 +129,7 @@ pub struct SolautoPosition {
 }
 
 impl SolautoPosition {
+    pub const LEN: usize = 357;
     pub fn new(position_id: u8, authority: Pubkey, position: Option<PositionData>) -> Self {
         Self {
             position_id,
@@ -147,12 +145,28 @@ impl SolautoPosition {
     }
 }
 
-pub const REFERRAL_ACCOUNT_SPACE: usize = (ACCOUNT_STORAGE_OVERHEAD as usize) + 97; // 32 + 33 + 32
 #[derive(ShankAccount, BorshDeserialize, BorshSerialize, Clone, Debug)]
 pub struct ReferralStateAccount {
     pub authority: Pubkey,
     pub referred_by_state: Option<Pubkey>,
     pub dest_fees_mint: Pubkey,
+    _padding: [u8; 128],
+}
+
+impl ReferralStateAccount {
+    pub const LEN: usize = 225;
+    pub fn new(
+        authority: Pubkey,
+        referred_by_state: Option<Pubkey>,
+        dest_fees_mint: Pubkey,
+    ) -> Self {
+        Self {
+            authority,
+            referred_by_state,
+            dest_fees_mint,
+            _padding: [0; 128],
+        }
+    }
 }
 
 #[derive(PartialEq)]

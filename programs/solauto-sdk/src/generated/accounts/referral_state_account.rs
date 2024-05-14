@@ -23,6 +23,8 @@ pub struct ReferralStateAccount {
         serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
     )]
     pub dest_fees_mint: Pubkey,
+    #[cfg_attr(feature = "serde", serde(with = "serde_with::As::<serde_with::Bytes>"))]
+    pub padding: [u8; 128],
 }
 
 impl ReferralStateAccount {

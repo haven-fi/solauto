@@ -246,12 +246,19 @@ fn get_std_target_liq_utilization_rate(
                 .setting_params
                 .as_ref()
                 .unwrap();
+
             if current_liq_utilization_rate_bps > setting_params.repay_from_bps() {
-                let maximum_repay_to_bps = math_utils::get_maximum_repay_to_bps_param(
-                    obligation_position.max_ltv,
-                    obligation_position.liq_threshold,
-                );
-                Ok(min(setting_params.repay_to_bps, maximum_repay_to_bps))
+                if obligation_position.max_ltv.is_some() {
+                    Ok(min(
+                        setting_params.repay_to_bps,
+                        math_utils::get_maximum_repay_to_bps_param(
+                            obligation_position.max_ltv.unwrap(),
+                            obligation_position.liq_threshold,
+                        ),
+                    ))
+                } else {
+                    Ok(setting_params.repay_to_bps)
+                }
             } else if current_liq_utilization_rate_bps < setting_params.boost_from_bps() {
                 Ok(setting_params.boost_to_bps)
             } else {

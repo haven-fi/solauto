@@ -26,7 +26,7 @@ mod update_referral_states {
 
         data.general
             .execute_instructions(
-                &[data.general.update_referral_states_ix().instruction()],
+                vec![data.general.update_referral_states_ix().instruction()],
                 None
             ).await
             .unwrap();
@@ -45,7 +45,7 @@ mod update_referral_states {
 
         data.general
             .execute_instructions(
-                &[
+                vec![
                     data.general
                         .update_referral_states_ix()
                         .referred_by_authority(Some(referred_by_authority))
@@ -77,7 +77,7 @@ mod update_referral_states {
 
         let err = data.general
             .execute_instructions(
-                &[
+                vec![
                     data.general
                         .update_referral_states_ix()
                         .referred_by_authority(Some(referred_by_authority2))
@@ -116,7 +116,7 @@ mod update_referral_states {
 
         let err = data.general
             .execute_instructions(
-                &[
+                vec![
                     data.general
                         .update_referral_states_ix()
                         .signer_referral_state(Pubkey::default())

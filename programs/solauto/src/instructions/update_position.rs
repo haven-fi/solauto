@@ -1,5 +1,4 @@
 use solana_program::{entrypoint::ProgramResult, msg};
-use std::ops::Div;
 
 use crate::{
     types::{
@@ -35,11 +34,7 @@ pub fn update_position<'a>(
             return Err(SolautoError::InvalidPositionSettings.into());
         }
 
-        validation_utils::validate_position_settings(
-            &solauto_position,
-            (position_data.state.max_ltv_bps as f64).div(10000.0),
-            (position_data.state.liq_threshold as f64).div(10000.0),
-        )?;
+        validation_utils::validate_position_settings(&solauto_position)?;
         solauto_position
             .data
             .position

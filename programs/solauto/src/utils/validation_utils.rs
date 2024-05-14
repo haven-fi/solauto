@@ -1,3 +1,5 @@
+use std::ops::Div;
+
 use solana_program::{
     account_info::AccountInfo, entrypoint::ProgramResult, msg, program_error::ProgramError,
     pubkey::Pubkey, sysvar::instructions::ID as ixs_sysvar_id,
@@ -108,8 +110,6 @@ pub fn validate_position(
 
 pub fn validate_position_settings(
     solauto_position: &DeserializedAccount<SolautoPosition>,
-    max_ltv: f64,
-    liq_threshold: f64,
 ) -> ProgramResult {
     if solauto_position.data.self_managed {
         return Ok(());
@@ -146,11 +146,16 @@ pub fn validate_position_settings(
         return invalid_params("boost_gap must be 50 or greater");
     }
 
-    let maximum_repay_to_bps = get_maximum_repay_to_bps_param(max_ltv, liq_threshold);
-    if settings.repay_to_bps > maximum_repay_to_bps {
-        return invalid_params(
-            format!("For the given max_ltv and liq_threshold of the supplied asset, repay_to_bps must be lower or equal to {} in order to bring the utilization rate to an allowed position", maximum_repay_to_bps).as_str()
+    if position_data.state.max_ltv_bps.is_some() {
+        let maximum_repay_to_bps = get_maximum_repay_to_bps_param(
+            (position_data.state.max_ltv_bps.unwrap() as f64).div(10000.0),
+            (position_data.state.liq_threshold_bps as f64).div(10000.0),
         );
+        if settings.repay_to_bps > maximum_repay_to_bps {
+            return invalid_params(
+                format!("For the given max_ltv and liq_threshold of the supplied asset, repay_to_bps must be lower or equal to {} in order to bring the utilization rate to an allowed position", maximum_repay_to_bps).as_str()
+            );
+        }
     }
 
     Ok(())
@@ -372,12 +377,16 @@ pub fn validate_dca_settings(position_data: &PositionData) -> ProgramResult {
         match dca.dca_direction {
             DCADirection::In(_) => {
                 if dca.target_boost_to_bps.unwrap() <= settings.boost_to_bps {
-                    return invalid_params("When DCAing-in, target boost-to parameter must be greater than current setting's boost to value");
+                    return invalid_params(
+                        "When DCAing-in, target boost-to parameter must be greater than current setting's boost to value"
+                    );
                 }
             }
             DCADirection::Out => {
                 if dca.target_boost_to_bps.unwrap() >= settings.boost_to_bps {
-                    return invalid_params("When DCAing-out, target boost-to parameter must be less than current setting's boost to value");
+                    return invalid_params(
+                        "When DCAing-out, target boost-to parameter must be less than current setting's boost to value"
+                    );
                 }
             }
         }

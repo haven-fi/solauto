@@ -53,19 +53,6 @@ impl<'a> SolendClient<'a> {
         ctx: &'b Context<'a, SolendOpenPositionAccounts<'a>>,
         solauto_position: &'b DeserializedAccount<'a, SolautoPosition>,
     ) -> ProgramResult {
-        let supply_reserve =
-            DeserializedAccount::<Reserve>::unpack(Some(ctx.accounts.supply_reserve))?.unwrap();
-        if &supply_reserve.data.collateral.mint_pubkey != ctx.accounts.supply_collateral_mint.key {
-            msg!(
-                "Supply reserve account provided does not match the supply_collateral_mint account"
-            );
-            return Err(SolautoError::IncorrectAccounts.into());
-        }
-
-        let (max_ltv, liq_threshold) =
-            SolendClient::get_max_ltv_and_liq_threshold(&supply_reserve.data);
-        validate_position_settings(&solauto_position, max_ltv, liq_threshold)?;
-
         if account_has_data(ctx.accounts.obligation) {
             return Ok(());
         }
@@ -243,7 +230,7 @@ impl<'a> SolendClient<'a> {
         };
 
         Ok(LendingProtocolObligationPosition {
-            max_ltv,
+            max_ltv: Some(max_ltv),
             liq_threshold,
             supply: supply_liquidity,
             debt: debt_liquidity,
@@ -251,7 +238,7 @@ impl<'a> SolendClient<'a> {
         })
     }
 
-    fn get_max_ltv_and_liq_threshold(supply_reserve: &Box<Reserve>) -> (f64, f64) {
+    pub fn get_max_ltv_and_liq_threshold(supply_reserve: &Box<Reserve>) -> (f64, f64) {
         (
             (supply_reserve.config.loan_to_value_ratio as f64).div(100 as f64),
             (supply_reserve.config.liquidation_threshold as f64).div(100 as f64),

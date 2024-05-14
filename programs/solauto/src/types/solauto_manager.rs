@@ -398,8 +398,10 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
         };
         position.state.last_updated = Clock::get()?.unix_timestamp as u64;
 
-        position.state.max_ltv_bps = obligation_position.max_ltv.mul(10000.0) as u64;
-        position.state.liq_threshold = obligation_position.liq_threshold.mul(10000.0) as u64;
+        position.state.max_ltv_bps = obligation_position
+            .max_ltv
+            .map_or_else(|| None, |max_ltv| Some(max_ltv.mul(10000.0) as u16));
+        position.state.liq_threshold_bps = obligation_position.liq_threshold.mul(10000.0) as u16;
 
         Ok(())
     }

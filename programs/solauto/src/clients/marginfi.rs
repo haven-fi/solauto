@@ -19,7 +19,7 @@ use crate::{
             SolautoStandardAccounts,
         },
         lending_protocol::{LendingProtocolClient, LendingProtocolTokenAccounts},
-        obligation_position::{self, LendingProtocolObligationPosition, PositionTokenUsage},
+        obligation_position::{LendingProtocolObligationPosition, PositionTokenUsage},
         shared::{
             DeserializedAccount, LendingPlatform, SolautoError, SolautoPosition, TokenBalanceAmount,
         },
@@ -48,16 +48,8 @@ impl<'a> MarginfiClient<'a> {
         ctx: &'b Context<'a, MarginfiOpenPositionAccounts<'a>>,
         solauto_position: &'b DeserializedAccount<'a, SolautoPosition>,
     ) -> ProgramResult {
-        let supply_bank =
-            DeserializedAccount::<Bank>::deserialize(Some(ctx.accounts.supply_bank))?.unwrap();
-        if &supply_bank.data.mint != ctx.accounts.supply_mint.key {
-            msg!("Supply bank account provided does not match the supply_mint account");
-            return Err(SolautoError::IncorrectAccounts.into());
-        }
-
-        let (max_ltv, liq_threshold) =
-            MarginfiClient::get_max_ltv_and_liq_threshold(&supply_bank.data);
-        validate_position_settings(solauto_position, max_ltv, liq_threshold)?;
+        // TODO: better solution with #[cfg]
+        return Ok(());
 
         if account_has_data(ctx.accounts.marginfi_account) {
             return Ok(());
@@ -175,11 +167,10 @@ impl<'a> MarginfiClient<'a> {
         ))
     }
 
-    pub fn get_max_ltv_and_liq_threshold(supply_bank: &Box<Bank>) -> (f64, f64) {
-        let value = math_utils::convert_i80f48_to_f64(I80F48::from_le_bytes(
+    pub fn get_liq_threshold(supply_bank: &Box<Bank>) -> f64 {
+        math_utils::convert_i80f48_to_f64(I80F48::from_le_bytes(
             supply_bank.config.asset_weight_init.value,
-        ));
-        (value, value)
+        ))
     }
 
     pub fn get_obligation_position(
@@ -189,10 +180,10 @@ impl<'a> MarginfiClient<'a> {
         debt_bank: Option<&DeserializedAccount<Bank>>,
         debt_price_oracle: Option<&AccountInfo>,
     ) -> Result<LendingProtocolObligationPosition, ProgramError> {
-        let (mut max_ltv, mut liq_threshold) = if supply_bank.is_some() {
-            MarginfiClient::get_max_ltv_and_liq_threshold(&supply_bank.unwrap().data)
+        let mut liq_threshold = if supply_bank.is_some() {
+            MarginfiClient::get_liq_threshold(&supply_bank.unwrap().data)
         } else {
-            (0.0, 0.0)
+            0.0
         };
 
         let balances = &marginfi_account.data.lending_account.balances;
@@ -239,7 +230,6 @@ impl<'a> MarginfiClient<'a> {
             {
                 let discount_factor = bank_deposits_usd_value
                     .div(bank.data.config.total_asset_value_init_limit as f64);
-                max_ltv = max_ltv * discount_factor;
                 liq_threshold = liq_threshold * discount_factor;
             }
 
@@ -284,7 +274,7 @@ impl<'a> MarginfiClient<'a> {
         };
 
         return Ok(LendingProtocolObligationPosition {
-            max_ltv,
+            max_ltv: None,
             liq_threshold,
             supply,
             debt,

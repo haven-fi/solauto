@@ -23,9 +23,11 @@ import {
 } from '@metaplex-foundation/umi';
 import {
   Serializer,
+  array,
   option,
   publicKey as publicKeySerializer,
   struct,
+  u8,
 } from '@metaplex-foundation/umi/serializers';
 
 export type ReferralStateAccount = Account<ReferralStateAccountAccountData>;
@@ -34,12 +36,14 @@ export type ReferralStateAccountAccountData = {
   authority: PublicKey;
   referredByState: Option<PublicKey>;
   destFeesMint: PublicKey;
+  padding: Array<number>;
 };
 
 export type ReferralStateAccountAccountDataArgs = {
   authority: PublicKey;
   referredByState: OptionOrNullable<PublicKey>;
   destFeesMint: PublicKey;
+  padding: Array<number>;
 };
 
 export function getReferralStateAccountAccountDataSerializer(): Serializer<
@@ -51,6 +55,7 @@ export function getReferralStateAccountAccountDataSerializer(): Serializer<
       ['authority', publicKeySerializer()],
       ['referredByState', option(publicKeySerializer())],
       ['destFeesMint', publicKeySerializer()],
+      ['padding', array(u8(), { size: 128 })],
     ],
     { description: 'ReferralStateAccountAccountData' }
   ) as Serializer<
@@ -138,10 +143,12 @@ export function getReferralStateAccountGpaBuilder(
       authority: PublicKey;
       referredByState: OptionOrNullable<PublicKey>;
       destFeesMint: PublicKey;
+      padding: Array<number>;
     }>({
       authority: [0, publicKeySerializer()],
       referredByState: [32, option(publicKeySerializer())],
       destFeesMint: [null, publicKeySerializer()],
+      padding: [null, array(u8(), { size: 128 })],
     })
     .deserializeUsing<ReferralStateAccount>((account) =>
       deserializeReferralStateAccount(account)

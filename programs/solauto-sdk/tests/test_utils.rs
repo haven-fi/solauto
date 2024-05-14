@@ -3,14 +3,7 @@ use std::str::FromStr;
 use borsh::BorshDeserialize;
 use solana_program_test::{ BanksClientError, ProgramTest, ProgramTestContext };
 use solana_sdk::{
-    instruction::Instruction,
-    program_pack::{ IsInitialized, Pack },
-    pubkey::Pubkey,
-    rent::Rent,
-    signature::Keypair,
-    signer::Signer,
-    system_instruction,
-    transaction::Transaction,
+    compute_budget::ComputeBudgetInstruction, instruction::Instruction, program_pack::{ IsInitialized, Pack }, pubkey::Pubkey, rent::Rent, signature::Keypair, signer::Signer, system_instruction, transaction::Transaction
 };
 use solauto::{
     constants::{ SOLAUTO_FEES_WALLET, WSOL_MINT },
@@ -18,7 +11,11 @@ use solauto::{
 };
 use solauto_sdk::{
     generated::{
-        instructions::{ MarginfiOpenPositionBuilder, UpdateReferralStatesBuilder },
+        instructions::{
+            MarginfiOpenPositionBuilder,
+            UpdatePositionBuilder,
+            UpdateReferralStatesBuilder,
+        },
         types::{ DCASettings, SolautoSettingsParameters, UpdatePositionData },
     },
     SOLAUTO_ID,
@@ -236,9 +233,11 @@ impl<'a> GeneralTestData<'a> {
 
     pub async fn execute_instructions(
         &mut self,
-        instructions: &[Instruction],
+        mut instructions: Vec<Instruction>,
         additional_signers: Option<&[&Keypair]>
     ) -> Result<(), BanksClientError> {
+        instructions.insert(0, ComputeBudgetInstruction::set_compute_unit_limit(500_000));
+
         let mut signers = Vec::new();
         signers.push(&self.ctx.payer);
 
@@ -249,7 +248,7 @@ impl<'a> GeneralTestData<'a> {
         }
 
         let tx = Transaction::new_signed_with_payer(
-            instructions,
+            instructions.as_slice(),
             Some(&self.ctx.payer.pubkey()),
             signers.as_slice(),
             self.ctx.last_blockhash
@@ -273,7 +272,7 @@ impl<'a> GeneralTestData<'a> {
     ) -> Result<&mut Self, BanksClientError> {
         let rent = Rent::default();
         self.execute_instructions(
-            &[
+            vec![
                 system_instruction::create_account(
                     &self.ctx.payer.pubkey(),
                     &token_mint.pubkey(),
@@ -302,7 +301,7 @@ impl<'a> GeneralTestData<'a> {
         token_mint: &Keypair
     ) -> Result<&mut Self, BanksClientError> {
         self.execute_instructions(
-            &[
+            vec![
                 ata_instruction::create_associated_token_account(
                     &self.ctx.payer.pubkey(),
                     &wallet,
@@ -323,7 +322,7 @@ impl<'a> GeneralTestData<'a> {
         amount: u64
     ) -> Result<&mut Self, BanksClientError> {
         self.execute_instructions(
-            &[
+            vec![
                 token_instruction
                     ::mint_to(
                         &spl_token::id(),
@@ -399,7 +398,7 @@ impl<'a> MarginfiTestData<'a> {
             marginfi_account,
             marginfi_account_keypair,
             marginfi_group,
-            supply_bank
+            supply_bank,
         }
     }
 
@@ -413,17 +412,16 @@ impl<'a> MarginfiTestData<'a> {
         settings: Option<SolautoSettingsParameters>,
         active_dca: Option<DCASettings>
     ) -> Result<&mut Self, BanksClientError> {
-        let mut signers = vec![&self.general.ctx.payer];
+        let mut additional_signers = vec![];
         if self.general.position_id == 0 {
-            signers.push(self.marginfi_account_keypair.as_ref().unwrap());
+            additional_signers.push(self.marginfi_account_keypair.as_ref().unwrap());
         }
-        let tx = Transaction::new_signed_with_payer(
-            &[self.open_position_ix(settings, active_dca).instruction()],
-            Some(&self.general.ctx.payer.pubkey()),
-            signers.as_slice(),
-            self.general.ctx.last_blockhash
-        );
-        self.general.ctx.banks_client.process_transaction(tx).await.unwrap();
+        self.general
+            .execute_instructions(
+                vec![self.open_position_ix(settings, active_dca).instruction()],
+                Some(additional_signers.as_slice())
+            ).await
+            .unwrap();
         Ok(self)
     }
 
@@ -460,6 +458,46 @@ impl<'a> MarginfiTestData<'a> {
             )
             .signer_debt_ta(self.general.signer_debt_liquidity_ta)
             .position_debt_ta(self.general.position_debt_liquidity_ta)
+            .update_position_data(position_data);
+        builder
+    }
+
+    pub async fn update_position(
+        &mut self,
+        settings: Option<SolautoSettingsParameters>,
+        active_dca: Option<DCASettings>
+    ) -> Result<&mut Self, BanksClientError> {
+        self.general
+            .execute_instructions(
+                vec![self.update_position_ix(settings, active_dca).instruction()],
+                None
+            ).await
+            .unwrap();
+        Ok(self)
+    }
+
+    pub fn update_position_ix(
+        &self,
+        setting_params: Option<SolautoSettingsParameters>,
+        active_dca: Option<DCASettings>
+    ) -> UpdatePositionBuilder {
+        let mut builder = UpdatePositionBuilder::new();
+        let position_data = UpdatePositionData {
+            position_id: self.general.position_id,
+            setting_params,
+            active_dca,
+        };
+        builder
+            .signer(self.general.ctx.payer.pubkey())
+            .solauto_position(self.general.solauto_position)
+            .debt_mint(
+                self.general.debt_liquidity_mint.map_or_else(
+                    || None,
+                    |mint| Some(mint.pubkey())
+                )
+            )
+            .position_debt_ta(self.general.position_debt_liquidity_ta)
+            .signer_debt_ta(self.general.signer_debt_liquidity_ta)
             .update_position_data(position_data);
         builder
     }

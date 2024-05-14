@@ -1343,6 +1343,15 @@
           {
             "name": "destFeesMint",
             "type": "publicKey"
+          },
+          {
+            "name": "padding",
+            "type": {
+              "array": [
+                "u8",
+                128
+              ]
+            }
           }
         ]
       }
@@ -1532,11 +1541,13 @@
           },
           {
             "name": "maxLtvBps",
-            "type": "u64"
+            "type": {
+              "option": "u16"
+            }
           },
           {
-            "name": "liqThreshold",
-            "type": "u64"
+            "name": "liqThresholdBps",
+            "type": "u16"
           },
           {
             "name": "lastUpdated",
@@ -1645,23 +1656,6 @@
       }
     },
     {
-      "name": "DCADirection",
-      "type": {
-        "kind": "enum",
-        "variants": [
-          {
-            "name": "In",
-            "fields": [
-              "u64"
-            ]
-          },
-          {
-            "name": "Out"
-          }
-        ]
-      }
-    },
-    {
       "name": "TokenBalanceAmount",
       "type": {
         "kind": "enum",
@@ -1674,6 +1668,23 @@
           },
           {
             "name": "All"
+          }
+        ]
+      }
+    },
+    {
+      "name": "DCADirection",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "In",
+            "fields": [
+              "u64"
+            ]
+          },
+          {
+            "name": "Out"
           }
         ]
       }

@@ -30,7 +30,10 @@ pub fn process_marginfi_open_position_instruction<'a>(
         ctx.accounts.supply_mint,
         ctx.accounts.debt_mint,
         ctx.accounts.marginfi_account,
+        None,
+        None,
     )?;
+    validation_utils::validate_position_settings(&solauto_position)?;
     if solauto_position.data.position.is_some() {
         validation_utils::validate_dca_settings(solauto_position.data.position.as_ref().unwrap())?;
     }

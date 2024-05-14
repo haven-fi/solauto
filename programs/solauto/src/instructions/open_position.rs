@@ -1,4 +1,6 @@
-use solana_program::{account_info::AccountInfo, entrypoint::ProgramResult, program_pack::Pack};
+use solana_program::{
+    account_info::AccountInfo, entrypoint::ProgramResult, msg, program_pack::Pack,
+};
 use solend_sdk::state::Obligation;
 
 use crate::{
@@ -7,7 +9,7 @@ use crate::{
         instruction::accounts::{
             Context, MarginfiOpenPositionAccounts, SolendOpenPositionAccounts,
         },
-        shared::{DeserializedAccount, SolautoPosition, POSITION_ACCOUNT_SPACE},
+        shared::{DeserializedAccount, SolautoPosition},
     },
     utils::*,
 };
@@ -31,8 +33,7 @@ pub fn marginfi_open_position<'a>(
         ctx.accounts.debt_mint,
     )?;
 
-    MarginfiClient::initialize(&ctx, &solauto_position)?;
-    ix_utils::update_data(&mut solauto_position)
+    MarginfiClient::initialize(&ctx, &solauto_position)
 }
 
 pub fn solend_open_position<'a>(
@@ -88,8 +89,7 @@ pub fn solend_open_position<'a>(
         )?;
     }
 
-    SolendClient::initialize(&ctx, &solauto_position)?;
-    ix_utils::update_data(&mut solauto_position)
+    SolendClient::initialize(&ctx, &solauto_position)
 }
 
 fn initialize_solauto_position<'a, 'b>(
@@ -112,7 +112,7 @@ fn initialize_solauto_position<'a, 'b>(
             solauto_position.account_info,
             &crate::ID,
             Some(solauto_position.data.seeds()),
-            POSITION_ACCOUNT_SPACE,
+            SolautoPosition::LEN,
         )?;
     }
 
@@ -144,5 +144,5 @@ fn initialize_solauto_position<'a, 'b>(
         signer_debt_ta,
     )?;
 
-    Ok(())
+    ix_utils::update_data(solauto_position)
 }

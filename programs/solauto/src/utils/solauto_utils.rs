@@ -15,7 +15,6 @@ use crate::{
         shared::{
             DCADirection, DeserializedAccount, LendingPlatform, LendingProtocolPositionData,
             PositionData, PositionState, ReferralStateAccount, SolautoError, SolautoPosition,
-            REFERRAL_ACCOUNT_SPACE,
         },
     },
 };
@@ -39,6 +38,8 @@ pub fn create_new_solauto_position<'a>(
     supply_mint: &'a AccountInfo<'a>,
     debt_mint: Option<&'a AccountInfo<'a>>,
     lending_protocol_account: &'a AccountInfo<'a>,
+    max_ltv: Option<f64>,
+    liq_threshold: Option<f64>,
 ) -> Result<DeserializedAccount<'a, SolautoPosition>, ProgramError> {
     let data = if update_position_data.setting_params.is_some() {
         if update_position_data.position_id == 0 {
@@ -51,12 +52,20 @@ pub fn create_new_solauto_position<'a>(
             return Err(SolautoError::IncorrectAccounts.into());
         }
 
+        let mut state = PositionState::default();
+        if max_ltv.is_some() {
+            state.max_ltv_bps = Some(max_ltv.unwrap().mul(10000.0) as u16);
+        }
+        if liq_threshold.is_some() {
+            state.liq_threshold_bps = liq_threshold.unwrap().mul(10000.0) as u16;
+        }
+
         SolautoPosition::new(
             update_position_data.position_id,
             *signer.key,
             Some(PositionData {
                 setting_params: update_position_data.setting_params.clone(),
-                state: PositionState::default(),
+                state,
                 lending_platform,
                 protocol_data: LendingProtocolPositionData {
                     protocol_account: lending_protocol_account.key.clone(),
@@ -120,7 +129,7 @@ pub fn create_or_update_referral_state<'a>(
             referral_state,
             &crate::ID,
             Some(referral_state_seeds[..].to_vec()),
-            REFERRAL_ACCOUNT_SPACE,
+            ReferralStateAccount::LEN,
         )?;
 
         let dest_mint = if referral_fees_dest_mint.is_some() {
@@ -129,11 +138,11 @@ pub fn create_or_update_referral_state<'a>(
             &WSOL_MINT
         };
 
-        let data = Box::new(ReferralStateAccount {
-            authority: *authority.key,
-            referred_by_state: referred_by_state.map_or(None, |r| Some(r.key.clone())),
-            dest_fees_mint: *dest_mint,
-        });
+        let data = Box::new(ReferralStateAccount::new(
+            *authority.key,
+            referred_by_state.map_or(None, |r| Some(r.key.clone())),
+            *dest_mint,
+        ));
 
         let deserialized_account = DeserializedAccount {
             account_info: referral_state,
