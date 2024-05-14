@@ -1,4 +1,4 @@
-use marginfi_sdk::generated::accounts::{Bank, MarginfiAccount};
+use marginfi_sdk::generated::accounts::MarginfiAccount;
 use solana_program::entrypoint::ProgramResult;
 
 use crate::{

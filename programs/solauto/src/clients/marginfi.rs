@@ -2,14 +2,13 @@ use fixed::types::I80F48;
 use marginfi_sdk::generated::{
     accounts::{ Bank, MarginfiAccount },
     instructions::*,
-    types::{ Balance, OracleSetup, RiskTier },
+    types::{ Balance, OracleSetup },
 };
 use pyth_sdk_solana::state::SolanaPriceAccount;
 use solana_program::{
     account_info::AccountInfo,
     clock::Clock,
     entrypoint::ProgramResult,
-    msg,
     program_error::ProgramError,
     sysvar::Sysvar,
 };
