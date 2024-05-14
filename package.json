@@ -4,7 +4,7 @@
     "format:rust": "find ./programs/* -name '*.rs' -exec rustfmt {} +",
     "build": "cargo build-sbf",
     "build:test": "cargo build-sbf -- --package solauto --features test",
-    "generate": "pnpm build && pnpm generate:idl && pnpm generate:clients",
+    "generate": "pnpm generate:idl && pnpm generate:clients",
     "generate:idl": "shank idl --crate-root programs/solauto --out-dir idls --out-filename solauto.json",
     "generate:clients": "node ./generateClients.cjs && pnpm format:rust",
     "test:typescript": "cd typescript/solauto-sdk && pnpm test",
