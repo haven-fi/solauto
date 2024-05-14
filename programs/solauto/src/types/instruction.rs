@@ -105,7 +105,7 @@ pub enum Instruction {
     #[account(mut, name = "solauto_position")]
     #[account(mut, name = "signer_supply_liquidity_ta")]
     #[account(mut, name = "position_supply_liquidity_ta")]
-    #[account(optional, mut, name = "position_supply_collateral_ta")]
+    #[account(mut, optional, name = "position_supply_collateral_ta")]
     #[account(mut, optional, name = "position_debt_liquidity_ta")]
     ClosePosition,
 
@@ -115,7 +115,7 @@ pub enum Instruction {
     #[account(name = "token_program")]
     #[account(name = "ata_program")]
     #[account(mut, name = "solauto_position")]
-    #[account(mut, optional, name = "debt_mint")]
+    #[account(optional, name = "debt_mint")]
     #[account(mut, optional, name = "position_debt_ta")]
     #[account(mut, optional, name = "signer_debt_ta")]
     CancelDCA,
@@ -159,8 +159,8 @@ pub enum Instruction {
     #[account(mut, name = "solauto_position")]
     #[account(name = "marginfi_group")]
     #[account(mut, name = "marginfi_account")]
-    #[account(mut, optional, name = "supply_bank")]
-    #[account(optional, name = "supply_pyth_price_oracle")]
+    #[account(mut, name = "supply_bank")]
+    #[account(name = "supply_pyth_price_oracle")]
     #[account(mut, optional, name = "authority_supply_ta")]
     #[account(mut, optional, name = "vault_supply_ta")]
     #[account(mut, optional, name = "supply_vault_authority")]
@@ -182,7 +182,7 @@ pub enum Instruction {
     #[account(mut, name = "solauto_position")]
     #[account(name = "lending_market")]
     #[account(mut, name = "obligation")]
-    #[account(mut, optional, name = "supply_reserve")]
+    #[account(mut, name = "supply_reserve")]
     #[account(optional, name = "supply_reserve_pyth_price_oracle")]
     #[account(optional, name = "supply_reserve_switchboard_oracle")]
     #[account(mut, optional, name = "authority_supply_liquidity_ta")]

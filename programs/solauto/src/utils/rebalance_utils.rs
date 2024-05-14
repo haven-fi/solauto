@@ -364,8 +364,6 @@ pub fn get_rebalance_values(
     };
     let total_supply_usd = obligation_position
         .supply
-        .as_ref()
-        .unwrap()
         .amount_used
         .usd_value
         + amount_usd_to_dca_in;

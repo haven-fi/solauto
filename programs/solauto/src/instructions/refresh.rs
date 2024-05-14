@@ -1,3 +1,4 @@
+use marginfi_sdk::generated::accounts::{Bank, MarginfiAccount};
 use solana_program::entrypoint::ProgramResult;
 
 use crate::{
@@ -32,18 +33,13 @@ pub fn marginfi_refresh_accounts(
     if ctx.accounts.solauto_position.is_some()
         && !solauto_position.as_ref().unwrap().data.self_managed
     {
-        let (marginfi_account, supply_bank, debt_bank) =
-            MarginfiClient::deserialize_margfinfi_accounts(
-                ctx.accounts.marginfi_account.unwrap(),
-                Some(ctx.accounts.supply_bank),
-                ctx.accounts.debt_bank,
-            )?;
+        let marginfi_account = DeserializedAccount::<MarginfiAccount>::deserialize(ctx.accounts.marginfi_account)?.unwrap();
 
         let obligation_position = MarginfiClient::get_obligation_position(
             &marginfi_account,
-            supply_bank.as_ref(),
-            Some(ctx.accounts.supply_price_oracle),
-            debt_bank.as_ref(),
+            ctx.accounts.supply_bank,
+            ctx.accounts.supply_price_oracle,
+            ctx.accounts.debt_bank,
             ctx.accounts.debt_price_oracle,
         )?;
 
@@ -92,7 +88,7 @@ pub fn solend_refresh_accounts(
         if solauto_position.is_some() && !solauto_position.as_ref().unwrap().data.self_managed {
             let obligation_position = SolendClient::get_obligation_position(
                 &mut data_accounts.lending_market.data,
-                data_accounts.supply_reserve.as_ref().map(|sr| &sr.data),
+                &data_accounts.supply_reserve.as_ref().unwrap().data,
                 data_accounts.debt_reserve.as_ref().map(|sr| &sr.data),
                 &data_accounts.obligation.data,
             )?;

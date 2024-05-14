@@ -13,7 +13,7 @@ mod update_position {
     use crate::{ assert_instruction_error, test_utils::* };
 
     #[tokio::test]
-    async fn update_position_settings() {
+    async fn update_settings_and_dca() {
         let args = GeneralArgs::new();
         let mut data = MarginfiTestData::new(&args).await;
         data.test_prefixtures().await
@@ -29,26 +29,42 @@ mod update_position {
 
         let dca_amount = 50_000;
         data.general
-            .mint_tokens_to_ta(
-                data.general.debt_liquidity_mint.unwrap(),
-                data.general.signer_debt_liquidity_ta.unwrap(),
-                data.general.ctx.payer.pubkey(),
-                dca_amount
-            ).await
-            .unwrap();
+        .mint_tokens_to_ta(
+            data.general.debt_liquidity_mint.unwrap(),
+            data.general.signer_debt_liquidity_ta.unwrap(),
+            data.general.ctx.payer.pubkey(),
+            dca_amount
+        ).await
+        .unwrap();
+    
+        let active_dca = DCASettings {
+            unix_start_date: Utc::now().timestamp() as u64,
+            unix_dca_interval: 60 * 60 * 24,
+            dca_periods_passed: 0,
+            target_dca_periods: 5,
+            dca_direction: DCADirection::In(dca_amount),
+            dca_risk_aversion_bps: None,
+            target_boost_to_bps: None,
+        };
+        data.open_position(Some(data.general.default_setting_params.clone()), Some(active_dca.clone())).await.unwrap();
 
-        data.open_position(
-            Some(data.general.default_setting_params.clone()),
-            None
-        ).await.unwrap();
-
+        // Update position's settings and add a DCA
         let new_settings = SolautoSettingsParameters {
             boost_to_bps: 2000,
             boost_gap: 1000,
             repay_to_bps: 8500,
             repay_gap: 1000,
         };
-        data.update_position(Some(new_settings.clone()), None).await.unwrap();
+        let new_dca = DCASettings {
+            unix_start_date: Utc::now().timestamp() as u64,
+            unix_dca_interval: 60 * 60 * 24,
+            dca_periods_passed: 0,
+            target_dca_periods: 5,
+            dca_direction: DCADirection::Out,
+            dca_risk_aversion_bps: None,
+            target_boost_to_bps: None,
+        };
+        data.update_position(Some(new_settings.clone()), Some(new_dca.clone())).await.unwrap();
 
         let solauto_position = data.general.deserialize_account_data::<SolautoPosition>(
             data.general.solauto_position
@@ -57,6 +73,13 @@ mod update_position {
             solauto_position.position.as_ref().unwrap().setting_params.as_ref().unwrap() ==
                 &new_settings
         );
+        assert!(
+            solauto_position.position.as_ref().unwrap().active_dca.as_ref().unwrap() == &new_dca
+        );
+        assert!(solauto_position.position.as_ref().unwrap().debt_ta_balance == 0);
+
+        // TODO Modify setting params while active dca and get assert ix error
+
     }
 
     // pub async fn test_settings(data: &mut MarginfiTestData<'_>, settings: SolautoSettingsParameters) {

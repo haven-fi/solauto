@@ -321,6 +321,7 @@ pub fn cancel_active_dca<'a, 'b>(
         .as_ref()
         .unwrap();
 
+    msg!("Hello ..1");
     if let DCADirection::In(_) = active_dca.dca_direction {
         if position_account.position.as_ref().unwrap().debt_ta_balance > 0 {
             if debt_mint.is_none() || position_debt_ta.is_none() || signer_debt_ta.is_none() {
@@ -329,6 +330,8 @@ pub fn cancel_active_dca<'a, 'b>(
                 );
                 return Err(SolautoError::IncorrectAccounts.into());
             }
+
+            msg!("Hello ..2");
 
             init_ata_if_needed(
                 token_program,
@@ -339,7 +342,12 @@ pub fn cancel_active_dca<'a, 'b>(
                 debt_mint.unwrap(),
             )?;
 
+            msg!("Hello ..3");
+
             position_account.position.as_mut().unwrap().debt_ta_balance = 0;
+
+            msg!("Hello ..4");
+
             spl_token_transfer(
                 token_program,
                 position_debt_ta.unwrap(),
@@ -348,10 +356,15 @@ pub fn cancel_active_dca<'a, 'b>(
                 TokenAccount::unpack(&position_debt_ta.unwrap().data.borrow())?.amount,
                 Some(&position_account.seeds()),
             )?;
+
+            msg!("Hello ..5");
+
         }
     }
 
     position_account.position.as_mut().unwrap().active_dca = None;
+
+    msg!("Hello ..6");
 
     Ok(())
 }
