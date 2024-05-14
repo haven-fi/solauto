@@ -33,6 +33,7 @@ import {
 export type ReferralStateAccount = Account<ReferralStateAccountAccountData>;
 
 export type ReferralStateAccountAccountData = {
+  bump: Array<number>;
   authority: PublicKey;
   referredByState: Option<PublicKey>;
   destFeesMint: PublicKey;
@@ -40,6 +41,7 @@ export type ReferralStateAccountAccountData = {
 };
 
 export type ReferralStateAccountAccountDataArgs = {
+  bump: Array<number>;
   authority: PublicKey;
   referredByState: OptionOrNullable<PublicKey>;
   destFeesMint: PublicKey;
@@ -52,6 +54,7 @@ export function getReferralStateAccountAccountDataSerializer(): Serializer<
 > {
   return struct<ReferralStateAccountAccountData>(
     [
+      ['bump', array(u8(), { size: 1 })],
       ['authority', publicKeySerializer()],
       ['referredByState', option(publicKeySerializer())],
       ['destFeesMint', publicKeySerializer()],
@@ -140,13 +143,15 @@ export function getReferralStateAccountGpaBuilder(
   );
   return gpaBuilder(context, programId)
     .registerFields<{
+      bump: Array<number>;
       authority: PublicKey;
       referredByState: OptionOrNullable<PublicKey>;
       destFeesMint: PublicKey;
       padding: Array<number>;
     }>({
-      authority: [0, publicKeySerializer()],
-      referredByState: [32, option(publicKeySerializer())],
+      bump: [0, array(u8(), { size: 1 })],
+      authority: [1, publicKeySerializer()],
+      referredByState: [33, option(publicKeySerializer())],
       destFeesMint: [null, publicKeySerializer()],
       padding: [null, array(u8(), { size: 128 })],
     })

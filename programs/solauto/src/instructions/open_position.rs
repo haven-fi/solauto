@@ -1,5 +1,5 @@
 use solana_program::{
-    account_info::AccountInfo, entrypoint::ProgramResult, msg, program_pack::Pack
+    account_info::AccountInfo, entrypoint::ProgramResult, msg, program_pack::Pack,
 };
 use solend_sdk::state::Obligation;
 
@@ -19,6 +19,7 @@ use self::solana_utils::account_has_data;
 pub fn marginfi_open_position<'a>(
     ctx: Context<'a, MarginfiOpenPositionAccounts<'a>>,
     mut solauto_position: DeserializedAccount<'a, SolautoPosition>,
+    marignfi_acc_seed_idx: Option<u64>,
 ) -> ProgramResult {
     initialize_solauto_position(
         &mut solauto_position,
@@ -33,7 +34,7 @@ pub fn marginfi_open_position<'a>(
         ctx.accounts.debt_mint,
     )?;
 
-    MarginfiClient::initialize(&ctx, &solauto_position)
+    MarginfiClient::initialize(&ctx, &solauto_position, marignfi_acc_seed_idx)
 }
 
 pub fn solend_open_position<'a>(

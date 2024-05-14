@@ -132,7 +132,8 @@ pub struct SolautoPosition {
 impl SolautoPosition {
     pub const LEN: usize = 358;
     pub fn new(position_id: u8, authority: Pubkey, position: Option<PositionData>) -> Self {
-        let (_, bump) = Pubkey::find_program_address(&[&[position_id], authority.as_ref()], &crate::ID);
+        let (_, bump) =
+            Pubkey::find_program_address(&[&[position_id], authority.as_ref()], &crate::ID);
         Self {
             _position_id_arr: [position_id],
             _bump: [bump],
@@ -169,7 +170,10 @@ impl ReferralStateAccount {
         referred_by_state: Option<Pubkey>,
         dest_fees_mint: Pubkey,
     ) -> Self {
-        let (_, bump) = Pubkey::find_program_address(&ReferralStateAccount::seeds(&authority).as_slice(), &crate::ID);
+        let (_, bump) = Pubkey::find_program_address(
+            &ReferralStateAccount::seeds(&authority).as_slice(),
+            &crate::ID,
+        );
         Self {
             _bump: [bump],
             authority,

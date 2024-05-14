@@ -23,7 +23,10 @@ pub fn update_data<T: BorshSerialize>(account: &mut DeserializedAccount<T>) -> P
 //     seeds
 // }
 
-pub fn get_seeds_with_bump<'a, 'b>(mut seeds: Vec<&'a [u8]>, bump_storage: &'a mut [u8]) -> Vec<&'a [u8]> {
+pub fn get_seeds_with_bump<'a, 'b>(
+    mut seeds: Vec<&'a [u8]>,
+    bump_storage: &'a mut [u8],
+) -> Vec<&'a [u8]> {
     let (_, bump) = Pubkey::find_program_address(seeds.as_slice(), &crate::ID);
     bump_storage[0] = bump;
     seeds.push(&bump_storage[..1]);

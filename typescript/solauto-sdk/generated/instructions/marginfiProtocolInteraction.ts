@@ -43,8 +43,8 @@ export type MarginfiProtocolInteractionInstructionAccounts = {
   solautoPosition: PublicKey | Pda;
   marginfiGroup: PublicKey | Pda;
   marginfiAccount: PublicKey | Pda;
-  supplyBank?: PublicKey | Pda;
-  supplyPythPriceOracle?: PublicKey | Pda;
+  supplyBank: PublicKey | Pda;
+  supplyPythPriceOracle: PublicKey | Pda;
   authoritySupplyTa?: PublicKey | Pda;
   vaultSupplyTa?: PublicKey | Pda;
   supplyVaultAuthority?: PublicKey | Pda;

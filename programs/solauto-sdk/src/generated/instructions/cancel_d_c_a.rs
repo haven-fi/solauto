@@ -58,7 +58,7 @@ impl CancelDCA {
             false,
         ));
         if let Some(debt_mint) = self.debt_mint {
-            accounts.push(solana_program::instruction::AccountMeta::new(
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
                 debt_mint, false,
             ));
         } else {
@@ -120,7 +120,7 @@ impl CancelDCAInstructionData {
 ///   2. `[optional]` token_program (default to `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA`)
 ///   3. `[optional]` ata_program (default to `ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL`)
 ///   4. `[writable]` solauto_position
-///   5. `[writable, optional]` debt_mint
+///   5. `[optional]` debt_mint
 ///   6. `[writable, optional]` position_debt_ta
 ///   7. `[writable, optional]` signer_debt_ta
 #[derive(Default)]
@@ -349,7 +349,7 @@ impl<'a, 'b> CancelDCACpi<'a, 'b> {
             false,
         ));
         if let Some(debt_mint) = self.debt_mint {
-            accounts.push(solana_program::instruction::AccountMeta::new(
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
                 *debt_mint.key,
                 false,
             ));
@@ -432,7 +432,7 @@ impl<'a, 'b> CancelDCACpi<'a, 'b> {
 ///   2. `[]` token_program
 ///   3. `[]` ata_program
 ///   4. `[writable]` solauto_position
-///   5. `[writable, optional]` debt_mint
+///   5. `[optional]` debt_mint
 ///   6. `[writable, optional]` position_debt_ta
 ///   7. `[writable, optional]` signer_debt_ta
 pub struct CancelDCACpiBuilder<'a, 'b> {

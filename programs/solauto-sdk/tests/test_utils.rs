@@ -1,6 +1,7 @@
 use std::str::FromStr;
 
 use borsh::BorshDeserialize;
+use num_traits::ToBytes;
 use solana_program_test::{ BanksClientError, ProgramTest, ProgramTestContext };
 use solana_sdk::{
     compute_budget::ComputeBudgetInstruction, instruction::Instruction, program_pack::{ IsInitialized, Pack }, pubkey::Pubkey, rent::Rent, signature::Keypair, signer::Signer, system_instruction, transaction::Transaction
@@ -19,6 +20,7 @@ use solauto_sdk::{
 };
 use spl_associated_token_account::{ get_associated_token_address, instruction as ata_instruction };
 use spl_token::{ instruction as token_instruction, state::Mint };
+use rand::{Rng, thread_rng};
 
 #[macro_export]
 macro_rules! assert_instruction_error {
@@ -363,6 +365,7 @@ pub struct MarginfiTestData<'a> {
     pub general: GeneralTestData<'a>,
     pub marginfi_account: Pubkey,
     pub marginfi_account_keypair: Option<Keypair>,
+    pub marginfi_account_seed_idx: Option<u64>,
     pub marginfi_group: Pubkey,
     pub supply_bank: Pubkey,
 }
@@ -373,12 +376,19 @@ impl<'a> MarginfiTestData<'a> {
         let marginfi_group = Keypair::new().pubkey();
         let supply_bank = Keypair::new().pubkey();
 
+
+        let marginfi_account_seed_idx = if args.position_id != 0 {
+            let mut rng = thread_rng();
+            let random_number: u64 = rng.gen();
+            Some(random_number)
+        } else {
+            Some(0)
+        };
         let (marginfi_account, marginfi_account_keypair) = if args.position_id != 0 {
-            let signer_pubkey = general.ctx.payer.pubkey();
+            let seed_idx = marginfi_account_seed_idx.unwrap().to_le_bytes();
             let marginfi_account_seeds = &[
                 general.solauto_position.as_ref(),
-                signer_pubkey.as_ref(),
-                general.lending_protocol.as_ref(),
+                seed_idx.as_ref()
             ];
             let (marginfi_account, _) = Pubkey::find_program_address(
                 marginfi_account_seeds.as_slice(),
@@ -394,6 +404,7 @@ impl<'a> MarginfiTestData<'a> {
             general,
             marginfi_account,
             marginfi_account_keypair,
+            marginfi_account_seed_idx,
             marginfi_group,
             supply_bank,
         }
@@ -454,7 +465,7 @@ impl<'a> MarginfiTestData<'a> {
             )
             .signer_debt_ta(self.general.signer_debt_liquidity_ta)
             .position_debt_ta(self.general.position_debt_liquidity_ta)
-            .update_position_data(position_data);
+            .args((position_data, self.marginfi_account_seed_idx));
         builder
     }
 

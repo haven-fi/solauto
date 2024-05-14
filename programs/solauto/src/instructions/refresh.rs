@@ -33,7 +33,9 @@ pub fn marginfi_refresh_accounts(
     if ctx.accounts.solauto_position.is_some()
         && !solauto_position.as_ref().unwrap().data.self_managed
     {
-        let marginfi_account = DeserializedAccount::<MarginfiAccount>::deserialize(ctx.accounts.marginfi_account)?.unwrap();
+        let marginfi_account =
+            DeserializedAccount::<MarginfiAccount>::deserialize(ctx.accounts.marginfi_account)?
+                .unwrap();
 
         let obligation_position = MarginfiClient::get_obligation_position(
             &marginfi_account,

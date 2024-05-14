@@ -4715,6 +4715,7 @@ dependencies = [
  "chrono",
  "num-derive 0.4.2",
  "num-traits",
+ "rand 0.8.5",
  "solana-program",
  "solana-program-test",
  "solana-sdk",

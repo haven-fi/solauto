@@ -362,11 +362,7 @@ pub fn get_rebalance_values(
     } else {
         0.0
     };
-    let total_supply_usd = obligation_position
-        .supply
-        .amount_used
-        .usd_value
-        + amount_usd_to_dca_in;
+    let total_supply_usd = obligation_position.supply.amount_used.usd_value + amount_usd_to_dca_in;
 
     let mut debt_adjustment_usd = if target_liq_utilization_rate_bps.is_some() {
         math_utils::calculate_debt_adjustment_usd(

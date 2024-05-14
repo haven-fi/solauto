@@ -44,7 +44,7 @@ export type SolendProtocolInteractionInstructionAccounts = {
   solautoPosition: PublicKey | Pda;
   lendingMarket: PublicKey | Pda;
   obligation: PublicKey | Pda;
-  supplyReserve?: PublicKey | Pda;
+  supplyReserve: PublicKey | Pda;
   supplyReservePythPriceOracle?: PublicKey | Pda;
   supplyReserveSwitchboardOracle?: PublicKey | Pda;
   authoritySupplyLiquidityTa?: PublicKey | Pda;

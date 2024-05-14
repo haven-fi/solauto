@@ -145,7 +145,9 @@ pub fn validate_position_settings(
     }
 
     if settings.repay_to_bps == 0 && position_data.protocol_data.debt_mint.is_some() {
-        return invalid_params("Must provide a valid repay_to_bps if the Solauto position has debt");
+        return invalid_params(
+            "Must provide a valid repay_to_bps if the Solauto position has debt",
+        );
     }
 
     if position_data.state.max_ltv_bps.is_some() {

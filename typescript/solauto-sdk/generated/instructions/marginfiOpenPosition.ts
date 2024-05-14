@@ -8,6 +8,8 @@
 
 import {
   Context,
+  Option,
+  OptionOrNullable,
   Pda,
   PublicKey,
   Signer,
@@ -18,7 +20,10 @@ import {
 import {
   Serializer,
   mapSerializer,
+  option,
   struct,
+  tuple,
+  u64,
   u8,
 } from '@metaplex-foundation/umi/serializers';
 import {
@@ -58,11 +63,11 @@ export type MarginfiOpenPositionInstructionAccounts = {
 // Data.
 export type MarginfiOpenPositionInstructionData = {
   discriminator: number;
-  updatePositionData: UpdatePositionData;
+  args: [UpdatePositionData, Option<bigint>];
 };
 
 export type MarginfiOpenPositionInstructionDataArgs = {
-  updatePositionData: UpdatePositionDataArgs;
+  args: [UpdatePositionDataArgs, OptionOrNullable<number | bigint>];
 };
 
 export function getMarginfiOpenPositionInstructionDataSerializer(): Serializer<
@@ -77,7 +82,7 @@ export function getMarginfiOpenPositionInstructionDataSerializer(): Serializer<
     struct<MarginfiOpenPositionInstructionData>(
       [
         ['discriminator', u8()],
-        ['updatePositionData', getUpdatePositionDataSerializer()],
+        ['args', tuple([getUpdatePositionDataSerializer(), option(u64())])],
       ],
       { description: 'MarginfiOpenPositionInstructionData' }
     ),

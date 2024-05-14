@@ -99,7 +99,7 @@ export function cancelDCA(
     },
     debtMint: {
       index: 5,
-      isWritable: true as boolean,
+      isWritable: false as boolean,
       value: input.debtMint ?? null,
     },
     positionDebtTa: {

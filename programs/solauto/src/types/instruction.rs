@@ -60,7 +60,7 @@ pub enum Instruction {
     #[account(optional, name = "debt_mint")]
     #[account(mut, optional, name = "signer_debt_ta")]
     #[account(mut, optional, name = "position_debt_ta")]
-    MarginfiOpenPosition(UpdatePositionData),
+    MarginfiOpenPosition((UpdatePositionData, Option<u64>)),
 
     /// Open a new Solauto position with Solend
     #[account(signer, name = "signer")]

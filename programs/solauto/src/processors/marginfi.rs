@@ -19,6 +19,7 @@ use crate::{
 pub fn process_marginfi_open_position_instruction<'a>(
     accounts: &'a [AccountInfo<'a>],
     position_data: UpdatePositionData,
+    marignfi_acc_seed_idx: Option<u64>,
 ) -> ProgramResult {
     let ctx = MarginfiOpenPositionAccounts::context(accounts)?;
 
@@ -85,7 +86,7 @@ pub fn process_marginfi_open_position_instruction<'a>(
         false,
     )?;
 
-    open_position::marginfi_open_position(ctx, std_accounts.solauto_position)
+    open_position::marginfi_open_position(ctx, std_accounts.solauto_position, marignfi_acc_seed_idx)
 }
 
 pub fn process_marginfi_refresh_data<'a>(accounts: &'a [AccountInfo<'a>]) -> ProgramResult {

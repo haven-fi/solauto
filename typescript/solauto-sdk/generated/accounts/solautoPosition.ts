@@ -39,8 +39,9 @@ import {
 export type SolautoPosition = Account<SolautoPositionAccountData>;
 
 export type SolautoPositionAccountData = {
-  positionId: number;
   positionIdArr: Array<number>;
+  bump: Array<number>;
+  positionId: number;
   authority: PublicKey;
   selfManaged: boolean;
   position: Option<PositionData>;
@@ -48,8 +49,9 @@ export type SolautoPositionAccountData = {
 };
 
 export type SolautoPositionAccountDataArgs = {
-  positionId: number;
   positionIdArr: Array<number>;
+  bump: Array<number>;
+  positionId: number;
   authority: PublicKey;
   selfManaged: boolean;
   position: OptionOrNullable<PositionDataArgs>;
@@ -62,8 +64,9 @@ export function getSolautoPositionAccountDataSerializer(): Serializer<
 > {
   return struct<SolautoPositionAccountData>(
     [
-      ['positionId', u8()],
       ['positionIdArr', array(u8(), { size: 1 })],
+      ['bump', array(u8(), { size: 1 })],
+      ['positionId', u8()],
       ['authority', publicKeySerializer()],
       ['selfManaged', bool()],
       ['position', option(getPositionDataSerializer())],
@@ -147,18 +150,20 @@ export function getSolautoPositionGpaBuilder(
   );
   return gpaBuilder(context, programId)
     .registerFields<{
-      positionId: number;
       positionIdArr: Array<number>;
+      bump: Array<number>;
+      positionId: number;
       authority: PublicKey;
       selfManaged: boolean;
       position: OptionOrNullable<PositionDataArgs>;
       padding: Array<number>;
     }>({
-      positionId: [0, u8()],
-      positionIdArr: [1, array(u8(), { size: 1 })],
-      authority: [2, publicKeySerializer()],
-      selfManaged: [34, bool()],
-      position: [35, option(getPositionDataSerializer())],
+      positionIdArr: [0, array(u8(), { size: 1 })],
+      bump: [1, array(u8(), { size: 1 })],
+      positionId: [2, u8()],
+      authority: [3, publicKeySerializer()],
+      selfManaged: [35, bool()],
+      position: [36, option(getPositionDataSerializer())],
       padding: [null, array(u8(), { size: 128 })],
     })
     .deserializeUsing<SolautoPosition>((account) =>
