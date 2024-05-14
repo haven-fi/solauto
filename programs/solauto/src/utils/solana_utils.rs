@@ -23,19 +23,10 @@ pub fn account_has_data(account: &AccountInfo) -> bool {
 pub fn invoke_instruction(
     instruction: &Instruction,
     account_infos: &[AccountInfo],
-    seed: Option<&Vec<&[u8]>>,
+    seeds: Option<&Vec<&[u8]>>,
 ) -> ProgramResult {
-    if seed.is_some() {
-        let (_, bump) = Pubkey::find_program_address(seed.unwrap().as_slice(), &crate::ID);
-
-        let mut flat_seeds: Vec<&[u8]> = Vec::new();
-        for s in seed.unwrap() {
-            flat_seeds.extend_from_slice(&[s]);
-        }
-        let binding = [bump];
-        flat_seeds.push(&binding);
-
-        invoke_signed(instruction, account_infos, &[flat_seeds.as_slice()])
+    if seeds.is_some() {
+        invoke_signed(instruction, account_infos, &[seeds.unwrap().as_slice()])
     } else {
         invoke(instruction, account_infos)
     }

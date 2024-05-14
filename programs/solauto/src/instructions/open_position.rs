@@ -1,5 +1,5 @@
 use solana_program::{
-    account_info::AccountInfo, entrypoint::ProgramResult, program_pack::Pack,
+    account_info::AccountInfo, entrypoint::ProgramResult, msg, program_pack::Pack
 };
 use solend_sdk::state::Obligation;
 
@@ -104,6 +104,8 @@ fn initialize_solauto_position<'a, 'b>(
     signer_debt_ta: Option<&'a AccountInfo<'a>>,
     debt_mint: Option<&'a AccountInfo<'a>>,
 ) -> ProgramResult {
+    msg!("HELLLLLLOOOOO 1");
+
     if !solauto_position.data.self_managed || !account_has_data(solauto_position.account_info) {
         solana_utils::init_account(
             system_program,
@@ -111,10 +113,12 @@ fn initialize_solauto_position<'a, 'b>(
             signer,
             solauto_position.account_info,
             &crate::ID,
-            Some(solauto_position.data.seeds()),
+            Some(solauto_position.data.seeds_with_bump()),
             SolautoPosition::LEN,
         )?;
     }
+
+    msg!("HELLLLLLOOOOO 2");
 
     solana_utils::init_ata_if_needed(
         token_program,
@@ -124,6 +128,8 @@ fn initialize_solauto_position<'a, 'b>(
         position_supply_ta,
         supply_mint,
     )?;
+
+    msg!("HELLLLLLOOOOO 3");
 
     if debt_mint.is_some() {
         solana_utils::init_ata_if_needed(
@@ -136,6 +142,8 @@ fn initialize_solauto_position<'a, 'b>(
         )?;
     }
 
+    msg!("HELLLLLLOOOOO 4");
+
     solauto_utils::initiate_dca_in_if_necessary(
         token_program,
         solauto_position,
@@ -143,6 +151,7 @@ fn initialize_solauto_position<'a, 'b>(
         signer,
         signer_debt_ta,
     )?;
+    msg!("HELLLLLLOOOOO 5");
 
     ix_utils::update_data(solauto_position)
 }

@@ -1,18 +1,18 @@
-use solana_program::{entrypoint::ProgramResult, program_pack::Pack};
+use solana_program::{ entrypoint::ProgramResult, program_pack::Pack };
 use spl_token::state::Account as TokenAccount;
 
 use crate::{
     constants::WSOL_MINT,
     types::{
-        instruction::accounts::{ClaimReferralFeesAccounts, Context, ConvertReferralFeesAccounts},
-        shared::{DeserializedAccount, ReferralStateAccount},
+        instruction::accounts::{ ClaimReferralFeesAccounts, Context, ConvertReferralFeesAccounts },
+        shared::{ DeserializedAccount, ReferralStateAccount },
     },
-    utils::{solana_utils, solauto_utils},
+    utils::solana_utils,
 };
 
 pub fn convert_referral_fees(
     ctx: Context<ConvertReferralFeesAccounts>,
-    referral_state: DeserializedAccount<ReferralStateAccount>,
+    referral_state: DeserializedAccount<ReferralStateAccount>
 ) -> ProgramResult {
     let balance = TokenAccount::unpack(&ctx.accounts.referral_fees_ta.data.borrow())?.amount;
 
@@ -22,24 +22,21 @@ pub fn convert_referral_fees(
         ctx.accounts.referral_state,
         ctx.accounts.intermediary_ta,
         balance,
-        Some(&solauto_utils::get_referral_account_seeds(
-            &referral_state.data.authority,
-        )),
+        Some(&referral_state.data.seeds_with_bump())
     )?;
 
     Ok(())
 }
 
-pub fn claim_referral_fees(ctx: Context<ClaimReferralFeesAccounts>) -> ProgramResult {
-    let referral_account_seeds =
-        &solauto_utils::get_referral_account_seeds(ctx.accounts.signer.key);
+pub fn claim_referral_fees(ctx: Context<ClaimReferralFeesAccounts>, referral_state: DeserializedAccount<ReferralStateAccount>) -> ProgramResult {
+    let referral_state_seeds = &referral_state.data.seeds_with_bump();
     if ctx.accounts.referral_fees_mint.key == &WSOL_MINT {
         solana_utils::close_token_account(
             ctx.accounts.token_program,
             ctx.accounts.referral_fees_ta,
             ctx.accounts.signer,
             ctx.accounts.referral_state,
-            Some(referral_account_seeds),
+            Some(referral_state_seeds)
         )?;
 
         solana_utils::init_ata_if_needed(
@@ -48,7 +45,7 @@ pub fn claim_referral_fees(ctx: Context<ClaimReferralFeesAccounts>) -> ProgramRe
             ctx.accounts.signer,
             ctx.accounts.referral_state,
             ctx.accounts.referral_fees_ta,
-            ctx.accounts.referral_fees_mint,
+            ctx.accounts.referral_fees_mint
         )?;
     } else {
         solana_utils::init_ata_if_needed(
@@ -57,7 +54,7 @@ pub fn claim_referral_fees(ctx: Context<ClaimReferralFeesAccounts>) -> ProgramRe
             ctx.accounts.signer,
             ctx.accounts.signer,
             ctx.accounts.fees_destination_ta.unwrap(),
-            ctx.accounts.referral_fees_mint,
+            ctx.accounts.referral_fees_mint
         )?;
 
         let balance = TokenAccount::unpack(&ctx.accounts.referral_fees_ta.data.borrow())?.amount;
@@ -68,7 +65,7 @@ pub fn claim_referral_fees(ctx: Context<ClaimReferralFeesAccounts>) -> ProgramRe
             ctx.accounts.referral_state,
             ctx.accounts.fees_destination_ta.unwrap(),
             balance,
-            Some(referral_account_seeds),
+            Some(referral_state_seeds)
         )?;
     }
 

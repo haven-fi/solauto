@@ -16,7 +16,7 @@ pub fn close_position<'a>(
     position_supply_liquidity_ta: DeserializedAccount<'a, TokenAccount>,
     position_debt_liquidity_ta: Option<DeserializedAccount<'a, TokenAccount>>,
 ) -> ProgramResult {
-    let solauto_position_seeds = &solauto_position.data.seeds();
+    let solauto_position_seeds = &solauto_position.data.seeds_with_bump();
 
     if position_supply_liquidity_ta.data.amount > 0
         && position_supply_liquidity_ta.data.mint != WSOL_MINT

@@ -15,6 +15,21 @@ pub fn update_data<T: BorshSerialize>(account: &mut DeserializedAccount<T>) -> P
     Ok(())
 }
 
+// pub fn get_seeds_with_bump<'a>(mut seeds: Vec<&'a [u8]>) -> Vec<&'a [u8]> {
+//     let (_, bump) = Pubkey::find_program_address(seeds.as_slice(), &crate::ID);
+
+//     seeds.push(&[bump]);
+
+//     seeds
+// }
+
+pub fn get_seeds_with_bump<'a, 'b>(mut seeds: Vec<&'a [u8]>, bump_storage: &'a mut [u8]) -> Vec<&'a [u8]> {
+    let (_, bump) = Pubkey::find_program_address(seeds.as_slice(), &crate::ID);
+    bump_storage[0] = bump;
+    seeds.push(&bump_storage[..1]);
+    seeds
+}
+
 pub fn solauto_invoke_instruction(
     instruction: Instruction,
     account_infos: &[AccountInfo],
@@ -26,7 +41,7 @@ pub fn solauto_invoke_instruction(
         invoke_instruction(
             &instruction,
             account_infos,
-            Some(&solauto_position.data.seeds()),
+            Some(&solauto_position.data.seeds_with_bump()),
         )
     }
 }

@@ -5,10 +5,7 @@ use solana_program_test::{ BanksClientError, ProgramTest, ProgramTestContext };
 use solana_sdk::{
     compute_budget::ComputeBudgetInstruction, instruction::Instruction, program_pack::{ IsInitialized, Pack }, pubkey::Pubkey, rent::Rent, signature::Keypair, signer::Signer, system_instruction, transaction::Transaction
 };
-use solauto::{
-    constants::{ SOLAUTO_FEES_WALLET, WSOL_MINT },
-    utils::solauto_utils::get_referral_account_seeds,
-};
+use solauto::{constants::{ SOLAUTO_FEES_WALLET, WSOL_MINT }, types::shared::ReferralStateAccount};
 use solauto_sdk::{
     generated::{
         instructions::{
@@ -214,7 +211,7 @@ impl<'a> GeneralTestData<'a> {
     }
 
     pub fn get_referral_state(authority: &Pubkey) -> Pubkey {
-        let seeds = get_referral_account_seeds(authority);
+        let seeds = ReferralStateAccount::seeds(authority);
         let (referral_state, _) = Pubkey::find_program_address(&seeds, &SOLAUTO_ID);
         referral_state
     }

@@ -120,8 +120,9 @@ pub struct PositionData {
 
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankAccount)]
 pub struct SolautoPosition {
-    pub position_id: u8,
     _position_id_arr: [u8; 1],
+    _bump: [u8; 1],
+    pub position_id: u8,
     pub authority: Pubkey,
     pub self_managed: bool,
     pub position: Option<PositionData>,
@@ -129,24 +130,32 @@ pub struct SolautoPosition {
 }
 
 impl SolautoPosition {
-    pub const LEN: usize = 357;
+    pub const LEN: usize = 358;
     pub fn new(position_id: u8, authority: Pubkey, position: Option<PositionData>) -> Self {
+        let (_, bump) = Pubkey::find_program_address(&[&[position_id], authority.as_ref()], &crate::ID);
         Self {
-            position_id,
             _position_id_arr: [position_id],
+            _bump: [bump],
+            position_id,
             authority,
             self_managed: position_id == 0,
             position,
             _padding: [0; 128],
         }
     }
-    pub fn seeds<'a, 'b>(&'a self) -> Vec<&'a [u8]> {
+    pub fn seeds<'a>(&'a self) -> Vec<&'a [u8]> {
         vec![&self._position_id_arr, self.authority.as_ref()]
+    }
+    pub fn seeds_with_bump<'a>(&'a self) -> Vec<&'a [u8]> {
+        let mut seeds = self.seeds();
+        seeds.push(&self._bump);
+        seeds
     }
 }
 
 #[derive(ShankAccount, BorshDeserialize, BorshSerialize, Clone, Debug)]
 pub struct ReferralStateAccount {
+    _bump: [u8; 1],
     pub authority: Pubkey,
     pub referred_by_state: Option<Pubkey>,
     pub dest_fees_mint: Pubkey,
@@ -154,18 +163,28 @@ pub struct ReferralStateAccount {
 }
 
 impl ReferralStateAccount {
-    pub const LEN: usize = 225;
+    pub const LEN: usize = 226;
     pub fn new(
         authority: Pubkey,
         referred_by_state: Option<Pubkey>,
         dest_fees_mint: Pubkey,
     ) -> Self {
+        let (_, bump) = Pubkey::find_program_address(&ReferralStateAccount::seeds(&authority).as_slice(), &crate::ID);
         Self {
+            _bump: [bump],
             authority,
             referred_by_state,
             dest_fees_mint,
             _padding: [0; 128],
         }
+    }
+    pub fn seeds<'a>(authority: &'a Pubkey) -> Vec<&'a [u8]> {
+        vec![b"referral_state", authority.as_ref()]
+    }
+    pub fn seeds_with_bump<'a>(&'a self) -> Vec<&'a [u8]> {
+        let mut seeds = ReferralStateAccount::seeds(&self.authority);
+        seeds.push(&self._bump);
+        seeds
     }
 }
 

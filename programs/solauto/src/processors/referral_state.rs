@@ -156,5 +156,5 @@ pub fn process_claim_referral_fees<'a>(accounts: &'a [AccountInfo<'a>]) -> Progr
         }
     }
 
-    referral_fees::claim_referral_fees(ctx)
+    referral_fees::claim_referral_fees(ctx, referral_state)
 }

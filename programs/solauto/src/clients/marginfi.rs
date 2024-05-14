@@ -6,11 +6,7 @@ use marginfi_sdk::generated::{
 };
 use pyth_sdk_solana::state::SolanaPriceAccount;
 use solana_program::{
-    account_info::AccountInfo,
-    clock::Clock,
-    entrypoint::ProgramResult,
-    program_error::ProgramError,
-    sysvar::Sysvar,
+    account_info::AccountInfo, clock::Clock, entrypoint::ProgramResult, program_error::ProgramError, sysvar::Sysvar
 };
 use std::ops::{ Div, Mul, Sub };
 use switchboard_v2::AggregatorAccountData;
@@ -62,6 +58,10 @@ impl<'a> MarginfiClient<'a> {
             return Ok(());
         }
 
+        // TODO: if self managed, marginfi account will be fresh keypair, and we cpi.invoke as normal
+        // TODO: if not self managed, marginfi account will be a pda from solauto program, with a marginfi_account_seed_bump argument to pass into the instruction,
+        // and then we add the marginfi account seeds to the (end of the?) signer seeds here
+        
         let marginfi_account_owner = get_owner(solauto_position, ctx.accounts.signer);
         let cpi = MarginfiAccountInitializeCpi::new(
             ctx.accounts.marginfi_program,
@@ -74,7 +74,7 @@ impl<'a> MarginfiClient<'a> {
             }
         );
         if marginfi_account_owner.key == solauto_position.account_info.key {
-            cpi.invoke_signed(&[solauto_position.data.seeds().as_slice()])
+            cpi.invoke_signed(&[solauto_position.data.seeds_with_bump().as_slice()])
         } else {
             cpi.invoke()
         }
@@ -407,7 +407,7 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
         );
 
         if authority.key == std_accounts.solauto_position.account_info.key {
-            cpi.invoke_signed(&[std_accounts.solauto_position.data.seeds().as_slice()])
+            cpi.invoke_signed(&[std_accounts.solauto_position.data.seeds_with_bump().as_slice()])
         } else {
             cpi.invoke()
         }
@@ -454,7 +454,7 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
 
         if authority.key == std_accounts.solauto_position.account_info.key {
             cpi.invoke_signed_with_remaining_accounts(
-                &[std_accounts.solauto_position.data.seeds().as_slice()],
+                &[std_accounts.solauto_position.data.seeds_with_bump().as_slice()],
                 remaining_accounts.as_slice()
             )
         } else {
@@ -496,7 +496,7 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
 
         if authority.key == std_accounts.solauto_position.account_info.key {
             cpi.invoke_signed_with_remaining_accounts(
-                &[std_accounts.solauto_position.data.seeds().as_slice()],
+                &[std_accounts.solauto_position.data.seeds_with_bump().as_slice()],
                 remaining_accounts.as_slice()
             )
         } else {
@@ -533,7 +533,7 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
         );
 
         if authority.key == std_accounts.solauto_position.account_info.key {
-            cpi.invoke_signed(&[std_accounts.solauto_position.data.seeds().as_slice()])
+            cpi.invoke_signed(&[std_accounts.solauto_position.data.seeds_with_bump().as_slice()])
         } else {
             cpi.invoke()
         }

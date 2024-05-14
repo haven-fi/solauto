@@ -17,9 +17,7 @@ use crate::{
     },
 };
 
-use super::{
-    math_utils::get_maximum_repay_to_bps_param, solauto_utils::get_referral_account_seeds,
-};
+use super::math_utils::get_maximum_repay_to_bps_param;
 use crate::constants::{KAMINO_PROGRAM, MARGINFI_PROGRAM, SOLEND_PROGRAM};
 
 pub fn generic_instruction_validation(
@@ -209,7 +207,7 @@ pub fn validate_referral_accounts(
     referred_by_supply_ta: Option<&DeserializedAccount<TokenAccount>>,
     check_supply_ta: bool,
 ) -> ProgramResult {
-    let referral_state_seeds = &get_referral_account_seeds(referral_state_authority);
+    let referral_state_seeds = &ReferralStateAccount::seeds(referral_state_authority);
     let (referral_state_pda, _bump) =
         Pubkey::find_program_address(referral_state_seeds, &crate::ID);
     if &referral_state_pda != authority_referral_state.account_info.key {

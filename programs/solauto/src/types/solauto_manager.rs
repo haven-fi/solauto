@@ -192,7 +192,7 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
                 self.std_accounts.solauto_position.account_info,
                 self.accounts.intermediary_ta.unwrap(),
                 amount_to_dca_in.unwrap(),
-                Some(&self.std_accounts.solauto_position.data.seeds())
+                Some(&self.std_accounts.solauto_position.data.seeds_with_bump())
             )?;
         }
 
@@ -295,7 +295,7 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
             self.std_accounts.solauto_position.account_info,
             self.std_accounts.solauto_fees_supply_ta.as_ref().unwrap().account_info,
             solauto_fees,
-            Some(&self.std_accounts.solauto_position.data.seeds())
+            Some(&self.std_accounts.solauto_position.data.seeds_with_bump())
         )?;
 
         let referrer_fees = (total_available_balance as f64).mul(
@@ -309,7 +309,7 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
                 self.std_accounts.solauto_position.account_info,
                 self.std_accounts.referred_by_supply_ta.as_ref().unwrap().account_info,
                 referrer_fees,
-                Some(&self.std_accounts.solauto_position.data.seeds())
+                Some(&self.std_accounts.solauto_position.data.seeds_with_bump())
             )?;
         }
 
