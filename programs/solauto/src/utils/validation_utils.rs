@@ -146,6 +146,10 @@ pub fn validate_position_settings(
         return invalid_params("boost_gap must be 50 or greater");
     }
 
+    if settings.repay_to_bps == 0 && position_data.protocol_data.debt_mint.is_some() {
+        return invalid_params("Must provide a valid repay_to_bps if the Solauto position has debt");
+    }
+
     if position_data.state.max_ltv_bps.is_some() {
         let maximum_repay_to_bps = get_maximum_repay_to_bps_param(
             (position_data.state.max_ltv_bps.unwrap() as f64).div(10000.0),

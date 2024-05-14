@@ -37,18 +37,9 @@ mod update_position {
             ).await
             .unwrap();
 
-        let active_dca = DCASettings {
-            unix_start_date: Utc::now().timestamp() as u64,
-            unix_dca_interval: 60 * 60 * 24,
-            dca_periods_passed: 0,
-            target_dca_periods: 5,
-            dca_direction: DCADirection::In(dca_amount),
-            dca_risk_aversion_bps: None,
-            target_boost_to_bps: None,
-        };
         data.open_position(
             Some(data.general.default_setting_params.clone()),
-            Some(active_dca)
+            None
         ).await.unwrap();
 
         let new_settings = SolautoSettingsParameters {
