@@ -447,7 +447,6 @@ impl<'a> MarginfiTestData<'a> {
             .solauto_position(self.general.solauto_position)
             .marginfi_group(self.marginfi_group)
             .marginfi_account(self.marginfi_account, self.general.position_id == 0)
-            .supply_bank(self.supply_bank)
             .supply_mint(self.general.supply_liquidity_mint.pubkey())
             .position_supply_ta(self.general.position_supply_liquidity_ta)
             .debt_mint(

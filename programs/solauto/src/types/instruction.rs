@@ -56,7 +56,6 @@ pub enum Instruction {
     #[account(name = "marginfi_group")]
     #[account(mut, optional_signer, name = "marginfi_account")]
     #[account(name = "supply_mint")]
-    #[account(name = "supply_bank")]
     #[account(mut, name = "position_supply_ta")]
     #[account(optional, name = "debt_mint")]
     #[account(mut, optional, name = "signer_debt_ta")]
