@@ -40,7 +40,7 @@ pub enum TokenBalanceAmount {
 #[derive(BorshDeserialize, BorshSerialize, Clone, Copy, Debug, ShankType, PartialEq)]
 pub enum DCADirection {
     /// Base unit amount of debt to DCA-in with
-    In(u64),
+    In(Option<u64>),
     Out,
 }
 
@@ -130,7 +130,7 @@ pub struct SolautoPosition {
 }
 
 impl SolautoPosition {
-    pub const LEN: usize = 358;
+    pub const LEN: usize = 359;
     pub fn new(position_id: u8, authority: Pubkey, position: Option<PositionData>) -> Self {
         let (_, bump) =
             Pubkey::find_program_address(&[&[position_id], authority.as_ref()], &crate::ID);

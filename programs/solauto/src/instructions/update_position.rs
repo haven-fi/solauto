@@ -16,17 +16,13 @@ pub fn update_position<'a>(
     mut solauto_position: DeserializedAccount<'a, SolautoPosition>,
     new_data: UpdatePositionData,
 ) -> ProgramResult {
-    msg!("Hello 1");
     if new_data.setting_params.is_some() {
         update_settings(&mut solauto_position, &new_data)?;
     }
-    msg!("Hello 2");
 
     if new_data.active_dca.is_some() {
         update_dca(&ctx, &mut solauto_position, &new_data)?;
     }
-
-    msg!("Hello 3");
 
     ix_utils::update_data(&mut solauto_position)
 }
@@ -70,8 +66,6 @@ fn update_dca<'a, 'b>(
 ) -> ProgramResult {
     let new_dca = new_data.active_dca.as_ref().unwrap();
 
-    msg!("Hello .1");
-
     if solauto_position
         .data
         .position
@@ -112,13 +106,9 @@ fn update_dca<'a, 'b>(
         }
     }
 
-    msg!("Hello .2");
-
     let position_data = solauto_position.data.position.as_mut().unwrap();
     validation_utils::validate_dca_settings(&position_data)?;
     position_data.active_dca = new_data.active_dca.clone();
-
-    msg!("Hello .3");
 
     if let DCADirection::In(_) = new_dca.dca_direction {
         if position_data.protocol_data.debt_mint.is_some()
@@ -130,8 +120,6 @@ fn update_dca<'a, 'b>(
         }
         position_data.protocol_data.debt_mint = Some(*ctx.accounts.debt_mint.unwrap().key);
 
-        msg!("Hello .5");
-
         solana_utils::init_ata_if_needed(
             ctx.accounts.token_program,
             ctx.accounts.system_program,
@@ -141,8 +129,6 @@ fn update_dca<'a, 'b>(
             ctx.accounts.debt_mint.unwrap(),
         )?;
 
-        msg!("Hello .6");
-
         solauto_utils::initiate_dca_in_if_necessary(
             ctx.accounts.token_program,
             solauto_position,
@@ -150,8 +136,6 @@ fn update_dca<'a, 'b>(
             ctx.accounts.signer,
             ctx.accounts.signer_debt_ta,
         )?;
-
-        msg!("Hello .7");
     }
 
     Ok(())

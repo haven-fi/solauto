@@ -49,9 +49,6 @@ impl<'a> MarginfiClient<'a> {
         solauto_position: &'b DeserializedAccount<'a, SolautoPosition>,
         marignfi_acc_seed_idx: Option<u64>,
     ) -> ProgramResult {
-        #[cfg(feature = "test")]
-        return Ok(());
-
         if account_has_data(ctx.accounts.marginfi_account) {
             return Ok(());
         }

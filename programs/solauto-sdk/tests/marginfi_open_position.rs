@@ -108,7 +108,7 @@ mod open_position {
             unix_dca_interval: 60 * 60 * 24,
             dca_periods_passed: 0,
             target_dca_periods: 5,
-            dca_direction: DCADirection::In(dca_amount),
+            dca_direction: DCADirection::In(Some(dca_amount)),
             dca_risk_aversion_bps: None,
             target_boost_to_bps: None,
         };

@@ -29,24 +29,35 @@ mod update_position {
 
         let dca_amount = 50_000;
         data.general
-        .mint_tokens_to_ta(
-            data.general.debt_liquidity_mint.unwrap(),
-            data.general.signer_debt_liquidity_ta.unwrap(),
-            data.general.ctx.payer.pubkey(),
-            dca_amount
-        ).await
-        .unwrap();
-    
+            .mint_tokens_to_ta(
+                data.general.debt_liquidity_mint.unwrap(),
+                data.general.signer_debt_liquidity_ta.unwrap(),
+                data.general.ctx.payer.pubkey(),
+                dca_amount
+            ).await
+            .unwrap();
+
         let active_dca = DCASettings {
             unix_start_date: Utc::now().timestamp() as u64,
             unix_dca_interval: 60 * 60 * 24,
             dca_periods_passed: 0,
             target_dca_periods: 5,
-            dca_direction: DCADirection::In(dca_amount),
+            dca_direction: DCADirection::In(Some(dca_amount)),
             dca_risk_aversion_bps: None,
             target_boost_to_bps: None,
         };
-        data.open_position(Some(data.general.default_setting_params.clone()), Some(active_dca.clone())).await.unwrap();
+        data.open_position(
+            Some(data.general.default_setting_params.clone()),
+            Some(active_dca.clone())
+        ).await.unwrap();
+
+        let solauto_position = data.general.deserialize_account_data::<SolautoPosition>(
+            data.general.solauto_position
+        ).await;
+        assert!(
+            solauto_position.position.as_ref().unwrap().active_dca.as_ref().unwrap() == &active_dca
+        );
+        assert!(solauto_position.position.as_ref().unwrap().debt_ta_balance == dca_amount);
 
         // Update position's settings and add a DCA
         let new_settings = SolautoSettingsParameters {
@@ -57,7 +68,7 @@ mod update_position {
         };
         let new_dca = DCASettings {
             unix_start_date: Utc::now().timestamp() as u64,
-            unix_dca_interval: 60 * 60 * 24,
+            unix_dca_interval: 60 * 60,
             dca_periods_passed: 0,
             target_dca_periods: 5,
             dca_direction: DCADirection::Out,
@@ -79,7 +90,6 @@ mod update_position {
         assert!(solauto_position.position.as_ref().unwrap().debt_ta_balance == 0);
 
         // TODO Modify setting params while active dca and get assert ix error
-
     }
 
     // pub async fn test_settings(data: &mut MarginfiTestData<'_>, settings: SolautoSettingsParameters) {

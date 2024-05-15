@@ -208,29 +208,29 @@ pub fn initiate_dca_in_if_necessary<'a, 'b>(
         return Err(SolautoError::IncorrectAccounts.into());
     }
 
-    let signer_token_account = TokenAccount::unpack(&signer_debt_ta.unwrap().data.borrow())?;
-    let balance = signer_token_account.amount;
-    if balance == 0 {
-        msg!("Unable to initiate DCA with a lack of funds in the signer debt token account");
-        return Err(ProgramError::InvalidInstructionData.into());
-    }
-
     let DCADirection::In(base_unit_amount) = active_dca.dca_direction else {
         panic!("Expected DCADirection::In variant");
     };
 
-    if base_unit_amount > balance {
+    if base_unit_amount.is_none() {
+        return Ok(());
+    }
+
+    let signer_token_account = TokenAccount::unpack(&signer_debt_ta.unwrap().data.borrow())?;
+    let balance = signer_token_account.amount;
+
+    if base_unit_amount.unwrap() > balance {
         msg!("Provided greater DCA-in value than exists in the signer debt token account");
         return Err(ProgramError::InvalidInstructionData.into());
     }
 
-    position.debt_ta_balance += base_unit_amount;
+    position.debt_ta_balance += base_unit_amount.unwrap();
     spl_token_transfer(
         token_program,
         signer_debt_ta.unwrap(),
         signer,
         position_debt_ta.unwrap(),
-        base_unit_amount,
+        base_unit_amount.unwrap(),
         None,
     )?;
 
@@ -315,7 +315,6 @@ pub fn cancel_active_dca<'a, 'b>(
         .as_ref()
         .unwrap();
 
-    msg!("Hello ..1");
     if let DCADirection::In(_) = active_dca.dca_direction {
         if solauto_position
             .data
@@ -332,7 +331,10 @@ pub fn cancel_active_dca<'a, 'b>(
                 return Err(SolautoError::IncorrectAccounts.into());
             }
 
-            msg!("Hello ..2");
+            let debt_ta_current_balance = TokenAccount::unpack(&position_debt_ta.unwrap().data.borrow())?.amount;
+            if debt_ta_current_balance == 0 {
+                return Ok(());
+            }
 
             init_ata_if_needed(
                 token_program,
@@ -343,8 +345,6 @@ pub fn cancel_active_dca<'a, 'b>(
                 debt_mint.unwrap(),
             )?;
 
-            msg!("Hello ..3");
-
             solauto_position
                 .data
                 .position
@@ -352,25 +352,18 @@ pub fn cancel_active_dca<'a, 'b>(
                 .unwrap()
                 .debt_ta_balance = 0;
 
-            msg!("Hello ..4");
-
             spl_token_transfer(
                 token_program,
                 position_debt_ta.unwrap(),
                 solauto_position.account_info,
                 signer_debt_ta.unwrap(),
-                TokenAccount::unpack(&position_debt_ta.unwrap().data.borrow())?.amount,
+                debt_ta_current_balance,
                 Some(&solauto_position.data.seeds_with_bump()),
             )?;
-
-            msg!("Hello ..5");
         }
     }
 
     solauto_position.data.position.as_mut().unwrap().active_dca = None;
-
-    msg!("Hello ..6");
-
     Ok(())
 }
 

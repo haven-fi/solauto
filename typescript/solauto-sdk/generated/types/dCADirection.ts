@@ -6,11 +6,13 @@
  * @see https://github.com/metaplex-foundation/kinobi
  */
 
+import { Option, OptionOrNullable } from '@metaplex-foundation/umi';
 import {
   GetDataEnumKind,
   GetDataEnumKindContent,
   Serializer,
   dataEnum,
+  option,
   struct,
   tuple,
   u64,
@@ -18,11 +20,11 @@ import {
 } from '@metaplex-foundation/umi/serializers';
 
 export type DCADirection =
-  | { __kind: 'In'; fields: [bigint] }
+  | { __kind: 'In'; fields: [Option<bigint>] }
   | { __kind: 'Out' };
 
 export type DCADirectionArgs =
-  | { __kind: 'In'; fields: [number | bigint] }
+  | { __kind: 'In'; fields: [OptionOrNullable<number | bigint>] }
   | { __kind: 'Out' };
 
 export function getDCADirectionSerializer(): Serializer<
@@ -34,7 +36,7 @@ export function getDCADirectionSerializer(): Serializer<
       [
         'In',
         struct<GetDataEnumKindContent<DCADirection, 'In'>>([
-          ['fields', tuple([u64()])],
+          ['fields', tuple([option(u64())])],
         ]),
       ],
       ['Out', unit()],
