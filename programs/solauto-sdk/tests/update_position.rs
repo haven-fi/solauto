@@ -4,13 +4,13 @@ pub mod test_utils;
 mod update_position {
     use chrono::Utc;
     use solana_program_test::tokio;
-    use solana_sdk::signer::Signer;
+    use solana_sdk::{ instruction::InstructionError, signature::Keypair, signer::Signer, transaction::Transaction };
     use solauto_sdk::generated::{
         accounts::SolautoPosition,
         types::{ DCADirection, DCASettings, SolautoSettingsParameters },
     };
 
-    use crate::test_utils::*;
+    use crate::{assert_instruction_error, test_utils::*};
 
     #[tokio::test]
     async fn update_settings_and_dca() {
@@ -88,5 +88,38 @@ mod update_position {
             solauto_position.position.as_ref().unwrap().active_dca.as_ref().unwrap() == &new_dca
         );
         assert!(solauto_position.position.as_ref().unwrap().debt_ta_balance == 0);
+    }
+
+    #[tokio::test]
+    async fn incorrect_signer() {
+        let temp_account = Keypair::new();
+        let mut args = GeneralArgs::new();
+        args.fund_account(temp_account.pubkey());
+        let mut data = MarginfiTestData::new(&args).await;
+        data.test_prefixtures().await
+            .unwrap()
+            .general.create_referral_state_accounts().await
+            .unwrap();
+        data.general
+            .create_ata(
+                data.general.ctx.payer.pubkey(),
+                data.general.debt_liquidity_mint.unwrap()
+            ).await
+            .unwrap();
+        data.open_position(Some(data.general.default_setting_params.clone()), None).await.unwrap();
+
+        let tx = Transaction::new_signed_with_payer(
+            &[
+                data
+                    .update_position_ix(Some(data.general.default_setting_params.clone()), None)
+                    .signer(temp_account.pubkey())
+                    .instruction(),
+            ],
+            Some(&temp_account.pubkey()),
+            &[&temp_account],
+            data.general.ctx.last_blockhash
+        );
+        let err = data.general.ctx.banks_client.process_transaction(tx).await.unwrap_err();
+        assert_instruction_error!(err, InstructionError::Custom(0));
     }
 }
