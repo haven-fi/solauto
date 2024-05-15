@@ -122,4 +122,14 @@ mod update_position {
         let err = data.general.ctx.banks_client.process_transaction(tx).await.unwrap_err();
         assert_instruction_error!(err, InstructionError::Custom(0));
     }
+
+    #[tokio::test]
+    async fn incorrect_solauto_position() {
+
+    }
+
+    #[tokio::test]
+    async fn incorrect_token_accounts() {
+        
+    }
 }
