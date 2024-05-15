@@ -43,9 +43,10 @@ pub fn process_solend_open_position_instruction<'a>(
         Some(max_ltv),
         Some(liq_threshold),
     )?;
-    validation_utils::validate_position_settings(&solauto_position)?;
     if solauto_position.data.position.is_some() {
-        validation_utils::validate_dca_settings(solauto_position.data.position.as_ref().unwrap())?;
+        let position_data = solauto_position.data.position.as_ref().unwrap();
+        validation_utils::validate_position_settings(position_data)?;
+        validation_utils::validate_dca_settings(position_data)?;
     }
 
     solauto_utils::init_solauto_fees_supply_ta(

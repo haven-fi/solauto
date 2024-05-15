@@ -10,7 +10,7 @@ mod update_position {
         types::{ DCADirection, DCASettings, SolautoSettingsParameters },
     };
 
-    use crate::{ assert_instruction_error, test_utils::* };
+    use crate::test_utils::*;
 
     #[tokio::test]
     async fn update_settings_and_dca() {
@@ -88,36 +88,5 @@ mod update_position {
             solauto_position.position.as_ref().unwrap().active_dca.as_ref().unwrap() == &new_dca
         );
         assert!(solauto_position.position.as_ref().unwrap().debt_ta_balance == 0);
-
-        // TODO Modify setting params while active dca and get assert ix error
     }
-
-    // pub async fn test_settings(data: &mut MarginfiTestData<'_>, settings: SolautoSettingsParameters) {
-    //     let tx = Transaction::new_signed_with_payer(
-    //         &[data.open_position_ix(Some(settings), None).instruction()],
-    //         Some(&data.general.ctx.payer.pubkey()),
-    //         &[&data.general.ctx.payer],
-    //         data.general.ctx.last_blockhash
-    //     );
-    //     let err = data.general.ctx.banks_client.process_transaction(tx).await.unwrap_err();
-    //     assert_instruction_error!(err, InstructionError::Custom(4));
-    // }
-
-    // #[tokio::test]
-    // async fn invalid_settings() {
-    //     let args = GeneralArgs::new();
-    //     let mut data = MarginfiTestData::new(&args).await;
-    //     data
-    //         .test_prefixtures().await
-    //         .unwrap()
-    //         .create_referral_state_accounts().await
-    //         .unwrap();
-
-    //     test_settings(&mut data, SolautoSettingsParameters {
-    //         boost_to_bps: 4499,
-    //         boost_from_bps: 4500,
-    //         repay_to_bps: 9000,
-    //         repay_from_bps: 9500,
-    //     }).await;
-    // }
 }

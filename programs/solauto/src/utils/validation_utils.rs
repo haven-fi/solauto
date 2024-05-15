@@ -26,7 +26,7 @@ pub fn generic_instruction_validation(
     authority_signer_only_ix: bool,
     solauto_managed_only_ix: bool,
 ) -> ProgramResult {
-    validate_position(
+    validate_instruction(
         accounts.signer,
         &accounts.solauto_position,
         authority_signer_only_ix,
@@ -66,7 +66,7 @@ pub fn generic_instruction_validation(
     Ok(())
 }
 
-pub fn validate_position(
+pub fn validate_instruction(
     signer: &AccountInfo,
     solauto_position: &DeserializedAccount<SolautoPosition>,
     authority_signer_only_ix: bool,
@@ -107,14 +107,8 @@ pub fn validate_position(
 }
 
 pub fn validate_position_settings(
-    solauto_position: &DeserializedAccount<SolautoPosition>,
+    position_data: &PositionData,
 ) -> ProgramResult {
-    if solauto_position.data.self_managed {
-        return Ok(());
-    }
-
-    let position_data = solauto_position.data.position.as_ref().unwrap();
-
     if position_data.protocol_data.debt_mint.is_none() && position_data.setting_params.is_some() {
         msg!("Cannot provide setting parameters when not borrowing debt");
         return Err(SolautoError::InvalidPositionSettings.into());
@@ -159,6 +153,73 @@ pub fn validate_position_settings(
             return invalid_params(
                 format!("For the given max_ltv and liq_threshold of the supplied asset, repay_to_bps must be lower or equal to {} in order to bring the utilization rate to an allowed position", maximum_repay_to_bps).as_str()
             );
+        }
+    }
+
+    Ok(())
+}
+
+pub fn validate_dca_settings(position_data: &PositionData) -> ProgramResult {
+    if position_data.active_dca.is_none() {
+        return Ok(());
+    }
+
+    if position_data.setting_params.is_none() {
+        msg!("Position settings must be set if you are providing DCA settings");
+        return Err(SolautoError::InvalidPositionSettings.into());
+    }
+
+    let dca = position_data.active_dca.as_ref().unwrap();
+    let settings = position_data.setting_params.as_ref().unwrap();
+    let invalid_params = |error_msg| {
+        msg!(error_msg);
+        Err(SolautoError::InvalidDCASettings.into())
+    };
+
+    if dca.dca_periods_passed > 0 {
+        return invalid_params(
+            "DCA periods passed cannot be anything other than 0 when first being set",
+        );
+    }
+
+    if dca.unix_dca_interval < 60 * 10 || dca.unix_dca_interval > 60 * 60 * 24 * 30 {
+        return invalid_params("DCA interval period must be between 10 minutes and 1 month");
+    }
+
+    if dca.target_dca_periods == 0 {
+        return invalid_params("DCA periods must be greater than or equal to 1");
+    }
+
+    if dca.dca_direction == DCADirection::Out && dca.dca_risk_aversion_bps.is_some() {
+        return invalid_params("DCA risk aversion BPS parameter is only for when DCAing-in");
+    }
+
+    if dca.dca_risk_aversion_bps.is_some() && dca.dca_risk_aversion_bps.unwrap() > 10000 {
+        return invalid_params("DCA risk aversion BPS must be between 0 and 10000");
+    }
+
+    if let DCADirection::Out = dca.dca_direction {
+        if settings.boost_to_bps == 0 {
+            return invalid_params("Cannot DCA-out of a position with a boost-to parameter of 0");
+        }
+    }
+
+    if dca.target_boost_to_bps.is_some() {
+        match dca.dca_direction {
+            DCADirection::In(_) => {
+                if dca.target_boost_to_bps.unwrap() <= settings.boost_to_bps {
+                    return invalid_params(
+                        "When DCAing-in, target boost-to parameter must be greater than current setting's boost to value"
+                    );
+                }
+            }
+            DCADirection::Out => {
+                if dca.target_boost_to_bps.unwrap() >= settings.boost_to_bps {
+                    return invalid_params(
+                        "When DCAing-out, target boost-to parameter must be less than current setting's boost to value"
+                    );
+                }
+            }
         }
     }
 
@@ -326,73 +387,6 @@ pub fn validate_token_account(
                 source_ta.unwrap().account_info.key
             );
             return Err(SolautoError::IncorrectAccounts.into());
-        }
-    }
-
-    Ok(())
-}
-
-pub fn validate_dca_settings(position_data: &PositionData) -> ProgramResult {
-    if position_data.active_dca.is_none() {
-        return Ok(());
-    }
-
-    if position_data.setting_params.is_none() {
-        msg!("Position settings must be set if you are providing DCA settings");
-        return Err(SolautoError::InvalidPositionSettings.into());
-    }
-
-    let dca = position_data.active_dca.as_ref().unwrap();
-    let settings = position_data.setting_params.as_ref().unwrap();
-    let invalid_params = |error_msg| {
-        msg!(error_msg);
-        Err(SolautoError::InvalidDCASettings.into())
-    };
-
-    if dca.dca_periods_passed > 0 {
-        return invalid_params(
-            "DCA periods passed cannot be anything other than 0 when first being set",
-        );
-    }
-
-    if dca.unix_dca_interval < 60 * 10 || dca.unix_dca_interval > 60 * 60 * 24 * 30 {
-        return invalid_params("DCA interval period must be between 10 minutes and 1 month");
-    }
-
-    if dca.target_dca_periods == 0 {
-        return invalid_params("DCA periods must be greater than or equal to 1");
-    }
-
-    if dca.dca_direction == DCADirection::Out && dca.dca_risk_aversion_bps.is_some() {
-        return invalid_params("DCA risk aversion BPS parameter is only for when DCAing-in");
-    }
-
-    if dca.dca_risk_aversion_bps.is_some() && dca.dca_risk_aversion_bps.unwrap() > 10000 {
-        return invalid_params("DCA risk aversion BPS must be between 0 and 10000");
-    }
-
-    if let DCADirection::Out = dca.dca_direction {
-        if settings.boost_to_bps == 0 {
-            return invalid_params("Cannot DCA-out of a position with a boost-to parameter of 0");
-        }
-    }
-
-    if dca.target_boost_to_bps.is_some() {
-        match dca.dca_direction {
-            DCADirection::In(_) => {
-                if dca.target_boost_to_bps.unwrap() <= settings.boost_to_bps {
-                    return invalid_params(
-                        "When DCAing-in, target boost-to parameter must be greater than current setting's boost to value"
-                    );
-                }
-            }
-            DCADirection::Out => {
-                if dca.target_boost_to_bps.unwrap() >= settings.boost_to_bps {
-                    return invalid_params(
-                        "When DCAing-out, target boost-to parameter must be less than current setting's boost to value"
-                    );
-                }
-            }
         }
     }
 

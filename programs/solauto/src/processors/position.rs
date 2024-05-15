@@ -22,7 +22,7 @@ pub fn process_update_position_instruction<'a>(
         DeserializedAccount::<SolautoPosition>::deserialize(Some(ctx.accounts.solauto_position))?
             .unwrap();
 
-    validation_utils::validate_position(ctx.accounts.signer, &solauto_position, true, true)?;
+    validation_utils::validate_instruction(ctx.accounts.signer, &solauto_position, true, true)?;
 
     let debt_mint_pubkey = ctx
         .accounts
@@ -58,7 +58,7 @@ pub fn process_close_position_instruction<'a>(accounts: &'a [AccountInfo<'a>]) -
     let position_debt_liquidity_ta =
         DeserializedAccount::<TokenAccount>::unpack(ctx.accounts.position_debt_liquidity_ta)?;
 
-    validation_utils::validate_position(ctx.accounts.signer, &solauto_position, true, true)?;
+    validation_utils::validate_instruction(ctx.accounts.signer, &solauto_position, true, true)?;
 
     validation_utils::validate_token_accounts(
         ctx.accounts.signer,
@@ -81,7 +81,7 @@ pub fn process_cancel_dca<'a>(accounts: &'a [AccountInfo<'a>]) -> ProgramResult 
         DeserializedAccount::<SolautoPosition>::deserialize(Some(ctx.accounts.solauto_position))?
             .unwrap();
 
-    validation_utils::validate_position(ctx.accounts.signer, &solauto_position, true, true)?;
+    validation_utils::validate_instruction(ctx.accounts.signer, &solauto_position, true, true)?;
 
     if solauto_position
         .data
