@@ -114,7 +114,7 @@ pub fn process_cancel_dca<'a>(accounts: &'a [AccountInfo<'a>]) -> ProgramResult 
         debt_mint_pubkey,
     )?;
 
-    solauto_utils::cancel_active_dca(
+    solauto_utils::cancel_dca_in_if_necessary(
         ctx.accounts.signer,
         ctx.accounts.system_program,
         ctx.accounts.token_program,

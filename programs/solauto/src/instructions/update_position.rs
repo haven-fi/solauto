@@ -93,7 +93,7 @@ fn update_dca<'a, 'b>(
                     .debt_ta_balance
                     > 0
             {
-                solauto_utils::cancel_active_dca(
+                solauto_utils::cancel_dca_in_if_necessary(
                     ctx.accounts.signer,
                     ctx.accounts.system_program,
                     ctx.accounts.token_program,

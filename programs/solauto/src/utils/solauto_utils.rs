@@ -237,67 +237,7 @@ pub fn initiate_dca_in_if_necessary<'a, 'b>(
     Ok(())
 }
 
-pub fn is_dca_instruction(
-    solauto_position: &SolautoPosition,
-    obligation_position: &LendingProtocolObligationPosition,
-    current_unix_timestamp: u64,
-) -> Result<Option<DCADirection>, ProgramError> {
-    if solauto_position.self_managed
-        || solauto_position
-            .position
-            .as_ref()
-            .unwrap()
-            .protocol_data
-            .debt_mint
-            .is_none()
-    {
-        return Ok(None);
-    }
-
-    if obligation_position.current_liq_utilization_rate_bps()
-        >= solauto_position
-            .position
-            .as_ref()
-            .unwrap()
-            .setting_params
-            .as_ref()
-            .unwrap()
-            .repay_from_bps()
-    {
-        return Ok(None);
-    }
-
-    if solauto_position
-        .position
-        .as_ref()
-        .unwrap()
-        .active_dca
-        .is_none()
-    {
-        return Ok(None);
-    }
-
-    let dca_settings = solauto_position
-        .position
-        .as_ref()
-        .unwrap()
-        .active_dca
-        .as_ref()
-        .unwrap();
-
-    if dca_settings.unix_start_date.add(
-        dca_settings
-            .unix_dca_interval
-            .mul(dca_settings.dca_periods_passed as u64),
-    ) < current_unix_timestamp
-    {
-        return Ok(None);
-    }
-
-    Ok(Some(dca_settings.dca_direction))
-}
-
-pub fn cancel_active_dca<'a, 'b>(
+pub fn cancel_dca_in_if_necessary<'a, 'b>(
     signer: &'a AccountInfo<'a>,
     system_program: &'a AccountInfo<'a>,
     token_program: &'a AccountInfo<'a>,
@@ -365,6 +305,66 @@ pub fn cancel_active_dca<'a, 'b>(
 
     solauto_position.data.position.as_mut().unwrap().active_dca = None;
     Ok(())
+}
+
+pub fn is_dca_instruction(
+    solauto_position: &SolautoPosition,
+    obligation_position: &LendingProtocolObligationPosition,
+    current_unix_timestamp: u64,
+) -> Result<Option<DCADirection>, ProgramError> {
+    if solauto_position.self_managed
+        || solauto_position
+            .position
+            .as_ref()
+            .unwrap()
+            .protocol_data
+            .debt_mint
+            .is_none()
+    {
+        return Ok(None);
+    }
+
+    if obligation_position.current_liq_utilization_rate_bps()
+        >= solauto_position
+            .position
+            .as_ref()
+            .unwrap()
+            .setting_params
+            .as_ref()
+            .unwrap()
+            .repay_from_bps()
+    {
+        return Ok(None);
+    }
+
+    if solauto_position
+        .position
+        .as_ref()
+        .unwrap()
+        .active_dca
+        .is_none()
+    {
+        return Ok(None);
+    }
+
+    let dca_settings = solauto_position
+        .position
+        .as_ref()
+        .unwrap()
+        .active_dca
+        .as_ref()
+        .unwrap();
+
+    if dca_settings.unix_start_date.add(
+        dca_settings
+            .unix_dca_interval
+            .mul(dca_settings.dca_periods_passed as u64),
+    ) < current_unix_timestamp
+    {
+        return Ok(None);
+    }
+
+    Ok(Some(dca_settings.dca_direction))
 }
 
 pub struct SolautoFeesBps {
