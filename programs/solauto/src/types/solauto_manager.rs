@@ -354,8 +354,8 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
 
         let position = solauto_position.data.position.as_mut().unwrap();
 
-        position.state.net_worth_usd_base_amount = obligation_position.net_worth_usd_base_amount();
-        position.state.base_amount_liquidity_net_worth =
+        position.state.net_worth_base_amount_usd = obligation_position.net_worth_usd_base_amount();
+        position.state.net_worth_base_amount_supply_mint =
             obligation_position.net_worth_base_amount();
         position.state.liq_utilization_rate_bps =
             obligation_position.current_liq_utilization_rate_bps();

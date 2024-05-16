@@ -358,6 +358,46 @@ impl<'a> GeneralTestData<'a> {
             .referral_fees_dest_mint(self.referral_fees_dest_mint);
         builder
     }
+
+    pub async fn update_position(
+        &mut self,
+        settings: Option<SolautoSettingsParameters>,
+        active_dca: Option<DCASettings>
+    ) -> Result<&mut Self, BanksClientError> {
+        self
+            .execute_instructions(
+                vec![self.update_position_ix(settings, active_dca).instruction()],
+                None
+            ).await
+            .unwrap();
+        Ok(self)
+    }
+
+    pub fn update_position_ix(
+        &self,
+        setting_params: Option<SolautoSettingsParameters>,
+        active_dca: Option<DCASettings>
+    ) -> UpdatePositionBuilder {
+        let mut builder = UpdatePositionBuilder::new();
+        let position_data = UpdatePositionData {
+            position_id: self.position_id,
+            setting_params,
+            active_dca,
+        };
+        builder
+            .signer(self.ctx.payer.pubkey())
+            .solauto_position(self.solauto_position)
+            .debt_mint(
+                self.debt_liquidity_mint.map_or_else(
+                    || None,
+                    |mint| Some(mint.pubkey())
+                )
+            )
+            .position_debt_ta(self.position_debt_liquidity_ta)
+            .signer_debt_ta(self.signer_debt_liquidity_ta)
+            .update_position_data(position_data);
+        builder
+    }
 }
 
 pub struct MarginfiTestData<'a> {
@@ -465,46 +505,6 @@ impl<'a> MarginfiTestData<'a> {
             .signer_debt_ta(self.general.signer_debt_liquidity_ta)
             .position_debt_ta(self.general.position_debt_liquidity_ta)
             .args((position_data, self.marginfi_account_seed_idx));
-        builder
-    }
-
-    pub async fn update_position(
-        &mut self,
-        settings: Option<SolautoSettingsParameters>,
-        active_dca: Option<DCASettings>
-    ) -> Result<&mut Self, BanksClientError> {
-        self.general
-            .execute_instructions(
-                vec![self.update_position_ix(settings, active_dca).instruction()],
-                None
-            ).await
-            .unwrap();
-        Ok(self)
-    }
-
-    pub fn update_position_ix(
-        &self,
-        setting_params: Option<SolautoSettingsParameters>,
-        active_dca: Option<DCASettings>
-    ) -> UpdatePositionBuilder {
-        let mut builder = UpdatePositionBuilder::new();
-        let position_data = UpdatePositionData {
-            position_id: self.general.position_id,
-            setting_params,
-            active_dca,
-        };
-        builder
-            .signer(self.general.ctx.payer.pubkey())
-            .solauto_position(self.general.solauto_position)
-            .debt_mint(
-                self.general.debt_liquidity_mint.map_or_else(
-                    || None,
-                    |mint| Some(mint.pubkey())
-                )
-            )
-            .position_debt_ta(self.general.position_debt_liquidity_ta)
-            .signer_debt_ta(self.general.signer_debt_liquidity_ta)
-            .update_position_data(position_data);
         builder
     }
 }
