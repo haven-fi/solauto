@@ -111,14 +111,16 @@ pub fn process_solend_refresh_data<'a>(accounts: &'a [AccountInfo<'a>]) -> Progr
         validation_utils::validate_instruction(ctx.accounts.signer, solauto_position.as_ref().unwrap(), false, true)?;
         
         if ctx.accounts.obligation.is_some() {
-            validation_utils::validate_lending_protocol_account(
+            validation_utils::validate_lending_program_accounts_with_position(
                 solauto_position.as_ref().unwrap(),
                 ctx.accounts.obligation.unwrap(),
+                Some(ctx.accounts.supply_reserve),
+                ctx.accounts.debt_reserve
             )?;
         }
     }
     
-    validation_utils::validate_program_account(
+    validation_utils::validate_lending_program_account(
         &ctx.accounts.solend_program,
         LendingPlatform::Solend,
     )?;

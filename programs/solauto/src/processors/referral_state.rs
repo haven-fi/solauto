@@ -6,7 +6,6 @@ use solana_program::{
     program_error::ProgramError,
     sysvar::instructions::{load_current_index_checked, load_instruction_at_checked},
 };
-use spl_associated_token_account::get_associated_token_address;
 
 use crate::{
     constants::{JUP_PROGRAM, SOLAUTO_MANAGER, WSOL_MINT},

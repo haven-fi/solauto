@@ -1,9 +1,11 @@
 use std::ops::Div;
 
+use marginfi_sdk::generated::accounts::Bank;
 use solana_program::{
     account_info::AccountInfo, entrypoint::ProgramResult, msg, program_error::ProgramError,
     pubkey::Pubkey, sysvar::instructions::ID as ixs_sysvar_id,
 };
+use solend_sdk::state::Reserve;
 use spl_token::{state::Account as TokenAccount, ID as token_program_id};
 
 use crate::{
@@ -32,7 +34,7 @@ pub fn generic_instruction_validation(
         authority_signer_only_ix,
         solauto_managed_only_ix,
     )?;
-    validate_program_account(accounts.lending_protocol, lending_platform)?;
+    validate_lending_program_account(accounts.lending_protocol, lending_platform)?;
 
     if accounts.authority_referral_state.is_some() {
         validate_referral_accounts(
@@ -224,7 +226,7 @@ pub fn validate_dca_settings(position_data: &PositionData) -> ProgramResult {
     Ok(())
 }
 
-pub fn validate_program_account(
+pub fn validate_lending_program_account(
     program: &AccountInfo,
     lending_platform: LendingPlatform,
 ) -> ProgramResult {
@@ -301,20 +303,96 @@ pub fn validate_referral_accounts(
     Ok(())
 }
 
-pub fn validate_lending_protocol_account(
+pub fn validate_marginfi_bank<'a>(
+    marginfi_bank: &'a AccountInfo<'a>,
     solauto_position: &DeserializedAccount<SolautoPosition>,
-    protocol_position: &AccountInfo,
+    is_supply: bool
 ) -> ProgramResult {
-    if !solauto_position.data.self_managed {
-        let protocol_data = &solauto_position
-            .data
-            .position
-            .as_ref()
-            .unwrap()
-            .protocol_data;
+    let bank = DeserializedAccount::<Bank>::deserialize(Some(marginfi_bank))?.unwrap();
 
-        if protocol_position.key != &protocol_data.protocol_account {
-            msg!("Incorrect protocol-owned account");
+    if solauto_position.data.self_managed {
+        return Ok(());
+    }
+
+    let position_data = solauto_position.data.position.as_ref().unwrap();
+    let position_mint = if is_supply {
+        Some(position_data.protocol_data.supply_mint)
+    } else {
+        position_data.protocol_data.debt_mint
+    };
+    if Some(bank.data.mint) != position_mint {
+        msg!("Provided incorrect bank account");
+        return Err(SolautoError::IncorrectAccounts.into());
+    }
+
+    Ok(())
+}
+
+pub fn validate_solend_reserve<'a>(
+    solend_reserve: &'a AccountInfo<'a>,
+    solauto_position: &DeserializedAccount<SolautoPosition>,
+    is_supply: bool
+) -> ProgramResult {
+    let reserve = DeserializedAccount::<Reserve>::unpack(Some(solend_reserve))?.unwrap();
+
+    if solauto_position.data.self_managed {
+        return Ok(());
+    }
+
+    let position_data = solauto_position.data.position.as_ref().unwrap();
+    let position_mint = if is_supply {
+        Some(position_data.protocol_data.supply_mint)
+    } else {
+        position_data.protocol_data.debt_mint
+    };
+    if Some(reserve.data.liquidity.mint_pubkey) != position_mint {
+        msg!("Provided incorrect bank account");
+        return Err(SolautoError::IncorrectAccounts.into());
+    }
+
+    Ok(())
+}
+
+pub fn validate_lending_program_accounts_with_position<'a>(
+    solauto_position: &DeserializedAccount<SolautoPosition>,
+    protocol_position: &'a AccountInfo<'a>,
+    protocol_supply_account: Option<&'a AccountInfo<'a>>,
+    protocol_debt_account: Option<&'a AccountInfo<'a>>
+) -> ProgramResult {
+    if solauto_position.data.self_managed {
+        return Ok(());
+    }
+
+    let position_data = &solauto_position
+        .data
+        .position
+        .as_ref()
+        .unwrap();
+
+    if protocol_position.key != &position_data.protocol_data.protocol_account {
+        msg!("Incorrect protocol-owned account");
+        return Err(SolautoError::IncorrectAccounts.into());
+    }
+
+    match position_data.lending_platform {
+        LendingPlatform::Marginfi => {
+            if protocol_supply_account.is_some() {
+                validate_marginfi_bank(protocol_supply_account.unwrap(), solauto_position, true)?;
+            }
+            if protocol_debt_account.is_some() {
+                validate_marginfi_bank(protocol_debt_account.unwrap(), solauto_position, false)?;
+            }
+        }
+        LendingPlatform::Solend => {
+            if protocol_supply_account.is_some() {
+                validate_solend_reserve(protocol_supply_account.unwrap(), solauto_position, true)?;
+            }
+            if protocol_debt_account.is_some() {
+                validate_solend_reserve(protocol_debt_account.unwrap(), solauto_position, false)?;
+            }
+        }
+        LendingPlatform::Kamino => {
+            msg!("Not yet supported");
             return Err(SolautoError::IncorrectAccounts.into());
         }
     }
