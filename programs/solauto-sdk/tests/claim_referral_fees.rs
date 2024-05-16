@@ -35,7 +35,7 @@ mod claim_referral_fees {
         data.general
             .mint_tokens_to_ta(
                 data.general.referral_fees_dest_mint,
-                data.general.signer_referral_state,
+                data.general.signer_referral_dest_ta,
                 fees_amount
             ).await
             .unwrap();
@@ -53,5 +53,7 @@ mod claim_referral_fees {
             .unwrap()
             .general.create_referral_state_accounts().await
             .unwrap();
+
+        // TODO
     }
 }

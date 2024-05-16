@@ -87,7 +87,6 @@ pub fn create_new_solauto_position<'a>(
 }
 
 pub fn create_or_update_referral_state<'a>(
-    system_program: &'a AccountInfo<'a>,
     rent: &'a AccountInfo<'a>,
     signer: &'a AccountInfo<'a>,
     authority: &'a AccountInfo<'a>,
@@ -135,7 +134,7 @@ pub fn create_or_update_referral_state<'a>(
         ));
 
         init_account(
-            system_program,
+            rent,
             signer,
             referral_state,
             &crate::ID,

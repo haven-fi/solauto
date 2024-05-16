@@ -35,7 +35,6 @@ pub fn process_update_referral_states<'a>(
     }
 
     let mut authority_referral_state = solauto_utils::create_or_update_referral_state(
-        ctx.accounts.system_program,
         ctx.accounts.rent,
         ctx.accounts.signer,
         ctx.accounts.signer,
@@ -47,7 +46,6 @@ pub fn process_update_referral_states<'a>(
 
     if ctx.accounts.referred_by_state.is_some() {
         let mut referred_by_state = solauto_utils::create_or_update_referral_state(
-            ctx.accounts.system_program,
             ctx.accounts.rent,
             ctx.accounts.signer,
             ctx.accounts.referred_by_authority.unwrap(),
@@ -67,9 +65,7 @@ pub fn process_update_referral_states<'a>(
         ctx.accounts.referred_by_state,
         None,
         false,
-    )?;
-
-    Ok(())
+    )
 }
 
 pub fn process_convert_referral_fees<'a>(accounts: &'a [AccountInfo<'a>]) -> ProgramResult {
@@ -137,23 +133,9 @@ pub fn process_claim_referral_fees<'a>(accounts: &'a [AccountInfo<'a>]) -> Progr
         return Err(SolautoError::IncorrectAccounts.into());
     }
 
-    if referral_state.data.dest_fees_mint != WSOL_MINT {
-        if ctx.accounts.fees_destination_ta.is_none() {
-            msg!("Missing fees destination token account when the token mint is not wSOL");
-            return Err(SolautoError::IncorrectAccounts.into());
-        }
-
-        if ctx.accounts.fees_destination_ta.unwrap().key
-            != &get_associated_token_address(
-                referral_state.account_info.key,
-                ctx.accounts.referral_fees_dest_mint.key,
-            )
-        {
-            msg!(
-                "Provided incorrect destination token account for the given signer and token mint"
-            );
-            return Err(SolautoError::IncorrectAccounts.into());
-        }
+    if referral_state.data.dest_fees_mint != WSOL_MINT && ctx.accounts.fees_destination_ta.is_none() {
+        msg!("Missing fees destination token account when the token mint is not wSOL");
+        return Err(SolautoError::IncorrectAccounts.into());
     }
 
     referral_fees::claim_referral_fees(ctx, referral_state)
