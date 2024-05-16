@@ -94,10 +94,23 @@ pub fn process_marginfi_refresh_data<'a>(accounts: &'a [AccountInfo<'a>]) -> Pro
     let ctx = MarginfiRefreshDataAccounts::context(accounts)?;
     let solauto_position =
         DeserializedAccount::<SolautoPosition>::deserialize(ctx.accounts.solauto_position)?;
+    
+    if solauto_position.is_some() {
+        validation_utils::validate_instruction(ctx.accounts.signer, solauto_position.as_ref().unwrap(), false, true)?;
+        
+        if ctx.accounts.marginfi_account.is_some() {
+            validation_utils::validate_lending_protocol_account(
+                solauto_position.as_ref().unwrap(),
+                ctx.accounts.marginfi_account.unwrap(),
+            )?;
+        }
+    }
+
     validation_utils::validate_program_account(
         &ctx.accounts.marginfi_program,
         LendingPlatform::Marginfi,
     )?;
+
     refresh::marginfi_refresh_accounts(ctx, solauto_position)
 }
 

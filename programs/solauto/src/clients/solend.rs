@@ -283,6 +283,20 @@ impl<'a> SolendClient<'a> {
 
 impl<'a> LendingProtocolClient<'a> for SolendClient<'a> {
     fn validate(&self, std_accounts: &SolautoStandardAccounts) -> ProgramResult {
+        validate_lending_protocol_account(
+            &std_accounts.solauto_position,
+            self.data.obligation.account_info,
+        )?;
+
+        validate_token_accounts(
+            std_accounts.signer,
+            &std_accounts.solauto_position,
+            &self.supply_liquidity.as_ref().unwrap().source_ta,
+            self.debt_liquidity
+                .as_ref()
+                .map_or_else(|| None, |debt| Some(&debt.source_ta)),
+        )?;
+
         let curr_slot = Clock::get()?.slot;
         if self.data.obligation.data.last_update.is_stale(curr_slot)? {
             msg!(
@@ -321,38 +335,6 @@ impl<'a> LendingProtocolClient<'a> for SolendClient<'a> {
                 "Debt reserve account data is stale. Ensure you refresh everything before interacting"
             );
             return Err(SolautoError::StaleProtocolData.into());
-        }
-
-        // TODO: validate supply & debt reserve match the mints in the solauto position
-
-        validate_lending_protocol_account(
-            &std_accounts.solauto_position,
-            self.data.obligation.account_info,
-        )?;
-
-        validate_token_accounts(
-            std_accounts.signer,
-            &std_accounts.solauto_position,
-            &self.supply_liquidity.as_ref().unwrap().source_ta,
-            self.debt_liquidity
-                .as_ref()
-                .map_or_else(|| None, |debt| Some(&debt.source_ta)),
-        )?;
-
-        if self.data.supply_reserve.is_some()
-            && self.data.debt_reserve.is_some()
-            && self
-                .data
-                .supply_reserve
-                .as_ref()
-                .unwrap()
-                .data
-                .config
-                .reserve_type
-                == ReserveType::Isolated
-        {
-            msg!("Cannot use an isolated asset as collateral");
-            return Err(SolautoError::IncorrectAccounts.into());
         }
 
         Ok(())
