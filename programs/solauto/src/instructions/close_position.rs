@@ -1,4 +1,4 @@
-use solana_program::{entrypoint::ProgramResult, msg};
+use solana_program::entrypoint::ProgramResult;
 use spl_token::state::Account as TokenAccount;
 
 use crate::{
@@ -55,9 +55,9 @@ pub fn close_position<'a>(
     {
         solana_utils::spl_token_transfer(
             ctx.accounts.token_program,
-            ctx.accounts.position_supply_liquidity_ta,
+            ctx.accounts.position_debt_liquidity_ta.unwrap(),
             solauto_position.account_info,
-            ctx.accounts.signer_supply_liquidity_ta,
+            ctx.accounts.signer_debt_liquidity_ta.unwrap(),
             position_debt_liquidity_ta.as_ref().unwrap().data.amount,
             Some(solauto_position_seeds),
         )?;
@@ -73,11 +73,5 @@ pub fn close_position<'a>(
         )?;
     }
 
-    // solana_utils::close_pda(
-    //     ctx.accounts.solauto_position,
-    //     ctx.accounts.signer,
-    //     Some(solauto_position_seeds),
-    // )?;
-
-    Ok(())
+    solana_utils::close_pda(ctx.accounts.solauto_position, ctx.accounts.signer)
 }

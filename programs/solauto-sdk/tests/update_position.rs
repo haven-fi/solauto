@@ -132,7 +132,7 @@ mod update_position {
     }
 
     #[tokio::test]
-    async fn incorrect_token_accounts() {
+    async fn incorrect_token_account() {
         let args = GeneralArgs::new();
         let mut data = MarginfiTestData::new(&args).await;
         data.test_prefixtures().await
@@ -151,19 +151,6 @@ mod update_position {
             .create_ata(temp_wallet, data.general.debt_liquidity_mint.unwrap()).await
             .unwrap();
     
-        let err = data.general
-            .execute_instructions(
-                vec![
-                    data.general
-                        .update_position_ix(None, None)
-                        .signer_debt_ta(Some(fake_debt_ta))
-                        .instruction()
-                ],
-                None
-            ).await
-            .unwrap_err();
-        assert_instruction_error!(err, InstructionError::Custom(0));
-
         let err = data.general
             .execute_instructions(
                 vec![

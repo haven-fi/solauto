@@ -419,9 +419,10 @@ impl<'a> GeneralTestData<'a> {
         builder
             .signer(self.ctx.payer.pubkey())
             .solauto_position(self.solauto_position)
-            .signer_supply_liquidity_ta(self.signer_supply_liquidity_ta)
             .position_supply_liquidity_ta(self.position_supply_liquidity_ta)
-            .position_debt_liquidity_ta(self.position_debt_liquidity_ta);
+            .signer_supply_liquidity_ta(self.signer_supply_liquidity_ta)
+            .position_debt_liquidity_ta(self.position_debt_liquidity_ta)
+            .signer_debt_liquidity_ta(self.signer_debt_liquidity_ta);
         builder
     }
 }

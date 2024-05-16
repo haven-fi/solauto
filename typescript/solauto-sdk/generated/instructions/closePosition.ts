@@ -37,6 +37,7 @@ export type ClosePositionInstructionAccounts = {
   positionSupplyLiquidityTa: PublicKey | Pda;
   positionSupplyCollateralTa?: PublicKey | Pda;
   positionDebtLiquidityTa?: PublicKey | Pda;
+  signerDebtLiquidityTa?: PublicKey | Pda;
 };
 
 // Data.
@@ -120,6 +121,11 @@ export function closePosition(
       index: 8,
       isWritable: true as boolean,
       value: input.positionDebtLiquidityTa ?? null,
+    },
+    signerDebtLiquidityTa: {
+      index: 9,
+      isWritable: true as boolean,
+      value: input.signerDebtLiquidityTa ?? null,
     },
   } satisfies ResolvedAccountsWithIndices;
 

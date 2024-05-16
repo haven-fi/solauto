@@ -518,6 +518,12 @@
           "isMut": true,
           "isSigner": false,
           "isOptional": true
+        },
+        {
+          "name": "signerDebtLiquidityTa",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
         }
       ],
       "args": [],

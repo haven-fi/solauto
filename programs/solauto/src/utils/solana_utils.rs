@@ -163,10 +163,9 @@ pub fn close_token_account<'a, 'b>(
     )
 }
 
-pub fn close_pda<'a>(
-    pda: &'a AccountInfo<'a>,
-    sol_destination: &'a AccountInfo<'a>,
-    pda_seeds: Option<&Vec<&[u8]>>,
-) -> ProgramResult {
-    system_transfer(pda, sol_destination, **pda.lamports.borrow_mut(), pda_seeds)
+pub fn close_pda(pda: &AccountInfo, sol_destination: &AccountInfo) -> ProgramResult {
+    let pda_lamports = pda.lamports();
+    **sol_destination.try_borrow_mut_lamports()? += pda_lamports;
+    **pda.try_borrow_mut_lamports()? -= pda_lamports;
+    Ok(())
 }
