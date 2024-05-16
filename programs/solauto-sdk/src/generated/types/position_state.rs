@@ -12,8 +12,8 @@ use borsh::BorshSerialize;
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct PositionState {
     pub liq_utilization_rate_bps: u16,
-    pub net_worth_usd_base_amount: u64,
-    pub base_amount_liquidity_net_worth: u64,
+    pub net_worth_base_amount_usd: u64,
+    pub net_worth_base_amount_supply_mint: u64,
     pub base_amount_supplied: u64,
     pub base_amount_borrowed: u64,
     pub max_ltv_bps: Option<u16>,

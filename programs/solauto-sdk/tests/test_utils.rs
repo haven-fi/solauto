@@ -3,12 +3,21 @@ use std::str::FromStr;
 use borsh::BorshDeserialize;
 use solana_program_test::{ BanksClientError, ProgramTest, ProgramTestContext };
 use solana_sdk::{
-    compute_budget::ComputeBudgetInstruction, instruction::Instruction, program_pack::{ IsInitialized, Pack }, pubkey::Pubkey, rent::Rent, signature::Keypair, signer::Signer, system_instruction, transaction::Transaction
+    compute_budget::ComputeBudgetInstruction,
+    instruction::Instruction,
+    program_pack::{ IsInitialized, Pack },
+    pubkey::Pubkey,
+    rent::Rent,
+    signature::Keypair,
+    signer::Signer,
+    system_instruction,
+    transaction::Transaction,
 };
-use solauto::{constants::{ SOLAUTO_FEES_WALLET, WSOL_MINT }, types::shared::ReferralStateAccount};
+use solauto::{ constants::{ SOLAUTO_FEES_WALLET, WSOL_MINT }, types::shared::ReferralStateAccount };
 use solauto_sdk::{
     generated::{
         instructions::{
+            ClosePositionBuilder,
             MarginfiOpenPositionBuilder,
             UpdatePositionBuilder,
             UpdateReferralStatesBuilder,
@@ -19,7 +28,7 @@ use solauto_sdk::{
 };
 use spl_associated_token_account::{ get_associated_token_address, instruction as ata_instruction };
 use spl_token::{ instruction as token_instruction, state::Mint };
-use rand::{Rng, thread_rng};
+use rand::{ Rng, thread_rng };
 
 #[macro_export]
 macro_rules! assert_instruction_error {
@@ -286,7 +295,7 @@ impl<'a> GeneralTestData<'a> {
                         None,
                         6
                     )
-                    .unwrap(),
+                    .unwrap()
             ],
             Some(&[token_mint])
         ).await.unwrap();
@@ -305,7 +314,7 @@ impl<'a> GeneralTestData<'a> {
                     &wallet,
                     &token_mint.pubkey(),
                     &spl_token::id()
-                ),
+                )
             ],
             None
         ).await.unwrap();
@@ -330,7 +339,7 @@ impl<'a> GeneralTestData<'a> {
                         &[&self.ctx.payer.pubkey()],
                         amount
                     )
-                    .unwrap(),
+                    .unwrap()
             ],
             None
         ).await.unwrap();
@@ -364,12 +373,10 @@ impl<'a> GeneralTestData<'a> {
         settings: Option<SolautoSettingsParameters>,
         active_dca: Option<DCASettings>
     ) -> Result<&mut Self, BanksClientError> {
-        self
-            .execute_instructions(
-                vec![self.update_position_ix(settings, active_dca).instruction()],
-                None
-            ).await
-            .unwrap();
+        self.execute_instructions(
+            vec![self.update_position_ix(settings, active_dca).instruction()],
+            None
+        ).await.unwrap();
         Ok(self)
     }
 
@@ -398,6 +405,25 @@ impl<'a> GeneralTestData<'a> {
             .update_position_data(position_data);
         builder
     }
+
+    pub async fn close_position(&mut self) -> Result<&mut Self, BanksClientError> {
+        self.execute_instructions(
+            vec![self.close_position_ix().instruction()],
+            None
+        ).await.unwrap();
+        Ok(self)
+    }
+
+    pub fn close_position_ix(&self) -> ClosePositionBuilder {
+        let mut builder = ClosePositionBuilder::new();
+        builder
+            .signer(self.ctx.payer.pubkey())
+            .solauto_position(self.solauto_position)
+            .signer_supply_liquidity_ta(self.signer_supply_liquidity_ta)
+            .position_supply_liquidity_ta(self.position_supply_liquidity_ta)
+            .position_debt_liquidity_ta(self.position_debt_liquidity_ta);
+        builder
+    }
 }
 
 pub struct MarginfiTestData<'a> {
@@ -415,7 +441,6 @@ impl<'a> MarginfiTestData<'a> {
         let marginfi_group = Keypair::new().pubkey();
         let supply_bank = Keypair::new().pubkey();
 
-
         let marginfi_account_seed_idx = if args.position_id != 0 {
             let mut rng = thread_rng();
             let random_number: u64 = rng.gen();
@@ -425,10 +450,7 @@ impl<'a> MarginfiTestData<'a> {
         };
         let (marginfi_account, marginfi_account_keypair) = if args.position_id != 0 {
             let seed_idx = marginfi_account_seed_idx.unwrap().to_le_bytes();
-            let marginfi_account_seeds = &[
-                general.solauto_position.as_ref(),
-                seed_idx.as_ref()
-            ];
+            let marginfi_account_seeds = &[general.solauto_position.as_ref(), seed_idx.as_ref()];
             let (marginfi_account, _) = Pubkey::find_program_address(
                 marginfi_account_seeds.as_slice(),
                 &SOLAUTO_ID

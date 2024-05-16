@@ -33,8 +33,7 @@ pub fn invoke_instruction(
 }
 
 pub fn init_account<'a>(
-    system_program: &'a AccountInfo<'a>,
-    rent_sysvar: &'a AccountInfo<'a>,
+    rent_sysvar: &AccountInfo,
     payer: &'a AccountInfo<'a>,
     account: &'a AccountInfo<'a>,
     new_owner: &Pubkey,
@@ -50,10 +49,10 @@ pub fn init_account<'a>(
         .minimum_balance(space)
         .saturating_sub(account.lamports());
     if required_lamports > 0 {
-        system_transfer(system_program, payer, account, required_lamports, None)?;
+        system_transfer(payer, account, required_lamports, None)?;
     }
 
-    let accounts = &[account.clone(), system_program.clone()];
+    let accounts = &[account.clone()];
 
     invoke_instruction(
         &system_instruction::allocate(account.key, space.try_into().unwrap()),
@@ -106,7 +105,6 @@ pub fn init_ata_if_needed<'a, 'b>(
 }
 
 pub fn system_transfer<'a>(
-    system_program: &'a AccountInfo<'a>,
     source: &'a AccountInfo<'a>,
     destination: &'a AccountInfo<'a>,
     lamports: u64,
@@ -114,7 +112,7 @@ pub fn system_transfer<'a>(
 ) -> ProgramResult {
     invoke_instruction(
         &system_instruction::transfer(source.key, destination.key, lamports),
-        &[source.clone(), destination.clone(), system_program.clone()],
+        &[source.clone(), destination.clone()],
         source_seeds,
     )
 }
@@ -166,16 +164,9 @@ pub fn close_token_account<'a, 'b>(
 }
 
 pub fn close_pda<'a>(
-    system_program: &'a AccountInfo<'a>,
     pda: &'a AccountInfo<'a>,
     sol_destination: &'a AccountInfo<'a>,
     pda_seeds: Option<&Vec<&[u8]>>,
 ) -> ProgramResult {
-    system_transfer(
-        system_program,
-        pda,
-        sol_destination,
-        **pda.lamports.borrow(),
-        pda_seeds,
-    )
+    system_transfer(pda, sol_destination, **pda.lamports.borrow_mut(), pda_seeds)
 }

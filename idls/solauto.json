@@ -1541,11 +1541,11 @@
             "type": "u16"
           },
           {
-            "name": "netWorthUsdBaseAmount",
+            "name": "netWorthBaseAmountUsd",
             "type": "u64"
           },
           {
-            "name": "baseAmountLiquidityNetWorth",
+            "name": "netWorthBaseAmountSupplyMint",
             "type": "u64"
           },
           {

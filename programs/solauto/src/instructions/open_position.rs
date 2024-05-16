@@ -1,6 +1,4 @@
-use solana_program::{
-    account_info::AccountInfo, entrypoint::ProgramResult, msg, program_pack::Pack,
-};
+use solana_program::{account_info::AccountInfo, entrypoint::ProgramResult, program_pack::Pack};
 use solend_sdk::state::Obligation;
 
 use crate::{
@@ -80,7 +78,6 @@ pub fn solend_open_position<'a>(
 
     if !account_has_data(ctx.accounts.obligation) {
         solana_utils::init_account(
-            ctx.accounts.system_program,
             ctx.accounts.rent,
             ctx.accounts.signer,
             ctx.accounts.obligation,
@@ -107,7 +104,6 @@ fn initialize_solauto_position<'a, 'b>(
 ) -> ProgramResult {
     if !solauto_position.data.self_managed || !account_has_data(solauto_position.account_info) {
         solana_utils::init_account(
-            system_program,
             rent,
             signer,
             solauto_position.account_info,

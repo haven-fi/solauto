@@ -35,7 +35,6 @@ pub fn process_update_referral_states<'a>(
     }
 
     let mut authority_referral_state = solauto_utils::create_or_update_referral_state(
-        ctx.accounts.system_program,
         ctx.accounts.rent,
         ctx.accounts.signer,
         ctx.accounts.signer,
@@ -47,7 +46,6 @@ pub fn process_update_referral_states<'a>(
 
     if ctx.accounts.referred_by_state.is_some() {
         let mut referred_by_state = solauto_utils::create_or_update_referral_state(
-            ctx.accounts.system_program,
             ctx.accounts.rent,
             ctx.accounts.signer,
             ctx.accounts.referred_by_authority.unwrap(),

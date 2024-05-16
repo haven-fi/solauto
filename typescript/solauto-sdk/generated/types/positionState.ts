@@ -17,8 +17,8 @@ import {
 
 export type PositionState = {
   liqUtilizationRateBps: number;
-  netWorthUsdBaseAmount: bigint;
-  baseAmountLiquidityNetWorth: bigint;
+  netWorthBaseAmountUsd: bigint;
+  netWorthBaseAmountSupplyMint: bigint;
   baseAmountSupplied: bigint;
   baseAmountBorrowed: bigint;
   maxLtvBps: Option<number>;
@@ -28,8 +28,8 @@ export type PositionState = {
 
 export type PositionStateArgs = {
   liqUtilizationRateBps: number;
-  netWorthUsdBaseAmount: number | bigint;
-  baseAmountLiquidityNetWorth: number | bigint;
+  netWorthBaseAmountUsd: number | bigint;
+  netWorthBaseAmountSupplyMint: number | bigint;
   baseAmountSupplied: number | bigint;
   baseAmountBorrowed: number | bigint;
   maxLtvBps: OptionOrNullable<number>;
@@ -44,8 +44,8 @@ export function getPositionStateSerializer(): Serializer<
   return struct<PositionState>(
     [
       ['liqUtilizationRateBps', u16()],
-      ['netWorthUsdBaseAmount', u64()],
-      ['baseAmountLiquidityNetWorth', u64()],
+      ['netWorthBaseAmountUsd', u64()],
+      ['netWorthBaseAmountSupplyMint', u64()],
       ['baseAmountSupplied', u64()],
       ['baseAmountBorrowed', u64()],
       ['maxLtvBps', option(u16())],

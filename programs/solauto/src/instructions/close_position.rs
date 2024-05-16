@@ -1,4 +1,4 @@
-use solana_program::entrypoint::ProgramResult;
+use solana_program::{entrypoint::ProgramResult, msg};
 use spl_token::state::Account as TokenAccount;
 
 use crate::{
@@ -73,10 +73,11 @@ pub fn close_position<'a>(
         )?;
     }
 
-    solana_utils::close_pda(
-        ctx.accounts.system_program,
-        ctx.accounts.solauto_position,
-        ctx.accounts.signer,
-        Some(solauto_position_seeds),
-    )
+    // solana_utils::close_pda(
+    //     ctx.accounts.solauto_position,
+    //     ctx.accounts.signer,
+    //     Some(solauto_position_seeds),
+    // )?;
+
+    Ok(())
 }

@@ -106,9 +106,7 @@ pub fn validate_instruction(
     Ok(())
 }
 
-pub fn validate_position_settings(
-    position_data: &PositionData,
-) -> ProgramResult {
+pub fn validate_position_settings(position_data: &PositionData) -> ProgramResult {
     if position_data.protocol_data.debt_mint.is_none() && position_data.setting_params.is_some() {
         msg!("Cannot provide setting parameters when not borrowing debt");
         return Err(SolautoError::InvalidPositionSettings.into());

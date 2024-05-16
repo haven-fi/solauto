@@ -87,7 +87,6 @@ pub fn create_new_solauto_position<'a>(
 }
 
 pub fn create_or_update_referral_state<'a>(
-    system_program: &'a AccountInfo<'a>,
     rent: &'a AccountInfo<'a>,
     signer: &'a AccountInfo<'a>,
     authority: &'a AccountInfo<'a>,
@@ -135,7 +134,6 @@ pub fn create_or_update_referral_state<'a>(
         ));
 
         init_account(
-            system_program,
             rent,
             signer,
             referral_state,
@@ -271,7 +269,8 @@ pub fn cancel_dca_in_if_necessary<'a, 'b>(
                 return Err(SolautoError::IncorrectAccounts.into());
             }
 
-            let debt_ta_current_balance = TokenAccount::unpack(&position_debt_ta.unwrap().data.borrow())?.amount;
+            let debt_ta_current_balance =
+                TokenAccount::unpack(&position_debt_ta.unwrap().data.borrow())?.amount;
             if debt_ta_current_balance == 0 {
                 return Ok(());
             }
