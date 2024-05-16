@@ -2,7 +2,6 @@ pub mod test_utils;
 
 #[cfg(test)]
 mod update_referral_states {
-    use std::str::FromStr;
 
     use solana_program_test::tokio;
     use solana_sdk::{
@@ -20,8 +19,7 @@ mod update_referral_states {
     #[tokio::test]
     async fn update_referral_states() {
         // Create referral state for signer
-        let mut args = GeneralArgs::new();
-        args.referral_fees_dest_mint(Pubkey::from_str(USDC_MINT).unwrap());
+        let args = GeneralArgs::new();
         let mut data = MarginfiTestData::new(&args).await;
 
         data.general
@@ -37,7 +35,7 @@ mod update_referral_states {
             ).await;
         assert!(signer_referral_state_data.authority == data.general.ctx.payer.pubkey());
         assert!(signer_referral_state_data.referred_by_state == None);
-        assert!(signer_referral_state_data.dest_fees_mint == data.general.referral_fees_dest_mint);
+        assert!(signer_referral_state_data.dest_fees_mint == data.general.referral_fees_dest_mint.pubkey());
 
         // Check if able to set the referred_by_state even after signer referral state has been created
         let referred_by_authority = Keypair::new().pubkey();

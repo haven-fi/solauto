@@ -3,7 +3,13 @@ pub mod test_utils;
 #[cfg(test)]
 mod update_position {
     use solana_program_test::tokio;
-    use solana_sdk::{ instruction::InstructionError, signature::Keypair, signer::Signer, transaction::Transaction };
+    use solana_sdk::{
+        instruction::InstructionError,
+        signature::Keypair,
+        signer::Signer,
+        transaction::Transaction,
+    };
+    use spl_token::state::Account as TokenAccount;
     use spl_associated_token_account::get_associated_token_address;
 
     use crate::{ assert_instruction_error, test_utils::* };
@@ -27,6 +33,23 @@ mod update_position {
             .unwrap();
         data.open_position(Some(data.general.default_setting_params.clone()), None).await.unwrap();
 
+        let current_supply_balance = 3445655;
+        data.general
+            .mint_tokens_to_ta(
+                data.general.supply_liquidity_mint,
+                data.general.position_supply_liquidity_ta,
+                current_supply_balance
+            ).await
+            .unwrap();
+        let current_debt_balance = 34543;
+        data.general
+            .mint_tokens_to_ta(
+                data.general.debt_liquidity_mint.unwrap(),
+                data.general.position_debt_liquidity_ta.unwrap(),
+                current_debt_balance
+            ).await
+            .unwrap();
+
         data.general.close_position().await.unwrap();
 
         let solauto_position = data.general.ctx.banks_client
@@ -43,6 +66,16 @@ mod update_position {
             .get_account(data.general.position_debt_liquidity_ta.unwrap()).await
             .unwrap();
         assert!(position_debt_liquidity_ta.is_none());
+
+        let signer_supply_liquidity_ta = data.general.unpack_account_data::<TokenAccount>(
+            data.general.signer_supply_liquidity_ta
+        ).await;
+        assert!(signer_supply_liquidity_ta.amount == current_supply_balance);
+
+        let signer_debt_liquidity_ta = data.general.unpack_account_data::<TokenAccount>(
+            data.general.signer_debt_liquidity_ta.unwrap()
+        ).await;
+        assert!(signer_debt_liquidity_ta.amount == current_debt_balance);
     }
 
     #[tokio::test]
@@ -64,12 +97,7 @@ mod update_position {
         data.open_position(Some(data.general.default_setting_params.clone()), None).await.unwrap();
 
         let tx = Transaction::new_signed_with_payer(
-            &[
-                data.general
-                    .close_position_ix()
-                    .signer(temp_account.pubkey())
-                    .instruction(),
-            ],
+            &[data.general.close_position_ix().signer(temp_account.pubkey()).instruction()],
             Some(&temp_account.pubkey()),
             &[&temp_account],
             data.general.ctx.last_blockhash

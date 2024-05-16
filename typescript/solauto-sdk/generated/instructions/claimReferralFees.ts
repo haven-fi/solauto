@@ -34,8 +34,8 @@ export type ClaimReferralFeesInstructionAccounts = {
   tokenProgram?: PublicKey | Pda;
   rent?: PublicKey | Pda;
   referralState: PublicKey | Pda;
-  referralFeesTa: PublicKey | Pda;
-  referralFeesMint: PublicKey | Pda;
+  referralFeesDestTa: PublicKey | Pda;
+  referralFeesDestMint: PublicKey | Pda;
   feesDestinationTa?: PublicKey | Pda;
 };
 
@@ -97,15 +97,15 @@ export function claimReferralFees(
       isWritable: false as boolean,
       value: input.referralState ?? null,
     },
-    referralFeesTa: {
+    referralFeesDestTa: {
       index: 5,
       isWritable: true as boolean,
-      value: input.referralFeesTa ?? null,
+      value: input.referralFeesDestTa ?? null,
     },
-    referralFeesMint: {
+    referralFeesDestMint: {
       index: 6,
-      isWritable: true as boolean,
-      value: input.referralFeesMint ?? null,
+      isWritable: false as boolean,
+      value: input.referralFeesDestMint ?? null,
     },
     feesDestinationTa: {
       index: 7,

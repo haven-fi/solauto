@@ -35,8 +35,8 @@ pub enum Instruction {
     #[account(name = "token_program")]
     #[account(name = "rent")]
     #[account(name = "referral_state")]
-    #[account(mut, name = "referral_fees_ta")]
-    #[account(mut, name = "referral_fees_mint")]
+    #[account(mut, name = "referral_fees_dest_ta")]
+    #[account(name = "referral_fees_dest_mint")]
     #[account(mut, optional, name = "fees_destination_ta")]
     ClaimReferralFees,
 

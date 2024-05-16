@@ -35,6 +35,7 @@ pub fn process_update_referral_states<'a>(
     }
 
     let mut authority_referral_state = solauto_utils::create_or_update_referral_state(
+        ctx.accounts.system_program,
         ctx.accounts.rent,
         ctx.accounts.signer,
         ctx.accounts.signer,
@@ -46,6 +47,7 @@ pub fn process_update_referral_states<'a>(
 
     if ctx.accounts.referred_by_state.is_some() {
         let mut referred_by_state = solauto_utils::create_or_update_referral_state(
+            ctx.accounts.system_program,
             ctx.accounts.rent,
             ctx.accounts.signer,
             ctx.accounts.referred_by_authority.unwrap(),
@@ -144,7 +146,7 @@ pub fn process_claim_referral_fees<'a>(accounts: &'a [AccountInfo<'a>]) -> Progr
         if ctx.accounts.fees_destination_ta.unwrap().key
             != &get_associated_token_address(
                 referral_state.account_info.key,
-                ctx.accounts.referral_fees_mint.key,
+                ctx.accounts.referral_fees_dest_mint.key,
             )
         {
             msg!(

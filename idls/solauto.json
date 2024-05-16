@@ -135,13 +135,13 @@
           "isSigner": false
         },
         {
-          "name": "referralFeesTa",
+          "name": "referralFeesDestTa",
           "isMut": true,
           "isSigner": false
         },
         {
-          "name": "referralFeesMint",
-          "isMut": true,
+          "name": "referralFeesDestMint",
+          "isMut": false,
           "isSigner": false
         },
         {

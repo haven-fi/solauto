@@ -13,10 +13,11 @@ use solana_sdk::{
     system_instruction,
     transaction::Transaction,
 };
-use solauto::{ constants::{ SOLAUTO_FEES_WALLET, WSOL_MINT }, types::shared::ReferralStateAccount };
+use solauto::{ constants::SOLAUTO_FEES_WALLET, types::shared::ReferralStateAccount };
 use solauto_sdk::{
     generated::{
         instructions::{
+            ClaimReferralFeesBuilder,
             ClosePositionBuilder,
             MarginfiOpenPositionBuilder,
             UpdatePositionBuilder,
@@ -52,7 +53,6 @@ pub struct GeneralArgs {
     supply_mint: Keypair,
     debt_mint: Option<Keypair>,
     referred_by_authority: Option<Pubkey>,
-    referral_fees_dest_mint: Pubkey,
     fund_accounts: Vec<Pubkey>,
 }
 
@@ -63,7 +63,6 @@ impl GeneralArgs {
             supply_mint: Keypair::new(),
             debt_mint: Some(Keypair::new()),
             referred_by_authority: None,
-            referral_fees_dest_mint: WSOL_MINT,
             fund_accounts: Vec::new(),
         }
     }
@@ -83,10 +82,6 @@ impl GeneralArgs {
         self.referred_by_authority = referred_by_authority;
         self
     }
-    pub fn referral_fees_dest_mint(&mut self, referral_fees_dest_mint: Pubkey) -> &mut Self {
-        self.referral_fees_dest_mint = referral_fees_dest_mint;
-        self
-    }
     pub fn fund_account(&mut self, account: Pubkey) -> &mut Self {
         self.fund_accounts.push(account);
         self
@@ -99,7 +94,7 @@ pub struct GeneralTestData<'a> {
     pub lending_protocol: Pubkey,
     pub solauto_fees_wallet: Pubkey,
     pub solauto_fees_supply_ta: Pubkey,
-    pub referral_fees_dest_mint: Pubkey,
+    pub referral_fees_dest_mint: &'a Keypair,
     pub signer_referral_state: Pubkey,
     pub signer_referral_dest_ta: Pubkey,
     pub referred_by_state: Option<Pubkey>,
@@ -139,12 +134,15 @@ impl<'a> GeneralTestData<'a> {
 
         let signer_pubkey = ctx.payer.pubkey();
         let signer_referral_state = GeneralTestData::get_referral_state(&signer_pubkey);
+        let referral_fees_dest_mint = &args.supply_mint;
         let signer_referral_dest_ta = get_associated_token_address(
             &signer_referral_state,
-            &args.referral_fees_dest_mint
+            &referral_fees_dest_mint.pubkey()
         );
 
-        let (referred_by_state, referred_by_supply_ta) = if args.referred_by_authority.is_some() {
+        let (referred_by_state, referred_by_supply_ta) = if
+            args.referred_by_authority.is_some()
+        {
             let referred_by_state = GeneralTestData::get_referral_state(
                 args.referred_by_authority.as_ref().unwrap()
             );
@@ -197,7 +195,7 @@ impl<'a> GeneralTestData<'a> {
             lending_protocol,
             solauto_fees_wallet: SOLAUTO_FEES_WALLET,
             solauto_fees_supply_ta,
-            referral_fees_dest_mint: args.referral_fees_dest_mint,
+            referral_fees_dest_mint,
             signer_referral_state,
             signer_referral_dest_ta,
             referred_by_state,
@@ -325,7 +323,6 @@ impl<'a> GeneralTestData<'a> {
         &mut self,
         token_mint: &Keypair,
         token_account: Pubkey,
-        ta_owner: Pubkey,
         amount: u64
     ) -> Result<&mut Self, BanksClientError> {
         self.execute_instructions(
@@ -335,7 +332,7 @@ impl<'a> GeneralTestData<'a> {
                         &spl_token::id(),
                         &token_mint.pubkey(),
                         &token_account,
-                        &ta_owner,
+                        &self.ctx.payer.pubkey(),
                         &[&self.ctx.payer.pubkey()],
                         amount
                     )
@@ -347,13 +344,10 @@ impl<'a> GeneralTestData<'a> {
     }
 
     pub async fn create_referral_state_accounts(&mut self) -> Result<&mut Self, BanksClientError> {
-        let tx = Transaction::new_signed_with_payer(
-            &[self.update_referral_states_ix().instruction()],
-            Some(&self.ctx.payer.pubkey()),
-            &[&self.ctx.payer],
-            self.ctx.last_blockhash
-        );
-        self.ctx.banks_client.process_transaction(tx).await.unwrap();
+        self.execute_instructions(
+            vec![self.update_referral_states_ix().instruction()],
+            None
+        ).await.unwrap();
         Ok(self)
     }
 
@@ -362,9 +356,35 @@ impl<'a> GeneralTestData<'a> {
         builder
             .signer(self.ctx.payer.pubkey())
             .signer_referral_state(self.signer_referral_state)
+            .referral_fees_dest_mint(self.referral_fees_dest_mint.pubkey())
             .referred_by_state(self.referred_by_state)
-            .referred_by_authority(self.referred_by_authority)
-            .referral_fees_dest_mint(self.referral_fees_dest_mint);
+            .referred_by_authority(self.referred_by_authority);
+        builder
+    }
+
+    pub async fn claim_referral_fees(&mut self) -> Result<&mut Self, BanksClientError> {
+        self.execute_instructions(
+            vec![self.claim_referral_fees_ix().instruction()],
+            None
+        ).await.unwrap();
+        Ok(self)
+    }
+
+    pub fn claim_referral_fees_ix(&self) -> ClaimReferralFeesBuilder {
+        let mut builder = ClaimReferralFeesBuilder::new();
+        builder
+            .signer(self.ctx.payer.pubkey())
+            .referral_state(self.signer_referral_state)
+            .referral_fees_dest_ta(self.signer_referral_dest_ta)
+            .referral_fees_dest_mint(self.referral_fees_dest_mint.pubkey())
+            .fees_destination_ta(
+                Some(
+                    get_associated_token_address(
+                        &self.ctx.payer.pubkey(),
+                        &self.referral_fees_dest_mint.pubkey()
+                    )
+                )
+            );
         builder
     }
 

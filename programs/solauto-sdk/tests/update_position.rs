@@ -38,7 +38,6 @@ mod update_position {
             .mint_tokens_to_ta(
                 data.general.debt_liquidity_mint.unwrap(),
                 data.general.signer_debt_liquidity_ta.unwrap(),
-                data.general.ctx.payer.pubkey(),
                 dca_amount
             ).await
             .unwrap();
