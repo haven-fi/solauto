@@ -42,4 +42,16 @@
 
 // }
 
-fn main() {}
+use solauto::utils::math_utils;
+
+fn main() {
+    // let debt_adjustment_usd = math_utils::calculate_debt_adjustment_usd(
+    //     0.8,
+    //     384826.0,
+    //     169011.0,
+    //     5500,
+    //     0
+    // );
+
+    // println!("${}", debt_adjustment_usd);
+}

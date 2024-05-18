@@ -7,9 +7,8 @@ use solana_program::{
     pubkey::Pubkey,
 };
 use std::{
-    cmp::min,
     fmt,
-    ops::{Add, Sub},
+    ops::Add,
 };
 use thiserror::Error;
 
@@ -18,6 +17,12 @@ pub enum LendingPlatform {
     Marginfi,
     Solend,
     Kamino,
+}
+
+impl Default for LendingPlatform {
+    fn default() -> Self {
+        LendingPlatform::Marginfi
+    }
 }
 
 #[derive(PartialEq)]

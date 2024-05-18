@@ -1,5 +1,5 @@
 use marginfi_sdk::generated::accounts::MarginfiAccount;
-use solana_program::entrypoint::ProgramResult;
+use solana_program::{clock::Clock, entrypoint::ProgramResult, sysvar::Sysvar};
 
 use crate::{
     clients::{marginfi::MarginfiClient, solend::SolendClient},
@@ -45,7 +45,7 @@ pub fn marginfi_refresh_accounts(
             ctx.accounts.debt_price_oracle,
         )?;
 
-        SolautoManager::refresh_position(&obligation_position, solauto_position.as_mut().unwrap())?;
+        SolautoManager::refresh_position(&obligation_position, &mut solauto_position.as_mut().unwrap().data, Clock::get()?.unix_timestamp as u64)?;
     }
 
     if solauto_position.is_some() {
@@ -97,7 +97,8 @@ pub fn solend_refresh_accounts(
 
             SolautoManager::refresh_position(
                 &obligation_position,
-                solauto_position.as_mut().unwrap(),
+                &mut solauto_position.as_mut().unwrap().data,
+                Clock::get()?.unix_timestamp as u64
             )?;
         }
     }

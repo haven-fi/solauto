@@ -12,13 +12,13 @@ use crate::{
 
 use super::shared::LendingPlatform;
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct TokenAmount {
     pub base_unit: u64,
     pub usd_value: f64,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct PositionTokenUsage {
     pub amount_used: TokenAmount,
     pub amount_can_be_used: TokenAmount,
@@ -96,6 +96,7 @@ impl PositionTokenUsage {
     }
 }
 
+#[derive(Default)]
 pub struct LendingProtocolObligationPosition {
     pub max_ltv: Option<f64>,
     pub liq_threshold: f64,

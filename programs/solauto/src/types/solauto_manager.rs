@@ -12,7 +12,7 @@ use super::{
     lending_protocol::{LendingProtocolClient, LendingProtocolTokenAccounts},
     obligation_position::LendingProtocolObligationPosition,
     shared::{
-        DeserializedAccount, SolautoError, SolautoPosition, SolautoRebalanceStep,
+        SolautoError, SolautoPosition, SolautoRebalanceStep,
         TokenBalanceAmount,
     },
 };
@@ -59,7 +59,7 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
     ) -> Result<Self, ProgramError> {
         client.validate(&std_accounts)?;
         let solauto_fees_bps =
-            solauto_utils::SolautoFeesBps::from(std_accounts.referred_by_supply_ta.is_some());
+            solauto_utils::SolautoFeesBps::get(std_accounts.referred_by_supply_ta.is_some());
         Ok(Self {
             client,
             obligation_position,
@@ -346,13 +346,14 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
 
     pub fn refresh_position(
         obligation_position: &LendingProtocolObligationPosition,
-        solauto_position: &mut DeserializedAccount<SolautoPosition>,
+        solauto_position: &mut SolautoPosition,
+        current_unix_timestamp: u64
     ) -> ProgramResult {
-        if solauto_position.data.self_managed {
+        if solauto_position.self_managed {
             return Ok(());
         }
 
-        let position = solauto_position.data.position.as_mut().unwrap();
+        let position = solauto_position.position.as_mut().unwrap();
 
         position.state.net_worth_base_amount_usd = obligation_position.net_worth_usd_base_amount();
         position.state.net_worth_base_amount_supply_mint =
@@ -370,7 +371,7 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
         } else {
             0
         };
-        position.state.last_updated = Clock::get()?.unix_timestamp as u64;
+        position.state.last_updated = current_unix_timestamp;
 
         position.state.max_ltv_bps = obligation_position
             .max_ltv

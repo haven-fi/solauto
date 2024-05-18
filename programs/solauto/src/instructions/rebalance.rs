@@ -1,4 +1,4 @@
-use solana_program::{entrypoint::ProgramResult, msg, program_error::ProgramError};
+use solana_program::{clock::Clock, entrypoint::ProgramResult, msg, program_error::ProgramError, sysvar::Sysvar};
 
 use crate::{
     clients::{marginfi::MarginfiClient, solend::SolendClient},
@@ -116,7 +116,8 @@ fn rebalance<'a, T: LendingProtocolClient<'a>>(
 
     SolautoManager::refresh_position(
         &solauto_manager.obligation_position,
-        &mut solauto_manager.std_accounts.solauto_position,
+        &mut solauto_manager.std_accounts.solauto_position.data,
+        Clock::get()?.unix_timestamp as u64
     )?;
     ix_utils::update_data(&mut solauto_manager.std_accounts.solauto_position)
 }
