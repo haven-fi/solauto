@@ -11,7 +11,7 @@ mod open_position {
     };
     use solauto_sdk::generated::{
         accounts::SolautoPosition,
-        types::{ DCADirection, DCASettings, LendingPlatform, SolautoSettingsParameters },
+        types::{ DCASettings, DebtToAddToPosition, LendingPlatform, SolautoSettingsParameters },
     };
     use spl_associated_token_account::get_associated_token_address;
     use spl_token::state::Account as TokenAccount;
@@ -104,12 +104,14 @@ mod open_position {
 
         let active_dca = DCASettings {
             unix_start_date: Utc::now().timestamp() as u64,
-            unix_dca_interval: 60 * 60 * 24,
+            dca_interval_seconds: 60 * 60 * 24,
             dca_periods_passed: 0,
             target_dca_periods: 5,
-            dca_direction: DCADirection::In(Some(dca_amount)),
-            dca_risk_aversion_bps: None,
             target_boost_to_bps: None,
+            add_to_pos: Some(DebtToAddToPosition {
+                base_unit_debt_amount: dca_amount,
+                risk_aversion_bps: None
+            }),
         };
         data.open_position(
             Some(data.general.default_setting_params.clone()),

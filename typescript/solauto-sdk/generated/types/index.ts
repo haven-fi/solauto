@@ -6,8 +6,8 @@
  * @see https://github.com/metaplex-foundation/kinobi
  */
 
-export * from './dCADirection';
 export * from './dCASettings';
+export * from './debtToAddToPosition';
 export * from './lendingPlatform';
 export * from './lendingProtocolPositionData';
 export * from './positionData';

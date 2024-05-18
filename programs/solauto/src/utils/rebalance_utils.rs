@@ -16,7 +16,7 @@ use crate::{
             RebalanceArgs, SolautoStandardAccounts, SOLAUTO_REBALANCE_IX_DISCRIMINATORS,
         },
         obligation_position::LendingProtocolObligationPosition,
-        shared::{DCADirection, SolautoError, SolautoPosition, SolautoRebalanceStep},
+        shared::{SolautoError, SolautoPosition, SolautoRebalanceStep},
     },
 };
 
@@ -159,11 +159,17 @@ fn get_max_liq_utilization_rate_from_risk_aversion(position_account: &SolautoPos
     let position = position_account.position.as_ref().unwrap();
     let setting_params = position.setting_params.as_ref().unwrap();
     let dca_settings = position.active_dca.as_ref().unwrap();
-    let risk_aversion_bps = if dca_settings.dca_risk_aversion_bps.is_some() {
-        dca_settings.dca_risk_aversion_bps.unwrap()
+    if dca_settings.add_to_pos.is_none() {
+        return setting_params.repay_from_bps();
+    }
+
+    let risk_aversion_bps = dca_settings.add_to_pos.as_ref().unwrap().risk_aversion_bps;
+    let risk_aversion_bps = if risk_aversion_bps.is_some() {
+        risk_aversion_bps.unwrap()
     } else {
         1500
     };
+
     let maximum_liq_utilization_rate_bps = setting_params.repay_from_bps().sub(
         (setting_params.repay_from_bps() as f64).mul((risk_aversion_bps as f64).div(10000.0))
             as u16,
@@ -172,19 +178,20 @@ fn get_max_liq_utilization_rate_from_risk_aversion(position_account: &SolautoPos
     maximum_liq_utilization_rate_bps
 }
 
-fn get_additional_amount_to_dca_in(
-    position_account: &mut SolautoPosition,
-) -> Result<u64, ProgramError> {
+fn get_additional_amount_to_dca_in(position_account: &mut SolautoPosition) -> Option<u64> {
     let position = position_account.position.as_mut().unwrap();
-
     let dca_settings = position.active_dca.as_ref().unwrap();
+    if dca_settings.add_to_pos.is_none() {
+        return None;
+    }
+
     let percent = (1.0)
         .div((dca_settings.target_dca_periods as f64).sub(dca_settings.dca_periods_passed as f64));
 
     let base_unit_amount = (position.debt_ta_balance as f64).mul(percent) as u64;
     position.debt_ta_balance -= base_unit_amount;
 
-    Ok(base_unit_amount)
+    Some(base_unit_amount)
 }
 
 fn get_target_liq_utilization_rate_from_dca(
@@ -203,11 +210,7 @@ fn get_target_liq_utilization_rate_from_dca(
     let target_boost_to_bps = if dca_settings.target_boost_to_bps.is_some() {
         dca_settings.target_boost_to_bps.unwrap() as i16
     } else {
-        if let DCADirection::In(_) = dca_settings.dca_direction {
-            setting_params.boost_to_bps as i16
-        } else {
-            0
-        }
+        setting_params.boost_to_bps as i16
     };
 
     let boost_bps_diff = (setting_params.boost_to_bps as i16).sub(target_boost_to_bps);
@@ -280,9 +283,19 @@ fn get_target_rate_and_dca_amount(
         current_unix_timestamp,
     )?;
     let (target_liq_utilization_rate_bps, amount_to_dca_in) = match dca_instruction {
-        Some(direction) => match direction {
-            DCADirection::In(_) => {
-                let amount_to_dca_in = get_additional_amount_to_dca_in(position_account)?;
+        true => {
+            let amount_to_dca_in = get_additional_amount_to_dca_in(position_account);
+
+            let position_data = position_account.position.as_ref().unwrap();
+            let target_boost_to_bps = position_data
+                .active_dca
+                .as_ref()
+                .unwrap()
+                .target_boost_to_bps;
+            if target_boost_to_bps.is_some()
+                && target_boost_to_bps.unwrap()
+                    > position_data.setting_params.as_ref().unwrap().boost_to_bps
+            {
                 let target_rate = max(
                     obligation_position.current_liq_utilization_rate_bps(),
                     get_target_liq_utilization_rate_from_dca(
@@ -292,20 +305,21 @@ fn get_target_rate_and_dca_amount(
                 );
 
                 if target_rate > get_max_liq_utilization_rate_from_risk_aversion(position_account) {
-                    (None, Some(amount_to_dca_in))
+                    (None, amount_to_dca_in)
                 } else {
-                    (Some(target_rate), Some(amount_to_dca_in))
+                    (Some(target_rate), amount_to_dca_in)
                 }
+            } else {
+                (
+                    Some(get_target_liq_utilization_rate_from_dca(
+                        position_account,
+                        obligation_position,
+                    )?),
+                    amount_to_dca_in,
+                )
             }
-            DCADirection::Out => (
-                Some(get_target_liq_utilization_rate_from_dca(
-                    position_account,
-                    obligation_position,
-                )?),
-                None,
-            ),
-        },
-        None => (
+        }
+        false => (
             Some(get_std_target_liq_utilization_rate(
                 position_account,
                 obligation_position,

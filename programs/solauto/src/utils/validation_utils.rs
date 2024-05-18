@@ -2,47 +2,37 @@ use std::ops::Div;
 
 use marginfi_sdk::generated::accounts::Bank;
 use solana_program::{
-    account_info::AccountInfo,
-    entrypoint::ProgramResult,
-    msg,
-    program_error::ProgramError,
-    pubkey::Pubkey,
-    sysvar::instructions::ID as ixs_sysvar_id,
+    account_info::AccountInfo, entrypoint::ProgramResult, msg, program_error::ProgramError,
+    pubkey::Pubkey, sysvar::instructions::ID as ixs_sysvar_id,
 };
 use solend_sdk::state::Reserve;
-use spl_token::{ state::Account as TokenAccount, ID as token_program_id };
+use spl_token::{state::Account as TokenAccount, ID as token_program_id};
 
 use crate::{
-    constants::{ SOLAUTO_FEES_WALLET, SOLAUTO_MANAGER },
+    constants::{SOLAUTO_FEES_WALLET, SOLAUTO_MANAGER},
     types::{
         instruction::SolautoStandardAccounts,
         shared::{
-            DCADirection,
-            DeserializedAccount,
-            LendingPlatform,
-            PositionData,
-            ReferralStateAccount,
-            SolautoError,
-            SolautoPosition,
-            TokenType,
+            DeserializedAccount, LendingPlatform, PositionData, ReferralStateAccount, SolautoError,
+            SolautoPosition, TokenType,
         },
     },
 };
 
 use super::math_utils::get_maximum_repay_to_bps_param;
-use crate::constants::{ KAMINO_PROGRAM, MARGINFI_PROGRAM, SOLEND_PROGRAM };
+use crate::constants::{KAMINO_PROGRAM, MARGINFI_PROGRAM, SOLEND_PROGRAM};
 
 pub fn generic_instruction_validation(
     accounts: &SolautoStandardAccounts,
     lending_platform: LendingPlatform,
     authority_signer_only_ix: bool,
-    solauto_managed_only_ix: bool
+    solauto_managed_only_ix: bool,
 ) -> ProgramResult {
     validate_instruction(
         accounts.signer,
         &accounts.solauto_position,
         authority_signer_only_ix,
-        solauto_managed_only_ix
+        solauto_managed_only_ix,
     )?;
     validate_lending_program_account(accounts.lending_protocol, lending_platform)?;
 
@@ -52,14 +42,19 @@ pub fn generic_instruction_validation(
             accounts.authority_referral_state.as_ref().unwrap(),
             accounts.referred_by_state,
             accounts.referred_by_supply_ta.as_ref(),
-            true
+            true,
         )?;
     }
 
-    if
-        accounts.solauto_fees_supply_ta.is_some() &&
-        accounts.solauto_fees_supply_ta.as_ref().unwrap().account_info.owner == &token_program_id &&
-        accounts.solauto_fees_supply_ta.as_ref().unwrap().data.owner != SOLAUTO_FEES_WALLET
+    if accounts.solauto_fees_supply_ta.is_some()
+        && accounts
+            .solauto_fees_supply_ta
+            .as_ref()
+            .unwrap()
+            .account_info
+            .owner
+            == &token_program_id
+        && accounts.solauto_fees_supply_ta.as_ref().unwrap().data.owner != SOLAUTO_FEES_WALLET
     {
         return Err(SolautoError::IncorrectAccounts.into());
     }
@@ -77,7 +72,7 @@ pub fn validate_instruction(
     signer: &AccountInfo,
     solauto_position: &DeserializedAccount<SolautoPosition>,
     authority_signer_only_ix: bool,
-    solauto_managed_only_ix: bool
+    solauto_managed_only_ix: bool,
 ) -> ProgramResult {
     if !signer.is_signer {
         msg!("Signer account is not a signer");
@@ -94,10 +89,8 @@ pub fn validate_instruction(
             return Err(SolautoError::IncorrectAccounts.into());
         }
 
-        let (pda, _) = Pubkey::find_program_address(
-            solauto_position.data.seeds().as_slice(),
-            &crate::ID
-        );
+        let (pda, _) =
+            Pubkey::find_program_address(solauto_position.data.seeds().as_slice(), &crate::ID);
         if &pda != solauto_position.account_info.key {
             msg!("Invalid position specified for the current signer");
             return Err(ProgramError::MissingRequiredSignature.into());
@@ -146,13 +139,15 @@ pub fn validate_position_settings(position_data: &PositionData) -> ProgramResult
     }
 
     if settings.repay_to_bps == 0 && position_data.protocol_data.debt_mint.is_some() {
-        return invalid_params("Must provide a valid repay_to_bps if the Solauto position has debt");
+        return invalid_params(
+            "Must provide a valid repay_to_bps if the Solauto position has debt",
+        );
     }
 
     if position_data.state.max_ltv_bps.is_some() {
         let maximum_repay_to_bps = get_maximum_repay_to_bps_param(
             (position_data.state.max_ltv_bps.unwrap() as f64).div(10000.0),
-            (position_data.state.liq_threshold_bps as f64).div(10000.0)
+            (position_data.state.liq_threshold_bps as f64).div(10000.0),
         );
         if settings.repay_to_bps > maximum_repay_to_bps {
             return invalid_params(
@@ -166,7 +161,7 @@ pub fn validate_position_settings(position_data: &PositionData) -> ProgramResult
 
 pub fn validate_dca_settings(
     position_data: &PositionData,
-    current_unix_timestamp: u64
+    current_unix_timestamp: u64,
 ) -> ProgramResult {
     if position_data.active_dca.is_none() {
         return Ok(());
@@ -178,7 +173,6 @@ pub fn validate_dca_settings(
     }
 
     let dca = position_data.active_dca.as_ref().unwrap();
-    let settings = position_data.setting_params.as_ref().unwrap();
     let invalid_params = |error_msg| {
         msg!(error_msg);
         Err(SolautoError::InvalidDCASettings.into())
@@ -186,7 +180,7 @@ pub fn validate_dca_settings(
 
     if dca.dca_periods_passed > 0 {
         return invalid_params(
-            "DCA periods passed cannot be anything other than 0 when first being set"
+            "DCA periods passed cannot be anything other than 0 when first being set",
         );
     }
 
@@ -194,9 +188,8 @@ pub fn validate_dca_settings(
         return invalid_params("DCA interval period must be between 10 minutes and 1 month");
     }
 
-    if
-        current_unix_timestamp < dca.unix_start_date ||
-        current_unix_timestamp > dca.unix_start_date + dca.dca_interval_seconds
+    if current_unix_timestamp < dca.unix_start_date
+        || current_unix_timestamp > dca.unix_start_date + dca.dca_interval_seconds
     {
         return invalid_params("Provided an invalid unix start date");
     }
@@ -205,37 +198,11 @@ pub fn validate_dca_settings(
         return invalid_params("DCA periods must be greater than or equal to 1");
     }
 
-    if dca.dca_direction == DCADirection::Out && dca.dca_risk_aversion_bps.is_some() {
-        return invalid_params("DCA risk aversion BPS parameter is only for when DCAing-in");
-    }
-
-    if dca.dca_risk_aversion_bps.is_some() && dca.dca_risk_aversion_bps.unwrap() > 10000 {
+    if dca.add_to_pos.is_some()
+        && dca.add_to_pos.as_ref().unwrap().risk_aversion_bps.is_some()
+        && dca.add_to_pos.as_ref().unwrap().risk_aversion_bps.unwrap() > 10000
+    {
         return invalid_params("DCA risk aversion BPS must be between 0 and 10000");
-    }
-
-    if let DCADirection::Out = dca.dca_direction {
-        if settings.boost_to_bps == 0 {
-            return invalid_params("Cannot DCA-out of a position with a boost-to parameter of 0");
-        }
-    }
-
-    if dca.target_boost_to_bps.is_some() {
-        match dca.dca_direction {
-            DCADirection::In(_) => {
-                if dca.target_boost_to_bps.unwrap() <= settings.boost_to_bps {
-                    return invalid_params(
-                        "When DCAing-in, target boost-to parameter must be greater than current setting's boost to value"
-                    );
-                }
-            }
-            DCADirection::Out => {
-                if dca.target_boost_to_bps.unwrap() >= settings.boost_to_bps {
-                    return invalid_params(
-                        "When DCAing-out, target boost-to parameter must be less than current setting's boost to value"
-                    );
-                }
-            }
-        }
     }
 
     Ok(())
@@ -243,7 +210,7 @@ pub fn validate_dca_settings(
 
 pub fn validate_lending_program_account(
     program: &AccountInfo,
-    lending_platform: LendingPlatform
+    lending_platform: LendingPlatform,
 ) -> ProgramResult {
     match lending_platform {
         LendingPlatform::Solend => {
@@ -283,13 +250,11 @@ pub fn validate_referral_accounts(
     authority_referral_state: &DeserializedAccount<ReferralStateAccount>,
     referred_by_state: Option<&AccountInfo>,
     referred_by_supply_ta: Option<&DeserializedAccount<TokenAccount>>,
-    check_supply_ta: bool
+    check_supply_ta: bool,
 ) -> ProgramResult {
     let referral_state_seeds = &ReferralStateAccount::seeds(referral_state_authority);
-    let (referral_state_pda, _bump) = Pubkey::find_program_address(
-        referral_state_seeds,
-        &crate::ID
-    );
+    let (referral_state_pda, _bump) =
+        Pubkey::find_program_address(referral_state_seeds, &crate::ID);
     if &referral_state_pda != authority_referral_state.account_info.key {
         msg!("Invalid referral position account given for the provided authority");
         return Err(SolautoError::IncorrectAccounts.into());
@@ -297,21 +262,19 @@ pub fn validate_referral_accounts(
 
     let authority_referred_by_state = authority_referral_state.data.referred_by_state;
 
-    if
-        referred_by_state.is_some() &&
-        referred_by_state.as_ref().unwrap().key != authority_referred_by_state.as_ref().unwrap()
+    if referred_by_state.is_some()
+        && referred_by_state.as_ref().unwrap().key != authority_referred_by_state.as_ref().unwrap()
     {
         msg!("Provided incorrect referred_by_state account given the authority referral state");
         return Err(SolautoError::IncorrectAccounts.into());
     }
 
-    if
-        check_supply_ta &&
-        authority_referred_by_state.is_some() &&
-        (referred_by_supply_ta.is_none() ||
-            referred_by_supply_ta.as_ref().unwrap().account_info.owner != &token_program_id ||
-            &referred_by_supply_ta.as_ref().unwrap().data.owner !=
-                referred_by_state.as_ref().unwrap().key)
+    if check_supply_ta
+        && authority_referred_by_state.is_some()
+        && (referred_by_supply_ta.is_none()
+            || referred_by_supply_ta.as_ref().unwrap().account_info.owner != &token_program_id
+            || &referred_by_supply_ta.as_ref().unwrap().data.owner
+                != referred_by_state.as_ref().unwrap().key)
     {
         msg!(
             "Provided incorrect referred_by_supply_ta according to the given authority and token mint"
@@ -325,7 +288,7 @@ pub fn validate_referral_accounts(
 pub fn validate_marginfi_bank<'a>(
     marginfi_bank: &'a AccountInfo<'a>,
     solauto_position: &DeserializedAccount<SolautoPosition>,
-    is_supply: bool
+    is_supply: bool,
 ) -> ProgramResult {
     let bank = DeserializedAccount::<Bank>::deserialize(Some(marginfi_bank))?.unwrap();
 
@@ -350,7 +313,7 @@ pub fn validate_marginfi_bank<'a>(
 pub fn validate_solend_reserve<'a>(
     solend_reserve: &'a AccountInfo<'a>,
     solauto_position: &DeserializedAccount<SolautoPosition>,
-    is_supply: bool
+    is_supply: bool,
 ) -> ProgramResult {
     let reserve = DeserializedAccount::<Reserve>::unpack(Some(solend_reserve))?.unwrap();
 
@@ -376,7 +339,7 @@ pub fn validate_lending_program_accounts_with_position<'a>(
     solauto_position: &DeserializedAccount<SolautoPosition>,
     protocol_position: &'a AccountInfo<'a>,
     protocol_supply_account: Option<&'a AccountInfo<'a>>,
-    protocol_debt_account: Option<&'a AccountInfo<'a>>
+    protocol_debt_account: Option<&'a AccountInfo<'a>>,
 ) -> ProgramResult {
     if solauto_position.data.self_managed {
         return Ok(());
@@ -419,16 +382,22 @@ pub fn validate_token_accounts(
     signer: &AccountInfo,
     solauto_position: &DeserializedAccount<SolautoPosition>,
     source_supply_ta: &DeserializedAccount<TokenAccount>,
-    source_debt_ta: Option<&DeserializedAccount<TokenAccount>>
+    source_debt_ta: Option<&DeserializedAccount<TokenAccount>>,
 ) -> ProgramResult {
     validate_token_account(
         signer,
         solauto_position,
         Some(source_supply_ta),
         Some(TokenType::Supply),
-        None
+        None,
     )?;
-    validate_token_account(signer, solauto_position, source_debt_ta, Some(TokenType::Debt), None)?;
+    validate_token_account(
+        signer,
+        solauto_position,
+        source_debt_ta,
+        Some(TokenType::Debt),
+        None,
+    )?;
     Ok(())
 }
 
@@ -437,14 +406,16 @@ pub fn validate_token_account(
     solauto_position: &DeserializedAccount<SolautoPosition>,
     source_ta: Option<&DeserializedAccount<TokenAccount>>,
     token_type: Option<TokenType>,
-    token_mint: Option<&Pubkey>
+    token_mint: Option<&Pubkey>,
 ) -> ProgramResult {
-    if
-        source_ta.is_some() &&
-        &source_ta.as_ref().unwrap().data.owner != signer.key &&
-        &source_ta.as_ref().unwrap().data.owner != solauto_position.account_info.key
+    if source_ta.is_some()
+        && &source_ta.as_ref().unwrap().data.owner != signer.key
+        && &source_ta.as_ref().unwrap().data.owner != solauto_position.account_info.key
     {
-        msg!("Incorrect token account {}", source_ta.unwrap().account_info.key);
+        msg!(
+            "Incorrect token account {}",
+            source_ta.unwrap().account_info.key
+        );
         return Err(SolautoError::IncorrectAccounts.into());
     }
 
@@ -461,12 +432,14 @@ pub fn validate_token_account(
             token_mint
         };
 
-        if
-            source_ta.is_some() &&
-            token_mint.is_some() &&
-            &source_ta.as_ref().unwrap().data.mint != token_mint.unwrap()
+        if source_ta.is_some()
+            && token_mint.is_some()
+            && &source_ta.as_ref().unwrap().data.mint != token_mint.unwrap()
         {
-            msg!("Incorrect token account {}", source_ta.unwrap().account_info.key);
+            msg!(
+                "Incorrect token account {}",
+                source_ta.unwrap().account_info.key
+            );
             return Err(SolautoError::IncorrectAccounts.into());
         }
     }
@@ -477,10 +450,7 @@ pub fn validate_token_account(
 #[cfg(test)]
 mod tests {
     use crate::types::shared::{
-        DCASettings,
-        LendingProtocolPositionData,
-        PositionState,
-        SolautoSettingsParameters,
+        DCASettings, LendingProtocolPositionData, PositionState, SolautoSettingsParameters,
     };
 
     use super::*;
@@ -488,7 +458,7 @@ mod tests {
     fn test_position_settings(
         settings: SolautoSettingsParameters,
         liq_threshold_bps: u16,
-        max_ltv_bps: Option<u16>
+        max_ltv_bps: Option<u16>,
     ) {
         let position_data = PositionData {
             state: PositionState {
@@ -531,7 +501,7 @@ mod tests {
                 ..default_settings
             },
             default_liq_threshold_bps,
-            default_max_ltv_bps
+            default_max_ltv_bps,
         );
         test_position_settings(
             SolautoSettingsParameters {
@@ -539,7 +509,7 @@ mod tests {
                 ..default_settings
             },
             default_liq_threshold_bps,
-            default_max_ltv_bps
+            default_max_ltv_bps,
         );
         test_position_settings(
             SolautoSettingsParameters {
@@ -548,7 +518,7 @@ mod tests {
                 ..default_settings
             },
             default_liq_threshold_bps,
-            default_max_ltv_bps
+            default_max_ltv_bps,
         );
         test_position_settings(
             SolautoSettingsParameters {
@@ -557,7 +527,7 @@ mod tests {
                 ..default_settings
             },
             default_liq_threshold_bps,
-            default_max_ltv_bps
+            default_max_ltv_bps,
         );
         test_position_settings(
             SolautoSettingsParameters {
@@ -566,7 +536,7 @@ mod tests {
                 ..default_settings
             },
             default_liq_threshold_bps,
-            default_max_ltv_bps
+            default_max_ltv_bps,
         );
         test_position_settings(
             SolautoSettingsParameters {
@@ -575,7 +545,7 @@ mod tests {
                 ..default_settings
             },
             default_liq_threshold_bps,
-            Some(6500)
+            Some(6500),
         );
     }
 
@@ -583,7 +553,7 @@ mod tests {
         current_timestamp: u64,
         current_liq_utilization_rate_bps: Option<u16>,
         position_settings: &SolautoSettingsParameters,
-        dca_settings: DCASettings
+        dca_settings: DCASettings,
     ) {
         let current_liq_utilization_rate = if current_liq_utilization_rate_bps.is_some() {
             current_liq_utilization_rate_bps.unwrap()
@@ -630,89 +600,25 @@ mod tests {
             dca_interval_seconds: 60 * 60 * 24,
             dca_periods_passed: 0,
             target_dca_periods: 5,
-            dca_direction: DCADirection::Out,
-            dca_risk_aversion_bps: None,
             target_boost_to_bps: Some(0),
+            add_to_pos: None,
         };
-        test_dca_settings(
-            current_timestamp,
-            default_current_liq_utilization_rate_bps,
-            &SolautoSettingsParameters {
-                boost_to_bps: 4000,
-                ..default_position_settings
-            },
-            DCASettings {
-                target_boost_to_bps: Some(5000),
-                ..default_dca_settings
-            }
-        );
-        test_dca_settings(
-            current_timestamp,
-            Some(3000),
-            &SolautoSettingsParameters {
-                boost_to_bps: 5000,
-                ..default_position_settings
-            },
-            DCASettings {
-                target_boost_to_bps: Some(4000),
-                dca_direction: DCADirection::In(None),
-                ..default_dca_settings
-            }
-        );
-        test_dca_settings(
-            current_timestamp,
-            Some(3000),
-            &SolautoSettingsParameters {
-                boost_to_bps: 0,
-                ..default_position_settings
-            },
-            DCASettings {
-                dca_direction: DCADirection::Out,
-                ..default_dca_settings
-            }
-        );
-        test_dca_settings(
-            current_timestamp,
-            Some(4500),
-            &default_position_settings,
-            DCASettings {
-                target_boost_to_bps: Some(5000),
-                ..default_dca_settings
-            }
-        );
-        test_dca_settings(
-            current_timestamp,
-            default_current_liq_utilization_rate_bps,
-            &default_position_settings,
-            DCASettings {
-                dca_direction: DCADirection::In(None),
-                ..default_dca_settings
-            }
-        );
-        test_dca_settings(
-            current_timestamp,
-            Some(4500),
-            &default_position_settings,
-            DCASettings {
-                dca_direction: DCADirection::In(None),
-                target_boost_to_bps: Some(4000),
-                ..default_dca_settings
-            }
-        );
         test_dca_settings(
             50,
             default_current_liq_utilization_rate_bps,
             &default_position_settings,
-            default_dca_settings.clone()
+            default_dca_settings.clone(),
         );
         test_dca_settings(
             current_timestamp,
             default_current_liq_utilization_rate_bps,
             &default_position_settings,
             DCASettings {
-                unix_start_date: current_timestamp + (default_dca_settings.dca_interval_seconds) + 100,
+                unix_start_date: current_timestamp
+                    + default_dca_settings.dca_interval_seconds
+                    + 100,
                 ..default_dca_settings
-            }
+            },
         );
         test_dca_settings(
             current_timestamp,
@@ -720,8 +626,8 @@ mod tests {
             &default_position_settings,
             DCASettings {
                 dca_periods_passed: 1,
-                ..default_dca_settings
-            }
+                ..default_dca_settings.clone()
+            },
         );
         test_dca_settings(
             current_timestamp,
@@ -729,18 +635,8 @@ mod tests {
             &default_position_settings,
             DCASettings {
                 target_dca_periods: 0,
-                ..default_dca_settings
-            }
-        );
-        test_dca_settings(
-            current_timestamp,
-            default_current_liq_utilization_rate_bps,
-            &default_position_settings,
-            DCASettings {
-                dca_risk_aversion_bps: Some(0),
-                dca_direction: DCADirection::In(None),
-                ..default_dca_settings
-            }
+                ..default_dca_settings.clone()
+            },
         );
         test_dca_settings(
             current_timestamp,
@@ -748,8 +644,8 @@ mod tests {
             &default_position_settings,
             DCASettings {
                 dca_interval_seconds: 60,
-                ..default_dca_settings
-            }
+                ..default_dca_settings.clone()
+            },
         );
         test_dca_settings(
             current_timestamp,
@@ -757,8 +653,8 @@ mod tests {
             &default_position_settings,
             DCASettings {
                 dca_interval_seconds: 60 * 60 * 24 * 60,
-                ..default_dca_settings
-            }
+                ..default_dca_settings.clone()
+            },
         );
     }
 }

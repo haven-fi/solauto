@@ -15,26 +15,28 @@ import {
   u64,
   u8,
 } from '@metaplex-foundation/umi/serializers';
-import { DCADirection, DCADirectionArgs, getDCADirectionSerializer } from '.';
+import {
+  DebtToAddToPosition,
+  DebtToAddToPositionArgs,
+  getDebtToAddToPositionSerializer,
+} from '.';
 
 export type DCASettings = {
   unixStartDate: bigint;
-  unixDcaInterval: bigint;
+  dcaIntervalSeconds: bigint;
   dcaPeriodsPassed: number;
   targetDcaPeriods: number;
-  dcaDirection: DCADirection;
-  dcaRiskAversionBps: Option<number>;
   targetBoostToBps: Option<number>;
+  addToPos: Option<DebtToAddToPosition>;
 };
 
 export type DCASettingsArgs = {
   unixStartDate: number | bigint;
-  unixDcaInterval: number | bigint;
+  dcaIntervalSeconds: number | bigint;
   dcaPeriodsPassed: number;
   targetDcaPeriods: number;
-  dcaDirection: DCADirectionArgs;
-  dcaRiskAversionBps: OptionOrNullable<number>;
   targetBoostToBps: OptionOrNullable<number>;
+  addToPos: OptionOrNullable<DebtToAddToPositionArgs>;
 };
 
 export function getDCASettingsSerializer(): Serializer<
@@ -44,12 +46,11 @@ export function getDCASettingsSerializer(): Serializer<
   return struct<DCASettings>(
     [
       ['unixStartDate', u64()],
-      ['unixDcaInterval', u64()],
+      ['dcaIntervalSeconds', u64()],
       ['dcaPeriodsPassed', u8()],
       ['targetDcaPeriods', u8()],
-      ['dcaDirection', getDCADirectionSerializer()],
-      ['dcaRiskAversionBps', option(u16())],
       ['targetBoostToBps', option(u16())],
+      ['addToPos', option(getDebtToAddToPositionSerializer())],
     ],
     { description: 'DCASettings' }
   ) as Serializer<DCASettingsArgs, DCASettings>;

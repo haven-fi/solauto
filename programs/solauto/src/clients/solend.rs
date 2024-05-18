@@ -286,8 +286,14 @@ impl<'a> LendingProtocolClient<'a> for SolendClient<'a> {
         validate_lending_program_accounts_with_position(
             &std_accounts.solauto_position,
             self.data.obligation.account_info,
-            self.data.supply_reserve.as_ref().map_or_else(|| None, |reserve| Some(reserve.account_info)),
-            self.data.debt_reserve.as_ref().map_or_else(|| None, |reserve| Some(reserve.account_info))
+            self.data
+                .supply_reserve
+                .as_ref()
+                .map_or_else(|| None, |reserve| Some(reserve.account_info)),
+            self.data
+                .debt_reserve
+                .as_ref()
+                .map_or_else(|| None, |reserve| Some(reserve.account_info)),
         )?;
 
         validate_token_accounts(

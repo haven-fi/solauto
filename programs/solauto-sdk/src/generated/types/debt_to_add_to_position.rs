@@ -10,7 +10,7 @@ use borsh::BorshSerialize;
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub enum DCADirection {
-    In(Option<u64>),
-    Out,
+pub struct DebtToAddToPosition {
+    pub base_unit_debt_amount: u64,
+    pub risk_aversion_bps: Option<u16>,
 }

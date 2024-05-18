@@ -13,8 +13,8 @@ use crate::{
         instruction::UpdatePositionData,
         obligation_position::LendingProtocolObligationPosition,
         shared::{
-            DCADirection, DeserializedAccount, LendingPlatform, LendingProtocolPositionData,
-            PositionData, PositionState, ReferralStateAccount, SolautoError, SolautoPosition,
+            DeserializedAccount, LendingPlatform, LendingProtocolPositionData, PositionData,
+            PositionState, ReferralStateAccount, SolautoError, SolautoPosition,
         },
     },
 };
@@ -187,7 +187,7 @@ pub fn initiate_dca_in_if_necessary<'a, 'b>(
     }
 
     let active_dca = position.active_dca.as_ref().unwrap();
-    if active_dca.dca_direction == DCADirection::Out {
+    if active_dca.add_to_pos.is_none() {
         return Ok(());
     }
 
@@ -206,29 +206,26 @@ pub fn initiate_dca_in_if_necessary<'a, 'b>(
         return Err(SolautoError::IncorrectAccounts.into());
     }
 
-    let DCADirection::In(base_unit_amount) = active_dca.dca_direction else {
-        panic!("Expected DCADirection::In variant");
-    };
-
-    if base_unit_amount.is_none() {
-        return Ok(());
-    }
-
+    let base_unit_amount_to_add = active_dca
+        .add_to_pos
+        .as_ref()
+        .unwrap()
+        .base_unit_debt_amount;
     let signer_token_account = TokenAccount::unpack(&signer_debt_ta.unwrap().data.borrow())?;
     let balance = signer_token_account.amount;
 
-    if base_unit_amount.unwrap() > balance {
+    if base_unit_amount_to_add > balance {
         msg!("Provided greater DCA-in value than exists in the signer debt token account");
         return Err(ProgramError::InvalidInstructionData.into());
     }
 
-    position.debt_ta_balance += base_unit_amount.unwrap();
+    position.debt_ta_balance += base_unit_amount_to_add;
     spl_token_transfer(
         token_program,
         signer_debt_ta.unwrap(),
         signer,
         position_debt_ta.unwrap(),
-        base_unit_amount.unwrap(),
+        base_unit_amount_to_add,
         None,
     )?;
 
@@ -253,53 +250,52 @@ pub fn cancel_dca_in_if_necessary<'a, 'b>(
         .as_ref()
         .unwrap();
 
-    if let DCADirection::In(_) = active_dca.dca_direction {
-        if solauto_position
+    if active_dca.add_to_pos.is_some()
+        && solauto_position
             .data
             .position
             .as_ref()
             .unwrap()
             .debt_ta_balance
             > 0
-        {
-            if debt_mint.is_none() || position_debt_ta.is_none() || signer_debt_ta.is_none() {
-                msg!(
-                    "Requires debt_mint, position_debt_ta & signer_debt_ta in order to cancel the active DCA-in"
-                );
-                return Err(SolautoError::IncorrectAccounts.into());
-            }
-
-            let debt_ta_current_balance =
-                TokenAccount::unpack(&position_debt_ta.unwrap().data.borrow())?.amount;
-            if debt_ta_current_balance == 0 {
-                return Ok(());
-            }
-
-            init_ata_if_needed(
-                token_program,
-                system_program,
-                signer,
-                signer,
-                signer_debt_ta.unwrap(),
-                debt_mint.unwrap(),
-            )?;
-
-            solauto_position
-                .data
-                .position
-                .as_mut()
-                .unwrap()
-                .debt_ta_balance = 0;
-
-            spl_token_transfer(
-                token_program,
-                position_debt_ta.unwrap(),
-                solauto_position.account_info,
-                signer_debt_ta.unwrap(),
-                debt_ta_current_balance,
-                Some(&solauto_position.data.seeds_with_bump()),
-            )?;
+    {
+        if debt_mint.is_none() || position_debt_ta.is_none() || signer_debt_ta.is_none() {
+            msg!(
+                "Requires debt_mint, position_debt_ta & signer_debt_ta in order to cancel the active DCA-in"
+            );
+            return Err(SolautoError::IncorrectAccounts.into());
         }
+
+        let debt_ta_current_balance =
+            TokenAccount::unpack(&position_debt_ta.unwrap().data.borrow())?.amount;
+        if debt_ta_current_balance == 0 {
+            return Ok(());
+        }
+
+        init_ata_if_needed(
+            token_program,
+            system_program,
+            signer,
+            signer,
+            signer_debt_ta.unwrap(),
+            debt_mint.unwrap(),
+        )?;
+
+        solauto_position
+            .data
+            .position
+            .as_mut()
+            .unwrap()
+            .debt_ta_balance = 0;
+
+        spl_token_transfer(
+            token_program,
+            position_debt_ta.unwrap(),
+            solauto_position.account_info,
+            signer_debt_ta.unwrap(),
+            debt_ta_current_balance,
+            Some(&solauto_position.data.seeds_with_bump()),
+        )?;
     }
 
     solauto_position.data.position.as_mut().unwrap().active_dca = None;
@@ -310,7 +306,7 @@ pub fn is_dca_instruction(
     solauto_position: &SolautoPosition,
     obligation_position: &LendingProtocolObligationPosition,
     current_unix_timestamp: u64,
-) -> Result<Option<DCADirection>, ProgramError> {
+) -> Result<bool, ProgramError> {
     if solauto_position.self_managed
         || solauto_position
             .position
@@ -320,39 +316,26 @@ pub fn is_dca_instruction(
             .debt_mint
             .is_none()
     {
-        return Ok(None);
+        return Ok(false);
     }
 
+    let position_data = solauto_position.position.as_ref().unwrap();
+
     if obligation_position.current_liq_utilization_rate_bps()
-        >= solauto_position
-            .position
-            .as_ref()
-            .unwrap()
+        >= position_data
             .setting_params
             .as_ref()
             .unwrap()
             .repay_from_bps()
     {
-        return Ok(None);
+        return Ok(false);
     }
 
-    if solauto_position
-        .position
-        .as_ref()
-        .unwrap()
-        .active_dca
-        .is_none()
-    {
-        return Ok(None);
+    if position_data.active_dca.is_none() {
+        return Ok(false);
     }
 
-    let dca_settings = solauto_position
-        .position
-        .as_ref()
-        .unwrap()
-        .active_dca
-        .as_ref()
-        .unwrap();
+    let dca_settings = position_data.active_dca.as_ref().unwrap();
 
     if dca_settings.unix_start_date.add(
         dca_settings
@@ -360,10 +343,10 @@ pub fn is_dca_instruction(
             .mul(dca_settings.dca_periods_passed as u64),
     ) < current_unix_timestamp
     {
-        return Ok(None);
+        return Ok(false);
     }
 
-    Ok(Some(dca_settings.dca_direction))
+    Ok(true)
 }
 
 pub struct SolautoFeesBps {

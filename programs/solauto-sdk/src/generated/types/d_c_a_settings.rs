@@ -5,7 +5,7 @@
 //! [https://github.com/metaplex-foundation/kinobi]
 //!
 
-use crate::generated::types::DCADirection;
+use crate::generated::types::DebtToAddToPosition;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 
@@ -13,10 +13,9 @@ use borsh::BorshSerialize;
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct DCASettings {
     pub unix_start_date: u64,
-    pub unix_dca_interval: u64,
+    pub dca_interval_seconds: u64,
     pub dca_periods_passed: u8,
     pub target_dca_periods: u8,
-    pub dca_direction: DCADirection,
-    pub dca_risk_aversion_bps: Option<u16>,
     pub target_boost_to_bps: Option<u16>,
+    pub add_to_pos: Option<DebtToAddToPosition>,
 }

@@ -6,7 +6,11 @@ use solana_program::{
     program_pack::{IsInitialized, Pack},
     pubkey::Pubkey,
 };
-use std::{cmp::min, fmt, ops::{Add, Sub}};
+use std::{
+    cmp::min,
+    fmt,
+    ops::{Add, Sub},
+};
 use thiserror::Error;
 
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, PartialEq)]
@@ -37,11 +41,14 @@ pub enum TokenBalanceAmount {
     All,
 }
 
-#[derive(BorshDeserialize, BorshSerialize, Clone, Copy, Debug, ShankType, PartialEq)]
-pub enum DCADirection {
-    /// Base unit amount of debt to DCA-in with
-    In(Option<u64>),
-    Out,
+#[derive(BorshDeserialize, BorshSerialize, Clone, Copy, Debug, ShankType)]
+pub struct DebtToAddToPosition {
+    pub base_unit_debt_amount: u64,
+    /// This value is used to determine whether or not to increase leverage,
+    /// or simply swap and deposit supply, depending on the distance from `current_liq_utilization_rate` to `repay_from` parameter.
+    /// e.g. a lower value will mean the DCA will more likely increase leverage than not, and vice-versa.
+    /// Defaults to 1500.
+    pub risk_aversion_bps: Option<u16>,
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType)]
@@ -54,15 +61,10 @@ pub struct DCASettings {
     pub dca_periods_passed: u8,
     /// The target number of DCA periods
     pub target_dca_periods: u8,
-    /// Whether to DCA-in or DCA-out
-    pub dca_direction: DCADirection,
-    /// Only used when DCAing-in and DCADirection::In value > 0. This value is used to determine whether or not to increase leverage,
-    /// or simply swap and deposit supply, depending on the distance from `current_liq_utilization_rate` to `repay_from` parameter.
-    /// e.g. a lower value will mean the DCA will more likely increase leverage than not, and vice-versa.
-    /// Defaults to 1500.
-    pub dca_risk_aversion_bps: Option<u16>,
     /// The taget boost_to_bps parameter to reach at the end of the DCA. Applicable for both DCA directions.
     pub target_boost_to_bps: Option<u16>,
+    // Gradually add more debt to the position during the DCA period
+    pub add_to_pos: Option<DebtToAddToPosition>,
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType)]
