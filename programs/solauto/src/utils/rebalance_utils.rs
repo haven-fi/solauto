@@ -219,9 +219,6 @@ fn get_target_liq_utilization_rate_from_dca(
     if dca_settings.dca_periods_passed == dca_settings.target_dca_periods - 1 {
         position.active_dca = None;
     }
-    if new_boost_to_bps == 0 {
-        position.setting_params = None;
-    }
 
     let diff = current_liq_utilization_rate.sub(target_boost_to_bps);
     let target_rate_bps =

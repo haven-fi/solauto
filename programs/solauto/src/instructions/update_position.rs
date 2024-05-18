@@ -1,4 +1,4 @@
-use solana_program::{entrypoint::ProgramResult, msg};
+use solana_program::{clock::Clock, entrypoint::ProgramResult, msg, sysvar::Sysvar};
 
 use crate::{
     types::{
@@ -31,7 +31,7 @@ pub fn update_position<'a>(
 
     let position_data = solauto_position.data.position.as_ref().unwrap();
     validation_utils::validate_position_settings(&position_data)?;
-    validation_utils::validate_dca_settings(&position_data)?;
+    validation_utils::validate_dca_settings(&position_data, Clock::get()?.unix_timestamp as u64)?;
 
     ix_utils::update_data(&mut solauto_position)
 }

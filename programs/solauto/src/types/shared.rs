@@ -6,7 +6,7 @@ use solana_program::{
     program_pack::{IsInitialized, Pack},
     pubkey::Pubkey,
 };
-use std::{cmp::min, fmt, ops::Add};
+use std::{cmp::min, fmt, ops::{Add, Sub}};
 use thiserror::Error;
 
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, PartialEq)]
@@ -48,8 +48,8 @@ pub enum DCADirection {
 pub struct DCASettings {
     /// The unix timestamp (in seconds) start date of DCA
     pub unix_start_date: u64,
-    /// The unix timestamp (in seconds) interval between each rebalance
-    pub unix_dca_interval: u64,
+    /// The interval in seconds between each DCA
+    pub dca_interval_seconds: u64,
     /// How many DCA periods have already passed
     pub dca_periods_passed: u8,
     /// The target number of DCA periods
@@ -82,7 +82,7 @@ impl SolautoSettingsParameters {
         self.boost_to_bps.saturating_sub(self.boost_gap)
     }
     pub fn repay_from_bps(&self) -> u16 {
-        min(9800, self.repay_to_bps.add(self.repay_gap))
+        self.repay_to_bps.add(self.repay_gap)
     }
 }
 

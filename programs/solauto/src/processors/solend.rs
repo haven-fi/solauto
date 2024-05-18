@@ -1,4 +1,4 @@
-use solana_program::{account_info::AccountInfo, entrypoint::ProgramResult, msg};
+use solana_program::{account_info::AccountInfo, clock::Clock, entrypoint::ProgramResult, msg, sysvar::Sysvar};
 use solend_sdk::state::Reserve;
 use spl_token::state::Account as TokenAccount;
 
@@ -46,7 +46,7 @@ pub fn process_solend_open_position_instruction<'a>(
     if solauto_position.data.position.is_some() {
         let position_data = solauto_position.data.position.as_ref().unwrap();
         validation_utils::validate_position_settings(position_data)?;
-        validation_utils::validate_dca_settings(position_data)?;
+        validation_utils::validate_dca_settings(position_data, Clock::get()?.unix_timestamp as u64)?;
     }
 
     solauto_utils::init_solauto_fees_supply_ta(

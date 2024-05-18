@@ -356,7 +356,7 @@ pub fn is_dca_instruction(
 
     if dca_settings.unix_start_date.add(
         dca_settings
-            .unix_dca_interval
+            .dca_interval_seconds
             .mul(dca_settings.dca_periods_passed as u64),
     ) < current_unix_timestamp
     {
