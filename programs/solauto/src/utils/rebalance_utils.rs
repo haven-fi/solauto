@@ -428,7 +428,7 @@ mod tests {
         SolautoSettingsParameters {
             boost_to_bps: 5000,
             boost_gap: 1000,
-            repay_to_bps: 8500,
+            repay_to_bps: 7500,
             repay_gap: 500,
         }
     }
@@ -549,7 +549,9 @@ mod tests {
 
     #[test]
     fn test_repay() {
-        standard_rebalance(0.95);
+        standard_rebalance(0.9053);
+        standard_rebalance(0.97432);
+        standard_rebalance(0.8234);
     }
 
     #[test]
