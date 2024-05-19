@@ -106,6 +106,13 @@ fn rebalance<'a, T: LendingProtocolClient<'a>>(
         return Err(ProgramError::InvalidInstructionData.into());
     }
 
+    if args.max_price_slippage_bps.is_some() && args.max_price_slippage_bps.unwrap() > 2000 {
+        msg!(
+            "Cannot provide a price slippage greater than 20%"
+        );
+        return Err(ProgramError::InvalidInstructionData.into());
+    }
+
     let solauto_rebalance_step = rebalance_utils::get_rebalance_step(&std_accounts)?;
 
     let mut solauto_manager = SolautoManager::from(
