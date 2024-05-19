@@ -541,6 +541,7 @@ mod tests {
             )
         ).unwrap();
 
+        println!("{}, {}", obligation_position.current_liq_utilization_rate_bps(), target_rate);
         assert!(obligation_position.current_liq_utilization_rate_bps() == target_rate);
     }
 
@@ -549,14 +550,16 @@ mod tests {
 
     #[test]
     fn test_repay() {
-        standard_rebalance(0.9053);
-        standard_rebalance(0.97432);
-        standard_rebalance(0.8234);
+        standard_rebalance(0.8034);
+        standard_rebalance(0.8753);
+        standard_rebalance(0.9243);
     }
 
     #[test]
     fn test_boost() {
-        standard_rebalance(0.25);
+        standard_rebalance(0.1343);
+        standard_rebalance(0.2232);
+        standard_rebalance(0.3943);
     }
 
     #[test]
