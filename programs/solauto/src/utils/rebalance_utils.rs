@@ -543,6 +543,7 @@ mod tests {
         );
         let expected_debt_adjustment_usd = expected_debt_adjustment_usd + debt_to_add;
 
+        println!("{}, {}", debt_adjustment_usd.unwrap(), expected_debt_adjustment_usd);
         assert!(
             debt_adjustment_usd.is_some() &&
                 debt_adjustment_usd.unwrap() == expected_debt_adjustment_usd
@@ -616,9 +617,9 @@ mod tests {
         let target_boost_to_bps = dca_settings.target_boost_to_bps.map_or_else(
             || 0,
             |target| target
-        );
+        ) as i16;
 
-        let curr_utilization_rate_diff = current_liq_utilization_rate_bps.sub(target_boost_to_bps);
+        let curr_utilization_rate_diff = (current_liq_utilization_rate_bps as i16).sub(target_boost_to_bps);
         let dca_progress = dca_progress_percentage(
             dca_settings.target_dca_periods,
             dca_settings.dca_periods_passed
@@ -636,7 +637,7 @@ mod tests {
         let start_boost_to_bps = setting_params.map_or_else(
             || default_setting_params().boost_to_bps,
             |settings| settings.boost_to_bps
-        );
+        ) as i16;
         let expected_boost_to_bps = (start_boost_to_bps as f64).sub(
             (start_boost_to_bps.sub(target_boost_to_bps) as f64).mul(dca_progress)
         ) as u16;
@@ -653,7 +654,25 @@ mod tests {
     }
 
     #[test]
-    fn test_dca_in() {}
+    fn test_dca_in() {
+        test_rebalance_with_dca(
+            BOOST_TO_BPS - 2000,
+            DCASettings {
+                unix_start_date: 0,
+                dca_interval_seconds: 5,
+                dca_periods_passed: 0,
+                target_dca_periods: 4,
+                target_boost_to_bps: Some(BOOST_TO_BPS),
+                add_to_pos: None,
+            },
+            Some(SolautoSettingsParameters {
+                boost_to_bps: BOOST_TO_BPS - 2000,
+                boost_gap: 500,
+                repay_to_bps: REPAY_TO_BPS,
+                repay_gap: 500
+            })
+        ).unwrap();
+    }
 
     #[test]
     fn test_dca_in_with_additional_debt() {}
@@ -661,7 +680,7 @@ mod tests {
     #[test]
     fn test_dca_out() {
         test_rebalance_with_dca(
-            5500,
+            BOOST_TO_BPS + 1000,
             DCASettings {
                 unix_start_date: 0,
                 dca_interval_seconds: 5,
@@ -674,12 +693,12 @@ mod tests {
         ).unwrap();
 
         test_rebalance_with_dca(
-            5500,
+            BOOST_TO_BPS + 1000,
             DCASettings {
                 unix_start_date: 0,
                 dca_interval_seconds: 5,
-                dca_periods_passed: 4,
-                target_dca_periods: 10,
+                dca_periods_passed: 9,
+                target_dca_periods: 15,
                 target_boost_to_bps: Some(1500),
                 add_to_pos: None,
             },
@@ -687,7 +706,7 @@ mod tests {
         ).unwrap();
 
         let solauto_position = test_rebalance_with_dca(
-            5500,
+            BOOST_TO_BPS + 1000,
             DCASettings {
                 unix_start_date: 0,
                 dca_interval_seconds: 5,
