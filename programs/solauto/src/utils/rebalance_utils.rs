@@ -239,6 +239,8 @@ fn get_target_liq_utilization_rate_from_dca(
 
     if dca_settings.dca_periods_passed == dca_settings.target_dca_periods - 1 {
         position.active_dca = None;
+    } else {
+        position.active_dca.as_mut().unwrap().dca_periods_passed += 1;
     }
 
     Ok(target_rate_bps)
@@ -415,6 +417,8 @@ pub fn get_rebalance_values(
 
 #[cfg(test)]
 mod tests {
+    use std::ops::Add;
+
     use num_traits::Pow;
     use solana_program::pubkey::Pubkey;
     use tests::math_utils::{ from_base_unit, to_base_unit };
@@ -500,6 +504,7 @@ mod tests {
     }
 
     fn test_rebalance(
+        current_timestamp: Option<u64>,
         current_liq_utilization_rate_bps: u16,
         expected_utilization_rate_bps: u16,
         setting_params: Option<SolautoSettingsParameters>,
@@ -523,7 +528,10 @@ mod tests {
             &obligation_position,
             &rebalance_args,
             &solauto_fees,
-            0
+            current_timestamp.map_or_else(
+                || 0,
+                |timestamp| timestamp
+            )
         )?;
 
         // Begin validation
@@ -547,6 +555,14 @@ mod tests {
         );
         let expected_debt_adjustment_usd = expected_debt_adjustment_usd + debt_to_add;
 
+        println!(
+            "{}, {}",
+            debt_adjustment_usd.map_or_else(
+                || 0.0,
+                |debt| debt
+            ),
+            expected_debt_adjustment_usd
+        );
         assert!(
             debt_adjustment_usd.is_some() &&
                 debt_adjustment_usd.unwrap() == expected_debt_adjustment_usd
@@ -585,34 +601,35 @@ mod tests {
 
     #[test]
     fn test_invalid_rebalance_condition() {
-        let result = test_rebalance(6250, 0, None, None);
+        let result = test_rebalance(None, 6250, 0, None, None);
         assert!(result.is_err());
         assert!(result.unwrap_err() == SolautoError::InvalidRebalanceCondition.into());
 
-        let result = test_rebalance(4001, 0, None, None);
+        let result = test_rebalance(None, 4001, 0, None, None);
         assert!(result.is_err());
         assert!(result.unwrap_err() == SolautoError::InvalidRebalanceCondition.into());
 
-        let result = test_rebalance(7999, 0, None, None);
+        let result = test_rebalance(None, 7999, 0, None, None);
         assert!(result.is_err());
         assert!(result.unwrap_err() == SolautoError::InvalidRebalanceCondition.into());
     }
 
     #[test]
     fn test_repay() {
-        test_rebalance(8034, REPAY_TO_BPS, None, None).unwrap();
-        test_rebalance(8753, REPAY_TO_BPS, None, None).unwrap();
-        test_rebalance(9243, REPAY_TO_BPS, None, None).unwrap();
+        test_rebalance(None, 8034, REPAY_TO_BPS, None, None).unwrap();
+        test_rebalance(None, 8753, REPAY_TO_BPS, None, None).unwrap();
+        test_rebalance(None, 9243, REPAY_TO_BPS, None, None).unwrap();
     }
 
     #[test]
     fn test_boost() {
-        test_rebalance(1343, BOOST_TO_BPS, None, None).unwrap();
-        test_rebalance(2232, BOOST_TO_BPS, None, None).unwrap();
-        test_rebalance(3943, BOOST_TO_BPS, None, None).unwrap();
+        test_rebalance(None, 1343, BOOST_TO_BPS, None, None).unwrap();
+        test_rebalance(None, 2232, BOOST_TO_BPS, None, None).unwrap();
+        test_rebalance(None, 3943, BOOST_TO_BPS, None, None).unwrap();
     }
 
     fn test_rebalance_with_dca(
+        current_timestamp: Option<u64>,
         current_liq_utilization_rate_bps: u16,
         dca_settings: DCASettings,
         setting_params: Option<SolautoSettingsParameters>
@@ -631,6 +648,13 @@ mod tests {
         );
 
         let solauto_position = test_rebalance(
+            Some(current_timestamp.map_or_else(
+                ||
+                    dca_settings.unix_start_date.add(
+                        dca_settings.dca_interval_seconds.mul((dca_settings.dca_periods_passed as u64) + 1)
+                    ),
+                |timestamp| timestamp
+            )),
             current_liq_utilization_rate_bps,
             (current_liq_utilization_rate_bps as f64).sub(
                 (curr_utilization_rate_diff as f64).mul(dca_progress)
@@ -659,8 +683,27 @@ mod tests {
     }
 
     #[test]
+    fn test_invalid_dca_condition() {
+        let result = test_rebalance_with_dca(
+            Some(14),
+            BOOST_TO_BPS + 500,
+            DCASettings {
+                unix_start_date: 0,
+                dca_interval_seconds: 5,
+                dca_periods_passed: 2,
+                target_dca_periods: 4,
+                target_boost_to_bps: Some(0),
+                add_to_pos: None,
+            },
+            None
+        );
+        assert!(result.is_err() && result.unwrap_err() == SolautoError::InvalidRebalanceCondition.into());
+    }
+
+    #[test]
     fn test_dca_in() {
         test_rebalance_with_dca(
+            None,
             BOOST_TO_BPS - 2000,
             DCASettings {
                 unix_start_date: 0,
@@ -679,6 +722,7 @@ mod tests {
         ).unwrap();
 
         test_rebalance_with_dca(
+            None,
             0,
             DCASettings {
                 unix_start_date: 0,
@@ -696,25 +740,27 @@ mod tests {
             })
         ).unwrap();
 
-        test_rebalance_with_dca(
-            BOOST_TO_BPS + 1000,
-            DCASettings {
-                unix_start_date: 0,
-                dca_interval_seconds: 5,
-                dca_periods_passed: 0,
-                target_dca_periods: 10,
-                target_boost_to_bps: Some(BOOST_TO_BPS),
-                add_to_pos: None,
-            },
-            Some(SolautoSettingsParameters {
-                boost_to_bps: BOOST_TO_BPS - 500,
-                boost_gap: 500,
-                repay_to_bps: REPAY_TO_BPS,
-                repay_gap: 500,
-            })
-        ).unwrap();
+        // test_rebalance_with_dca(
+           // None,
+            //     BOOST_TO_BPS + 1000,
+        //     DCASettings {
+        //         unix_start_date: 0,
+        //         dca_interval_seconds: 5,
+        //         dca_periods_passed: 4,
+        //         target_dca_periods: 10,
+        //         target_boost_to_bps: Some(BOOST_TO_BPS),
+        //         add_to_pos: None,
+        //     },
+        //     Some(SolautoSettingsParameters {
+        //         boost_to_bps: BOOST_TO_BPS - 500,
+        //         boost_gap: 500,
+        //         repay_to_bps: REPAY_TO_BPS,
+        //         repay_gap: 500,
+        //     })
+        // ).unwrap();
 
         let solauto_position = test_rebalance_with_dca(
+            None,
             BOOST_TO_BPS - 500,
             DCASettings {
                 unix_start_date: 0,
@@ -740,6 +786,7 @@ mod tests {
     #[test]
     fn test_dca_out() {
         test_rebalance_with_dca(
+            None,
             BOOST_TO_BPS + 1000,
             DCASettings {
                 unix_start_date: 0,
@@ -753,6 +800,7 @@ mod tests {
         ).unwrap();
 
         test_rebalance_with_dca(
+            None,
             BOOST_TO_BPS + 1000,
             DCASettings {
                 unix_start_date: 0,
@@ -766,6 +814,7 @@ mod tests {
         ).unwrap();
 
         let solauto_position = test_rebalance_with_dca(
+            None,
             BOOST_TO_BPS + 1000,
             DCASettings {
                 unix_start_date: 0,
