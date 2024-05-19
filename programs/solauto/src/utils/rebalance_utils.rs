@@ -431,7 +431,7 @@ mod tests {
 
     fn assert_bps_within_margin_of_error(result_bps: u16, expected_bps: u16) {
         println!("{}, {}", result_bps, expected_bps);
-        assert!(result_bps >= expected_bps - 1 && result_bps <= expected_bps + 1);
+        assert!(result_bps >= expected_bps.saturating_sub(1) && result_bps <= expected_bps + 1);
     }
 
     // CHANGING THESE WILL BREAK TESTS
@@ -678,12 +678,26 @@ mod tests {
             DCASettings {
                 unix_start_date: 0,
                 dca_interval_seconds: 5,
-                dca_periods_passed: 0,
+                dca_periods_passed: 4,
                 target_dca_periods: 10,
                 target_boost_to_bps: Some(1500),
                 add_to_pos: None,
             },
             None
         ).unwrap();
+
+        let solauto_position = test_rebalance_with_dca(
+            5500,
+            DCASettings {
+                unix_start_date: 0,
+                dca_interval_seconds: 5,
+                dca_periods_passed: 9,
+                target_dca_periods: 10,
+                target_boost_to_bps: Some(0),
+                add_to_pos: None,
+            },
+            None
+        ).unwrap();
+        assert!(solauto_position.position.as_ref().unwrap().active_dca.is_none());
     }
 }
