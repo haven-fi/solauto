@@ -149,9 +149,10 @@ impl LendingProtocolObligationPosition {
     pub fn supply_lent_update(&mut self, base_unit_supply_update: i64) -> ProgramResult {
         if base_unit_supply_update.is_positive() {
             self.supply.amount_used.base_unit += base_unit_supply_update as u64;
-            self.supply.amount_can_be_used.base_unit -= base_unit_supply_update as u64;
+
+            self.supply.amount_can_be_used.base_unit = self.supply.amount_can_be_used.base_unit.saturating_sub(base_unit_supply_update as u64);
         } else {
-            self.supply.amount_used.base_unit -= (base_unit_supply_update * -1) as u64;
+            self.supply.amount_used.base_unit = self.supply.amount_used.base_unit.saturating_sub((base_unit_supply_update * -1) as u64);
 
             if self.lending_platform != LendingPlatform::Solend {
                 self.supply.amount_can_be_used.base_unit += (base_unit_supply_update * -1) as u64;
@@ -168,9 +169,10 @@ impl LendingProtocolObligationPosition {
                     .mul((debt.borrow_fee_bps as f64).div(10000.0));
                 debt.amount_used.base_unit +=
                     (base_unit_debt_amount_update as u64) + (borrow_fee as u64);
-                debt.amount_can_be_used.base_unit -= base_unit_debt_amount_update as u64;
+                
+                debt.amount_can_be_used.base_unit = debt.amount_can_be_used.base_unit.saturating_sub(base_unit_debt_amount_update as u64);
             } else {
-                debt.amount_used.base_unit -= (base_unit_debt_amount_update * -1) as u64;
+                debt.amount_used.base_unit = debt.amount_used.base_unit.saturating_sub((base_unit_debt_amount_update * -1) as u64);
 
                 if self.lending_platform != LendingPlatform::Solend {
                     debt.amount_can_be_used.base_unit += (base_unit_debt_amount_update * -1) as u64;

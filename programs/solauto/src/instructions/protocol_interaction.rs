@@ -121,7 +121,7 @@ fn protocol_interaction<'a, T: LendingProtocolClient<'a>>(
     SolautoManager::refresh_position(
         &solauto_manager.obligation_position,
         &mut solauto_manager.std_accounts.solauto_position.data,
-        Clock::get()?.unix_timestamp as u64
+        Clock::get()?.unix_timestamp as u64,
     )?;
     ix_utils::update_data(&mut solauto_manager.std_accounts.solauto_position)
 }

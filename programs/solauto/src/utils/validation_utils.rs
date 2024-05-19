@@ -134,8 +134,8 @@ pub fn validate_position_settings(position_data: &PositionData) -> ProgramResult
     if settings.repay_gap < 500 {
         return invalid_params("repay_gap must be 500 or greater");
     }
-    if settings.boost_gap < 500 {
-        return invalid_params("boost_gap must be 500 or greater");
+    if settings.boost_gap < 100 {
+        return invalid_params("boost_gap must be 100 or greater");
     }
 
     if settings.repay_to_bps == 0 && position_data.protocol_data.debt_mint.is_some() {
@@ -497,7 +497,7 @@ mod tests {
         };
         test_position_settings(
             SolautoSettingsParameters {
-                boost_gap: 200,
+                boost_gap: 50,
                 ..default_settings
             },
             default_liq_threshold_bps,

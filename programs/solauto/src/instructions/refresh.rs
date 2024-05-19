@@ -45,7 +45,11 @@ pub fn marginfi_refresh_accounts(
             ctx.accounts.debt_price_oracle,
         )?;
 
-        SolautoManager::refresh_position(&obligation_position, &mut solauto_position.as_mut().unwrap().data, Clock::get()?.unix_timestamp as u64)?;
+        SolautoManager::refresh_position(
+            &obligation_position,
+            &mut solauto_position.as_mut().unwrap().data,
+            Clock::get()?.unix_timestamp as u64,
+        )?;
     }
 
     if solauto_position.is_some() {
@@ -98,7 +102,7 @@ pub fn solend_refresh_accounts(
             SolautoManager::refresh_position(
                 &obligation_position,
                 &mut solauto_position.as_mut().unwrap().data,
-                Clock::get()?.unix_timestamp as u64
+                Clock::get()?.unix_timestamp as u64,
             )?;
         }
     }

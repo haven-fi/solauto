@@ -285,7 +285,7 @@ pub enum SolautoAction {
     Withdraw(TokenBalanceAmount),
 }
 
-#[derive(BorshSerialize, BorshDeserialize, Clone, Debug)]
+#[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Default)]
 pub struct RebalanceArgs {
     /// Target liq utilization rate. Only used/allowed if signed by the position authority.
     pub target_liq_utilization_rate_bps: Option<u16>,

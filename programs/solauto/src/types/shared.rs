@@ -6,10 +6,7 @@ use solana_program::{
     program_pack::{IsInitialized, Pack},
     pubkey::Pubkey,
 };
-use std::{
-    fmt,
-    ops::Add,
-};
+use std::{fmt, ops::Add};
 use thiserror::Error;
 
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, PartialEq)]
@@ -106,6 +103,7 @@ pub struct LendingProtocolPositionData {
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, Default)]
 pub struct PositionState {
     pub liq_utilization_rate_bps: u16,
+    // Denominated by 6 decimal places
     pub net_worth_base_amount_usd: u64,
     pub net_worth_base_amount_supply_mint: u64,
     pub base_amount_supplied: u64,
