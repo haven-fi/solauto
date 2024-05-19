@@ -306,17 +306,21 @@ fn get_target_rate_and_dca_amount(
             let target_boost_to_bps = position_data.active_dca
                 .as_ref()
                 .unwrap().target_boost_to_bps;
-            if
+
+            let increasing_leverage =
                 target_boost_to_bps.is_some() &&
                 target_boost_to_bps.unwrap() >
-                    position_data.setting_params.as_ref().unwrap().boost_to_bps
-            {
+                    position_data.setting_params.as_ref().unwrap().boost_to_bps;
+
+            if increasing_leverage {
+                let max_liq_utilization_rate_bps =
+                    get_max_liq_utilization_rate_from_risk_aversion(position_data);
                 let target_rate = max(
                     obligation_position.current_liq_utilization_rate_bps(),
                     get_target_liq_utilization_rate_from_dca(position_data, obligation_position)?
                 );
 
-                if target_rate > get_max_liq_utilization_rate_from_risk_aversion(position_data) {
+                if target_rate > max_liq_utilization_rate_bps {
                     (None, amount_to_dca_in)
                 } else {
                     (Some(target_rate), amount_to_dca_in)
@@ -523,7 +527,7 @@ mod tests {
         )?;
 
         // Begin validation
-        let boosting = current_liq_utilization_rate_bps < settings.boost_from_bps();
+        let boosting = current_liq_utilization_rate_bps < expected_utilization_rate_bps;
         let adjustment_fee_bps = if boosting { solauto_fees.total } else { 0 };
         let expected_debt_adjustment_usd = calculate_debt_adjustment_usd(
             0.8,
@@ -543,7 +547,6 @@ mod tests {
         );
         let expected_debt_adjustment_usd = expected_debt_adjustment_usd + debt_to_add;
 
-        println!("{}, {}", debt_adjustment_usd.unwrap(), expected_debt_adjustment_usd);
         assert!(
             debt_adjustment_usd.is_some() &&
                 debt_adjustment_usd.unwrap() == expected_debt_adjustment_usd
@@ -619,7 +622,9 @@ mod tests {
             |target| target
         ) as i16;
 
-        let curr_utilization_rate_diff = (current_liq_utilization_rate_bps as i16).sub(target_boost_to_bps);
+        let curr_utilization_rate_diff = (current_liq_utilization_rate_bps as i16).sub(
+            target_boost_to_bps
+        );
         let dca_progress = dca_progress_percentage(
             dca_settings.target_dca_periods,
             dca_settings.dca_periods_passed
@@ -634,12 +639,12 @@ mod tests {
             Some(dca_settings)
         )?;
 
-        let start_boost_to_bps = setting_params.map_or_else(
+        let before_boost_to_bps = setting_params.map_or_else(
             || default_setting_params().boost_to_bps,
             |settings| settings.boost_to_bps
         ) as i16;
-        let expected_boost_to_bps = (start_boost_to_bps as f64).sub(
-            (start_boost_to_bps.sub(target_boost_to_bps) as f64).mul(dca_progress)
+        let expected_boost_to_bps = (before_boost_to_bps as f64).sub(
+            (before_boost_to_bps.sub(target_boost_to_bps) as f64).mul(dca_progress)
         ) as u16;
         assert_bps_within_margin_of_error(
             solauto_position.position
@@ -669,9 +674,46 @@ mod tests {
                 boost_to_bps: BOOST_TO_BPS - 2000,
                 boost_gap: 500,
                 repay_to_bps: REPAY_TO_BPS,
-                repay_gap: 500
+                repay_gap: 500,
             })
         ).unwrap();
+
+        test_rebalance_with_dca(
+            0,
+            DCASettings {
+                unix_start_date: 0,
+                dca_interval_seconds: 5,
+                dca_periods_passed: 0,
+                target_dca_periods: 10,
+                target_boost_to_bps: Some(BOOST_TO_BPS),
+                add_to_pos: None,
+            },
+            Some(SolautoSettingsParameters {
+                boost_to_bps: 0,
+                boost_gap: 500,
+                repay_to_bps: REPAY_TO_BPS,
+                repay_gap: 500,
+            })
+        ).unwrap();
+
+        let solauto_position = test_rebalance_with_dca(
+            BOOST_TO_BPS - 500,
+            DCASettings {
+                unix_start_date: 0,
+                dca_interval_seconds: 5,
+                dca_periods_passed: 9,
+                target_dca_periods: 10,
+                target_boost_to_bps: Some(BOOST_TO_BPS),
+                add_to_pos: None,
+            },
+            Some(SolautoSettingsParameters {
+                boost_to_bps: BOOST_TO_BPS - 500,
+                boost_gap: 500,
+                repay_to_bps: REPAY_TO_BPS,
+                repay_gap: 500,
+            })
+        ).unwrap();
+        assert!(solauto_position.position.as_ref().unwrap().active_dca.is_none());
     }
 
     #[test]
