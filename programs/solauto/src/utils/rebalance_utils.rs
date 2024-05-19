@@ -696,6 +696,24 @@ mod tests {
             })
         ).unwrap();
 
+        test_rebalance_with_dca(
+            BOOST_TO_BPS + 1000,
+            DCASettings {
+                unix_start_date: 0,
+                dca_interval_seconds: 5,
+                dca_periods_passed: 0,
+                target_dca_periods: 10,
+                target_boost_to_bps: Some(BOOST_TO_BPS),
+                add_to_pos: None,
+            },
+            Some(SolautoSettingsParameters {
+                boost_to_bps: BOOST_TO_BPS - 500,
+                boost_gap: 500,
+                repay_to_bps: REPAY_TO_BPS,
+                repay_gap: 500,
+            })
+        ).unwrap();
+
         let solauto_position = test_rebalance_with_dca(
             BOOST_TO_BPS - 500,
             DCASettings {
