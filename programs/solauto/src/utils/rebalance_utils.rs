@@ -541,7 +541,6 @@ mod tests {
             )
         ).unwrap();
 
-        println!("{} {}", obligation_position.current_liq_utilization_rate_bps(), target_rate);
         assert!(obligation_position.current_liq_utilization_rate_bps() == target_rate);
     }
 
