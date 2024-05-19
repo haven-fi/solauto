@@ -60,9 +60,9 @@ pub struct DCASettings {
     /// The interval in seconds between each DCA
     pub dca_interval_seconds: u64,
     /// How many DCA periods have already passed
-    pub dca_periods_passed: u8,
+    pub dca_periods_passed: u16,
     /// The target number of DCA periods
-    pub target_dca_periods: u8,
+    pub target_dca_periods: u16,
     /// The taget boost_to_bps parameter to reach at the end of the DCA. Applicable for both DCA directions.
     pub target_boost_to_bps: Option<u16>,
     // Gradually add more debt to the position during the DCA period
@@ -135,7 +135,7 @@ pub struct SolautoPosition {
 }
 
 impl SolautoPosition {
-    pub const LEN: usize = 359;
+    pub const LEN: usize = 361;
     pub fn new(position_id: u8, authority: Pubkey, position: Option<PositionData>) -> Self {
         let (_, bump) =
             Pubkey::find_program_address(&[&[position_id], authority.as_ref()], &crate::ID);

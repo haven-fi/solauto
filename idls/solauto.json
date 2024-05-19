@@ -1482,11 +1482,11 @@
           },
           {
             "name": "dcaPeriodsPassed",
-            "type": "u8"
+            "type": "u16"
           },
           {
             "name": "targetDcaPeriods",
-            "type": "u8"
+            "type": "u16"
           },
           {
             "name": "targetBoostToBps",

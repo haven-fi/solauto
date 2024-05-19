@@ -107,9 +107,7 @@ fn rebalance<'a, T: LendingProtocolClient<'a>>(
     }
 
     if args.max_price_slippage_bps.is_some() && args.max_price_slippage_bps.unwrap() > 2000 {
-        msg!(
-            "Cannot provide a price slippage greater than 20%"
-        );
+        msg!("Cannot provide a price slippage greater than 20%");
         return Err(ProgramError::InvalidInstructionData.into());
     }
 

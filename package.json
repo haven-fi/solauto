@@ -8,7 +8,9 @@
     "generate:idl": "shank idl --crate-root programs/solauto --out-dir idls --out-filename solauto.json",
     "generate:clients": "node ./generateClients.cjs && pnpm format:rust",
     "test:typescript": "cd typescript/solauto-sdk && pnpm test",
-    "test:rust": "cargo test --package solauto -- --nocapture && cd programs/solauto-sdk && cargo test-sbf"
+    "test:unit": "cargo test --package solauto -- --nocapture",
+    "test:solana": "cd programs/solauto-sdk && cargo test-sbf",
+    "test:rust": "pnpm test:unit && pnpm test:solana"
   },
   "dependencies": {
     "@coral-xyz/borsh": "^0.29.0",

@@ -103,7 +103,7 @@ mod open_position {
             .unwrap();
 
         let active_dca = DCASettings {
-            unix_start_date: Utc::now().timestamp() as u64,
+            unix_start_date: (Utc::now().timestamp() as u64) - 1,
             dca_interval_seconds: 60 * 60 * 24,
             dca_periods_passed: 0,
             target_dca_periods: 5,

@@ -14,8 +14,8 @@ use borsh::BorshSerialize;
 pub struct DCASettings {
     pub unix_start_date: u64,
     pub dca_interval_seconds: u64,
-    pub dca_periods_passed: u8,
-    pub target_dca_periods: u8,
+    pub dca_periods_passed: u16,
+    pub target_dca_periods: u16,
     pub target_boost_to_bps: Option<u16>,
     pub add_to_pos: Option<DebtToAddToPosition>,
 }

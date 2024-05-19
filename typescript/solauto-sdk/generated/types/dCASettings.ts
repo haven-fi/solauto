@@ -13,7 +13,6 @@ import {
   struct,
   u16,
   u64,
-  u8,
 } from '@metaplex-foundation/umi/serializers';
 import {
   DebtToAddToPosition,
@@ -47,8 +46,8 @@ export function getDCASettingsSerializer(): Serializer<
     [
       ['unixStartDate', u64()],
       ['dcaIntervalSeconds', u64()],
-      ['dcaPeriodsPassed', u8()],
-      ['targetDcaPeriods', u8()],
+      ['dcaPeriodsPassed', u16()],
+      ['targetDcaPeriods', u16()],
       ['targetBoostToBps', option(u16())],
       ['addToPos', option(getDebtToAddToPositionSerializer())],
     ],
