@@ -96,7 +96,7 @@ impl PositionTokenUsage {
     }
 }
 
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub struct LendingProtocolObligationPosition {
     pub max_ltv: Option<f64>,
     pub liq_threshold: f64,

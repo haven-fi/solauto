@@ -248,7 +248,11 @@ fn get_std_target_liq_utilization_rate(
     let target_rate_bps: Result<u16, SolautoError> = if
         rebalance_args.target_liq_utilization_rate_bps.is_none()
     {
-        let setting_params = solauto_position.position.as_ref().unwrap().setting_params.as_ref().unwrap();
+        let setting_params = solauto_position.position
+            .as_ref()
+            .unwrap()
+            .setting_params.as_ref()
+            .unwrap();
 
         if current_liq_utilization_rate_bps > setting_params.repay_from_bps() {
             if obligation_position.max_ltv.is_some() {
@@ -293,7 +297,9 @@ fn get_target_rate_and_dca_amount(
             let position_data = solauto_position.position.as_mut().unwrap();
             let amount_to_dca_in = get_additional_amount_to_dca_in(position_data);
 
-            let target_boost_to_bps = position_data.active_dca.as_ref().unwrap().target_boost_to_bps;
+            let target_boost_to_bps = position_data.active_dca
+                .as_ref()
+                .unwrap().target_boost_to_bps;
             if
                 target_boost_to_bps.is_some() &&
                 target_boost_to_bps.unwrap() >
@@ -311,7 +317,12 @@ fn get_target_rate_and_dca_amount(
                 }
             } else {
                 (
-                    Some(get_target_liq_utilization_rate_from_dca(position_data, obligation_position)?),
+                    Some(
+                        get_target_liq_utilization_rate_from_dca(
+                            position_data,
+                            obligation_position
+                        )?
+                    ),
                     amount_to_dca_in,
                 )
             }
@@ -395,44 +406,95 @@ pub fn get_rebalance_values(
 
 #[cfg(test)]
 mod tests {
+    use num_traits::Pow;
     use solana_program::pubkey::Pubkey;
 
-    use crate::types::solauto_manager::SolautoManager;
+    use crate::types::{
+        obligation_position::PositionTokenUsage,
+        shared::{ DCASettings, SolautoSettingsParameters },
+        solauto_manager::SolautoManager,
+    };
 
     use super::*;
 
-    fn standard_solauto_position(data: PositionData) -> SolautoPosition {
+    fn default_setting_params() -> SolautoSettingsParameters {
+        SolautoSettingsParameters {
+            boost_to_bps: 5000,
+            boost_gap: 1000,
+            repay_to_bps: 8500,
+            repay_gap: 500
+        }
+    }
+
+    fn standard_solauto_position(
+        setting_params: Option<SolautoSettingsParameters>,
+        active_dca: Option<DCASettings>
+    ) -> SolautoPosition {
+        let mut data = PositionData::default();
+        data.setting_params = setting_params;
+        data.active_dca = active_dca;
         SolautoPosition::new(1, Pubkey::default(), Some(data))
     }
 
-    fn new_obligation_position(position: &mut SolautoPosition, current_unix_timestamp: u64) -> Result<LendingProtocolObligationPosition, ProgramError> {
-        let obligation_position = LendingProtocolObligationPosition::default();
+    fn create_token_usage(
+        market_price: f64,
+        decimals: u8,
+        amount_used_usd: f64
+    ) -> PositionTokenUsage {
+        let mut token_usage = PositionTokenUsage::default();
+        token_usage.market_price = market_price;
+        token_usage.decimals = decimals;
+        token_usage.amount_used.usd_value = amount_used_usd;
+        token_usage.amount_used.base_unit = token_usage.amount_used.usd_value
+            .div(token_usage.market_price)
+            .mul((10.0).pow(token_usage.decimals as f64)) as u64;
+
+        token_usage
+    }
+
+    fn new_obligation_position(
+        position: &mut SolautoPosition,
+        liq_utilization_rate: f64,
+        current_unix_timestamp: u64
+    ) -> Result<LendingProtocolObligationPosition, ProgramError> {
+        let mut obligation_position = LendingProtocolObligationPosition::default();
+        obligation_position.liq_threshold = 0.8;
+
+        let supply_market_price = 100.0;
+        let supply_amount = 1000.0;
+        obligation_position.supply = create_token_usage(supply_market_price, 6, supply_amount.mul(supply_market_price));
+        
+        let debt_usd = supply_amount.mul(supply_market_price)
+            .mul(obligation_position.liq_threshold)
+            .mul(liq_utilization_rate);
+        obligation_position.debt = Some(create_token_usage(1.0, 6, debt_usd));
+
         SolautoManager::refresh_position(&obligation_position, position, current_unix_timestamp)?;
         Ok(obligation_position)
     }
 
     #[test]
+    fn test_invalid_rebalance_condition() {
+
+    }
+
+    #[test]
     fn test_repay() {
-
+        let mut solauto_position = standard_solauto_position(Some(default_setting_params()), None);
+        let obligation_position = new_obligation_position(&mut solauto_position, 0.65, 0);
+        println!("{:?}", obligation_position);
+        println!("{:?}", solauto_position);
     }
 
     #[test]
-    fn test_boost() {
-        
-    }
+    fn test_boost() {}
 
     #[test]
-    fn test_dca_in() {
-
-    }
+    fn test_dca_in() {}
 
     #[test]
-    fn test_dca_in_with_additional_debt() {
-
-    }
+    fn test_dca_in_with_additional_debt() {}
 
     #[test]
-    fn test_dca_out() {
-
-    }
+    fn test_dca_out() {}
 }

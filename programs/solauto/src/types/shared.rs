@@ -93,7 +93,7 @@ impl SolautoSettingsParameters {
     }
 }
 
-#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType)]
+#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, Default)]
 pub struct LendingProtocolPositionData {
     /// Marginfi: "marginfi_account", Solend: "obligation", Kamino: "obligation"
     pub protocol_account: Pubkey,
@@ -115,7 +115,7 @@ pub struct PositionState {
     pub last_updated: u64,
 }
 
-#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType)]
+#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, Default)]
 pub struct PositionData {
     pub state: PositionState,
     pub lending_platform: LendingPlatform,
