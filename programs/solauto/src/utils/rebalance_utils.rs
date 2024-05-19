@@ -410,7 +410,7 @@ pub fn get_rebalance_values(
 #[cfg(test)]
 mod tests {
     use num_traits::Pow;
-    use solana_program::pubkey::Pubkey;
+    use solana_program::{entrypoint::ProgramResult, pubkey::Pubkey};
     use tests::math_utils::to_base_unit;
 
     use crate::{
@@ -424,6 +424,7 @@ mod tests {
 
     use super::*;
 
+    // CHANGING THESE WILL BREAK TESTS
     fn default_setting_params() -> SolautoSettingsParameters {
         SolautoSettingsParameters {
             boost_to_bps: 5000,
@@ -484,7 +485,7 @@ mod tests {
         obligation_position
     }
 
-    fn standard_rebalance(current_liq_utilization_rate: f64) {
+    fn standard_rebalance(current_liq_utilization_rate: f64) -> ProgramResult {
         let settings = default_setting_params();
         let mut solauto_position = standard_solauto_position(Some(settings.clone()), None);
         let mut obligation_position = new_obligation_position(
@@ -501,7 +502,7 @@ mod tests {
             &rebalance_args,
             &solauto_fees,
             0
-        ).unwrap();
+        )?;
 
         let boosting =
             (current_liq_utilization_rate.mul(10000.0) as u16) < settings.boost_from_bps();
@@ -537,29 +538,42 @@ mod tests {
         obligation_position.debt_borrowed_update(
             to_base_unit::<f64, u8, i64>(
                 debt_adjustment,
-                obligation_position.supply.decimals
+                obligation_position.debt.as_ref().unwrap().decimals
             )
         ).unwrap();
 
         println!("{}, {}", obligation_position.current_liq_utilization_rate_bps(), target_rate);
         assert!(obligation_position.current_liq_utilization_rate_bps() == target_rate);
+        Ok(())
     }
 
     #[test]
-    fn test_invalid_rebalance_condition() {}
+    fn test_invalid_rebalance_condition() {
+        let result = standard_rebalance(0.625);
+        assert!(result.is_err());
+        assert!(result.unwrap_err() == SolautoError::InvalidRebalanceCondition.into());
+
+        let result = standard_rebalance(0.41);
+        assert!(result.is_err());
+        assert!(result.unwrap_err() == SolautoError::InvalidRebalanceCondition.into());
+
+        let result = standard_rebalance(0.79);
+        assert!(result.is_err());
+        assert!(result.unwrap_err() == SolautoError::InvalidRebalanceCondition.into());
+    }
 
     #[test]
     fn test_repay() {
-        standard_rebalance(0.8034);
-        standard_rebalance(0.8753);
-        standard_rebalance(0.9243);
+        standard_rebalance(0.8034).unwrap();
+        standard_rebalance(0.8753).unwrap();
+        standard_rebalance(0.9243).unwrap();
     }
 
     #[test]
     fn test_boost() {
-        standard_rebalance(0.1343);
-        standard_rebalance(0.2232);
-        standard_rebalance(0.3943);
+        standard_rebalance(0.1343).unwrap();
+        standard_rebalance(0.2232).unwrap();
+        standard_rebalance(0.3943).unwrap();
     }
 
     #[test]
