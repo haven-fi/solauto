@@ -10,9 +10,9 @@
 //     let rpc_url = String::from("https://api.mainnet-beta.solana.com/");
 //     let client = RpcClient::new(rpc_url);
 
-//     // let pubkey = Pubkey::from_str("CCKtUs6Cgwo4aaQUmBPmyoApH2gUDErxNZCAntD6LYGh").unwrap(); // SOL
+//     let pubkey = Pubkey::from_str("CCKtUs6Cgwo4aaQUmBPmyoApH2gUDErxNZCAntD6LYGh").unwrap(); // SOL
 //     // let pubkey = Pubkey::from_str("2s37akK2eyBbp8DZgCm7RtsaEz8eJP3Nxd4urLHQv7yB").unwrap(); // USDC
-//     let pubkey = Pubkey::from_str("Guu5uBc8k1WK1U2ihGosNaCy57LSgCkpWAabtzQqrQf8").unwrap(); // JUP
+//     // let pubkey = Pubkey::from_str("Guu5uBc8k1WK1U2ihGosNaCy57LSgCkpWAabtzQqrQf8").unwrap(); // JUP
 //     match client.get_account(&pubkey) {
 //         Ok(account_info) => {
 //             let bank = Bank::deserialize(&mut account_info.data.as_slice()).unwrap();
@@ -42,13 +42,16 @@
 
 // }
 
-// use std::ops::{Div, Mul, Sub};
+// use std::ops::{ Div, Mul, Sub };
 // use solauto::utils::math_utils;
 
 fn main() {
     // let liq_threshold = 0.8;
-    // let mut supply = 410387.0;
-    // let mut debt = 180520.0;
+    // let mut supply = 410289.0;
+    // let mut debt = 180522.0;
+    // let supply_weight = 0.899999976158142;
+    // let debt_weight = 1.100000023841858;
+
     // let debt_adjustment_usd = math_utils::calculate_debt_adjustment_usd(
     //     liq_threshold,
     //     supply,
@@ -59,8 +62,10 @@ fn main() {
 
     // supply += debt_adjustment_usd;
     // debt += debt_adjustment_usd;
-    
-    // println!("{}", debt.div(supply.mul(liq_threshold)));
-    // println!("{}", (supply.mul(liq_threshold).sub(debt)).div(supply.mul(liq_threshold)));
+
+    // println!(
+    //     "{}",
+    //     supply.mul(supply_weight).sub(debt.mul(debt_weight)).div(supply.mul(supply_weight))
+    // );
     // println!("${}", debt_adjustment_usd);
 }
