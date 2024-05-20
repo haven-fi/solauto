@@ -198,7 +198,11 @@ pub fn validate_dca_settings(
         return invalid_params("DCA periods must be greater than or equal to 1");
     }
 
-    if dca.target_boost_to_bps.is_some() && dca.target_boost_to_bps.unwrap() > position_data.setting_params.as_ref().unwrap().boost_to_bps && dca.add_to_pos.is_none() {
+    if dca.target_boost_to_bps.is_some()
+        && dca.target_boost_to_bps.unwrap()
+            > position_data.setting_params.as_ref().unwrap().boost_to_bps
+        && dca.add_to_pos.is_none()
+    {
         return invalid_params("If providing a higher boost-to parameter in the DCA you need to provide an add_to_pos value");
     }
 

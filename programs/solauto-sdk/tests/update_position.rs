@@ -78,7 +78,7 @@ mod update_position {
             dca_interval_seconds: 60 * 60,
             dca_periods_passed: 0,
             target_dca_periods: 5,
-            target_boost_to_bps: Some(3000),
+            target_boost_to_bps: Some(500),
             add_to_pos: None
         };
         data.general
