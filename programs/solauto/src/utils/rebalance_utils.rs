@@ -200,7 +200,6 @@ fn get_additional_amount_to_dca_in(position: &mut PositionData) -> Option<u64> {
         dca_settings.target_dca_periods,
         dca_settings.dca_periods_passed
     );
-    println!("hello {}", dca_progress);
     let base_unit_amount = (position.debt_ta_balance as f64).mul(dca_progress) as u64;
     position.debt_ta_balance -= base_unit_amount;
 
@@ -305,13 +304,6 @@ fn get_target_rate_and_dca_amount(
         true => {
             let position_data = solauto_position.position.as_mut().unwrap();
             let amount_to_dca_in = get_additional_amount_to_dca_in(position_data);
-            println!(
-                "Putting in: {}",
-                amount_to_dca_in.map_or_else(
-                    || 0,
-                    |val| val
-                )
-            );
 
             let target_boost_to_bps = position_data.active_dca
                 .as_ref()
@@ -401,24 +393,10 @@ pub fn get_rebalance_values(
     } else {
         0.0
     };
-    println!(
-        "real debt to add {}",
-        amount_to_dca_in.map_or_else(
-            || 0,
-            |val| val
-        )
-    );
-    println!("real debt to add usd {}", amount_usd_to_dca_in);
 
     let mut debt_adjustment_usd = if target_liq_utilization_rate_bps.is_some() {
         let total_supply_usd =
             obligation_position.supply.amount_used.usd_value + amount_usd_to_dca_in;
-        println!(
-            "REal checking {}, {}, {}",
-            total_supply_usd,
-            obligation_position.debt.as_ref().unwrap().amount_used.usd_value,
-            target_liq_utilization_rate_bps.unwrap()
-        );
         math_utils::calculate_debt_adjustment_usd(
             obligation_position.liq_threshold,
             total_supply_usd,
@@ -589,16 +567,8 @@ mod tests {
                 dca_settings.clone()
             )?;
 
-        println!(
-            "debt to add: {}",
-            debt_to_add.map_or_else(
-                || 0,
-                |val| val
-            )
-        );
-
         let boosting =
-        debt_to_add.is_some() ||
+            debt_to_add.is_some() ||
             current_liq_utilization_rate_bps <= expected_liq_utilization_rate_bps;
         if boosting {
             expected_liq_utilization_rate_bps = max(
@@ -606,7 +576,6 @@ mod tests {
                 current_liq_utilization_rate_bps
             );
         }
-        println!("boosting {}", boosting);
         let adjustment_fee_bps = if boosting { SolautoFeesBps::get(false).total } else { 0 };
 
         let debt_to_add_usd = debt_to_add.map_or_else(
@@ -617,13 +586,6 @@ mod tests {
                     obligation_position.debt.as_ref().unwrap().decimals
                 ).mul(obligation_position.debt.as_ref().unwrap().market_price)
             }
-        );
-        println!("debt to add usd {}", debt_to_add_usd);
-        println!(
-            "Expect checking {}, {}, {}",
-            obligation_position.supply.amount_used.usd_value + debt_to_add_usd,
-            obligation_position.debt.as_ref().unwrap().amount_used.usd_value,
-            expected_liq_utilization_rate_bps
         );
         let expected_debt_adjustment_usd = calculate_debt_adjustment_usd(
             0.8,
@@ -677,34 +639,34 @@ mod tests {
         Ok(solauto_position)
     }
 
-    // #[test]
-    // fn test_invalid_rebalance_condition() {
-    //     let result = test_rebalance(None, 6250, None, None);
-    //     assert!(result.is_err());
-    //     assert!(result.unwrap_err() == SolautoError::InvalidRebalanceCondition.into());
+    #[test]
+    fn test_invalid_rebalance_condition() {
+        let result = test_rebalance(None, 6250, None, None);
+        assert!(result.is_err());
+        assert!(result.unwrap_err() == SolautoError::InvalidRebalanceCondition.into());
 
-    //     let result = test_rebalance(None, 4001, None, None);
-    //     assert!(result.is_err());
-    //     assert!(result.unwrap_err() == SolautoError::InvalidRebalanceCondition.into());
+        let result = test_rebalance(None, 4001, None, None);
+        assert!(result.is_err());
+        assert!(result.unwrap_err() == SolautoError::InvalidRebalanceCondition.into());
 
-    //     let result = test_rebalance(None, 7999, None, None);
-    //     assert!(result.is_err());
-    //     assert!(result.unwrap_err() == SolautoError::InvalidRebalanceCondition.into());
-    // }
+        let result = test_rebalance(None, 7999, None, None);
+        assert!(result.is_err());
+        assert!(result.unwrap_err() == SolautoError::InvalidRebalanceCondition.into());
+    }
 
-    // #[test]
-    // fn test_repay() {
-    //     rebalance_with_std_validation(None, 8034, REPAY_TO_BPS, None, None).unwrap();
-    //     rebalance_with_std_validation(None, 8753, REPAY_TO_BPS, None, None).unwrap();
-    //     rebalance_with_std_validation(None, 9243, REPAY_TO_BPS, None, None).unwrap();
-    // }
+    #[test]
+    fn test_repay() {
+        rebalance_with_std_validation(None, 8034, REPAY_TO_BPS, None, None).unwrap();
+        rebalance_with_std_validation(None, 8753, REPAY_TO_BPS, None, None).unwrap();
+        rebalance_with_std_validation(None, 9243, REPAY_TO_BPS, None, None).unwrap();
+    }
 
-    // #[test]
-    // fn test_boost() {
-    //     rebalance_with_std_validation(None, 1343, BOOST_TO_BPS, None, None).unwrap();
-    //     rebalance_with_std_validation(None, 2232, BOOST_TO_BPS, None, None).unwrap();
-    //     rebalance_with_std_validation(None, 3943, BOOST_TO_BPS, None, None).unwrap();
-    // }
+    #[test]
+    fn test_boost() {
+        rebalance_with_std_validation(None, 1343, BOOST_TO_BPS, None, None).unwrap();
+        rebalance_with_std_validation(None, 2232, BOOST_TO_BPS, None, None).unwrap();
+        rebalance_with_std_validation(None, 3943, BOOST_TO_BPS, None, None).unwrap();
+    }
 
     fn standard_dca_rebalance_validation(
         solauto_position: &SolautoPosition,
@@ -922,67 +884,67 @@ mod tests {
         ).unwrap();
     }
 
-    // #[test]
-    // fn test_dca_out() {
-    //     test_dca_rebalance_with_std_validation(
-    //         None,
-    //         BOOST_TO_BPS + 1000,
-    //         DCASettings {
-    //             unix_start_date: 0,
-    //             dca_interval_seconds: 5,
-    //             dca_periods_passed: 0,
-    //             target_dca_periods: 10,
-    //             target_boost_to_bps: Some(0),
-    //             add_to_pos: None,
-    //         },
-    //         None
-    //     ).unwrap();
+    #[test]
+    fn test_dca_out() {
+        test_dca_rebalance_with_std_validation(
+            None,
+            BOOST_TO_BPS + 1000,
+            DCASettings {
+                unix_start_date: 0,
+                dca_interval_seconds: 5,
+                dca_periods_passed: 0,
+                target_dca_periods: 10,
+                target_boost_to_bps: Some(0),
+                add_to_pos: None,
+            },
+            None
+        ).unwrap();
 
-    //     test_dca_rebalance_with_std_validation(
-    //         None,
-    //         BOOST_TO_BPS + 1000,
-    //         DCASettings {
-    //             unix_start_date: 0,
-    //             dca_interval_seconds: 5,
-    //             dca_periods_passed: 9,
-    //             target_dca_periods: 15,
-    //             target_boost_to_bps: Some(1500),
-    //             add_to_pos: None,
-    //         },
-    //         None
-    //     ).unwrap();
+        test_dca_rebalance_with_std_validation(
+            None,
+            BOOST_TO_BPS + 1000,
+            DCASettings {
+                unix_start_date: 0,
+                dca_interval_seconds: 5,
+                dca_periods_passed: 9,
+                target_dca_periods: 15,
+                target_boost_to_bps: Some(1500),
+                add_to_pos: None,
+            },
+            None
+        ).unwrap();
 
-    //     test_dca_rebalance_with_std_validation(
-    //         None,
-    //         BOOST_TO_BPS + 1000,
-    //         DCASettings {
-    //             unix_start_date: 0,
-    //             dca_interval_seconds: 5,
-    //             dca_periods_passed: 9,
-    //             target_dca_periods: 10,
-    //             target_boost_to_bps: Some(0),
-    //             add_to_pos: None,
-    //         },
-    //         None
-    //     ).unwrap();
+        test_dca_rebalance_with_std_validation(
+            None,
+            BOOST_TO_BPS + 1000,
+            DCASettings {
+                unix_start_date: 0,
+                dca_interval_seconds: 5,
+                dca_periods_passed: 9,
+                target_dca_periods: 10,
+                target_boost_to_bps: Some(0),
+                add_to_pos: None,
+            },
+            None
+        ).unwrap();
 
-    //     test_dca_rebalance_with_std_validation(
-    //         None,
-    //         500,
-    //         DCASettings {
-    //             unix_start_date: 0,
-    //             dca_interval_seconds: 5,
-    //             dca_periods_passed: 1,
-    //             target_dca_periods: 15,
-    //             target_boost_to_bps: Some(0),
-    //             add_to_pos: None,
-    //         },
-    //         Some(SolautoSettingsParameters {
-    //             boost_to_bps: BOOST_TO_BPS,
-    //             boost_gap: 500,
-    //             repay_to_bps: REPAY_TO_BPS,
-    //             repay_gap: 500,
-    //         })
-    //     ).unwrap();
-    // }
+        test_dca_rebalance_with_std_validation(
+            None,
+            500,
+            DCASettings {
+                unix_start_date: 0,
+                dca_interval_seconds: 5,
+                dca_periods_passed: 1,
+                target_dca_periods: 15,
+                target_boost_to_bps: Some(0),
+                add_to_pos: None,
+            },
+            Some(SolautoSettingsParameters {
+                boost_to_bps: BOOST_TO_BPS,
+                boost_gap: 500,
+                repay_to_bps: REPAY_TO_BPS,
+                repay_gap: 500,
+            })
+        ).unwrap();
+    }
 }
