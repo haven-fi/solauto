@@ -198,6 +198,10 @@ pub fn validate_dca_settings(
         return invalid_params("DCA periods must be greater than or equal to 1");
     }
 
+    if dca.target_boost_to_bps.is_some() && dca.target_boost_to_bps.unwrap() > position_data.setting_params.as_ref().unwrap().boost_to_bps && dca.add_to_pos.is_none() {
+        return invalid_params("If providing a higher boost-to parameter in the DCA you need to provide an add_to_pos value");
+    }
+
     if dca.add_to_pos.is_some()
         && dca.add_to_pos.as_ref().unwrap().risk_aversion_bps.is_some()
         && dca.add_to_pos.as_ref().unwrap().risk_aversion_bps.unwrap() > 10000
@@ -653,6 +657,15 @@ mod tests {
             &default_position_settings,
             DCASettings {
                 dca_interval_seconds: 60 * 60 * 24 * 60,
+                ..default_dca_settings.clone()
+            },
+        );
+        test_dca_settings(
+            current_timestamp,
+            default_current_liq_utilization_rate_bps,
+            &default_position_settings,
+            DCASettings {
+                target_boost_to_bps: Some(5500),
                 ..default_dca_settings.clone()
             },
         );
