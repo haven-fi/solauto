@@ -42,16 +42,25 @@
 
 // }
 
-use solauto::utils::math_utils;
+// use std::ops::{Div, Mul, Sub};
+// use solauto::utils::math_utils;
 
 fn main() {
+    // let liq_threshold = 0.8;
+    // let mut supply = 410387.0;
+    // let mut debt = 180520.0;
     // let debt_adjustment_usd = math_utils::calculate_debt_adjustment_usd(
-    //     0.8,
-    //     384826.0,
-    //     169011.0,
+    //     liq_threshold,
+    //     supply,
+    //     debt,
     //     5500,
     //     0
     // );
 
+    // supply += debt_adjustment_usd;
+    // debt += debt_adjustment_usd;
+    
+    // println!("{}", debt.div(supply.mul(liq_threshold)));
+    // println!("{}", (supply.mul(liq_threshold).sub(debt)).div(supply.mul(liq_threshold)));
     // println!("${}", debt_adjustment_usd);
 }
