@@ -4,14 +4,13 @@ use solana_program::{
 };
 use spl_associated_token_account::get_associated_token_address;
 use spl_token::state::Account as TokenAccount;
-use std::ops::{Add, Mul};
+use std::ops::Mul;
 
 use super::solana_utils::{account_has_data, init_account, init_ata_if_needed, spl_token_transfer};
 use crate::{
     constants::{REFERRER_FEE_SPLIT, SOLAUTO_FEES_WALLET, WSOL_MINT},
     types::{
-        instruction::{RebalanceArgs, UpdatePositionData},
-        obligation_position::LendingProtocolObligationPosition,
+        instruction::UpdatePositionData,
         shared::{
             DeserializedAccount, LendingPlatform, LendingProtocolPositionData, PositionData,
             PositionState, ReferralStateAccount, SolautoError, SolautoPosition,
@@ -300,59 +299,6 @@ pub fn cancel_dca_in_if_necessary<'a, 'b>(
 
     solauto_position.data.position.as_mut().unwrap().active_dca = None;
     Ok(())
-}
-
-pub fn is_dca_instruction(
-    solauto_position: &SolautoPosition,
-    obligation_position: &LendingProtocolObligationPosition,
-    rebalance_args: &RebalanceArgs,
-    current_unix_timestamp: u64,
-) -> Result<bool, ProgramError> {
-    if rebalance_args.target_liq_utilization_rate_bps.is_some() || solauto_position.self_managed {
-        return Ok(false);
-    }
-
-    let position_data = solauto_position.position.as_ref().unwrap();
-
-    if obligation_position.current_liq_utilization_rate_bps()
-        >= position_data
-            .setting_params
-            .as_ref()
-            .unwrap()
-            .repay_from_bps()
-    {
-        return Ok(false);
-    }
-
-    if position_data.active_dca.is_none() {
-        return Ok(false);
-    }
-
-    let dca_settings = position_data.active_dca.as_ref().unwrap();
-
-    if dca_settings.dca_periods_passed > 0
-        && current_unix_timestamp
-            < dca_settings.unix_start_date.add(
-                dca_settings
-                    .dca_interval_seconds
-                    .mul((dca_settings.dca_periods_passed as u64) + 1),
-            )
-    {
-        if obligation_position.current_liq_utilization_rate_bps()
-            <= position_data
-                .setting_params
-                .as_ref()
-                .unwrap()
-                .boost_from_bps()
-        {
-            return Ok(false);
-        } else {
-            msg!("DCA rebalance was initiated too early");
-            return Err(SolautoError::InvalidRebalanceCondition.into());
-        }
-    }
-
-    Ok(true)
 }
 
 pub struct SolautoFeesBps {

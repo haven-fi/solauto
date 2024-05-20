@@ -1,7 +1,8 @@
-use std::{ cmp::{ max, min }, ops::{ Div, Mul, Sub } };
+use std::{ cmp::{ max, min }, ops::{ Add, Div, Mul, Sub } };
 
 use solana_program::{
     instruction::{ get_stack_height, TRANSACTION_LEVEL_STACK_HEIGHT },
+    msg,
     program_error::ProgramError,
     sysvar::instructions::{ load_current_index_checked, load_instruction_at_checked },
 };
@@ -22,7 +23,7 @@ use crate::{
 use super::{
     ix_utils::{ get_relative_instruction, InstructionChecker },
     math_utils,
-    solauto_utils::{ is_dca_instruction, SolautoFeesBps },
+    solauto_utils::SolautoFeesBps,
 };
 
 const DEFAULT_MAX_PRICE_SLIPPAGE_BPS: u16 = 300;
@@ -190,6 +191,11 @@ fn dca_progress_percentage(target_periods: u16, periods_passed: u16) -> f64 {
     (1.0).div((target_periods as f64).sub(periods_passed as f64))
 }
 
+fn updated_target_from_dca(curr_bps: u16, target_bps: u16, dca_progress: f64) -> u16 {
+    let current_rate_diff = (curr_bps as i16).sub(target_bps as i16);
+    (curr_bps as f64).sub((current_rate_diff as f64).mul(dca_progress)) as u16
+}
+
 fn get_additional_amount_to_dca_in(position: &mut PositionData) -> Option<u64> {
     let dca_settings = position.active_dca.as_ref().unwrap();
     if dca_settings.add_to_pos.is_none() {
@@ -210,15 +216,12 @@ fn get_target_liq_utilization_rate_from_dca(
     position: &mut PositionData,
     obligation_position: &LendingProtocolObligationPosition
 ) -> Result<u16, ProgramError> {
-    let current_liq_utilization_rate =
-        obligation_position.current_liq_utilization_rate_bps() as i16;
-
     let setting_params = position.setting_params.as_mut().unwrap();
     let dca_settings = position.active_dca.as_ref().unwrap();
 
     let target_boost_to_bps = dca_settings.target_boost_to_bps.map_or_else(
-        || setting_params.boost_to_bps as i16,
-        |target_boost_to| target_boost_to as i16
+        || setting_params.boost_to_bps,
+        |target_boost_to| target_boost_to
     );
 
     let dca_progress = dca_progress_percentage(
@@ -226,16 +229,18 @@ fn get_target_liq_utilization_rate_from_dca(
         dca_settings.dca_periods_passed
     );
 
-    let boost_param_diff = (setting_params.boost_to_bps as i16).sub(target_boost_to_bps);
-    let new_boost_to_bps = (setting_params.boost_to_bps as f64).sub(
-        (boost_param_diff as f64).mul(dca_progress)
-    ) as u16;
+    let new_boost_to_bps = updated_target_from_dca(
+        setting_params.boost_to_bps,
+        target_boost_to_bps,
+        dca_progress
+    );
     setting_params.boost_to_bps = new_boost_to_bps;
 
-    let current_rate_diff = current_liq_utilization_rate.sub(target_boost_to_bps);
-    let target_rate_bps = (current_liq_utilization_rate as f64).sub(
-        (current_rate_diff as f64).mul(dca_progress)
-    ) as u16;
+    let new_current_rate_bps = updated_target_from_dca(
+        obligation_position.current_liq_utilization_rate_bps(),
+        target_boost_to_bps,
+        dca_progress
+    );
 
     if dca_settings.dca_periods_passed == dca_settings.target_dca_periods - 1 {
         position.active_dca = None;
@@ -243,7 +248,7 @@ fn get_target_liq_utilization_rate_from_dca(
         position.active_dca.as_mut().unwrap().dca_periods_passed += 1;
     }
 
-    Ok(target_rate_bps)
+    Ok(max(new_current_rate_bps, new_boost_to_bps))
 }
 
 fn get_std_target_liq_utilization_rate(
@@ -288,6 +293,52 @@ fn get_std_target_liq_utilization_rate(
     Ok(target_rate_bps.unwrap())
 }
 
+fn is_dca_instruction(
+    solauto_position: &SolautoPosition,
+    obligation_position: &LendingProtocolObligationPosition,
+    rebalance_args: &RebalanceArgs,
+    current_unix_timestamp: u64
+) -> Result<bool, ProgramError> {
+    if rebalance_args.target_liq_utilization_rate_bps.is_some() || solauto_position.self_managed {
+        return Ok(false);
+    }
+
+    let position_data = solauto_position.position.as_ref().unwrap();
+
+    if
+        obligation_position.current_liq_utilization_rate_bps() >=
+        position_data.setting_params.as_ref().unwrap().repay_from_bps()
+    {
+        return Ok(false);
+    }
+
+    if position_data.active_dca.is_none() {
+        return Ok(false);
+    }
+
+    let dca_settings = position_data.active_dca.as_ref().unwrap();
+
+    if
+        dca_settings.dca_periods_passed > 0 &&
+        current_unix_timestamp <
+            dca_settings.unix_start_date.add(
+                dca_settings.dca_interval_seconds.mul((dca_settings.dca_periods_passed as u64) + 1)
+            )
+    {
+        if
+            obligation_position.current_liq_utilization_rate_bps() <=
+            position_data.setting_params.as_ref().unwrap().boost_from_bps()
+        {
+            return Ok(false);
+        } else {
+            msg!("DCA rebalance was initiated too early");
+            return Err(SolautoError::InvalidRebalanceCondition.into());
+        }
+    }
+
+    Ok(true)
+}
+
 fn get_target_rate_and_dca_amount(
     solauto_position: &mut SolautoPosition,
     obligation_position: &LendingProtocolObligationPosition,
@@ -300,9 +351,10 @@ fn get_target_rate_and_dca_amount(
         rebalance_args,
         current_unix_timestamp
     )?;
+    let position_data = solauto_position.position.as_mut().unwrap();
+
     let (target_liq_utilization_rate_bps, amount_to_dca_in) = match dca_instruction {
         true => {
-            let position_data = solauto_position.position.as_mut().unwrap();
             let amount_to_dca_in = get_additional_amount_to_dca_in(position_data);
 
             let target_boost_to_bps = position_data.active_dca
@@ -368,6 +420,13 @@ pub fn get_rebalance_values(
         rebalance_args,
         current_unix_timestamp
     )?;
+    println!(
+        "{}",
+        target_liq_utilization_rate_bps.map_or_else(
+            || 0,
+            |val| val
+        )
+    );
 
     let max_price_slippage_bps = rebalance_args.max_price_slippage_bps.map_or_else(
         || DEFAULT_MAX_PRICE_SLIPPAGE_BPS,
@@ -656,30 +715,16 @@ mod tests {
 
     #[test]
     fn test_repay() {
-        rebalance_with_std_validation(None, 8034, REPAY_TO_BPS, None, None).unwrap();
-        rebalance_with_std_validation(None, 8753, REPAY_TO_BPS, None, None).unwrap();
-        rebalance_with_std_validation(None, 9243, REPAY_TO_BPS, None, None).unwrap();
+        rebalance_with_std_validation(None, REPAY_TO_BPS + 534, REPAY_TO_BPS, None, None).unwrap();
+        rebalance_with_std_validation(None, REPAY_TO_BPS + 1003, REPAY_TO_BPS, None, None).unwrap();
+        rebalance_with_std_validation(None, REPAY_TO_BPS + 1743, REPAY_TO_BPS, None, None).unwrap();
     }
 
     #[test]
     fn test_boost() {
-        rebalance_with_std_validation(None, 1343, BOOST_TO_BPS, None, None).unwrap();
-        rebalance_with_std_validation(None, 2232, BOOST_TO_BPS, None, None).unwrap();
-        rebalance_with_std_validation(None, 3943, BOOST_TO_BPS, None, None).unwrap();
-        rebalance_with_std_validation(
-            None,
-            BOOST_TO_BPS - 1000,
-            BOOST_TO_BPS,
-            None,
-            Some(DCASettings {
-                unix_start_date: 0,
-                dca_periods_passed: 3,
-                dca_interval_seconds: 5,
-                target_dca_periods: 5,
-                target_boost_to_bps: Some(0),
-                add_to_pos: None,
-            })
-        ).unwrap();
+        rebalance_with_std_validation(None, BOOST_TO_BPS - 3657, BOOST_TO_BPS, None, None).unwrap();
+        rebalance_with_std_validation(None, BOOST_TO_BPS - 2768, BOOST_TO_BPS, None, None).unwrap();
+        rebalance_with_std_validation(None, BOOST_TO_BPS - 1047, BOOST_TO_BPS, None, None).unwrap();
     }
 
     fn standard_dca_rebalance_validation(
@@ -732,20 +777,36 @@ mod tests {
         dca_settings: DCASettings,
         setting_params: Option<SolautoSettingsParameters>
     ) -> Result<SolautoPosition, ProgramError> {
+        let settings = Some(
+            setting_params.map_or_else(
+                || default_setting_params(),
+                |settings| settings
+            )
+        );
+
         let expected_liq_utilization_rate_bps = if dca_settings.target_boost_to_bps.is_some() {
-            let curr_utilization_rate_diff = (current_liq_utilization_rate_bps as i16).sub(
-                dca_settings.target_boost_to_bps.unwrap() as i16
-            );
+            let target_boost_to_bps = dca_settings.target_boost_to_bps.unwrap();
             let dca_progress = dca_progress_percentage(
                 dca_settings.target_dca_periods,
                 dca_settings.dca_periods_passed
             );
-            (current_liq_utilization_rate_bps as f64).sub(
-                (curr_utilization_rate_diff as f64).mul(dca_progress)
-            ) as u16
+
+            let new_curr_rate_bps = updated_target_from_dca(
+                current_liq_utilization_rate_bps,
+                target_boost_to_bps,
+                dca_progress
+            );
+            let new_boost_to_bps = updated_target_from_dca(
+                settings.as_ref().unwrap().boost_to_bps,
+                target_boost_to_bps,
+                dca_progress
+            );
+
+            max(new_curr_rate_bps, new_boost_to_bps)
         } else {
             current_liq_utilization_rate_bps
         };
+        println!("expected {}", expected_liq_utilization_rate_bps);
 
         let solauto_position = rebalance_with_std_validation(
             Some(
@@ -762,11 +823,11 @@ mod tests {
             ),
             current_liq_utilization_rate_bps,
             expected_liq_utilization_rate_bps,
-            setting_params.clone(),
+            settings.clone(),
             Some(dca_settings.clone())
         )?;
 
-        standard_dca_rebalance_validation(&solauto_position, dca_settings, setting_params);
+        standard_dca_rebalance_validation(&solauto_position, dca_settings, settings);
 
         Ok(solauto_position)
     }
