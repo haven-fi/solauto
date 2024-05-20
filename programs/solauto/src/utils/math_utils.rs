@@ -129,5 +129,6 @@ mod tests {
         test_debt_adjustment_calculation(10444.0, 7454.0, 0.2);
         test_debt_adjustment_calculation(1340444.0, 7454.0, 0.35);
         test_debt_adjustment_calculation(1000000.0, 519999.0, 0.65);
+        test_debt_adjustment_calculation(100.0, 80.0, 0.8);
     }
 }
