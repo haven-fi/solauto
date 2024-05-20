@@ -1,6 +1,6 @@
 use solana_program::{ entrypoint::ProgramResult, msg };
 use solend_sdk::{ math::BPS_SCALER, state::Reserve };
-use std::ops::{ Div, Mul, Sub };
+use std::ops::{ Div, Mul };
 
 use crate::{
     constants::USD_DECIMALS,
@@ -10,6 +10,8 @@ use crate::{
         decimal_to_f64_div_wad,
         from_base_unit,
         to_base_unit,
+        get_marginfi_liq_utilization_rate_bps,
+        get_std_liq_utilization_rate_bps,
     },
 };
 
@@ -120,18 +122,19 @@ impl LendingProtocolObligationPosition {
         if let Some(debt) = &self.debt {
             match self.lending_platform {
                 LendingPlatform::Marginfi => {
-                    let weighted_supply = self.supply.amount_used.usd_value.mul(self.supply.health_weight.unwrap());
-                    let weighted_debt = debt.amount_used.usd_value.mul(debt.health_weight.unwrap());
-
-                    weighted_supply.sub(weighted_debt).div(weighted_supply).mul(10000.0) as u16
+                    get_marginfi_liq_utilization_rate_bps(
+                        self.supply.amount_used.usd_value,
+                        self.supply.health_weight.unwrap(),
+                        debt.amount_used.usd_value,
+                        debt.health_weight.unwrap()
+                    )
                 }
-                _ => {
-                    debt.amount_used.usd_value
-                        .div(
-                            self.supply.amount_used.usd_value.mul(self.liq_threshold as f64)
-                        )
-                        .mul(10000.0) as u16
-                }
+                _ =>
+                    get_std_liq_utilization_rate_bps(
+                        self.supply.amount_used.usd_value,
+                        debt.amount_used.usd_value,
+                        self.liq_threshold
+                    ),
             }
         } else {
             0

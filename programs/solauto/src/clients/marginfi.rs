@@ -220,7 +220,9 @@ impl<'a> MarginfiClient<'a> {
                 math_utils::convert_i80f48_to_u64(base_unit_deposit_room_available),
                 market_price,
                 bank.data.mint_decimals,
-                math_utils::convert_i80f48_to_f64(I80F48::from_le_bytes(bank.data.config.asset_weight_maint.value))
+                math_utils::convert_i80f48_to_f64(I80F48::from_le_bytes(
+                    bank.data.config.asset_weight_maint.value,
+                )),
             ),
             liq_threshold,
         ))
@@ -256,7 +258,9 @@ impl<'a> MarginfiClient<'a> {
             math_utils::convert_i80f48_to_u64(base_unit_debt_available),
             market_price,
             bank.data.mint_decimals,
-            math_utils::convert_i80f48_to_f64(I80F48::from_le_bytes(bank.data.config.liability_weight_maint.value))
+            math_utils::convert_i80f48_to_f64(I80F48::from_le_bytes(
+                bank.data.config.liability_weight_maint.value,
+            )),
         ))
     }
 
