@@ -1,12 +1,13 @@
-use borsh::{BorshDeserialize, BorshSerialize};
-use shank::{ShankAccount, ShankType};
+use borsh::{ BorshDeserialize, BorshSerialize };
+use num_traits::{FromPrimitive, ToPrimitive};
+use shank::{ ShankAccount, ShankType };
 use solana_program::{
     account_info::AccountInfo,
     program_error::ProgramError,
-    program_pack::{IsInitialized, Pack},
+    program_pack::{ IsInitialized, Pack },
     pubkey::Pubkey,
 };
-use std::{fmt, ops::Add};
+use std::{ fmt, ops::{ Add, Div, Mul, Sub } };
 use thiserror::Error;
 
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, PartialEq)]
@@ -43,7 +44,7 @@ pub enum TokenBalanceAmount {
     All,
 }
 
-#[derive(BorshDeserialize, BorshSerialize, Clone, Copy, Debug, ShankType)]
+#[derive(BorshDeserialize, BorshSerialize, Clone, Copy, Debug, ShankType, Default)]
 pub struct DebtToAddToPosition {
     pub base_unit_debt_amount: u64,
     /// This value is used to determine whether or not to increase leverage,
@@ -53,23 +54,53 @@ pub struct DebtToAddToPosition {
     pub risk_aversion_bps: Option<u16>,
 }
 
-#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType)]
-pub struct DCASettings {
+#[derive(BorshDeserialize, BorshSerialize, Clone, Copy, Debug, ShankType, Default)]
+pub struct AutomationSettings {
     /// The unix timestamp (in seconds) start date of DCA
     pub unix_start_date: u64,
     /// The interval in seconds between each DCA
-    pub dca_interval_seconds: u64,
-    /// How many DCA periods have already passed
-    pub dca_periods_passed: u16,
-    /// The target number of DCA periods
-    pub target_dca_periods: u16,
-    /// The taget boost_to_bps parameter to reach at the end of the DCA. Applicable for both DCA directions.
-    pub target_boost_to_bps: Option<u16>,
-    // Gradually add more debt to the position during the DCA period
-    pub add_to_pos: Option<DebtToAddToPosition>,
+    pub interval_seconds: u64,
+    /// How many periods have already passed
+    pub periods_passed: u16,
+    /// The target number of periods
+    pub target_periods: u16,
+}
+
+impl AutomationSettings {
+    pub fn progress_pct(&self) -> f64 {
+        (1.0).div((self.target_periods as f64).sub(self.periods_passed as f64))
+    }
+
+    pub fn eligible_for_next_period(&self, current_unix_timestamp: u64) -> bool {
+        if self.periods_passed == 0 {
+            true
+        } else {
+            current_unix_timestamp >=
+                self.unix_start_date.add(
+                    self.interval_seconds.mul((self.periods_passed as u64) + 1)
+                )
+        }
+    }
+
+    pub fn updated_amount_from_automation<T: ToPrimitive + FromPrimitive>(&self, curr_amt: T, target_amt: T) -> Option<T> {
+        let curr_amt_i64 = curr_amt.to_i64()?;
+        let target_amt_i64 = target_amt.to_i64()?;
+        
+        let current_rate_diff = (curr_amt_i64 - target_amt_i64) as f64;
+        let new_amt = curr_amt.to_f64()? - (current_rate_diff * self.progress_pct());
+
+        T::from_f64(new_amt)
+    }
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType)]
+pub struct DCASettings {
+    pub automation: AutomationSettings,
+    // Gradually add more debt to the position during the DCA period. If this is not provided, then a DCA-out is assumed.
+    pub add_to_pos: Option<DebtToAddToPosition>,
+}
+
+#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, Default)]
 pub struct SolautoSettingsParameters {
     /// At which liquidation utilization rate to boost leverage to
     pub boost_to_bps: u16,
@@ -79,6 +110,10 @@ pub struct SolautoSettingsParameters {
     pub repay_to_bps: u16,
     /// repay_gap basis points above repay_to_bps is the liquidation utilization rate at which to begin a rebalance
     pub repay_gap: u16,
+    /// If slowly adjusting the boost_to_bps with automation, this must be set
+    pub target_boost_to_bps: Option<u16>,
+    /// Data required if providing a target_boost_to_bps
+    pub automation: Option<AutomationSettings>,
 }
 
 impl SolautoSettingsParameters {
@@ -97,7 +132,7 @@ pub struct LendingProtocolPositionData {
     /// The supply token mint
     pub supply_mint: Pubkey,
     /// The debt token mint
-    pub debt_mint: Option<Pubkey>,
+    pub debt_mint: Pubkey,
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, Default)]
@@ -122,7 +157,7 @@ pub struct PositionData {
     pub state: PositionState,
     pub lending_platform: LendingPlatform,
     pub protocol_data: LendingProtocolPositionData,
-    pub setting_params: Option<SolautoSettingsParameters>,
+    pub setting_params: SolautoSettingsParameters,
     pub active_dca: Option<DCASettings>,
     pub debt_ta_balance: u64,
 }
@@ -139,10 +174,12 @@ pub struct SolautoPosition {
 }
 
 impl SolautoPosition {
-    pub const LEN: usize = 377;
+    pub const LEN: usize = 397;
     pub fn new(position_id: u8, authority: Pubkey, position: Option<PositionData>) -> Self {
-        let (_, bump) =
-            Pubkey::find_program_address(&[&[position_id], authority.as_ref()], &crate::ID);
+        let (_, bump) = Pubkey::find_program_address(
+            &[&[position_id], authority.as_ref()],
+            &crate::ID
+        );
         Self {
             _position_id_arr: [position_id],
             _bump: [bump],
@@ -177,11 +214,11 @@ impl ReferralStateAccount {
     pub fn new(
         authority: Pubkey,
         referred_by_state: Option<Pubkey>,
-        dest_fees_mint: Pubkey,
+        dest_fees_mint: Pubkey
     ) -> Self {
         let (_, bump) = Pubkey::find_program_address(
             &ReferralStateAccount::seeds(&authority).as_slice(),
-            &crate::ID,
+            &crate::ID
         );
         Self {
             _bump: [bump],
@@ -221,12 +258,15 @@ impl<'a, T: BorshDeserialize> DeserializedAccount<'a, T> {
         match account {
             Some(account_info) => {
                 let mut data: &[u8] = &(*account_info.data).borrow();
-                let deserialized_data = T::deserialize(&mut data)
-                    .map_err(|_| SolautoError::FailedAccountDeserialization)?;
-                Ok(Some(Self {
-                    account_info,
-                    data: Box::new(deserialized_data),
-                }))
+                let deserialized_data = T::deserialize(&mut data).map_err(
+                    |_| SolautoError::FailedAccountDeserialization
+                )?;
+                Ok(
+                    Some(Self {
+                        account_info,
+                        data: Box::new(deserialized_data),
+                    })
+                )
             }
             None => Ok(None),
         }
@@ -237,12 +277,15 @@ impl<'a, T: Pack + IsInitialized> DeserializedAccount<'a, T> {
     pub fn unpack(account: Option<&'a AccountInfo<'a>>) -> Result<Option<Self>, ProgramError> {
         match account {
             Some(account_info) => {
-                let deserialized_data = T::unpack(&account_info.data.borrow())
-                    .map_err(|_| SolautoError::FailedAccountDeserialization)?;
-                Ok(Some(Self {
-                    account_info,
-                    data: Box::new(deserialized_data),
-                }))
+                let deserialized_data = T::unpack(&account_info.data.borrow()).map_err(
+                    |_| SolautoError::FailedAccountDeserialization
+                )?;
+                Ok(
+                    Some(Self {
+                        account_info,
+                        data: Box::new(deserialized_data),
+                    })
+                )
             }
             None => Ok(None),
         }
@@ -255,10 +298,12 @@ pub enum SolautoError {
     IncorrectAccounts,
     #[error("Failed to deserialize account data, incorrect account was likely given")]
     FailedAccountDeserialization,
-    #[error("Invalid position data given")]
+    #[error("Invalid position settings given")]
     InvalidPositionSettings,
-    #[error("Invalid DCA data given")]
+    #[error("Invalid DCA settings given")]
     InvalidDCASettings,
+    #[error("Invalid automation data given")]
+    InvalidAutomationData,
     #[error(
         "Stale protocol data. Refresh instruction must be invoked before taking a protocol action"
     )]

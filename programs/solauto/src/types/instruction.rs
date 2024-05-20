@@ -57,9 +57,9 @@ pub enum Instruction {
     #[account(mut, optional_signer, name = "marginfi_account")]
     #[account(name = "supply_mint")]
     #[account(mut, name = "position_supply_ta")]
-    #[account(optional, name = "debt_mint")]
+    #[account(name = "debt_mint")]
+    #[account(mut, name = "position_debt_ta")]
     #[account(mut, optional, name = "signer_debt_ta")]
-    #[account(mut, optional, name = "position_debt_ta")]
     MarginfiOpenPosition((UpdatePositionData, Option<u64>)),
 
     /// Open a new Solauto position with Solend
@@ -78,13 +78,13 @@ pub enum Instruction {
     #[account(name = "lending_market")]
     #[account(mut, name = "obligation")]
     #[account(name = "supply_reserve")]
-    #[account(mut, name = "position_supply_liquidity_ta")]
     #[account(name = "supply_liquidity_mint")]
-    #[account(mut, name = "position_supply_collateral_ta")]
+    #[account(mut, name = "position_supply_liquidity_ta")]
     #[account(name = "supply_collateral_mint")]
+    #[account(mut, name = "position_supply_collateral_ta")]
+    #[account(name = "debt_liquidity_mint")]
+    #[account(mut, name = "position_debt_liquidity_ta")]
     #[account(mut, optional, name = "signer_debt_liquidity_ta")]
-    #[account(mut, optional, name = "position_debt_liquidity_ta")]
-    #[account(optional, name = "debt_liquidity_mint")]
     SolendOpenPosition(UpdatePositionData),
 
     /// Update solauto position settings. Can only be invoked by position authority

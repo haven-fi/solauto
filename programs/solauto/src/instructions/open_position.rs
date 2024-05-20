@@ -25,11 +25,11 @@ pub fn marginfi_open_position<'a>(
         ctx.accounts.token_program,
         ctx.accounts.rent,
         ctx.accounts.signer,
-        ctx.accounts.position_supply_ta,
         ctx.accounts.supply_mint,
+        ctx.accounts.position_supply_ta,
+        ctx.accounts.debt_mint,
         ctx.accounts.position_debt_ta,
         ctx.accounts.signer_debt_ta,
-        ctx.accounts.debt_mint,
     )?;
 
     MarginfiClient::initialize(&ctx, &solauto_position, marignfi_acc_seed_idx)
@@ -45,11 +45,11 @@ pub fn solend_open_position<'a>(
         ctx.accounts.token_program,
         ctx.accounts.rent,
         ctx.accounts.signer,
-        ctx.accounts.position_supply_liquidity_ta,
         ctx.accounts.supply_liquidity_mint,
+        ctx.accounts.position_supply_liquidity_ta,
+        ctx.accounts.debt_liquidity_mint,
         ctx.accounts.position_debt_liquidity_ta,
         ctx.accounts.signer_debt_liquidity_ta,
-        ctx.accounts.debt_liquidity_mint,
     )?;
 
     solana_utils::init_ata_if_needed(
@@ -96,11 +96,11 @@ fn initialize_solauto_position<'a, 'b>(
     token_program: &'a AccountInfo<'a>,
     rent: &'a AccountInfo<'a>,
     signer: &'a AccountInfo<'a>,
-    position_supply_ta: &'a AccountInfo<'a>,
     supply_mint: &'a AccountInfo<'a>,
-    position_debt_ta: Option<&'a AccountInfo<'a>>,
+    position_supply_ta: &'a AccountInfo<'a>,
+    debt_mint: &'a AccountInfo<'a>,
+    position_debt_ta: &'a AccountInfo<'a>,
     signer_debt_ta: Option<&'a AccountInfo<'a>>,
-    debt_mint: Option<&'a AccountInfo<'a>>,
 ) -> ProgramResult {
     if !solauto_position.data.self_managed || !account_has_data(solauto_position.account_info) {
         solana_utils::init_account(
@@ -122,21 +122,19 @@ fn initialize_solauto_position<'a, 'b>(
         supply_mint,
     )?;
 
-    if debt_mint.is_some() {
-        solana_utils::init_ata_if_needed(
-            token_program,
-            system_program,
-            signer,
-            solauto_position.account_info,
-            position_debt_ta.unwrap(),
-            debt_mint.unwrap(),
-        )?;
-    }
+    solana_utils::init_ata_if_needed(
+        token_program,
+        system_program,
+        signer,
+        solauto_position.account_info,
+        position_debt_ta,
+        debt_mint,
+    )?;
 
     solauto_utils::initiate_dca_in_if_necessary(
         token_program,
         solauto_position,
-        position_debt_ta,
+        Some(position_debt_ta),
         signer,
         signer_debt_ta,
     )?;

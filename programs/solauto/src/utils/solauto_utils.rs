@@ -35,7 +35,7 @@ pub fn create_new_solauto_position<'a>(
     update_position_data: UpdatePositionData,
     lending_platform: LendingPlatform,
     supply_mint: &'a AccountInfo<'a>,
-    debt_mint: Option<&'a AccountInfo<'a>>,
+    debt_mint: &'a AccountInfo<'a>,
     lending_protocol_account: &'a AccountInfo<'a>,
     max_ltv: Option<f64>,
     liq_threshold: Option<f64>,
@@ -63,13 +63,13 @@ pub fn create_new_solauto_position<'a>(
             update_position_data.position_id,
             *signer.key,
             Some(PositionData {
-                setting_params: update_position_data.setting_params.clone(),
+                setting_params: update_position_data.setting_params.unwrap(),
                 state,
                 lending_platform,
                 protocol_data: LendingProtocolPositionData {
                     protocol_account: lending_protocol_account.key.clone(),
-                    supply_mint: supply_mint.key.clone(),
-                    debt_mint: debt_mint.map_or_else(|| None, |mint| Some(mint.key.clone())),
+                    supply_mint: *supply_mint.key,
+                    debt_mint: *debt_mint.key,
                 },
                 active_dca: update_position_data.active_dca.clone(),
                 debt_ta_balance: 0,
@@ -198,7 +198,7 @@ pub fn initiate_dca_in_if_necessary<'a, 'b>(
     if position_debt_ta.unwrap().key
         != &get_associated_token_address(
             solauto_position.account_info.key,
-            position.protocol_data.debt_mint.as_ref().unwrap(),
+            &position.protocol_data.debt_mint,
         )
     {
         msg!("Incorrect position token account provided");
