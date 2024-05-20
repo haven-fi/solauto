@@ -342,25 +342,6 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
         );
         position.state.liq_threshold_bps = obligation_position.liq_threshold.mul(10000.0) as u16;
 
-        let supply_weight = obligation_position.supply.health_weight
-            .map_or_else(
-                || 1.0,
-                |val| val
-            )
-            .mul((10.0).pow(9)) as u64;
-        position.state.base_unit_supply_weight = supply_weight;
-        position.state.base_unit_debt_weight = obligation_position.debt.as_ref().map_or_else(
-            || supply_weight,
-            |debt| {
-                debt.health_weight
-                    .map_or_else(
-                        || 1.0,
-                        |val| val
-                    )
-                    .mul((10.0).pow(9)) as u64
-            }
-        );
-
         if position.setting_params.target_boost_to_bps.is_some() {
             let automation = position.setting_params.automation.as_mut().unwrap();
             

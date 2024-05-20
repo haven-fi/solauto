@@ -44,18 +44,6 @@ pub fn convert_i80f48_to_f64(value: I80F48) -> f64 {
     float_value.to_num::<f64>()
 }
 
-pub fn get_marginfi_liq_utilization_rate_bps(
-    supply_usd: f64,
-    supply_weight: f64,
-    debt_usd: f64,
-    debt_weight: f64
-) -> u16 {
-    let weighted_supply = supply_usd.mul(supply_weight);
-    let weighted_debt = debt_usd.mul(debt_weight);
-
-    weighted_supply.sub(weighted_debt).div(weighted_supply).mul(10000.0) as u16
-}
-
 pub fn get_std_liq_utilization_rate_bps(
     supply_usd: f64,
     debt_usd: f64,
@@ -93,27 +81,6 @@ pub fn get_std_debt_adjustment_usd(
 
     (target_liq_utilization_rate * total_supply_usd * liq_threshold - total_debt_usd) /
         (1.0 - target_liq_utilization_rate * (1.0 - adjustment_fee) * liq_threshold)
-}
-
-// TODO Add comment for function
-pub fn get_marginfi_debt_adjustment_usd(
-    supply_usd: f64,
-    supply_weight: f64,
-    debt_usd: f64,
-    debt_weight: f64,
-    target_liq_utilization_rate_bps: u16,
-    adjustment_fee_bps: u16
-) -> f64 {
-    let adjustment_fee = if adjustment_fee_bps > 0 {
-        (adjustment_fee_bps as f64).div(10000.0)
-    } else {
-        0.0
-    };
-
-    let target_liq_utilization_rate = (target_liq_utilization_rate_bps as f64).div(10000.0);
-
-    // TODO
-    0.0
 }
 
 pub fn get_maximum_repay_to_bps_param(max_ltv: f64, liq_threshold: f64) -> u16 {
@@ -157,40 +124,6 @@ mod tests {
                 round_to_places(target_liq_utilization_rate, 2)
         );
     }
-
-    fn test_marginfi_debt_adjustment_calculation(
-        mut supply_usd: f64,
-        mut debt_usd: f64,
-        target_liq_utilization_rate: f64,
-        adjustment_fee_bps: u16
-    ) {
-        let supply_weight = 0.899999976158142; // Stanard SOL asset maint weight
-        let debt_weight = 1.100000023841858; // Stanard USDC liability maint weight
-
-        let debt_adjustment = get_marginfi_debt_adjustment_usd(
-            supply_usd,
-            supply_weight,
-            debt_usd,
-            debt_weight,
-            target_liq_utilization_rate.mul(10000.0) as u16,
-            adjustment_fee_bps
-        );
-
-        supply_usd += debt_adjustment;
-        debt_usd += debt_adjustment;
-
-        let new_liq_utilization_rate_bps = get_marginfi_liq_utilization_rate_bps(
-            supply_usd,
-            supply_weight,
-            debt_usd,
-            debt_weight
-        );
-        assert!(
-            round_to_places((new_liq_utilization_rate_bps as f64).div(10000.0), 2) ==
-                round_to_places(target_liq_utilization_rate, 2)
-        );
-    }
-
     #[test]
     fn test_std_debt_adjustment() {
         test_std_debt_adjustment_calculation(100.0, 80.0, 0.8);
@@ -200,10 +133,5 @@ mod tests {
         test_std_debt_adjustment_calculation(10444.0, 7454.0, 0.2);
         test_std_debt_adjustment_calculation(1340444.0, 7454.0, 0.35);
         test_std_debt_adjustment_calculation(1000000.0, 519999.0, 0.65);
-    }
-
-    #[test]
-    fn test_marginfi_debt_adjustment() {
-        // TODO
     }
 }

@@ -421,7 +421,6 @@ pub fn get_rebalance_values(
         let total_supply_usd =
             obligation_position.supply.amount_used.usd_value + amount_usd_to_dca_in;
 
-        // TODO support marginfi calculation
         math_utils::get_std_debt_adjustment_usd(
             obligation_position.liq_threshold,
             total_supply_usd,
@@ -616,7 +615,6 @@ mod tests {
             }
         );
 
-        // TODO support marginfi calculation
         let expected_debt_adjustment_usd = math_utils::get_std_debt_adjustment_usd(
             0.8,
             obligation_position.supply.amount_used.usd_value + debt_to_add_usd,

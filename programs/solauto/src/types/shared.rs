@@ -145,10 +145,6 @@ pub struct PositionState {
     pub base_amount_borrowed: u64,
     pub max_ltv_bps: Option<u16>,
     pub liq_threshold_bps: u16,
-    // Denominated by 9 decimal places
-    pub base_unit_supply_weight: u64,
-    // Denominated by 9 decimal places
-    pub base_unit_debt_weight: u64,
     pub last_updated: u64,
 }
 

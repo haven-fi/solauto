@@ -398,13 +398,13 @@ pub fn validate_lending_program_accounts_with_position<'a>(
 pub fn validate_token_accounts(
     signer: &AccountInfo,
     solauto_position: &DeserializedAccount<SolautoPosition>,
-    source_supply_ta: &DeserializedAccount<TokenAccount>,
+    source_supply_ta: Option<&DeserializedAccount<TokenAccount>>,
     source_debt_ta: Option<&DeserializedAccount<TokenAccount>>
 ) -> ProgramResult {
     validate_token_account(
         signer,
         solauto_position,
-        Some(source_supply_ta),
+        source_supply_ta,
         Some(TokenType::Supply),
         None
     )?;
@@ -472,8 +472,6 @@ mod tests {
                 base_amount_borrowed: 0,
                 max_ltv_bps,
                 liq_threshold_bps,
-                base_unit_supply_weight: 1000000000,
-                base_unit_debt_weight: 1000000000,
                 last_updated: 0,
             },
             lending_platform: LendingPlatform::Marginfi,

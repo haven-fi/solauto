@@ -128,8 +128,8 @@ pub enum Instruction {
     #[account(optional, name = "marginfi_account")]
     #[account(mut, name = "supply_bank")]
     #[account(name = "supply_price_oracle")]
-    #[account(mut, optional, name = "debt_bank")]
-    #[account(optional, name = "debt_price_oracle")]
+    #[account(mut, name = "debt_bank")]
+    #[account(name = "debt_price_oracle")]
     #[account(mut, optional, name = "solauto_position")]
     MarginfiRefreshData,
 
@@ -165,8 +165,8 @@ pub enum Instruction {
     #[account(mut, optional, name = "authority_supply_ta")]
     #[account(mut, optional, name = "vault_supply_ta")]
     #[account(mut, optional, name = "supply_vault_authority")]
-    #[account(mut, optional, name = "debt_bank")]
-    #[account(optional, name = "debt_pyth_price_oracle")]
+    #[account(mut, name = "debt_bank")]
+    #[account(name = "debt_pyth_price_oracle")]
     #[account(mut, optional, name = "authority_debt_ta")]
     #[account(mut, optional, name = "vault_debt_ta")]
     #[account(mut, optional, name = "debt_vault_authority")]

@@ -120,7 +120,7 @@ pub fn process_marginfi_refresh_data<'a>(accounts: &'a [AccountInfo<'a>]) -> Pro
                 solauto_position.as_ref().unwrap(),
                 ctx.accounts.marginfi_account.unwrap(),
                 Some(ctx.accounts.supply_bank),
-                ctx.accounts.debt_bank
+                Some(ctx.accounts.debt_bank)
             )?;
         }
     }

@@ -22,13 +22,11 @@ pub fn marginfi_refresh_accounts(
         ctx.accounts.supply_bank,
     )?;
 
-    if ctx.accounts.debt_bank.is_some() {
-        MarginfiClient::refresh_bank(
-            ctx.accounts.marginfi_program,
-            ctx.accounts.marginfi_group,
-            ctx.accounts.debt_bank.unwrap(),
-        )?;
-    }
+    MarginfiClient::refresh_bank(
+        ctx.accounts.marginfi_program,
+        ctx.accounts.marginfi_group,
+        ctx.accounts.debt_bank,
+    )?;
 
     if ctx.accounts.solauto_position.is_some()
         && !solauto_position.as_ref().unwrap().data.self_managed

@@ -299,7 +299,7 @@ impl<'a> LendingProtocolClient<'a> for SolendClient<'a> {
         validate_token_accounts(
             std_accounts.signer,
             &std_accounts.solauto_position,
-            &self.supply_liquidity.as_ref().unwrap().source_ta,
+            Some(&self.supply_liquidity.as_ref().unwrap().source_ta),
             self.debt_liquidity
                 .as_ref()
                 .map_or_else(|| None, |debt| Some(&debt.source_ta)),

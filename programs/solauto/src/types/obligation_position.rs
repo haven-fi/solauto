@@ -10,7 +10,6 @@ use crate::{
         decimal_to_f64_div_wad,
         from_base_unit,
         to_base_unit,
-        get_marginfi_liq_utilization_rate_bps,
         get_std_liq_utilization_rate_bps,
     },
 };
@@ -120,22 +119,11 @@ pub struct LendingProtocolObligationPosition {
 impl LendingProtocolObligationPosition {
     pub fn current_liq_utilization_rate_bps(&self) -> u16 {
         if let Some(debt) = &self.debt {
-            match self.lending_platform {
-                LendingPlatform::Marginfi => {
-                    get_marginfi_liq_utilization_rate_bps(
-                        self.supply.amount_used.usd_value,
-                        self.supply.health_weight.unwrap(),
-                        debt.amount_used.usd_value,
-                        debt.health_weight.unwrap()
-                    )
-                }
-                _ =>
-                    get_std_liq_utilization_rate_bps(
-                        self.supply.amount_used.usd_value,
-                        debt.amount_used.usd_value,
-                        self.liq_threshold
-                    ),
-            }
+            get_std_liq_utilization_rate_bps(
+                self.supply.amount_used.usd_value,
+                debt.amount_used.usd_value,
+                self.liq_threshold
+            )
         } else {
             0
         }

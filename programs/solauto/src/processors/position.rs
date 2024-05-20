@@ -62,7 +62,7 @@ pub fn process_close_position_instruction<'a>(accounts: &'a [AccountInfo<'a>]) -
     validation_utils::validate_token_accounts(
         ctx.accounts.signer,
         &solauto_position,
-        &position_supply_liquidity_ta,
+        Some(&position_supply_liquidity_ta),
         position_debt_liquidity_ta.as_ref()
     )?;
 
