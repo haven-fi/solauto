@@ -629,9 +629,4 @@ mod tests {
             },
         );
     }
-
-    #[test]
-    fn test_invalid_dca_settings() {
-        // TODO
-    }
 }

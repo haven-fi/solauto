@@ -1,4 +1,4 @@
-use std::{ cmp::{ max, min }, ops::{ Add, Div, Mul, Sub } };
+use std::{ cmp::{ max, min }, ops::{ Div, Mul, Sub } };
 
 use solana_program::{
     instruction::{ get_stack_height, TRANSACTION_LEVEL_STACK_HEIGHT },
@@ -428,6 +428,7 @@ pub fn get_rebalance_values(
 
 #[cfg(test)]
 mod tests {
+    use std::ops::Add;
     use num_traits::Pow;
     use solana_program::pubkey::Pubkey;
     use tests::math_utils::{ from_base_unit, to_base_unit };
@@ -532,7 +533,8 @@ mod tests {
         current_timestamp: Option<u64>,
         current_liq_utilization_rate_bps: u16,
         setting_params: Option<SolautoSettingsParameters>,
-        dca_settings: Option<DCASettings>
+        dca_settings: Option<DCASettings>,
+        mut rebalance_args: Option<RebalanceArgs>
     ) -> Result<
         (SolautoPosition, LendingProtocolObligationPosition, Option<f64>, Option<u64>),
         ProgramError
@@ -550,13 +552,16 @@ mod tests {
             current_liq_utilization_rate_bps
         );
         let solauto_fees = SolautoFeesBps::get(false);
-        let mut rebalance_args = RebalanceArgs::default();
-        rebalance_args.max_price_slippage_bps = Some(0);
+
+        if rebalance_args.is_none() {
+            rebalance_args = Some(RebalanceArgs::default());
+        }
+        rebalance_args.as_mut().unwrap().max_price_slippage_bps = Some(0);
 
         let (debt_adjustment_usd, debt_to_add) = get_rebalance_values(
             &mut solauto_position,
             &obligation_position,
-            &rebalance_args,
+            rebalance_args.as_ref().unwrap(),
             &solauto_fees,
             current_timestamp.map_or_else(
                 || 0,
@@ -572,14 +577,16 @@ mod tests {
         current_liq_utilization_rate_bps: u16,
         mut expected_liq_utilization_rate_bps: u16,
         setting_params: Option<SolautoSettingsParameters>,
-        dca_settings: Option<DCASettings>
+        dca_settings: Option<DCASettings>,
+        rebalance_args: Option<RebalanceArgs>
     ) -> Result<SolautoPosition, ProgramError> {
         let (solauto_position, mut obligation_position, debt_adjustment_usd, debt_to_add) =
             test_rebalance(
                 current_timestamp,
                 current_liq_utilization_rate_bps,
                 setting_params,
-                dca_settings.clone()
+                dca_settings.clone(),
+                rebalance_args
             )?;
 
         let boosting =
@@ -657,31 +664,90 @@ mod tests {
 
     #[test]
     fn test_invalid_rebalance_condition() {
-        let result = test_rebalance(None, 6250, None, None);
+        let result = test_rebalance(None, 6250, None, None, None);
         assert!(result.is_err());
         assert!(result.unwrap_err() == SolautoError::InvalidRebalanceCondition.into());
 
-        let result = test_rebalance(None, 4001, None, None);
+        let result = test_rebalance(None, 4001, None, None, None);
         assert!(result.is_err());
         assert!(result.unwrap_err() == SolautoError::InvalidRebalanceCondition.into());
 
-        let result = test_rebalance(None, 7999, None, None);
+        let result = test_rebalance(None, 7999, None, None, None);
         assert!(result.is_err());
         assert!(result.unwrap_err() == SolautoError::InvalidRebalanceCondition.into());
     }
 
     #[test]
     fn test_repay() {
-        rebalance_with_std_validation(None, REPAY_TO_BPS + 534, REPAY_TO_BPS, None, None).unwrap();
-        rebalance_with_std_validation(None, REPAY_TO_BPS + 1003, REPAY_TO_BPS, None, None).unwrap();
-        rebalance_with_std_validation(None, REPAY_TO_BPS + 1743, REPAY_TO_BPS, None, None).unwrap();
+        rebalance_with_std_validation(
+            None,
+            REPAY_TO_BPS + 534,
+            REPAY_TO_BPS,
+            None,
+            None,
+            None
+        ).unwrap();
+        rebalance_with_std_validation(
+            None,
+            REPAY_TO_BPS + 1003,
+            REPAY_TO_BPS,
+            None,
+            None,
+            None
+        ).unwrap();
+        rebalance_with_std_validation(
+            None,
+            REPAY_TO_BPS + 1743,
+            REPAY_TO_BPS,
+            None,
+            None,
+            None
+        ).unwrap();
     }
 
     #[test]
     fn test_boost() {
-        rebalance_with_std_validation(None, BOOST_TO_BPS - 3657, BOOST_TO_BPS, None, None).unwrap();
-        rebalance_with_std_validation(None, BOOST_TO_BPS - 2768, BOOST_TO_BPS, None, None).unwrap();
-        rebalance_with_std_validation(None, BOOST_TO_BPS - 1047, BOOST_TO_BPS, None, None).unwrap();
+        rebalance_with_std_validation(
+            None,
+            BOOST_TO_BPS - 3657,
+            BOOST_TO_BPS,
+            None,
+            None,
+            None
+        ).unwrap();
+        rebalance_with_std_validation(
+            None,
+            BOOST_TO_BPS - 2768,
+            BOOST_TO_BPS,
+            None,
+            None,
+            None
+        ).unwrap();
+        rebalance_with_std_validation(
+            None,
+            BOOST_TO_BPS - 1047,
+            BOOST_TO_BPS,
+            None,
+            None,
+            None
+        ).unwrap();
+    }
+
+    #[test]
+    fn test_authority_rebalance() {
+        let target_liq_utilization_rate_bps = BOOST_TO_BPS + (REPAY_TO_BPS - BOOST_TO_BPS) / 2;
+        rebalance_with_std_validation(
+            None,
+            BOOST_TO_BPS - 3657,
+            target_liq_utilization_rate_bps,
+            None,
+            None,
+            Some(RebalanceArgs {
+                target_liq_utilization_rate_bps: Some(target_liq_utilization_rate_bps),
+                max_price_slippage_bps: None,
+                limit_gap_bps: None,
+            })
+        ).unwrap();
     }
 
     fn test_dca_rebalance_with_std_validation(
@@ -721,7 +787,8 @@ mod tests {
             current_liq_utilization_rate_bps,
             expected_liq_utilization_rate_bps,
             settings.clone(),
-            Some(dca_settings.clone())
+            Some(dca_settings.clone()),
+            None
         )?;
 
         if dca_settings.automation.periods_passed == dca_settings.automation.target_periods - 1 {
@@ -783,7 +850,7 @@ mod tests {
             },
             None
         ).unwrap();
-        
+
         // curr_liq_utilization_rate_bps < setting_params.boost_to_bps
         test_dca_rebalance_with_std_validation(
             None,
@@ -835,7 +902,7 @@ mod tests {
             },
             None
         ).unwrap();
-        
+
         // curr_liq_utilization_rate_bps - setting_params.boost_to_bps
         test_dca_rebalance_with_std_validation(
             None,
@@ -852,6 +919,4 @@ mod tests {
             None
         ).unwrap();
     }
-
-    // TODO add test for if providing target liq utilization rate in rebalance args
 }
