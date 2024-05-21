@@ -44,11 +44,7 @@ pub fn convert_i80f48_to_f64(value: I80F48) -> f64 {
     float_value.to_num::<f64>()
 }
 
-pub fn get_std_liq_utilization_rate_bps(
-    supply_usd: f64,
-    debt_usd: f64,
-    liq_threshold: f64
-) -> u16 {
+pub fn get_std_liq_utilization_rate_bps(supply_usd: f64, debt_usd: f64, liq_threshold: f64) -> u16 {
     debt_usd.div(supply_usd.mul(liq_threshold)).mul(10000.0) as u16
 }
 
@@ -96,12 +92,14 @@ mod tests {
         (value * multiplier).round() / multiplier
     }
 
-    fn test_std_debt_adjustment_calculation(
+    fn test_debt_adjustment_calculation(
         mut supply_usd: f64,
         mut debt_usd: f64,
         target_liq_utilization_rate: f64
     ) {
-        let liq_threshold = 0.8;
+        let supply_weight = 0.899999976158142;
+        let debt_weight = 1.100000023841858;
+        let liq_threshold = supply_weight.div(debt_weight); // ~0.81
 
         let debt_adjustment = get_std_debt_adjustment_usd(
             liq_threshold,
@@ -123,15 +121,27 @@ mod tests {
             round_to_places((new_liq_utilization_rate_bps as f64).div(10000.0), 2) ==
                 round_to_places(target_liq_utilization_rate, 2)
         );
+
+        let marginfi_liq_utilization_rate = (1.0).sub(
+            supply_usd
+                .mul(supply_weight)
+                .sub(debt_usd.mul(debt_weight))
+                .div(supply_usd.mul(supply_weight))
+        );
+
+        assert!(
+            round_to_places(marginfi_liq_utilization_rate, 4) ==
+            round_to_places(target_liq_utilization_rate, 4)
+        );
     }
     #[test]
     fn test_std_debt_adjustment() {
-        test_std_debt_adjustment_calculation(100.0, 80.0, 0.8);
-        test_std_debt_adjustment_calculation(30.0, 24.0, 0.5);
-        test_std_debt_adjustment_calculation(44334.0, 24534.0, 0.5);
-        test_std_debt_adjustment_calculation(7644.0, 434.0, 0.8);
-        test_std_debt_adjustment_calculation(10444.0, 7454.0, 0.2);
-        test_std_debt_adjustment_calculation(1340444.0, 7454.0, 0.35);
-        test_std_debt_adjustment_calculation(1000000.0, 519999.0, 0.65);
+        test_debt_adjustment_calculation(100.0, 80.0, 0.8);
+        test_debt_adjustment_calculation(30.0, 24.0, 0.5);
+        test_debt_adjustment_calculation(44334.0, 24534.0, 0.5);
+        test_debt_adjustment_calculation(7644.0, 434.0, 0.8);
+        test_debt_adjustment_calculation(10444.0, 7454.0, 0.2);
+        test_debt_adjustment_calculation(1340444.0, 7454.0, 0.35);
+        test_debt_adjustment_calculation(1000000.0, 519999.0, 0.65);
     }
 }
