@@ -1,7 +1,7 @@
 use fixed::types::I80F48;
 use num_traits::{FromPrimitive, ToPrimitive};
 use solend_sdk::math::{Decimal, WAD};
-use std::ops::{Div, Mul, Sub};
+use std::ops::{Div, Mul};
 
 pub fn decimal_to_f64(decimal: Decimal) -> f64 {
     u128::try_from(decimal.0).unwrap() as f64
@@ -93,6 +93,8 @@ pub fn get_maximum_repay_to_bps_param(max_ltv: f64, liq_threshold: f64) -> u16 {
 
 #[cfg(test)]
 mod tests {
+    use std::ops::Sub;
+
     use super::*;
 
     fn round_to_places(value: f64, places: u32) -> f64 {
