@@ -44,12 +44,12 @@ export type MarginfiProtocolInteractionInstructionAccounts = {
   marginfiGroup: PublicKey | Pda;
   marginfiAccount: PublicKey | Pda;
   supplyBank: PublicKey | Pda;
-  supplyPythPriceOracle: PublicKey | Pda;
+  supplyPriceOracle: PublicKey | Pda;
   authoritySupplyTa?: PublicKey | Pda;
   vaultSupplyTa?: PublicKey | Pda;
   supplyVaultAuthority?: PublicKey | Pda;
   debtBank: PublicKey | Pda;
-  debtPythPriceOracle: PublicKey | Pda;
+  debtPriceOracle: PublicKey | Pda;
   authorityDebtTa?: PublicKey | Pda;
   vaultDebtTa?: PublicKey | Pda;
   debtVaultAuthority?: PublicKey | Pda;
@@ -152,10 +152,10 @@ export function marginfiProtocolInteraction(
       isWritable: true as boolean,
       value: input.supplyBank ?? null,
     },
-    supplyPythPriceOracle: {
+    supplyPriceOracle: {
       index: 10,
       isWritable: false as boolean,
-      value: input.supplyPythPriceOracle ?? null,
+      value: input.supplyPriceOracle ?? null,
     },
     authoritySupplyTa: {
       index: 11,
@@ -177,10 +177,10 @@ export function marginfiProtocolInteraction(
       isWritable: true as boolean,
       value: input.debtBank ?? null,
     },
-    debtPythPriceOracle: {
+    debtPriceOracle: {
       index: 15,
       isWritable: false as boolean,
-      value: input.debtPythPriceOracle ?? null,
+      value: input.debtPriceOracle ?? null,
     },
     authorityDebtTa: {
       index: 16,

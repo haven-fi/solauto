@@ -49,12 +49,12 @@ export type MarginfiRebalanceInstructionAccounts = {
   marginfiAccount: PublicKey | Pda;
   intermediaryTa: PublicKey | Pda;
   supplyBank: PublicKey | Pda;
-  supplyPythPriceOracle: PublicKey | Pda;
+  supplyPriceOracle: PublicKey | Pda;
   positionSupplyTa: PublicKey | Pda;
   vaultSupplyTa: PublicKey | Pda;
   supplyVaultAuthority?: PublicKey | Pda;
   debtBank: PublicKey | Pda;
-  debtPythPriceOracle: PublicKey | Pda;
+  debtPriceOracle: PublicKey | Pda;
   positionDebtTa: PublicKey | Pda;
   vaultDebtTa: PublicKey | Pda;
   debtVaultAuthority?: PublicKey | Pda;
@@ -181,10 +181,10 @@ export function marginfiRebalance(
       isWritable: true as boolean,
       value: input.supplyBank ?? null,
     },
-    supplyPythPriceOracle: {
+    supplyPriceOracle: {
       index: 15,
       isWritable: false as boolean,
-      value: input.supplyPythPriceOracle ?? null,
+      value: input.supplyPriceOracle ?? null,
     },
     positionSupplyTa: {
       index: 16,
@@ -206,10 +206,10 @@ export function marginfiRebalance(
       isWritable: true as boolean,
       value: input.debtBank ?? null,
     },
-    debtPythPriceOracle: {
+    debtPriceOracle: {
       index: 20,
       isWritable: false as boolean,
-      value: input.debtPythPriceOracle ?? null,
+      value: input.debtPriceOracle ?? null,
     },
     positionDebtTa: {
       index: 21,

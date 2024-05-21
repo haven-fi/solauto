@@ -779,7 +779,7 @@
           "isSigner": false
         },
         {
-          "name": "supplyPythPriceOracle",
+          "name": "supplyPriceOracle",
           "isMut": false,
           "isSigner": false
         },
@@ -807,7 +807,7 @@
           "isSigner": false
         },
         {
-          "name": "debtPythPriceOracle",
+          "name": "debtPriceOracle",
           "isMut": false,
           "isSigner": false
         },
@@ -1061,7 +1061,7 @@
           "isSigner": false
         },
         {
-          "name": "supplyPythPriceOracle",
+          "name": "supplyPriceOracle",
           "isMut": false,
           "isSigner": false
         },
@@ -1087,7 +1087,7 @@
           "isSigner": false
         },
         {
-          "name": "debtPythPriceOracle",
+          "name": "debtPriceOracle",
           "isMut": false,
           "isSigner": false
         },

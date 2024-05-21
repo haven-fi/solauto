@@ -31,7 +31,7 @@ pub struct MarginfiProtocolInteraction {
 
     pub supply_bank: solana_program::pubkey::Pubkey,
 
-    pub supply_pyth_price_oracle: solana_program::pubkey::Pubkey,
+    pub supply_price_oracle: solana_program::pubkey::Pubkey,
 
     pub authority_supply_ta: Option<solana_program::pubkey::Pubkey>,
 
@@ -41,7 +41,7 @@ pub struct MarginfiProtocolInteraction {
 
     pub debt_bank: solana_program::pubkey::Pubkey,
 
-    pub debt_pyth_price_oracle: solana_program::pubkey::Pubkey,
+    pub debt_price_oracle: solana_program::pubkey::Pubkey,
 
     pub authority_debt_ta: Option<solana_program::pubkey::Pubkey>,
 
@@ -104,7 +104,7 @@ impl MarginfiProtocolInteraction {
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.supply_pyth_price_oracle,
+            self.supply_price_oracle,
             false,
         ));
         if let Some(authority_supply_ta) = self.authority_supply_ta {
@@ -145,7 +145,7 @@ impl MarginfiProtocolInteraction {
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.debt_pyth_price_oracle,
+            self.debt_price_oracle,
             false,
         ));
         if let Some(authority_debt_ta) = self.authority_debt_ta {
@@ -227,12 +227,12 @@ pub struct MarginfiProtocolInteractionInstructionArgs {
 ///   7. `[]` marginfi_group
 ///   8. `[writable]` marginfi_account
 ///   9. `[writable]` supply_bank
-///   10. `[]` supply_pyth_price_oracle
+///   10. `[]` supply_price_oracle
 ///   11. `[writable, optional]` authority_supply_ta
 ///   12. `[writable, optional]` vault_supply_ta
 ///   13. `[writable, optional]` supply_vault_authority
 ///   14. `[writable]` debt_bank
-///   15. `[]` debt_pyth_price_oracle
+///   15. `[]` debt_price_oracle
 ///   16. `[writable, optional]` authority_debt_ta
 ///   17. `[writable, optional]` vault_debt_ta
 ///   18. `[writable, optional]` debt_vault_authority
@@ -248,12 +248,12 @@ pub struct MarginfiProtocolInteractionBuilder {
     marginfi_group: Option<solana_program::pubkey::Pubkey>,
     marginfi_account: Option<solana_program::pubkey::Pubkey>,
     supply_bank: Option<solana_program::pubkey::Pubkey>,
-    supply_pyth_price_oracle: Option<solana_program::pubkey::Pubkey>,
+    supply_price_oracle: Option<solana_program::pubkey::Pubkey>,
     authority_supply_ta: Option<solana_program::pubkey::Pubkey>,
     vault_supply_ta: Option<solana_program::pubkey::Pubkey>,
     supply_vault_authority: Option<solana_program::pubkey::Pubkey>,
     debt_bank: Option<solana_program::pubkey::Pubkey>,
-    debt_pyth_price_oracle: Option<solana_program::pubkey::Pubkey>,
+    debt_price_oracle: Option<solana_program::pubkey::Pubkey>,
     authority_debt_ta: Option<solana_program::pubkey::Pubkey>,
     vault_debt_ta: Option<solana_program::pubkey::Pubkey>,
     debt_vault_authority: Option<solana_program::pubkey::Pubkey>,
@@ -329,11 +329,11 @@ impl MarginfiProtocolInteractionBuilder {
         self
     }
     #[inline(always)]
-    pub fn supply_pyth_price_oracle(
+    pub fn supply_price_oracle(
         &mut self,
-        supply_pyth_price_oracle: solana_program::pubkey::Pubkey,
+        supply_price_oracle: solana_program::pubkey::Pubkey,
     ) -> &mut Self {
-        self.supply_pyth_price_oracle = Some(supply_pyth_price_oracle);
+        self.supply_price_oracle = Some(supply_price_oracle);
         self
     }
     /// `[optional account]`
@@ -369,11 +369,11 @@ impl MarginfiProtocolInteractionBuilder {
         self
     }
     #[inline(always)]
-    pub fn debt_pyth_price_oracle(
+    pub fn debt_price_oracle(
         &mut self,
-        debt_pyth_price_oracle: solana_program::pubkey::Pubkey,
+        debt_price_oracle: solana_program::pubkey::Pubkey,
     ) -> &mut Self {
-        self.debt_pyth_price_oracle = Some(debt_pyth_price_oracle);
+        self.debt_price_oracle = Some(debt_price_oracle);
         self
     }
     /// `[optional account]`
@@ -447,16 +447,16 @@ impl MarginfiProtocolInteractionBuilder {
             marginfi_group: self.marginfi_group.expect("marginfi_group is not set"),
             marginfi_account: self.marginfi_account.expect("marginfi_account is not set"),
             supply_bank: self.supply_bank.expect("supply_bank is not set"),
-            supply_pyth_price_oracle: self
-                .supply_pyth_price_oracle
-                .expect("supply_pyth_price_oracle is not set"),
+            supply_price_oracle: self
+                .supply_price_oracle
+                .expect("supply_price_oracle is not set"),
             authority_supply_ta: self.authority_supply_ta,
             vault_supply_ta: self.vault_supply_ta,
             supply_vault_authority: self.supply_vault_authority,
             debt_bank: self.debt_bank.expect("debt_bank is not set"),
-            debt_pyth_price_oracle: self
-                .debt_pyth_price_oracle
-                .expect("debt_pyth_price_oracle is not set"),
+            debt_price_oracle: self
+                .debt_price_oracle
+                .expect("debt_price_oracle is not set"),
             authority_debt_ta: self.authority_debt_ta,
             vault_debt_ta: self.vault_debt_ta,
             debt_vault_authority: self.debt_vault_authority,
@@ -494,7 +494,7 @@ pub struct MarginfiProtocolInteractionCpiAccounts<'a, 'b> {
 
     pub supply_bank: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub supply_pyth_price_oracle: &'b solana_program::account_info::AccountInfo<'a>,
+    pub supply_price_oracle: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub authority_supply_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
@@ -504,7 +504,7 @@ pub struct MarginfiProtocolInteractionCpiAccounts<'a, 'b> {
 
     pub debt_bank: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub debt_pyth_price_oracle: &'b solana_program::account_info::AccountInfo<'a>,
+    pub debt_price_oracle: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub authority_debt_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
@@ -538,7 +538,7 @@ pub struct MarginfiProtocolInteractionCpi<'a, 'b> {
 
     pub supply_bank: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub supply_pyth_price_oracle: &'b solana_program::account_info::AccountInfo<'a>,
+    pub supply_price_oracle: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub authority_supply_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
@@ -548,7 +548,7 @@ pub struct MarginfiProtocolInteractionCpi<'a, 'b> {
 
     pub debt_bank: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub debt_pyth_price_oracle: &'b solana_program::account_info::AccountInfo<'a>,
+    pub debt_price_oracle: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub authority_debt_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
@@ -577,12 +577,12 @@ impl<'a, 'b> MarginfiProtocolInteractionCpi<'a, 'b> {
             marginfi_group: accounts.marginfi_group,
             marginfi_account: accounts.marginfi_account,
             supply_bank: accounts.supply_bank,
-            supply_pyth_price_oracle: accounts.supply_pyth_price_oracle,
+            supply_price_oracle: accounts.supply_price_oracle,
             authority_supply_ta: accounts.authority_supply_ta,
             vault_supply_ta: accounts.vault_supply_ta,
             supply_vault_authority: accounts.supply_vault_authority,
             debt_bank: accounts.debt_bank,
-            debt_pyth_price_oracle: accounts.debt_pyth_price_oracle,
+            debt_price_oracle: accounts.debt_price_oracle,
             authority_debt_ta: accounts.authority_debt_ta,
             vault_debt_ta: accounts.vault_debt_ta,
             debt_vault_authority: accounts.debt_vault_authority,
@@ -664,7 +664,7 @@ impl<'a, 'b> MarginfiProtocolInteractionCpi<'a, 'b> {
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.supply_pyth_price_oracle.key,
+            *self.supply_price_oracle.key,
             false,
         ));
         if let Some(authority_supply_ta) = self.authority_supply_ta {
@@ -705,7 +705,7 @@ impl<'a, 'b> MarginfiProtocolInteractionCpi<'a, 'b> {
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.debt_pyth_price_oracle.key,
+            *self.debt_price_oracle.key,
             false,
         ));
         if let Some(authority_debt_ta) = self.authority_debt_ta {
@@ -771,7 +771,7 @@ impl<'a, 'b> MarginfiProtocolInteractionCpi<'a, 'b> {
         account_infos.push(self.marginfi_group.clone());
         account_infos.push(self.marginfi_account.clone());
         account_infos.push(self.supply_bank.clone());
-        account_infos.push(self.supply_pyth_price_oracle.clone());
+        account_infos.push(self.supply_price_oracle.clone());
         if let Some(authority_supply_ta) = self.authority_supply_ta {
             account_infos.push(authority_supply_ta.clone());
         }
@@ -782,7 +782,7 @@ impl<'a, 'b> MarginfiProtocolInteractionCpi<'a, 'b> {
             account_infos.push(supply_vault_authority.clone());
         }
         account_infos.push(self.debt_bank.clone());
-        account_infos.push(self.debt_pyth_price_oracle.clone());
+        account_infos.push(self.debt_price_oracle.clone());
         if let Some(authority_debt_ta) = self.authority_debt_ta {
             account_infos.push(authority_debt_ta.clone());
         }
@@ -818,12 +818,12 @@ impl<'a, 'b> MarginfiProtocolInteractionCpi<'a, 'b> {
 ///   7. `[]` marginfi_group
 ///   8. `[writable]` marginfi_account
 ///   9. `[writable]` supply_bank
-///   10. `[]` supply_pyth_price_oracle
+///   10. `[]` supply_price_oracle
 ///   11. `[writable, optional]` authority_supply_ta
 ///   12. `[writable, optional]` vault_supply_ta
 ///   13. `[writable, optional]` supply_vault_authority
 ///   14. `[writable]` debt_bank
-///   15. `[]` debt_pyth_price_oracle
+///   15. `[]` debt_price_oracle
 ///   16. `[writable, optional]` authority_debt_ta
 ///   17. `[writable, optional]` vault_debt_ta
 ///   18. `[writable, optional]` debt_vault_authority
@@ -845,12 +845,12 @@ impl<'a, 'b> MarginfiProtocolInteractionCpiBuilder<'a, 'b> {
             marginfi_group: None,
             marginfi_account: None,
             supply_bank: None,
-            supply_pyth_price_oracle: None,
+            supply_price_oracle: None,
             authority_supply_ta: None,
             vault_supply_ta: None,
             supply_vault_authority: None,
             debt_bank: None,
-            debt_pyth_price_oracle: None,
+            debt_price_oracle: None,
             authority_debt_ta: None,
             vault_debt_ta: None,
             debt_vault_authority: None,
@@ -937,11 +937,11 @@ impl<'a, 'b> MarginfiProtocolInteractionCpiBuilder<'a, 'b> {
         self
     }
     #[inline(always)]
-    pub fn supply_pyth_price_oracle(
+    pub fn supply_price_oracle(
         &mut self,
-        supply_pyth_price_oracle: &'b solana_program::account_info::AccountInfo<'a>,
+        supply_price_oracle: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
-        self.instruction.supply_pyth_price_oracle = Some(supply_pyth_price_oracle);
+        self.instruction.supply_price_oracle = Some(supply_price_oracle);
         self
     }
     /// `[optional account]`
@@ -980,11 +980,11 @@ impl<'a, 'b> MarginfiProtocolInteractionCpiBuilder<'a, 'b> {
         self
     }
     #[inline(always)]
-    pub fn debt_pyth_price_oracle(
+    pub fn debt_price_oracle(
         &mut self,
-        debt_pyth_price_oracle: &'b solana_program::account_info::AccountInfo<'a>,
+        debt_price_oracle: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
-        self.instruction.debt_pyth_price_oracle = Some(debt_pyth_price_oracle);
+        self.instruction.debt_price_oracle = Some(debt_price_oracle);
         self
     }
     /// `[optional account]`
@@ -1114,10 +1114,10 @@ impl<'a, 'b> MarginfiProtocolInteractionCpiBuilder<'a, 'b> {
                 .supply_bank
                 .expect("supply_bank is not set"),
 
-            supply_pyth_price_oracle: self
+            supply_price_oracle: self
                 .instruction
-                .supply_pyth_price_oracle
-                .expect("supply_pyth_price_oracle is not set"),
+                .supply_price_oracle
+                .expect("supply_price_oracle is not set"),
 
             authority_supply_ta: self.instruction.authority_supply_ta,
 
@@ -1127,10 +1127,10 @@ impl<'a, 'b> MarginfiProtocolInteractionCpiBuilder<'a, 'b> {
 
             debt_bank: self.instruction.debt_bank.expect("debt_bank is not set"),
 
-            debt_pyth_price_oracle: self
+            debt_price_oracle: self
                 .instruction
-                .debt_pyth_price_oracle
-                .expect("debt_pyth_price_oracle is not set"),
+                .debt_price_oracle
+                .expect("debt_price_oracle is not set"),
 
             authority_debt_ta: self.instruction.authority_debt_ta,
 
@@ -1158,12 +1158,12 @@ struct MarginfiProtocolInteractionCpiBuilderInstruction<'a, 'b> {
     marginfi_group: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     marginfi_account: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     supply_bank: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    supply_pyth_price_oracle: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    supply_price_oracle: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     authority_supply_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     vault_supply_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     supply_vault_authority: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     debt_bank: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    debt_pyth_price_oracle: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    debt_price_oracle: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     authority_debt_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     vault_debt_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     debt_vault_authority: Option<&'b solana_program::account_info::AccountInfo<'a>>,

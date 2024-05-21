@@ -459,8 +459,7 @@ pub fn validate_token_account(
 #[cfg(test)]
 mod tests {
     use crate::types::shared::{
-        AutomationSettings, LendingProtocolPositionData, PositionState,
-        SolautoSettingsParameters,
+        AutomationSettings, LendingProtocolPositionData, PositionState, SolautoSettingsParameters,
     };
 
     use super::*;
