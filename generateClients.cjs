@@ -5,22 +5,6 @@ const crypto = require("crypto");
 
 const idlsDir = path.join(__dirname, "idls");
 
-// function getAnchorIxDiscriminator(namespace, instructionName) {
-//   // Concatenate the namespace and instruction name with a colon
-//   const concatenated = `${namespace}:${instructionName}`;
-//   // Create a SHA-256 hash of the concatenated string
-//   const hash = crypto.createHash('sha256').update(concatenated).digest();
-//   // Slice the first 8 bytes of the hash
-//   const slice = hash.slice(0, 8);
-//   // Convert the sliced bytes to a little-endian unsigned 64-bit integer using BigInt
-//   let anchorIx = BigInt(0);
-//   for (let i = 0; i < slice.length; i++) {
-//       anchorIx += BigInt(slice[i]) << (8n * BigInt(i));
-//   }
-//   // Return the BigInt as a string
-//   return anchorIx;
-// }
-
 function generateSolautoSDKs() {
   const kinobi = k.createFromIdls([path.join(idlsDir, "solauto.json")]);
 
@@ -38,7 +22,7 @@ function generateSolautoSDKs() {
 
   kinobi.accept(
     new k.renderJavaScriptVisitor(
-      path.join(__dirname, "typescript", "solauto-sdk", "generated")
+      path.join(__dirname, "typescript", "solauto-sdk", "src", "generated")
     )
   );
 }

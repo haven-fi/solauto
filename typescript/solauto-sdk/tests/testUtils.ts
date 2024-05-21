@@ -12,7 +12,3 @@ export function getSecretKey(keypairFilename: string = "id"): Uint8Array {
     path.join(process.env.HOME!, ".config", "solana", keypairFilename + ".json")
   );
 }
-
-export function generateRandomU8(): number {
-  return Math.floor((Math.random() * 255) + 1);
-}

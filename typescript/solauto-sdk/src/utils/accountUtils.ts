@@ -1,9 +1,15 @@
-import { PublicKey, Keypair, AccountMeta } from "@solana/web3.js";
-import { SOLAUTO_PROGRAM_ID } from "./generated";
+import { PublicKey, AccountMeta } from "@solana/web3.js";
+import { SOLAUTO_PROGRAM_ID } from "../generated";
 
 export function bufferFromU8(num: number): Buffer {
   const buffer = Buffer.alloc(1);
   buffer.writeUInt8(num);
+  return buffer;
+}
+
+export function bufferFromU64(num: bigint): Buffer {
+  const buffer = Buffer.alloc(8);
+  buffer.writeBigUInt64LE(num);
   return buffer;
 }
 
@@ -22,12 +28,7 @@ export function getAccountMeta(
 export async function getPositionAccount(
   signer: PublicKey,
   positionId: number,
-  reuse?: boolean
 ) {
-  if (reuse) {
-    return new PublicKey("AwgtJe3D9bhBHLB3T3gmxTtcpd2F3tytTmyNY29ZqcwS");
-  }
-
   const [positionAccount, _] = await PublicKey.findProgramAddress(
     [bufferFromU8(positionId), signer.toBuffer()],
     new PublicKey(SOLAUTO_PROGRAM_ID)
@@ -41,12 +42,7 @@ export async function getSolendObligationAccount(
   signer: PublicKey,
   lendingMarket: PublicKey,
   solendProgram: PublicKey,
-  reuse?: boolean
 ) {
-  if (reuse) {
-    return new PublicKey("9H6TFwHSu1C4SPoUT3JobTXJyrEaTM8zcfMUvYXhSbgh");
-  }
-
   const seeds = [
     signer.toBuffer(),
     lendingMarket.toBuffer(),
@@ -65,24 +61,14 @@ export async function getSolendObligationAccount(
   return obligationAccount;
 }
 
-export async function getMarginfiAccount(
-  solautoPositionAccount: PublicKey | undefined,
-  signer: PublicKey,
-  marginfiProgram: PublicKey,
-  reuse?: boolean
+export async function getMarginfiAccountPDA(
+  solautoPositionAccount: PublicKey,
+  marginfiAccountSeedIdx: bigint
 ) {
-  if (reuse) {
-    // return new PublicKey("");
-  }
-
   const seeds = [
-    signer.toBuffer(),
-    marginfiProgram.toBuffer(),
+    solautoPositionAccount.toBuffer(),
+    bufferFromU64(marginfiAccountSeedIdx),
   ];
-
-  if (solautoPositionAccount !== undefined) {
-    seeds.unshift(solautoPositionAccount.toBuffer());
-  }
 
   const [marginfiAccount, _] = await PublicKey.findProgramAddress(
     seeds,
