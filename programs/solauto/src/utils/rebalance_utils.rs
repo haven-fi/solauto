@@ -186,11 +186,6 @@ fn get_max_liq_utilization_rate_from_risk_aversion(position: &PositionData) -> u
     maximum_liq_utilization_rate_bps
 }
 
-fn updated_target_from_dca(curr_bps: u16, target_bps: u16, dca_progress: f64) -> u16 {
-    let current_rate_diff = (curr_bps as i16).sub(target_bps as i16);
-    (curr_bps as f64).sub((current_rate_diff as f64).mul(dca_progress)) as u16
-}
-
 fn get_additional_amount_to_dca_in(position: &mut PositionData) -> Option<u64> {
     if position.active_dca.is_none() {
         return None;
