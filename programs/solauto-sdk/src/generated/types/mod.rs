@@ -5,6 +5,7 @@
 //! [https://github.com/metaplex-foundation/kinobi]
 //!
 
+pub(crate) mod r#automation_settings;
 pub(crate) mod r#d_c_a_settings;
 pub(crate) mod r#debt_to_add_to_position;
 pub(crate) mod r#lending_platform;
@@ -17,6 +18,7 @@ pub(crate) mod r#solauto_settings_parameters;
 pub(crate) mod r#token_balance_amount;
 pub(crate) mod r#update_position_data;
 
+pub use self::r#automation_settings::*;
 pub use self::r#d_c_a_settings::*;
 pub use self::r#debt_to_add_to_position::*;
 pub use self::r#lending_platform::*;

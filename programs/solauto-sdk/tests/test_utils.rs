@@ -51,7 +51,7 @@ pub const MARGINFI_PROGRAM: &str = "MFv2hWf31Z9kbCa1snEPYctwafyhdvnV7FZnsebVacA"
 pub struct GeneralArgs {
     position_id: u8,
     supply_mint: Keypair,
-    debt_mint: Option<Keypair>,
+    debt_mint: Keypair,
     referred_by_authority: Option<Pubkey>,
     fund_accounts: Vec<Pubkey>,
 }
@@ -61,7 +61,7 @@ impl GeneralArgs {
         Self {
             position_id: 1,
             supply_mint: Keypair::new(),
-            debt_mint: Some(Keypair::new()),
+            debt_mint: Keypair::new(),
             referred_by_authority: None,
             fund_accounts: Vec::new(),
         }
@@ -74,7 +74,7 @@ impl GeneralArgs {
         self.supply_mint = supply_mint;
         self
     }
-    pub fn debt_mint(&mut self, debt_mint: Option<Keypair>) -> &mut Self {
+    pub fn debt_mint(&mut self, debt_mint: Keypair) -> &mut Self {
         self.debt_mint = debt_mint;
         self
     }
@@ -104,9 +104,9 @@ pub struct GeneralTestData<'a> {
     pub supply_liquidity_mint: &'a Keypair,
     pub position_supply_liquidity_ta: Pubkey,
     pub signer_supply_liquidity_ta: Pubkey,
-    pub debt_liquidity_mint: Option<&'a Keypair>,
-    pub position_debt_liquidity_ta: Option<Pubkey>,
-    pub signer_debt_liquidity_ta: Option<Pubkey>,
+    pub debt_liquidity_mint: &'a Keypair,
+    pub position_debt_liquidity_ta: Pubkey,
+    pub signer_debt_liquidity_ta: Pubkey,
 
     pub default_setting_params: SolautoSettingsParameters,
 }
@@ -168,26 +168,14 @@ impl<'a> GeneralTestData<'a> {
             &args.supply_mint.pubkey()
         );
 
-        let signer_debt_liquidity_ta = if args.debt_mint.is_some() {
-            Some(
-                get_associated_token_address(
-                    &signer_pubkey,
-                    &args.debt_mint.as_ref().unwrap().pubkey()
-                )
-            )
-        } else {
-            None
-        };
-        let position_debt_liquidity_ta = if args.debt_mint.is_some() {
-            Some(
-                get_associated_token_address(
-                    &solauto_position,
-                    &args.debt_mint.as_ref().unwrap().pubkey()
-                )
-            )
-        } else {
-            None
-        };
+        let signer_debt_liquidity_ta = get_associated_token_address(
+            &signer_pubkey,
+            &args.debt_mint.pubkey()
+        );
+        let position_debt_liquidity_ta = get_associated_token_address(
+            &solauto_position,
+            &args.debt_mint.pubkey()
+        );
 
         Self {
             ctx,
@@ -205,7 +193,7 @@ impl<'a> GeneralTestData<'a> {
             supply_liquidity_mint: &args.supply_mint,
             position_supply_liquidity_ta,
             signer_supply_liquidity_ta,
-            debt_liquidity_mint: args.debt_mint.as_ref(),
+            debt_liquidity_mint: &args.debt_mint,
             position_debt_liquidity_ta,
             signer_debt_liquidity_ta,
 
@@ -214,6 +202,8 @@ impl<'a> GeneralTestData<'a> {
                 boost_gap: 500,
                 repay_to_bps: 9000,
                 repay_gap: 500,
+                automation: None,
+                target_boost_to_bps: None
             },
         }
     }
@@ -263,11 +253,7 @@ impl<'a> GeneralTestData<'a> {
 
     pub async fn test_prefixtures(&mut self) -> Result<&mut Self, BanksClientError> {
         self.create_token_mint_account(self.supply_liquidity_mint).await.unwrap();
-
-        if self.debt_liquidity_mint.is_some() {
-            self.create_token_mint_account(self.debt_liquidity_mint.unwrap()).await.unwrap();
-        }
-
+        self.create_token_mint_account(self.debt_liquidity_mint).await.unwrap();
         Ok(self)
     }
 
@@ -414,14 +400,9 @@ impl<'a> GeneralTestData<'a> {
         builder
             .signer(self.ctx.payer.pubkey())
             .solauto_position(self.solauto_position)
-            .debt_mint(
-                self.debt_liquidity_mint.map_or_else(
-                    || None,
-                    |mint| Some(mint.pubkey())
-                )
-            )
-            .position_debt_ta(self.position_debt_liquidity_ta)
-            .signer_debt_ta(self.signer_debt_liquidity_ta)
+            .debt_mint(Some(self.debt_liquidity_mint.pubkey()))
+            .position_debt_ta(Some(self.position_debt_liquidity_ta))
+            .signer_debt_ta(Some(self.signer_debt_liquidity_ta))
             .update_position_data(position_data);
         builder
     }
@@ -441,8 +422,8 @@ impl<'a> GeneralTestData<'a> {
             .solauto_position(self.solauto_position)
             .position_supply_liquidity_ta(self.position_supply_liquidity_ta)
             .signer_supply_liquidity_ta(self.signer_supply_liquidity_ta)
-            .position_debt_liquidity_ta(self.position_debt_liquidity_ta)
-            .signer_debt_liquidity_ta(self.signer_debt_liquidity_ta);
+            .position_debt_liquidity_ta(Some(self.position_debt_liquidity_ta))
+            .signer_debt_liquidity_ta(Some(self.signer_debt_liquidity_ta));
         builder
     }
 }
@@ -539,13 +520,8 @@ impl<'a> MarginfiTestData<'a> {
             .marginfi_account(self.marginfi_account, self.general.position_id == 0)
             .supply_mint(self.general.supply_liquidity_mint.pubkey())
             .position_supply_ta(self.general.position_supply_liquidity_ta)
-            .debt_mint(
-                self.general.debt_liquidity_mint.map_or_else(
-                    || None,
-                    |mint| Some(mint.pubkey())
-                )
-            )
-            .signer_debt_ta(self.general.signer_debt_liquidity_ta)
+            .debt_mint(self.general.debt_liquidity_mint.pubkey())
+            .signer_debt_ta(Some(self.general.signer_debt_liquidity_ta))
             .position_debt_ta(self.general.position_debt_liquidity_ta)
             .args((position_data, self.marginfi_account_seed_idx));
         builder

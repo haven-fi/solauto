@@ -6,6 +6,7 @@
  * @see https://github.com/metaplex-foundation/kinobi
  */
 
+export * from './automationSettings';
 export * from './dCASettings';
 export * from './debtToAddToPosition';
 export * from './lendingPlatform';

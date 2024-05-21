@@ -26,10 +26,7 @@ mod update_position {
             .create_ata(data.general.ctx.payer.pubkey(), data.general.supply_liquidity_mint).await
             .unwrap();
         data.general
-            .create_ata(
-                data.general.ctx.payer.pubkey(),
-                data.general.debt_liquidity_mint.unwrap()
-            ).await
+            .create_ata(data.general.ctx.payer.pubkey(), data.general.debt_liquidity_mint).await
             .unwrap();
         data.open_position(Some(data.general.default_setting_params.clone()), None).await.unwrap();
 
@@ -44,8 +41,8 @@ mod update_position {
         let current_debt_balance = 34543;
         data.general
             .mint_tokens_to_ta(
-                data.general.debt_liquidity_mint.unwrap(),
-                data.general.position_debt_liquidity_ta.unwrap(),
+                data.general.debt_liquidity_mint,
+                data.general.position_debt_liquidity_ta,
                 current_debt_balance
             ).await
             .unwrap();
@@ -63,7 +60,7 @@ mod update_position {
         assert!(position_supply_liquidity_ta.is_none());
 
         let position_debt_liquidity_ta = data.general.ctx.banks_client
-            .get_account(data.general.position_debt_liquidity_ta.unwrap()).await
+            .get_account(data.general.position_debt_liquidity_ta).await
             .unwrap();
         assert!(position_debt_liquidity_ta.is_none());
 
@@ -73,7 +70,7 @@ mod update_position {
         assert!(signer_supply_liquidity_ta.amount == current_supply_balance);
 
         let signer_debt_liquidity_ta = data.general.unpack_account_data::<TokenAccount>(
-            data.general.signer_debt_liquidity_ta.unwrap()
+            data.general.signer_debt_liquidity_ta
         ).await;
         assert!(signer_debt_liquidity_ta.amount == current_debt_balance);
     }
@@ -89,10 +86,7 @@ mod update_position {
             .general.create_referral_state_accounts().await
             .unwrap();
         data.general
-            .create_ata(
-                data.general.ctx.payer.pubkey(),
-                data.general.debt_liquidity_mint.unwrap()
-            ).await
+            .create_ata(data.general.ctx.payer.pubkey(), data.general.debt_liquidity_mint).await
             .unwrap();
         data.open_position(Some(data.general.default_setting_params.clone()), None).await.unwrap();
 
@@ -118,10 +112,7 @@ mod update_position {
             .create_ata(data.general.ctx.payer.pubkey(), data.general.supply_liquidity_mint).await
             .unwrap();
         data.general
-            .create_ata(
-                data.general.ctx.payer.pubkey(),
-                data.general.debt_liquidity_mint.unwrap()
-            ).await
+            .create_ata(data.general.ctx.payer.pubkey(), data.general.debt_liquidity_mint).await
             .unwrap();
         data.open_position(Some(data.general.default_setting_params.clone()), None).await.unwrap();
 
@@ -151,10 +142,10 @@ mod update_position {
         let temp_account = Keypair::new();
         let fake_debt_ta = get_associated_token_address(
             &temp_account.pubkey(),
-            &data.general.debt_liquidity_mint.unwrap().pubkey()
+            &data.general.debt_liquidity_mint.pubkey()
         );
         data.general
-            .create_ata(temp_account.pubkey(), &data.general.debt_liquidity_mint.unwrap()).await
+            .create_ata(temp_account.pubkey(), &data.general.debt_liquidity_mint).await
             .unwrap();
 
         // Fake position debt token account

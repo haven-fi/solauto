@@ -6,10 +6,9 @@
  * @see https://github.com/metaplex-foundation/kinobi
  */
 
-import { Option, OptionOrNullable, PublicKey } from '@metaplex-foundation/umi';
+import { PublicKey } from '@metaplex-foundation/umi';
 import {
   Serializer,
-  option,
   publicKey as publicKeySerializer,
   struct,
 } from '@metaplex-foundation/umi/serializers';
@@ -17,14 +16,10 @@ import {
 export type LendingProtocolPositionData = {
   protocolAccount: PublicKey;
   supplyMint: PublicKey;
-  debtMint: Option<PublicKey>;
+  debtMint: PublicKey;
 };
 
-export type LendingProtocolPositionDataArgs = {
-  protocolAccount: PublicKey;
-  supplyMint: PublicKey;
-  debtMint: OptionOrNullable<PublicKey>;
-};
+export type LendingProtocolPositionDataArgs = LendingProtocolPositionData;
 
 export function getLendingProtocolPositionDataSerializer(): Serializer<
   LendingProtocolPositionDataArgs,
@@ -34,7 +29,7 @@ export function getLendingProtocolPositionDataSerializer(): Serializer<
     [
       ['protocolAccount', publicKeySerializer()],
       ['supplyMint', publicKeySerializer()],
-      ['debtMint', option(publicKeySerializer())],
+      ['debtMint', publicKeySerializer()],
     ],
     { description: 'LendingProtocolPositionData' }
   ) as Serializer<LendingProtocolPositionDataArgs, LendingProtocolPositionData>;

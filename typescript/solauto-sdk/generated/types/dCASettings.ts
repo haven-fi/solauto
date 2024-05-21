@@ -11,30 +11,23 @@ import {
   Serializer,
   option,
   struct,
-  u16,
-  u64,
 } from '@metaplex-foundation/umi/serializers';
 import {
+  AutomationSettings,
+  AutomationSettingsArgs,
   DebtToAddToPosition,
   DebtToAddToPositionArgs,
+  getAutomationSettingsSerializer,
   getDebtToAddToPositionSerializer,
 } from '.';
 
 export type DCASettings = {
-  unixStartDate: bigint;
-  dcaIntervalSeconds: bigint;
-  dcaPeriodsPassed: number;
-  targetDcaPeriods: number;
-  targetBoostToBps: Option<number>;
+  automation: AutomationSettings;
   addToPos: Option<DebtToAddToPosition>;
 };
 
 export type DCASettingsArgs = {
-  unixStartDate: number | bigint;
-  dcaIntervalSeconds: number | bigint;
-  dcaPeriodsPassed: number;
-  targetDcaPeriods: number;
-  targetBoostToBps: OptionOrNullable<number>;
+  automation: AutomationSettingsArgs;
   addToPos: OptionOrNullable<DebtToAddToPositionArgs>;
 };
 
@@ -44,11 +37,7 @@ export function getDCASettingsSerializer(): Serializer<
 > {
   return struct<DCASettings>(
     [
-      ['unixStartDate', u64()],
-      ['dcaIntervalSeconds', u64()],
-      ['dcaPeriodsPassed', u16()],
-      ['targetDcaPeriods', u16()],
-      ['targetBoostToBps', option(u16())],
+      ['automation', getAutomationSettingsSerializer()],
       ['addToPos', option(getDebtToAddToPositionSerializer())],
     ],
     { description: 'DCASettings' }

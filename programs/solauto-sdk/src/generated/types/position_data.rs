@@ -19,7 +19,7 @@ pub struct PositionData {
     pub state: PositionState,
     pub lending_platform: LendingPlatform,
     pub protocol_data: LendingProtocolPositionData,
-    pub setting_params: Option<SolautoSettingsParameters>,
+    pub setting_params: SolautoSettingsParameters,
     pub active_dca: Option<DCASettings>,
     pub debt_ta_balance: u64,
 }

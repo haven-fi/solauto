@@ -46,30 +46,30 @@
 // use solauto::utils::math_utils;
 
 fn main() {
-//     let mut supply = 447805.0;
-//     let mut debt = 201545.0;
-//     let supply_weight = 0.899999976158142;
-//     let debt_weight = 1.100000023841858;
-//     let liq_threshold = supply_weight.div(debt_weight);
+    //     let mut supply = 447805.0;
+    //     let mut debt = 201545.0;
+    //     let supply_weight = 0.899999976158142;
+    //     let debt_weight = 1.100000023841858;
+    //     let liq_threshold = supply_weight.div(debt_weight);
 
-//     let debt_adjustment_usd = math_utils::get_std_debt_adjustment_usd(
-//         liq_threshold,
-//         supply,
-//         debt,
-//         5500,
-//         0
-//     );
+    //     let debt_adjustment_usd = math_utils::get_std_debt_adjustment_usd(
+    //         liq_threshold,
+    //         supply,
+    //         debt,
+    //         5500,
+    //         0
+    //     );
 
-//     supply += debt_adjustment_usd;
-//     debt += debt_adjustment_usd;
+    //     supply += debt_adjustment_usd;
+    //     debt += debt_adjustment_usd;
 
-//     println!(
-//         "{}",
-//         1.0 - (supply.mul(supply_weight).sub(debt.mul(debt_weight)).div(supply.mul(supply_weight)))
-//     );
-//     println!(
-//         "{}",
-//         debt.div(supply.mul(liq_threshold))
-//     );
-//     println!("${}", debt_adjustment_usd);
+    //     println!(
+    //         "{}",
+    //         1.0 - (supply.mul(supply_weight).sub(debt.mul(debt_weight)).div(supply.mul(supply_weight)))
+    //     );
+    //     println!(
+    //         "{}",
+    //         debt.div(supply.mul(liq_threshold))
+    //     );
+    //     println!("${}", debt_adjustment_usd);
 }

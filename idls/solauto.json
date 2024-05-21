@@ -246,17 +246,15 @@
         {
           "name": "debtMint",
           "isMut": false,
-          "isSigner": false,
-          "isOptional": true
-        },
-        {
-          "name": "signerDebtTa",
-          "isMut": true,
-          "isSigner": false,
-          "isOptional": true
+          "isSigner": false
         },
         {
           "name": "positionDebtTa",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "signerDebtTa",
           "isMut": true,
           "isSigner": false,
           "isOptional": true
@@ -363,17 +361,12 @@
           "isSigner": false
         },
         {
-          "name": "positionSupplyLiquidityTa",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
           "name": "supplyLiquidityMint",
           "isMut": false,
           "isSigner": false
         },
         {
-          "name": "positionSupplyCollateralTa",
+          "name": "positionSupplyLiquidityTa",
           "isMut": true,
           "isSigner": false
         },
@@ -383,20 +376,23 @@
           "isSigner": false
         },
         {
-          "name": "signerDebtLiquidityTa",
+          "name": "positionSupplyCollateralTa",
           "isMut": true,
-          "isSigner": false,
-          "isOptional": true
-        },
-        {
-          "name": "positionDebtLiquidityTa",
-          "isMut": true,
-          "isSigner": false,
-          "isOptional": true
+          "isSigner": false
         },
         {
           "name": "debtLiquidityMint",
           "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "positionDebtLiquidityTa",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "signerDebtLiquidityTa",
+          "isMut": true,
           "isSigner": false,
           "isOptional": true
         }
@@ -622,14 +618,12 @@
         {
           "name": "debtBank",
           "isMut": true,
-          "isSigner": false,
-          "isOptional": true
+          "isSigner": false
         },
         {
           "name": "debtPriceOracle",
           "isMut": false,
-          "isSigner": false,
-          "isOptional": true
+          "isSigner": false
         },
         {
           "name": "solautoPosition",
@@ -810,14 +804,12 @@
         {
           "name": "debtBank",
           "isMut": true,
-          "isSigner": false,
-          "isOptional": true
+          "isSigner": false
         },
         {
           "name": "debtPythPriceOracle",
           "isMut": false,
-          "isSigner": false,
-          "isOptional": true
+          "isSigner": false
         },
         {
           "name": "authorityDebtTa",
@@ -1468,7 +1460,7 @@
       }
     },
     {
-      "name": "DCASettings",
+      "name": "AutomationSettings",
       "type": {
         "kind": "struct",
         "fields": [
@@ -1477,21 +1469,29 @@
             "type": "u64"
           },
           {
-            "name": "dcaIntervalSeconds",
+            "name": "intervalSeconds",
             "type": "u64"
           },
           {
-            "name": "dcaPeriodsPassed",
+            "name": "periodsPassed",
             "type": "u16"
           },
           {
-            "name": "targetDcaPeriods",
+            "name": "targetPeriods",
             "type": "u16"
-          },
+          }
+        ]
+      }
+    },
+    {
+      "name": "DCASettings",
+      "type": {
+        "kind": "struct",
+        "fields": [
           {
-            "name": "targetBoostToBps",
+            "name": "automation",
             "type": {
-              "option": "u16"
+              "defined": "AutomationSettings"
             }
           },
           {
@@ -1525,6 +1525,20 @@
           {
             "name": "repayGap",
             "type": "u16"
+          },
+          {
+            "name": "targetBoostToBps",
+            "type": {
+              "option": "u16"
+            }
+          },
+          {
+            "name": "automation",
+            "type": {
+              "option": {
+                "defined": "AutomationSettings"
+              }
+            }
           }
         ]
       }
@@ -1544,9 +1558,7 @@
           },
           {
             "name": "debtMint",
-            "type": {
-              "option": "publicKey"
-            }
+            "type": "publicKey"
           }
         ]
       }
@@ -1587,14 +1599,6 @@
             "type": "u16"
           },
           {
-            "name": "baseUnitSupplyWeight",
-            "type": "u64"
-          },
-          {
-            "name": "baseUnitDebtWeight",
-            "type": "u64"
-          },
-          {
             "name": "lastUpdated",
             "type": "u64"
           }
@@ -1627,9 +1631,7 @@
           {
             "name": "settingParams",
             "type": {
-              "option": {
-                "defined": "SolautoSettingsParameters"
-              }
+              "defined": "SolautoSettingsParameters"
             }
           },
           {
@@ -1732,45 +1734,50 @@
     {
       "code": 2,
       "name": "InvalidPositionSettings",
-      "msg": "Invalid position data given"
+      "msg": "Invalid position settings given"
     },
     {
       "code": 3,
       "name": "InvalidDCASettings",
-      "msg": "Invalid DCA data given"
+      "msg": "Invalid DCA settings given"
     },
     {
       "code": 4,
+      "name": "InvalidAutomationData",
+      "msg": "Invalid automation data given"
+    },
+    {
+      "code": 5,
       "name": "StaleProtocolData",
       "msg": "Stale protocol data. Refresh instruction must be invoked before taking a protocol action"
     },
     {
-      "code": 5,
+      "code": 6,
       "name": "UnableToReposition",
       "msg": "Unable to adjust position to the desired utilization rate"
     },
     {
-      "code": 6,
+      "code": 7,
       "name": "ExceededValidUtilizationRate",
       "msg": "Desired action brought the utilization rate to an unsafe amount"
     },
     {
-      "code": 7,
+      "code": 8,
       "name": "InvalidRebalanceCondition",
       "msg": "Invalid position condition to rebalance"
     },
     {
-      "code": 8,
+      "code": 9,
       "name": "InstructionIsCPI",
       "msg": "Unable to invoke instruciton through a CPI"
     },
     {
-      "code": 9,
+      "code": 10,
       "name": "RebalanceAbuse",
       "msg": "Too many rebalance instruction invocations in the same transaction"
     },
     {
-      "code": 10,
+      "code": 11,
       "name": "IncorrectInstructions",
       "msg": "Incorrect set of instructions in the transaction"
     }

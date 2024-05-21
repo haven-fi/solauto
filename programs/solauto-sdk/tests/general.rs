@@ -122,7 +122,7 @@ mod general {
         // Correct wallet, incorrect token mint
         let fake_solauto_fees_supply_ta = get_associated_token_address(
             &data.general.solauto_fees_wallet,
-            &data.general.debt_liquidity_mint.unwrap().pubkey()
+            &data.general.debt_liquidity_mint.pubkey()
         );
         let err = data.general
             .execute_instructions(

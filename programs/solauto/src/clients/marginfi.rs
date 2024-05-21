@@ -168,7 +168,7 @@ impl<'a> MarginfiClient<'a> {
         account_balances: &[Balance],
         supply_bank: &'a AccountInfo<'a>,
         price_oracle: &'a AccountInfo<'a>,
-        debt_weight: f64
+        debt_weight: f64,
     ) -> Result<(PositionTokenUsage, f64), ProgramError> {
         let bank = DeserializedAccount::<Bank>::deserialize(Some(supply_bank))?.unwrap();
 
@@ -265,17 +265,14 @@ impl<'a> MarginfiClient<'a> {
     ) -> Result<LendingProtocolObligationPosition, ProgramError> {
         let account_balances = &marginfi_account.data.lending_account.balances[..2];
 
-        let debt = MarginfiClient::get_debt_token_usage(
-            account_balances,
-            debt_bank,
-            debt_price_oracle,
-        )?;
+        let debt =
+            MarginfiClient::get_debt_token_usage(account_balances, debt_bank, debt_price_oracle)?;
 
         let (supply, liq_threshold) = MarginfiClient::get_supply_token_usage(
             account_balances,
             supply_bank,
             supply_price_oracle,
-            debt.health_weight.unwrap()
+            debt.health_weight.unwrap(),
         )?;
 
         return Ok(LendingProtocolObligationPosition {
@@ -369,8 +366,13 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
         validate_token_accounts(
             std_accounts.signer,
             &std_accounts.solauto_position,
-            self.supply.token_accounts.as_ref().map_or_else(|| None, |tas| Some(&tas.source_ta)),
-            self.debt.token_accounts.as_ref()
+            self.supply
+                .token_accounts
+                .as_ref()
+                .map_or_else(|| None, |tas| Some(&tas.source_ta)),
+            self.debt
+                .token_accounts
+                .as_ref()
                 .map_or_else(|| None, |debt| Some(&debt.source_ta)),
         )?;
 
@@ -391,7 +393,13 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
                 marginfi_account: self.marginfi_account.account_info,
                 signer: authority,
                 bank: self.supply.bank,
-                signer_token_account: self.supply.token_accounts.as_ref().unwrap().source_ta.account_info,
+                signer_token_account: self
+                    .supply
+                    .token_accounts
+                    .as_ref()
+                    .unwrap()
+                    .source_ta
+                    .account_info,
                 bank_liquidity_vault: self.supply.token_accounts.as_ref().unwrap().protocol_ta,
                 token_program: std_accounts.token_program,
             },
@@ -530,7 +538,13 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
                 marginfi_account: self.marginfi_account.account_info,
                 signer: authority,
                 bank: self.debt.bank,
-                signer_token_account: self.debt.token_accounts.as_ref().unwrap().source_ta.account_info,
+                signer_token_account: self
+                    .debt
+                    .token_accounts
+                    .as_ref()
+                    .unwrap()
+                    .source_ta
+                    .account_info,
                 bank_liquidity_vault: self.debt.token_accounts.as_ref().unwrap().protocol_ta,
                 token_program: std_accounts.token_program,
             },

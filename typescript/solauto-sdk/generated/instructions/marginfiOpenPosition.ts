@@ -55,9 +55,9 @@ export type MarginfiOpenPositionInstructionAccounts = {
   marginfiAccount: PublicKey | Pda | Signer;
   supplyMint: PublicKey | Pda;
   positionSupplyTa: PublicKey | Pda;
-  debtMint?: PublicKey | Pda;
+  debtMint: PublicKey | Pda;
+  positionDebtTa: PublicKey | Pda;
   signerDebtTa?: PublicKey | Pda;
-  positionDebtTa?: PublicKey | Pda;
 };
 
 // Data.
@@ -192,15 +192,15 @@ export function marginfiOpenPosition(
       isWritable: false as boolean,
       value: input.debtMint ?? null,
     },
-    signerDebtTa: {
+    positionDebtTa: {
       index: 17,
       isWritable: true as boolean,
-      value: input.signerDebtTa ?? null,
+      value: input.positionDebtTa ?? null,
     },
-    positionDebtTa: {
+    signerDebtTa: {
       index: 18,
       isWritable: true as boolean,
-      value: input.positionDebtTa ?? null,
+      value: input.signerDebtTa ?? null,
     },
   } satisfies ResolvedAccountsWithIndices;
 

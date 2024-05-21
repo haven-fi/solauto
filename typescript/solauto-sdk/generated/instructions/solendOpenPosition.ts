@@ -49,13 +49,13 @@ export type SolendOpenPositionInstructionAccounts = {
   lendingMarket: PublicKey | Pda;
   obligation: PublicKey | Pda;
   supplyReserve: PublicKey | Pda;
-  positionSupplyLiquidityTa: PublicKey | Pda;
   supplyLiquidityMint: PublicKey | Pda;
-  positionSupplyCollateralTa: PublicKey | Pda;
+  positionSupplyLiquidityTa: PublicKey | Pda;
   supplyCollateralMint: PublicKey | Pda;
+  positionSupplyCollateralTa: PublicKey | Pda;
+  debtLiquidityMint: PublicKey | Pda;
+  positionDebtLiquidityTa: PublicKey | Pda;
   signerDebtLiquidityTa?: PublicKey | Pda;
-  positionDebtLiquidityTa?: PublicKey | Pda;
-  debtLiquidityMint?: PublicKey | Pda;
 };
 
 // Data.
@@ -180,40 +180,40 @@ export function solendOpenPosition(
       isWritable: false as boolean,
       value: input.supplyReserve ?? null,
     },
-    positionSupplyLiquidityTa: {
-      index: 15,
-      isWritable: true as boolean,
-      value: input.positionSupplyLiquidityTa ?? null,
-    },
     supplyLiquidityMint: {
-      index: 16,
+      index: 15,
       isWritable: false as boolean,
       value: input.supplyLiquidityMint ?? null,
     },
-    positionSupplyCollateralTa: {
-      index: 17,
+    positionSupplyLiquidityTa: {
+      index: 16,
       isWritable: true as boolean,
-      value: input.positionSupplyCollateralTa ?? null,
+      value: input.positionSupplyLiquidityTa ?? null,
     },
     supplyCollateralMint: {
-      index: 18,
+      index: 17,
       isWritable: false as boolean,
       value: input.supplyCollateralMint ?? null,
     },
-    signerDebtLiquidityTa: {
-      index: 19,
+    positionSupplyCollateralTa: {
+      index: 18,
       isWritable: true as boolean,
-      value: input.signerDebtLiquidityTa ?? null,
+      value: input.positionSupplyCollateralTa ?? null,
+    },
+    debtLiquidityMint: {
+      index: 19,
+      isWritable: false as boolean,
+      value: input.debtLiquidityMint ?? null,
     },
     positionDebtLiquidityTa: {
       index: 20,
       isWritable: true as boolean,
       value: input.positionDebtLiquidityTa ?? null,
     },
-    debtLiquidityMint: {
+    signerDebtLiquidityTa: {
       index: 21,
-      isWritable: false as boolean,
-      value: input.debtLiquidityMint ?? null,
+      isWritable: true as boolean,
+      value: input.signerDebtLiquidityTa ?? null,
     },
   } satisfies ResolvedAccountsWithIndices;
 

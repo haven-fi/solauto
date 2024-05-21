@@ -48,8 +48,8 @@ export type MarginfiProtocolInteractionInstructionAccounts = {
   authoritySupplyTa?: PublicKey | Pda;
   vaultSupplyTa?: PublicKey | Pda;
   supplyVaultAuthority?: PublicKey | Pda;
-  debtBank?: PublicKey | Pda;
-  debtPythPriceOracle?: PublicKey | Pda;
+  debtBank: PublicKey | Pda;
+  debtPythPriceOracle: PublicKey | Pda;
   authorityDebtTa?: PublicKey | Pda;
   vaultDebtTa?: PublicKey | Pda;
   debtVaultAuthority?: PublicKey | Pda;

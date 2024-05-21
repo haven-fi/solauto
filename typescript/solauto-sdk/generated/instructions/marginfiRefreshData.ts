@@ -34,8 +34,8 @@ export type MarginfiRefreshDataInstructionAccounts = {
   marginfiAccount?: PublicKey | Pda;
   supplyBank: PublicKey | Pda;
   supplyPriceOracle: PublicKey | Pda;
-  debtBank?: PublicKey | Pda;
-  debtPriceOracle?: PublicKey | Pda;
+  debtBank: PublicKey | Pda;
+  debtPriceOracle: PublicKey | Pda;
   solautoPosition?: PublicKey | Pda;
 };
 

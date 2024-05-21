@@ -22,5 +22,9 @@ pub struct LendingProtocolPositionData {
         serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
     )]
     pub supply_mint: Pubkey,
-    pub debt_mint: Option<Pubkey>,
+    #[cfg_attr(
+        feature = "serde",
+        serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
+    )]
+    pub debt_mint: Pubkey,
 }

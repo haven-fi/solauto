@@ -1,25 +1,32 @@
-use solana_program::{ clock::Clock, entrypoint::ProgramResult, msg, sysvar::Sysvar };
+use solana_program::{clock::Clock, entrypoint::ProgramResult, msg, sysvar::Sysvar};
 
 use crate::{
     types::{
-        instruction::{ accounts::{ Context, UpdatePositionAccounts }, UpdatePositionData },
-        shared::{ DeserializedAccount, SolautoError, SolautoPosition },
+        instruction::{
+            accounts::{Context, UpdatePositionAccounts},
+            UpdatePositionData,
+        },
+        shared::{DeserializedAccount, SolautoError, SolautoPosition},
     },
-    utils::{ ix_utils, solana_utils, solauto_utils, validation_utils },
+    utils::{ix_utils, solana_utils, solauto_utils, validation_utils},
 };
 
 pub fn update_position<'a>(
     ctx: Context<UpdatePositionAccounts<'a>>,
     mut solauto_position: DeserializedAccount<'a, SolautoPosition>,
-    new_data: UpdatePositionData
+    new_data: UpdatePositionData,
 ) -> ProgramResult {
     if new_data.active_dca.is_some() {
         update_dca(&ctx, &mut solauto_position, &new_data)?;
     }
 
     if new_data.setting_params.is_some() {
-        solauto_position.data.position.as_mut().unwrap().setting_params =
-            new_data.setting_params.unwrap();
+        solauto_position
+            .data
+            .position
+            .as_mut()
+            .unwrap()
+            .setting_params = new_data.setting_params.unwrap();
     }
 
     let position_data = solauto_position.data.position.as_ref().unwrap();
@@ -33,20 +40,36 @@ pub fn update_position<'a>(
 fn update_dca<'a, 'b>(
     ctx: &'b Context<UpdatePositionAccounts<'a>>,
     solauto_position: &'b mut DeserializedAccount<'a, SolautoPosition>,
-    new_data: &'b UpdatePositionData
+    new_data: &'b UpdatePositionData,
 ) -> ProgramResult {
     let new_dca = new_data.active_dca.as_ref().unwrap();
 
-    if solauto_position.data.position.as_ref().unwrap().active_dca.is_some() {
-        let curr_add_to_pos = solauto_position.data.position
+    if solauto_position
+        .data
+        .position
+        .as_ref()
+        .unwrap()
+        .active_dca
+        .is_some()
+    {
+        let curr_add_to_pos = solauto_position
+            .data
+            .position
             .as_ref()
             .unwrap()
-            .active_dca.as_ref()
+            .active_dca
+            .as_ref()
             .unwrap()
-            .add_to_pos.as_ref();
-        if
-            curr_add_to_pos.is_some() &&
-            solauto_position.data.position.as_ref().unwrap().debt_ta_balance > 0
+            .add_to_pos
+            .as_ref();
+        if curr_add_to_pos.is_some()
+            && solauto_position
+                .data
+                .position
+                .as_ref()
+                .unwrap()
+                .debt_ta_balance
+                > 0
         {
             solauto_utils::cancel_dca_in_if_necessary(
                 ctx.accounts.signer,
@@ -55,7 +78,7 @@ fn update_dca<'a, 'b>(
                 solauto_position,
                 ctx.accounts.debt_mint,
                 ctx.accounts.position_debt_ta,
-                ctx.accounts.signer_debt_ta
+                ctx.accounts.signer_debt_ta,
             )?;
         }
     }
@@ -75,7 +98,7 @@ fn update_dca<'a, 'b>(
             ctx.accounts.signer,
             solauto_position.account_info,
             ctx.accounts.position_debt_ta.unwrap(),
-            ctx.accounts.debt_mint.unwrap()
+            ctx.accounts.debt_mint.unwrap(),
         )?;
 
         solauto_utils::initiate_dca_in_if_necessary(
@@ -83,7 +106,7 @@ fn update_dca<'a, 'b>(
             solauto_position,
             ctx.accounts.position_debt_ta,
             ctx.accounts.signer,
-            ctx.accounts.signer_debt_ta
+            ctx.accounts.signer_debt_ta,
         )?;
     }
 

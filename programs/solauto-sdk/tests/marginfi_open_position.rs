@@ -11,7 +11,13 @@ mod open_position {
     };
     use solauto_sdk::generated::{
         accounts::SolautoPosition,
-        types::{ DCASettings, DebtToAddToPosition, LendingPlatform, SolautoSettingsParameters },
+        types::{
+            AutomationSettings,
+            DCASettings,
+            DebtToAddToPosition,
+            LendingPlatform,
+            SolautoSettingsParameters,
+        },
     };
     use spl_associated_token_account::get_associated_token_address;
     use spl_token::state::Account as TokenAccount;
@@ -32,6 +38,8 @@ mod open_position {
             boost_gap: 500,
             repay_to_bps: 9000,
             repay_gap: 500,
+            automation: None,
+            target_boost_to_bps: None,
         };
         data.open_position(Some(setting_params.clone()), None).await.unwrap();
 
@@ -44,17 +52,11 @@ mod open_position {
         assert!(solauto_position.authority == data.general.ctx.payer.pubkey());
 
         let position = solauto_position.position.as_ref().unwrap();
-        assert!(position.setting_params == Some(setting_params));
+        assert!(position.setting_params == setting_params);
         assert!(position.active_dca == None);
         assert!(position.lending_platform == LendingPlatform::Marginfi);
         assert!(position.protocol_data.supply_mint == data.general.supply_liquidity_mint.pubkey());
-        assert!(
-            position.protocol_data.debt_mint ==
-                data.general.debt_liquidity_mint.map_or_else(
-                    || None,
-                    |mint| Some(mint.pubkey())
-                )
-        );
+        assert!(position.protocol_data.debt_mint == data.general.debt_liquidity_mint.pubkey());
         assert!(position.protocol_data.protocol_account == data.marginfi_account);
     }
 
@@ -87,30 +89,28 @@ mod open_position {
             .general.create_referral_state_accounts().await
             .unwrap();
         data.general
-            .create_ata(
-                data.general.ctx.payer.pubkey(),
-                data.general.debt_liquidity_mint.unwrap()
-            ).await
+            .create_ata(data.general.ctx.payer.pubkey(), data.general.debt_liquidity_mint).await
             .unwrap();
 
         let dca_amount = 50_000;
         data.general
             .mint_tokens_to_ta(
-                data.general.debt_liquidity_mint.unwrap(),
-                data.general.signer_debt_liquidity_ta.unwrap(),
+                data.general.debt_liquidity_mint,
+                data.general.signer_debt_liquidity_ta,
                 dca_amount
             ).await
             .unwrap();
 
         let active_dca = DCASettings {
-            unix_start_date: (Utc::now().timestamp() as u64) - 1,
-            dca_interval_seconds: 60 * 60 * 24,
-            dca_periods_passed: 0,
-            target_dca_periods: 5,
-            target_boost_to_bps: None,
+            automation: AutomationSettings {
+                unix_start_date: (Utc::now().timestamp() as u64) - 1,
+                interval_seconds: 60 * 60 * 24,
+                periods_passed: 0,
+                target_periods: 5,
+            },
             add_to_pos: Some(DebtToAddToPosition {
                 base_unit_debt_amount: dca_amount,
-                risk_aversion_bps: None
+                risk_aversion_bps: None,
             }),
         };
         data.open_position(
@@ -128,7 +128,7 @@ mod open_position {
         assert!(position.debt_ta_balance == dca_amount);
 
         let position_debt_ta = data.general.unpack_account_data::<TokenAccount>(
-            data.general.position_debt_liquidity_ta.as_ref().unwrap().clone()
+            data.general.position_debt_liquidity_ta.clone()
         ).await;
         assert!(position_debt_ta.amount == dca_amount);
     }
@@ -190,7 +190,7 @@ mod open_position {
         // Correct wallet, incorrect mint
         let fake_supply_ta = get_associated_token_address(
             &data.general.solauto_position,
-            &data.general.debt_liquidity_mint.unwrap().pubkey()
+            &data.general.debt_liquidity_mint.pubkey()
         );
         let err = data.general
             .execute_instructions(
@@ -203,11 +203,11 @@ mod open_position {
         // Correct mint, incorrect wallet
         let fake_debt_ta = get_associated_token_address(
             &data.general.ctx.payer.pubkey(),
-            &data.general.debt_liquidity_mint.unwrap().pubkey()
+            &data.general.debt_liquidity_mint.pubkey()
         );
         let err = data.general
             .execute_instructions(
-                vec![open_position_ix.position_debt_ta(Some(fake_debt_ta)).instruction()],
+                vec![open_position_ix.position_debt_ta(fake_debt_ta).instruction()],
                 None
             ).await
             .unwrap_err();
@@ -220,7 +220,7 @@ mod open_position {
         );
         let err = data.general
             .execute_instructions(
-                vec![open_position_ix.position_debt_ta(Some(fake_debt_ta)).instruction()],
+                vec![open_position_ix.position_debt_ta(fake_debt_ta).instruction()],
                 None
             ).await
             .unwrap_err();

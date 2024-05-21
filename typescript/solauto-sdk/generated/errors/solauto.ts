@@ -52,37 +52,50 @@ nameToErrorMap.set(
   FailedAccountDeserializationError
 );
 
-/** InvalidPositionSettings: Invalid position data given */
+/** InvalidPositionSettings: Invalid position settings given */
 export class InvalidPositionSettingsError extends ProgramError {
   override readonly name: string = 'InvalidPositionSettings';
 
   readonly code: number = 0x2; // 2
 
   constructor(program: Program, cause?: Error) {
-    super('Invalid position data given', program, cause);
+    super('Invalid position settings given', program, cause);
   }
 }
 codeToErrorMap.set(0x2, InvalidPositionSettingsError);
 nameToErrorMap.set('InvalidPositionSettings', InvalidPositionSettingsError);
 
-/** InvalidDCASettings: Invalid DCA data given */
+/** InvalidDCASettings: Invalid DCA settings given */
 export class InvalidDCASettingsError extends ProgramError {
   override readonly name: string = 'InvalidDCASettings';
 
   readonly code: number = 0x3; // 3
 
   constructor(program: Program, cause?: Error) {
-    super('Invalid DCA data given', program, cause);
+    super('Invalid DCA settings given', program, cause);
   }
 }
 codeToErrorMap.set(0x3, InvalidDCASettingsError);
 nameToErrorMap.set('InvalidDCASettings', InvalidDCASettingsError);
 
+/** InvalidAutomationData: Invalid automation data given */
+export class InvalidAutomationDataError extends ProgramError {
+  override readonly name: string = 'InvalidAutomationData';
+
+  readonly code: number = 0x4; // 4
+
+  constructor(program: Program, cause?: Error) {
+    super('Invalid automation data given', program, cause);
+  }
+}
+codeToErrorMap.set(0x4, InvalidAutomationDataError);
+nameToErrorMap.set('InvalidAutomationData', InvalidAutomationDataError);
+
 /** StaleProtocolData: Stale protocol data. Refresh instruction must be invoked before taking a protocol action */
 export class StaleProtocolDataError extends ProgramError {
   override readonly name: string = 'StaleProtocolData';
 
-  readonly code: number = 0x4; // 4
+  readonly code: number = 0x5; // 5
 
   constructor(program: Program, cause?: Error) {
     super(
@@ -92,14 +105,14 @@ export class StaleProtocolDataError extends ProgramError {
     );
   }
 }
-codeToErrorMap.set(0x4, StaleProtocolDataError);
+codeToErrorMap.set(0x5, StaleProtocolDataError);
 nameToErrorMap.set('StaleProtocolData', StaleProtocolDataError);
 
 /** UnableToReposition: Unable to adjust position to the desired utilization rate */
 export class UnableToRepositionError extends ProgramError {
   override readonly name: string = 'UnableToReposition';
 
-  readonly code: number = 0x5; // 5
+  readonly code: number = 0x6; // 6
 
   constructor(program: Program, cause?: Error) {
     super(
@@ -109,14 +122,14 @@ export class UnableToRepositionError extends ProgramError {
     );
   }
 }
-codeToErrorMap.set(0x5, UnableToRepositionError);
+codeToErrorMap.set(0x6, UnableToRepositionError);
 nameToErrorMap.set('UnableToReposition', UnableToRepositionError);
 
 /** ExceededValidUtilizationRate: Desired action brought the utilization rate to an unsafe amount */
 export class ExceededValidUtilizationRateError extends ProgramError {
   override readonly name: string = 'ExceededValidUtilizationRate';
 
-  readonly code: number = 0x6; // 6
+  readonly code: number = 0x7; // 7
 
   constructor(program: Program, cause?: Error) {
     super(
@@ -126,7 +139,7 @@ export class ExceededValidUtilizationRateError extends ProgramError {
     );
   }
 }
-codeToErrorMap.set(0x6, ExceededValidUtilizationRateError);
+codeToErrorMap.set(0x7, ExceededValidUtilizationRateError);
 nameToErrorMap.set(
   'ExceededValidUtilizationRate',
   ExceededValidUtilizationRateError
@@ -136,33 +149,33 @@ nameToErrorMap.set(
 export class InvalidRebalanceConditionError extends ProgramError {
   override readonly name: string = 'InvalidRebalanceCondition';
 
-  readonly code: number = 0x7; // 7
+  readonly code: number = 0x8; // 8
 
   constructor(program: Program, cause?: Error) {
     super('Invalid position condition to rebalance', program, cause);
   }
 }
-codeToErrorMap.set(0x7, InvalidRebalanceConditionError);
+codeToErrorMap.set(0x8, InvalidRebalanceConditionError);
 nameToErrorMap.set('InvalidRebalanceCondition', InvalidRebalanceConditionError);
 
 /** InstructionIsCPI: Unable to invoke instruciton through a CPI */
 export class InstructionIsCPIError extends ProgramError {
   override readonly name: string = 'InstructionIsCPI';
 
-  readonly code: number = 0x8; // 8
+  readonly code: number = 0x9; // 9
 
   constructor(program: Program, cause?: Error) {
     super('Unable to invoke instruciton through a CPI', program, cause);
   }
 }
-codeToErrorMap.set(0x8, InstructionIsCPIError);
+codeToErrorMap.set(0x9, InstructionIsCPIError);
 nameToErrorMap.set('InstructionIsCPI', InstructionIsCPIError);
 
 /** RebalanceAbuse: Too many rebalance instruction invocations in the same transaction */
 export class RebalanceAbuseError extends ProgramError {
   override readonly name: string = 'RebalanceAbuse';
 
-  readonly code: number = 0x9; // 9
+  readonly code: number = 0xa; // 10
 
   constructor(program: Program, cause?: Error) {
     super(
@@ -172,20 +185,20 @@ export class RebalanceAbuseError extends ProgramError {
     );
   }
 }
-codeToErrorMap.set(0x9, RebalanceAbuseError);
+codeToErrorMap.set(0xa, RebalanceAbuseError);
 nameToErrorMap.set('RebalanceAbuse', RebalanceAbuseError);
 
 /** IncorrectInstructions: Incorrect set of instructions in the transaction */
 export class IncorrectInstructionsError extends ProgramError {
   override readonly name: string = 'IncorrectInstructions';
 
-  readonly code: number = 0xa; // 10
+  readonly code: number = 0xb; // 11
 
   constructor(program: Program, cause?: Error) {
     super('Incorrect set of instructions in the transaction', program, cause);
   }
 }
-codeToErrorMap.set(0xa, IncorrectInstructionsError);
+codeToErrorMap.set(0xb, IncorrectInstructionsError);
 nameToErrorMap.set('IncorrectInstructions', IncorrectInstructionsError);
 
 /**

@@ -5,14 +5,14 @@
 //! [https://github.com/metaplex-foundation/kinobi]
 //!
 
-use crate::generated::types::AutomationSettings;
-use crate::generated::types::DebtToAddToPosition;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct DCASettings {
-    pub automation: AutomationSettings,
-    pub add_to_pos: Option<DebtToAddToPosition>,
+pub struct AutomationSettings {
+    pub unix_start_date: u64,
+    pub interval_seconds: u64,
+    pub periods_passed: u16,
+    pub target_periods: u16,
 }

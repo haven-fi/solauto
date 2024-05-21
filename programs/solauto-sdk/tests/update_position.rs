@@ -12,7 +12,7 @@ mod update_position {
     };
     use solauto_sdk::generated::{
         accounts::SolautoPosition,
-        types::{ DCASettings, DebtToAddToPosition, SolautoSettingsParameters },
+        types::{ AutomationSettings, DCASettings, DebtToAddToPosition, SolautoSettingsParameters },
     };
     use spl_associated_token_account::get_associated_token_address;
 
@@ -27,30 +27,28 @@ mod update_position {
             .general.create_referral_state_accounts().await
             .unwrap();
         data.general
-            .create_ata(
-                data.general.ctx.payer.pubkey(),
-                data.general.debt_liquidity_mint.unwrap()
-            ).await
+            .create_ata(data.general.ctx.payer.pubkey(), data.general.debt_liquidity_mint).await
             .unwrap();
 
         let dca_amount = 50_000;
         data.general
             .mint_tokens_to_ta(
-                data.general.debt_liquidity_mint.unwrap(),
-                data.general.signer_debt_liquidity_ta.unwrap(),
+                data.general.debt_liquidity_mint,
+                data.general.signer_debt_liquidity_ta,
                 dca_amount
             ).await
             .unwrap();
 
         let active_dca = DCASettings {
-            unix_start_date: (Utc::now().timestamp() as u64) - 1,
-            dca_interval_seconds: 60 * 60 * 24,
-            dca_periods_passed: 0,
-            target_dca_periods: 5,
-            target_boost_to_bps: None,
+            automation: AutomationSettings {
+                unix_start_date: (Utc::now().timestamp() as u64) - 1,
+                interval_seconds: 60 * 60 * 24,
+                periods_passed: 0,
+                target_periods: 5,
+            },
             add_to_pos: Some(DebtToAddToPosition {
                 base_unit_debt_amount: dca_amount,
-                risk_aversion_bps: None
+                risk_aversion_bps: None,
             }),
         };
         data.open_position(
@@ -67,19 +65,23 @@ mod update_position {
         assert!(solauto_position.position.as_ref().unwrap().debt_ta_balance == dca_amount);
 
         // Update position's settings and add a DCA
+        let dca_out_automation = AutomationSettings {
+            unix_start_date: (Utc::now().timestamp() as u64) - 1,
+            interval_seconds: 60 * 60 * 10,
+            periods_passed: 0,
+            target_periods: 5,
+        };
         let new_settings = SolautoSettingsParameters {
             boost_to_bps: 2000,
             boost_gap: 1000,
             repay_to_bps: 8500,
             repay_gap: 1000,
+            automation: Some(dca_out_automation.clone()),
+            target_boost_to_bps: Some(0),
         };
         let new_dca = DCASettings {
-            unix_start_date: (Utc::now().timestamp() as u64) - 1,
-            dca_interval_seconds: 60 * 60,
-            dca_periods_passed: 0,
-            target_dca_periods: 5,
-            target_boost_to_bps: Some(500),
-            add_to_pos: None
+            automation: dca_out_automation,
+            add_to_pos: None,
         };
         data.general
             .update_position(Some(new_settings.clone()), Some(new_dca.clone())).await
@@ -88,10 +90,7 @@ mod update_position {
         let solauto_position = data.general.deserialize_account_data::<SolautoPosition>(
             data.general.solauto_position
         ).await;
-        assert!(
-            solauto_position.position.as_ref().unwrap().setting_params.as_ref().unwrap() ==
-                &new_settings
-        );
+        assert!(solauto_position.position.as_ref().unwrap().setting_params == new_settings);
         assert!(
             solauto_position.position.as_ref().unwrap().active_dca.as_ref().unwrap() == &new_dca
         );
@@ -109,10 +108,7 @@ mod update_position {
             .general.create_referral_state_accounts().await
             .unwrap();
         data.general
-            .create_ata(
-                data.general.ctx.payer.pubkey(),
-                data.general.debt_liquidity_mint.unwrap()
-            ).await
+            .create_ata(data.general.ctx.payer.pubkey(), data.general.debt_liquidity_mint).await
             .unwrap();
         data.open_position(Some(data.general.default_setting_params.clone()), None).await.unwrap();
 
@@ -145,12 +141,10 @@ mod update_position {
         let temp_wallet = Keypair::new().pubkey();
         let fake_debt_ta = get_associated_token_address(
             &temp_wallet,
-            &data.general.debt_liquidity_mint.unwrap().pubkey()
+            &data.general.debt_liquidity_mint.pubkey()
         );
-        data.general
-            .create_ata(temp_wallet, data.general.debt_liquidity_mint.unwrap()).await
-            .unwrap();
-    
+        data.general.create_ata(temp_wallet, data.general.debt_liquidity_mint).await.unwrap();
+
         let err = data.general
             .execute_instructions(
                 vec![
