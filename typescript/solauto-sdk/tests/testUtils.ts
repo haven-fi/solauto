@@ -1,4 +1,3 @@
-import { Keypair } from "@solana/web3.js";
 import fs from "fs";
 import path from "path";
 

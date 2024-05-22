@@ -25,7 +25,7 @@ export function getAccountMeta(
   };
 }
 
-export async function getPositionAccount(
+export async function getSolautoPositionAccount(
   signer: PublicKey,
   positionId: number,
 ) {

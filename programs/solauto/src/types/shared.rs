@@ -70,10 +70,6 @@ pub struct AutomationSettings {
 }
 
 impl AutomationSettings {
-    pub fn progress_pct(&self) -> f64 {
-        (1.0).div((self.target_periods as f64).sub(self.periods_passed as f64))
-    }
-
     pub fn eligible_for_next_period(&self, current_unix_timestamp: u64) -> bool {
         if self.periods_passed == 0 {
             true
@@ -84,7 +80,6 @@ impl AutomationSettings {
                     .add(self.interval_seconds.mul((self.periods_passed as u64) + 1))
         }
     }
-
     pub fn updated_amount_from_automation<T: ToPrimitive + FromPrimitive>(
         &self,
         curr_amt: T,
@@ -92,9 +87,9 @@ impl AutomationSettings {
     ) -> Option<T> {
         let curr_amt_i64 = curr_amt.to_i64()?;
         let target_amt_i64 = target_amt.to_i64()?;
-
         let current_rate_diff = (curr_amt_i64 - target_amt_i64) as f64;
-        let new_amt = curr_amt.to_f64()? - (current_rate_diff * self.progress_pct());
+        let progress_pct = (1.0).div((self.target_periods as f64).sub(self.periods_passed as f64));
+        let new_amt = curr_amt.to_f64()? - (current_rate_diff * progress_pct);
 
         T::from_f64(new_amt)
     }

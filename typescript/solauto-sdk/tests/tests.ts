@@ -27,7 +27,7 @@ import {
   clusterApiUrl,
 } from "@solana/web3.js";
 import { MARGINFI_ACCOUNTS } from "../src/constants/marginfiAccounts";
-import { getPositionAccount, getSolendObligationAccount } from "../src/utils/accountUtils";
+import { getSolautoPositionAccount, getSolendObligationAccount } from "../src/utils/accountUtils";
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
@@ -71,7 +71,7 @@ describe("Solauto tests", async () => {
   const positionId = generateRandomU8();
 
   const solautoPosition = solautoManaged
-    ? await getPositionAccount(signerPublicKey, positionId)
+    ? await getSolautoPositionAccount(signerPublicKey, positionId)
     : undefined;
 
   const positionSupplyLiquidityTa = await getAssociatedTokenAddress(
