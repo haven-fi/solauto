@@ -1,4 +1,4 @@
-import { PublicKey } from "@solana/web3.js";
+import { Keypair, PublicKey } from "@solana/web3.js";
 import {
   LendingPlatform,
   ReferralStateAccount,
@@ -12,6 +12,11 @@ import {
 import { SOLAUTO_FEES_WALLET, WSOL_MINT } from "../constants/generalAccounts";
 import { getAssociatedTokenAddress } from "@solana/spl-token";
 import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
+import { MarginfiTokenAccounts } from "../types";
+import {
+  MARGINFI_GROUP,
+  findMarginfiAccountsByMint,
+} from "../constants/marginfiAccounts";
 
 interface Account<T> {
   pubkey: PublicKey;
@@ -129,9 +134,48 @@ export class SolautoInfo {
 }
 
 export interface SolautoMarginfiInfoArgs extends SolautoInfoArgs {
+  marginfiAccount?: PublicKey;
+  marginfiAccountKeypair?: Keypair;
+  marginfiAccountSeedIdx?: bigint;
 
+  supplyMarginfiTokenAccounts: MarginfiTokenAccounts;
+  debtMarginfiTokenAccounts: MarginfiTokenAccounts;
 }
 
 export class SolautoMarginfiInfo extends SolautoInfo {
+  public marginfiAccountKeypair?: Keypair;
+  public marginfiAccountSeedIdx?: bigint;
+  public marginfiGroup?: PublicKey;
 
+  public supplyMarginfiTokenAccounts?: MarginfiTokenAccounts;
+  public debtMarginfiTokenAccounts?: MarginfiTokenAccounts;
+
+  async initialize(args: SolautoMarginfiInfoArgs) {
+    this.marginfiAccountKeypair = args.marginfiAccountKeypair;
+    this.marginfiAccountSeedIdx = args.marginfiAccountSeedIdx;
+    this.marginfiGroup = new PublicKey(MARGINFI_GROUP);
+
+    if (
+      args.position.existingSolautoPosition?.data?.position.__option === "Some"
+    ) {
+      this.supplyMarginfiTokenAccounts = findMarginfiAccountsByMint(
+        args.position.existingSolautoPosition?.data?.position.value.protocolData
+          .supplyMint
+      )!;
+      this.debtMarginfiTokenAccounts = findMarginfiAccountsByMint(
+        args.position.existingSolautoPosition?.data?.position.value.protocolData
+          .debtMint
+      )!;
+    } else {
+      this.supplyMarginfiTokenAccounts = args.supplyMarginfiTokenAccounts;
+      this.debtMarginfiTokenAccounts = args.debtMarginfiTokenAccounts;
+    }
+
+    args.supplyLiquidityMint = new PublicKey(
+      this.supplyMarginfiTokenAccounts.mint
+    );
+    args.debtLiquidityMint = new PublicKey(this.debtMarginfiTokenAccounts.mint);
+
+    await super.initialize(args, LendingPlatform.Marginfi);
+  }
 }

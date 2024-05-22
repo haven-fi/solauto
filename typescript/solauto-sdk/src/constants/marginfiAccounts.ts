@@ -1,6 +1,7 @@
 import { MarginfiTokenAccounts } from "../types";
 
 export const MARGINFI_PROGRAM = "MFv2hWf31Z9kbCa1snEPYctwafyhdvnV7FZnsebVacA";
+export const MARGINFI_GROUP = "4qp6Fx6tnZkY5Wropq9wUYgtFxXKwE6viZxFHg3rdAG8";
 
 export const MARGINFI_ACCOUNTS: { [key: string]: MarginfiTokenAccounts } = {
   SOL: {
@@ -18,3 +19,13 @@ export const MARGINFI_ACCOUNTS: { [key: string]: MarginfiTokenAccounts } = {
     priceOracle: "Gnt27xtC473ZT2Mw5u8wZ68Z3gULkSTb5DuxJy7eJotD"
   }
 };
+
+export function findMarginfiAccountsByMint(mint: string): MarginfiTokenAccounts | undefined {
+  for (const key in MARGINFI_ACCOUNTS) {
+    const account = MARGINFI_ACCOUNTS[key];
+    if (account.mint === mint) {
+      return account;
+    }
+  }
+  return undefined;
+}

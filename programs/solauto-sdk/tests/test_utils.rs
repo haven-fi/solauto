@@ -434,14 +434,12 @@ pub struct MarginfiTestData<'a> {
     pub marginfi_account_keypair: Option<Keypair>,
     pub marginfi_account_seed_idx: Option<u64>,
     pub marginfi_group: Pubkey,
-    pub supply_bank: Pubkey,
 }
 
 impl<'a> MarginfiTestData<'a> {
     pub async fn new(args: &'a GeneralArgs) -> Self {
         let general = GeneralTestData::new(args, MARGINFI_PROGRAM).await;
         let marginfi_group = Keypair::new().pubkey();
-        let supply_bank = Keypair::new().pubkey();
 
         let marginfi_account_seed_idx = if args.position_id != 0 {
             let mut rng = thread_rng();
@@ -469,7 +467,6 @@ impl<'a> MarginfiTestData<'a> {
             marginfi_account_keypair,
             marginfi_account_seed_idx,
             marginfi_group,
-            supply_bank,
         }
     }
 
