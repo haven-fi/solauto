@@ -1,13 +1,15 @@
-// import { publicKey } from "@metaplex-foundation/umi";
 import { PublicKey } from "@solana/web3.js";
 import {
   LendingPlatform,
   ReferralStateAccount,
-  SOLAUTO_PROGRAM_ID,
   SolautoPosition,
 } from "../generated";
-import { getSolautoPositionAccount } from "../utils/accountUtils";
-import { SOLAUTO_FEES_WALLET } from "../constants/generalAccounts";
+import {
+  getReferralStateAccount,
+  getSolautoPositionAccount,
+  getTokenAccount,
+} from "../utils/accountUtils";
+import { SOLAUTO_FEES_WALLET, WSOL_MINT } from "../constants/generalAccounts";
 import { getAssociatedTokenAddress } from "@solana/spl-token";
 import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 
@@ -22,52 +24,106 @@ export interface SolautoInfoArgs {
     newPositionId?: number;
     existingSolautoPosition?: Account<SolautoPosition>;
   };
-  supplyMint?: PublicKey;
-  debtMint?: PublicKey;
+  supplyLiquidityMint?: PublicKey;
+  debtLiquidityMint?: PublicKey;
   referralState?: Account<ReferralStateAccount>;
   referralFeesDestMint?: PublicKey;
   referredByAuthority?: PublicKey;
 }
 
 export class SolautoInfo {
+  public signer: PublicKey;
   public positionId: number;
   public solautoPosition: PublicKey;
   public solautoPositionData?: SolautoPosition;
   public lendingPlatform: LendingPlatform;
 
-  public supplyMint: PublicKey;
+  public supplyLiquidityMint: PublicKey;
+  public positionSupplyLiquidityTa: PublicKey;
+  public signerSupplyLiquidityTa: PublicKey;
+
+  public debtLiquidityMint: PublicKey;
+  public positionDebtLiquidityTa: PublicKey;
+  public signerDebtLiquidityTa: PublicKey;
+
+  public signerReferralState: PublicKey;
+  public signerReferralFeesDestMint: PublicKey;
+  public signerReferralDestTa: PublicKey;
+
+  public referredByState?: PublicKey;
+  public referredByAuthority?: PublicKey;
+  public referredBySupplyTa?: PublicKey;
 
   public solautoFeesWallet: PublicKey;
   public solautoFeesSupplyTa: PublicKey;
 
   async initialize(args: SolautoInfoArgs, lendingPlatform: LendingPlatform) {
-    this.positionId = args.position.newPositionId;
-    this.supplyMint = args.supplyMint;
+    this.signer = args.signer;
+    this.positionId =
+      args.position.existingSolautoPosition?.data.positionId ??
+      args.position.newPositionId;
+    this.solautoPosition = await getSolautoPositionAccount(
+      args.signer,
+      this.positionId
+    );
+    this.solautoPositionData = args.position.existingSolautoPosition.data;
+    this.lendingPlatform = lendingPlatform;
 
-    if (args.position.existingSolautoPosition !== undefined) {
-      this.solautoPosition = args.position.existingSolautoPosition.pubkey;
-      this.solautoPositionData = args.position.existingSolautoPosition.data;
-      this.positionId = this.solautoPositionData.positionId;
+    this.supplyLiquidityMint =
+      this.solautoPositionData.position.__option === "Some"
+        ? toWeb3JsPublicKey(
+            this.solautoPositionData.position.value.protocolData.supplyMint
+          )
+        : args.supplyLiquidityMint;
+    this.positionSupplyLiquidityTa = await getTokenAccount(
+      this.solautoPosition,
+      this.supplyLiquidityMint
+    );
+    this.signerSupplyLiquidityTa = await getTokenAccount(
+      this.signer,
+      this.supplyLiquidityMint
+    );
 
-      if (this.solautoPositionData.position.__option === "Some") {
-        this.supplyMint = toWeb3JsPublicKey(
-          this.solautoPositionData.position.value.protocolData.supplyMint
-        );
-      }
-    } else {
-      this.solautoPosition = await getSolautoPositionAccount(
-        args.signer,
-        args.position.newPositionId
+    this.debtLiquidityMint =
+      this.solautoPositionData.position.__option === "Some"
+        ? toWeb3JsPublicKey(
+            this.solautoPositionData.position.value.protocolData.debtMint
+          )
+        : args.debtLiquidityMint;
+    this.positionDebtLiquidityTa = await getTokenAccount(
+      this.solautoPosition,
+      this.debtLiquidityMint
+    );
+    this.signerDebtLiquidityTa = await getTokenAccount(
+      this.signer,
+      this.debtLiquidityMint
+    );
+
+    this.positionDebtLiquidityTa = this.signerReferralState =
+      await getReferralStateAccount(this.signer);
+    this.signerReferralFeesDestMint = args.referralState?.data?.destFeesMint
+      ? toWeb3JsPublicKey(args.referralState?.data?.destFeesMint)
+      : args.referralFeesDestMint ?? new PublicKey(WSOL_MINT);
+    this.signerReferralDestTa = await getAssociatedTokenAddress(
+      this.signerReferralDestTa,
+      this.signerReferralState
+    );
+
+    this.referredByAuthority = args.referredByAuthority;
+    if (this.referredByAuthority !== undefined) {
+      this.referredByState = await getReferralStateAccount(
+        this.referredByAuthority
+      );
+      this.referredBySupplyTa = await getTokenAccount(
+        this.referredByState,
+        this.supplyLiquidityMint
       );
     }
 
-    this.lendingPlatform = lendingPlatform;
     this.solautoFeesWallet = new PublicKey(SOLAUTO_FEES_WALLET);
-    this.solautoFeesSupplyTa = await getAssociatedTokenAddress(
-      this.supplyMint,
+    this.solautoFeesSupplyTa = await getTokenAccount(
       this.solautoFeesWallet,
-      true,
-      toWeb3JsPublicKey(SOLAUTO_PROGRAM_ID)
+      this.supplyLiquidityMint
     );
   }
 }
