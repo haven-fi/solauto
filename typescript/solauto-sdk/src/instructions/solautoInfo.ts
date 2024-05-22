@@ -128,10 +128,10 @@ export class SolautoInfo {
   }
 }
 
-export interface SolautoMarginfiInfoArgs {
+export interface SolautoMarginfiInfoArgs extends SolautoInfoArgs {
 
 }
 
-export class SolautoMarginfiInfo {
+export class SolautoMarginfiInfo extends SolautoInfo {
 
 }
