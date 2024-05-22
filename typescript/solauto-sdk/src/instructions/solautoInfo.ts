@@ -127,3 +127,11 @@ export class SolautoInfo {
     );
   }
 }
+
+export interface SolautoMarginfiInfoArgs {
+
+}
+
+export class SolautoMarginfiInfo {
+
+}
