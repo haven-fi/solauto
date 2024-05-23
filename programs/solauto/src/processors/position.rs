@@ -51,7 +51,7 @@ pub fn process_close_position_instruction<'a>(accounts: &'a [AccountInfo<'a>]) -
     ))?
     .unwrap();
     let position_debt_liquidity_ta =
-        DeserializedAccount::<TokenAccount>::unpack(ctx.accounts.position_debt_liquidity_ta)?;
+        DeserializedAccount::<TokenAccount>::unpack(Some(ctx.accounts.position_debt_liquidity_ta))?;
 
     validation_utils::validate_instruction(ctx.accounts.signer, &solauto_position, true, true)?;
 

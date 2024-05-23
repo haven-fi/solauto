@@ -55,23 +55,21 @@ pub fn close_position<'a>(
     {
         solana_utils::spl_token_transfer(
             ctx.accounts.token_program,
-            ctx.accounts.position_debt_liquidity_ta.unwrap(),
+            ctx.accounts.position_debt_liquidity_ta,
             solauto_position.account_info,
-            ctx.accounts.signer_debt_liquidity_ta.unwrap(),
+            ctx.accounts.signer_debt_liquidity_ta,
             position_debt_liquidity_ta.as_ref().unwrap().data.amount,
             Some(solauto_position_seeds),
         )?;
     }
 
-    if ctx.accounts.position_debt_liquidity_ta.is_some() {
-        solana_utils::close_token_account(
-            ctx.accounts.token_program,
-            ctx.accounts.position_debt_liquidity_ta.unwrap(),
-            ctx.accounts.signer,
-            ctx.accounts.solauto_position,
-            Some(solauto_position_seeds),
-        )?;
-    }
+    solana_utils::close_token_account(
+        ctx.accounts.token_program,
+        ctx.accounts.position_debt_liquidity_ta,
+        ctx.accounts.signer,
+        ctx.accounts.solauto_position,
+        Some(solauto_position_seeds),
+    )?;
 
     solana_utils::close_pda(ctx.accounts.solauto_position, ctx.accounts.signer)
 }

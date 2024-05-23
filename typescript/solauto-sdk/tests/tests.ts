@@ -67,35 +67,9 @@ describe("Solauto tests", async () => {
   const reuseAccounts = false;
   const payForTransactions = false;
 
-  const solautoManaged = true;
-  const positionId = generateRandomU8();
-
-  const solautoPosition = solautoManaged
-    ? await getSolautoPositionAccount(signerPublicKey, positionId)
-    : undefined;
-
-  const positionSupplyLiquidityTa = await getAssociatedTokenAddress(
-    new PublicKey(MARGINFI_ACCOUNTS.SOL.mint),
-    solautoPosition,
-    solautoManaged
-  );
-  const positionDebtLiquidityTa = await getAssociatedTokenAddress(
-    new PublicKey(MARGINFI_ACCOUNTS.USDC.mint),
-    solautoPosition,
-    solautoManaged
-  );
+  const positionId = 0;
 
   it("should open position", async () => {
-    // const settingParams = {
-    //   repayFromBps: 9500,
-    //   repayToBps: 9000,
-    //   boostFromBps: 4000,
-    //   boostToBps: 5000,
-    // };
-    // const builder = marginfiOpenPosition(umi, {
-    //   signer,
-
-    // });
 
     // const transaction = await builder.buildWithLatestBlockhash(umi);
     // await simulateTransaction(transaction);

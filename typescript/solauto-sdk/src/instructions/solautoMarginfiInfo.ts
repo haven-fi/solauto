@@ -14,6 +14,7 @@ import {
   marginfiOpenPosition,
   marginfiProtocolInteraction,
   marginfiRebalance,
+  marginfiRefreshData,
 } from "../generated";
 import {
   getMarginfiAccountPDA,
@@ -131,6 +132,20 @@ export class SolautoMarginfiInfo extends SolautoInfo {
       signerDebtTa: signerDebtLiquidityTa,
       positionData: args.positionData,
       marginfiAccountSeedIdx: args.marginfiAccountSeedIdx,
+    });
+  }
+
+  marginfiRefreshData(): TransactionBuilder {
+    return marginfiRefreshData(this.umi, {
+      signer: this.signer,
+      marginfiProgram: publicKey(MARGINFI_PROGRAM),
+      marginfiGroup: publicKey(this.marginfiGroup),
+      marginfiAccount: publicKey(this.marginfiAccount),
+      supplyBank: publicKey(this.supplyMarginfiTokenAccounts.bank),
+      supplyPriceOracle: publicKey(this.supplyMarginfiTokenAccounts.priceOracle),
+      debtBank: publicKey(this.debtMarginfiTokenAccounts.bank),
+      debtPriceOracle: publicKey(this.debtMarginfiTokenAccounts.priceOracle),
+      solautoPosition: publicKey(this.solautoPosition)
     });
   }
 

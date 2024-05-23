@@ -3,14 +3,19 @@ import {
   Signer,
   TransactionBuilder,
   Umi,
+  isOption,
   publicKey,
 } from "@metaplex-foundation/umi";
 import {
   LendingPlatform,
   ReferralStateAccount,
   SolautoPosition,
+  UpdatePositionDataArgs,
+  cancelDCA,
   claimReferralFees,
+  closePosition,
   createSolautoProgram,
+  updatePosition,
   updateReferralStates,
 } from "../generated";
 import {
@@ -186,5 +191,59 @@ export class SolautoInfo {
       referralFeesDestMint: publicKey(this.authorityReferralFeesDestMint),
       feesDestinationTa: publicKey(destinationTa),
     });
+  }
+
+  updatePosition(args: UpdatePositionDataArgs): TransactionBuilder {
+    let debtMint = undefined;
+    let positionDebtTa = undefined;
+    let signerDebtTa = undefined;
+    if (isOption(args.activeDca) && args.activeDca.__option === "Some") {
+      debtMint = publicKey(this.debtLiquidityMint);
+      positionDebtTa = publicKey(this.positionDebtLiquidityTa);
+      signerDebtTa = publicKey(this.signerDebtLiquidityTa);
+    }
+
+    return updatePosition(this.umi, {
+      signer: this.signer,
+      solautoPosition: publicKey(this.solautoPosition),
+      debtMint,
+      positionDebtTa,
+      signerDebtTa,
+      updatePositionData: args
+    });
+  }
+
+  closePosition(): TransactionBuilder {
+    return closePosition(this.umi, {
+      signer: this.signer,
+      solautoPosition: publicKey(this.solautoPosition),
+      signerSupplyLiquidityTa: publicKey(this.signerSupplyLiquidityTa),
+      positionSupplyLiquidityTa: publicKey(this.positionSupplyLiquidityTa),
+      positionDebtLiquidityTa: publicKey(this.positionDebtLiquidityTa),
+      signerDebtLiquidityTa: publicKey(this.signerDebtLiquidityTa)
+    });
+  }
+
+  cancelDCA(): TransactionBuilder {
+    let debtMint = undefined;
+    let positionDebtTa = undefined;
+    let signerDebtTa = undefined;
+
+    if (this.solautoPositionData?.position?.__option === "Some") {
+      const positionData = this.solautoPositionData?.position?.value;
+      if (positionData.activeDca.__option === "Some" && positionData.activeDca.value.addToPos.__option === "Some") {
+        debtMint = publicKey(this.debtLiquidityMint);
+        positionDebtTa = publicKey(this.positionDebtLiquidityTa);
+        signerDebtTa = publicKey(this.signerDebtLiquidityTa);
+      } 
+    }
+
+    return cancelDCA(this.umi, {
+      signer: this.signer,
+      solautoPosition: publicKey(this.solautoPosition),
+      debtMint,
+      positionDebtTa,
+      signerDebtTa
+    })
   }
 }

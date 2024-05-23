@@ -106,8 +106,8 @@ pub enum Instruction {
     #[account(mut, name = "signer_supply_liquidity_ta")]
     #[account(mut, name = "position_supply_liquidity_ta")]
     #[account(mut, optional, name = "position_supply_collateral_ta")]
-    #[account(mut, optional, name = "position_debt_liquidity_ta")]
-    #[account(mut, optional, name = "signer_debt_liquidity_ta")]
+    #[account(mut, name = "position_debt_liquidity_ta")]
+    #[account(mut, name = "signer_debt_liquidity_ta")]
     ClosePosition,
 
     /// Cancel an active DCA on a Solauto position
