@@ -784,7 +784,7 @@
           "isSigner": false
         },
         {
-          "name": "authoritySupplyTa",
+          "name": "signerSupplyTa",
           "isMut": true,
           "isSigner": false,
           "isOptional": true
@@ -812,7 +812,7 @@
           "isSigner": false
         },
         {
-          "name": "authorityDebtTa",
+          "name": "signerDebtTa",
           "isMut": true,
           "isSigner": false,
           "isOptional": true
@@ -914,7 +914,7 @@
           "isOptional": true
         },
         {
-          "name": "authoritySupplyLiquidityTa",
+          "name": "signerSupplyLiquidityTa",
           "isMut": true,
           "isSigner": false,
           "isOptional": true
@@ -932,7 +932,7 @@
           "isOptional": true
         },
         {
-          "name": "authoritySupplyCollateralTa",
+          "name": "signerSupplyCollateralTa",
           "isMut": true,
           "isSigner": false,
           "isOptional": true
@@ -956,7 +956,7 @@
           "isOptional": true
         },
         {
-          "name": "authorityDebtLiquidityTa",
+          "name": "signerDebtLiquidityTa",
           "isMut": true,
           "isSigner": false,
           "isOptional": true

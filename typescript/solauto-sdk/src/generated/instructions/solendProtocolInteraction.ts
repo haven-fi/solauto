@@ -47,14 +47,14 @@ export type SolendProtocolInteractionInstructionAccounts = {
   supplyReserve: PublicKey | Pda;
   supplyReservePythPriceOracle?: PublicKey | Pda;
   supplyReserveSwitchboardOracle?: PublicKey | Pda;
-  authoritySupplyLiquidityTa?: PublicKey | Pda;
+  signerSupplyLiquidityTa?: PublicKey | Pda;
   reserveSupplyLiquidityTa?: PublicKey | Pda;
   supplyCollateralMint?: PublicKey | Pda;
-  authoritySupplyCollateralTa?: PublicKey | Pda;
+  signerSupplyCollateralTa?: PublicKey | Pda;
   reserveSupplyCollateralTa?: PublicKey | Pda;
   debtReserve?: PublicKey | Pda;
   debtReserveFeeReceiverTa?: PublicKey | Pda;
-  authorityDebtLiquidityTa?: PublicKey | Pda;
+  signerDebtLiquidityTa?: PublicKey | Pda;
   reserveDebtLiquidityTa?: PublicKey | Pda;
 };
 
@@ -170,10 +170,10 @@ export function solendProtocolInteraction(
       isWritable: false as boolean,
       value: input.supplyReserveSwitchboardOracle ?? null,
     },
-    authoritySupplyLiquidityTa: {
+    signerSupplyLiquidityTa: {
       index: 13,
       isWritable: true as boolean,
-      value: input.authoritySupplyLiquidityTa ?? null,
+      value: input.signerSupplyLiquidityTa ?? null,
     },
     reserveSupplyLiquidityTa: {
       index: 14,
@@ -185,10 +185,10 @@ export function solendProtocolInteraction(
       isWritable: false as boolean,
       value: input.supplyCollateralMint ?? null,
     },
-    authoritySupplyCollateralTa: {
+    signerSupplyCollateralTa: {
       index: 16,
       isWritable: true as boolean,
-      value: input.authoritySupplyCollateralTa ?? null,
+      value: input.signerSupplyCollateralTa ?? null,
     },
     reserveSupplyCollateralTa: {
       index: 17,
@@ -205,10 +205,10 @@ export function solendProtocolInteraction(
       isWritable: true as boolean,
       value: input.debtReserveFeeReceiverTa ?? null,
     },
-    authorityDebtLiquidityTa: {
+    signerDebtLiquidityTa: {
       index: 20,
       isWritable: true as boolean,
-      value: input.authorityDebtLiquidityTa ?? null,
+      value: input.signerDebtLiquidityTa ?? null,
     },
     reserveDebtLiquidityTa: {
       index: 21,

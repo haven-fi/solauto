@@ -28,19 +28,19 @@ pub fn marginfi_interaction<'a, 'b>(
         ctx.accounts.marginfi_account,
         ctx.accounts.supply_bank,
         ctx.accounts.supply_price_oracle,
-        ctx.accounts.authority_supply_ta,
+        ctx.accounts.signer_supply_ta,
         ctx.accounts.vault_supply_ta,
         ctx.accounts.supply_vault_authority,
         ctx.accounts.debt_bank,
         ctx.accounts.debt_price_oracle,
-        ctx.accounts.authority_debt_ta,
+        ctx.accounts.signer_debt_ta,
         ctx.accounts.vault_debt_ta,
         ctx.accounts.debt_vault_authority,
     )?;
     let solauto_manager_accounts = SolautoManagerAccounts::from(
-        ctx.accounts.authority_supply_ta,
+        ctx.accounts.signer_supply_ta,
         ctx.accounts.vault_supply_ta,
-        ctx.accounts.authority_debt_ta,
+        ctx.accounts.signer_debt_ta,
         ctx.accounts.vault_debt_ta,
         None,
     )?;
@@ -65,31 +65,31 @@ pub fn solend_interaction<'a, 'b>(
         ctx.accounts.supply_reserve,
         ctx.accounts.supply_reserve_pyth_price_oracle,
         ctx.accounts.supply_reserve_switchboard_oracle,
-        ctx.accounts.authority_supply_liquidity_ta,
+        ctx.accounts.signer_supply_liquidity_ta,
         ctx.accounts.reserve_supply_liquidity_ta,
         ctx.accounts.supply_collateral_mint,
-        ctx.accounts.authority_supply_collateral_ta,
+        ctx.accounts.signer_supply_collateral_ta,
         ctx.accounts.reserve_supply_collateral_ta,
         ctx.accounts.debt_reserve,
         ctx.accounts.debt_reserve_fee_receiver_ta,
-        ctx.accounts.authority_debt_liquidity_ta,
+        ctx.accounts.signer_debt_liquidity_ta,
         ctx.accounts.reserve_debt_liquidity_ta,
     )?;
     let solauto_manager_accounts = SolautoManagerAccounts::from(
-        ctx.accounts.authority_supply_liquidity_ta,
+        ctx.accounts.signer_supply_liquidity_ta,
         ctx.accounts.reserve_supply_liquidity_ta,
-        ctx.accounts.authority_debt_liquidity_ta,
+        ctx.accounts.signer_debt_liquidity_ta,
         ctx.accounts.reserve_debt_liquidity_ta,
         None,
     )?;
 
-    if ctx.accounts.authority_supply_collateral_ta.is_some() {
+    if ctx.accounts.signer_supply_collateral_ta.is_some() {
         solana_utils::init_ata_if_needed(
             ctx.accounts.token_program,
             ctx.accounts.system_program,
             ctx.accounts.signer,
             ctx.accounts.signer,
-            ctx.accounts.authority_supply_collateral_ta.unwrap(),
+            ctx.accounts.signer_supply_collateral_ta.unwrap(),
             ctx.accounts.supply_collateral_mint.unwrap(),
         )?;
     }

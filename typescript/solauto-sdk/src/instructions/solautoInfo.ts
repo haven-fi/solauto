@@ -1,8 +1,11 @@
-import { PublicKey } from "@solana/web3.js";
+import { Connection, PublicKey, clusterApiUrl } from "@solana/web3.js";
+import { Context, Umi, publicKey } from "@metaplex-foundation/umi";
 import {
   LendingPlatform,
   ReferralStateAccount,
   SolautoPosition,
+  createSolautoProgram,
+  updateReferralStates,
 } from "../generated";
 import {
   getReferralStateAccount,
@@ -12,6 +15,7 @@ import {
 import { SOLAUTO_FEES_WALLET, WSOL_MINT } from "../constants/generalAccounts";
 import { getAssociatedTokenAddress } from "@solana/spl-token";
 import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
+import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
 
 interface Account<T> {
   pubkey: PublicKey;
@@ -32,6 +36,8 @@ export interface SolautoInfoArgs {
 }
 
 export class SolautoInfo {
+  public umi: Umi;
+
   public signer: PublicKey;
   public positionId: number;
   public solautoPosition: PublicKey;
@@ -58,6 +64,15 @@ export class SolautoInfo {
   public solautoFeesSupplyTa: PublicKey;
 
   async initialize(args: SolautoInfoArgs, lendingPlatform: LendingPlatform) {
+    this.umi = createUmi(
+      new Connection(clusterApiUrl("mainnet-beta"), "confirmed")
+    );
+    this.umi = this.umi.use({
+      install(umi) {
+        umi.programs.add(createSolautoProgram(), false);
+      },
+    });
+
     this.signer = args.signer;
     this.positionId =
       args.position.existingSolautoPosition?.data.positionId ??
@@ -125,5 +140,16 @@ export class SolautoInfo {
       this.solautoFeesWallet,
       this.supplyLiquidityMint
     );
+  }
+
+  updateReferralStates() {
+    const builder = updateReferralStates(this.umi, {
+      signer: publicKey(this.signer),
+      signerReferralState: publicKey(this.signerReferralState),
+      referralFeesDestMint: publicKey(this.signerReferralFeesDestMint),
+      referredByState: publicKey(this.referredByState),
+      referredByAuthority: publicKey(this.referredByAuthority)
+    });
+
   }
 }
