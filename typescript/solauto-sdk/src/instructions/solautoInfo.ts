@@ -5,6 +5,7 @@ import {
   Umi,
   isOption,
   publicKey,
+  PublicKey as UmiPublicKey
 } from "@metaplex-foundation/umi";
 import {
   LendingPlatform,
@@ -90,20 +91,20 @@ export class SolautoInfo {
     this.signer = args.signer;
     this.positionId =
       args.position.existingSolautoPosition?.data.positionId ??
-      args.position.newPositionId;
+      args.position.newPositionId!;
     this.solautoPosition = await getSolautoPositionAccount(
       toWeb3JsPublicKey(args.signer.publicKey),
       this.positionId
     );
-    this.solautoPositionData = args.position.existingSolautoPosition.data;
+    this.solautoPositionData = args.position.existingSolautoPosition?.data;
     this.lendingPlatform = lendingPlatform;
 
     this.supplyLiquidityMint =
-      this.solautoPositionData.position.__option === "Some"
+      this.solautoPositionData?.position.__option === "Some"
         ? toWeb3JsPublicKey(
             this.solautoPositionData.position.value.protocolData.supplyMint
           )
-        : args.supplyLiquidityMint;
+        : args.supplyLiquidityMint!;
     this.positionSupplyLiquidityTa = getTokenAccount(
       this.solautoPosition,
       this.supplyLiquidityMint
@@ -114,11 +115,11 @@ export class SolautoInfo {
     );
 
     this.debtLiquidityMint =
-      this.solautoPositionData.position.__option === "Some"
+      this.solautoPositionData?.position.__option === "Some"
         ? toWeb3JsPublicKey(
             this.solautoPositionData.position.value.protocolData.debtMint
           )
-        : args.debtLiquidityMint;
+        : args.debtLiquidityMint!;
     this.positionDebtLiquidityTa = getTokenAccount(
       this.solautoPosition,
       this.debtLiquidityMint
@@ -138,7 +139,7 @@ export class SolautoInfo {
       ? args.referralFeesDestMint
       : args.referralState?.data?.destFeesMint
       ? toWeb3JsPublicKey(args.referralState?.data?.destFeesMint)
-      : new PublicKey(WSOL_MINT);
+      : WSOL_MINT;
     this.authorityReferralDestTa = await getAssociatedTokenAddress(
       this.authorityReferralFeesDestMint,
       this.authorityReferralState
@@ -149,7 +150,7 @@ export class SolautoInfo {
       args.referralState?.data.referredByState.__option === "Some"
         ? toWeb3JsPublicKey(args.referralState?.data.referredByState.value)
         : args.referredByAuthority
-        ? await getReferralStateAccount(this.referredByAuthority)
+        ? await getReferralStateAccount(this.referredByAuthority!)
         : undefined;
     this.referredByAuthority = args.referredByAuthority;
     if (this.referredByState !== undefined) {
@@ -171,17 +172,23 @@ export class SolautoInfo {
       signer: this.signer,
       signerReferralState: publicKey(this.authorityReferralState),
       referralFeesDestMint: publicKey(this.authorityReferralFeesDestMint),
-      referredByState: publicKey(this.referredByState),
-      referredByAuthority: publicKey(this.referredByAuthority),
+      referredByState: this.referredByState
+        ? publicKey(this.referredByState)
+        : undefined,
+      referredByAuthority: this.referredByAuthority
+        ? publicKey(this.referredByAuthority)
+        : undefined,
     });
   }
 
   claimReferralFees(): TransactionBuilder {
-    const destinationTa =
-      this.authorityReferralFeesDestMint !== new PublicKey(WSOL_MINT)
-        ? getTokenAccount(
-            toWeb3JsPublicKey(this.signer.publicKey),
-            this.authorityReferralFeesDestMint
+    const feesDestinationTa =
+      this.authorityReferralFeesDestMint !== WSOL_MINT
+        ? publicKey(
+            getTokenAccount(
+              toWeb3JsPublicKey(this.signer.publicKey),
+              this.authorityReferralFeesDestMint
+            )
           )
         : undefined;
     return claimReferralFees(this.umi, {
@@ -189,14 +196,14 @@ export class SolautoInfo {
       referralState: publicKey(this.authorityReferralState),
       referralFeesDestTa: publicKey(this.authorityReferralDestTa),
       referralFeesDestMint: publicKey(this.authorityReferralFeesDestMint),
-      feesDestinationTa: publicKey(destinationTa),
+      feesDestinationTa,
     });
   }
 
   updatePosition(args: UpdatePositionDataArgs): TransactionBuilder {
-    let debtMint = undefined;
-    let positionDebtTa = undefined;
-    let signerDebtTa = undefined;
+    let debtMint: UmiPublicKey | undefined = undefined;
+    let positionDebtTa: UmiPublicKey | undefined = undefined;
+    let signerDebtTa: UmiPublicKey | undefined = undefined;
     if (isOption(args.activeDca) && args.activeDca.__option === "Some") {
       debtMint = publicKey(this.debtLiquidityMint);
       positionDebtTa = publicKey(this.positionDebtLiquidityTa);
@@ -209,7 +216,7 @@ export class SolautoInfo {
       debtMint,
       positionDebtTa,
       signerDebtTa,
-      updatePositionData: args
+      updatePositionData: args,
     });
   }
 
@@ -220,22 +227,25 @@ export class SolautoInfo {
       signerSupplyLiquidityTa: publicKey(this.signerSupplyLiquidityTa),
       positionSupplyLiquidityTa: publicKey(this.positionSupplyLiquidityTa),
       positionDebtLiquidityTa: publicKey(this.positionDebtLiquidityTa),
-      signerDebtLiquidityTa: publicKey(this.signerDebtLiquidityTa)
+      signerDebtLiquidityTa: publicKey(this.signerDebtLiquidityTa),
     });
   }
 
   cancelDCA(): TransactionBuilder {
-    let debtMint = undefined;
-    let positionDebtTa = undefined;
-    let signerDebtTa = undefined;
+    let debtMint: UmiPublicKey | undefined = undefined;
+    let positionDebtTa: UmiPublicKey | undefined = undefined;
+    let signerDebtTa: UmiPublicKey | undefined = undefined;
 
     if (this.solautoPositionData?.position?.__option === "Some") {
       const positionData = this.solautoPositionData?.position?.value;
-      if (positionData.activeDca.__option === "Some" && positionData.activeDca.value.addToPos.__option === "Some") {
+      if (
+        positionData.activeDca.__option === "Some" &&
+        positionData.activeDca.value.addToPos.__option === "Some"
+      ) {
         debtMint = publicKey(this.debtLiquidityMint);
         positionDebtTa = publicKey(this.positionDebtLiquidityTa);
         signerDebtTa = publicKey(this.signerDebtLiquidityTa);
-      } 
+      }
     }
 
     return cancelDCA(this.umi, {
@@ -243,7 +253,7 @@ export class SolautoInfo {
       solautoPosition: publicKey(this.solautoPosition),
       debtMint,
       positionDebtTa,
-      signerDebtTa
-    })
+      signerDebtTa,
+    });
   }
 }

@@ -16,7 +16,7 @@ import {
   marginfiOpenPosition,
   solendOpenPosition,
 } from "../src/generated";
-import { generateRandomU8 } from "../src/utils/generalUtils";
+import { generateRandomU64, generateRandomU8 } from "../src/utils/generalUtils";
 import { getSecretKey } from "./testUtils";
 import {
   Connection,
@@ -27,13 +27,21 @@ import {
   clusterApiUrl,
 } from "@solana/web3.js";
 import { MARGINFI_ACCOUNTS } from "../src/constants/marginfiAccounts";
-import { getSolautoPositionAccount, getSolendObligationAccount } from "../src/utils/accountUtils";
+import {
+  getSolautoPositionAccount,
+  getSolendObligationAccount,
+} from "../src/utils/accountUtils";
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
   getAssociatedTokenAddress,
 } from "@solana/spl-token";
 import { assert, expect } from "chai";
+import {
+  SolautoMarginfiInfo,
+  newMarginfiSolautoManagedPositionArgs,
+} from "../src/instructions/solautoMarginfiInfo";
+import { WSOL_MINT } from "../src/constants/generalAccounts";
 
 const connection = new Connection(clusterApiUrl("mainnet-beta"), "confirmed");
 let umi = createUmi(connection);
@@ -64,19 +72,41 @@ export const solauto = (): UmiPlugin => ({
 describe("Solauto tests", async () => {
   umi = umi.use(solauto()).use(signerIdentity(signer));
 
-  const reuseAccounts = false;
   const payForTransactions = false;
-
   const positionId = 0;
 
-  it("should open position", async () => {
+  it("e2e", async () => {
+    const solautoMarginfiInfo = new SolautoMarginfiInfo();
+    await solautoMarginfiInfo.initialize(
+      newMarginfiSolautoManagedPositionArgs(
+        signer,
+        positionId,
+        WSOL_MINT,
+        new PublicKey(MARGINFI_ACCOUNTS.USDC.mint),
+        new PublicKey("He4ka5Q3N1UvZikZvykdi47xyk5PoVP2tcQL5sVp31Sz")
+      )
+    );
 
-    // const transaction = await builder.buildWithLatestBlockhash(umi);
-    // await simulateTransaction(transaction);
+    const builder = solautoMarginfiInfo.marginfiOpenPosition(
+      {
+        boostToBps: 5000,
+        boostGap: 500,
+        repayToBps: 8500,
+        repayGap: 500,
+        automation: {
+          __option: "None",
+        },
+        targetBoostToBps: {
+          __option: "None",
+        },
+      },
+      undefined
+    );
 
-    // if (payForTransactions) {
-    //   await builder.sendAndConfirm(umi);
-    // }
-
+    const transaction = await builder.buildWithLatestBlockhash(umi);
+    await simulateTransaction(transaction);
+    if (payForTransactions) {
+      await builder.sendAndConfirm(umi);
+    }
   });
 });

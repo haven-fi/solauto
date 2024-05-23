@@ -1,4 +1,6 @@
-// TODO
-export const SOLAUTO_FEES_WALLET = "AprYCPiVeKMCgjQ2ZufwChMzvQ5kFjJo2ekTLSkXsQDm";
+import { PublicKey } from "@solana/web3.js";
 
-export const WSOL_MINT = "So11111111111111111111111111111111111111112";
+// TODO
+export const SOLAUTO_FEES_WALLET = new PublicKey("AprYCPiVeKMCgjQ2ZufwChMzvQ5kFjJo2ekTLSkXsQDm");
+
+export const WSOL_MINT = new PublicKey("So11111111111111111111111111111111111111112");
