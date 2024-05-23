@@ -5,14 +5,14 @@ use crate::{
     constants::WSOL_MINT,
     types::{
         instruction::accounts::{ClaimReferralFeesAccounts, Context, ConvertReferralFeesAccounts},
-        shared::{DeserializedAccount, ReferralStateAccount},
+        shared::{DeserializedAccount, ReferralState},
     },
     utils::solana_utils,
 };
 
 pub fn convert_referral_fees(
     ctx: Context<ConvertReferralFeesAccounts>,
-    referral_state: DeserializedAccount<ReferralStateAccount>,
+    referral_state: DeserializedAccount<ReferralState>,
 ) -> ProgramResult {
     let balance = TokenAccount::unpack(&ctx.accounts.referral_fees_ta.data.borrow())?.amount;
 
@@ -30,7 +30,7 @@ pub fn convert_referral_fees(
 
 pub fn claim_referral_fees(
     ctx: Context<ClaimReferralFeesAccounts>,
-    referral_state: DeserializedAccount<ReferralStateAccount>,
+    referral_state: DeserializedAccount<ReferralState>,
 ) -> ProgramResult {
     let referral_state_seeds = &referral_state.data.seeds_with_bump();
 

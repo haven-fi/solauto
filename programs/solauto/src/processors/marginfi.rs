@@ -14,7 +14,7 @@ use crate::{
             },
             MarginfiOpenPositionData, RebalanceData, SolautoAction, SolautoStandardAccounts,
         },
-        shared::{DeserializedAccount, LendingPlatform, ReferralStateAccount, SolautoPosition},
+        shared::{DeserializedAccount, LendingPlatform, ReferralState, SolautoPosition},
     },
     utils::*,
 };
@@ -79,7 +79,7 @@ pub fn process_marginfi_open_position_instruction<'a>(
         solauto_fees_supply_ta: DeserializedAccount::<TokenAccount>::unpack(Some(
             ctx.accounts.solauto_fees_supply_ta,
         ))?,
-        authority_referral_state: DeserializedAccount::<ReferralStateAccount>::deserialize(Some(
+        authority_referral_state: DeserializedAccount::<ReferralState>::deserialize(Some(
             ctx.accounts.signer_referral_state,
         ))?,
         referred_by_state: ctx.accounts.referred_by_state,
@@ -186,7 +186,7 @@ pub fn process_marginfi_rebalance<'a>(
         solauto_fees_supply_ta: DeserializedAccount::<TokenAccount>::unpack(Some(
             ctx.accounts.solauto_fees_supply_ta,
         ))?,
-        authority_referral_state: DeserializedAccount::<ReferralStateAccount>::deserialize(Some(
+        authority_referral_state: DeserializedAccount::<ReferralState>::deserialize(Some(
             ctx.accounts.authority_referral_state,
         ))?,
         referred_by_state: None,

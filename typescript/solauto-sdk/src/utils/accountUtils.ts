@@ -47,16 +47,16 @@ export async function getSolautoPositionAccount(
   return positionAccount;
 }
 
-export async function getReferralStateAccount(authority: PublicKey) {
+export async function getReferralState(authority: PublicKey) {
   const str = "referral_state";
   const strBuffer = Buffer.from(str, "utf-8");
 
-  const [referralStateAccount, _] = await PublicKey.findProgramAddress(
+  const [ReferralState, _] = await PublicKey.findProgramAddress(
     [strBuffer, authority.toBuffer()],
     new PublicKey(SOLAUTO_PROGRAM_ID)
   );
 
-  return referralStateAccount;
+  return ReferralState;
 }
 
 export async function getMarginfiAccountPDA(

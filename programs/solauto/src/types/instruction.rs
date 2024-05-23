@@ -314,7 +314,7 @@ pub struct SolautoStandardAccounts<'a> {
     pub ixs_sysvar: Option<&'a AccountInfo<'a>>,
     pub solauto_position: DeserializedAccount<'a, SolautoPosition>,
     pub solauto_fees_supply_ta: Option<DeserializedAccount<'a, TokenAccount>>,
-    pub authority_referral_state: Option<DeserializedAccount<'a, ReferralStateAccount>>,
+    pub authority_referral_state: Option<DeserializedAccount<'a, ReferralState>>,
     pub referred_by_state: Option<&'a AccountInfo<'a>>,
     pub referred_by_supply_ta: Option<DeserializedAccount<'a, TokenAccount>>,
 }

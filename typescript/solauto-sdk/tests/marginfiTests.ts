@@ -12,7 +12,7 @@ import {
 } from "@metaplex-foundation/umi-web3js-adapters";
 import { createSolautoProgram } from "../src/generated";
 import { getSecretKey } from "./testUtils";
-import { Connection, Keypair, PublicKey, clusterApiUrl } from "@solana/web3.js";
+import { Connection, PublicKey, clusterApiUrl } from "@solana/web3.js";
 import { MARGINFI_ACCOUNTS } from "../src/constants/marginfiAccounts";
 import { assert } from "chai";
 import {
@@ -65,25 +65,21 @@ describe("Solauto tests", async () => {
       )
     );
 
-    const builder = transactionBuilder()
-      .add(solautoMarginfiInfo.updateReferralStates())
-      .add(
-        solautoMarginfiInfo.marginfiOpenPosition(
-          {
-            boostToBps: 5000,
-            boostGap: 500,
-            repayToBps: 8500,
-            repayGap: 500,
-            automation: {
-              __option: "None",
-            },
-            targetBoostToBps: {
-              __option: "None",
-            },
-          },
-          undefined
-        )
-      );
+    const builder = solautoMarginfiInfo.marginfiOpenPosition(
+      {
+        boostToBps: 5000,
+        boostGap: 500,
+        repayToBps: 8500,
+        repayGap: 500,
+        automation: {
+          __option: "None",
+        },
+        targetBoostToBps: {
+          __option: "None",
+        },
+      },
+      undefined
+    );
 
     // TODO
 

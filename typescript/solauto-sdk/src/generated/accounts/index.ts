@@ -6,5 +6,5 @@
  * @see https://github.com/metaplex-foundation/kinobi
  */
 
-export * from './referralStateAccount';
+export * from './referralState';
 export * from './solautoPosition';

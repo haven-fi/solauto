@@ -21,7 +21,7 @@ use crate::{
             },
             UpdateReferralStatesArgs,
         },
-        shared::{DeserializedAccount, ReferralStateAccount, SolautoError},
+        shared::{DeserializedAccount, ReferralState, SolautoError},
     },
     utils::{ix_utils, solauto_utils, validation_utils},
 };
@@ -72,10 +72,9 @@ pub fn process_update_referral_states<'a>(
 
 pub fn process_convert_referral_fees<'a>(accounts: &'a [AccountInfo<'a>]) -> ProgramResult {
     let ctx = ConvertReferralFeesAccounts::context(accounts)?;
-    let referral_state = DeserializedAccount::<ReferralStateAccount>::deserialize(Some(
-        ctx.accounts.referral_state,
-    ))?
-    .unwrap();
+    let referral_state =
+        DeserializedAccount::<ReferralState>::deserialize(Some(ctx.accounts.referral_state))?
+            .unwrap();
 
     if !ctx.accounts.solauto_manager.is_signer {
         return Err(ProgramError::MissingRequiredSignature.into());
@@ -134,7 +133,7 @@ pub fn process_claim_referral_fees<'a>(accounts: &'a [AccountInfo<'a>]) -> Progr
     }
 
     let (expected_referral_state_address, _) = Pubkey::find_program_address(
-        ReferralStateAccount::seeds(ctx.accounts.signer.key).as_slice(),
+        ReferralState::seeds(ctx.accounts.signer.key).as_slice(),
         &crate::ID,
     );
     if ctx.accounts.referral_state.key != &expected_referral_state_address {
@@ -142,10 +141,9 @@ pub fn process_claim_referral_fees<'a>(accounts: &'a [AccountInfo<'a>]) -> Progr
         return Err(SolautoError::IncorrectAccounts.into());
     }
 
-    let referral_state = DeserializedAccount::<ReferralStateAccount>::deserialize(Some(
-        ctx.accounts.referral_state,
-    ))?
-    .unwrap();
+    let referral_state =
+        DeserializedAccount::<ReferralState>::deserialize(Some(ctx.accounts.referral_state))?
+            .unwrap();
 
     if ctx.accounts.referral_fees_dest_ta.key
         != &get_associated_token_address(

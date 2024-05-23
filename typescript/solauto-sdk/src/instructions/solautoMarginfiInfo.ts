@@ -27,6 +27,7 @@ import {
   TransactionBuilder,
   publicKey,
   PublicKey as UmiPublicKey,
+  transactionBuilder,
 } from "@metaplex-foundation/umi";
 import { generateRandomU64 } from "../utils/generalUtils";
 
@@ -116,11 +117,21 @@ export class SolautoMarginfiInfo extends SolautoInfo {
     settingParams: SolautoSettingsParameters,
     activeDca?: DCASettings
   ): TransactionBuilder {
+    if (this.authorityReferralStateData !== undefined) {
+      return this.marginfiOpenPositionIx(settingParams, activeDca);
+    } else {
+      return transactionBuilder()
+        .add(this.updateReferralStatesIx())
+        .add(this.marginfiOpenPositionIx(settingParams, activeDca));
+    }
+  }
+
+  private marginfiOpenPositionIx(
+    settingParams: SolautoSettingsParameters,
+    activeDca?: DCASettings
+  ): TransactionBuilder {
     let signerDebtLiquidityTa: UmiPublicKey | undefined = undefined;
-    if (
-      activeDca &&
-      activeDca.addToPos.__option === "Some"
-    ) {
+    if (activeDca && activeDca.addToPos.__option === "Some") {
       signerDebtLiquidityTa = publicKey(this.signerDebtLiquidityTa);
     }
 
@@ -156,7 +167,7 @@ export class SolautoMarginfiInfo extends SolautoInfo {
     });
   }
 
-  marginfiRefreshData(): TransactionBuilder {
+  marginfiRefreshDataIx(): TransactionBuilder {
     return marginfiRefreshData(this.umi, {
       signer: this.signer,
       marginfiProgram: publicKey(MARGINFI_PROGRAM),
@@ -172,7 +183,7 @@ export class SolautoMarginfiInfo extends SolautoInfo {
     });
   }
 
-  marginfiProtocolInteraction(args: SolautoActionArgs): TransactionBuilder {
+  marginfiProtocolInteractionIx(args: SolautoActionArgs): TransactionBuilder {
     let signerSupplyTa: UmiPublicKey | undefined = undefined;
     let vaultSupplyTa: UmiPublicKey | undefined = undefined;
     let supplyVaultAuthority: UmiPublicKey | undefined = undefined;
@@ -219,7 +230,7 @@ export class SolautoMarginfiInfo extends SolautoInfo {
     });
   }
 
-  marginfiRebalance(
+  marginfiRebalanceIx(
     intermediaryTa: PublicKey,
     args: RebalanceDataArgs
   ): TransactionBuilder {
@@ -229,7 +240,9 @@ export class SolautoMarginfiInfo extends SolautoInfo {
       ixsSysvar: publicKey(SYSVAR_INSTRUCTIONS_PUBKEY),
       solautoFeesSupplyTa: publicKey(this.solautoFeesSupplyTa),
       authorityReferralState: publicKey(this.authorityReferralState),
-      referredBySupplyTa: this.referredBySupplyTa ? publicKey(this.referredBySupplyTa) : undefined,
+      referredBySupplyTa: this.referredBySupplyTa
+        ? publicKey(this.referredBySupplyTa)
+        : undefined,
       solautoPosition: publicKey(this.solautoPosition),
       marginfiGroup: publicKey(this.marginfiGroup),
       marginfiAccount: publicKey(this.marginfiAccount),

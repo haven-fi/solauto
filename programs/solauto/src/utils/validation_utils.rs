@@ -13,8 +13,8 @@ use crate::{
     types::{
         instruction::SolautoStandardAccounts,
         shared::{
-            AutomationSettings, DeserializedAccount, LendingPlatform, PositionData,
-            ReferralStateAccount, SolautoError, SolautoPosition, TokenType,
+            AutomationSettings, DeserializedAccount, LendingPlatform, PositionData, ReferralState,
+            SolautoError, SolautoPosition, TokenType,
         },
     },
 };
@@ -259,12 +259,12 @@ pub fn require_accounts(accounts: &[Option<&AccountInfo>]) -> ProgramResult {
 
 pub fn validate_referral_accounts(
     referral_state_authority: &Pubkey,
-    authority_referral_state: &DeserializedAccount<ReferralStateAccount>,
+    authority_referral_state: &DeserializedAccount<ReferralState>,
     referred_by_state: Option<&AccountInfo>,
     referred_by_supply_ta: Option<&DeserializedAccount<TokenAccount>>,
     check_supply_ta: bool,
 ) -> ProgramResult {
-    let referral_state_seeds = &ReferralStateAccount::seeds(referral_state_authority);
+    let referral_state_seeds = &ReferralState::seeds(referral_state_authority);
     let (referral_state_pda, _bump) =
         Pubkey::find_program_address(referral_state_seeds, &crate::ID);
     if &referral_state_pda != authority_referral_state.account_info.key {

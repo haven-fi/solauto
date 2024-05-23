@@ -154,7 +154,7 @@ mod update_position {
                 vec![
                     data.general
                         .close_position_ix()
-                        .position_debt_liquidity_ta(Some(fake_debt_ta))
+                        .position_debt_liquidity_ta(fake_debt_ta)
                         .instruction()
                 ],
                 None

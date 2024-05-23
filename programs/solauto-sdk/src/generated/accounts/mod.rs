@@ -5,8 +5,8 @@
 //! [https://github.com/metaplex-foundation/kinobi]
 //!
 
-pub(crate) mod r#referral_state_account;
+pub(crate) mod r#referral_state;
 pub(crate) mod r#solauto_position;
 
-pub use self::r#referral_state_account::*;
+pub use self::r#referral_state::*;
 pub use self::r#solauto_position::*;

@@ -13,7 +13,7 @@ use solana_sdk::{
     system_instruction,
     transaction::Transaction,
 };
-use solauto::{ constants::SOLAUTO_FEES_WALLET, types::shared::ReferralStateAccount };
+use solauto::{ constants::SOLAUTO_FEES_WALLET, types::shared::ReferralState };
 use solauto_sdk::{
     generated::{
         instructions::{
@@ -208,7 +208,7 @@ impl<'a> GeneralTestData<'a> {
     }
 
     pub fn get_referral_state(authority: &Pubkey) -> Pubkey {
-        let seeds = ReferralStateAccount::seeds(authority);
+        let seeds = ReferralState::seeds(authority);
         let (referral_state, _) = Pubkey::find_program_address(&seeds, &SOLAUTO_ID);
         referral_state
     }
@@ -421,8 +421,8 @@ impl<'a> GeneralTestData<'a> {
             .solauto_position(self.solauto_position)
             .position_supply_liquidity_ta(self.position_supply_liquidity_ta)
             .signer_supply_liquidity_ta(self.signer_supply_liquidity_ta)
-            .position_debt_liquidity_ta(Some(self.position_debt_liquidity_ta))
-            .signer_debt_liquidity_ta(Some(self.signer_debt_liquidity_ta));
+            .position_debt_liquidity_ta(self.position_debt_liquidity_ta)
+            .signer_debt_liquidity_ta(self.signer_debt_liquidity_ta);
         builder
     }
 }

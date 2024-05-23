@@ -9,7 +9,7 @@ import {
 } from "@metaplex-foundation/umi";
 import {
   LendingPlatform,
-  ReferralStateAccount,
+  ReferralState,
   SolautoPosition,
   UpdatePositionDataArgs,
   cancelDCA,
@@ -20,7 +20,7 @@ import {
   updateReferralStates,
 } from "../generated";
 import {
-  getReferralStateAccount,
+  getReferralState,
   getSolautoPositionAccount,
   getTokenAccount,
 } from "../utils/accountUtils";
@@ -44,7 +44,7 @@ export interface SolautoInfoArgs {
   supplyLiquidityMint?: PublicKey;
   debtLiquidityMint?: PublicKey;
 
-  referralState?: Account<ReferralStateAccount>;
+  referralState?: Account<ReferralState>;
   referralFeesDestMint?: PublicKey;
   referredByAuthority?: PublicKey;
 }
@@ -67,6 +67,7 @@ export class SolautoInfo {
   public signerDebtLiquidityTa: PublicKey;
 
   public authorityReferralState: PublicKey;
+  public authorityReferralStateData?: ReferralState;
   public authorityReferralFeesDestMint: PublicKey;
   public authorityReferralDestTa: PublicKey;
 
@@ -132,9 +133,10 @@ export class SolautoInfo {
     this.authorityReferralState =
       args.referralState !== undefined
         ? args.referralState.pubkey
-        : await getReferralStateAccount(
+        : await getReferralState(
             toWeb3JsPublicKey(this.signer.publicKey)
           );
+    this.authorityReferralStateData = args.referralState?.data;
     this.authorityReferralFeesDestMint = args.referralFeesDestMint
       ? args.referralFeesDestMint
       : args.referralState?.data?.destFeesMint
@@ -151,7 +153,7 @@ export class SolautoInfo {
       args.referralState?.data.referredByState.__option === "Some"
         ? toWeb3JsPublicKey(args.referralState?.data.referredByState.value)
         : args.referredByAuthority
-        ? await getReferralStateAccount(args.referredByAuthority!)
+        ? await getReferralState(args.referredByAuthority!)
         : undefined;
     this.referredByAuthority = args.referredByAuthority;
     if (this.referredByState !== undefined) {
@@ -168,7 +170,7 @@ export class SolautoInfo {
     );
   }
 
-  updateReferralStates(): TransactionBuilder {
+  updateReferralStatesIx(): TransactionBuilder {
     return updateReferralStates(this.umi, {
       signer: this.signer,
       signerReferralState: publicKey(this.authorityReferralState),
@@ -182,7 +184,7 @@ export class SolautoInfo {
     });
   }
 
-  claimReferralFees(): TransactionBuilder {
+  claimReferralFeesIx(): TransactionBuilder {
     const feesDestinationTa =
       this.authorityReferralFeesDestMint !== WSOL_MINT
         ? publicKey(
@@ -201,7 +203,7 @@ export class SolautoInfo {
     });
   }
 
-  updatePosition(args: UpdatePositionDataArgs): TransactionBuilder {
+  updatePositionIx(args: UpdatePositionDataArgs): TransactionBuilder {
     let debtMint: UmiPublicKey | undefined = undefined;
     let positionDebtTa: UmiPublicKey | undefined = undefined;
     let signerDebtTa: UmiPublicKey | undefined = undefined;
@@ -221,7 +223,7 @@ export class SolautoInfo {
     });
   }
 
-  closePosition(): TransactionBuilder {
+  closePositionIx(): TransactionBuilder {
     return closePosition(this.umi, {
       signer: this.signer,
       solautoPosition: publicKey(this.solautoPosition),
@@ -232,7 +234,7 @@ export class SolautoInfo {
     });
   }
 
-  cancelDCA(): TransactionBuilder {
+  cancelDCAIx(): TransactionBuilder {
     let debtMint: UmiPublicKey | undefined = undefined;
     let positionDebtTa: UmiPublicKey | undefined = undefined;
     let signerDebtTa: UmiPublicKey | undefined = undefined;

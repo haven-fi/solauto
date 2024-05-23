@@ -197,7 +197,7 @@ impl SolautoPosition {
 }
 
 #[derive(ShankAccount, BorshDeserialize, BorshSerialize, Clone, Debug)]
-pub struct ReferralStateAccount {
+pub struct ReferralState {
     _bump: [u8; 1],
     pub authority: Pubkey,
     pub referred_by_state: Option<Pubkey>,
@@ -205,17 +205,15 @@ pub struct ReferralStateAccount {
     _padding: [u8; 128],
 }
 
-impl ReferralStateAccount {
+impl ReferralState {
     pub const LEN: usize = 226;
     pub fn new(
         authority: Pubkey,
         referred_by_state: Option<Pubkey>,
         dest_fees_mint: Pubkey,
     ) -> Self {
-        let (_, bump) = Pubkey::find_program_address(
-            &ReferralStateAccount::seeds(&authority).as_slice(),
-            &crate::ID,
-        );
+        let (_, bump) =
+            Pubkey::find_program_address(&ReferralState::seeds(&authority).as_slice(), &crate::ID);
         Self {
             _bump: [bump],
             authority,
@@ -228,7 +226,7 @@ impl ReferralStateAccount {
         vec![b"referral_state", authority.as_ref()]
     }
     pub fn seeds_with_bump<'a>(&'a self) -> Vec<&'a [u8]> {
-        let mut seeds = ReferralStateAccount::seeds(&self.authority);
+        let mut seeds = ReferralState::seeds(&self.authority);
         seeds.push(&self._bump);
         seeds
     }

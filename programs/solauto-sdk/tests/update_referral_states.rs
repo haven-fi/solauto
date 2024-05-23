@@ -12,7 +12,7 @@ mod update_referral_states {
         transaction::Transaction,
     };
     use solauto::constants::WSOL_MINT;
-    use solauto_sdk::generated::accounts::ReferralStateAccount;
+    use solauto_sdk::generated::accounts::ReferralState;
 
     use crate::{ assert_instruction_error, test_utils::* };
 
@@ -30,7 +30,7 @@ mod update_referral_states {
             .unwrap();
 
         let signer_referral_state_data =
-            data.general.deserialize_account_data::<ReferralStateAccount>(
+            data.general.deserialize_account_data::<ReferralState>(
                 data.general.signer_referral_state.clone()
             ).await;
         assert!(signer_referral_state_data.authority == data.general.ctx.payer.pubkey());
@@ -54,7 +54,7 @@ mod update_referral_states {
             ).await
             .unwrap();
 
-        let referred_by_state_data = data.general.deserialize_account_data::<ReferralStateAccount>(
+        let referred_by_state_data = data.general.deserialize_account_data::<ReferralState>(
             referred_by_state.clone()
         ).await;
         assert!(referred_by_state_data.authority == referred_by_authority);
@@ -62,7 +62,7 @@ mod update_referral_states {
         assert!(referred_by_state_data.dest_fees_mint == WSOL_MINT);
 
         let signer_referral_state_data =
-            data.general.deserialize_account_data::<ReferralStateAccount>(
+            data.general.deserialize_account_data::<ReferralState>(
                 data.general.signer_referral_state.clone()
             ).await;
         assert!(

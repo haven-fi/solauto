@@ -11,7 +11,7 @@ use solana_program::pubkey::Pubkey;
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct ReferralStateAccount {
+pub struct ReferralState {
     pub bump: [u8; 1],
     #[cfg_attr(
         feature = "serde",
@@ -28,7 +28,7 @@ pub struct ReferralStateAccount {
     pub padding: [u8; 128],
 }
 
-impl ReferralStateAccount {
+impl ReferralState {
     #[inline(always)]
     pub fn from_bytes(data: &[u8]) -> Result<Self, std::io::Error> {
         let mut data = data;
@@ -36,7 +36,7 @@ impl ReferralStateAccount {
     }
 }
 
-impl<'a> TryFrom<&solana_program::account_info::AccountInfo<'a>> for ReferralStateAccount {
+impl<'a> TryFrom<&solana_program::account_info::AccountInfo<'a>> for ReferralState {
     type Error = std::io::Error;
 
     fn try_from(

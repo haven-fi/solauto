@@ -13,7 +13,7 @@ use crate::{
         instruction::UpdatePositionData,
         shared::{
             DeserializedAccount, LendingPlatform, LendingProtocolPositionData, PositionData,
-            PositionState, ReferralStateAccount, SolautoError, SolautoPosition,
+            PositionState, ReferralState, SolautoError, SolautoPosition,
         },
     },
 };
@@ -92,8 +92,8 @@ pub fn create_or_update_referral_state<'a>(
     referral_state: &'a AccountInfo<'a>,
     referral_fees_dest_mint: Option<Pubkey>,
     referred_by_state: Option<&'a AccountInfo<'a>>,
-) -> Result<DeserializedAccount<'a, ReferralStateAccount>, ProgramError> {
-    let referral_state_seeds = ReferralStateAccount::seeds(authority.key);
+) -> Result<DeserializedAccount<'a, ReferralState>, ProgramError> {
+    let referral_state_seeds = ReferralState::seeds(authority.key);
     let (referral_state_pda, _) =
         Pubkey::find_program_address(referral_state_seeds.as_slice(), &crate::ID);
     if &referral_state_pda != referral_state.key {
@@ -103,8 +103,7 @@ pub fn create_or_update_referral_state<'a>(
 
     if account_has_data(referral_state) {
         let mut referral_state_account =
-            DeserializedAccount::<ReferralStateAccount>::deserialize(Some(referral_state))?
-                .unwrap();
+            DeserializedAccount::<ReferralState>::deserialize(Some(referral_state))?.unwrap();
 
         if referral_state_account.data.referred_by_state.is_none() && referred_by_state.is_some() {
             referral_state_account.data.referred_by_state =
@@ -126,7 +125,7 @@ pub fn create_or_update_referral_state<'a>(
             &WSOL_MINT
         };
 
-        let data = Box::new(ReferralStateAccount::new(
+        let data = Box::new(ReferralState::new(
             *authority.key,
             referred_by_state.map_or(None, |r| Some(r.key.clone())),
             *dest_mint,
@@ -138,7 +137,7 @@ pub fn create_or_update_referral_state<'a>(
             referral_state,
             &crate::ID,
             Some(data.seeds_with_bump()),
-            ReferralStateAccount::LEN,
+            ReferralState::LEN,
         )?;
 
         Ok(DeserializedAccount {
