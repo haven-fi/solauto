@@ -1,17 +1,9 @@
 import {
-  Transaction,
-  UmiPlugin,
   createSignerFromKeypair,
   signerIdentity,
-  transactionBuilder,
 } from "@metaplex-foundation/umi";
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
-import {
-  toWeb3JsKeypair,
-  toWeb3JsLegacyTransaction,
-} from "@metaplex-foundation/umi-web3js-adapters";
-import { createSolautoProgram } from "../src/generated";
-import { getSecretKey } from "./testUtils";
+import { getSecretKey, simulateTransaction } from "./testUtils";
 import { Connection, PublicKey, clusterApiUrl } from "@solana/web3.js";
 import { MARGINFI_ACCOUNTS } from "../src/constants/marginfiAccounts";
 import { assert } from "chai";
@@ -28,27 +20,8 @@ const signerKeypair = umi.eddsa.createKeypairFromSecretKey(secretKey);
 const signer = createSignerFromKeypair(umi, signerKeypair);
 // const signerPublicKey = Keypair.fromSecretKey(secretKey).publicKey;
 
-async function simulateTransaction(transaction: Transaction) {
-  const web3Transaction = toWeb3JsLegacyTransaction(transaction);
-  web3Transaction.sign(toWeb3JsKeypair(signerKeypair));
-
-  const simulationResult = await connection.simulateTransaction(
-    web3Transaction
-  );
-  if (simulationResult.value.err) {
-    console.log(simulationResult.value.logs);
-  }
-  assert.equal(simulationResult.value.err, undefined);
-}
-
-export const solauto = (): UmiPlugin => ({
-  install(umi) {
-    umi.programs.add(createSolautoProgram(), false);
-  },
-});
-
 describe("Solauto tests", async () => {
-  umi = umi.use(solauto()).use(signerIdentity(signer));
+  umi = umi.use(signerIdentity(signer));
 
   const payForTransactions = false;
   const positionId = 1;
@@ -83,8 +56,11 @@ describe("Solauto tests", async () => {
 
     // TODO
 
-    const transaction = await builder.buildWithLatestBlockhash(umi);
-    await simulateTransaction(transaction);
+    await simulateTransaction(
+      connection,
+      await builder.buildWithLatestBlockhash(umi),
+      signer
+    );
     if (payForTransactions) {
       await builder.sendAndConfirm(umi);
     }
