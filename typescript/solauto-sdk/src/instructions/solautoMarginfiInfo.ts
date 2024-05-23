@@ -10,6 +10,7 @@ import {
   getMarginfiAccountPDA,
   getSolautoPositionAccount,
 } from "../utils/accountUtils";
+import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 
 export interface SolautoMarginfiInfoArgs extends SolautoInfoArgs {
   marginfiAccount?: PublicKey;
@@ -37,7 +38,7 @@ export class SolautoMarginfiInfo extends SolautoInfo {
     const solautoPosition =
       args.position.existingSolautoPosition?.pubkey ??
       (await getSolautoPositionAccount(
-        args.signer,
+        toWeb3JsPublicKey(args.signer.publicKey),
         args.position.newPositionId
       ));
     this.marginfiAccount =

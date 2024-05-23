@@ -1,5 +1,5 @@
 import { Connection, PublicKey, clusterApiUrl } from "@solana/web3.js";
-import { Context, Umi, publicKey } from "@metaplex-foundation/umi";
+import { Context, Signer, Umi, publicKey } from "@metaplex-foundation/umi";
 import {
   LendingPlatform,
   ReferralStateAccount,
@@ -23,7 +23,7 @@ interface Account<T> {
 }
 
 export interface SolautoInfoArgs {
-  signer: PublicKey;
+  signer: Signer;
   position: {
     newPositionId?: number;
     existingSolautoPosition?: Account<SolautoPosition>;
@@ -38,7 +38,7 @@ export interface SolautoInfoArgs {
 export class SolautoInfo {
   public umi: Umi;
 
-  public signer: PublicKey;
+  public signer: Signer;
   public positionId: number;
   public solautoPosition: PublicKey;
   public solautoPositionData?: SolautoPosition;
@@ -65,6 +65,7 @@ export class SolautoInfo {
 
   async initialize(args: SolautoInfoArgs, lendingPlatform: LendingPlatform) {
     this.umi = createUmi(
+      // TODO change url to use helius rpc
       new Connection(clusterApiUrl("mainnet-beta"), "confirmed")
     );
     this.umi = this.umi.use({
@@ -78,7 +79,7 @@ export class SolautoInfo {
       args.position.existingSolautoPosition?.data.positionId ??
       args.position.newPositionId;
     this.solautoPosition = await getSolautoPositionAccount(
-      args.signer,
+      toWeb3JsPublicKey(args.signer.publicKey),
       this.positionId
     );
     this.solautoPositionData = args.position.existingSolautoPosition.data;
@@ -95,7 +96,7 @@ export class SolautoInfo {
       this.supplyLiquidityMint
     );
     this.signerSupplyLiquidityTa = await getTokenAccount(
-      this.signer,
+      toWeb3JsPublicKey(this.signer.publicKey),
       this.supplyLiquidityMint
     );
 
@@ -110,12 +111,12 @@ export class SolautoInfo {
       this.debtLiquidityMint
     );
     this.signerDebtLiquidityTa = await getTokenAccount(
-      this.signer,
+      toWeb3JsPublicKey(this.signer.publicKey),
       this.debtLiquidityMint
     );
 
     this.positionDebtLiquidityTa = this.signerReferralState =
-      await getReferralStateAccount(this.signer);
+      await getReferralStateAccount(toWeb3JsPublicKey(this.signer.publicKey));
     this.signerReferralFeesDestMint = args.referralState?.data?.destFeesMint
       ? toWeb3JsPublicKey(args.referralState?.data?.destFeesMint)
       : args.referralFeesDestMint ?? new PublicKey(WSOL_MINT);
@@ -144,7 +145,7 @@ export class SolautoInfo {
 
   updateReferralStates() {
     const builder = updateReferralStates(this.umi, {
-      signer: publicKey(this.signer),
+      signer: this.signer,
       signerReferralState: publicKey(this.signerReferralState),
       referralFeesDestMint: publicKey(this.signerReferralFeesDestMint),
       referredByState: publicKey(this.referredByState),
