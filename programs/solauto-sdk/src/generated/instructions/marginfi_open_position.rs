@@ -189,7 +189,8 @@ impl MarginfiOpenPositionInstructionData {
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct MarginfiOpenPositionInstructionArgs {
-    pub args: (UpdatePositionData, Option<u64>),
+    pub position_data: UpdatePositionData,
+    pub marginfi_account_seed_idx: Option<u64>,
 }
 
 /// Instruction builder for `MarginfiOpenPosition`.
@@ -236,7 +237,8 @@ pub struct MarginfiOpenPositionBuilder {
     debt_mint: Option<solana_program::pubkey::Pubkey>,
     position_debt_ta: Option<solana_program::pubkey::Pubkey>,
     signer_debt_ta: Option<solana_program::pubkey::Pubkey>,
-    args: Option<(UpdatePositionData, Option<u64>)>,
+    position_data: Option<UpdatePositionData>,
+    marginfi_account_seed_idx: Option<u64>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
 
@@ -381,8 +383,14 @@ impl MarginfiOpenPositionBuilder {
         self
     }
     #[inline(always)]
-    pub fn args(&mut self, args: (UpdatePositionData, Option<u64>)) -> &mut Self {
-        self.args = Some(args);
+    pub fn position_data(&mut self, position_data: UpdatePositionData) -> &mut Self {
+        self.position_data = Some(position_data);
+        self
+    }
+    /// `[optional argument]`
+    #[inline(always)]
+    pub fn marginfi_account_seed_idx(&mut self, marginfi_account_seed_idx: u64) -> &mut Self {
+        self.marginfi_account_seed_idx = Some(marginfi_account_seed_idx);
         self
     }
     /// Add an aditional account to the instruction.
@@ -443,7 +451,11 @@ impl MarginfiOpenPositionBuilder {
             signer_debt_ta: self.signer_debt_ta,
         };
         let args = MarginfiOpenPositionInstructionArgs {
-            args: self.args.clone().expect("args is not set"),
+            position_data: self
+                .position_data
+                .clone()
+                .expect("position_data is not set"),
+            marginfi_account_seed_idx: self.marginfi_account_seed_idx.clone(),
         };
 
         accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
@@ -805,7 +817,8 @@ impl<'a, 'b> MarginfiOpenPositionCpiBuilder<'a, 'b> {
             debt_mint: None,
             position_debt_ta: None,
             signer_debt_ta: None,
-            args: None,
+            position_data: None,
+            marginfi_account_seed_idx: None,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
@@ -964,8 +977,14 @@ impl<'a, 'b> MarginfiOpenPositionCpiBuilder<'a, 'b> {
         self
     }
     #[inline(always)]
-    pub fn args(&mut self, args: (UpdatePositionData, Option<u64>)) -> &mut Self {
-        self.instruction.args = Some(args);
+    pub fn position_data(&mut self, position_data: UpdatePositionData) -> &mut Self {
+        self.instruction.position_data = Some(position_data);
+        self
+    }
+    /// `[optional argument]`
+    #[inline(always)]
+    pub fn marginfi_account_seed_idx(&mut self, marginfi_account_seed_idx: u64) -> &mut Self {
+        self.instruction.marginfi_account_seed_idx = Some(marginfi_account_seed_idx);
         self
     }
     /// Add an additional account to the instruction.
@@ -1010,7 +1029,12 @@ impl<'a, 'b> MarginfiOpenPositionCpiBuilder<'a, 'b> {
         signers_seeds: &[&[&[u8]]],
     ) -> solana_program::entrypoint::ProgramResult {
         let args = MarginfiOpenPositionInstructionArgs {
-            args: self.instruction.args.clone().expect("args is not set"),
+            position_data: self
+                .instruction
+                .position_data
+                .clone()
+                .expect("position_data is not set"),
+            marginfi_account_seed_idx: self.instruction.marginfi_account_seed_idx.clone(),
         };
         let instruction = MarginfiOpenPositionCpi {
             __program: self.instruction.__program,
@@ -1121,7 +1145,8 @@ struct MarginfiOpenPositionCpiBuilderInstruction<'a, 'b> {
     debt_mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     position_debt_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     signer_debt_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    args: Option<(UpdatePositionData, Option<u64>)>,
+    position_data: Option<UpdatePositionData>,
+    marginfi_account_seed_idx: Option<u64>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(
         &'b solana_program::account_info::AccountInfo<'a>,

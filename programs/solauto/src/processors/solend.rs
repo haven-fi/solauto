@@ -13,7 +13,7 @@ use crate::{
                 SolendOpenPositionAccounts, SolendProtocolInteractionAccounts,
                 SolendRebalanceAccounts, SolendRefreshDataAccounts,
             },
-            RebalanceArgs, SolautoAction, SolautoStandardAccounts, UpdatePositionData,
+            RebalanceData, SolautoAction, SolautoStandardAccounts, UpdatePositionData,
         },
         shared::{DeserializedAccount, LendingPlatform, ReferralStateAccount, SolautoPosition},
     },
@@ -174,7 +174,7 @@ pub fn process_solend_interaction_instruction<'a>(
 
 pub fn process_solend_rebalance<'a>(
     accounts: &'a [AccountInfo<'a>],
-    args: RebalanceArgs,
+    args: RebalanceData,
 ) -> ProgramResult {
     // TODO
     msg!("Instruction is currently a WIP");

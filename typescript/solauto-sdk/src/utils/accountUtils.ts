@@ -1,6 +1,6 @@
 import { PublicKey, AccountMeta } from "@solana/web3.js";
 import { SOLAUTO_PROGRAM_ID } from "../generated";
-import { getAssociatedTokenAddress } from "@solana/spl-token";
+import { getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 
 export function bufferFromU8(num: number): Buffer {
@@ -27,8 +27,8 @@ export function getAccountMeta(
   };
 }
 
-export async function getTokenAccount(wallet: PublicKey, tokenMint: PublicKey) {
-  return await getAssociatedTokenAddress(
+export function getTokenAccount(wallet: PublicKey, tokenMint: PublicKey) {
+  return getAssociatedTokenAddressSync(
     tokenMint,
     wallet,
     true,

@@ -14,28 +14,28 @@ import {
   u16,
 } from '@metaplex-foundation/umi/serializers';
 
-export type RebalanceArgs = {
+export type RebalanceData = {
   targetLiqUtilizationRateBps: Option<number>;
   maxPriceSlippageBps: Option<number>;
   limitGapBps: Option<number>;
 };
 
-export type RebalanceArgsArgs = {
+export type RebalanceDataArgs = {
   targetLiqUtilizationRateBps: OptionOrNullable<number>;
   maxPriceSlippageBps: OptionOrNullable<number>;
   limitGapBps: OptionOrNullable<number>;
 };
 
-export function getRebalanceArgsSerializer(): Serializer<
-  RebalanceArgsArgs,
-  RebalanceArgs
+export function getRebalanceDataSerializer(): Serializer<
+  RebalanceDataArgs,
+  RebalanceData
 > {
-  return struct<RebalanceArgs>(
+  return struct<RebalanceData>(
     [
       ['targetLiqUtilizationRateBps', option(u16())],
       ['maxPriceSlippageBps', option(u16())],
       ['limitGapBps', option(u16())],
     ],
-    { description: 'RebalanceArgs' }
-  ) as Serializer<RebalanceArgsArgs, RebalanceArgs>;
+    { description: 'RebalanceData' }
+  ) as Serializer<RebalanceDataArgs, RebalanceData>;
 }

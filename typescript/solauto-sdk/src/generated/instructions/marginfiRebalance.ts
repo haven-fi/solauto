@@ -27,9 +27,9 @@ import {
   getAccountMetasAndSigners,
 } from '../shared';
 import {
-  RebalanceArgs,
-  RebalanceArgsArgs,
-  getRebalanceArgsSerializer,
+  RebalanceData,
+  RebalanceDataArgs,
+  getRebalanceDataSerializer,
 } from '../types';
 
 // Accounts.
@@ -63,11 +63,11 @@ export type MarginfiRebalanceInstructionAccounts = {
 // Data.
 export type MarginfiRebalanceInstructionData = {
   discriminator: number;
-  rebalanceArgs: RebalanceArgs;
+  rebalanceData: RebalanceData;
 };
 
 export type MarginfiRebalanceInstructionDataArgs = {
-  rebalanceArgs: RebalanceArgsArgs;
+  rebalanceData: RebalanceDataArgs;
 };
 
 export function getMarginfiRebalanceInstructionDataSerializer(): Serializer<
@@ -82,7 +82,7 @@ export function getMarginfiRebalanceInstructionDataSerializer(): Serializer<
     struct<MarginfiRebalanceInstructionData>(
       [
         ['discriminator', u8()],
-        ['rebalanceArgs', getRebalanceArgsSerializer()],
+        ['rebalanceData', getRebalanceDataSerializer()],
       ],
       { description: 'MarginfiRebalanceInstructionData' }
     ),

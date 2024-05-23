@@ -27,9 +27,9 @@ import {
   getAccountMetasAndSigners,
 } from '../shared';
 import {
-  RebalanceArgs,
-  RebalanceArgsArgs,
-  getRebalanceArgsSerializer,
+  RebalanceData,
+  RebalanceDataArgs,
+  getRebalanceDataSerializer,
 } from '../types';
 
 // Accounts.
@@ -66,11 +66,11 @@ export type SolendRebalanceInstructionAccounts = {
 // Data.
 export type SolendRebalanceInstructionData = {
   discriminator: number;
-  rebalanceArgs: RebalanceArgs;
+  rebalanceData: RebalanceData;
 };
 
 export type SolendRebalanceInstructionDataArgs = {
-  rebalanceArgs: RebalanceArgsArgs;
+  rebalanceData: RebalanceDataArgs;
 };
 
 export function getSolendRebalanceInstructionDataSerializer(): Serializer<
@@ -85,7 +85,7 @@ export function getSolendRebalanceInstructionDataSerializer(): Serializer<
     struct<SolendRebalanceInstructionData>(
       [
         ['discriminator', u8()],
-        ['rebalanceArgs', getRebalanceArgsSerializer()],
+        ['rebalanceData', getRebalanceDataSerializer()],
       ],
       { description: 'SolendRebalanceInstructionData' }
     ),

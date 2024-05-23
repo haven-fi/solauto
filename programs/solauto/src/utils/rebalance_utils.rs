@@ -14,7 +14,7 @@ use crate::{
     constants::{JUP_PROGRAM, MARGINFI_PROGRAM},
     types::{
         instruction::{
-            RebalanceArgs, SolautoStandardAccounts, SOLAUTO_REBALANCE_IX_DISCRIMINATORS,
+            RebalanceData, SolautoStandardAccounts, SOLAUTO_REBALANCE_IX_DISCRIMINATORS,
         },
         obligation_position::LendingProtocolObligationPosition,
         shared::{PositionData, SolautoError, SolautoPosition, SolautoRebalanceStep},
@@ -233,7 +233,7 @@ fn get_target_liq_utilization_rate_from_dca(
 fn get_std_target_liq_utilization_rate(
     solauto_position: &SolautoPosition,
     obligation_position: &LendingProtocolObligationPosition,
-    rebalance_args: &RebalanceArgs,
+    rebalance_args: &RebalanceData,
 ) -> Result<u16, SolautoError> {
     let current_liq_utilization_rate_bps = obligation_position.current_liq_utilization_rate_bps();
 
@@ -273,7 +273,7 @@ fn get_std_target_liq_utilization_rate(
 fn is_dca_instruction(
     solauto_position: &SolautoPosition,
     obligation_position: &LendingProtocolObligationPosition,
-    rebalance_args: &RebalanceArgs,
+    rebalance_args: &RebalanceData,
     current_unix_timestamp: u64,
 ) -> Result<bool, ProgramError> {
     if rebalance_args.target_liq_utilization_rate_bps.is_some() || solauto_position.self_managed {
@@ -314,7 +314,7 @@ fn is_dca_instruction(
 fn get_target_rate_and_dca_amount(
     solauto_position: &mut SolautoPosition,
     obligation_position: &LendingProtocolObligationPosition,
-    rebalance_args: &RebalanceArgs,
+    rebalance_args: &RebalanceData,
     current_unix_timestamp: u64,
 ) -> Result<(Option<u16>, Option<u64>), ProgramError> {
     let dca_instruction = is_dca_instruction(
@@ -357,7 +357,7 @@ fn get_target_rate_and_dca_amount(
 pub fn get_rebalance_values(
     solauto_position: &mut SolautoPosition,
     obligation_position: &LendingProtocolObligationPosition,
-    rebalance_args: &RebalanceArgs,
+    rebalance_args: &RebalanceData,
     solauto_fees_bps: &SolautoFeesBps,
     current_unix_timestamp: u64,
 ) -> Result<(Option<f64>, Option<u64>), ProgramError> {
@@ -529,7 +529,7 @@ mod tests {
         current_liq_utilization_rate_bps: u16,
         setting_params: Option<SolautoSettingsParameters>,
         dca_settings: Option<DCASettings>,
-        mut rebalance_args: Option<RebalanceArgs>,
+        mut rebalance_args: Option<RebalanceData>,
     ) -> Result<
         (
             SolautoPosition,
@@ -547,7 +547,7 @@ mod tests {
         let solauto_fees = SolautoFeesBps::get(false);
 
         if rebalance_args.is_none() {
-            rebalance_args = Some(RebalanceArgs::default());
+            rebalance_args = Some(RebalanceData::default());
         }
         rebalance_args.as_mut().unwrap().max_price_slippage_bps = Some(0);
 
@@ -573,7 +573,7 @@ mod tests {
         mut expected_liq_utilization_rate_bps: u16,
         setting_params: Option<SolautoSettingsParameters>,
         dca_settings: Option<DCASettings>,
-        rebalance_args: Option<RebalanceArgs>,
+        rebalance_args: Option<RebalanceData>,
     ) -> Result<SolautoPosition, ProgramError> {
         let (solauto_position, mut obligation_position, debt_adjustment_usd, debt_to_add) =
             test_rebalance(
@@ -705,7 +705,7 @@ mod tests {
             target_liq_utilization_rate_bps,
             None,
             None,
-            Some(RebalanceArgs {
+            Some(RebalanceData {
                 target_liq_utilization_rate_bps: Some(target_liq_utilization_rate_bps),
                 max_price_slippage_bps: None,
                 limit_gap_bps: None,

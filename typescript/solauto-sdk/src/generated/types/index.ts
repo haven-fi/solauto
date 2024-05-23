@@ -13,7 +13,7 @@ export * from './lendingPlatform';
 export * from './lendingProtocolPositionData';
 export * from './positionData';
 export * from './positionState';
-export * from './rebalanceArgs';
+export * from './rebalanceData';
 export * from './solautoAction';
 export * from './solautoSettingsParameters';
 export * from './tokenBalanceAmount';

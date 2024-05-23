@@ -7,7 +7,7 @@ use crate::{
     types::{
         instruction::{
             accounts::{Context, MarginfiRebalanceAccounts, SolendRebalanceAccounts},
-            RebalanceArgs, SolautoStandardAccounts,
+            RebalanceData, SolautoStandardAccounts,
         },
         lending_protocol::LendingProtocolClient,
         obligation_position::LendingProtocolObligationPosition,
@@ -19,7 +19,7 @@ use crate::{
 pub fn marginfi_rebalance<'a, 'b>(
     ctx: Context<'a, MarginfiRebalanceAccounts<'a>>,
     std_accounts: SolautoStandardAccounts<'a>,
-    args: RebalanceArgs,
+    args: RebalanceData,
 ) -> ProgramResult {
     let (marginfi_client, obligation_position) = MarginfiClient::from(
         ctx.accounts.signer,
@@ -56,7 +56,7 @@ pub fn marginfi_rebalance<'a, 'b>(
 pub fn solend_rebalance<'a, 'b>(
     ctx: Context<'a, SolendRebalanceAccounts<'a>>,
     std_accounts: SolautoStandardAccounts<'a>,
-    args: RebalanceArgs,
+    args: RebalanceData,
 ) -> ProgramResult {
     let (solend_client, obligation_position) = SolendClient::from(
         ctx.accounts.lending_market,
@@ -95,7 +95,7 @@ fn rebalance<'a, T: LendingProtocolClient<'a>>(
     mut obligation_position: LendingProtocolObligationPosition,
     solauto_manager_accounts: SolautoManagerAccounts<'a>,
     std_accounts: SolautoStandardAccounts<'a>,
-    args: RebalanceArgs,
+    args: RebalanceData,
 ) -> ProgramResult {
     if args.target_liq_utilization_rate_bps.is_some()
         && std_accounts.signer.key != &std_accounts.solauto_position.data.authority

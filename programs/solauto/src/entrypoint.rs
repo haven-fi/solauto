@@ -21,8 +21,8 @@ pub fn process_instruction<'a>(
         Instruction::ConvertReferralFees => process_convert_referral_fees(accounts),
         Instruction::ClaimReferralFees => process_claim_referral_fees(accounts),
 
-        Instruction::MarginfiOpenPosition((args, marignfi_acc_seed_idx)) => {
-            process_marginfi_open_position_instruction(accounts, args, marignfi_acc_seed_idx)
+        Instruction::MarginfiOpenPosition(args) => {
+            process_marginfi_open_position_instruction(accounts, args)
         }
         Instruction::SolendOpenPosition(args) => {
             process_solend_open_position_instruction(accounts, args)

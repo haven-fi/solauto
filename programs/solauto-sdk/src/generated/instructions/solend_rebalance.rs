@@ -5,7 +5,7 @@
 //! [https://github.com/metaplex-foundation/kinobi]
 //!
 
-use crate::generated::types::RebalanceArgs;
+use crate::generated::types::RebalanceData;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 
@@ -220,7 +220,7 @@ impl SolendRebalanceInstructionData {
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SolendRebalanceInstructionArgs {
-    pub rebalance_args: RebalanceArgs,
+    pub rebalance_data: RebalanceData,
 }
 
 /// Instruction builder for `SolendRebalance`.
@@ -283,7 +283,7 @@ pub struct SolendRebalanceBuilder {
     debt_reserve_fee_receiver_ta: Option<solana_program::pubkey::Pubkey>,
     position_debt_liquidity_ta: Option<solana_program::pubkey::Pubkey>,
     reserve_debt_liquidity_ta: Option<solana_program::pubkey::Pubkey>,
-    rebalance_args: Option<RebalanceArgs>,
+    rebalance_data: Option<RebalanceData>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
 
@@ -477,8 +477,8 @@ impl SolendRebalanceBuilder {
         self
     }
     #[inline(always)]
-    pub fn rebalance_args(&mut self, rebalance_args: RebalanceArgs) -> &mut Self {
-        self.rebalance_args = Some(rebalance_args);
+    pub fn rebalance_data(&mut self, rebalance_data: RebalanceData) -> &mut Self {
+        self.rebalance_data = Some(rebalance_data);
         self
     }
     /// Add an aditional account to the instruction.
@@ -563,10 +563,10 @@ impl SolendRebalanceBuilder {
                 .expect("reserve_debt_liquidity_ta is not set"),
         };
         let args = SolendRebalanceInstructionArgs {
-            rebalance_args: self
-                .rebalance_args
+            rebalance_data: self
+                .rebalance_data
                 .clone()
-                .expect("rebalance_args is not set"),
+                .expect("rebalance_data is not set"),
         };
 
         accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
@@ -1004,7 +1004,7 @@ impl<'a, 'b> SolendRebalanceCpiBuilder<'a, 'b> {
             debt_reserve_fee_receiver_ta: None,
             position_debt_liquidity_ta: None,
             reserve_debt_liquidity_ta: None,
-            rebalance_args: None,
+            rebalance_data: None,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
@@ -1222,8 +1222,8 @@ impl<'a, 'b> SolendRebalanceCpiBuilder<'a, 'b> {
         self
     }
     #[inline(always)]
-    pub fn rebalance_args(&mut self, rebalance_args: RebalanceArgs) -> &mut Self {
-        self.instruction.rebalance_args = Some(rebalance_args);
+    pub fn rebalance_data(&mut self, rebalance_data: RebalanceData) -> &mut Self {
+        self.instruction.rebalance_data = Some(rebalance_data);
         self
     }
     /// Add an additional account to the instruction.
@@ -1268,11 +1268,11 @@ impl<'a, 'b> SolendRebalanceCpiBuilder<'a, 'b> {
         signers_seeds: &[&[&[u8]]],
     ) -> solana_program::entrypoint::ProgramResult {
         let args = SolendRebalanceInstructionArgs {
-            rebalance_args: self
+            rebalance_data: self
                 .instruction
-                .rebalance_args
+                .rebalance_data
                 .clone()
-                .expect("rebalance_args is not set"),
+                .expect("rebalance_data is not set"),
         };
         let instruction = SolendRebalanceCpi {
             __program: self.instruction.__program,
@@ -1431,7 +1431,7 @@ struct SolendRebalanceCpiBuilderInstruction<'a, 'b> {
     debt_reserve_fee_receiver_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     position_debt_liquidity_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     reserve_debt_liquidity_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    rebalance_args: Option<RebalanceArgs>,
+    rebalance_data: Option<RebalanceData>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(
         &'b solana_program::account_info::AccountInfo<'a>,

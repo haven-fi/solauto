@@ -60,7 +60,7 @@ pub enum Instruction {
     #[account(name = "debt_mint")]
     #[account(mut, name = "position_debt_ta")]
     #[account(mut, optional, name = "signer_debt_ta")]
-    MarginfiOpenPosition((UpdatePositionData, Option<u64>)),
+    MarginfiOpenPosition(MarginfiOpenPositionData),
 
     /// Open a new Solauto position with Solend
     #[account(signer, name = "signer")]
@@ -222,7 +222,7 @@ pub enum Instruction {
     #[account(mut, name = "position_debt_ta")]
     #[account(mut, name = "vault_debt_ta")]
     #[account(mut, optional, name = "debt_vault_authority")]
-    MarginfiRebalance(RebalanceArgs),
+    MarginfiRebalance(RebalanceData),
     
     /// Rebalance the position, can be invoked by the authority or Solauto manager
     #[account(signer, name = "signer")]
@@ -252,7 +252,7 @@ pub enum Instruction {
     #[account(mut, name = "debt_reserve_fee_receiver_ta")]
     #[account(mut, name = "position_debt_liquidity_ta")]
     #[account(mut, name = "reserve_debt_liquidity_ta")]
-    SolendRebalance(RebalanceArgs),
+    SolendRebalance(RebalanceData),
 }
 
 pub const SOLAUTO_REBALANCE_IX_DISCRIMINATORS: [u64; 2] = [12, 13];
@@ -261,6 +261,13 @@ pub const SOLAUTO_REBALANCE_IX_DISCRIMINATORS: [u64; 2] = [12, 13];
 pub struct UpdateReferralStatesArgs {
     /// The destination token mint to accumulate referral fees in
     pub referral_fees_dest_mint: Option<Pubkey>,
+}
+
+#[derive(BorshSerialize, BorshDeserialize, Clone, Debug)]
+pub struct MarginfiOpenPositionData {
+    pub position_data: UpdatePositionData,
+    /// Marginfi account seed index if the position is Solauto-managed
+    pub marginfi_account_seed_idx: Option<u64>,
 }
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug)]
@@ -286,7 +293,7 @@ pub enum SolautoAction {
 }
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Default)]
-pub struct RebalanceArgs {
+pub struct RebalanceData {
     /// Target liq utilization rate. Only used/allowed if signed by the position authority.
     pub target_liq_utilization_rate_bps: Option<u16>,
     /// Max price slippage bps for token swapping. Defaults to 300 (3%).

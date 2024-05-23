@@ -1,5 +1,6 @@
 use solana_program::{
-    account_info::AccountInfo, clock::Clock, entrypoint::ProgramResult, sysvar::Sysvar,
+    account_info::AccountInfo, clock::Clock, entrypoint::ProgramResult, msg,
+    program_error::ProgramError, sysvar::Sysvar,
 };
 use spl_token::state::Account as TokenAccount;
 
@@ -11,7 +12,7 @@ use crate::{
                 MarginfiOpenPositionAccounts, MarginfiProtocolInteractionAccounts,
                 MarginfiRebalanceAccounts, MarginfiRefreshDataAccounts,
             },
-            RebalanceArgs, SolautoAction, SolautoStandardAccounts, UpdatePositionData,
+            MarginfiOpenPositionData, RebalanceData, SolautoAction, SolautoStandardAccounts,
         },
         shared::{DeserializedAccount, LendingPlatform, ReferralStateAccount, SolautoPosition},
     },
@@ -20,15 +21,14 @@ use crate::{
 
 pub fn process_marginfi_open_position_instruction<'a>(
     accounts: &'a [AccountInfo<'a>],
-    position_data: UpdatePositionData,
-    marignfi_acc_seed_idx: Option<u64>,
+    args: MarginfiOpenPositionData,
 ) -> ProgramResult {
     let ctx = MarginfiOpenPositionAccounts::context(accounts)?;
 
     let solauto_position = solauto_utils::create_new_solauto_position(
         ctx.accounts.signer,
         ctx.accounts.solauto_position,
-        position_data,
+        args.position_data,
         LendingPlatform::Marginfi,
         ctx.accounts.supply_mint,
         ctx.accounts.debt_mint,
@@ -41,6 +41,10 @@ pub fn process_marginfi_open_position_instruction<'a>(
         let current_timestamp = Clock::get()?.unix_timestamp as u64;
         validation_utils::validate_position_settings(position_data, current_timestamp)?;
         validation_utils::validate_dca_settings(position_data, current_timestamp)?;
+    }
+    if solauto_position.data.self_managed && args.marginfi_account_seed_idx.is_some() {
+        msg!("Provided a Marginfi account seed index on a self-managed index");
+        return Err(ProgramError::InvalidInstructionData.into());
     }
 
     solauto_utils::init_solauto_fees_supply_ta(
@@ -90,7 +94,11 @@ pub fn process_marginfi_open_position_instruction<'a>(
         false,
     )?;
 
-    open_position::marginfi_open_position(ctx, std_accounts.solauto_position, marignfi_acc_seed_idx)
+    open_position::marginfi_open_position(
+        ctx,
+        std_accounts.solauto_position,
+        args.marginfi_account_seed_idx,
+    )
 }
 
 pub fn process_marginfi_refresh_data<'a>(accounts: &'a [AccountInfo<'a>]) -> ProgramResult {
@@ -159,7 +167,7 @@ pub fn process_marginfi_interaction_instruction<'a>(
 
 pub fn process_marginfi_rebalance<'a>(
     accounts: &'a [AccountInfo<'a>],
-    args: RebalanceArgs,
+    args: RebalanceData,
 ) -> ProgramResult {
     let ctx = MarginfiRebalanceAccounts::context(accounts)?;
     let solauto_position =

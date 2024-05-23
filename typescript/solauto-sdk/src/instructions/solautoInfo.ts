@@ -1,9 +1,15 @@
 import { Connection, PublicKey, clusterApiUrl } from "@solana/web3.js";
-import { Context, Signer, Umi, publicKey } from "@metaplex-foundation/umi";
+import {
+  Signer,
+  TransactionBuilder,
+  Umi,
+  publicKey,
+} from "@metaplex-foundation/umi";
 import {
   LendingPlatform,
   ReferralStateAccount,
   SolautoPosition,
+  claimReferralFees,
   createSolautoProgram,
   updateReferralStates,
 } from "../generated";
@@ -28,8 +34,10 @@ export interface SolautoInfoArgs {
     newPositionId?: number;
     existingSolautoPosition?: Account<SolautoPosition>;
   };
+
   supplyLiquidityMint?: PublicKey;
   debtLiquidityMint?: PublicKey;
+
   referralState?: Account<ReferralStateAccount>;
   referralFeesDestMint?: PublicKey;
   referredByAuthority?: PublicKey;
@@ -52,9 +60,9 @@ export class SolautoInfo {
   public positionDebtLiquidityTa: PublicKey;
   public signerDebtLiquidityTa: PublicKey;
 
-  public signerReferralState: PublicKey;
-  public signerReferralFeesDestMint: PublicKey;
-  public signerReferralDestTa: PublicKey;
+  public authorityReferralState: PublicKey;
+  public authorityReferralFeesDestMint: PublicKey;
+  public authorityReferralDestTa: PublicKey;
 
   public referredByState?: PublicKey;
   public referredByAuthority?: PublicKey;
@@ -91,11 +99,11 @@ export class SolautoInfo {
             this.solautoPositionData.position.value.protocolData.supplyMint
           )
         : args.supplyLiquidityMint;
-    this.positionSupplyLiquidityTa = await getTokenAccount(
+    this.positionSupplyLiquidityTa = getTokenAccount(
       this.solautoPosition,
       this.supplyLiquidityMint
     );
-    this.signerSupplyLiquidityTa = await getTokenAccount(
+    this.signerSupplyLiquidityTa = getTokenAccount(
       toWeb3JsPublicKey(this.signer.publicKey),
       this.supplyLiquidityMint
     );
@@ -106,51 +114,77 @@ export class SolautoInfo {
             this.solautoPositionData.position.value.protocolData.debtMint
           )
         : args.debtLiquidityMint;
-    this.positionDebtLiquidityTa = await getTokenAccount(
+    this.positionDebtLiquidityTa = getTokenAccount(
       this.solautoPosition,
       this.debtLiquidityMint
     );
-    this.signerDebtLiquidityTa = await getTokenAccount(
+    this.signerDebtLiquidityTa = getTokenAccount(
       toWeb3JsPublicKey(this.signer.publicKey),
       this.debtLiquidityMint
     );
 
-    this.positionDebtLiquidityTa = this.signerReferralState =
-      await getReferralStateAccount(toWeb3JsPublicKey(this.signer.publicKey));
-    this.signerReferralFeesDestMint = args.referralState?.data?.destFeesMint
+    this.authorityReferralState =
+      args.referralState !== undefined
+        ? args.referralState.pubkey
+        : await getReferralStateAccount(
+            toWeb3JsPublicKey(this.signer.publicKey)
+          );
+    this.authorityReferralFeesDestMint = args.referralFeesDestMint
+      ? args.referralFeesDestMint
+      : args.referralState?.data?.destFeesMint
       ? toWeb3JsPublicKey(args.referralState?.data?.destFeesMint)
-      : args.referralFeesDestMint ?? new PublicKey(WSOL_MINT);
-    this.signerReferralDestTa = await getAssociatedTokenAddress(
-      this.signerReferralDestTa,
-      this.signerReferralState
+      : new PublicKey(WSOL_MINT);
+    this.authorityReferralDestTa = await getAssociatedTokenAddress(
+      this.authorityReferralFeesDestMint,
+      this.authorityReferralState
     );
 
+    this.referredByState =
+      args.referralState?.data.referredByState &&
+      args.referralState?.data.referredByState.__option === "Some"
+        ? toWeb3JsPublicKey(args.referralState?.data.referredByState.value)
+        : args.referredByAuthority
+        ? await getReferralStateAccount(this.referredByAuthority)
+        : undefined;
     this.referredByAuthority = args.referredByAuthority;
-    if (this.referredByAuthority !== undefined) {
-      this.referredByState = await getReferralStateAccount(
-        this.referredByAuthority
-      );
-      this.referredBySupplyTa = await getTokenAccount(
+    if (this.referredByState !== undefined) {
+      this.referredBySupplyTa = getTokenAccount(
         this.referredByState,
         this.supplyLiquidityMint
       );
     }
 
     this.solautoFeesWallet = new PublicKey(SOLAUTO_FEES_WALLET);
-    this.solautoFeesSupplyTa = await getTokenAccount(
+    this.solautoFeesSupplyTa = getTokenAccount(
       this.solautoFeesWallet,
       this.supplyLiquidityMint
     );
   }
 
-  updateReferralStates() {
-    const builder = updateReferralStates(this.umi, {
+  updateReferralStates(): TransactionBuilder {
+    return updateReferralStates(this.umi, {
       signer: this.signer,
-      signerReferralState: publicKey(this.signerReferralState),
-      referralFeesDestMint: publicKey(this.signerReferralFeesDestMint),
+      signerReferralState: publicKey(this.authorityReferralState),
+      referralFeesDestMint: publicKey(this.authorityReferralFeesDestMint),
       referredByState: publicKey(this.referredByState),
-      referredByAuthority: publicKey(this.referredByAuthority)
+      referredByAuthority: publicKey(this.referredByAuthority),
     });
+  }
 
+  claimReferralFees(): TransactionBuilder {
+    const destinationTa =
+      this.authorityReferralFeesDestMint !== new PublicKey(WSOL_MINT)
+        ? getTokenAccount(
+            toWeb3JsPublicKey(this.signer.publicKey),
+            this.authorityReferralFeesDestMint
+          )
+        : undefined;
+    return claimReferralFees(this.umi, {
+      signer: this.signer,
+      referralState: publicKey(this.authorityReferralState),
+      referralFeesDestTa: publicKey(this.authorityReferralDestTa),
+      referralFeesDestMint: publicKey(this.authorityReferralFeesDestMint),
+      feesDestinationTa: publicKey(destinationTa),
+    });
   }
 }

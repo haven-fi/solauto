@@ -262,16 +262,9 @@
       ],
       "args": [
         {
-          "name": "args",
+          "name": "marginfiOpenPositionData",
           "type": {
-            "tuple": [
-              {
-                "defined": "UpdatePositionData"
-              },
-              {
-                "option": "u64"
-              }
-            ]
+            "defined": "MarginfiOpenPositionData"
           }
         }
       ],
@@ -1110,9 +1103,9 @@
       ],
       "args": [
         {
-          "name": "rebalanceArgs",
+          "name": "rebalanceData",
           "type": {
-            "defined": "RebalanceArgs"
+            "defined": "RebalanceData"
           }
         }
       ],
@@ -1263,9 +1256,9 @@
       ],
       "args": [
         {
-          "name": "rebalanceArgs",
+          "name": "rebalanceData",
           "type": {
-            "defined": "RebalanceArgs"
+            "defined": "RebalanceData"
           }
         }
       ],
@@ -1388,6 +1381,26 @@
       }
     },
     {
+      "name": "MarginfiOpenPositionData",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "positionData",
+            "type": {
+              "defined": "UpdatePositionData"
+            }
+          },
+          {
+            "name": "marginfiAccountSeedIdx",
+            "type": {
+              "option": "u64"
+            }
+          }
+        ]
+      }
+    },
+    {
       "name": "UpdatePositionData",
       "type": {
         "kind": "struct",
@@ -1416,7 +1429,7 @@
       }
     },
     {
-      "name": "RebalanceArgs",
+      "name": "RebalanceData",
       "type": {
         "kind": "struct",
         "fields": [

@@ -20,6 +20,7 @@ use solauto_sdk::{
             ClaimReferralFeesBuilder,
             ClosePositionBuilder,
             MarginfiOpenPositionBuilder,
+            MarginfiOpenPositionInstructionArgs,
             UpdatePositionBuilder,
             UpdateReferralStatesBuilder,
         },
@@ -140,9 +141,7 @@ impl<'a> GeneralTestData<'a> {
             &referral_fees_dest_mint.pubkey()
         );
 
-        let (referred_by_state, referred_by_supply_ta) = if
-            args.referred_by_authority.is_some()
-        {
+        let (referred_by_state, referred_by_supply_ta) = if args.referred_by_authority.is_some() {
             let referred_by_state = GeneralTestData::get_referral_state(
                 args.referred_by_authority.as_ref().unwrap()
             );
@@ -203,7 +202,7 @@ impl<'a> GeneralTestData<'a> {
                 repay_to_bps: 9000,
                 repay_gap: 500,
                 automation: None,
-                target_boost_to_bps: None
+                target_boost_to_bps: None,
             },
         }
     }
@@ -446,7 +445,7 @@ impl<'a> MarginfiTestData<'a> {
             let random_number: u64 = rng.gen();
             Some(random_number)
         } else {
-            Some(0)
+            None
         };
         let (marginfi_account, marginfi_account_keypair) = if args.position_id != 0 {
             let seed_idx = marginfi_account_seed_idx.unwrap().to_le_bytes();
@@ -520,7 +519,10 @@ impl<'a> MarginfiTestData<'a> {
             .debt_mint(self.general.debt_liquidity_mint.pubkey())
             .signer_debt_ta(Some(self.general.signer_debt_liquidity_ta))
             .position_debt_ta(self.general.position_debt_liquidity_ta)
-            .args((position_data, self.marginfi_account_seed_idx));
+            .position_data(position_data);
+        if self.marginfi_account_seed_idx.is_some() {
+            builder.marginfi_account_seed_idx(self.marginfi_account_seed_idx.unwrap());
+        }
         builder
     }
 }

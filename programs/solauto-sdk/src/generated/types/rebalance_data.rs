@@ -10,7 +10,7 @@ use borsh::BorshSerialize;
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct RebalanceArgs {
+pub struct RebalanceData {
     pub target_liq_utilization_rate_bps: Option<u16>,
     pub max_price_slippage_bps: Option<u16>,
     pub limit_gap_bps: Option<u16>,

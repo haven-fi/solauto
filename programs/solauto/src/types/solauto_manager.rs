@@ -8,7 +8,7 @@ use std::{
 };
 
 use super::{
-    instruction::{RebalanceArgs, SolautoAction, SolautoStandardAccounts},
+    instruction::{RebalanceData, SolautoAction, SolautoStandardAccounts},
     lending_protocol::{LendingProtocolClient, LendingProtocolTokenAccounts},
     obligation_position::LendingProtocolObligationPosition,
     shared::{SolautoError, SolautoPosition, SolautoRebalanceStep, TokenBalanceAmount},
@@ -167,7 +167,7 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
 
     pub fn rebalance(
         &mut self,
-        rebalance_args: RebalanceArgs,
+        rebalance_args: RebalanceData,
         rebalance_step: SolautoRebalanceStep,
     ) -> ProgramResult {
         if rebalance_step == SolautoRebalanceStep::StartSolautoRebalanceSandwich
@@ -185,7 +185,7 @@ impl<'a, 'b> SolautoManager<'a, 'b> {
         }
     }
 
-    fn begin_rebalance(&mut self, rebalance_args: &RebalanceArgs) -> ProgramResult {
+    fn begin_rebalance(&mut self, rebalance_args: &RebalanceData) -> ProgramResult {
         let (debt_adjustment_usd, amount_to_dca_in) = rebalance_utils::get_rebalance_values(
             &mut self.std_accounts.solauto_position.data,
             &mut self.obligation_position,

@@ -22,7 +22,6 @@ import {
   mapSerializer,
   option,
   struct,
-  tuple,
   u64,
   u8,
 } from '@metaplex-foundation/umi/serializers';
@@ -63,11 +62,13 @@ export type MarginfiOpenPositionInstructionAccounts = {
 // Data.
 export type MarginfiOpenPositionInstructionData = {
   discriminator: number;
-  args: [UpdatePositionData, Option<bigint>];
+  positionData: UpdatePositionData;
+  marginfiAccountSeedIdx: Option<bigint>;
 };
 
 export type MarginfiOpenPositionInstructionDataArgs = {
-  args: [UpdatePositionDataArgs, OptionOrNullable<number | bigint>];
+  positionData: UpdatePositionDataArgs;
+  marginfiAccountSeedIdx: OptionOrNullable<number | bigint>;
 };
 
 export function getMarginfiOpenPositionInstructionDataSerializer(): Serializer<
@@ -82,7 +83,8 @@ export function getMarginfiOpenPositionInstructionDataSerializer(): Serializer<
     struct<MarginfiOpenPositionInstructionData>(
       [
         ['discriminator', u8()],
-        ['args', tuple([getUpdatePositionDataSerializer(), option(u64())])],
+        ['positionData', getUpdatePositionDataSerializer()],
+        ['marginfiAccountSeedIdx', option(u64())],
       ],
       { description: 'MarginfiOpenPositionInstructionData' }
     ),
