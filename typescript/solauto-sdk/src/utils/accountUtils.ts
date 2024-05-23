@@ -31,8 +31,7 @@ export function getTokenAccount(wallet: PublicKey, tokenMint: PublicKey) {
   return getAssociatedTokenAddressSync(
     tokenMint,
     wallet,
-    true,
-    toWeb3JsPublicKey(SOLAUTO_PROGRAM_ID)
+    true
   );
 }
 

@@ -25,7 +25,7 @@ import {
   getTokenAccount,
 } from "../utils/accountUtils";
 import { SOLAUTO_FEES_WALLET, WSOL_MINT } from "../constants/generalAccounts";
-import { getAssociatedTokenAddress } from "@solana/spl-token";
+import { getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
 
@@ -140,9 +140,10 @@ export class SolautoInfo {
       : args.referralState?.data?.destFeesMint
       ? toWeb3JsPublicKey(args.referralState?.data?.destFeesMint)
       : WSOL_MINT;
-    this.authorityReferralDestTa = await getAssociatedTokenAddress(
+    this.authorityReferralDestTa = getAssociatedTokenAddressSync(
       this.authorityReferralFeesDestMint,
-      this.authorityReferralState
+      this.authorityReferralState,
+      true
     );
 
     this.referredByState =
@@ -150,7 +151,7 @@ export class SolautoInfo {
       args.referralState?.data.referredByState.__option === "Some"
         ? toWeb3JsPublicKey(args.referralState?.data.referredByState.value)
         : args.referredByAuthority
-        ? await getReferralStateAccount(this.referredByAuthority!)
+        ? await getReferralStateAccount(args.referredByAuthority!)
         : undefined;
     this.referredByAuthority = args.referredByAuthority;
     if (this.referredByState !== undefined) {

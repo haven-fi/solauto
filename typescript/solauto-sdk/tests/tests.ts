@@ -73,7 +73,7 @@ describe("Solauto tests", async () => {
   umi = umi.use(solauto()).use(signerIdentity(signer));
 
   const payForTransactions = false;
-  const positionId = 0;
+  const positionId = 1;
 
   it("e2e", async () => {
     const solautoMarginfiInfo = new SolautoMarginfiInfo();

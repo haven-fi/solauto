@@ -27,8 +27,6 @@ import {
   TransactionBuilder,
   publicKey,
   PublicKey as UmiPublicKey,
-  OptionOrNullable,
-  isOption,
 } from "@metaplex-foundation/umi";
 import { generateRandomU64 } from "../utils/generalUtils";
 
