@@ -4,6 +4,7 @@ import {
   createSignerFromKeypair,
   publicKey,
   signerIdentity,
+  transactionBuilder,
 } from "@metaplex-foundation/umi";
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
 import {
@@ -87,21 +88,27 @@ describe("Solauto tests", async () => {
       )
     );
 
-    const builder = solautoMarginfiInfo.marginfiOpenPosition(
-      {
-        boostToBps: 5000,
-        boostGap: 500,
-        repayToBps: 8500,
-        repayGap: 500,
-        automation: {
-          __option: "None",
-        },
-        targetBoostToBps: {
-          __option: "None",
-        },
-      },
-      undefined
-    );
+    const builder = transactionBuilder()
+      .add(solautoMarginfiInfo.updateReferralStates())
+      .add(
+        solautoMarginfiInfo.marginfiOpenPosition(
+          {
+            boostToBps: 5000,
+            boostGap: 500,
+            repayToBps: 8500,
+            repayGap: 500,
+            automation: {
+              __option: "None",
+            },
+            targetBoostToBps: {
+              __option: "None",
+            },
+          },
+          undefined
+        )
+      );
+
+    builder.prepend(solautoMarginfiInfo.updateReferralStates());
 
     const transaction = await builder.buildWithLatestBlockhash(umi);
     await simulateTransaction(transaction);
