@@ -505,14 +505,12 @@
         {
           "name": "positionDebtLiquidityTa",
           "isMut": true,
-          "isSigner": false,
-          "isOptional": true
+          "isSigner": false
         },
         {
           "name": "signerDebtLiquidityTa",
           "isMut": true,
-          "isSigner": false,
-          "isOptional": true
+          "isSigner": false
         }
       ],
       "args": [],

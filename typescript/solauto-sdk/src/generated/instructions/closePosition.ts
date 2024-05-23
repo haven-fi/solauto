@@ -36,8 +36,8 @@ export type ClosePositionInstructionAccounts = {
   signerSupplyLiquidityTa: PublicKey | Pda;
   positionSupplyLiquidityTa: PublicKey | Pda;
   positionSupplyCollateralTa?: PublicKey | Pda;
-  positionDebtLiquidityTa?: PublicKey | Pda;
-  signerDebtLiquidityTa?: PublicKey | Pda;
+  positionDebtLiquidityTa: PublicKey | Pda;
+  signerDebtLiquidityTa: PublicKey | Pda;
 };
 
 // Data.

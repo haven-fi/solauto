@@ -26,9 +26,9 @@ pub struct ClosePosition {
 
     pub position_supply_collateral_ta: Option<solana_program::pubkey::Pubkey>,
 
-    pub position_debt_liquidity_ta: Option<solana_program::pubkey::Pubkey>,
+    pub position_debt_liquidity_ta: solana_program::pubkey::Pubkey,
 
-    pub signer_debt_liquidity_ta: Option<solana_program::pubkey::Pubkey>,
+    pub signer_debt_liquidity_ta: solana_program::pubkey::Pubkey,
 }
 
 impl ClosePosition {
@@ -80,28 +80,14 @@ impl ClosePosition {
                 false,
             ));
         }
-        if let Some(position_debt_liquidity_ta) = self.position_debt_liquidity_ta {
-            accounts.push(solana_program::instruction::AccountMeta::new(
-                position_debt_liquidity_ta,
-                false,
-            ));
-        } else {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::SOLAUTO_ID,
-                false,
-            ));
-        }
-        if let Some(signer_debt_liquidity_ta) = self.signer_debt_liquidity_ta {
-            accounts.push(solana_program::instruction::AccountMeta::new(
-                signer_debt_liquidity_ta,
-                false,
-            ));
-        } else {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::SOLAUTO_ID,
-                false,
-            ));
-        }
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            self.position_debt_liquidity_ta,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            self.signer_debt_liquidity_ta,
+            false,
+        ));
         accounts.extend_from_slice(remaining_accounts);
         let data = ClosePositionInstructionData::new().try_to_vec().unwrap();
 
@@ -136,8 +122,8 @@ impl ClosePositionInstructionData {
 ///   5. `[writable]` signer_supply_liquidity_ta
 ///   6. `[writable]` position_supply_liquidity_ta
 ///   7. `[writable, optional]` position_supply_collateral_ta
-///   8. `[writable, optional]` position_debt_liquidity_ta
-///   9. `[writable, optional]` signer_debt_liquidity_ta
+///   8. `[writable]` position_debt_liquidity_ta
+///   9. `[writable]` signer_debt_liquidity_ta
 #[derive(Default)]
 pub struct ClosePositionBuilder {
     signer: Option<solana_program::pubkey::Pubkey>,
@@ -213,22 +199,20 @@ impl ClosePositionBuilder {
         self.position_supply_collateral_ta = position_supply_collateral_ta;
         self
     }
-    /// `[optional account]`
     #[inline(always)]
     pub fn position_debt_liquidity_ta(
         &mut self,
-        position_debt_liquidity_ta: Option<solana_program::pubkey::Pubkey>,
+        position_debt_liquidity_ta: solana_program::pubkey::Pubkey,
     ) -> &mut Self {
-        self.position_debt_liquidity_ta = position_debt_liquidity_ta;
+        self.position_debt_liquidity_ta = Some(position_debt_liquidity_ta);
         self
     }
-    /// `[optional account]`
     #[inline(always)]
     pub fn signer_debt_liquidity_ta(
         &mut self,
-        signer_debt_liquidity_ta: Option<solana_program::pubkey::Pubkey>,
+        signer_debt_liquidity_ta: solana_program::pubkey::Pubkey,
     ) -> &mut Self {
-        self.signer_debt_liquidity_ta = signer_debt_liquidity_ta;
+        self.signer_debt_liquidity_ta = Some(signer_debt_liquidity_ta);
         self
     }
     /// Add an aditional account to the instruction.
@@ -270,8 +254,12 @@ impl ClosePositionBuilder {
                 .position_supply_liquidity_ta
                 .expect("position_supply_liquidity_ta is not set"),
             position_supply_collateral_ta: self.position_supply_collateral_ta,
-            position_debt_liquidity_ta: self.position_debt_liquidity_ta,
-            signer_debt_liquidity_ta: self.signer_debt_liquidity_ta,
+            position_debt_liquidity_ta: self
+                .position_debt_liquidity_ta
+                .expect("position_debt_liquidity_ta is not set"),
+            signer_debt_liquidity_ta: self
+                .signer_debt_liquidity_ta
+                .expect("signer_debt_liquidity_ta is not set"),
         };
 
         accounts.instruction_with_remaining_accounts(&self.__remaining_accounts)
@@ -296,9 +284,9 @@ pub struct ClosePositionCpiAccounts<'a, 'b> {
 
     pub position_supply_collateral_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
-    pub position_debt_liquidity_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    pub position_debt_liquidity_ta: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub signer_debt_liquidity_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    pub signer_debt_liquidity_ta: &'b solana_program::account_info::AccountInfo<'a>,
 }
 
 /// `close_position` CPI instruction.
@@ -322,9 +310,9 @@ pub struct ClosePositionCpi<'a, 'b> {
 
     pub position_supply_collateral_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
-    pub position_debt_liquidity_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    pub position_debt_liquidity_ta: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub signer_debt_liquidity_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    pub signer_debt_liquidity_ta: &'b solana_program::account_info::AccountInfo<'a>,
 }
 
 impl<'a, 'b> ClosePositionCpi<'a, 'b> {
@@ -419,28 +407,14 @@ impl<'a, 'b> ClosePositionCpi<'a, 'b> {
                 false,
             ));
         }
-        if let Some(position_debt_liquidity_ta) = self.position_debt_liquidity_ta {
-            accounts.push(solana_program::instruction::AccountMeta::new(
-                *position_debt_liquidity_ta.key,
-                false,
-            ));
-        } else {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::SOLAUTO_ID,
-                false,
-            ));
-        }
-        if let Some(signer_debt_liquidity_ta) = self.signer_debt_liquidity_ta {
-            accounts.push(solana_program::instruction::AccountMeta::new(
-                *signer_debt_liquidity_ta.key,
-                false,
-            ));
-        } else {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::SOLAUTO_ID,
-                false,
-            ));
-        }
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            *self.position_debt_liquidity_ta.key,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            *self.signer_debt_liquidity_ta.key,
+            false,
+        ));
         remaining_accounts.iter().for_each(|remaining_account| {
             accounts.push(solana_program::instruction::AccountMeta {
                 pubkey: *remaining_account.0.key,
@@ -467,12 +441,8 @@ impl<'a, 'b> ClosePositionCpi<'a, 'b> {
         if let Some(position_supply_collateral_ta) = self.position_supply_collateral_ta {
             account_infos.push(position_supply_collateral_ta.clone());
         }
-        if let Some(position_debt_liquidity_ta) = self.position_debt_liquidity_ta {
-            account_infos.push(position_debt_liquidity_ta.clone());
-        }
-        if let Some(signer_debt_liquidity_ta) = self.signer_debt_liquidity_ta {
-            account_infos.push(signer_debt_liquidity_ta.clone());
-        }
+        account_infos.push(self.position_debt_liquidity_ta.clone());
+        account_infos.push(self.signer_debt_liquidity_ta.clone());
         remaining_accounts
             .iter()
             .for_each(|remaining_account| account_infos.push(remaining_account.0.clone()));
@@ -497,8 +467,8 @@ impl<'a, 'b> ClosePositionCpi<'a, 'b> {
 ///   5. `[writable]` signer_supply_liquidity_ta
 ///   6. `[writable]` position_supply_liquidity_ta
 ///   7. `[writable, optional]` position_supply_collateral_ta
-///   8. `[writable, optional]` position_debt_liquidity_ta
-///   9. `[writable, optional]` signer_debt_liquidity_ta
+///   8. `[writable]` position_debt_liquidity_ta
+///   9. `[writable]` signer_debt_liquidity_ta
 pub struct ClosePositionCpiBuilder<'a, 'b> {
     instruction: Box<ClosePositionCpiBuilderInstruction<'a, 'b>>,
 }
@@ -586,22 +556,20 @@ impl<'a, 'b> ClosePositionCpiBuilder<'a, 'b> {
         self.instruction.position_supply_collateral_ta = position_supply_collateral_ta;
         self
     }
-    /// `[optional account]`
     #[inline(always)]
     pub fn position_debt_liquidity_ta(
         &mut self,
-        position_debt_liquidity_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+        position_debt_liquidity_ta: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
-        self.instruction.position_debt_liquidity_ta = position_debt_liquidity_ta;
+        self.instruction.position_debt_liquidity_ta = Some(position_debt_liquidity_ta);
         self
     }
-    /// `[optional account]`
     #[inline(always)]
     pub fn signer_debt_liquidity_ta(
         &mut self,
-        signer_debt_liquidity_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+        signer_debt_liquidity_ta: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
-        self.instruction.signer_debt_liquidity_ta = signer_debt_liquidity_ta;
+        self.instruction.signer_debt_liquidity_ta = Some(signer_debt_liquidity_ta);
         self
     }
     /// Add an additional account to the instruction.
@@ -682,9 +650,15 @@ impl<'a, 'b> ClosePositionCpiBuilder<'a, 'b> {
 
             position_supply_collateral_ta: self.instruction.position_supply_collateral_ta,
 
-            position_debt_liquidity_ta: self.instruction.position_debt_liquidity_ta,
+            position_debt_liquidity_ta: self
+                .instruction
+                .position_debt_liquidity_ta
+                .expect("position_debt_liquidity_ta is not set"),
 
-            signer_debt_liquidity_ta: self.instruction.signer_debt_liquidity_ta,
+            signer_debt_liquidity_ta: self
+                .instruction
+                .signer_debt_liquidity_ta
+                .expect("signer_debt_liquidity_ta is not set"),
         };
         instruction.invoke_signed_with_remaining_accounts(
             signers_seeds,
