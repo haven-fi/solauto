@@ -53,7 +53,7 @@ describe("Solauto tests", async () => {
   const payForTransactions = false;
   const positionId = 1;
 
-  it("e2e", async () => {
+  it("open - deposit - rebalance - close", async () => {
     const solautoMarginfiInfo = new SolautoMarginfiInfo();
     await solautoMarginfiInfo.initialize(
       newMarginfiSolautoManagedPositionArgs(
@@ -84,6 +84,8 @@ describe("Solauto tests", async () => {
           undefined
         )
       );
+
+    // TODO
 
     const transaction = await builder.buildWithLatestBlockhash(umi);
     await simulateTransaction(transaction);
