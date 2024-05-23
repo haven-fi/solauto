@@ -2,7 +2,6 @@ import {
   Transaction,
   UmiPlugin,
   createSignerFromKeypair,
-  publicKey,
   signerIdentity,
   transactionBuilder,
 } from "@metaplex-foundation/umi";
@@ -11,33 +10,11 @@ import {
   toWeb3JsKeypair,
   toWeb3JsLegacyTransaction,
 } from "@metaplex-foundation/umi-web3js-adapters";
-import {
-  createSolautoProgram,
-  deserializeSolautoPosition,
-  marginfiOpenPosition,
-  solendOpenPosition,
-} from "../src/generated";
-import { generateRandomU64, generateRandomU8 } from "../src/utils/generalUtils";
+import { createSolautoProgram } from "../src/generated";
 import { getSecretKey } from "./testUtils";
-import {
-  Connection,
-  Keypair,
-  PublicKey,
-  SYSVAR_RENT_PUBKEY,
-  SystemProgram,
-  clusterApiUrl,
-} from "@solana/web3.js";
+import { Connection, Keypair, PublicKey, clusterApiUrl } from "@solana/web3.js";
 import { MARGINFI_ACCOUNTS } from "../src/constants/marginfiAccounts";
-import {
-  getSolautoPositionAccount,
-  getSolendObligationAccount,
-} from "../src/utils/accountUtils";
-import {
-  ASSOCIATED_TOKEN_PROGRAM_ID,
-  TOKEN_PROGRAM_ID,
-  getAssociatedTokenAddress,
-} from "@solana/spl-token";
-import { assert, expect } from "chai";
+import { assert } from "chai";
 import {
   SolautoMarginfiInfo,
   newMarginfiSolautoManagedPositionArgs,
@@ -49,7 +26,7 @@ let umi = createUmi(connection);
 const secretKey = getSecretKey();
 const signerKeypair = umi.eddsa.createKeypairFromSecretKey(secretKey);
 const signer = createSignerFromKeypair(umi, signerKeypair);
-const signerPublicKey = Keypair.fromSecretKey(secretKey).publicKey;
+// const signerPublicKey = Keypair.fromSecretKey(secretKey).publicKey;
 
 async function simulateTransaction(transaction: Transaction) {
   const web3Transaction = toWeb3JsLegacyTransaction(transaction);
@@ -107,8 +84,6 @@ describe("Solauto tests", async () => {
           undefined
         )
       );
-
-    builder.prepend(solautoMarginfiInfo.updateReferralStates());
 
     const transaction = await builder.buildWithLatestBlockhash(umi);
     await simulateTransaction(transaction);
