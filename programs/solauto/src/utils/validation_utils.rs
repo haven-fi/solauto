@@ -80,22 +80,17 @@ pub fn validate_instruction(
     }
 
     let position_authority = solauto_position.data.authority;
+    let authority_signed = || {
+        let (pda, _) = Pubkey::find_program_address(solauto_position.data.seeds().as_slice(), &crate::ID);
+        return signer.key == &position_authority && solauto_position.account_info.key == &pda;
+    };
 
-    if authority_signer_only_ix {
-        if signer.key != &position_authority {
-            msg!(
-                "Authority-only instruction, invalid signer for the specified instruction & Solauto position"
-            );
-            return Err(SolautoError::IncorrectAccounts.into());
-        }
-
-        let (pda, _) =
-            Pubkey::find_program_address(solauto_position.data.seeds().as_slice(), &crate::ID);
-        if &pda != solauto_position.account_info.key {
-            msg!("Invalid position specified for the current signer");
-            return Err(ProgramError::MissingRequiredSignature.into());
-        }
-    } else if signer.key != &SOLAUTO_MANAGER {
+    if authority_signer_only_ix && !authority_signed() {
+        msg!(
+            "Authority-only instruction, invalid signer for the specified instruction & Solauto position"
+        );
+        return Err(ProgramError::MissingRequiredSignature.into());
+    } else if !authority_signed() && signer.key != &SOLAUTO_MANAGER {
         msg!("Solauto instruction can only be signed by the position authority or Solauto manager");
         return Err(ProgramError::MissingRequiredSignature.into());
     }

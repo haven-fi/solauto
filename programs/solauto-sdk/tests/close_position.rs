@@ -1,7 +1,7 @@
 pub mod test_utils;
 
 #[cfg(test)]
-mod update_position {
+mod close_position {
     use solana_program_test::tokio;
     use solana_sdk::{
         instruction::InstructionError,
@@ -97,7 +97,7 @@ mod update_position {
             data.general.ctx.last_blockhash
         );
         let err = data.general.ctx.banks_client.process_transaction(tx).await.unwrap_err();
-        assert_instruction_error!(err, InstructionError::Custom(0));
+        assert_instruction_error!(err, InstructionError::MissingRequiredSignature);
     }
 
     #[tokio::test]
