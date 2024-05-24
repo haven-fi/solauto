@@ -78,13 +78,13 @@ describe("Solauto tests", async () => {
       builder = builder.add(beforeIx);
     }
 
-    builder = builder.add(info.marginfiProtocolInteraction(initialDeposit));
-    // TODO add rebalance
+    // builder = builder.add(info.marginfiProtocolInteraction(initialDeposit));
+    // // TODO add rebalance
 
-    const afterIx = tokenAccountChoresAfter(info, initialDeposit, undefined);
-    if (afterIx !== undefined) {
-      builder = builder.add(afterIx);
-    }
+    // const afterIx = tokenAccountChoresAfter(info, initialDeposit, undefined);
+    // if (afterIx !== undefined) {
+    //   builder = builder.add(afterIx);
+    // }
 
     // TODO optimize this
     builder = builder.prepend(requestComputeUnitLimitUmiIx(signer, 500000));
