@@ -251,8 +251,7 @@ impl<'a, T: BorshDeserialize> DeserializedAccount<'a, T> {
     pub fn deserialize(account: Option<&'a AccountInfo<'a>>) -> Result<Option<Self>, ProgramError> {
         match account {
             Some(account_info) => {
-                let mut data: &[u8] = &(*account_info.data).borrow();
-                let deserialized_data = T::deserialize(&mut data)
+                let deserialized_data = T::try_from_slice(&account_info.data.borrow())
                     .map_err(|_| SolautoError::FailedAccountDeserialization)?;
                 Ok(Some(Self {
                     account_info,

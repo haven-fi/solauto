@@ -78,7 +78,6 @@ describe("Solauto tests", async () => {
       builder = builder.add(beforeIx);
     }
     
-    // builder = builder.add(info.marginfiRefreshDataIx());
     builder = builder.add(info.marginfiProtocolInteraction(initialDeposit));
     // TODO add rebalance
 
