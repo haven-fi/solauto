@@ -25,8 +25,11 @@ export async function simulateTransaction(connection: Connection, transaction: T
     web3Transaction
   );
   if (simulationResult.value.err) {
-    console.log(simulationResult.value.logs);
+    simulationResult.value.logs?.forEach(x => {
+      console.log(x);
+    })
   }
+  console.log("Compute units: ", simulationResult.value.unitsConsumed);
   assert.equal(simulationResult.value.err, undefined);
 }
 

@@ -183,6 +183,14 @@ export class SolautoMarginfiInfo extends SolautoInfo {
     });
   }
 
+  marginfiProtocolInteraction(args: SolautoActionArgs): TransactionBuilder {
+    let builder = transactionBuilder();
+
+    // what do we need to do if wSOL accounts
+
+    return builder.add(this.marginfiProtocolInteractionIx(args));
+  }
+
   marginfiProtocolInteractionIx(args: SolautoActionArgs): TransactionBuilder {
     let signerSupplyTa: UmiPublicKey | undefined = undefined;
     let vaultSupplyTa: UmiPublicKey | undefined = undefined;

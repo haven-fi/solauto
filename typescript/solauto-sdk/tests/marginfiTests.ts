@@ -1,17 +1,27 @@
 import {
   createSignerFromKeypair,
   signerIdentity,
+  transactionBuilder,
 } from "@metaplex-foundation/umi";
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
 import { getSecretKey, simulateTransaction } from "./testUtils";
 import { Connection, PublicKey, clusterApiUrl } from "@solana/web3.js";
 import { MARGINFI_ACCOUNTS } from "../src/constants/marginfiAccounts";
-import { assert } from "chai";
 import {
   SolautoMarginfiInfo,
   newMarginfiSolautoManagedPositionArgs,
 } from "../src/instructions/solautoMarginfiInfo";
 import { WSOL_MINT } from "../src/constants/generalAccounts";
+import { SolautoActionArgs } from "../src/generated";
+import {
+  requestComputeUnitLimitUmiIx,
+  tokenAccountChoresAfter,
+  tokenAccountChoresBefore,
+} from "../src/utils/instructionUtils";
+import {
+  toWeb3JsLegacyTransaction,
+  toWeb3JsTransaction,
+} from "@metaplex-foundation/umi-web3js-adapters";
 
 const connection = new Connection(clusterApiUrl("mainnet-beta"), "confirmed");
 let umi = createUmi(connection);
@@ -27,8 +37,8 @@ describe("Solauto tests", async () => {
   const positionId = 1;
 
   it("open - deposit - rebalance - close", async () => {
-    const solautoMarginfiInfo = new SolautoMarginfiInfo();
-    await solautoMarginfiInfo.initialize(
+    const info = new SolautoMarginfiInfo();
+    await info.initialize(
       newMarginfiSolautoManagedPositionArgs(
         signer,
         positionId,
@@ -38,23 +48,46 @@ describe("Solauto tests", async () => {
       )
     );
 
-    const builder = solautoMarginfiInfo.marginfiOpenPosition(
-      {
-        boostToBps: 5000,
-        boostGap: 500,
-        repayToBps: 8500,
-        repayGap: 500,
-        automation: {
-          __option: "None",
+    const initialDeposit: SolautoActionArgs = {
+      __kind: "Deposit",
+      fields: [BigInt(1000000000)],
+    };
+    let builder = transactionBuilder().add(
+      info.marginfiOpenPosition(
+        {
+          boostToBps: 5000,
+          boostGap: 500,
+          repayToBps: 8500,
+          repayGap: 500,
+          automation: {
+            __option: "None",
+          },
+          targetBoostToBps: {
+            __option: "None",
+          },
         },
-        targetBoostToBps: {
-          __option: "None",
-        },
-      },
+        undefined
+      )
+    );
+    const beforeIx = await tokenAccountChoresBefore(
+      info,
+      initialDeposit,
       undefined
     );
+    if (beforeIx !== undefined) {
+      builder = builder.add(beforeIx);
+    }
 
-    // TODO
+    builder = builder.add(info.marginfiProtocolInteraction(initialDeposit));
+    // TODO add rebalance
+
+    const afterIx = tokenAccountChoresAfter(info, initialDeposit, undefined);
+    if (afterIx !== undefined) {
+      builder = builder.add(afterIx);
+    }
+
+    // TODO optimize this
+    builder = builder.prepend(requestComputeUnitLimitUmiIx(signer, 500000));
 
     await simulateTransaction(
       connection,
@@ -62,7 +95,8 @@ describe("Solauto tests", async () => {
       signer
     );
     if (payForTransactions) {
-      await builder.sendAndConfirm(umi);
+      const result = await builder.sendAndConfirm(umi);
+      console.log(result.result);
     }
   });
 });

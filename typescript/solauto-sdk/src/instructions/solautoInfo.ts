@@ -10,6 +10,7 @@ import {
 import {
   LendingPlatform,
   ReferralState,
+  SolautoActionArgs,
   SolautoPosition,
   UpdatePositionDataArgs,
   cancelDCA,
