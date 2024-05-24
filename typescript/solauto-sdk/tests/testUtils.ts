@@ -1,6 +1,5 @@
-import { Keypair, Transaction, UmiPlugin } from "@metaplex-foundation/umi";
-import { toWeb3JsKeypair, toWeb3JsTransaction } from "@metaplex-foundation/umi-web3js-adapters";
-import { Connection } from "@solana/web3.js";
+import { UmiPlugin } from "@metaplex-foundation/umi";
+import { Connection, VersionedTransaction } from "@solana/web3.js";
 import fs from "fs";
 import path from "path";
 import { assert } from "chai";
@@ -17,17 +16,15 @@ export function getSecretKey(keypairFilename: string = "id"): Uint8Array {
   );
 }
 
-export async function simulateTransaction(connection: Connection, transaction: Transaction, signerKeypair: Keypair) {
-  const web3Transaction = toWeb3JsTransaction(transaction);
-  web3Transaction.sign([toWeb3JsKeypair(signerKeypair)]);
-
-  const simulationResult = await connection.simulateTransaction(
-    web3Transaction
-  );
+export async function simulateTransaction(
+  connection: Connection,
+  transaction: VersionedTransaction
+) {
+  const simulationResult = await connection.simulateTransaction(transaction);
   if (simulationResult.value.err) {
-    simulationResult.value.logs?.forEach(x => {
+    simulationResult.value.logs?.forEach((x) => {
       console.log(x);
-    })
+    });
   }
   console.log("Compute units: ", simulationResult.value.unitsConsumed);
   assert.equal(simulationResult.value.err, undefined);

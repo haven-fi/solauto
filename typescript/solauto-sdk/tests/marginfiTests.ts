@@ -19,7 +19,7 @@ import {
   tokenAccountChoresBefore,
 } from "../src/utils/instructionUtils";
 import {
-  toWeb3JsLegacyTransaction,
+  toWeb3JsKeypair,
   toWeb3JsTransaction,
 } from "@metaplex-foundation/umi-web3js-adapters";
 
@@ -77,7 +77,7 @@ describe("Solauto tests", async () => {
     if (beforeIx !== undefined) {
       builder = builder.add(beforeIx);
     }
-    
+
     builder = builder.add(info.marginfiProtocolInteraction(initialDeposit));
     // TODO add rebalance
 
@@ -89,10 +89,13 @@ describe("Solauto tests", async () => {
     // TODO optimize this
     builder = builder.prepend(requestComputeUnitLimitUmiIx(signer, 500000));
 
+    let tx = await builder.buildWithLatestBlockhash(umi);
+    const web3Transaction = toWeb3JsTransaction(tx);
+    web3Transaction.sign([toWeb3JsKeypair(signerKeypair)]);
+
     await simulateTransaction(
       connection,
-      await builder.buildWithLatestBlockhash(umi),
-      signer
+      web3Transaction,
     );
     if (payForTransactions) {
       const result = await builder.sendAndConfirm(umi);

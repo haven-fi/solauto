@@ -9,6 +9,7 @@ mod claim_referral_fees {
         signer::Signer,
         transaction::Transaction,
     };
+    use solauto_sdk::generated::accounts::ReferralState;
     use spl_associated_token_account::get_associated_token_address;
 
     use crate::{ assert_instruction_error, test_utils::* };
@@ -74,16 +75,12 @@ mod claim_referral_fees {
         let fake_referral_state_account = data.general.signer_referral_state;
 
         let mut data = MarginfiTestData::new(&args).await;
-        data
-            .test_prefixtures().await
+        data.test_prefixtures().await
             .unwrap()
             .general.create_referral_state_accounts().await
             .unwrap();
         data.general
-            .create_ata(
-                data.general.ctx.payer.pubkey(),
-                data.general.referral_fees_dest_mint
-            ).await
+            .create_ata(data.general.ctx.payer.pubkey(), data.general.referral_fees_dest_mint).await
             .unwrap();
         data.general
             .create_ata(

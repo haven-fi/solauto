@@ -101,7 +101,7 @@ impl<'a> MarginfiClient<'a> {
         debt_vault_authority: Option<&'a AccountInfo<'a>>,
     ) -> Result<(Self, LendingProtocolObligationPosition), ProgramError> {
         let deserialized_marginfi_account =
-            DeserializedAccount::<MarginfiAccount>::deserialize(Some(marginfi_account))?.unwrap();
+            DeserializedAccount::<MarginfiAccount>::try_from_slice(Some(marginfi_account))?.unwrap();
 
         let obligation_position = MarginfiClient::get_obligation_position(
             &deserialized_marginfi_account,
@@ -170,7 +170,7 @@ impl<'a> MarginfiClient<'a> {
         price_oracle: &'a AccountInfo<'a>,
         debt_weight: f64,
     ) -> Result<(PositionTokenUsage, f64), ProgramError> {
-        let bank = DeserializedAccount::<Bank>::deserialize(Some(supply_bank))?.unwrap();
+        let bank = DeserializedAccount::<Bank>::try_from_slice(Some(supply_bank))?.unwrap();
 
         let supply_weight = math_utils::convert_i80f48_to_f64(I80F48::from_le_bytes(
             bank.data.config.asset_weight_maint.value,
@@ -225,7 +225,7 @@ impl<'a> MarginfiClient<'a> {
         debt_bank: &'a AccountInfo<'a>,
         price_oracle: &'a AccountInfo<'a>,
     ) -> Result<PositionTokenUsage, ProgramError> {
-        let bank = DeserializedAccount::<Bank>::deserialize(Some(debt_bank))?.unwrap();
+        let bank = DeserializedAccount::<Bank>::try_from_slice(Some(debt_bank))?.unwrap();
 
         let liability_share_value = I80F48::from_le_bytes(bank.data.liability_share_value.value);
 
