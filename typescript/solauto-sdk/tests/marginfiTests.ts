@@ -12,9 +12,7 @@ import {
   newMarginfiSolautoManagedPositionArgs,
 } from "../src/instructions/solautoMarginfiInfo";
 import { SolautoActionArgs } from "../src/generated";
-import {
-  buildSolautoUserInstruction,
-} from "../src/utils/solautoInstructionUtils";
+import { buildSolautoUserInstruction } from "../src/utils/solautoInstructionUtils";
 import {
   toWeb3JsKeypair,
   toWeb3JsTransaction,
@@ -45,6 +43,7 @@ describe("Solauto tests", async () => {
         new PublicKey("He4ka5Q3N1UvZikZvykdi47xyk5PoVP2tcQL5sVp31Sz")
       )
     );
+    // TODO fix issue with SOL as supply and USDC as debt
 
     const initialDeposit: SolautoActionArgs = {
       __kind: "Deposit",
@@ -52,38 +51,35 @@ describe("Solauto tests", async () => {
       fields: [BigInt(1000000)],
     };
 
-    let tx = transactionBuilder()
-      .add(
-        info.marginfiOpenPosition(
-          {
-            boostToBps: 5000,
-            boostGap: 500,
-            repayToBps: 8500,
-            repayGap: 500,
-            automation: {
-              __option: "None",
-            },
-            targetBoostToBps: {
-              __option: "None",
-            },
+    let tx = transactionBuilder().add([
+      info.marginfiOpenPosition(
+        {
+          boostToBps: 5000,
+          boostGap: 500,
+          repayToBps: 8500,
+          repayGap: 500,
+          automation: {
+            __option: "None",
           },
-          undefined
-        )
-      )
-      .add(info.marginfiProtocolInteraction(initialDeposit))
-      // TODO borrow, rebalance to 0, withdraw remaining supply
-      .add(
-        info.marginfiProtocolInteraction({
-          __kind: "Withdraw",
-          fields: [
-            {
-              __kind: "Some",
-              fields: [BigInt(1000000)],
-            },
-          ],
-        })
-      )
-      .add(info.closePositionIx());
+          targetBoostToBps: {
+            __option: "None",
+          },
+        },
+        undefined
+      ),
+      info.marginfiProtocolInteraction(initialDeposit),
+      // TODO remove the below, borrow instead, rebalance to 0, withdraw remaining supply
+      info.marginfiProtocolInteraction({
+        __kind: "Withdraw",
+        fields: [
+          {
+            __kind: "Some",
+            fields: [BigInt(1000000)],
+          },
+        ],
+      }),
+      info.closePositionIx(),
+    ]);
 
     tx = await buildSolautoUserInstruction(tx, info, initialDeposit);
 
