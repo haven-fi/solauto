@@ -17,7 +17,8 @@ use crate::{
             RebalanceData, SolautoStandardAccounts, SOLAUTO_REBALANCE_IX_DISCRIMINATORS,
         },
         obligation_position::LendingProtocolObligationPosition,
-        shared::{PositionData, SolautoError, SolautoPosition, SolautoRebalanceStep},
+        shared::{SolautoError, SolautoRebalanceStep},
+        solauto_position::{SolautoPosition,PositionData}
     },
 };
 
@@ -430,10 +431,9 @@ mod tests {
     use crate::{
         types::{
             obligation_position::PositionTokenUsage,
-            shared::{
-                AutomationSettings, DCASettings, DebtToAddToPosition, SolautoSettingsParameters,
-            },
+            shared::AutomationSettings,
             solauto_manager::SolautoManager,
+            solauto_position::{DCASettings, DebtToAddToPosition, SolautoSettingsParameters}
         },
         utils::math_utils,
     };

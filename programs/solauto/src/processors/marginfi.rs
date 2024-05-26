@@ -14,7 +14,8 @@ use crate::{
             },
             MarginfiOpenPositionData, RebalanceData, SolautoAction, SolautoStandardAccounts,
         },
-        shared::{DeserializedAccount, LendingPlatform, ReferralState, SolautoPosition},
+        shared::{DeserializedAccount, LendingPlatform, ReferralState},
+        solauto_position::SolautoPosition
     },
     utils::*,
 };

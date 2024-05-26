@@ -1,17 +1,20 @@
 use borsh::BorshSerialize;
 use solana_program::{
-    account_info::AccountInfo, entrypoint::ProgramResult, hash::hash, instruction::Instruction,
-    program::invoke, program_error::ProgramError, pubkey::Pubkey,
+    account_info::AccountInfo,
+    entrypoint::ProgramResult,
+    hash::hash,
+    instruction::Instruction,
+    program::invoke,
+    program_error::ProgramError,
+    pubkey::Pubkey,
     sysvar::instructions::load_instruction_at_checked,
 };
 
 use super::solana_utils::invoke_instruction;
-use crate::types::shared::{DeserializedAccount, SolautoPosition};
+use crate::types::{ shared::DeserializedAccount, solauto_position::SolautoPosition };
 
 pub fn update_data<T: BorshSerialize>(account: &mut DeserializedAccount<T>) -> ProgramResult {
-    account
-        .data
-        .serialize(&mut &mut account.account_info.data.borrow_mut()[..])?;
+    account.data.serialize(&mut &mut account.account_info.data.borrow_mut()[..])?;
     Ok(())
 }
 
@@ -25,7 +28,7 @@ pub fn update_data<T: BorshSerialize>(account: &mut DeserializedAccount<T>) -> P
 
 pub fn get_seeds_with_bump<'a, 'b>(
     mut seeds: Vec<&'a [u8]>,
-    bump_storage: &'a mut [u8],
+    bump_storage: &'a mut [u8]
 ) -> Vec<&'a [u8]> {
     let (_, bump) = Pubkey::find_program_address(seeds.as_slice(), &crate::ID);
     bump_storage[0] = bump;
@@ -36,7 +39,7 @@ pub fn get_seeds_with_bump<'a, 'b>(
 pub fn solauto_invoke_instruction(
     instruction: Instruction,
     account_infos: &[AccountInfo],
-    solauto_position: &DeserializedAccount<SolautoPosition>,
+    solauto_position: &DeserializedAccount<SolautoPosition>
 ) -> ProgramResult {
     if solauto_position.data.self_managed {
         invoke(&instruction, account_infos)
@@ -44,7 +47,7 @@ pub fn solauto_invoke_instruction(
         invoke_instruction(
             &instruction,
             account_infos,
-            Some(&solauto_position.data.seeds_with_bump()),
+            Some(&solauto_position.data.seeds_with_bump())
         )
     }
 }
@@ -53,15 +56,20 @@ pub fn get_relative_instruction(
     ixs_sysvar: &AccountInfo,
     current_ix_idx: u16,
     relative_idx: i16,
-    total_ix_in_tx: u16,
+    total_ix_in_tx: u16
 ) -> Result<Option<Instruction>, ProgramError> {
-    if (current_ix_idx as i16) + relative_idx > 0
-        && (current_ix_idx as i16) + relative_idx < (total_ix_in_tx as i16)
+    if
+        (current_ix_idx as i16) + relative_idx > 0 &&
+        (current_ix_idx as i16) + relative_idx < (total_ix_in_tx as i16)
     {
-        Ok(Some(load_instruction_at_checked(
-            ((current_ix_idx as i16) + relative_idx) as usize,
-            ixs_sysvar,
-        )?))
+        Ok(
+            Some(
+                load_instruction_at_checked(
+                    ((current_ix_idx as i16) + relative_idx) as usize,
+                    ixs_sysvar
+                )?
+            )
+        )
     } else {
         Ok(None)
     }
@@ -108,9 +116,9 @@ impl InstructionChecker {
                     .try_into()
                     .expect("Slice with incorrect length");
 
-                if self.ix_discriminators.is_none()
-                    || self
-                        .ix_discriminators
+                if
+                    self.ix_discriminators.is_none() ||
+                    self.ix_discriminators
                         .as_ref()
                         .unwrap()
                         .iter()

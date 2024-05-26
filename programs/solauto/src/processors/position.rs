@@ -10,7 +10,8 @@ use crate::{
             accounts::{CancelDCAAccounts, ClosePositionAccounts, UpdatePositionAccounts},
             UpdatePositionData,
         },
-        shared::{DeserializedAccount, SolautoError, SolautoPosition},
+        shared::{DeserializedAccount, SolautoError},
+        solauto_position::SolautoPosition
     },
     utils::{ix_utils, solauto_utils, validation_utils},
 };

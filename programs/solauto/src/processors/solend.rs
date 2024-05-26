@@ -15,7 +15,8 @@ use crate::{
             },
             RebalanceData, SolautoAction, SolautoStandardAccounts, UpdatePositionData,
         },
-        shared::{DeserializedAccount, LendingPlatform, ReferralState, SolautoPosition},
+        shared::{DeserializedAccount, LendingPlatform, ReferralState},
+        solauto_position::SolautoPosition
     },
     utils::*,
 };

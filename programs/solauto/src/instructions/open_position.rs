@@ -7,7 +7,8 @@ use crate::{
         instruction::accounts::{
             Context, MarginfiOpenPositionAccounts, SolendOpenPositionAccounts,
         },
-        shared::{DeserializedAccount, SolautoPosition},
+        shared::DeserializedAccount,
+        solauto_position::SolautoPosition
     },
     utils::*,
 };

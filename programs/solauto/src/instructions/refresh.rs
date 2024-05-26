@@ -5,8 +5,9 @@ use crate::{
     clients::{marginfi::MarginfiClient, solend::SolendClient},
     types::{
         instruction::accounts::{Context, MarginfiRefreshDataAccounts, SolendRefreshDataAccounts},
-        shared::{DeserializedAccount, SolautoPosition},
+        shared::DeserializedAccount,
         solauto_manager::SolautoManager,
+        solauto_position::SolautoPosition
     },
     utils::ix_utils,
 };

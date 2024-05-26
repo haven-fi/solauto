@@ -6,7 +6,8 @@ use crate::{
             accounts::{Context, UpdatePositionAccounts},
             UpdatePositionData,
         },
-        shared::{DeserializedAccount, SolautoError, SolautoPosition},
+        shared::{DeserializedAccount, SolautoError},
+        solauto_position::SolautoPosition
     },
     utils::{ix_utils, solana_utils, solauto_utils, validation_utils},
 };

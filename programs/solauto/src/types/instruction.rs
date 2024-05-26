@@ -3,7 +3,7 @@ use shank::{ShankContext, ShankInstruction};
 use solana_program::{account_info::AccountInfo, pubkey::Pubkey};
 use spl_token::state::Account as TokenAccount;
 
-use super::shared::*;
+use super::{shared::*, solauto_position::*};
 
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankContext, ShankInstruction)]
 #[rustfmt::skip]

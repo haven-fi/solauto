@@ -21,8 +21,9 @@ use crate::{
         lending_protocol::{LendingProtocolClient, LendingProtocolTokenAccounts},
         obligation_position::{LendingProtocolObligationPosition, PositionTokenUsage},
         shared::{
-            DeserializedAccount, LendingPlatform, SolautoError, SolautoPosition, TokenBalanceAmount,
+            DeserializedAccount, LendingPlatform, SolautoError, TokenBalanceAmount,
         },
+        solauto_position::SolautoPosition
     },
     utils::{math_utils, solana_utils::*, solauto_utils::*, validation_utils::*},
 };

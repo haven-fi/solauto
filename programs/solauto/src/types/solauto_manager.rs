@@ -11,7 +11,8 @@ use super::{
     instruction::{RebalanceData, SolautoAction, SolautoStandardAccounts},
     lending_protocol::{LendingProtocolClient, LendingProtocolTokenAccounts},
     obligation_position::LendingProtocolObligationPosition,
-    shared::{SolautoError, SolautoPosition, SolautoRebalanceStep, TokenBalanceAmount},
+    shared::{SolautoError, SolautoRebalanceStep, TokenBalanceAmount},
+    solauto_position::SolautoPosition
 };
 use crate::utils::*;
 

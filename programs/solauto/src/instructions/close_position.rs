@@ -5,7 +5,8 @@ use crate::{
     constants::WSOL_MINT,
     types::{
         instruction::accounts::{ClosePositionAccounts, Context},
-        shared::{DeserializedAccount, SolautoPosition},
+        shared::DeserializedAccount,
+        solauto_position::SolautoPosition
     },
     utils::solana_utils,
 };
