@@ -10,7 +10,6 @@ import {
 import {
   LendingPlatform,
   ReferralState,
-  SolautoActionArgs,
   SolautoPosition,
   UpdatePositionDataArgs,
   cancelDCA,
@@ -25,10 +24,11 @@ import {
   getSolautoPositionAccount,
   getTokenAccount,
 } from "../utils/accountUtils";
-import { SOLAUTO_FEES_WALLET, WSOL_MINT } from "../constants/generalAccounts";
+import { SOLAUTO_FEES_WALLET } from "../constants/generalAccounts";
 import { getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
+import { MINT_DECIMALS, WSOL_MINT } from "../constants/tokenConstants";
 
 interface Account<T> {
   pubkey: PublicKey;
@@ -60,10 +60,12 @@ export class SolautoInfo {
   public lendingPlatform: LendingPlatform;
 
   public supplyLiquidityMint: PublicKey;
+  public supplyMintDecimals: number;
   public positionSupplyLiquidityTa: PublicKey;
   public signerSupplyLiquidityTa: PublicKey;
 
   public debtLiquidityMint: PublicKey;
+  public debtMintDecimals: number;
   public positionDebtLiquidityTa: PublicKey;
   public signerDebtLiquidityTa: PublicKey;
 
@@ -107,6 +109,7 @@ export class SolautoInfo {
             this.solautoPositionData.position.value.protocolData.supplyMint
           )
         : args.supplyLiquidityMint!;
+    this.supplyMintDecimals = MINT_DECIMALS[this.supplyLiquidityMint.toString()];
     this.positionSupplyLiquidityTa = getTokenAccount(
       this.solautoPosition,
       this.supplyLiquidityMint
@@ -122,6 +125,7 @@ export class SolautoInfo {
             this.solautoPositionData.position.value.protocolData.debtMint
           )
         : args.debtLiquidityMint!;
+    this.debtMintDecimals = MINT_DECIMALS[this.debtLiquidityMint.toString()];
     this.positionDebtLiquidityTa = getTokenAccount(
       this.solautoPosition,
       this.debtLiquidityMint
@@ -142,7 +146,7 @@ export class SolautoInfo {
       ? args.referralFeesDestMint
       : args.referralState?.data?.destFeesMint
       ? toWeb3JsPublicKey(args.referralState?.data?.destFeesMint)
-      : WSOL_MINT;
+      : new PublicKey(WSOL_MINT);
     this.authorityReferralDestTa = getAssociatedTokenAddressSync(
       this.authorityReferralFeesDestMint,
       this.authorityReferralState,
@@ -187,7 +191,7 @@ export class SolautoInfo {
 
   claimReferralFeesIx(): TransactionBuilder {
     const feesDestinationTa =
-      this.authorityReferralFeesDestMint !== WSOL_MINT
+      this.authorityReferralFeesDestMint !== new PublicKey(WSOL_MINT)
         ? publicKey(
             getTokenAccount(
               toWeb3JsPublicKey(this.signer.publicKey),

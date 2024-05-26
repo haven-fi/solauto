@@ -4,6 +4,7 @@
     "format:rust": "find ./programs/* -name '*.rs' -exec rustfmt {} +",
     "build": "cargo build-sbf",
     "build:test": "cargo build-sbf -- --package solauto --features test",
+    "deploy-build": "solana program deploy target/deploy/solauto.so --keypair ~/.config/solana/id.json --program-id AutoyKBRaHSBHy9RsmXCZMy6nNFAg5FYijrvZyQcNLV --use-rpc --buffer ~/.config/solana/buffer.json",
     "generate": "pnpm generate:idl && pnpm generate:clients",
     "generate:idl": "shank idl --crate-root programs/solauto --out-dir idls --out-filename solauto.json",
     "generate:clients": "node ./generateClients.cjs && pnpm format:rust",

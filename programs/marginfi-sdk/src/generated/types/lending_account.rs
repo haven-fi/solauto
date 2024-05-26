@@ -8,8 +8,11 @@
 use crate::generated::types::Balance;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
+use bytemuck::Pod;
+use bytemuck::Zeroable;
 
-#[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
+#[repr(C)]
+#[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq, Copy, Pod, Zeroable)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct LendingAccount {
     pub balances: [Balance; 16],

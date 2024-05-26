@@ -8,9 +8,12 @@
 use crate::generated::types::LendingAccount;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
+use bytemuck::Pod;
+use bytemuck::Zeroable;
 use solana_program::pubkey::Pubkey;
 
-#[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
+#[repr(C)]
+#[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq, Copy, Pod, Zeroable)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct MarginfiAccount {
     pub discriminator: [u8; 8],
@@ -25,15 +28,8 @@ pub struct MarginfiAccount {
     )]
     pub authority: Pubkey,
     pub lending_account: LendingAccount,
-    /// The flags that indicate the state of the account.
-    /// This is u64 bitfield, where each bit represents a flag.
-    ///
-    /// Flags:
-    /// - DISABLED_FLAG = 1 << 0 = 1 - This flag indicates that the account is disabled,
-    /// and no further actions can be taken on it.
-    pub account_flags: u64,
     #[cfg_attr(feature = "serde", serde(with = "serde_with::As::<serde_with::Bytes>"))]
-    pub padding: [u64; 63],
+    pub padding: [u64; 64],
 }
 
 impl MarginfiAccount {

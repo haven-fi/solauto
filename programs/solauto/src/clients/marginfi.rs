@@ -2,7 +2,7 @@ use fixed::types::I80F48;
 use marginfi_sdk::generated::{
     accounts::{Bank, MarginfiAccount},
     instructions::*,
-    types::{Balance, OracleSetup},
+    types::{Balance},
 };
 use pyth_sdk_solana::state::SolanaPriceAccount;
 use solana_program::{
@@ -37,7 +37,7 @@ pub struct MarginfiBankAccounts<'a> {
 pub struct MarginfiClient<'a> {
     signer: &'a AccountInfo<'a>,
     program: &'a AccountInfo<'a>,
-    marginfi_account: DeserializedAccount<'a, MarginfiAccount>,
+    marginfi_account: &'a AccountInfo<'a>,
     marginfi_group: &'a AccountInfo<'a>,
     supply: MarginfiBankAccounts<'a>,
     debt: MarginfiBankAccounts<'a>,
@@ -101,7 +101,8 @@ impl<'a> MarginfiClient<'a> {
         debt_vault_authority: Option<&'a AccountInfo<'a>>,
     ) -> Result<(Self, LendingProtocolObligationPosition), ProgramError> {
         let deserialized_marginfi_account =
-            DeserializedAccount::<MarginfiAccount>::try_from_slice(Some(marginfi_account))?.unwrap();
+            DeserializedAccount::<MarginfiAccount>::zerocopy(Some(marginfi_account))?
+                .unwrap();
 
         let obligation_position = MarginfiClient::get_obligation_position(
             &deserialized_marginfi_account,
@@ -136,7 +137,7 @@ impl<'a> MarginfiClient<'a> {
         let client = Self {
             signer,
             program,
-            marginfi_account: deserialized_marginfi_account,
+            marginfi_account,
             marginfi_group,
             supply,
             debt,
@@ -170,7 +171,7 @@ impl<'a> MarginfiClient<'a> {
         price_oracle: &'a AccountInfo<'a>,
         debt_weight: f64,
     ) -> Result<(PositionTokenUsage, f64), ProgramError> {
-        let bank = DeserializedAccount::<Bank>::try_from_slice(Some(supply_bank))?.unwrap();
+        let bank = DeserializedAccount::<Bank>::zerocopy(Some(supply_bank))?.unwrap();
 
         let supply_weight = math_utils::convert_i80f48_to_f64(I80F48::from_le_bytes(
             bank.data.config.asset_weight_maint.value,
@@ -225,7 +226,7 @@ impl<'a> MarginfiClient<'a> {
         debt_bank: &'a AccountInfo<'a>,
         price_oracle: &'a AccountInfo<'a>,
     ) -> Result<PositionTokenUsage, ProgramError> {
-        let bank = DeserializedAccount::<Bank>::try_from_slice(Some(debt_bank))?.unwrap();
+        let bank = DeserializedAccount::<Bank>::zerocopy(Some(debt_bank))?.unwrap();
 
         let liability_share_value = I80F48::from_le_bytes(bank.data.liability_share_value.value);
 
@@ -264,7 +265,6 @@ impl<'a> MarginfiClient<'a> {
         debt_price_oracle: &'a AccountInfo<'a>,
     ) -> Result<LendingProtocolObligationPosition, ProgramError> {
         let account_balances = &marginfi_account.data.lending_account.balances[..2];
-
         let debt =
             MarginfiClient::get_debt_token_usage(account_balances, debt_bank, debt_price_oracle)?;
 
@@ -295,8 +295,8 @@ impl<'a> MarginfiClient<'a> {
         // when we take actions like withdrawing or borrowing
 
         match bank.data.config.oracle_setup {
-            OracleSetup::None => Err(SolautoError::IncorrectAccounts.into()),
-            OracleSetup::PythEma => {
+            0 => Err(SolautoError::IncorrectAccounts.into()),
+            1 => {
                 let price_feed = SolanaPriceAccount::account_info_to_feed(price_oracle)?;
                 let price_result = price_feed
                     .get_ema_price_no_older_than(clock.unix_timestamp, max_price_age)
@@ -318,7 +318,7 @@ impl<'a> MarginfiClient<'a> {
 
                 Ok(price)
             }
-            OracleSetup::SwitchboardV2 => {
+            2 => {
                 let data = price_oracle.data.borrow();
                 let aggregator_account = AggregatorAccountData::new_from_bytes(&data)?;
                 aggregator_account.check_staleness(clock.unix_timestamp, max_price_age as i64)?;
@@ -334,7 +334,8 @@ impl<'a> MarginfiClient<'a> {
                 };
 
                 Ok(price)
-            }
+            },
+            _ => Ok(0.0)
         }
     }
 
@@ -358,7 +359,7 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
     fn validate(&self, std_accounts: &SolautoStandardAccounts) -> ProgramResult {
         validate_lending_program_accounts_with_position(
             &std_accounts.solauto_position,
-            self.marginfi_account.account_info,
+            self.marginfi_account,
             Some(self.supply.bank),
             Some(self.debt.bank),
         )?;
@@ -390,7 +391,7 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
             self.program,
             LendingAccountDepositCpiAccounts {
                 marginfi_group: self.marginfi_group,
-                marginfi_account: self.marginfi_account.account_info,
+                marginfi_account: self.marginfi_account,
                 signer: authority,
                 bank: self.supply.bank,
                 signer_token_account: self
@@ -438,7 +439,7 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
             self.program,
             LendingAccountWithdrawCpiAccounts {
                 marginfi_group: self.marginfi_group,
-                marginfi_account: self.marginfi_account.account_info,
+                marginfi_account: self.marginfi_account,
                 signer: authority,
                 bank: self.supply.bank,
                 destination_token_account: destination,
@@ -484,7 +485,7 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
             self.program,
             LendingAccountBorrowCpiAccounts {
                 marginfi_group: self.marginfi_group,
-                marginfi_account: self.marginfi_account.account_info,
+                marginfi_account: self.marginfi_account,
                 signer: authority,
                 bank: self.debt.bank,
                 destination_token_account: destination,
@@ -535,7 +536,7 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
             self.program,
             LendingAccountRepayCpiAccounts {
                 marginfi_group: self.marginfi_group,
-                marginfi_account: self.marginfi_account.account_info,
+                marginfi_account: self.marginfi_account,
                 signer: authority,
                 bank: self.debt.bank,
                 signer_token_account: self

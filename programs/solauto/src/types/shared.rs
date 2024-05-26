@@ -1,4 +1,5 @@
 use borsh::{BorshDeserialize, BorshSerialize};
+use bytemuck::AnyBitPattern;
 use num_traits::{FromPrimitive, ToPrimitive};
 use shank::{ShankAccount, ShankType};
 use solana_program::{
@@ -89,7 +90,7 @@ impl AutomationSettings {
         let target_amt_i64 = target_amt.to_i64()?;
         let current_rate_diff = (curr_amt_i64 - target_amt_i64) as f64;
         let progress_pct = (1.0).div((self.target_periods as f64).sub(self.periods_passed as f64));
-        let new_amt = curr_amt.to_f64()? - (current_rate_diff * progress_pct);
+        let new_amt = curr_amt.to_f64()? - current_rate_diff * progress_pct;
 
         T::from_f64(new_amt)
     }
@@ -247,29 +248,35 @@ pub struct DeserializedAccount<'a, T> {
     pub data: Box<T>,
 }
 
-impl<'a, T: BorshDeserialize> DeserializedAccount<'a, T> {
-    pub fn try_from_slice(account: Option<&'a AccountInfo<'a>>) -> Result<Option<Self>, ProgramError> {
+impl<'a, T: AnyBitPattern> DeserializedAccount<'a, T> {
+    pub fn zerocopy(
+        account: Option<&'a AccountInfo<'a>>,
+    ) -> Result<Option<Self>, ProgramError> {
         match account {
             Some(account_info) => {
-                let deserialized_data = T::try_from_slice(&account_info.data.borrow())
-                    .map_err(|_| SolautoError::FailedAccountDeserialization)?;
                 Ok(Some(Self {
                     account_info,
-                    data: Box::new(deserialized_data),
+                    data: Box::new(
+                        *bytemuck::from_bytes::<T>(&account_info.data.borrow()),
+                    ),
                 }))
             }
             None => Ok(None),
         }
     }
+}
+
+impl<'a, T: BorshDeserialize> DeserializedAccount<'a, T> {
     pub fn deserialize(account: Option<&'a AccountInfo<'a>>) -> Result<Option<Self>, ProgramError> {
         match account {
             Some(account_info) => {
                 let mut data: &[u8] = &(*account_info.data).borrow();
-                let deserialized_data = T::deserialize(&mut data)
-                    .map_err(|_| SolautoError::FailedAccountDeserialization)?;
                 Ok(Some(Self {
                     account_info,
-                    data: Box::new(deserialized_data),
+                    data: Box::new(
+                        T::deserialize(&mut data)
+                            .map_err(|_| SolautoError::FailedAccountDeserialization)?,
+                    ),
                 }))
             }
             None => Ok(None),

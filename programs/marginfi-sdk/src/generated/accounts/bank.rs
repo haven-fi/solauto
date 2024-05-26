@@ -9,9 +9,12 @@ use crate::generated::types::BankConfig;
 use crate::generated::types::WrappedI80F48;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
+use bytemuck::Pod;
+use bytemuck::Zeroable;
 use solana_program::pubkey::Pubkey;
 
-#[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
+#[repr(C)]
+#[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq, Copy, Pod, Zeroable)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Bank {
     pub discriminator: [u8; 8],
@@ -73,8 +76,8 @@ pub struct Bank {
         serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
     )]
     pub emissions_mint: Pubkey,
-    pub padding0: [u128; 28],
-    pub padding1: [u128; 32],
+    pub padding0: [[u64; 2]; 28],
+    pub padding1: [[u64; 2]; 32],
 }
 
 impl Bank {

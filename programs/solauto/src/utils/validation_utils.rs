@@ -81,7 +81,8 @@ pub fn validate_instruction(
 
     let position_authority = solauto_position.data.authority;
     let authority_signed = || {
-        let (pda, _) = Pubkey::find_program_address(solauto_position.data.seeds().as_slice(), &crate::ID);
+        let (pda, _) =
+            Pubkey::find_program_address(solauto_position.data.seeds().as_slice(), &crate::ID);
         return signer.key == &position_authority && solauto_position.account_info.key == &pda;
     };
 
@@ -297,7 +298,7 @@ pub fn validate_marginfi_bank<'a>(
     solauto_position: &DeserializedAccount<SolautoPosition>,
     is_supply: bool,
 ) -> ProgramResult {
-    let bank = DeserializedAccount::<Bank>::deserialize(Some(marginfi_bank))?.unwrap();
+    let bank = DeserializedAccount::<Bank>::zerocopy(Some(marginfi_bank))?.unwrap();
 
     if solauto_position.data.self_managed {
         return Ok(());
@@ -352,7 +353,7 @@ pub fn validate_lending_program_accounts_with_position<'a>(
         return Ok(());
     }
 
-    let position_data = &solauto_position.data.position.as_ref().unwrap();
+    let position_data = solauto_position.data.position.as_ref().unwrap();
 
     if protocol_position.key != &position_data.protocol_data.protocol_account {
         msg!("Incorrect protocol-owned account");

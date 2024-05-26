@@ -11,7 +11,6 @@ import {
   SolautoMarginfiInfo,
   newMarginfiSolautoManagedPositionArgs,
 } from "../src/instructions/solautoMarginfiInfo";
-import { WSOL_MINT } from "../src/constants/generalAccounts";
 import { SolautoActionArgs } from "../src/generated";
 import {
   requestComputeUnitLimitUmiIx,
@@ -22,6 +21,7 @@ import {
   toWeb3JsKeypair,
   toWeb3JsTransaction,
 } from "@metaplex-foundation/umi-web3js-adapters";
+import { WSOL_MINT } from "../src/constants/tokenConstants";
 
 const connection = new Connection(clusterApiUrl("mainnet-beta"), "confirmed");
 let umi = createUmi(connection);
@@ -34,7 +34,7 @@ describe("Solauto tests", async () => {
   umi = umi.use(signerIdentity(signer));
 
   const payForTransactions = false;
-  const positionId = 1;
+  const positionId = 3;
 
   it("open - deposit - rebalance - close", async () => {
     const info = new SolautoMarginfiInfo();
@@ -42,7 +42,7 @@ describe("Solauto tests", async () => {
       newMarginfiSolautoManagedPositionArgs(
         signer,
         positionId,
-        WSOL_MINT,
+        new PublicKey(WSOL_MINT),
         new PublicKey(MARGINFI_ACCOUNTS.USDC.mint),
         new PublicKey("He4ka5Q3N1UvZikZvykdi47xyk5PoVP2tcQL5sVp31Sz")
       )
@@ -78,13 +78,13 @@ describe("Solauto tests", async () => {
       builder = builder.add(beforeIx);
     }
 
-    // builder = builder.add(info.marginfiProtocolInteraction(initialDeposit));
-    // // TODO add rebalance
+    builder = builder.add(info.marginfiProtocolInteraction(initialDeposit));
+    // TODO add rebalance
 
-    // const afterIx = tokenAccountChoresAfter(info, initialDeposit, undefined);
-    // if (afterIx !== undefined) {
-    //   builder = builder.add(afterIx);
-    // }
+    const afterIx = tokenAccountChoresAfter(info, initialDeposit, undefined);
+    if (afterIx !== undefined) {
+      builder = builder.add(afterIx);
+    }
 
     // TODO optimize this
     builder = builder.prepend(requestComputeUnitLimitUmiIx(signer, 500000));
@@ -93,10 +93,7 @@ describe("Solauto tests", async () => {
     const web3Transaction = toWeb3JsTransaction(tx);
     web3Transaction.sign([toWeb3JsKeypair(signerKeypair)]);
 
-    await simulateTransaction(
-      connection,
-      web3Transaction,
-    );
+    await simulateTransaction(connection, web3Transaction);
     if (payForTransactions) {
       const result = await builder.sendAndConfirm(umi);
       console.log(result.result);

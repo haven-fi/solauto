@@ -54,8 +54,8 @@ function generateSDKForAnchorIDL(sdkDirName, idlFilename, programId) {
 }
 
 generateSolautoSDKs();
-generateSDKForAnchorIDL(
-  "marginfi-sdk",
-  "marginfi.json",
-  "MFv2hWf31Z9kbCa1snEPYctwafyhdvnV7FZnsebVacA"
-);
+// generateSDKForAnchorIDL(
+//   "marginfi-sdk",
+//   "marginfi.json",
+//   "MFv2hWf31Z9kbCa1snEPYctwafyhdvnV7FZnsebVacA"
+// );

@@ -30,6 +30,7 @@ import {
   transactionBuilder,
 } from "@metaplex-foundation/umi";
 import { generateRandomU64 } from "../utils/generalUtils";
+import { splTokenTransferUmiIx } from "../utils/instructionUtils";
 
 export interface SolautoMarginfiInfoArgs extends SolautoInfoArgs {
   marginfiAccount?: Signer;
@@ -186,16 +187,45 @@ export class SolautoMarginfiInfo extends SolautoInfo {
   marginfiProtocolInteraction(args: SolautoActionArgs): TransactionBuilder {
     let builder = transactionBuilder();
 
-    // what do we need to do if wSOL accounts
+    if (args.__kind === "Deposit") {
+      console.log(BigInt(args.fields[0]) / BigInt(10)**BigInt(this.supplyMintDecimals));
+      builder = builder.add(
+        splTokenTransferUmiIx(
+          this.signer,
+          this.signerSupplyLiquidityTa,
+          this.positionSupplyLiquidityTa,
+          toWeb3JsPublicKey(this.signer.publicKey),
+          this.supplyLiquidityMint,
+          this.supplyMintDecimals,
+          BigInt(args.fields[0])
+        )
+      );
+    } else if (args.__kind === "Repay" && args.fields[0].__kind === "Some") {
+      builder = builder.add(
+        splTokenTransferUmiIx(
+          this.signer,
+          this.signerDebtLiquidityTa,
+          this.positionDebtLiquidityTa,
+          toWeb3JsPublicKey(this.signer.publicKey),
+          this.debtLiquidityMint,
+          this.debtMintDecimals,
+          BigInt(args.fields[0].fields[0])
+        )
+      );
+    }
 
-    return builder.add(this.marginfiProtocolInteractionIx(args));
+    // return builder.add(this.marginfiProtocolInteractionIx(args));
+    return builder;
   }
 
   marginfiProtocolInteractionIx(args: SolautoActionArgs): TransactionBuilder {
+    let withdrawingFromSignerTa = false;
+
     let signerSupplyTa: UmiPublicKey | undefined = undefined;
     let vaultSupplyTa: UmiPublicKey | undefined = undefined;
     let supplyVaultAuthority: UmiPublicKey | undefined = undefined;
     if (args.__kind === "Deposit" || args.__kind === "Withdraw") {
+      withdrawingFromSignerTa = true;
       signerSupplyTa = publicKey(this.signerSupplyLiquidityTa);
       vaultSupplyTa = publicKey(
         this.supplyMarginfiTokenAccounts.liquidityVault
@@ -226,7 +256,7 @@ export class SolautoMarginfiInfo extends SolautoInfo {
       supplyPriceOracle: publicKey(
         this.supplyMarginfiTokenAccounts.priceOracle
       ),
-      signerSupplyTa,
+      signerSupplyTa: withdrawingFromSignerTa ? publicKey(this.positionSupplyLiquidityTa) : publicKey(this.signerSupplyLiquidityTa),
       vaultSupplyTa,
       supplyVaultAuthority,
       debtBank: publicKey(this.debtMarginfiTokenAccounts.bank),

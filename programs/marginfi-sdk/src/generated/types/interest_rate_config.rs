@@ -8,8 +8,11 @@
 use crate::generated::types::WrappedI80F48;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
+use bytemuck::Pod;
+use bytemuck::Zeroable;
 
-#[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
+#[repr(C)]
+#[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq, Copy, Pod, Zeroable)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct InterestRateConfig {
     pub optimal_utilization_rate: WrappedI80F48,
@@ -19,5 +22,5 @@ pub struct InterestRateConfig {
     pub insurance_ir_fee: WrappedI80F48,
     pub protocol_fixed_fee_apr: WrappedI80F48,
     pub protocol_ir_fee: WrappedI80F48,
-    pub padding: [u128; 8],
+    pub padding: [[u64; 2]; 8],
 }

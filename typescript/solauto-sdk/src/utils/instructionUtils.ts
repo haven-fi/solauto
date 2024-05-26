@@ -5,7 +5,6 @@ import {
   transactionBuilder,
 } from "@metaplex-foundation/umi";
 import {
-  ComputeBudgetInstruction,
   ComputeBudgetProgram,
   PublicKey,
   SystemProgram,
@@ -14,16 +13,17 @@ import {
   createAssociatedTokenAccountInstruction,
   createCloseAccountInstruction,
   ACCOUNT_SIZE,
+  createTransferCheckedInstruction,
 } from "@solana/spl-token";
 import {
   fromWeb3JsInstruction,
   fromWeb3JsPublicKey,
   toWeb3JsPublicKey,
 } from "@metaplex-foundation/umi-web3js-adapters";
-import { WSOL_MINT } from "../constants/generalAccounts";
 import { SolautoActionArgs } from "../generated";
 import { SolautoInfo } from "../instructions/solautoInfo";
 import { getTokenAccount } from "./accountUtils";
+import { WSOL_MINT } from "../constants/tokenConstants";
 
 function getusedWsolTokenAccount(
   info: SolautoInfo,
@@ -31,8 +31,8 @@ function getusedWsolTokenAccount(
   initiatingDcaIn?: bigint,
   cancellingDcaIn?: boolean
 ): PublicKey | undefined {
-  const supplyIsWsol = info.supplyLiquidityMint.equals(WSOL_MINT);
-  const debtIsWsol = info.debtLiquidityMint.equals(WSOL_MINT);
+  const supplyIsWsol = info.supplyLiquidityMint.equals(new PublicKey(WSOL_MINT));
+  const debtIsWsol = info.debtLiquidityMint.equals(new PublicKey(WSOL_MINT));
   if (!supplyIsWsol && !debtIsWsol) {
     return undefined;
   }
@@ -104,7 +104,7 @@ export async function tokenAccountChoresBefore(
       createAssociatedTokenAccountUmiIx(
         info.signer,
         toWeb3JsPublicKey(info.signer.publicKey),
-        WSOL_MINT
+        new PublicKey(WSOL_MINT)
       ),
     ]);
 
@@ -125,7 +125,7 @@ export async function tokenAccountChoresBefore(
         createAssociatedTokenAccountUmiIx(
           info.signer,
           toWeb3JsPublicKey(info.signer.publicKey),
-          WSOL_MINT
+          new PublicKey(WSOL_MINT)
         )
       );
     }
@@ -184,7 +184,7 @@ export function createAssociatedTokenAccountUmiIx(
         toWeb3JsPublicKey(signer.publicKey),
         getTokenAccount(wallet, mint),
         wallet,
-        WSOL_MINT
+        new PublicKey(WSOL_MINT)
       )
     ),
     signers: [signer],
@@ -218,6 +218,24 @@ export function closeTokenAccountUmiIx(
   return {
     instruction: fromWeb3JsInstruction(
       createCloseAccountInstruction(tokenAccount, authority, authority)
+    ),
+    signers: [signer],
+    bytesCreatedOnChain: 0,
+  };
+}
+
+export function splTokenTransferUmiIx(
+  signer: Signer,
+  fromTa: PublicKey,
+  toTa: PublicKey,
+  authority: PublicKey,
+  mint: PublicKey,
+  mintDecimals: number,
+  amount: bigint
+): WrappedInstruction {
+  return {
+    instruction: fromWeb3JsInstruction(
+      createTransferCheckedInstruction(fromTa, mint, toTa, authority, amount, mintDecimals)
     ),
     signers: [signer],
     bytesCreatedOnChain: 0,

@@ -810,9 +810,9 @@ dependencies = [
 
 [[package]]
 name = "bytemuck"
-version = "1.14.3"
+version = "1.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a2ef034f05691a48569bd920a96c81b9d91bbad1ab5ac7c4616c1f6ef36cb79f"
+checksum = "78834c15cb5d5efe3452d58b1e8ba890dd62d21907f867f383358198e56ebca5"
 dependencies = [
  "bytemuck_derive",
 ]
@@ -2188,6 +2188,7 @@ name = "marginfi-sdk"
 version = "0.1.0"
 dependencies = [
  "borsh 0.10.3",
+ "bytemuck",
  "num-derive 0.4.2",
  "num-traits",
  "solana-program",
@@ -4694,6 +4695,7 @@ name = "solauto"
 version = "0.1.0"
 dependencies = [
  "borsh 0.10.3",
+ "bytemuck",
  "fixed",
  "marginfi-sdk",
  "num-traits",
@@ -4728,7 +4730,7 @@ dependencies = [
 [[package]]
 name = "solend-sdk"
 version = "2.0.2"
-source = "git+https://github.com/Cheliosooo/solana-program-library.git?branch=mainnet#f8648b4a35bc94f8159ef66525daa9512df44d9a"
+source = "git+https://github.com/Cheliosooo/solana-program-library.git?branch=mainnet#ba84d665aeff004e07ac6ae8cb7e088c9c15271d"
 dependencies = [
  "arrayref",
  "bytemuck",
@@ -6158,18 +6160,18 @@ dependencies = [
 
 [[package]]
 name = "zerocopy"
-version = "0.7.32"
+version = "0.7.34"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "74d4d3961e53fa4c9a25a8637fc2bfaf2595b3d3ae34875568a5cf64787716be"
+checksum = "ae87e3fcd617500e5d106f0380cf7b77f3c6092aae37191433159dda23cfb087"
 dependencies = [
  "zerocopy-derive",
 ]
 
 [[package]]
 name = "zerocopy-derive"
-version = "0.7.32"
+version = "0.7.34"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9ce1b18ccd8e73a9321186f97e46f9f04b778851177567b1975109d26a08d2a6"
+checksum = "15e934569e47891f7d9411f1a451d947a60e000ab3bd24fbb970f000387d1b3b"
 dependencies = [
  "proc-macro2 1.0.78",
  "quote 1.0.35",

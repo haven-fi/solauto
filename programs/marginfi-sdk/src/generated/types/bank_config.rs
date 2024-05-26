@@ -12,10 +12,13 @@ use crate::generated::types::RiskTier;
 use crate::generated::types::WrappedI80F48;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
+use bytemuck::Pod;
+use bytemuck::Zeroable;
 use solana_program::pubkey::Pubkey;
 
 /// TODO: Convert weights to (u64, u64) to avoid precision loss (maybe?)
-#[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
+#[repr(C)]
+#[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq, Copy, Pod, Zeroable)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct BankConfig {
     pub asset_weight_init: WrappedI80F48,
@@ -24,12 +27,12 @@ pub struct BankConfig {
     pub liability_weight_maint: WrappedI80F48,
     pub deposit_limit: u64,
     pub interest_rate_config: InterestRateConfig,
-    pub operational_state: BankOperationalState,
-    pub oracle_setup: OracleSetup,
+    pub operational_state: u8,
+    pub oracle_setup: u8,
     pub oracle_keys: [Pubkey; 5],
     pub auto_padding0: [u8; 6],
     pub borrow_limit: u64,
-    pub risk_tier: RiskTier,
+    pub risk_tier: u8,
     pub auto_padding1: [u8; 7],
     /// USD denominated limit for calculating asset value for initialization margin requirements.
     /// Example, if total SOL deposits are equal to $1M and the limit it set to $500K,

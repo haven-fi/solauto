@@ -32,7 +32,7 @@ pub fn marginfi_refresh_accounts(
         && !solauto_position.as_ref().unwrap().data.self_managed
     {
         let marginfi_account =
-            DeserializedAccount::<MarginfiAccount>::try_from_slice(ctx.accounts.marginfi_account)?
+            DeserializedAccount::<MarginfiAccount>::zerocopy(ctx.accounts.marginfi_account)?
                 .unwrap();
 
         let obligation_position = MarginfiClient::get_obligation_position(
