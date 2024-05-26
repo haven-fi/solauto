@@ -5,17 +5,20 @@ import {
   Umi,
   isOption,
   publicKey,
-  PublicKey as UmiPublicKey
+  PublicKey as UmiPublicKey,
 } from "@metaplex-foundation/umi";
 import {
   LendingPlatform,
   ReferralState,
+  ReferralStateAccountData,
   SolautoPosition,
   UpdatePositionDataArgs,
   cancelDCA,
   claimReferralFees,
   closePosition,
   createSolautoProgram,
+  safeFetchReferralState,
+  safeFetchSolautoPosition,
   updatePosition,
   updateReferralStates,
 } from "../generated";
@@ -26,26 +29,20 @@ import {
 } from "../utils/accountUtils";
 import { SOLAUTO_FEES_WALLET } from "../constants/generalAccounts";
 import { getAssociatedTokenAddressSync } from "@solana/spl-token";
-import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
+import {
+  fromWeb3JsPublicKey,
+  toWeb3JsPublicKey,
+} from "@metaplex-foundation/umi-web3js-adapters";
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
-import { MINT_DECIMALS, WSOL_MINT } from "../constants/tokenConstants";
-
-interface Account<T> {
-  pubkey: PublicKey;
-  data: T;
-}
+import { WSOL_MINT } from "../constants/tokenConstants";
 
 export interface SolautoInfoArgs {
   signer: Signer;
-  position: {
-    newPositionId?: number;
-    existingSolautoPosition?: Account<SolautoPosition>;
-  };
+  positionId: number;
 
   supplyLiquidityMint?: PublicKey;
   debtLiquidityMint?: PublicKey;
 
-  referralState?: Account<ReferralState>;
   referralFeesDestMint?: PublicKey;
   referredByAuthority?: PublicKey;
 }
@@ -56,21 +53,19 @@ export class SolautoInfo {
   public signer: Signer;
   public positionId: number;
   public solautoPosition: PublicKey;
-  public solautoPositionData?: SolautoPosition;
+  public solautoPositionData: SolautoPosition | null;
   public lendingPlatform: LendingPlatform;
 
   public supplyLiquidityMint: PublicKey;
-  public supplyMintDecimals: number;
   public positionSupplyLiquidityTa: PublicKey;
   public signerSupplyLiquidityTa: PublicKey;
 
   public debtLiquidityMint: PublicKey;
-  public debtMintDecimals: number;
   public positionDebtLiquidityTa: PublicKey;
   public signerDebtLiquidityTa: PublicKey;
 
   public authorityReferralState: PublicKey;
-  public authorityReferralStateData?: ReferralState;
+  public authorityReferralStateData: ReferralState | null;
   public authorityReferralFeesDestMint: PublicKey;
   public authorityReferralDestTa: PublicKey;
 
@@ -93,14 +88,15 @@ export class SolautoInfo {
     });
 
     this.signer = args.signer;
-    this.positionId =
-      args.position.existingSolautoPosition?.data.positionId ??
-      args.position.newPositionId!;
+    this.positionId = args.positionId;
     this.solautoPosition = await getSolautoPositionAccount(
       toWeb3JsPublicKey(args.signer.publicKey),
       this.positionId
     );
-    this.solautoPositionData = args.position.existingSolautoPosition?.data;
+    this.solautoPositionData = await safeFetchSolautoPosition(
+      this.umi,
+      fromWeb3JsPublicKey(this.solautoPosition)
+    );
     this.lendingPlatform = lendingPlatform;
 
     this.supplyLiquidityMint =
@@ -109,7 +105,6 @@ export class SolautoInfo {
             this.solautoPositionData.position.value.protocolData.supplyMint
           )
         : args.supplyLiquidityMint!;
-    this.supplyMintDecimals = MINT_DECIMALS[this.supplyLiquidityMint.toString()];
     this.positionSupplyLiquidityTa = getTokenAccount(
       this.solautoPosition,
       this.supplyLiquidityMint
@@ -125,7 +120,6 @@ export class SolautoInfo {
             this.solautoPositionData.position.value.protocolData.debtMint
           )
         : args.debtLiquidityMint!;
-    this.debtMintDecimals = MINT_DECIMALS[this.debtLiquidityMint.toString()];
     this.positionDebtLiquidityTa = getTokenAccount(
       this.solautoPosition,
       this.debtLiquidityMint
@@ -135,17 +129,19 @@ export class SolautoInfo {
       this.debtLiquidityMint
     );
 
-    this.authorityReferralState =
-      args.referralState !== undefined
-        ? args.referralState.pubkey
-        : await getReferralState(
-            toWeb3JsPublicKey(this.signer.publicKey)
-          );
-    this.authorityReferralStateData = args.referralState?.data;
+    this.authorityReferralState = await getReferralState(
+      toWeb3JsPublicKey(
+        this.solautoPositionData?.authority ?? this.signer.publicKey
+      )
+    );
+    this.authorityReferralStateData = await safeFetchReferralState(
+      this.umi,
+      fromWeb3JsPublicKey(this.authorityReferralState)
+    );
     this.authorityReferralFeesDestMint = args.referralFeesDestMint
       ? args.referralFeesDestMint
-      : args.referralState?.data?.destFeesMint
-      ? toWeb3JsPublicKey(args.referralState?.data?.destFeesMint)
+      : this.authorityReferralStateData?.destFeesMint
+      ? toWeb3JsPublicKey(this.authorityReferralStateData?.destFeesMint)
       : new PublicKey(WSOL_MINT);
     this.authorityReferralDestTa = getAssociatedTokenAddressSync(
       this.authorityReferralFeesDestMint,
@@ -154,9 +150,9 @@ export class SolautoInfo {
     );
 
     this.referredByState =
-      args.referralState?.data.referredByState &&
-      args.referralState?.data.referredByState.__option === "Some"
-        ? toWeb3JsPublicKey(args.referralState?.data.referredByState.value)
+      this.authorityReferralStateData?.referredByState &&
+      this.authorityReferralStateData?.referredByState.__option === "Some"
+        ? toWeb3JsPublicKey(this.authorityReferralStateData?.referredByState.value)
         : args.referredByAuthority
         ? await getReferralState(args.referredByAuthority!)
         : undefined;

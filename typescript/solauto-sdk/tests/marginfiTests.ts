@@ -13,10 +13,8 @@ import {
 } from "../src/instructions/solautoMarginfiInfo";
 import { SolautoActionArgs } from "../src/generated";
 import {
-  requestComputeUnitLimitUmiIx,
-  tokenAccountChoresAfter,
-  tokenAccountChoresBefore,
-} from "../src/utils/instructionUtils";
+  solautoUserInstruction,
+} from "../src/utils/solautoInstructionUtils";
 import {
   toWeb3JsKeypair,
   toWeb3JsTransaction,
@@ -34,72 +32,68 @@ describe("Solauto tests", async () => {
   umi = umi.use(signerIdentity(signer));
 
   const payForTransactions = false;
-  const positionId = 3;
+  const positionId = 1;
 
-  it("open - deposit - borrow - rebalance (to 0) - close", async () => {
+  it("open - deposit - borrow - rebalance (to 0) - withdraw - close", async () => {
     const info = new SolautoMarginfiInfo();
     await info.initialize(
       newMarginfiSolautoManagedPositionArgs(
         signer,
         positionId,
-        new PublicKey(WSOL_MINT),
         new PublicKey(MARGINFI_ACCOUNTS.USDC.mint),
+        new PublicKey(WSOL_MINT),
         new PublicKey("He4ka5Q3N1UvZikZvykdi47xyk5PoVP2tcQL5sVp31Sz")
       )
     );
 
     const initialDeposit: SolautoActionArgs = {
       __kind: "Deposit",
-      fields: [BigInt(1000000000)],
+      // fields: [BigInt(1000000000)],
+      fields: [BigInt(4000000)],
     };
 
-    let builder = transactionBuilder();
-    const beforeIx = await tokenAccountChoresBefore(
-      info,
-      initialDeposit,
-      undefined
-    );
-    if (beforeIx !== undefined) {
-      builder = builder.add(beforeIx);
-    }
-
-    builder = transactionBuilder().add(
-      info.marginfiOpenPosition(
-        {
-          boostToBps: 5000,
-          boostGap: 500,
-          repayToBps: 8500,
-          repayGap: 500,
-          automation: {
-            __option: "None",
+    let tx = transactionBuilder()
+      .add(
+        info.marginfiOpenPositionIx(
+          {
+            boostToBps: 5000,
+            boostGap: 500,
+            repayToBps: 8500,
+            repayGap: 500,
+            automation: {
+              __option: "None",
+            },
+            targetBoostToBps: {
+              __option: "None",
+            },
           },
-          targetBoostToBps: {
-            __option: "None",
-          },
-        },
-        undefined
+          undefined
+        )
       )
-    );
+      .add(info.marginfiProtocolInteraction(initialDeposit))
+      // TODO borrow, rebalance to 0, withdraw remaining supply
+      .add(
+        info.marginfiProtocolInteraction({
+          __kind: "Withdraw",
+          fields: [
+            {
+              __kind: "Some",
+              fields: [BigInt(4000000)],
+            },
+          ],
+        })
+      )
+      .add(info.closePositionIx());
 
+    tx = await solautoUserInstruction(tx, info, initialDeposit);
 
-    builder = builder.add(info.marginfiProtocolInteraction(initialDeposit));
-    // // TODO add rebalance
-
-    const afterIx = tokenAccountChoresAfter(info, initialDeposit, undefined);
-    if (afterIx !== undefined) {
-      builder = builder.add(afterIx);
-    }
-
-    // TODO optimize this
-    builder = builder.prepend(requestComputeUnitLimitUmiIx(signer, 500000));
-
-    let tx = await builder.buildWithLatestBlockhash(umi);
-    const web3Transaction = toWeb3JsTransaction(tx);
+    let transaction = await tx.buildWithLatestBlockhash(umi);
+    const web3Transaction = toWeb3JsTransaction(transaction);
     web3Transaction.sign([toWeb3JsKeypair(signerKeypair)]);
 
     await simulateTransaction(connection, web3Transaction);
     if (payForTransactions) {
-      const result = await builder.sendAndConfirm(umi);
+      const result = await tx.sendAndConfirm(umi);
       console.log(result.result);
     }
   });

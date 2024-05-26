@@ -1,5 +1,5 @@
 use solana_program::{
-    account_info::AccountInfo, clock::Clock, entrypoint::ProgramResult, msg, sysvar::Sysvar,
+    account_info::AccountInfo, clock::Clock, entrypoint::ProgramResult, msg, sysvar::Sysvar
 };
 use spl_token::state::Account as TokenAccount;
 
@@ -61,6 +61,11 @@ pub fn process_close_position_instruction<'a>(accounts: &'a [AccountInfo<'a>]) -
         Some(&position_supply_liquidity_ta),
         position_debt_liquidity_ta.as_ref(),
     )?;
+
+    if solauto_position.data.position.as_ref().unwrap().state.base_amount_supplied > 0 {
+        msg!("Can't close position when there is still tokens supplied to the lending protocol");
+        return Err(SolautoError::IncorrectAccounts.into());
+    }
 
     close_position::close_position(
         ctx,

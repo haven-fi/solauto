@@ -17,10 +17,7 @@ import {
   marginfiRebalance,
   marginfiRefreshData,
 } from "../generated";
-import {
-  getMarginfiAccountPDA,
-  getSolautoPositionAccount,
-} from "../utils/accountUtils";
+import { getMarginfiAccountPDA } from "../utils/accountUtils";
 import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 import {
   Signer,
@@ -30,7 +27,7 @@ import {
   transactionBuilder,
 } from "@metaplex-foundation/umi";
 import { generateRandomU64 } from "../utils/generalUtils";
-import { splTokenTransferUmiIx } from "../utils/instructionUtils";
+import { splTokenTransferUmiIx } from "../utils/solanaInstructionUtils";
 
 export interface SolautoMarginfiInfoArgs extends SolautoInfoArgs {
   marginfiAccount?: Signer;
@@ -46,9 +43,7 @@ export function newMarginfiSolautoManagedPositionArgs(
 ): SolautoMarginfiInfoArgs {
   return {
     signer,
-    position: {
-      newPositionId: positionId,
-    },
+    positionId,
     marginfiAccountSeedIdx: generateRandomU64(),
     supplyLiquidityMint: supplyMint,
     debtLiquidityMint: debtMint,
@@ -67,67 +62,28 @@ export class SolautoMarginfiInfo extends SolautoInfo {
   public debtMarginfiTokenAccounts: MarginfiTokenAccounts;
 
   async initialize(args: SolautoMarginfiInfoArgs) {
+    await super.initialize(args, LendingPlatform.Marginfi);
+
     this.marginfiAccountSeedIdx = args.marginfiAccountSeedIdx;
     this.marginfiGroup = new PublicKey(MARGINFI_GROUP);
 
-    const solautoPosition =
-      args.position.existingSolautoPosition?.pubkey ??
-      (await getSolautoPositionAccount(
-        toWeb3JsPublicKey(args.signer.publicKey),
-        args.position.newPositionId ?? 0
-      ));
     this.marginfiAccount =
       this.marginfiAccountSeedIdx !== undefined
         ? await getMarginfiAccountPDA(
-            solautoPosition,
+            this.solautoPosition,
             this.marginfiAccountSeedIdx
           )
         : args.marginfiAccount!;
 
-    if (
-      args.position.existingSolautoPosition?.data?.position.__option === "Some"
-    ) {
-      this.supplyMarginfiTokenAccounts = findMarginfiAccountsByMint(
-        args.position.existingSolautoPosition?.data?.position.value.protocolData
-          .supplyMint
-      )!;
-      this.debtMarginfiTokenAccounts = findMarginfiAccountsByMint(
-        args.position.existingSolautoPosition?.data?.position.value.protocolData
-          .debtMint
-      )!;
-    } else {
-      this.supplyMarginfiTokenAccounts = findMarginfiAccountsByMint(
-        args.supplyLiquidityMint!.toString()
-      )!;
-      this.debtMarginfiTokenAccounts = findMarginfiAccountsByMint(
-        args.debtLiquidityMint!.toString()
-      )!;
-    }
-
-    args.supplyLiquidityMint = new PublicKey(
-      this.supplyMarginfiTokenAccounts!.mint
-    );
-    args.debtLiquidityMint = new PublicKey(
-      this.debtMarginfiTokenAccounts!.mint
-    );
-
-    await super.initialize(args, LendingPlatform.Marginfi);
+    this.supplyMarginfiTokenAccounts = findMarginfiAccountsByMint(
+      this.supplyLiquidityMint.toString()
+    )!;
+    this.debtMarginfiTokenAccounts = findMarginfiAccountsByMint(
+      this.debtLiquidityMint.toString()
+    )!;
   }
 
-  marginfiOpenPosition(
-    settingParams: SolautoSettingsParameters,
-    activeDca?: DCASettings
-  ): TransactionBuilder {
-    if (this.authorityReferralStateData !== undefined) {
-      return this.marginfiOpenPositionIx(settingParams, activeDca);
-    } else {
-      return transactionBuilder()
-        .add(this.updateReferralStatesIx())
-        .add(this.marginfiOpenPositionIx(settingParams, activeDca));
-    }
-  }
-
-  private marginfiOpenPositionIx(
+  marginfiOpenPositionIx(
     settingParams: SolautoSettingsParameters,
     activeDca?: DCASettings
   ): TransactionBuilder {
@@ -188,15 +144,12 @@ export class SolautoMarginfiInfo extends SolautoInfo {
     let builder = transactionBuilder();
 
     if (args.__kind === "Deposit") {
-      console.log(BigInt(args.fields[0]));
       builder = builder.add(
         splTokenTransferUmiIx(
           this.signer,
           this.signerSupplyLiquidityTa,
           this.positionSupplyLiquidityTa,
           toWeb3JsPublicKey(this.signer.publicKey),
-          this.supplyLiquidityMint,
-          this.supplyMintDecimals,
           BigInt(args.fields[0])
         )
       );
@@ -207,8 +160,6 @@ export class SolautoMarginfiInfo extends SolautoInfo {
           this.signerDebtLiquidityTa,
           this.positionDebtLiquidityTa,
           toWeb3JsPublicKey(this.signer.publicKey),
-          this.debtLiquidityMint,
-          this.debtMintDecimals,
           BigInt(args.fields[0].fields[0])
         )
       );
@@ -256,7 +207,9 @@ export class SolautoMarginfiInfo extends SolautoInfo {
       supplyPriceOracle: publicKey(
         this.supplyMarginfiTokenAccounts.priceOracle
       ),
-      signerSupplyTa: withdrawingFromSignerTa ? publicKey(this.positionSupplyLiquidityTa) : publicKey(this.signerSupplyLiquidityTa),
+      signerSupplyTa: withdrawingFromSignerTa
+        ? publicKey(this.positionSupplyLiquidityTa)
+        : publicKey(this.signerSupplyLiquidityTa),
       vaultSupplyTa,
       supplyVaultAuthority,
       debtBank: publicKey(this.debtMarginfiTokenAccounts.bank),

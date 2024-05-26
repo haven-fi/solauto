@@ -1,31 +1,22 @@
 import {
-  Signer,
   TransactionBuilder,
-  WrappedInstruction,
   transactionBuilder,
 } from "@metaplex-foundation/umi";
+import { PublicKey } from "@solana/web3.js";
+import { ACCOUNT_SIZE } from "@solana/spl-token";
 import {
-  ComputeBudgetProgram,
-  PublicKey,
-  SystemProgram,
-} from "@solana/web3.js";
-import {
-  createAssociatedTokenAccountInstruction,
-  createCloseAccountInstruction,
-  ACCOUNT_SIZE,
-  createTransferCheckedInstruction,
-  TOKEN_PROGRAM_ID,
-  ASSOCIATED_TOKEN_PROGRAM_ID,
-} from "@solana/spl-token";
-import {
-  fromWeb3JsInstruction,
   fromWeb3JsPublicKey,
   toWeb3JsPublicKey,
 } from "@metaplex-foundation/umi-web3js-adapters";
 import { SolautoActionArgs } from "../generated";
 import { SolautoInfo } from "../instructions/solautoInfo";
-import { getTokenAccount } from "./accountUtils";
 import { WSOL_MINT } from "../constants/tokenConstants";
+import {
+  closeTokenAccountUmiIx,
+  createAssociatedTokenAccountUmiIx,
+  requestComputeUnitLimitUmiIx,
+  systemTransferUmiIx,
+} from "./solanaInstructionUtils";
 
 function getusedWsolTokenAccount(
   info: SolautoInfo,
@@ -57,7 +48,7 @@ function getusedWsolTokenAccount(
   }
 }
 
-export async function tokenAccountChoresBefore(
+async function tokenAccountChoresBefore(
   info: SolautoInfo,
   solautoAction?: SolautoActionArgs,
   initiatingDcaIn?: bigint
@@ -75,6 +66,7 @@ export async function tokenAccountChoresBefore(
       fromWeb3JsPublicKey(wSolTokenAccount)
     );
     if (result.exists && result.data.length > 0) {
+      console.log("CLOSING ACCOUNT");
       builder = builder.add(
         closeTokenAccountUmiIx(
           info.signer,
@@ -87,14 +79,12 @@ export async function tokenAccountChoresBefore(
     const lamports = (await info.umi.rpc.getRent(ACCOUNT_SIZE)).basisPoints;
     let amountToTransfer = lamports;
     if (solautoAction?.__kind === "Deposit") {
-      const value = solautoAction.fields[0];
-      amountToTransfer += typeof value === "bigint" ? value : BigInt(value);
+      amountToTransfer += BigInt(solautoAction.fields[0]);
     } else if (
       solautoAction?.__kind === "Repay" &&
       solautoAction.fields[0].__kind === "Some"
     ) {
-      const value = solautoAction.fields[0].fields[0];
-      amountToTransfer += typeof value === "bigint" ? value : BigInt(value);
+      amountToTransfer += BigInt(solautoAction.fields[0].fields[0]);
     } else if (initiatingDcaIn) {
       amountToTransfer += initiatingDcaIn;
     } else {
@@ -140,7 +130,7 @@ export async function tokenAccountChoresBefore(
   return undefined;
 }
 
-export function tokenAccountChoresAfter(
+function tokenAccountChoresAfter(
   info: SolautoInfo,
   solautoAction?: SolautoActionArgs,
   cancellingDcaIn?: boolean
@@ -164,93 +154,37 @@ export function tokenAccountChoresAfter(
   return undefined;
 }
 
-export function requestComputeUnitLimitUmiIx(
-  signer: Signer,
-  maxComputeUnits: number
-) {
-  return {
-    instruction: fromWeb3JsInstruction(
-      ComputeBudgetProgram.setComputeUnitLimit({
-        units: maxComputeUnits,
-      })
-    ),
-    signers: [signer],
-    bytesCreatedOnChain: 0,
-  };
-}
+export async function solautoUserInstruction(
+  tx: TransactionBuilder,
+  info: SolautoInfo,
+  solautoAction?: SolautoActionArgs,
+  initiatingDcaIn?: bigint,
+  cancellingDcaIn?: boolean
+): Promise<TransactionBuilder> {
+  const beforeIx = await tokenAccountChoresBefore(
+    info,
+    solautoAction,
+    initiatingDcaIn
+  );
+  if (beforeIx !== undefined) {
+    tx = tx.prepend(beforeIx);
+  }
 
-export function createAssociatedTokenAccountUmiIx(
-  signer: Signer,
-  wallet: PublicKey,
-  mint: PublicKey
-): WrappedInstruction {
-  return {
-    instruction: fromWeb3JsInstruction(
-      createAssociatedTokenAccountInstruction(
-        toWeb3JsPublicKey(signer.publicKey),
-        getTokenAccount(wallet, mint),
-        wallet,
-        mint
-      )
-    ),
-    signers: [signer],
-    bytesCreatedOnChain: 0,
-  };
-}
+  if (
+    this.authorityReferralStateData === null ||
+    (this.referredByState !== null &&
+      this.authorityReferralStateData.referredByState.__option === "None")
+  ) {
+    tx = tx.prepend(this.updateReferralStatesIx());
+  }
 
-export function systemTransferUmiIx(
-  signer: Signer,
-  destination: PublicKey,
-  lamports: bigint
-): WrappedInstruction {
-  return {
-    instruction: fromWeb3JsInstruction(
-      SystemProgram.transfer({
-        fromPubkey: toWeb3JsPublicKey(signer.publicKey),
-        toPubkey: destination,
-        lamports,
-      })
-    ),
-    signers: [signer],
-    bytesCreatedOnChain: 0,
-  };
-}
+  const afterIx = tokenAccountChoresAfter(info, solautoAction, cancellingDcaIn);
+  if (afterIx !== undefined) {
+    tx = tx.add(afterIx);
+  }
 
-export function closeTokenAccountUmiIx(
-  signer: Signer,
-  tokenAccount: PublicKey,
-  authority: PublicKey
-): WrappedInstruction {
-  return {
-    instruction: fromWeb3JsInstruction(
-      createCloseAccountInstruction(tokenAccount, authority, authority)
-    ),
-    signers: [signer],
-    bytesCreatedOnChain: 0,
-  };
-}
+  // TODO optimize this
+  tx = tx.prepend(requestComputeUnitLimitUmiIx(info.signer, 800000));
 
-export function splTokenTransferUmiIx(
-  signer: Signer,
-  fromTa: PublicKey,
-  toTa: PublicKey,
-  authority: PublicKey,
-  mint: PublicKey,
-  mintDecimals: number,
-  amount: bigint
-): WrappedInstruction {
-  return {
-    instruction: fromWeb3JsInstruction(
-      createTransferCheckedInstruction(
-        fromTa,
-        mint,
-        toTa,
-        authority,
-        amount,
-        mintDecimals
-      )
-    ),
-    signers: [signer],
-    bytesCreatedOnChain: 0,
-  };
+  return tx;
 }
