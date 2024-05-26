@@ -13,7 +13,7 @@ import {
 } from "../src/instructions/solautoMarginfiInfo";
 import { SolautoActionArgs } from "../src/generated";
 import {
-  solautoUserInstruction,
+  buildSolautoUserInstruction,
 } from "../src/utils/solautoInstructionUtils";
 import {
   toWeb3JsKeypair,
@@ -49,12 +49,12 @@ describe("Solauto tests", async () => {
     const initialDeposit: SolautoActionArgs = {
       __kind: "Deposit",
       // fields: [BigInt(1000000000)],
-      fields: [BigInt(4000000)],
+      fields: [BigInt(1000000)],
     };
 
     let tx = transactionBuilder()
       .add(
-        info.marginfiOpenPositionIx(
+        info.marginfiOpenPosition(
           {
             boostToBps: 5000,
             boostGap: 500,
@@ -78,14 +78,14 @@ describe("Solauto tests", async () => {
           fields: [
             {
               __kind: "Some",
-              fields: [BigInt(4000000)],
+              fields: [BigInt(1000000)],
             },
           ],
         })
       )
       .add(info.closePositionIx());
 
-    tx = await solautoUserInstruction(tx, info, initialDeposit);
+    tx = await buildSolautoUserInstruction(tx, info, initialDeposit);
 
     let transaction = await tx.buildWithLatestBlockhash(umi);
     const web3Transaction = toWeb3JsTransaction(transaction);

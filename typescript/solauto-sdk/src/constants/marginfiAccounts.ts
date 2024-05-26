@@ -21,7 +21,7 @@ export const MARGINFI_ACCOUNTS: { [key: string]: MarginfiTokenAccounts } = {
   }
 };
 
-export function findMarginfiAccountsByMint(mint: string): MarginfiTokenAccounts | undefined {
+export function findMarginfiBankAccountsByMint(mint: string): MarginfiTokenAccounts | undefined {
   for (const key in MARGINFI_ACCOUNTS) {
     const account = MARGINFI_ACCOUNTS[key];
     if (account.mint === mint) {

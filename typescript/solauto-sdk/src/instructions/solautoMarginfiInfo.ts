@@ -4,7 +4,7 @@ import { MarginfiTokenAccounts } from "../types";
 import {
   MARGINFI_GROUP,
   MARGINFI_PROGRAM,
-  findMarginfiAccountsByMint,
+  findMarginfiBankAccountsByMint,
 } from "../constants/marginfiAccounts";
 import {
   DCASettings,
@@ -58,8 +58,8 @@ export class SolautoMarginfiInfo extends SolautoInfo {
   public marginfiAccountSeedIdx?: bigint;
   public marginfiGroup: PublicKey;
 
-  public supplyMarginfiTokenAccounts: MarginfiTokenAccounts;
-  public debtMarginfiTokenAccounts: MarginfiTokenAccounts;
+  public marginfiSupplyBankAccounts: MarginfiTokenAccounts;
+  public marginfiDebtBankAccounts: MarginfiTokenAccounts;
 
   async initialize(args: SolautoMarginfiInfoArgs) {
     await super.initialize(args, LendingPlatform.Marginfi);
@@ -75,16 +75,27 @@ export class SolautoMarginfiInfo extends SolautoInfo {
           )
         : args.marginfiAccount!;
 
-    this.supplyMarginfiTokenAccounts = findMarginfiAccountsByMint(
+    this.marginfiSupplyBankAccounts = findMarginfiBankAccountsByMint(
       this.supplyLiquidityMint.toString()
     )!;
-    this.debtMarginfiTokenAccounts = findMarginfiAccountsByMint(
+    this.marginfiDebtBankAccounts = findMarginfiBankAccountsByMint(
       this.debtLiquidityMint.toString()
     )!;
   }
 
-  marginfiOpenPositionIx(
-    settingParams: SolautoSettingsParameters,
+  marginfiOpenPosition(
+    settingParams?: SolautoSettingsParameters,
+    activeDca?: DCASettings
+  ): TransactionBuilder {
+    let builder = transactionBuilder();
+    if (this.positionId != 0 || this.solautoPositionData === null) {
+      builder = builder.add(this.marginfiOpenPositionIx(settingParams, activeDca));
+    }
+    return builder;
+  }
+
+  private marginfiOpenPositionIx(
+    settingParams?: SolautoSettingsParameters,
     activeDca?: DCASettings
   ): TransactionBuilder {
     let signerDebtLiquidityTa: UmiPublicKey | undefined = undefined;
@@ -117,7 +128,7 @@ export class SolautoMarginfiInfo extends SolautoInfo {
       signerDebtTa: signerDebtLiquidityTa,
       positionData: {
         positionId: this.positionId,
-        settingParams,
+        settingParams: settingParams ?? null,
         activeDca: activeDca ?? null,
       },
       marginfiAccountSeedIdx: this.marginfiAccountSeedIdx ?? null,
@@ -130,12 +141,12 @@ export class SolautoMarginfiInfo extends SolautoInfo {
       marginfiProgram: publicKey(MARGINFI_PROGRAM),
       marginfiGroup: publicKey(this.marginfiGroup),
       marginfiAccount: publicKey(this.marginfiAccount),
-      supplyBank: publicKey(this.supplyMarginfiTokenAccounts.bank),
+      supplyBank: publicKey(this.marginfiSupplyBankAccounts.bank),
       supplyPriceOracle: publicKey(
-        this.supplyMarginfiTokenAccounts.priceOracle
+        this.marginfiSupplyBankAccounts.priceOracle
       ),
-      debtBank: publicKey(this.debtMarginfiTokenAccounts.bank),
-      debtPriceOracle: publicKey(this.debtMarginfiTokenAccounts.priceOracle),
+      debtBank: publicKey(this.marginfiDebtBankAccounts.bank),
+      debtPriceOracle: publicKey(this.marginfiDebtBankAccounts.priceOracle),
       solautoPosition: publicKey(this.solautoPosition),
     });
   }
@@ -165,8 +176,7 @@ export class SolautoMarginfiInfo extends SolautoInfo {
       );
     }
 
-    // return builder.add(this.marginfiProtocolInteractionIx(args));
-    return builder;
+    return builder.add(this.marginfiProtocolInteractionIx(args));
   }
 
   marginfiProtocolInteractionIx(args: SolautoActionArgs): TransactionBuilder {
@@ -179,10 +189,10 @@ export class SolautoMarginfiInfo extends SolautoInfo {
       withdrawingFromSignerTa = true;
       signerSupplyTa = publicKey(this.signerSupplyLiquidityTa);
       vaultSupplyTa = publicKey(
-        this.supplyMarginfiTokenAccounts.liquidityVault
+        this.marginfiSupplyBankAccounts.liquidityVault
       );
       supplyVaultAuthority = publicKey(
-        this.supplyMarginfiTokenAccounts.vaultAuthority
+        this.marginfiSupplyBankAccounts.vaultAuthority
       );
     }
 
@@ -191,9 +201,9 @@ export class SolautoMarginfiInfo extends SolautoInfo {
     let debtVaultAuthority: UmiPublicKey | undefined = undefined;
     if (args.__kind === "Borrow" || args.__kind === "Repay") {
       signerDebtTa = publicKey(this.signerDebtLiquidityTa);
-      vaultDebtTa = publicKey(this.debtMarginfiTokenAccounts.liquidityVault);
+      vaultDebtTa = publicKey(this.marginfiDebtBankAccounts.liquidityVault);
       debtVaultAuthority = publicKey(
-        this.debtMarginfiTokenAccounts.vaultAuthority
+        this.marginfiDebtBankAccounts.vaultAuthority
       );
     }
 
@@ -203,17 +213,17 @@ export class SolautoMarginfiInfo extends SolautoInfo {
       solautoPosition: publicKey(this.solautoPosition),
       marginfiGroup: publicKey(this.marginfiGroup),
       marginfiAccount: publicKey(this.marginfiAccount),
-      supplyBank: publicKey(this.supplyMarginfiTokenAccounts.bank),
+      supplyBank: publicKey(this.marginfiSupplyBankAccounts.bank),
       supplyPriceOracle: publicKey(
-        this.supplyMarginfiTokenAccounts.priceOracle
+        this.marginfiSupplyBankAccounts.priceOracle
       ),
       signerSupplyTa: withdrawingFromSignerTa
         ? publicKey(this.positionSupplyLiquidityTa)
         : publicKey(this.signerSupplyLiquidityTa),
       vaultSupplyTa,
       supplyVaultAuthority,
-      debtBank: publicKey(this.debtMarginfiTokenAccounts.bank),
-      debtPriceOracle: publicKey(this.debtMarginfiTokenAccounts.priceOracle),
+      debtBank: publicKey(this.marginfiDebtBankAccounts.bank),
+      debtPriceOracle: publicKey(this.marginfiDebtBankAccounts.priceOracle),
       signerDebtTa,
       vaultDebtTa,
       debtVaultAuthority,
@@ -238,21 +248,21 @@ export class SolautoMarginfiInfo extends SolautoInfo {
       marginfiGroup: publicKey(this.marginfiGroup),
       marginfiAccount: publicKey(this.marginfiAccount),
       intermediaryTa: publicKey(intermediaryTa),
-      supplyBank: publicKey(this.supplyMarginfiTokenAccounts.bank),
+      supplyBank: publicKey(this.marginfiSupplyBankAccounts.bank),
       supplyPriceOracle: publicKey(
-        this.supplyMarginfiTokenAccounts.priceOracle
+        this.marginfiSupplyBankAccounts.priceOracle
       ),
       positionSupplyTa: publicKey(this.positionSupplyLiquidityTa),
-      vaultSupplyTa: publicKey(this.supplyMarginfiTokenAccounts.liquidityVault),
+      vaultSupplyTa: publicKey(this.marginfiSupplyBankAccounts.liquidityVault),
       supplyVaultAuthority: publicKey(
-        this.supplyMarginfiTokenAccounts.vaultAuthority
+        this.marginfiSupplyBankAccounts.vaultAuthority
       ),
-      debtBank: publicKey(this.debtMarginfiTokenAccounts.bank),
-      debtPriceOracle: publicKey(this.debtMarginfiTokenAccounts.priceOracle),
+      debtBank: publicKey(this.marginfiDebtBankAccounts.bank),
+      debtPriceOracle: publicKey(this.marginfiDebtBankAccounts.priceOracle),
       positionDebtTa: publicKey(this.positionDebtLiquidityTa),
-      vaultDebtTa: publicKey(this.debtMarginfiTokenAccounts.liquidityVault),
+      vaultDebtTa: publicKey(this.marginfiDebtBankAccounts.liquidityVault),
       debtVaultAuthority: publicKey(
-        this.debtMarginfiTokenAccounts.vaultAuthority
+        this.marginfiDebtBankAccounts.vaultAuthority
       ),
       rebalanceData: args,
     });

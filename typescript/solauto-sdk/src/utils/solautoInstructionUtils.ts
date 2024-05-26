@@ -154,13 +154,21 @@ function tokenAccountChoresAfter(
   return undefined;
 }
 
-export async function solautoUserInstruction(
+export async function buildSolautoUserInstruction(
   tx: TransactionBuilder,
   info: SolautoInfo,
   solautoAction?: SolautoActionArgs,
   initiatingDcaIn?: bigint,
   cancellingDcaIn?: boolean
 ): Promise<TransactionBuilder> {
+  if (
+    info.authorityReferralStateData === null ||
+    (info.referredByState !== null &&
+      info.authorityReferralStateData?.referredByState.__option === "None")
+  ) {
+    tx = tx.prepend(this.updateReferralStatesIx());
+  }
+
   const beforeIx = await tokenAccountChoresBefore(
     info,
     solautoAction,
@@ -168,14 +176,6 @@ export async function solautoUserInstruction(
   );
   if (beforeIx !== undefined) {
     tx = tx.prepend(beforeIx);
-  }
-
-  if (
-    this.authorityReferralStateData === null ||
-    (this.referredByState !== null &&
-      this.authorityReferralStateData.referredByState.__option === "None")
-  ) {
-    tx = tx.prepend(this.updateReferralStatesIx());
   }
 
   const afterIx = tokenAccountChoresAfter(info, solautoAction, cancellingDcaIn);
