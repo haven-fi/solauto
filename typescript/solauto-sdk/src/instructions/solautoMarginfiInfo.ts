@@ -180,14 +180,11 @@ export class SolautoMarginfiInfo extends SolautoInfo {
   }
 
   marginfiProtocolInteractionIx(args: SolautoActionArgs): TransactionBuilder {
-    let withdrawingFromSignerTa = false;
-
     let signerSupplyTa: UmiPublicKey | undefined = undefined;
     let vaultSupplyTa: UmiPublicKey | undefined = undefined;
     let supplyVaultAuthority: UmiPublicKey | undefined = undefined;
     if (args.__kind === "Deposit" || args.__kind === "Withdraw") {
-      withdrawingFromSignerTa = true;
-      signerSupplyTa = publicKey(this.signerSupplyLiquidityTa);
+      signerSupplyTa = publicKey(this.positionSupplyLiquidityTa);
       vaultSupplyTa = publicKey(
         this.marginfiSupplyBankAccounts.liquidityVault
       );
@@ -200,6 +197,7 @@ export class SolautoMarginfiInfo extends SolautoInfo {
     let vaultDebtTa: UmiPublicKey | undefined = undefined;
     let debtVaultAuthority: UmiPublicKey | undefined = undefined;
     if (args.__kind === "Borrow" || args.__kind === "Repay") {
+      signerSupplyTa = publicKey(this.signerSupplyLiquidityTa);
       signerDebtTa = publicKey(this.signerDebtLiquidityTa);
       vaultDebtTa = publicKey(this.marginfiDebtBankAccounts.liquidityVault);
       debtVaultAuthority = publicKey(
@@ -217,9 +215,7 @@ export class SolautoMarginfiInfo extends SolautoInfo {
       supplyPriceOracle: publicKey(
         this.marginfiSupplyBankAccounts.priceOracle
       ),
-      signerSupplyTa: withdrawingFromSignerTa
-        ? publicKey(this.positionSupplyLiquidityTa)
-        : publicKey(this.signerSupplyLiquidityTa),
+      signerSupplyTa,
       vaultSupplyTa,
       supplyVaultAuthority,
       debtBank: publicKey(this.marginfiDebtBankAccounts.bank),
