@@ -14,6 +14,8 @@ import {
   createCloseAccountInstruction,
   ACCOUNT_SIZE,
   createTransferCheckedInstruction,
+  TOKEN_PROGRAM_ID,
+  ASSOCIATED_TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
 import {
   fromWeb3JsInstruction,
@@ -31,7 +33,9 @@ function getusedWsolTokenAccount(
   initiatingDcaIn?: bigint,
   cancellingDcaIn?: boolean
 ): PublicKey | undefined {
-  const supplyIsWsol = info.supplyLiquidityMint.equals(new PublicKey(WSOL_MINT));
+  const supplyIsWsol = info.supplyLiquidityMint.equals(
+    new PublicKey(WSOL_MINT)
+  );
   const debtIsWsol = info.debtLiquidityMint.equals(new PublicKey(WSOL_MINT));
   if (!supplyIsWsol && !debtIsWsol) {
     return undefined;
@@ -100,13 +104,13 @@ export async function tokenAccountChoresBefore(
       systemTransferUmiIx(info.signer, wSolTokenAccount, amountToTransfer)
     );
 
-    builder = builder.add([
+    builder = builder.add(
       createAssociatedTokenAccountUmiIx(
         info.signer,
         toWeb3JsPublicKey(info.signer.publicKey),
         new PublicKey(WSOL_MINT)
-      ),
-    ]);
+      )
+    );
 
     return builder;
   } else if (
@@ -125,7 +129,9 @@ export async function tokenAccountChoresBefore(
         createAssociatedTokenAccountUmiIx(
           info.signer,
           toWeb3JsPublicKey(info.signer.publicKey),
-          new PublicKey(WSOL_MINT)
+          solautoAction?.__kind === "Withdraw"
+            ? info.supplyLiquidityMint
+            : info.debtLiquidityMint
         )
       );
     }
@@ -184,7 +190,7 @@ export function createAssociatedTokenAccountUmiIx(
         toWeb3JsPublicKey(signer.publicKey),
         getTokenAccount(wallet, mint),
         wallet,
-        new PublicKey(WSOL_MINT)
+        mint
       )
     ),
     signers: [signer],
@@ -235,7 +241,14 @@ export function splTokenTransferUmiIx(
 ): WrappedInstruction {
   return {
     instruction: fromWeb3JsInstruction(
-      createTransferCheckedInstruction(fromTa, mint, toTa, authority, amount, mintDecimals)
+      createTransferCheckedInstruction(
+        fromTa,
+        mint,
+        toTa,
+        authority,
+        amount,
+        mintDecimals
+      )
     ),
     signers: [signer],
     bytesCreatedOnChain: 0,

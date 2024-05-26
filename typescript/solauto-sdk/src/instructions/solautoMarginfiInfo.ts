@@ -188,7 +188,7 @@ export class SolautoMarginfiInfo extends SolautoInfo {
     let builder = transactionBuilder();
 
     if (args.__kind === "Deposit") {
-      console.log(BigInt(args.fields[0]) / BigInt(10)**BigInt(this.supplyMintDecimals));
+      console.log(BigInt(args.fields[0]));
       builder = builder.add(
         splTokenTransferUmiIx(
           this.signer,

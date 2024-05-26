@@ -36,7 +36,7 @@ describe("Solauto tests", async () => {
   const payForTransactions = false;
   const positionId = 3;
 
-  it("open - deposit - rebalance - close", async () => {
+  it("open - deposit - borrow - rebalance (to 0) - close", async () => {
     const info = new SolautoMarginfiInfo();
     await info.initialize(
       newMarginfiSolautoManagedPositionArgs(
@@ -52,7 +52,18 @@ describe("Solauto tests", async () => {
       __kind: "Deposit",
       fields: [BigInt(1000000000)],
     };
-    let builder = transactionBuilder().add(
+
+    let builder = transactionBuilder();
+    const beforeIx = await tokenAccountChoresBefore(
+      info,
+      initialDeposit,
+      undefined
+    );
+    if (beforeIx !== undefined) {
+      builder = builder.add(beforeIx);
+    }
+
+    builder = transactionBuilder().add(
       info.marginfiOpenPosition(
         {
           boostToBps: 5000,
@@ -69,17 +80,10 @@ describe("Solauto tests", async () => {
         undefined
       )
     );
-    const beforeIx = await tokenAccountChoresBefore(
-      info,
-      initialDeposit,
-      undefined
-    );
-    if (beforeIx !== undefined) {
-      builder = builder.add(beforeIx);
-    }
+
 
     builder = builder.add(info.marginfiProtocolInteraction(initialDeposit));
-    // TODO add rebalance
+    // // TODO add rebalance
 
     const afterIx = tokenAccountChoresAfter(info, initialDeposit, undefined);
     if (afterIx !== undefined) {
