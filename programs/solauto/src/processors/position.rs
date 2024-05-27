@@ -43,14 +43,10 @@ pub fn process_update_position_instruction<'a>(
 }
 
 pub fn process_close_position_instruction<'a>(accounts: &'a [AccountInfo<'a>]) -> ProgramResult {
-    msg!("HELLO 0");
-
     let ctx = ClosePositionAccounts::context(accounts)?;
-    msg!("HELLO 0.1");
     let solauto_position =
         DeserializedAccount::<SolautoPosition>::deserialize(Some(ctx.accounts.solauto_position))?
             .unwrap();
-    msg!("HELLO 3");
 
     let position_supply_liquidity_ta = DeserializedAccount::<TokenAccount>::unpack(Some(
         ctx.accounts.position_supply_liquidity_ta,
@@ -58,7 +54,6 @@ pub fn process_close_position_instruction<'a>(accounts: &'a [AccountInfo<'a>]) -
     .unwrap();
     let position_debt_liquidity_ta =
         DeserializedAccount::<TokenAccount>::unpack(Some(ctx.accounts.position_debt_liquidity_ta))?;
-    msg!("HELLO 4");
 
     validation_utils::validate_instruction(ctx.accounts.signer, &solauto_position, true, true)?;
 
@@ -68,7 +63,6 @@ pub fn process_close_position_instruction<'a>(accounts: &'a [AccountInfo<'a>]) -
         Some(&position_supply_liquidity_ta),
         position_debt_liquidity_ta.as_ref(),
     )?;
-    msg!("HELLO 5");
 
     if solauto_position.data.state.supply.amount_used.base_unit > 0 {
         msg!("Can't close position when there is still tokens supplied to the lending protocol");

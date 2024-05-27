@@ -29,22 +29,25 @@ pub fn process_marginfi_open_position_instruction<'a>(
 ) -> ProgramResult {
     let ctx = MarginfiOpenPositionAccounts::context(accounts)?;
 
-    validation_utils::validate_marginfi_bank(
-        ctx.accounts.supply_bank,
-        Some(ctx.accounts.supply_mint.key),
-    )?;
-    validation_utils::validate_marginfi_bank(
-        ctx.accounts.debt_bank,
-        Some(ctx.accounts.debt_mint.key),
-    )?;
-    #[cfg(feature = "test")]
-    let (max_ltv, liq_threshold) = (0.8, 0.8);
-    #[cfg(not(feature = "test"))]
-    let (max_ltv, liq_threshold) = MarginfiClient::get_max_ltv_and_liq_threshold(
-        ctx.accounts.supply_bank,
-        ctx.accounts.debt_bank,
-    )?;
+    let (max_ltv, liq_threshold) = if cfg!(feature = "test") {
+        (0.8, 0.8)
+    } else {
+        validation_utils::validate_marginfi_bank(
+            ctx.accounts.supply_bank,
+            Some(ctx.accounts.supply_mint.key),
+        )?;
+        validation_utils::validate_marginfi_bank(
+            ctx.accounts.debt_bank,
+            Some(ctx.accounts.debt_mint.key),
+        )?;
+        let (max_ltv, liq_threshold) = MarginfiClient::get_max_ltv_and_liq_threshold(
+            ctx.accounts.supply_bank,
+            ctx.accounts.debt_bank,
+        )?;
 
+        (max_ltv, liq_threshold)
+    };
+    
     let solauto_position = solauto_utils::create_new_solauto_position(
         ctx.accounts.signer,
         ctx.accounts.solauto_position,

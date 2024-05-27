@@ -169,9 +169,7 @@ impl<'a, T: BorshDeserialize> DeserializedAccount<'a, T> {
     pub fn deserialize(account: Option<&'a AccountInfo<'a>>) -> Result<Option<Self>, ProgramError> {
         match account {
             Some(account_info) => {
-                msg!("HELLO 1");
                 let mut data: &[u8] = &(*account_info.data).borrow();
-                msg!("HELLO 2");
                 Ok(Some(Self {
                     account_info,
                     data: Box::new(
