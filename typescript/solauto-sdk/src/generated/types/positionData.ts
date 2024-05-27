@@ -20,19 +20,15 @@ import {
   LendingPlatformArgs,
   LendingProtocolPositionData,
   LendingProtocolPositionDataArgs,
-  PositionState,
-  PositionStateArgs,
   SolautoSettingsParameters,
   SolautoSettingsParametersArgs,
   getDCASettingsSerializer,
   getLendingPlatformSerializer,
   getLendingProtocolPositionDataSerializer,
-  getPositionStateSerializer,
   getSolautoSettingsParametersSerializer,
 } from '.';
 
 export type PositionData = {
-  state: PositionState;
   lendingPlatform: LendingPlatform;
   protocolData: LendingProtocolPositionData;
   settingParams: SolautoSettingsParameters;
@@ -41,7 +37,6 @@ export type PositionData = {
 };
 
 export type PositionDataArgs = {
-  state: PositionStateArgs;
   lendingPlatform: LendingPlatformArgs;
   protocolData: LendingProtocolPositionDataArgs;
   settingParams: SolautoSettingsParametersArgs;
@@ -55,7 +50,6 @@ export function getPositionDataSerializer(): Serializer<
 > {
   return struct<PositionData>(
     [
-      ['state', getPositionStateSerializer()],
       ['lendingPlatform', getLendingPlatformSerializer()],
       ['protocolData', getLendingProtocolPositionDataSerializer()],
       ['settingParams', getSolautoSettingsParametersSerializer()],

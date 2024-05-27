@@ -31,12 +31,12 @@ export type MarginfiRefreshDataInstructionAccounts = {
   signer: Signer;
   marginfiProgram: PublicKey | Pda;
   marginfiGroup: PublicKey | Pda;
-  marginfiAccount?: PublicKey | Pda;
+  marginfiAccount: PublicKey | Pda;
   supplyBank: PublicKey | Pda;
   supplyPriceOracle: PublicKey | Pda;
   debtBank: PublicKey | Pda;
   debtPriceOracle: PublicKey | Pda;
-  solautoPosition?: PublicKey | Pda;
+  solautoPosition: PublicKey | Pda;
 };
 
 // Data.

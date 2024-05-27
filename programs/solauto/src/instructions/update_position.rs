@@ -7,7 +7,7 @@ use crate::{
             UpdatePositionData,
         },
         shared::{DeserializedAccount, SolautoError},
-        solauto_position::SolautoPosition
+        solauto_position::SolautoPosition,
     },
     utils::{ix_utils, solana_utils, solauto_utils, validation_utils},
 };
@@ -30,10 +30,12 @@ pub fn update_position<'a>(
             .setting_params = new_data.setting_params.unwrap();
     }
 
-    let position_data = solauto_position.data.position.as_ref().unwrap();
     let current_timestamp = Clock::get()?.unix_timestamp as u64;
-    validation_utils::validate_position_settings(&position_data, current_timestamp)?;
-    validation_utils::validate_dca_settings(&position_data, current_timestamp)?;
+    validation_utils::validate_position_settings(&solauto_position.data, current_timestamp)?;
+    validation_utils::validate_dca_settings(
+        solauto_position.data.position.as_ref().unwrap(),
+        current_timestamp,
+    )?;
 
     ix_utils::update_data(&mut solauto_position)
 }

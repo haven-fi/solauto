@@ -1,6 +1,6 @@
 use borsh::BorshDeserialize;
 use solana_program::{
-    account_info::AccountInfo, entrypoint, entrypoint::ProgramResult, pubkey::Pubkey,
+    account_info::AccountInfo, entrypoint, entrypoint::ProgramResult, msg, pubkey::Pubkey,
 };
 
 use crate::{
@@ -15,7 +15,9 @@ pub fn process_instruction<'a>(
     accounts: &'a [AccountInfo<'a>],
     data: &'a [u8],
 ) -> ProgramResult {
+    msg!("YO N1");
     let instruction = Instruction::try_from_slice(data)?;
+    msg!("YO N2");
     match instruction {
         Instruction::UpdateReferralStates(args) => process_update_referral_states(accounts, args),
         Instruction::ConvertReferralFees => process_convert_referral_fees(accounts),

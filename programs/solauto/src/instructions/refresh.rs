@@ -1,114 +1,91 @@
 use marginfi_sdk::generated::accounts::MarginfiAccount;
-use solana_program::{clock::Clock, entrypoint::ProgramResult, sysvar::Sysvar};
+use solana_program::{
+    account_info::AccountInfo, clock::Clock, entrypoint::ProgramResult, sysvar::Sysvar,
+};
 
 use crate::{
     clients::{marginfi::MarginfiClient, solend::SolendClient},
     types::{
-        instruction::accounts::{Context, MarginfiRefreshDataAccounts, SolendRefreshDataAccounts},
-        shared::DeserializedAccount,
-        solauto_manager::SolautoManager,
-        solauto_position::SolautoPosition
+        shared::DeserializedAccount, solauto_manager::SolautoManager,
+        solauto_position::SolautoPosition,
     },
     utils::ix_utils,
 };
 
 // TODO: for client: avoid adding a refresh ix on a rebalance transaction if position has been last updated in the last 1 day
-pub fn marginfi_refresh_accounts(
-    ctx: Context<MarginfiRefreshDataAccounts>,
-    mut solauto_position: Option<DeserializedAccount<SolautoPosition>>,
+pub fn marginfi_refresh_accounts<'a, 'b>(
+    marginfi_program: &'a AccountInfo<'a>,
+    marginfi_group: &'a AccountInfo<'a>,
+    marginfi_account: &'a AccountInfo<'a>,
+    supply_bank: &'a AccountInfo<'a>,
+    supply_price_oracle: &'a AccountInfo<'a>,
+    debt_bank: &'a AccountInfo<'a>,
+    debt_price_oracle: &'a AccountInfo<'a>,
+    solauto_position: &'b mut DeserializedAccount<SolautoPosition>,
 ) -> ProgramResult {
-    MarginfiClient::refresh_bank(
-        ctx.accounts.marginfi_program,
-        ctx.accounts.marginfi_group,
-        ctx.accounts.supply_bank,
+    MarginfiClient::refresh_bank(marginfi_program, marginfi_group, supply_bank)?;
+
+    MarginfiClient::refresh_bank(marginfi_program, marginfi_group, debt_bank)?;
+
+    let marginfi_account =
+        DeserializedAccount::<MarginfiAccount>::zerocopy(Some(marginfi_account))?.unwrap();
+
+    let updated_state = MarginfiClient::get_updated_state(
+        &marginfi_account,
+        supply_bank,
+        supply_price_oracle,
+        debt_bank,
+        debt_price_oracle,
     )?;
 
-    MarginfiClient::refresh_bank(
-        ctx.accounts.marginfi_program,
-        ctx.accounts.marginfi_group,
-        ctx.accounts.debt_bank,
-    )?;
-
-    if ctx.accounts.solauto_position.is_some()
-        && !solauto_position.as_ref().unwrap().data.self_managed
-    {
-        let marginfi_account =
-            DeserializedAccount::<MarginfiAccount>::zerocopy(ctx.accounts.marginfi_account)?
-                .unwrap();
-
-        let obligation_position = MarginfiClient::get_obligation_position(
-            &marginfi_account,
-            ctx.accounts.supply_bank,
-            ctx.accounts.supply_price_oracle,
-            ctx.accounts.debt_bank,
-            ctx.accounts.debt_price_oracle,
-        )?;
-
-        SolautoManager::refresh_position(
-            &obligation_position,
-            &mut solauto_position.as_mut().unwrap().data,
-            Clock::get()?.unix_timestamp as u64,
-        )?;
-    }
-
-    if solauto_position.is_some() {
-        ix_utils::update_data(solauto_position.as_mut().unwrap())?;
-    }
-
-    Ok(())
+    SolautoManager::refresh_position(&mut solauto_position.data, updated_state, Clock::get()?);
+    ix_utils::update_data(solauto_position)
 }
 
-pub fn solend_refresh_accounts(
-    ctx: Context<SolendRefreshDataAccounts>,
-    mut solauto_position: Option<DeserializedAccount<SolautoPosition>>,
+pub fn solend_refresh_accounts<'a, 'b>(
+    lending_market: &'a AccountInfo<'a>,
+    obligation: &'a AccountInfo<'a>,
+    supply_reserve: &'a AccountInfo<'a>,
+    supply_reserve_pyth_oracle: &'a AccountInfo<'a>,
+    supply_reserve_switchboard_oracle: &'a AccountInfo<'a>,
+    debt_reserve: &'a AccountInfo<'a>,
+    debt_reserve_pyth_oracle: &'a AccountInfo<'a>,
+    debt_reserve_switchboard_oracle: &'a AccountInfo<'a>,
+    solauto_position: &'b mut DeserializedAccount<SolautoPosition>,
 ) -> ProgramResult {
     SolendClient::refresh_reserve(
-        ctx.accounts.supply_reserve,
-        ctx.accounts.supply_reserve_pyth_price_oracle,
-        ctx.accounts.supply_reserve_switchboard_oracle,
+        supply_reserve,
+        supply_reserve_pyth_oracle,
+        supply_reserve_switchboard_oracle,
     )?;
-    if ctx.accounts.debt_reserve.is_some() {
-        SolendClient::refresh_reserve(
-            ctx.accounts.debt_reserve.unwrap(),
-            ctx.accounts.debt_reserve_pyth_price_oracle.unwrap(),
-            ctx.accounts.debt_reserve_switchboard_oracle.unwrap(),
+    SolendClient::refresh_reserve(
+        debt_reserve,
+        debt_reserve_pyth_oracle,
+        debt_reserve_switchboard_oracle,
+    )?;
+
+    let mut data_accounts = SolendClient::deserialize_solend_accounts(
+        lending_market,
+        Some(supply_reserve),
+        Some(debt_reserve),
+        obligation,
+    )?;
+
+    if data_accounts.obligation.data.deposits.len() > 0 {
+        SolendClient::refresh_obligation(
+            data_accounts.obligation.account_info,
+            supply_reserve,
+            Some(debt_reserve),
         )?;
     }
-    if ctx.accounts.obligation.is_some() {
-        let mut data_accounts = SolendClient::deserialize_solend_accounts(
-            ctx.accounts.lending_market,
-            Some(ctx.accounts.supply_reserve),
-            ctx.accounts.debt_reserve,
-            ctx.accounts.obligation.unwrap(),
-        )?;
 
-        if data_accounts.obligation.data.deposits.len() > 0 {
-            SolendClient::refresh_obligation(
-                data_accounts.obligation.account_info,
-                ctx.accounts.supply_reserve,
-                ctx.accounts.debt_reserve,
-            )?;
-        }
+    let updated_state = SolendClient::get_updated_state(
+        &mut data_accounts.lending_market.data,
+        &data_accounts.supply_reserve.as_ref().unwrap().data,
+        &data_accounts.debt_reserve.as_ref().unwrap().data,
+        &data_accounts.obligation.data,
+    )?;
 
-        if solauto_position.is_some() && !solauto_position.as_ref().unwrap().data.self_managed {
-            let obligation_position = SolendClient::get_obligation_position(
-                &mut data_accounts.lending_market.data,
-                &data_accounts.supply_reserve.as_ref().unwrap().data,
-                data_accounts.debt_reserve.as_ref().map(|sr| &sr.data),
-                &data_accounts.obligation.data,
-            )?;
-
-            SolautoManager::refresh_position(
-                &obligation_position,
-                &mut solauto_position.as_mut().unwrap().data,
-                Clock::get()?.unix_timestamp as u64,
-            )?;
-        }
-    }
-
-    if solauto_position.is_some() {
-        ix_utils::update_data(&mut solauto_position.as_mut().unwrap())?;
-    }
-
-    Ok(())
+    SolautoManager::refresh_position(&mut solauto_position.data, updated_state, Clock::get()?);
+    ix_utils::update_data(solauto_position)
 }

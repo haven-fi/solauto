@@ -1,3 +1,5 @@
+use std::ops::Mul;
+
 use solana_program::{
     account_info::AccountInfo, clock::Clock, entrypoint::ProgramResult, msg,
     program_error::ProgramError, sysvar::Sysvar,
@@ -5,6 +7,7 @@ use solana_program::{
 use spl_token::state::Account as TokenAccount;
 
 use crate::{
+    clients::marginfi::MarginfiClient,
     instructions::{open_position, protocol_interaction, rebalance, refresh},
     types::{
         instruction::{
@@ -15,7 +18,7 @@ use crate::{
             MarginfiOpenPositionData, RebalanceData, SolautoAction, SolautoStandardAccounts,
         },
         shared::{DeserializedAccount, LendingPlatform, ReferralState},
-        solauto_position::SolautoPosition
+        solauto_position::SolautoPosition,
     },
     utils::*,
 };
@@ -26,6 +29,22 @@ pub fn process_marginfi_open_position_instruction<'a>(
 ) -> ProgramResult {
     let ctx = MarginfiOpenPositionAccounts::context(accounts)?;
 
+    validation_utils::validate_marginfi_bank(
+        ctx.accounts.supply_bank,
+        Some(ctx.accounts.supply_mint.key),
+    )?;
+    validation_utils::validate_marginfi_bank(
+        ctx.accounts.debt_bank,
+        Some(ctx.accounts.debt_mint.key),
+    )?;
+    #[cfg(feature = "test")]
+    let (max_ltv, liq_threshold) = (0.8, 0.8);
+    #[cfg(not(feature = "test"))]
+    let (max_ltv, liq_threshold) = MarginfiClient::get_max_ltv_and_liq_threshold(
+        ctx.accounts.supply_bank,
+        ctx.accounts.debt_bank,
+    )?;
+
     let solauto_position = solauto_utils::create_new_solauto_position(
         ctx.accounts.signer,
         ctx.accounts.solauto_position,
@@ -34,14 +53,16 @@ pub fn process_marginfi_open_position_instruction<'a>(
         ctx.accounts.supply_mint,
         ctx.accounts.debt_mint,
         ctx.accounts.marginfi_account,
-        None,
-        None,
+        max_ltv,
+        liq_threshold,
     )?;
     if solauto_position.data.position.is_some() {
-        let position_data = solauto_position.data.position.as_ref().unwrap();
         let current_timestamp = Clock::get()?.unix_timestamp as u64;
-        validation_utils::validate_position_settings(position_data, current_timestamp)?;
-        validation_utils::validate_dca_settings(position_data, current_timestamp)?;
+        validation_utils::validate_position_settings(&solauto_position.data, current_timestamp)?;
+        validation_utils::validate_dca_settings(
+            solauto_position.data.position.as_ref().unwrap(),
+            current_timestamp,
+        )?;
     }
     if solauto_position.data.self_managed && args.marginfi_account_seed_idx.is_some() {
         msg!("Provided a Marginfi account seed index on a self-managed index");
@@ -104,25 +125,20 @@ pub fn process_marginfi_open_position_instruction<'a>(
 
 pub fn process_marginfi_refresh_data<'a>(accounts: &'a [AccountInfo<'a>]) -> ProgramResult {
     let ctx = MarginfiRefreshDataAccounts::context(accounts)?;
-    let solauto_position =
-        DeserializedAccount::<SolautoPosition>::deserialize(ctx.accounts.solauto_position)?;
+    let mut solauto_position =
+        DeserializedAccount::<SolautoPosition>::deserialize(Some(ctx.accounts.solauto_position))?
+            .unwrap();
 
-    if solauto_position.is_some() {
-        validation_utils::validate_instruction(
-            ctx.accounts.signer,
-            solauto_position.as_ref().unwrap(),
-            false,
-            true,
+    validation_utils::validate_instruction(ctx.accounts.signer, &solauto_position, false, false)?;
+
+    if !solauto_position.data.self_managed {
+        validation_utils::validate_lending_program_accounts_with_position(
+            LendingPlatform::Marginfi,
+            &solauto_position,
+            ctx.accounts.marginfi_account,
+            Some(ctx.accounts.supply_bank),
+            Some(ctx.accounts.debt_bank),
         )?;
-
-        if ctx.accounts.marginfi_account.is_some() {
-            validation_utils::validate_lending_program_accounts_with_position(
-                solauto_position.as_ref().unwrap(),
-                ctx.accounts.marginfi_account.unwrap(),
-                Some(ctx.accounts.supply_bank),
-                Some(ctx.accounts.debt_bank),
-            )?;
-        }
     }
 
     validation_utils::validate_lending_program_account(
@@ -130,7 +146,16 @@ pub fn process_marginfi_refresh_data<'a>(accounts: &'a [AccountInfo<'a>]) -> Pro
         LendingPlatform::Marginfi,
     )?;
 
-    refresh::marginfi_refresh_accounts(ctx, solauto_position)
+    refresh::marginfi_refresh_accounts(
+        ctx.accounts.marginfi_program,
+        ctx.accounts.marginfi_group,
+        ctx.accounts.marginfi_account,
+        ctx.accounts.supply_bank,
+        ctx.accounts.supply_price_oracle,
+        ctx.accounts.debt_bank,
+        ctx.accounts.debt_price_oracle,
+        &mut solauto_position,
+    )
 }
 
 pub fn process_marginfi_interaction_instruction<'a>(

@@ -2,7 +2,7 @@ use fixed::types::I80F48;
 use marginfi_sdk::generated::{
     accounts::{Bank, MarginfiAccount},
     instructions::*,
-    types::{Balance},
+    types::Balance,
 };
 use pyth_sdk_solana::state::SolanaPriceAccount;
 use solana_program::{
@@ -19,18 +19,18 @@ use crate::{
             SolautoStandardAccounts,
         },
         lending_protocol::{LendingProtocolClient, LendingProtocolTokenAccounts},
-        obligation_position::{LendingProtocolObligationPosition, PositionTokenUsage},
         shared::{
-            DeserializedAccount, LendingPlatform, SolautoError, TokenBalanceAmount,
+            DeserializedAccount, LendingPlatform, RefreshStateProps, RefreshedTokenData,
+            SolautoError, TokenBalanceAmount,
         },
-        solauto_position::SolautoPosition
+        solauto_position::SolautoPosition,
     },
     utils::{math_utils, solana_utils::*, solauto_utils::*, validation_utils::*},
 };
 
 pub struct MarginfiBankAccounts<'a> {
     pub bank: &'a AccountInfo<'a>,
-    pub price_oracle: &'a AccountInfo<'a>,
+    pub price_oracle: Option<&'a AccountInfo<'a>>,
     pub vault_authority: Option<&'a AccountInfo<'a>>,
     pub token_accounts: Option<LendingProtocolTokenAccounts<'a>>,
 }
@@ -91,28 +91,16 @@ impl<'a> MarginfiClient<'a> {
         marginfi_group: &'a AccountInfo<'a>,
         marginfi_account: &'a AccountInfo<'a>,
         supply_bank: &'a AccountInfo<'a>,
-        supply_price_oracle: &'a AccountInfo<'a>,
+        supply_price_oracle: Option<&'a AccountInfo<'a>>,
         source_supply_ta: Option<&'a AccountInfo<'a>>,
         vault_supply_ta: Option<&'a AccountInfo<'a>>,
         supply_vault_authority: Option<&'a AccountInfo<'a>>,
         debt_bank: &'a AccountInfo<'a>,
-        debt_price_oracle: &'a AccountInfo<'a>,
+        debt_price_oracle: Option<&'a AccountInfo<'a>>,
         source_debt_ta: Option<&'a AccountInfo<'a>>,
         vault_debt_ta: Option<&'a AccountInfo<'a>>,
         debt_vault_authority: Option<&'a AccountInfo<'a>>,
-    ) -> Result<(Self, LendingProtocolObligationPosition), ProgramError> {
-        let deserialized_marginfi_account =
-            DeserializedAccount::<MarginfiAccount>::zerocopy(Some(marginfi_account))?
-                .unwrap();
-
-        let obligation_position = MarginfiClient::get_obligation_position(
-            &deserialized_marginfi_account,
-            supply_bank,
-            supply_price_oracle,
-            debt_bank,
-            debt_price_oracle,
-        )?;
-
+    ) -> Result<Self, ProgramError> {
         let supply = MarginfiBankAccounts {
             bank: supply_bank,
             price_oracle: supply_price_oracle,
@@ -135,16 +123,14 @@ impl<'a> MarginfiClient<'a> {
             )?,
         };
 
-        let client = Self {
+        Ok(Self {
             signer,
             program,
             marginfi_account,
             marginfi_group,
             supply,
             debt,
-        };
-
-        return Ok((client, obligation_position));
+        })
     }
 
     fn get_account_balance(
@@ -166,18 +152,37 @@ impl<'a> MarginfiClient<'a> {
         })
     }
 
+    pub fn get_max_ltv_and_liq_threshold(
+        supply_bank: &'a AccountInfo<'a>,
+        debt_bank: &'a AccountInfo<'a>,
+    ) -> Result<(f64, f64), ProgramError> {
+        let supply_bank = DeserializedAccount::<Bank>::zerocopy(Some(supply_bank))?.unwrap();
+        let debt_bank = DeserializedAccount::<Bank>::zerocopy(Some(debt_bank))?.unwrap();
+
+        let max_ltv = math_utils::convert_i80f48_to_f64(I80F48::from_le_bytes(
+            supply_bank.data.config.asset_weight_init.value,
+        ))
+        .div(math_utils::convert_i80f48_to_f64(I80F48::from_le_bytes(
+            debt_bank.data.config.liability_weight_maint.value,
+        )));
+
+        let liq_threshold = math_utils::convert_i80f48_to_f64(I80F48::from_le_bytes(
+            supply_bank.data.config.asset_weight_maint.value,
+        ))
+        .div(math_utils::convert_i80f48_to_f64(I80F48::from_le_bytes(
+            debt_bank.data.config.liability_weight_maint.value,
+        )));
+
+        Ok((max_ltv, liq_threshold))
+    }
+
     pub fn get_supply_token_usage(
         account_balances: &[Balance],
         supply_bank: &'a AccountInfo<'a>,
         price_oracle: &'a AccountInfo<'a>,
-        debt_weight: f64,
-    ) -> Result<(PositionTokenUsage, f64), ProgramError> {
+        mut max_ltv: f64,
+    ) -> Result<(RefreshedTokenData, f64), ProgramError> {
         let bank = DeserializedAccount::<Bank>::zerocopy(Some(supply_bank))?.unwrap();
-
-        let supply_weight = math_utils::convert_i80f48_to_f64(I80F48::from_le_bytes(
-            bank.data.config.asset_weight_maint.value,
-        ));
-        let mut liq_threshold = supply_weight.div(debt_weight);
 
         let asset_share_value = I80F48::from_le_bytes(bank.data.asset_share_value.value);
 
@@ -205,20 +210,20 @@ impl<'a> MarginfiClient<'a> {
         {
             let discount_factor =
                 bank_deposits_usd_value.div(bank.data.config.total_asset_value_init_limit as f64);
-            liq_threshold = liq_threshold * discount_factor;
+            max_ltv = max_ltv * discount_factor;
         }
 
         Ok((
-            PositionTokenUsage::from_marginfi_data(
-                base_unit_account_deposits,
-                math_utils::convert_i80f48_to_u64(base_unit_deposit_room_available),
+            RefreshedTokenData {
+                amount_used: base_unit_account_deposits,
+                amount_can_be_used: math_utils::convert_i80f48_to_u64(
+                    base_unit_deposit_room_available,
+                ),
                 market_price,
-                bank.data.mint_decimals,
-                math_utils::convert_i80f48_to_f64(I80F48::from_le_bytes(
-                    bank.data.config.asset_weight_maint.value,
-                )),
-            ),
-            liq_threshold,
+                decimals: bank.data.mint_decimals,
+                borrow_fee_bps: None,
+            },
+            max_ltv,
         ))
     }
 
@@ -226,7 +231,7 @@ impl<'a> MarginfiClient<'a> {
         account_balances: &[Balance],
         debt_bank: &'a AccountInfo<'a>,
         price_oracle: &'a AccountInfo<'a>,
-    ) -> Result<PositionTokenUsage, ProgramError> {
+    ) -> Result<RefreshedTokenData, ProgramError> {
         let bank = DeserializedAccount::<Bank>::zerocopy(Some(debt_bank))?.unwrap();
 
         let liability_share_value = I80F48::from_le_bytes(bank.data.liability_share_value.value);
@@ -247,42 +252,42 @@ impl<'a> MarginfiClient<'a> {
                 .mul(liability_share_value),
         );
 
-        Ok(PositionTokenUsage::from_marginfi_data(
-            base_unit_account_debt,
-            math_utils::convert_i80f48_to_u64(base_unit_debt_available),
+        Ok(RefreshedTokenData {
+            amount_used: base_unit_account_debt,
+            amount_can_be_used: math_utils::convert_i80f48_to_u64(base_unit_debt_available),
             market_price,
-            bank.data.mint_decimals,
-            math_utils::convert_i80f48_to_f64(I80F48::from_le_bytes(
-                bank.data.config.liability_weight_maint.value,
-            )),
-        ))
+            decimals: bank.data.mint_decimals,
+            borrow_fee_bps: None,
+        })
     }
 
-    pub fn get_obligation_position(
+    pub fn get_updated_state(
         marginfi_account: &DeserializedAccount<MarginfiAccount>,
         supply_bank: &'a AccountInfo<'a>,
         supply_price_oracle: &'a AccountInfo<'a>,
         debt_bank: &'a AccountInfo<'a>,
         debt_price_oracle: &'a AccountInfo<'a>,
-    ) -> Result<LendingProtocolObligationPosition, ProgramError> {
+    ) -> Result<RefreshStateProps, ProgramError> {
+        let (max_ltv, liq_threshold) =
+            MarginfiClient::get_max_ltv_and_liq_threshold(supply_bank, debt_bank)?;
+
         let account_balances = &marginfi_account.data.lending_account.balances[..2];
         let debt =
             MarginfiClient::get_debt_token_usage(account_balances, debt_bank, debt_price_oracle)?;
 
-        let (supply, liq_threshold) = MarginfiClient::get_supply_token_usage(
+        let (supply, max_ltv) = MarginfiClient::get_supply_token_usage(
             account_balances,
             supply_bank,
             supply_price_oracle,
-            debt.health_weight.unwrap(),
+            max_ltv,
         )?;
 
-        return Ok(LendingProtocolObligationPosition {
-            max_ltv: None,
+        Ok(RefreshStateProps {
+            max_ltv,
             liq_threshold,
             supply,
-            debt: Some(debt),
-            lending_platform: LendingPlatform::Marginfi,
-        });
+            debt,
+        })
     }
 
     pub fn load_price(
@@ -335,8 +340,8 @@ impl<'a> MarginfiClient<'a> {
                 };
 
                 Ok(price)
-            },
-            _ => Ok(0.0)
+            }
+            _ => Ok(0.0),
         }
     }
 
@@ -359,6 +364,7 @@ impl<'a> MarginfiClient<'a> {
 impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
     fn validate(&self, std_accounts: &SolautoStandardAccounts) -> ProgramResult {
         validate_lending_program_accounts_with_position(
+            LendingPlatform::Marginfi,
             &std_accounts.solauto_position,
             self.marginfi_account,
             Some(self.supply.bank),
@@ -426,7 +432,6 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
         amount: TokenBalanceAmount,
         destination: &'a AccountInfo<'a>,
         std_accounts: &'b SolautoStandardAccounts<'a>,
-        _obligation_position: &LendingProtocolObligationPosition,
     ) -> ProgramResult {
         let authority = get_owner(&std_accounts.solauto_position, self.signer);
 
@@ -456,9 +461,9 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
 
         let mut remaining_accounts = Vec::new();
         remaining_accounts.push((self.supply.bank, false, true));
-        remaining_accounts.push((self.supply.price_oracle, false, false));
+        remaining_accounts.push((self.supply.price_oracle.unwrap(), false, false));
         remaining_accounts.push((self.debt.bank, false, false));
-        remaining_accounts.push((self.debt.price_oracle, false, false));
+        remaining_accounts.push((self.debt.price_oracle.unwrap(), false, false));
 
         if authority.key == std_accounts.solauto_position.account_info.key {
             cpi.invoke_signed_with_remaining_accounts(
@@ -501,9 +506,9 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
 
         let mut remaining_accounts = Vec::new();
         remaining_accounts.push((self.supply.bank, false, false));
-        remaining_accounts.push((self.supply.price_oracle, false, false));
+        remaining_accounts.push((self.supply.price_oracle.unwrap(), false, false));
         remaining_accounts.push((self.debt.bank, false, true));
-        remaining_accounts.push((self.debt.price_oracle, false, false));
+        remaining_accounts.push((self.debt.price_oracle.unwrap(), false, false));
 
         if authority.key == std_accounts.solauto_position.account_info.key {
             cpi.invoke_signed_with_remaining_accounts(
@@ -523,7 +528,6 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
         &self,
         amount: TokenBalanceAmount,
         std_accounts: &'b SolautoStandardAccounts<'a>,
-        _obligation_position: &LendingProtocolObligationPosition,
     ) -> ProgramResult {
         let authority = get_owner(&std_accounts.solauto_position, self.signer);
 

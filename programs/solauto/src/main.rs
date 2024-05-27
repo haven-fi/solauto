@@ -1,4 +1,3 @@
-
 // use std::{borrow::Borrow, str::FromStr};
 
 // use borsh::BorshDeserialize;
@@ -46,10 +45,6 @@
 //         Err(e) => println!("An error occurred: {}", e),
 //     }
 // }
-
-
-
-
 
 // // use marginfi_sdk::generated::accounts::Bank;
 // // use solauto::utils::math_utils;

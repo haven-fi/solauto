@@ -6,7 +6,7 @@ use crate::{
     types::{
         instruction::accounts::{ClosePositionAccounts, Context},
         shared::DeserializedAccount,
-        solauto_position::SolautoPosition
+        solauto_position::SolautoPosition,
     },
     utils::solana_utils,
 };

@@ -5,7 +5,7 @@ const crypto = require("crypto");
 
 const idlsDir = path.join(__dirname, "idls");
 
-function generateSolautoSDKs() {
+function generateSolautoSDK() {
   const kinobi = k.createFromIdls([path.join(idlsDir, "solauto.json")]);
 
   kinobi.update(
@@ -53,7 +53,7 @@ function generateSDKForAnchorIDL(sdkDirName, idlFilename, programId) {
   );
 }
 
-generateSolautoSDKs();
+generateSolautoSDK();
 // generateSDKForAnchorIDL(
 //   "marginfi-sdk",
 //   "marginfi.json",

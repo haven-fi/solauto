@@ -3,6 +3,8 @@ use num_traits::{FromPrimitive, ToPrimitive};
 use solend_sdk::math::{Decimal, WAD};
 use std::ops::{Div, Mul};
 
+use crate::constants::USD_DECIMALS;
+
 pub fn decimal_to_f64(decimal: Decimal) -> f64 {
     u128::try_from(decimal.0).unwrap() as f64
 }
@@ -52,8 +54,26 @@ pub fn convert_i80f48_to_f64(value: I80F48) -> f64 {
     float_value.to_num::<f64>()
 }
 
-pub fn get_std_liq_utilization_rate_bps(supply_usd: f64, debt_usd: f64, liq_threshold: f64) -> u16 {
+pub fn get_liq_utilization_rate_bps(supply_usd: f64, debt_usd: f64, liq_threshold: f64) -> u16 {
     debt_usd.div(supply_usd.mul(liq_threshold)).mul(10000.0) as u16
+}
+
+pub fn net_worth_usd_base_amount(supply_usd: f64, debt_usd: f64) -> u64 {
+    to_base_unit::<f64, u8, u64>(supply_usd - debt_usd, USD_DECIMALS)
+}
+
+pub fn net_worth_base_amount(
+    supply_usd: f64,
+    debt_usd: f64,
+    supply_market_price: f64,
+    supply_decimals: u8,
+) -> u64 {
+    let supply_net_worth = from_base_unit::<u64, u8, f64>(
+        net_worth_usd_base_amount(supply_usd, debt_usd),
+        USD_DECIMALS,
+    )
+    .div(supply_market_price as f64);
+    to_base_unit::<f64, u8, u64>(supply_net_worth, supply_decimals)
 }
 
 /// Calculates the debt adjustment in USD in order to reach the target_liq_utilization_rate
@@ -87,7 +107,9 @@ pub fn get_std_debt_adjustment_usd(
         / (1.0 - target_liq_utilization_rate * (1.0 - adjustment_fee) * liq_threshold)
 }
 
-pub fn get_maximum_repay_to_bps_param(max_ltv: f64, liq_threshold: f64) -> u16 {
+pub fn get_maximum_repay_to_bps_param(max_ltv_bps: u16, liq_threshold_bps: u16) -> u16 {
+    let max_ltv = (max_ltv_bps as f64).div(10000.0);
+    let liq_threshold = (liq_threshold_bps as f64).div(10000.0);
     (max_ltv - 0.01).div(liq_threshold).mul(10000.0) as u16
 }
 
@@ -123,7 +145,7 @@ mod tests {
         debt_usd += debt_adjustment;
 
         let new_liq_utilization_rate_bps =
-            get_std_liq_utilization_rate_bps(supply_usd, debt_usd, liq_threshold);
+            get_liq_utilization_rate_bps(supply_usd, debt_usd, liq_threshold);
         assert!(
             round_to_places((new_liq_utilization_rate_bps as f64).div(10000.0), 2)
                 == round_to_places(target_liq_utilization_rate, 2)

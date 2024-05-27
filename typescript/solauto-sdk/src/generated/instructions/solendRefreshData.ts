@@ -32,16 +32,16 @@ export type SolendRefreshDataInstructionAccounts = {
   solendProgram: PublicKey | Pda;
   clock: PublicKey | Pda;
   supplyReserve: PublicKey | Pda;
-  supplyReservePythPriceOracle: PublicKey | Pda;
+  supplyReservePythOracle: PublicKey | Pda;
   supplyReserveSwitchboardOracle: PublicKey | Pda;
-  debtReserve?: PublicKey | Pda;
-  debtReservePythPriceOracle?: PublicKey | Pda;
-  debtReserveSwitchboardOracle?: PublicKey | Pda;
+  debtReserve: PublicKey | Pda;
+  debtReservePythOracle: PublicKey | Pda;
+  debtReserveSwitchboardOracle: PublicKey | Pda;
   lendingMarket: PublicKey | Pda;
-  obligation?: PublicKey | Pda;
-  solautoPosition?: PublicKey | Pda;
-  positionSupplyLiquidityTa?: PublicKey | Pda;
-  positionDebtLiquidityTa?: PublicKey | Pda;
+  obligation: PublicKey | Pda;
+  solautoPosition: PublicKey | Pda;
+  positionSupplyLiquidityTa: PublicKey | Pda;
+  positionDebtLiquidityTa: PublicKey | Pda;
 };
 
 // Data.
@@ -101,10 +101,10 @@ export function solendRefreshData(
       isWritable: true as boolean,
       value: input.supplyReserve ?? null,
     },
-    supplyReservePythPriceOracle: {
+    supplyReservePythOracle: {
       index: 4,
       isWritable: false as boolean,
-      value: input.supplyReservePythPriceOracle ?? null,
+      value: input.supplyReservePythOracle ?? null,
     },
     supplyReserveSwitchboardOracle: {
       index: 5,
@@ -116,10 +116,10 @@ export function solendRefreshData(
       isWritable: true as boolean,
       value: input.debtReserve ?? null,
     },
-    debtReservePythPriceOracle: {
+    debtReservePythOracle: {
       index: 7,
       isWritable: false as boolean,
-      value: input.debtReservePythPriceOracle ?? null,
+      value: input.debtReservePythOracle ?? null,
     },
     debtReserveSwitchboardOracle: {
       index: 8,
@@ -133,7 +133,7 @@ export function solendRefreshData(
     },
     obligation: {
       index: 10,
-      isWritable: true as boolean,
+      isWritable: false as boolean,
       value: input.obligation ?? null,
     },
     solautoPosition: {
@@ -143,12 +143,12 @@ export function solendRefreshData(
     },
     positionSupplyLiquidityTa: {
       index: 12,
-      isWritable: true as boolean,
+      isWritable: false as boolean,
       value: input.positionSupplyLiquidityTa ?? null,
     },
     positionDebtLiquidityTa: {
       index: 13,
-      isWritable: true as boolean,
+      isWritable: false as boolean,
       value: input.positionDebtLiquidityTa ?? null,
     },
   } satisfies ResolvedAccountsWithIndices;

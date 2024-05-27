@@ -16,7 +16,7 @@ pub struct MarginfiRefreshData {
 
     pub marginfi_group: solana_program::pubkey::Pubkey,
 
-    pub marginfi_account: Option<solana_program::pubkey::Pubkey>,
+    pub marginfi_account: solana_program::pubkey::Pubkey,
 
     pub supply_bank: solana_program::pubkey::Pubkey,
 
@@ -26,7 +26,7 @@ pub struct MarginfiRefreshData {
 
     pub debt_price_oracle: solana_program::pubkey::Pubkey,
 
-    pub solauto_position: Option<solana_program::pubkey::Pubkey>,
+    pub solauto_position: solana_program::pubkey::Pubkey,
 }
 
 impl MarginfiRefreshData {
@@ -51,17 +51,10 @@ impl MarginfiRefreshData {
             self.marginfi_group,
             false,
         ));
-        if let Some(marginfi_account) = self.marginfi_account {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                marginfi_account,
-                false,
-            ));
-        } else {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::SOLAUTO_ID,
-                false,
-            ));
-        }
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            self.marginfi_account,
+            false,
+        ));
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.supply_bank,
             false,
@@ -78,17 +71,10 @@ impl MarginfiRefreshData {
             self.debt_price_oracle,
             false,
         ));
-        if let Some(solauto_position) = self.solauto_position {
-            accounts.push(solana_program::instruction::AccountMeta::new(
-                solauto_position,
-                false,
-            ));
-        } else {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::SOLAUTO_ID,
-                false,
-            ));
-        }
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            self.solauto_position,
+            false,
+        ));
         accounts.extend_from_slice(remaining_accounts);
         let data = MarginfiRefreshDataInstructionData::new()
             .try_to_vec()
@@ -120,12 +106,12 @@ impl MarginfiRefreshDataInstructionData {
 ///   0. `[signer]` signer
 ///   1. `[]` marginfi_program
 ///   2. `[]` marginfi_group
-///   3. `[optional]` marginfi_account
+///   3. `[]` marginfi_account
 ///   4. `[writable]` supply_bank
 ///   5. `[]` supply_price_oracle
 ///   6. `[writable]` debt_bank
 ///   7. `[]` debt_price_oracle
-///   8. `[writable, optional]` solauto_position
+///   8. `[writable]` solauto_position
 #[derive(Default)]
 pub struct MarginfiRefreshDataBuilder {
     signer: Option<solana_program::pubkey::Pubkey>,
@@ -162,13 +148,12 @@ impl MarginfiRefreshDataBuilder {
         self.marginfi_group = Some(marginfi_group);
         self
     }
-    /// `[optional account]`
     #[inline(always)]
     pub fn marginfi_account(
         &mut self,
-        marginfi_account: Option<solana_program::pubkey::Pubkey>,
+        marginfi_account: solana_program::pubkey::Pubkey,
     ) -> &mut Self {
-        self.marginfi_account = marginfi_account;
+        self.marginfi_account = Some(marginfi_account);
         self
     }
     #[inline(always)]
@@ -197,13 +182,12 @@ impl MarginfiRefreshDataBuilder {
         self.debt_price_oracle = Some(debt_price_oracle);
         self
     }
-    /// `[optional account]`
     #[inline(always)]
     pub fn solauto_position(
         &mut self,
-        solauto_position: Option<solana_program::pubkey::Pubkey>,
+        solauto_position: solana_program::pubkey::Pubkey,
     ) -> &mut Self {
-        self.solauto_position = solauto_position;
+        self.solauto_position = Some(solauto_position);
         self
     }
     /// Add an aditional account to the instruction.
@@ -230,7 +214,7 @@ impl MarginfiRefreshDataBuilder {
             signer: self.signer.expect("signer is not set"),
             marginfi_program: self.marginfi_program.expect("marginfi_program is not set"),
             marginfi_group: self.marginfi_group.expect("marginfi_group is not set"),
-            marginfi_account: self.marginfi_account,
+            marginfi_account: self.marginfi_account.expect("marginfi_account is not set"),
             supply_bank: self.supply_bank.expect("supply_bank is not set"),
             supply_price_oracle: self
                 .supply_price_oracle
@@ -239,7 +223,7 @@ impl MarginfiRefreshDataBuilder {
             debt_price_oracle: self
                 .debt_price_oracle
                 .expect("debt_price_oracle is not set"),
-            solauto_position: self.solauto_position,
+            solauto_position: self.solauto_position.expect("solauto_position is not set"),
         };
 
         accounts.instruction_with_remaining_accounts(&self.__remaining_accounts)
@@ -254,7 +238,7 @@ pub struct MarginfiRefreshDataCpiAccounts<'a, 'b> {
 
     pub marginfi_group: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub marginfi_account: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    pub marginfi_account: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub supply_bank: &'b solana_program::account_info::AccountInfo<'a>,
 
@@ -264,7 +248,7 @@ pub struct MarginfiRefreshDataCpiAccounts<'a, 'b> {
 
     pub debt_price_oracle: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub solauto_position: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    pub solauto_position: &'b solana_program::account_info::AccountInfo<'a>,
 }
 
 /// `marginfi_refresh_data` CPI instruction.
@@ -278,7 +262,7 @@ pub struct MarginfiRefreshDataCpi<'a, 'b> {
 
     pub marginfi_group: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub marginfi_account: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    pub marginfi_account: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub supply_bank: &'b solana_program::account_info::AccountInfo<'a>,
 
@@ -288,7 +272,7 @@ pub struct MarginfiRefreshDataCpi<'a, 'b> {
 
     pub debt_price_oracle: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub solauto_position: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    pub solauto_position: &'b solana_program::account_info::AccountInfo<'a>,
 }
 
 impl<'a, 'b> MarginfiRefreshDataCpi<'a, 'b> {
@@ -355,17 +339,10 @@ impl<'a, 'b> MarginfiRefreshDataCpi<'a, 'b> {
             *self.marginfi_group.key,
             false,
         ));
-        if let Some(marginfi_account) = self.marginfi_account {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                *marginfi_account.key,
-                false,
-            ));
-        } else {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::SOLAUTO_ID,
-                false,
-            ));
-        }
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            *self.marginfi_account.key,
+            false,
+        ));
         accounts.push(solana_program::instruction::AccountMeta::new(
             *self.supply_bank.key,
             false,
@@ -382,17 +359,10 @@ impl<'a, 'b> MarginfiRefreshDataCpi<'a, 'b> {
             *self.debt_price_oracle.key,
             false,
         ));
-        if let Some(solauto_position) = self.solauto_position {
-            accounts.push(solana_program::instruction::AccountMeta::new(
-                *solauto_position.key,
-                false,
-            ));
-        } else {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::SOLAUTO_ID,
-                false,
-            ));
-        }
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            *self.solauto_position.key,
+            false,
+        ));
         remaining_accounts.iter().for_each(|remaining_account| {
             accounts.push(solana_program::instruction::AccountMeta {
                 pubkey: *remaining_account.0.key,
@@ -414,16 +384,12 @@ impl<'a, 'b> MarginfiRefreshDataCpi<'a, 'b> {
         account_infos.push(self.signer.clone());
         account_infos.push(self.marginfi_program.clone());
         account_infos.push(self.marginfi_group.clone());
-        if let Some(marginfi_account) = self.marginfi_account {
-            account_infos.push(marginfi_account.clone());
-        }
+        account_infos.push(self.marginfi_account.clone());
         account_infos.push(self.supply_bank.clone());
         account_infos.push(self.supply_price_oracle.clone());
         account_infos.push(self.debt_bank.clone());
         account_infos.push(self.debt_price_oracle.clone());
-        if let Some(solauto_position) = self.solauto_position {
-            account_infos.push(solauto_position.clone());
-        }
+        account_infos.push(self.solauto_position.clone());
         remaining_accounts
             .iter()
             .for_each(|remaining_account| account_infos.push(remaining_account.0.clone()));
@@ -443,12 +409,12 @@ impl<'a, 'b> MarginfiRefreshDataCpi<'a, 'b> {
 ///   0. `[signer]` signer
 ///   1. `[]` marginfi_program
 ///   2. `[]` marginfi_group
-///   3. `[optional]` marginfi_account
+///   3. `[]` marginfi_account
 ///   4. `[writable]` supply_bank
 ///   5. `[]` supply_price_oracle
 ///   6. `[writable]` debt_bank
 ///   7. `[]` debt_price_oracle
-///   8. `[writable, optional]` solauto_position
+///   8. `[writable]` solauto_position
 pub struct MarginfiRefreshDataCpiBuilder<'a, 'b> {
     instruction: Box<MarginfiRefreshDataCpiBuilderInstruction<'a, 'b>>,
 }
@@ -494,13 +460,12 @@ impl<'a, 'b> MarginfiRefreshDataCpiBuilder<'a, 'b> {
         self.instruction.marginfi_group = Some(marginfi_group);
         self
     }
-    /// `[optional account]`
     #[inline(always)]
     pub fn marginfi_account(
         &mut self,
-        marginfi_account: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+        marginfi_account: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
-        self.instruction.marginfi_account = marginfi_account;
+        self.instruction.marginfi_account = Some(marginfi_account);
         self
     }
     #[inline(always)]
@@ -535,13 +500,12 @@ impl<'a, 'b> MarginfiRefreshDataCpiBuilder<'a, 'b> {
         self.instruction.debt_price_oracle = Some(debt_price_oracle);
         self
     }
-    /// `[optional account]`
     #[inline(always)]
     pub fn solauto_position(
         &mut self,
-        solauto_position: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+        solauto_position: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
-        self.instruction.solauto_position = solauto_position;
+        self.instruction.solauto_position = Some(solauto_position);
         self
     }
     /// Add an additional account to the instruction.
@@ -600,7 +564,10 @@ impl<'a, 'b> MarginfiRefreshDataCpiBuilder<'a, 'b> {
                 .marginfi_group
                 .expect("marginfi_group is not set"),
 
-            marginfi_account: self.instruction.marginfi_account,
+            marginfi_account: self
+                .instruction
+                .marginfi_account
+                .expect("marginfi_account is not set"),
 
             supply_bank: self
                 .instruction
@@ -619,7 +586,10 @@ impl<'a, 'b> MarginfiRefreshDataCpiBuilder<'a, 'b> {
                 .debt_price_oracle
                 .expect("debt_price_oracle is not set"),
 
-            solauto_position: self.instruction.solauto_position,
+            solauto_position: self
+                .instruction
+                .solauto_position
+                .expect("solauto_position is not set"),
         };
         instruction.invoke_signed_with_remaining_accounts(
             signers_seeds,

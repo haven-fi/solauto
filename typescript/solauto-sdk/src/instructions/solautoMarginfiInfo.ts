@@ -122,8 +122,10 @@ export class SolautoMarginfiInfo extends SolautoInfo {
           ? publicKey(this.marginfiAccount)
           : (this.marginfiAccount as Signer),
       supplyMint: publicKey(this.supplyLiquidityMint),
+      supplyBank: publicKey(this.marginfiSupplyBankAccounts.bank),
       positionSupplyTa: publicKey(this.positionSupplyLiquidityTa),
       debtMint: publicKey(this.debtLiquidityMint),
+      debtBank: publicKey(this.marginfiDebtBankAccounts.bank),
       positionDebtTa: publicKey(this.positionDebtLiquidityTa),
       signerDebtTa: signerDebtLiquidityTa,
       positionData: {
@@ -193,10 +195,18 @@ export class SolautoMarginfiInfo extends SolautoInfo {
       );
     }
 
+    let supplyPriceOracle: UmiPublicKey | undefined = undefined;
+    let debtPriceOracle: UmiPublicKey | undefined = undefined;
+
     let signerDebtTa: UmiPublicKey | undefined = undefined;
     let vaultDebtTa: UmiPublicKey | undefined = undefined;
     let debtVaultAuthority: UmiPublicKey | undefined = undefined;
     if (args.__kind === "Borrow" || args.__kind === "Repay") {
+      supplyPriceOracle = publicKey(
+        this.marginfiSupplyBankAccounts.priceOracle
+      );
+      debtPriceOracle = publicKey(this.marginfiDebtBankAccounts.priceOracle);
+
       signerSupplyTa = publicKey(this.signerSupplyLiquidityTa);
       signerDebtTa = publicKey(this.signerDebtLiquidityTa);
       vaultDebtTa = publicKey(this.marginfiDebtBankAccounts.liquidityVault);
@@ -212,14 +222,12 @@ export class SolautoMarginfiInfo extends SolautoInfo {
       marginfiGroup: publicKey(this.marginfiGroup),
       marginfiAccount: publicKey(this.marginfiAccount),
       supplyBank: publicKey(this.marginfiSupplyBankAccounts.bank),
-      supplyPriceOracle: publicKey(
-        this.marginfiSupplyBankAccounts.priceOracle
-      ),
+      supplyPriceOracle,
       signerSupplyTa,
       vaultSupplyTa,
       supplyVaultAuthority,
       debtBank: publicKey(this.marginfiDebtBankAccounts.bank),
-      debtPriceOracle: publicKey(this.marginfiDebtBankAccounts.priceOracle),
+      debtPriceOracle,
       signerDebtTa,
       vaultDebtTa,
       debtVaultAuthority,

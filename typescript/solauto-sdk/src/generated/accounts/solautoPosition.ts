@@ -33,7 +33,10 @@ import {
 import {
   PositionData,
   PositionDataArgs,
+  PositionState,
+  PositionStateArgs,
   getPositionDataSerializer,
+  getPositionStateSerializer,
 } from '../types';
 
 export type SolautoPosition = Account<SolautoPositionAccountData>;
@@ -45,6 +48,7 @@ export type SolautoPositionAccountData = {
   authority: PublicKey;
   selfManaged: boolean;
   position: Option<PositionData>;
+  state: PositionState;
   padding: Array<number>;
 };
 
@@ -55,6 +59,7 @@ export type SolautoPositionAccountDataArgs = {
   authority: PublicKey;
   selfManaged: boolean;
   position: OptionOrNullable<PositionDataArgs>;
+  state: PositionStateArgs;
   padding: Array<number>;
 };
 
@@ -70,6 +75,7 @@ export function getSolautoPositionAccountDataSerializer(): Serializer<
       ['authority', publicKeySerializer()],
       ['selfManaged', bool()],
       ['position', option(getPositionDataSerializer())],
+      ['state', getPositionStateSerializer()],
       ['padding', array(u8(), { size: 128 })],
     ],
     { description: 'SolautoPositionAccountData' }
@@ -156,6 +162,7 @@ export function getSolautoPositionGpaBuilder(
       authority: PublicKey;
       selfManaged: boolean;
       position: OptionOrNullable<PositionDataArgs>;
+      state: PositionStateArgs;
       padding: Array<number>;
     }>({
       positionIdArr: [0, array(u8(), { size: 1 })],
@@ -164,6 +171,7 @@ export function getSolautoPositionGpaBuilder(
       authority: [3, publicKeySerializer()],
       selfManaged: [35, bool()],
       position: [36, option(getPositionDataSerializer())],
+      state: [null, getPositionStateSerializer()],
       padding: [null, array(u8(), { size: 128 })],
     })
     .deserializeUsing<SolautoPosition>((account) =>

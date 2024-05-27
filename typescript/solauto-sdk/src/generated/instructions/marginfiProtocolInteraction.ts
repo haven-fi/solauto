@@ -44,12 +44,12 @@ export type MarginfiProtocolInteractionInstructionAccounts = {
   marginfiGroup: PublicKey | Pda;
   marginfiAccount: PublicKey | Pda;
   supplyBank: PublicKey | Pda;
-  supplyPriceOracle: PublicKey | Pda;
+  supplyPriceOracle?: PublicKey | Pda;
   signerSupplyTa?: PublicKey | Pda;
   vaultSupplyTa?: PublicKey | Pda;
   supplyVaultAuthority?: PublicKey | Pda;
   debtBank: PublicKey | Pda;
-  debtPriceOracle: PublicKey | Pda;
+  debtPriceOracle?: PublicKey | Pda;
   signerDebtTa?: PublicKey | Pda;
   vaultDebtTa?: PublicKey | Pda;
   debtVaultAuthority?: PublicKey | Pda;

@@ -6,22 +6,25 @@
  * @see https://github.com/metaplex-foundation/kinobi
  */
 
-import { Option, OptionOrNullable } from '@metaplex-foundation/umi';
 import {
   Serializer,
-  option,
   struct,
   u16,
   u64,
 } from '@metaplex-foundation/umi/serializers';
+import {
+  PositionTokenUsage,
+  PositionTokenUsageArgs,
+  getPositionTokenUsageSerializer,
+} from '.';
 
 export type PositionState = {
   liqUtilizationRateBps: number;
   netWorthBaseAmountUsd: bigint;
   netWorthBaseAmountSupplyMint: bigint;
-  baseAmountSupplied: bigint;
-  baseAmountBorrowed: bigint;
-  maxLtvBps: Option<number>;
+  supply: PositionTokenUsage;
+  debt: PositionTokenUsage;
+  maxLtvBps: number;
   liqThresholdBps: number;
   lastUpdated: bigint;
 };
@@ -30,9 +33,9 @@ export type PositionStateArgs = {
   liqUtilizationRateBps: number;
   netWorthBaseAmountUsd: number | bigint;
   netWorthBaseAmountSupplyMint: number | bigint;
-  baseAmountSupplied: number | bigint;
-  baseAmountBorrowed: number | bigint;
-  maxLtvBps: OptionOrNullable<number>;
+  supply: PositionTokenUsageArgs;
+  debt: PositionTokenUsageArgs;
+  maxLtvBps: number;
   liqThresholdBps: number;
   lastUpdated: number | bigint;
 };
@@ -46,9 +49,9 @@ export function getPositionStateSerializer(): Serializer<
       ['liqUtilizationRateBps', u16()],
       ['netWorthBaseAmountUsd', u64()],
       ['netWorthBaseAmountSupplyMint', u64()],
-      ['baseAmountSupplied', u64()],
-      ['baseAmountBorrowed', u64()],
-      ['maxLtvBps', option(u16())],
+      ['supply', getPositionTokenUsageSerializer()],
+      ['debt', getPositionTokenUsageSerializer()],
+      ['maxLtvBps', u16()],
       ['liqThresholdBps', u16()],
       ['lastUpdated', u64()],
     ],

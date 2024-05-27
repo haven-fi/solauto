@@ -18,25 +18,25 @@ pub struct SolendRefreshData {
 
     pub supply_reserve: solana_program::pubkey::Pubkey,
 
-    pub supply_reserve_pyth_price_oracle: solana_program::pubkey::Pubkey,
+    pub supply_reserve_pyth_oracle: solana_program::pubkey::Pubkey,
 
     pub supply_reserve_switchboard_oracle: solana_program::pubkey::Pubkey,
 
-    pub debt_reserve: Option<solana_program::pubkey::Pubkey>,
+    pub debt_reserve: solana_program::pubkey::Pubkey,
 
-    pub debt_reserve_pyth_price_oracle: Option<solana_program::pubkey::Pubkey>,
+    pub debt_reserve_pyth_oracle: solana_program::pubkey::Pubkey,
 
-    pub debt_reserve_switchboard_oracle: Option<solana_program::pubkey::Pubkey>,
+    pub debt_reserve_switchboard_oracle: solana_program::pubkey::Pubkey,
 
     pub lending_market: solana_program::pubkey::Pubkey,
 
-    pub obligation: Option<solana_program::pubkey::Pubkey>,
+    pub obligation: solana_program::pubkey::Pubkey,
 
-    pub solauto_position: Option<solana_program::pubkey::Pubkey>,
+    pub solauto_position: solana_program::pubkey::Pubkey,
 
-    pub position_supply_liquidity_ta: Option<solana_program::pubkey::Pubkey>,
+    pub position_supply_liquidity_ta: solana_program::pubkey::Pubkey,
 
-    pub position_debt_liquidity_ta: Option<solana_program::pubkey::Pubkey>,
+    pub position_debt_liquidity_ta: solana_program::pubkey::Pubkey,
 }
 
 impl SolendRefreshData {
@@ -65,93 +65,45 @@ impl SolendRefreshData {
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.supply_reserve_pyth_price_oracle,
+            self.supply_reserve_pyth_oracle,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.supply_reserve_switchboard_oracle,
             false,
         ));
-        if let Some(debt_reserve) = self.debt_reserve {
-            accounts.push(solana_program::instruction::AccountMeta::new(
-                debt_reserve,
-                false,
-            ));
-        } else {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::SOLAUTO_ID,
-                false,
-            ));
-        }
-        if let Some(debt_reserve_pyth_price_oracle) = self.debt_reserve_pyth_price_oracle {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                debt_reserve_pyth_price_oracle,
-                false,
-            ));
-        } else {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::SOLAUTO_ID,
-                false,
-            ));
-        }
-        if let Some(debt_reserve_switchboard_oracle) = self.debt_reserve_switchboard_oracle {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                debt_reserve_switchboard_oracle,
-                false,
-            ));
-        } else {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::SOLAUTO_ID,
-                false,
-            ));
-        }
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            self.debt_reserve,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            self.debt_reserve_pyth_oracle,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            self.debt_reserve_switchboard_oracle,
+            false,
+        ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.lending_market,
             false,
         ));
-        if let Some(obligation) = self.obligation {
-            accounts.push(solana_program::instruction::AccountMeta::new(
-                obligation, false,
-            ));
-        } else {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::SOLAUTO_ID,
-                false,
-            ));
-        }
-        if let Some(solauto_position) = self.solauto_position {
-            accounts.push(solana_program::instruction::AccountMeta::new(
-                solauto_position,
-                false,
-            ));
-        } else {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::SOLAUTO_ID,
-                false,
-            ));
-        }
-        if let Some(position_supply_liquidity_ta) = self.position_supply_liquidity_ta {
-            accounts.push(solana_program::instruction::AccountMeta::new(
-                position_supply_liquidity_ta,
-                false,
-            ));
-        } else {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::SOLAUTO_ID,
-                false,
-            ));
-        }
-        if let Some(position_debt_liquidity_ta) = self.position_debt_liquidity_ta {
-            accounts.push(solana_program::instruction::AccountMeta::new(
-                position_debt_liquidity_ta,
-                false,
-            ));
-        } else {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::SOLAUTO_ID,
-                false,
-            ));
-        }
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            self.obligation,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            self.solauto_position,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            self.position_supply_liquidity_ta,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            self.position_debt_liquidity_ta,
+            false,
+        ));
         accounts.extend_from_slice(remaining_accounts);
         let data = SolendRefreshDataInstructionData::new()
             .try_to_vec()
@@ -184,26 +136,26 @@ impl SolendRefreshDataInstructionData {
 ///   1. `[]` solend_program
 ///   2. `[]` clock
 ///   3. `[writable]` supply_reserve
-///   4. `[]` supply_reserve_pyth_price_oracle
+///   4. `[]` supply_reserve_pyth_oracle
 ///   5. `[]` supply_reserve_switchboard_oracle
-///   6. `[writable, optional]` debt_reserve
-///   7. `[optional]` debt_reserve_pyth_price_oracle
-///   8. `[optional]` debt_reserve_switchboard_oracle
+///   6. `[writable]` debt_reserve
+///   7. `[]` debt_reserve_pyth_oracle
+///   8. `[]` debt_reserve_switchboard_oracle
 ///   9. `[]` lending_market
-///   10. `[writable, optional]` obligation
-///   11. `[writable, optional]` solauto_position
-///   12. `[writable, optional]` position_supply_liquidity_ta
-///   13. `[writable, optional]` position_debt_liquidity_ta
+///   10. `[]` obligation
+///   11. `[writable]` solauto_position
+///   12. `[]` position_supply_liquidity_ta
+///   13. `[]` position_debt_liquidity_ta
 #[derive(Default)]
 pub struct SolendRefreshDataBuilder {
     signer: Option<solana_program::pubkey::Pubkey>,
     solend_program: Option<solana_program::pubkey::Pubkey>,
     clock: Option<solana_program::pubkey::Pubkey>,
     supply_reserve: Option<solana_program::pubkey::Pubkey>,
-    supply_reserve_pyth_price_oracle: Option<solana_program::pubkey::Pubkey>,
+    supply_reserve_pyth_oracle: Option<solana_program::pubkey::Pubkey>,
     supply_reserve_switchboard_oracle: Option<solana_program::pubkey::Pubkey>,
     debt_reserve: Option<solana_program::pubkey::Pubkey>,
-    debt_reserve_pyth_price_oracle: Option<solana_program::pubkey::Pubkey>,
+    debt_reserve_pyth_oracle: Option<solana_program::pubkey::Pubkey>,
     debt_reserve_switchboard_oracle: Option<solana_program::pubkey::Pubkey>,
     lending_market: Option<solana_program::pubkey::Pubkey>,
     obligation: Option<solana_program::pubkey::Pubkey>,
@@ -238,11 +190,11 @@ impl SolendRefreshDataBuilder {
         self
     }
     #[inline(always)]
-    pub fn supply_reserve_pyth_price_oracle(
+    pub fn supply_reserve_pyth_oracle(
         &mut self,
-        supply_reserve_pyth_price_oracle: solana_program::pubkey::Pubkey,
+        supply_reserve_pyth_oracle: solana_program::pubkey::Pubkey,
     ) -> &mut Self {
-        self.supply_reserve_pyth_price_oracle = Some(supply_reserve_pyth_price_oracle);
+        self.supply_reserve_pyth_oracle = Some(supply_reserve_pyth_oracle);
         self
     }
     #[inline(always)]
@@ -253,31 +205,25 @@ impl SolendRefreshDataBuilder {
         self.supply_reserve_switchboard_oracle = Some(supply_reserve_switchboard_oracle);
         self
     }
-    /// `[optional account]`
     #[inline(always)]
-    pub fn debt_reserve(
-        &mut self,
-        debt_reserve: Option<solana_program::pubkey::Pubkey>,
-    ) -> &mut Self {
-        self.debt_reserve = debt_reserve;
+    pub fn debt_reserve(&mut self, debt_reserve: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.debt_reserve = Some(debt_reserve);
         self
     }
-    /// `[optional account]`
     #[inline(always)]
-    pub fn debt_reserve_pyth_price_oracle(
+    pub fn debt_reserve_pyth_oracle(
         &mut self,
-        debt_reserve_pyth_price_oracle: Option<solana_program::pubkey::Pubkey>,
+        debt_reserve_pyth_oracle: solana_program::pubkey::Pubkey,
     ) -> &mut Self {
-        self.debt_reserve_pyth_price_oracle = debt_reserve_pyth_price_oracle;
+        self.debt_reserve_pyth_oracle = Some(debt_reserve_pyth_oracle);
         self
     }
-    /// `[optional account]`
     #[inline(always)]
     pub fn debt_reserve_switchboard_oracle(
         &mut self,
-        debt_reserve_switchboard_oracle: Option<solana_program::pubkey::Pubkey>,
+        debt_reserve_switchboard_oracle: solana_program::pubkey::Pubkey,
     ) -> &mut Self {
-        self.debt_reserve_switchboard_oracle = debt_reserve_switchboard_oracle;
+        self.debt_reserve_switchboard_oracle = Some(debt_reserve_switchboard_oracle);
         self
     }
     #[inline(always)]
@@ -285,37 +231,33 @@ impl SolendRefreshDataBuilder {
         self.lending_market = Some(lending_market);
         self
     }
-    /// `[optional account]`
     #[inline(always)]
-    pub fn obligation(&mut self, obligation: Option<solana_program::pubkey::Pubkey>) -> &mut Self {
-        self.obligation = obligation;
+    pub fn obligation(&mut self, obligation: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.obligation = Some(obligation);
         self
     }
-    /// `[optional account]`
     #[inline(always)]
     pub fn solauto_position(
         &mut self,
-        solauto_position: Option<solana_program::pubkey::Pubkey>,
+        solauto_position: solana_program::pubkey::Pubkey,
     ) -> &mut Self {
-        self.solauto_position = solauto_position;
+        self.solauto_position = Some(solauto_position);
         self
     }
-    /// `[optional account]`
     #[inline(always)]
     pub fn position_supply_liquidity_ta(
         &mut self,
-        position_supply_liquidity_ta: Option<solana_program::pubkey::Pubkey>,
+        position_supply_liquidity_ta: solana_program::pubkey::Pubkey,
     ) -> &mut Self {
-        self.position_supply_liquidity_ta = position_supply_liquidity_ta;
+        self.position_supply_liquidity_ta = Some(position_supply_liquidity_ta);
         self
     }
-    /// `[optional account]`
     #[inline(always)]
     pub fn position_debt_liquidity_ta(
         &mut self,
-        position_debt_liquidity_ta: Option<solana_program::pubkey::Pubkey>,
+        position_debt_liquidity_ta: solana_program::pubkey::Pubkey,
     ) -> &mut Self {
-        self.position_debt_liquidity_ta = position_debt_liquidity_ta;
+        self.position_debt_liquidity_ta = Some(position_debt_liquidity_ta);
         self
     }
     /// Add an aditional account to the instruction.
@@ -343,20 +285,28 @@ impl SolendRefreshDataBuilder {
             solend_program: self.solend_program.expect("solend_program is not set"),
             clock: self.clock.expect("clock is not set"),
             supply_reserve: self.supply_reserve.expect("supply_reserve is not set"),
-            supply_reserve_pyth_price_oracle: self
-                .supply_reserve_pyth_price_oracle
-                .expect("supply_reserve_pyth_price_oracle is not set"),
+            supply_reserve_pyth_oracle: self
+                .supply_reserve_pyth_oracle
+                .expect("supply_reserve_pyth_oracle is not set"),
             supply_reserve_switchboard_oracle: self
                 .supply_reserve_switchboard_oracle
                 .expect("supply_reserve_switchboard_oracle is not set"),
-            debt_reserve: self.debt_reserve,
-            debt_reserve_pyth_price_oracle: self.debt_reserve_pyth_price_oracle,
-            debt_reserve_switchboard_oracle: self.debt_reserve_switchboard_oracle,
+            debt_reserve: self.debt_reserve.expect("debt_reserve is not set"),
+            debt_reserve_pyth_oracle: self
+                .debt_reserve_pyth_oracle
+                .expect("debt_reserve_pyth_oracle is not set"),
+            debt_reserve_switchboard_oracle: self
+                .debt_reserve_switchboard_oracle
+                .expect("debt_reserve_switchboard_oracle is not set"),
             lending_market: self.lending_market.expect("lending_market is not set"),
-            obligation: self.obligation,
-            solauto_position: self.solauto_position,
-            position_supply_liquidity_ta: self.position_supply_liquidity_ta,
-            position_debt_liquidity_ta: self.position_debt_liquidity_ta,
+            obligation: self.obligation.expect("obligation is not set"),
+            solauto_position: self.solauto_position.expect("solauto_position is not set"),
+            position_supply_liquidity_ta: self
+                .position_supply_liquidity_ta
+                .expect("position_supply_liquidity_ta is not set"),
+            position_debt_liquidity_ta: self
+                .position_debt_liquidity_ta
+                .expect("position_debt_liquidity_ta is not set"),
         };
 
         accounts.instruction_with_remaining_accounts(&self.__remaining_accounts)
@@ -373,25 +323,25 @@ pub struct SolendRefreshDataCpiAccounts<'a, 'b> {
 
     pub supply_reserve: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub supply_reserve_pyth_price_oracle: &'b solana_program::account_info::AccountInfo<'a>,
+    pub supply_reserve_pyth_oracle: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub supply_reserve_switchboard_oracle: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub debt_reserve: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    pub debt_reserve: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub debt_reserve_pyth_price_oracle: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    pub debt_reserve_pyth_oracle: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub debt_reserve_switchboard_oracle: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    pub debt_reserve_switchboard_oracle: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub lending_market: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub obligation: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    pub obligation: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub solauto_position: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    pub solauto_position: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub position_supply_liquidity_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    pub position_supply_liquidity_ta: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub position_debt_liquidity_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    pub position_debt_liquidity_ta: &'b solana_program::account_info::AccountInfo<'a>,
 }
 
 /// `solend_refresh_data` CPI instruction.
@@ -407,25 +357,25 @@ pub struct SolendRefreshDataCpi<'a, 'b> {
 
     pub supply_reserve: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub supply_reserve_pyth_price_oracle: &'b solana_program::account_info::AccountInfo<'a>,
+    pub supply_reserve_pyth_oracle: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub supply_reserve_switchboard_oracle: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub debt_reserve: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    pub debt_reserve: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub debt_reserve_pyth_price_oracle: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    pub debt_reserve_pyth_oracle: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub debt_reserve_switchboard_oracle: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    pub debt_reserve_switchboard_oracle: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub lending_market: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub obligation: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    pub obligation: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub solauto_position: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    pub solauto_position: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub position_supply_liquidity_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    pub position_supply_liquidity_ta: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub position_debt_liquidity_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    pub position_debt_liquidity_ta: &'b solana_program::account_info::AccountInfo<'a>,
 }
 
 impl<'a, 'b> SolendRefreshDataCpi<'a, 'b> {
@@ -439,10 +389,10 @@ impl<'a, 'b> SolendRefreshDataCpi<'a, 'b> {
             solend_program: accounts.solend_program,
             clock: accounts.clock,
             supply_reserve: accounts.supply_reserve,
-            supply_reserve_pyth_price_oracle: accounts.supply_reserve_pyth_price_oracle,
+            supply_reserve_pyth_oracle: accounts.supply_reserve_pyth_oracle,
             supply_reserve_switchboard_oracle: accounts.supply_reserve_switchboard_oracle,
             debt_reserve: accounts.debt_reserve,
-            debt_reserve_pyth_price_oracle: accounts.debt_reserve_pyth_price_oracle,
+            debt_reserve_pyth_oracle: accounts.debt_reserve_pyth_oracle,
             debt_reserve_switchboard_oracle: accounts.debt_reserve_switchboard_oracle,
             lending_market: accounts.lending_market,
             obligation: accounts.obligation,
@@ -502,94 +452,45 @@ impl<'a, 'b> SolendRefreshDataCpi<'a, 'b> {
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.supply_reserve_pyth_price_oracle.key,
+            *self.supply_reserve_pyth_oracle.key,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             *self.supply_reserve_switchboard_oracle.key,
             false,
         ));
-        if let Some(debt_reserve) = self.debt_reserve {
-            accounts.push(solana_program::instruction::AccountMeta::new(
-                *debt_reserve.key,
-                false,
-            ));
-        } else {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::SOLAUTO_ID,
-                false,
-            ));
-        }
-        if let Some(debt_reserve_pyth_price_oracle) = self.debt_reserve_pyth_price_oracle {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                *debt_reserve_pyth_price_oracle.key,
-                false,
-            ));
-        } else {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::SOLAUTO_ID,
-                false,
-            ));
-        }
-        if let Some(debt_reserve_switchboard_oracle) = self.debt_reserve_switchboard_oracle {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                *debt_reserve_switchboard_oracle.key,
-                false,
-            ));
-        } else {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::SOLAUTO_ID,
-                false,
-            ));
-        }
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            *self.debt_reserve.key,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            *self.debt_reserve_pyth_oracle.key,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            *self.debt_reserve_switchboard_oracle.key,
+            false,
+        ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             *self.lending_market.key,
             false,
         ));
-        if let Some(obligation) = self.obligation {
-            accounts.push(solana_program::instruction::AccountMeta::new(
-                *obligation.key,
-                false,
-            ));
-        } else {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::SOLAUTO_ID,
-                false,
-            ));
-        }
-        if let Some(solauto_position) = self.solauto_position {
-            accounts.push(solana_program::instruction::AccountMeta::new(
-                *solauto_position.key,
-                false,
-            ));
-        } else {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::SOLAUTO_ID,
-                false,
-            ));
-        }
-        if let Some(position_supply_liquidity_ta) = self.position_supply_liquidity_ta {
-            accounts.push(solana_program::instruction::AccountMeta::new(
-                *position_supply_liquidity_ta.key,
-                false,
-            ));
-        } else {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::SOLAUTO_ID,
-                false,
-            ));
-        }
-        if let Some(position_debt_liquidity_ta) = self.position_debt_liquidity_ta {
-            accounts.push(solana_program::instruction::AccountMeta::new(
-                *position_debt_liquidity_ta.key,
-                false,
-            ));
-        } else {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::SOLAUTO_ID,
-                false,
-            ));
-        }
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            *self.obligation.key,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            *self.solauto_position.key,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            *self.position_supply_liquidity_ta.key,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            *self.position_debt_liquidity_ta.key,
+            false,
+        ));
         remaining_accounts.iter().for_each(|remaining_account| {
             accounts.push(solana_program::instruction::AccountMeta {
                 pubkey: *remaining_account.0.key,
@@ -612,30 +513,16 @@ impl<'a, 'b> SolendRefreshDataCpi<'a, 'b> {
         account_infos.push(self.solend_program.clone());
         account_infos.push(self.clock.clone());
         account_infos.push(self.supply_reserve.clone());
-        account_infos.push(self.supply_reserve_pyth_price_oracle.clone());
+        account_infos.push(self.supply_reserve_pyth_oracle.clone());
         account_infos.push(self.supply_reserve_switchboard_oracle.clone());
-        if let Some(debt_reserve) = self.debt_reserve {
-            account_infos.push(debt_reserve.clone());
-        }
-        if let Some(debt_reserve_pyth_price_oracle) = self.debt_reserve_pyth_price_oracle {
-            account_infos.push(debt_reserve_pyth_price_oracle.clone());
-        }
-        if let Some(debt_reserve_switchboard_oracle) = self.debt_reserve_switchboard_oracle {
-            account_infos.push(debt_reserve_switchboard_oracle.clone());
-        }
+        account_infos.push(self.debt_reserve.clone());
+        account_infos.push(self.debt_reserve_pyth_oracle.clone());
+        account_infos.push(self.debt_reserve_switchboard_oracle.clone());
         account_infos.push(self.lending_market.clone());
-        if let Some(obligation) = self.obligation {
-            account_infos.push(obligation.clone());
-        }
-        if let Some(solauto_position) = self.solauto_position {
-            account_infos.push(solauto_position.clone());
-        }
-        if let Some(position_supply_liquidity_ta) = self.position_supply_liquidity_ta {
-            account_infos.push(position_supply_liquidity_ta.clone());
-        }
-        if let Some(position_debt_liquidity_ta) = self.position_debt_liquidity_ta {
-            account_infos.push(position_debt_liquidity_ta.clone());
-        }
+        account_infos.push(self.obligation.clone());
+        account_infos.push(self.solauto_position.clone());
+        account_infos.push(self.position_supply_liquidity_ta.clone());
+        account_infos.push(self.position_debt_liquidity_ta.clone());
         remaining_accounts
             .iter()
             .for_each(|remaining_account| account_infos.push(remaining_account.0.clone()));
@@ -656,16 +543,16 @@ impl<'a, 'b> SolendRefreshDataCpi<'a, 'b> {
 ///   1. `[]` solend_program
 ///   2. `[]` clock
 ///   3. `[writable]` supply_reserve
-///   4. `[]` supply_reserve_pyth_price_oracle
+///   4. `[]` supply_reserve_pyth_oracle
 ///   5. `[]` supply_reserve_switchboard_oracle
-///   6. `[writable, optional]` debt_reserve
-///   7. `[optional]` debt_reserve_pyth_price_oracle
-///   8. `[optional]` debt_reserve_switchboard_oracle
+///   6. `[writable]` debt_reserve
+///   7. `[]` debt_reserve_pyth_oracle
+///   8. `[]` debt_reserve_switchboard_oracle
 ///   9. `[]` lending_market
-///   10. `[writable, optional]` obligation
-///   11. `[writable, optional]` solauto_position
-///   12. `[writable, optional]` position_supply_liquidity_ta
-///   13. `[writable, optional]` position_debt_liquidity_ta
+///   10. `[]` obligation
+///   11. `[writable]` solauto_position
+///   12. `[]` position_supply_liquidity_ta
+///   13. `[]` position_debt_liquidity_ta
 pub struct SolendRefreshDataCpiBuilder<'a, 'b> {
     instruction: Box<SolendRefreshDataCpiBuilderInstruction<'a, 'b>>,
 }
@@ -678,10 +565,10 @@ impl<'a, 'b> SolendRefreshDataCpiBuilder<'a, 'b> {
             solend_program: None,
             clock: None,
             supply_reserve: None,
-            supply_reserve_pyth_price_oracle: None,
+            supply_reserve_pyth_oracle: None,
             supply_reserve_switchboard_oracle: None,
             debt_reserve: None,
-            debt_reserve_pyth_price_oracle: None,
+            debt_reserve_pyth_oracle: None,
             debt_reserve_switchboard_oracle: None,
             lending_market: None,
             obligation: None,
@@ -722,11 +609,11 @@ impl<'a, 'b> SolendRefreshDataCpiBuilder<'a, 'b> {
         self
     }
     #[inline(always)]
-    pub fn supply_reserve_pyth_price_oracle(
+    pub fn supply_reserve_pyth_oracle(
         &mut self,
-        supply_reserve_pyth_price_oracle: &'b solana_program::account_info::AccountInfo<'a>,
+        supply_reserve_pyth_oracle: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
-        self.instruction.supply_reserve_pyth_price_oracle = Some(supply_reserve_pyth_price_oracle);
+        self.instruction.supply_reserve_pyth_oracle = Some(supply_reserve_pyth_oracle);
         self
     }
     #[inline(always)]
@@ -738,31 +625,28 @@ impl<'a, 'b> SolendRefreshDataCpiBuilder<'a, 'b> {
             Some(supply_reserve_switchboard_oracle);
         self
     }
-    /// `[optional account]`
     #[inline(always)]
     pub fn debt_reserve(
         &mut self,
-        debt_reserve: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+        debt_reserve: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
-        self.instruction.debt_reserve = debt_reserve;
+        self.instruction.debt_reserve = Some(debt_reserve);
         self
     }
-    /// `[optional account]`
     #[inline(always)]
-    pub fn debt_reserve_pyth_price_oracle(
+    pub fn debt_reserve_pyth_oracle(
         &mut self,
-        debt_reserve_pyth_price_oracle: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+        debt_reserve_pyth_oracle: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
-        self.instruction.debt_reserve_pyth_price_oracle = debt_reserve_pyth_price_oracle;
+        self.instruction.debt_reserve_pyth_oracle = Some(debt_reserve_pyth_oracle);
         self
     }
-    /// `[optional account]`
     #[inline(always)]
     pub fn debt_reserve_switchboard_oracle(
         &mut self,
-        debt_reserve_switchboard_oracle: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+        debt_reserve_switchboard_oracle: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
-        self.instruction.debt_reserve_switchboard_oracle = debt_reserve_switchboard_oracle;
+        self.instruction.debt_reserve_switchboard_oracle = Some(debt_reserve_switchboard_oracle);
         self
     }
     #[inline(always)]
@@ -773,40 +657,36 @@ impl<'a, 'b> SolendRefreshDataCpiBuilder<'a, 'b> {
         self.instruction.lending_market = Some(lending_market);
         self
     }
-    /// `[optional account]`
     #[inline(always)]
     pub fn obligation(
         &mut self,
-        obligation: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+        obligation: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
-        self.instruction.obligation = obligation;
+        self.instruction.obligation = Some(obligation);
         self
     }
-    /// `[optional account]`
     #[inline(always)]
     pub fn solauto_position(
         &mut self,
-        solauto_position: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+        solauto_position: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
-        self.instruction.solauto_position = solauto_position;
+        self.instruction.solauto_position = Some(solauto_position);
         self
     }
-    /// `[optional account]`
     #[inline(always)]
     pub fn position_supply_liquidity_ta(
         &mut self,
-        position_supply_liquidity_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+        position_supply_liquidity_ta: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
-        self.instruction.position_supply_liquidity_ta = position_supply_liquidity_ta;
+        self.instruction.position_supply_liquidity_ta = Some(position_supply_liquidity_ta);
         self
     }
-    /// `[optional account]`
     #[inline(always)]
     pub fn position_debt_liquidity_ta(
         &mut self,
-        position_debt_liquidity_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+        position_debt_liquidity_ta: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
-        self.instruction.position_debt_liquidity_ta = position_debt_liquidity_ta;
+        self.instruction.position_debt_liquidity_ta = Some(position_debt_liquidity_ta);
         self
     }
     /// Add an additional account to the instruction.
@@ -867,34 +747,52 @@ impl<'a, 'b> SolendRefreshDataCpiBuilder<'a, 'b> {
                 .supply_reserve
                 .expect("supply_reserve is not set"),
 
-            supply_reserve_pyth_price_oracle: self
+            supply_reserve_pyth_oracle: self
                 .instruction
-                .supply_reserve_pyth_price_oracle
-                .expect("supply_reserve_pyth_price_oracle is not set"),
+                .supply_reserve_pyth_oracle
+                .expect("supply_reserve_pyth_oracle is not set"),
 
             supply_reserve_switchboard_oracle: self
                 .instruction
                 .supply_reserve_switchboard_oracle
                 .expect("supply_reserve_switchboard_oracle is not set"),
 
-            debt_reserve: self.instruction.debt_reserve,
+            debt_reserve: self
+                .instruction
+                .debt_reserve
+                .expect("debt_reserve is not set"),
 
-            debt_reserve_pyth_price_oracle: self.instruction.debt_reserve_pyth_price_oracle,
+            debt_reserve_pyth_oracle: self
+                .instruction
+                .debt_reserve_pyth_oracle
+                .expect("debt_reserve_pyth_oracle is not set"),
 
-            debt_reserve_switchboard_oracle: self.instruction.debt_reserve_switchboard_oracle,
+            debt_reserve_switchboard_oracle: self
+                .instruction
+                .debt_reserve_switchboard_oracle
+                .expect("debt_reserve_switchboard_oracle is not set"),
 
             lending_market: self
                 .instruction
                 .lending_market
                 .expect("lending_market is not set"),
 
-            obligation: self.instruction.obligation,
+            obligation: self.instruction.obligation.expect("obligation is not set"),
 
-            solauto_position: self.instruction.solauto_position,
+            solauto_position: self
+                .instruction
+                .solauto_position
+                .expect("solauto_position is not set"),
 
-            position_supply_liquidity_ta: self.instruction.position_supply_liquidity_ta,
+            position_supply_liquidity_ta: self
+                .instruction
+                .position_supply_liquidity_ta
+                .expect("position_supply_liquidity_ta is not set"),
 
-            position_debt_liquidity_ta: self.instruction.position_debt_liquidity_ta,
+            position_debt_liquidity_ta: self
+                .instruction
+                .position_debt_liquidity_ta
+                .expect("position_debt_liquidity_ta is not set"),
         };
         instruction.invoke_signed_with_remaining_accounts(
             signers_seeds,
@@ -909,10 +807,10 @@ struct SolendRefreshDataCpiBuilderInstruction<'a, 'b> {
     solend_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     clock: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     supply_reserve: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    supply_reserve_pyth_price_oracle: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    supply_reserve_pyth_oracle: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     supply_reserve_switchboard_oracle: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     debt_reserve: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    debt_reserve_pyth_price_oracle: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    debt_reserve_pyth_oracle: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     debt_reserve_switchboard_oracle: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     lending_market: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     obligation: Option<&'b solana_program::account_info::AccountInfo<'a>>,

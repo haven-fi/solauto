@@ -43,7 +43,7 @@ pub struct SolendRebalance {
 
     pub supply_reserve: solana_program::pubkey::Pubkey,
 
-    pub supply_reserve_pyth_price_oracle: solana_program::pubkey::Pubkey,
+    pub supply_reserve_pyth_oracle: solana_program::pubkey::Pubkey,
 
     pub supply_reserve_switchboard_oracle: solana_program::pubkey::Pubkey,
 
@@ -150,7 +150,7 @@ impl SolendRebalance {
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.supply_reserve_pyth_price_oracle,
+            self.supply_reserve_pyth_oracle,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
@@ -243,7 +243,7 @@ pub struct SolendRebalanceInstructionArgs {
 ///   13. `[writable]` obligation
 ///   14. `[writable]` intermediary_ta
 ///   15. `[writable]` supply_reserve
-///   16. `[]` supply_reserve_pyth_price_oracle
+///   16. `[]` supply_reserve_pyth_oracle
 ///   17. `[]` supply_reserve_switchboard_oracle
 ///   18. `[writable]` position_supply_liquidity_ta
 ///   19. `[writable]` reserve_supply_liquidity_ta
@@ -272,7 +272,7 @@ pub struct SolendRebalanceBuilder {
     obligation: Option<solana_program::pubkey::Pubkey>,
     intermediary_ta: Option<solana_program::pubkey::Pubkey>,
     supply_reserve: Option<solana_program::pubkey::Pubkey>,
-    supply_reserve_pyth_price_oracle: Option<solana_program::pubkey::Pubkey>,
+    supply_reserve_pyth_oracle: Option<solana_program::pubkey::Pubkey>,
     supply_reserve_switchboard_oracle: Option<solana_program::pubkey::Pubkey>,
     position_supply_liquidity_ta: Option<solana_program::pubkey::Pubkey>,
     reserve_supply_liquidity_ta: Option<solana_program::pubkey::Pubkey>,
@@ -392,11 +392,11 @@ impl SolendRebalanceBuilder {
         self
     }
     #[inline(always)]
-    pub fn supply_reserve_pyth_price_oracle(
+    pub fn supply_reserve_pyth_oracle(
         &mut self,
-        supply_reserve_pyth_price_oracle: solana_program::pubkey::Pubkey,
+        supply_reserve_pyth_oracle: solana_program::pubkey::Pubkey,
     ) -> &mut Self {
-        self.supply_reserve_pyth_price_oracle = Some(supply_reserve_pyth_price_oracle);
+        self.supply_reserve_pyth_oracle = Some(supply_reserve_pyth_oracle);
         self
     }
     #[inline(always)]
@@ -530,9 +530,9 @@ impl SolendRebalanceBuilder {
             obligation: self.obligation.expect("obligation is not set"),
             intermediary_ta: self.intermediary_ta.expect("intermediary_ta is not set"),
             supply_reserve: self.supply_reserve.expect("supply_reserve is not set"),
-            supply_reserve_pyth_price_oracle: self
-                .supply_reserve_pyth_price_oracle
-                .expect("supply_reserve_pyth_price_oracle is not set"),
+            supply_reserve_pyth_oracle: self
+                .supply_reserve_pyth_oracle
+                .expect("supply_reserve_pyth_oracle is not set"),
             supply_reserve_switchboard_oracle: self
                 .supply_reserve_switchboard_oracle
                 .expect("supply_reserve_switchboard_oracle is not set"),
@@ -607,7 +607,7 @@ pub struct SolendRebalanceCpiAccounts<'a, 'b> {
 
     pub supply_reserve: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub supply_reserve_pyth_price_oracle: &'b solana_program::account_info::AccountInfo<'a>,
+    pub supply_reserve_pyth_oracle: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub supply_reserve_switchboard_oracle: &'b solana_program::account_info::AccountInfo<'a>,
 
@@ -667,7 +667,7 @@ pub struct SolendRebalanceCpi<'a, 'b> {
 
     pub supply_reserve: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub supply_reserve_pyth_price_oracle: &'b solana_program::account_info::AccountInfo<'a>,
+    pub supply_reserve_pyth_oracle: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub supply_reserve_switchboard_oracle: &'b solana_program::account_info::AccountInfo<'a>,
 
@@ -716,7 +716,7 @@ impl<'a, 'b> SolendRebalanceCpi<'a, 'b> {
             obligation: accounts.obligation,
             intermediary_ta: accounts.intermediary_ta,
             supply_reserve: accounts.supply_reserve,
-            supply_reserve_pyth_price_oracle: accounts.supply_reserve_pyth_price_oracle,
+            supply_reserve_pyth_oracle: accounts.supply_reserve_pyth_oracle,
             supply_reserve_switchboard_oracle: accounts.supply_reserve_switchboard_oracle,
             position_supply_liquidity_ta: accounts.position_supply_liquidity_ta,
             reserve_supply_liquidity_ta: accounts.reserve_supply_liquidity_ta,
@@ -836,7 +836,7 @@ impl<'a, 'b> SolendRebalanceCpi<'a, 'b> {
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.supply_reserve_pyth_price_oracle.key,
+            *self.supply_reserve_pyth_oracle.key,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
@@ -915,7 +915,7 @@ impl<'a, 'b> SolendRebalanceCpi<'a, 'b> {
         account_infos.push(self.obligation.clone());
         account_infos.push(self.intermediary_ta.clone());
         account_infos.push(self.supply_reserve.clone());
-        account_infos.push(self.supply_reserve_pyth_price_oracle.clone());
+        account_infos.push(self.supply_reserve_pyth_oracle.clone());
         account_infos.push(self.supply_reserve_switchboard_oracle.clone());
         account_infos.push(self.position_supply_liquidity_ta.clone());
         account_infos.push(self.reserve_supply_liquidity_ta.clone());
@@ -958,7 +958,7 @@ impl<'a, 'b> SolendRebalanceCpi<'a, 'b> {
 ///   13. `[writable]` obligation
 ///   14. `[writable]` intermediary_ta
 ///   15. `[writable]` supply_reserve
-///   16. `[]` supply_reserve_pyth_price_oracle
+///   16. `[]` supply_reserve_pyth_oracle
 ///   17. `[]` supply_reserve_switchboard_oracle
 ///   18. `[writable]` position_supply_liquidity_ta
 ///   19. `[writable]` reserve_supply_liquidity_ta
@@ -993,7 +993,7 @@ impl<'a, 'b> SolendRebalanceCpiBuilder<'a, 'b> {
             obligation: None,
             intermediary_ta: None,
             supply_reserve: None,
-            supply_reserve_pyth_price_oracle: None,
+            supply_reserve_pyth_oracle: None,
             supply_reserve_switchboard_oracle: None,
             position_supply_liquidity_ta: None,
             reserve_supply_liquidity_ta: None,
@@ -1133,11 +1133,11 @@ impl<'a, 'b> SolendRebalanceCpiBuilder<'a, 'b> {
         self
     }
     #[inline(always)]
-    pub fn supply_reserve_pyth_price_oracle(
+    pub fn supply_reserve_pyth_oracle(
         &mut self,
-        supply_reserve_pyth_price_oracle: &'b solana_program::account_info::AccountInfo<'a>,
+        supply_reserve_pyth_oracle: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
-        self.instruction.supply_reserve_pyth_price_oracle = Some(supply_reserve_pyth_price_oracle);
+        self.instruction.supply_reserve_pyth_oracle = Some(supply_reserve_pyth_oracle);
         self
     }
     #[inline(always)]
@@ -1339,10 +1339,10 @@ impl<'a, 'b> SolendRebalanceCpiBuilder<'a, 'b> {
                 .supply_reserve
                 .expect("supply_reserve is not set"),
 
-            supply_reserve_pyth_price_oracle: self
+            supply_reserve_pyth_oracle: self
                 .instruction
-                .supply_reserve_pyth_price_oracle
-                .expect("supply_reserve_pyth_price_oracle is not set"),
+                .supply_reserve_pyth_oracle
+                .expect("supply_reserve_pyth_oracle is not set"),
 
             supply_reserve_switchboard_oracle: self
                 .instruction
@@ -1420,7 +1420,7 @@ struct SolendRebalanceCpiBuilderInstruction<'a, 'b> {
     obligation: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     intermediary_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     supply_reserve: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    supply_reserve_pyth_price_oracle: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    supply_reserve_pyth_oracle: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     supply_reserve_switchboard_oracle: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     position_supply_liquidity_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     reserve_supply_liquidity_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,

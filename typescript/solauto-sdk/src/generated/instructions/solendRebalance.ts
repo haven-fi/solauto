@@ -50,7 +50,7 @@ export type SolendRebalanceInstructionAccounts = {
   obligation: PublicKey | Pda;
   intermediaryTa: PublicKey | Pda;
   supplyReserve: PublicKey | Pda;
-  supplyReservePythPriceOracle: PublicKey | Pda;
+  supplyReservePythOracle: PublicKey | Pda;
   supplyReserveSwitchboardOracle: PublicKey | Pda;
   positionSupplyLiquidityTa: PublicKey | Pda;
   reserveSupplyLiquidityTa: PublicKey | Pda;
@@ -188,10 +188,10 @@ export function solendRebalance(
       isWritable: true as boolean,
       value: input.supplyReserve ?? null,
     },
-    supplyReservePythPriceOracle: {
+    supplyReservePythOracle: {
       index: 16,
       isWritable: false as boolean,
-      value: input.supplyReservePythPriceOracle ?? null,
+      value: input.supplyReservePythOracle ?? null,
     },
     supplyReserveSwitchboardOracle: {
       index: 17,

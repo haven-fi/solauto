@@ -8,7 +8,7 @@ use crate::{
             Context, MarginfiOpenPositionAccounts, SolendOpenPositionAccounts,
         },
         shared::DeserializedAccount,
-        solauto_position::SolautoPosition
+        solauto_position::SolautoPosition,
     },
     utils::*,
 };

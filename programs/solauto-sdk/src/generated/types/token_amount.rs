@@ -5,19 +5,12 @@
 //! [https://github.com/metaplex-foundation/kinobi]
 //!
 
-use crate::generated::types::PositionTokenUsage;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct PositionState {
-    pub liq_utilization_rate_bps: u16,
-    pub net_worth_base_amount_usd: u64,
-    pub net_worth_base_amount_supply_mint: u64,
-    pub supply: PositionTokenUsage,
-    pub debt: PositionTokenUsage,
-    pub max_ltv_bps: u16,
-    pub liq_threshold_bps: u16,
-    pub last_updated: u64,
+pub struct TokenAmount {
+    pub base_unit: u64,
+    pub base_amount_usd_value: u64,
 }

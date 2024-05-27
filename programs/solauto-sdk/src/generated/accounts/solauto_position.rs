@@ -6,6 +6,7 @@
 //!
 
 use crate::generated::types::PositionData;
+use crate::generated::types::PositionState;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 use solana_program::pubkey::Pubkey;
@@ -23,6 +24,7 @@ pub struct SolautoPosition {
     pub authority: Pubkey,
     pub self_managed: bool,
     pub position: Option<PositionData>,
+    pub state: PositionState,
     #[cfg_attr(feature = "serde", serde(with = "serde_with::As::<serde_with::Bytes>"))]
     pub padding: [u8; 128],
 }

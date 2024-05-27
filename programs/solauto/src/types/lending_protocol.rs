@@ -5,7 +5,6 @@ use spl_token::state::Account as TokenAccount;
 
 use super::{
     instruction::SolautoStandardAccounts,
-    obligation_position::LendingProtocolObligationPosition,
     shared::{DeserializedAccount, TokenBalanceAmount},
 };
 
@@ -51,12 +50,10 @@ pub trait LendingProtocolClient<'a> {
         amount: TokenBalanceAmount,
         destination: &'a AccountInfo<'a>,
         std_accounts: &'b SolautoStandardAccounts<'a>,
-        obligation_position: &LendingProtocolObligationPosition,
     ) -> ProgramResult;
     fn repay<'b>(
         &self,
         amount: TokenBalanceAmount,
         std_accounts: &'b SolautoStandardAccounts<'a>,
-        obligation_position: &LendingProtocolObligationPosition,
     ) -> ProgramResult;
 }

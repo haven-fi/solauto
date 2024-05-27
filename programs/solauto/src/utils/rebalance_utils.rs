@@ -16,9 +16,8 @@ use crate::{
         instruction::{
             RebalanceData, SolautoStandardAccounts, SOLAUTO_REBALANCE_IX_DISCRIMINATORS,
         },
-        obligation_position::LendingProtocolObligationPosition,
         shared::{SolautoError, SolautoRebalanceStep},
-        solauto_position::{SolautoPosition,PositionData}
+        solauto_position::{PositionData, SolautoPosition},
     },
 };
 
@@ -200,15 +199,17 @@ fn get_additional_amount_to_dca_in(position: &mut PositionData) -> Option<u64> {
 }
 
 fn get_target_liq_utilization_rate_from_dca(
-    position: &mut PositionData,
-    obligation_position: &LendingProtocolObligationPosition,
+    solauto_position: &mut SolautoPosition,
 ) -> Result<u16, ProgramError> {
+    let curr_liq_utilization_rate_bps = solauto_position.liq_utilization_rate_bps();
+    let position = solauto_position.position.as_mut().unwrap();
+
     let target_rate_bps = {
         let dca_settings = position.active_dca.as_ref().unwrap().clone();
 
         if dca_settings.add_to_pos.is_some() {
             max(
-                obligation_position.current_liq_utilization_rate_bps(),
+                curr_liq_utilization_rate_bps,
                 position.setting_params.boost_to_bps,
             )
         } else {
@@ -233,13 +234,12 @@ fn get_target_liq_utilization_rate_from_dca(
 
 fn get_std_target_liq_utilization_rate(
     solauto_position: &SolautoPosition,
-    obligation_position: &LendingProtocolObligationPosition,
     rebalance_args: &RebalanceData,
 ) -> Result<u16, SolautoError> {
-    let current_liq_utilization_rate_bps = obligation_position.current_liq_utilization_rate_bps();
-
     let target_rate_bps: Result<u16, SolautoError> =
-        if rebalance_args.target_liq_utilization_rate_bps.is_none() {
+        if rebalance_args.target_liq_utilization_rate_bps.is_some() {
+            Ok(rebalance_args.target_liq_utilization_rate_bps.unwrap())
+        } else {
             let setting_params = solauto_position
                 .position
                 .as_ref()
@@ -247,25 +247,20 @@ fn get_std_target_liq_utilization_rate(
                 .setting_params
                 .clone();
 
-            if current_liq_utilization_rate_bps > setting_params.repay_from_bps() {
-                if obligation_position.max_ltv.is_some() {
-                    Ok(min(
-                        setting_params.repay_to_bps,
-                        math_utils::get_maximum_repay_to_bps_param(
-                            obligation_position.max_ltv.unwrap(),
-                            obligation_position.liq_threshold,
-                        ),
-                    ))
-                } else {
-                    Ok(setting_params.repay_to_bps)
-                }
-            } else if current_liq_utilization_rate_bps < setting_params.boost_from_bps() {
+            if solauto_position.liq_utilization_rate_bps() > setting_params.repay_from_bps() {
+                Ok(min(
+                    setting_params.repay_to_bps,
+                    math_utils::get_maximum_repay_to_bps_param(
+                        solauto_position.state.max_ltv_bps,
+                        solauto_position.state.liq_threshold_bps,
+                    ),
+                ))
+            } else if solauto_position.liq_utilization_rate_bps() < setting_params.boost_from_bps()
+            {
                 Ok(setting_params.boost_to_bps)
             } else {
                 return Err(SolautoError::InvalidRebalanceCondition.into());
             }
-        } else {
-            Ok(rebalance_args.target_liq_utilization_rate_bps.unwrap())
         };
 
     Ok(target_rate_bps.unwrap())
@@ -273,7 +268,6 @@ fn get_std_target_liq_utilization_rate(
 
 fn is_dca_instruction(
     solauto_position: &SolautoPosition,
-    obligation_position: &LendingProtocolObligationPosition,
     rebalance_args: &RebalanceData,
     current_unix_timestamp: u64,
 ) -> Result<bool, ProgramError> {
@@ -283,8 +277,7 @@ fn is_dca_instruction(
 
     let position_data = solauto_position.position.as_ref().unwrap();
 
-    if obligation_position.current_liq_utilization_rate_bps()
-        >= position_data.setting_params.repay_from_bps()
+    if solauto_position.liq_utilization_rate_bps() >= position_data.setting_params.repay_from_bps()
     {
         return Ok(false);
     }
@@ -299,7 +292,7 @@ fn is_dca_instruction(
         .automation
         .eligible_for_next_period(current_unix_timestamp)
     {
-        if obligation_position.current_liq_utilization_rate_bps()
+        if solauto_position.liq_utilization_rate_bps()
             <= position_data.setting_params.boost_from_bps()
         {
             return Ok(false);
@@ -314,28 +307,21 @@ fn is_dca_instruction(
 
 fn get_target_rate_and_dca_amount(
     solauto_position: &mut SolautoPosition,
-    obligation_position: &LendingProtocolObligationPosition,
     rebalance_args: &RebalanceData,
     current_unix_timestamp: u64,
 ) -> Result<(Option<u16>, Option<u64>), ProgramError> {
-    let dca_instruction = is_dca_instruction(
-        solauto_position,
-        obligation_position,
-        rebalance_args,
-        current_unix_timestamp,
-    )?;
-    let position_data = solauto_position.position.as_mut().unwrap();
+    let dca_instruction =
+        is_dca_instruction(solauto_position, rebalance_args, current_unix_timestamp)?;
 
-    println!("DCA: {}", dca_instruction);
     let (target_liq_utilization_rate_bps, amount_to_dca_in) = match dca_instruction {
         true => {
+            let position_data = solauto_position.position.as_mut().unwrap();
             let amount_to_dca_in = get_additional_amount_to_dca_in(position_data);
             let max_liq_utilization_rate_bps =
                 get_max_liq_utilization_rate_from_risk_aversion(position_data);
             let target_liq_utilization_rate_bps =
-                get_target_liq_utilization_rate_from_dca(position_data, obligation_position)?;
+                get_target_liq_utilization_rate_from_dca(solauto_position)?;
 
-            println!("TARGET: {}", target_liq_utilization_rate_bps);
             if target_liq_utilization_rate_bps > max_liq_utilization_rate_bps {
                 (None, amount_to_dca_in)
             } else {
@@ -345,7 +331,6 @@ fn get_target_rate_and_dca_amount(
         false => (
             Some(get_std_target_liq_utilization_rate(
                 solauto_position,
-                obligation_position,
                 rebalance_args,
             )?),
             None,
@@ -357,21 +342,12 @@ fn get_target_rate_and_dca_amount(
 
 pub fn get_rebalance_values(
     solauto_position: &mut SolautoPosition,
-    obligation_position: &LendingProtocolObligationPosition,
     rebalance_args: &RebalanceData,
     solauto_fees_bps: &SolautoFeesBps,
     current_unix_timestamp: u64,
 ) -> Result<(Option<f64>, Option<u64>), ProgramError> {
-    let (target_liq_utilization_rate_bps, amount_to_dca_in) = get_target_rate_and_dca_amount(
-        solauto_position,
-        obligation_position,
-        rebalance_args,
-        current_unix_timestamp,
-    )?;
-    println!(
-        "{}",
-        target_liq_utilization_rate_bps.map_or_else(|| 0, |val| val)
-    );
+    let (target_liq_utilization_rate_bps, amount_to_dca_in) =
+        get_target_rate_and_dca_amount(solauto_position, rebalance_args, current_unix_timestamp)?;
 
     let max_price_slippage_bps = rebalance_args.max_price_slippage_bps.map_or_else(
         || DEFAULT_MAX_PRICE_SLIPPAGE_BPS,
@@ -380,7 +356,7 @@ pub fn get_rebalance_values(
 
     let adjustment_fee_bps = if amount_to_dca_in.is_some()
         || (target_liq_utilization_rate_bps.is_some()
-            && obligation_position.current_liq_utilization_rate_bps()
+            && solauto_position.liq_utilization_rate_bps()
                 <= target_liq_utilization_rate_bps.unwrap())
     {
         solauto_fees_bps.total
@@ -388,27 +364,24 @@ pub fn get_rebalance_values(
         0
     };
 
-    let debt = obligation_position.debt.as_ref().unwrap();
     let amount_usd_to_dca_in = if amount_to_dca_in.is_some() {
-        math_utils::from_base_unit::<u64, u8, f64>(amount_to_dca_in.unwrap(), debt.decimals)
-            .mul(debt.market_price)
+        math_utils::from_base_unit::<u64, u8, f64>(
+            amount_to_dca_in.unwrap(),
+            solauto_position.state.debt.decimals,
+        )
+        .mul(solauto_position.state.debt.market_price())
     } else {
         0.0
     };
 
     let mut debt_adjustment_usd = if target_liq_utilization_rate_bps.is_some() {
         let total_supply_usd =
-            obligation_position.supply.amount_used.usd_value + amount_usd_to_dca_in;
+            solauto_position.state.supply.amount_used.usd_value() + amount_usd_to_dca_in;
 
         math_utils::get_std_debt_adjustment_usd(
-            obligation_position.liq_threshold,
+            (solauto_position.state.liq_threshold_bps as f64).div(10000.0),
             total_supply_usd,
-            obligation_position
-                .debt
-                .as_ref()
-                .unwrap()
-                .amount_used
-                .usd_value,
+            solauto_position.state.debt.amount_used.usd_value(),
             target_liq_utilization_rate_bps.unwrap(),
             adjustment_fee_bps,
         )
@@ -423,17 +396,17 @@ pub fn get_rebalance_values(
 
 #[cfg(test)]
 mod tests {
-    use num_traits::Pow;
     use solana_program::pubkey::Pubkey;
     use std::ops::Add;
     use tests::math_utils::{from_base_unit, to_base_unit};
 
     use crate::{
         types::{
-            obligation_position::PositionTokenUsage,
             shared::AutomationSettings,
-            solauto_manager::SolautoManager,
-            solauto_position::{DCASettings, DebtToAddToPosition, SolautoSettingsParameters}
+            solauto_position::{
+                DCASettings, DebtToAddToPosition, PositionState, PositionTokenUsage,
+                SolautoSettingsParameters,
+            },
         },
         utils::math_utils,
     };
@@ -463,6 +436,7 @@ mod tests {
     fn standard_solauto_position(
         setting_params: SolautoSettingsParameters,
         active_dca: Option<DCASettings>,
+        current_liq_utilization_rate_bps: u16,
     ) -> SolautoPosition {
         let mut data = PositionData::default();
         data.setting_params = setting_params;
@@ -477,7 +451,27 @@ mod tests {
         }
         data.active_dca = active_dca;
 
-        SolautoPosition::new(1, Pubkey::default(), Some(data))
+        let mut position =
+            SolautoPosition::new(1, Pubkey::default(), Some(data), PositionState::default());
+
+        position.state.liq_threshold_bps = 8000;
+        position.state.max_ltv_bps = 6500;
+
+        let supply_market_price = 100.0;
+        let supply_amount = 1000.0;
+        position.state.supply = create_token_usage(
+            supply_market_price,
+            6,
+            supply_amount.mul(supply_market_price),
+        );
+
+        let debt_usd = supply_amount
+            .mul(supply_market_price)
+            .mul((position.state.liq_threshold_bps as f64).div(10000.0))
+            .mul((current_liq_utilization_rate_bps as f64).div(10000.0));
+        position.state.debt = create_token_usage(1.0, 6, debt_usd);
+
+        position
     }
 
     fn create_token_usage(
@@ -486,42 +480,11 @@ mod tests {
         amount_used_usd: f64,
     ) -> PositionTokenUsage {
         let mut token_usage = PositionTokenUsage::default();
-        token_usage.market_price = market_price;
         token_usage.decimals = decimals;
-        token_usage.amount_used.usd_value = amount_used_usd;
-        token_usage.amount_used.base_unit = token_usage
-            .amount_used
-            .usd_value
-            .div(token_usage.market_price)
-            .mul((10.0).pow(token_usage.decimals as f64))
-            as u64;
-
+        token_usage.amount_used.base_unit =
+            to_base_unit::<f64, u8, u64>(amount_used_usd.div(market_price), decimals);
+        token_usage.update_market_price(market_price);
         token_usage
-    }
-
-    fn new_obligation_position(
-        position: &mut SolautoPosition,
-        liq_utilization_rate_bps: u16,
-    ) -> LendingProtocolObligationPosition {
-        let mut obligation_position = LendingProtocolObligationPosition::default();
-        obligation_position.liq_threshold = 0.8;
-
-        let supply_market_price = 100.0;
-        let supply_amount = 1000.0;
-        obligation_position.supply = create_token_usage(
-            supply_market_price,
-            6,
-            supply_amount.mul(supply_market_price),
-        );
-
-        let debt_usd = supply_amount
-            .mul(supply_market_price)
-            .mul(obligation_position.liq_threshold)
-            .mul((liq_utilization_rate_bps as f64).div(10000.0));
-        obligation_position.debt = Some(create_token_usage(1.0, 6, debt_usd));
-
-        SolautoManager::refresh_position(&obligation_position, position, 0).unwrap();
-        obligation_position
     }
 
     fn test_rebalance(
@@ -530,20 +493,13 @@ mod tests {
         setting_params: Option<SolautoSettingsParameters>,
         dca_settings: Option<DCASettings>,
         mut rebalance_args: Option<RebalanceData>,
-    ) -> Result<
-        (
-            SolautoPosition,
-            LendingProtocolObligationPosition,
-            Option<f64>,
-            Option<u64>,
-        ),
-        ProgramError,
-    > {
+    ) -> Result<(SolautoPosition, Option<f64>, Option<u64>), ProgramError> {
         let settings = setting_params.map_or_else(|| default_setting_params(), |settings| settings);
-        let mut solauto_position =
-            standard_solauto_position(settings.clone(), dca_settings.clone());
-        let obligation_position =
-            new_obligation_position(&mut solauto_position, current_liq_utilization_rate_bps);
+        let mut solauto_position = standard_solauto_position(
+            settings.clone(),
+            dca_settings.clone(),
+            current_liq_utilization_rate_bps,
+        );
         let solauto_fees = SolautoFeesBps::get(false);
 
         if rebalance_args.is_none() {
@@ -553,18 +509,12 @@ mod tests {
 
         let (debt_adjustment_usd, debt_to_add) = get_rebalance_values(
             &mut solauto_position,
-            &obligation_position,
             rebalance_args.as_ref().unwrap(),
             &solauto_fees,
             current_timestamp.map_or_else(|| 0, |timestamp| timestamp),
         )?;
 
-        Ok((
-            solauto_position,
-            obligation_position,
-            debt_adjustment_usd,
-            debt_to_add,
-        ))
+        Ok((solauto_position, debt_adjustment_usd, debt_to_add))
     }
 
     fn rebalance_with_std_validation(
@@ -575,14 +525,13 @@ mod tests {
         dca_settings: Option<DCASettings>,
         rebalance_args: Option<RebalanceData>,
     ) -> Result<SolautoPosition, ProgramError> {
-        let (solauto_position, mut obligation_position, debt_adjustment_usd, debt_to_add) =
-            test_rebalance(
-                current_timestamp,
-                current_liq_utilization_rate_bps,
-                setting_params,
-                dca_settings.clone(),
-                rebalance_args,
-            )?;
+        let (mut solauto_position, debt_adjustment_usd, debt_to_add) = test_rebalance(
+            current_timestamp,
+            current_liq_utilization_rate_bps,
+            setting_params,
+            dca_settings.clone(),
+            rebalance_args,
+        )?;
 
         let boosting = debt_to_add.is_some()
             || current_liq_utilization_rate_bps <= expected_liq_utilization_rate_bps;
@@ -591,6 +540,14 @@ mod tests {
                 expected_liq_utilization_rate_bps,
                 current_liq_utilization_rate_bps,
             );
+        } else {
+            expected_liq_utilization_rate_bps = min(
+                expected_liq_utilization_rate_bps,
+                math_utils::get_maximum_repay_to_bps_param(
+                    solauto_position.state.max_ltv_bps,
+                    solauto_position.state.liq_threshold_bps,
+                ),
+            );
         }
         let adjustment_fee_bps = if boosting {
             SolautoFeesBps::get(false).total
@@ -598,34 +555,21 @@ mod tests {
             0
         };
 
+        let position_state = &mut solauto_position.state;
         let debt_to_add_usd = debt_to_add.map_or_else(
             || 0.0,
             |debt| {
-                from_base_unit::<u64, u8, f64>(
-                    debt,
-                    obligation_position.debt.as_ref().unwrap().decimals,
-                )
-                .mul(obligation_position.debt.as_ref().unwrap().market_price)
+                from_base_unit::<u64, u8, f64>(debt, position_state.debt.decimals)
+                    .mul(position_state.debt.market_price())
             },
         );
 
         let expected_debt_adjustment_usd = math_utils::get_std_debt_adjustment_usd(
-            0.8,
-            obligation_position.supply.amount_used.usd_value + debt_to_add_usd,
-            obligation_position
-                .debt
-                .as_ref()
-                .unwrap()
-                .amount_used
-                .usd_value,
+            (position_state.liq_threshold_bps as f64).div(10000.0),
+            position_state.supply.amount_used.usd_value() + debt_to_add_usd,
+            position_state.debt.amount_used.usd_value(),
             expected_liq_utilization_rate_bps,
             adjustment_fee_bps,
-        );
-
-        println!(
-            "{}, {}",
-            debt_adjustment_usd.map_or_else(|| 0.0, |debt| debt),
-            expected_debt_adjustment_usd
         );
         assert!(
             debt_adjustment_usd.is_some()
@@ -636,25 +580,24 @@ mod tests {
         let supply_adjustment = (expected_debt_adjustment_usd + debt_to_add_usd)
             .sub(expected_debt_adjustment_usd.mul((adjustment_fee_bps as f64).div(10000.0)))
             .sub(debt_to_add_usd.mul((adjustment_fee_bps as f64).div(10000.0)));
-        let supply_adjustment = supply_adjustment.div(obligation_position.supply.market_price);
-        obligation_position
-            .supply_lent_update(to_base_unit::<f64, u8, i64>(
+        let supply_adjustment = supply_adjustment.div(position_state.supply.market_price());
+        position_state
+            .supply
+            .update_usage(to_base_unit::<f64, u8, i64>(
                 supply_adjustment,
-                obligation_position.supply.decimals,
-            ))
-            .unwrap();
+                position_state.supply.decimals,
+            ));
 
-        let debt_adjustment = expected_debt_adjustment_usd
-            .div(obligation_position.debt.as_ref().unwrap().market_price);
-        obligation_position
-            .debt_borrowed_update(to_base_unit::<f64, u8, i64>(
+        let debt_adjustment = expected_debt_adjustment_usd.div(position_state.debt.market_price());
+        position_state
+            .debt
+            .update_usage(to_base_unit::<f64, u8, i64>(
                 debt_adjustment,
-                obligation_position.debt.as_ref().unwrap().decimals,
-            ))
-            .unwrap();
+                position_state.debt.decimals,
+            ));
 
         assert_bps_within_margin_of_error(
-            obligation_position.current_liq_utilization_rate_bps(),
+            solauto_position.liq_utilization_rate_bps(),
             expected_liq_utilization_rate_bps,
         );
 
@@ -731,8 +674,6 @@ mod tests {
         } else {
             settings.as_ref().unwrap().boost_to_bps
         };
-
-        println!("EXPECTED: {}", expected_liq_utilization_rate_bps);
 
         let solauto_position = rebalance_with_std_validation(
             Some(current_timestamp.map_or_else(
@@ -879,7 +820,7 @@ mod tests {
         )
         .unwrap();
 
-        // curr_liq_utilization_rate_bps - setting_params.boost_to_bps
+        // curr_liq_utilization_rate_bps < setting_params.boost_to_bps
         test_dca_rebalance_with_std_validation(
             None,
             BOOST_TO_BPS - 1000,

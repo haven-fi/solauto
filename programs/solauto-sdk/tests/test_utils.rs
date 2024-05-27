@@ -20,7 +20,6 @@ use solauto_sdk::{
             ClaimReferralFeesBuilder,
             ClosePositionBuilder,
             MarginfiOpenPositionBuilder,
-            MarginfiOpenPositionInstructionArgs,
             UpdatePositionBuilder,
             UpdateReferralStatesBuilder,
         },
@@ -515,8 +514,10 @@ impl<'a> MarginfiTestData<'a> {
             .marginfi_group(self.marginfi_group)
             .marginfi_account(self.marginfi_account, self.general.position_id == 0)
             .supply_mint(self.general.supply_liquidity_mint.pubkey())
+            .supply_bank(Pubkey::default())
             .position_supply_ta(self.general.position_supply_liquidity_ta)
             .debt_mint(self.general.debt_liquidity_mint.pubkey())
+            .debt_bank(Pubkey::default())
             .signer_debt_ta(Some(self.general.signer_debt_liquidity_ta))
             .position_debt_ta(self.general.position_debt_liquidity_ta)
             .position_data(position_data);

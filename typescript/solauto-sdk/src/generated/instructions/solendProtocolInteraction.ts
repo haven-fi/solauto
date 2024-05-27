@@ -45,7 +45,7 @@ export type SolendProtocolInteractionInstructionAccounts = {
   lendingMarket: PublicKey | Pda;
   obligation: PublicKey | Pda;
   supplyReserve: PublicKey | Pda;
-  supplyReservePythPriceOracle?: PublicKey | Pda;
+  supplyReservePythOracle?: PublicKey | Pda;
   supplyReserveSwitchboardOracle?: PublicKey | Pda;
   signerSupplyLiquidityTa?: PublicKey | Pda;
   reserveSupplyLiquidityTa?: PublicKey | Pda;
@@ -160,10 +160,10 @@ export function solendProtocolInteraction(
       isWritable: true as boolean,
       value: input.supplyReserve ?? null,
     },
-    supplyReservePythPriceOracle: {
+    supplyReservePythOracle: {
       index: 11,
       isWritable: false as boolean,
-      value: input.supplyReservePythPriceOracle ?? null,
+      value: input.supplyReservePythOracle ?? null,
     },
     supplyReserveSwitchboardOracle: {
       index: 12,

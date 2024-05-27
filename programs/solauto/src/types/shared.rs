@@ -4,6 +4,7 @@ use num_traits::{FromPrimitive, ToPrimitive};
 use shank::{ShankAccount, ShankType};
 use solana_program::{
     account_info::AccountInfo,
+    msg,
     program_error::ProgramError,
     program_pack::{IsInitialized, Pack},
     pubkey::Pubkey,
@@ -40,6 +41,21 @@ impl fmt::Display for TokenType {
             TokenType::Debt => write!(f, "debt"),
         }
     }
+}
+
+pub struct RefreshedTokenData {
+    pub amount_used: u64,
+    pub amount_can_be_used: u64,
+    pub market_price: f64,
+    pub decimals: u8,
+    pub borrow_fee_bps: Option<u16>,
+}
+
+pub struct RefreshStateProps {
+    pub max_ltv: f64,
+    pub liq_threshold: f64,
+    pub supply: RefreshedTokenData,
+    pub debt: RefreshedTokenData,
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, PartialEq)]
@@ -138,18 +154,12 @@ pub struct DeserializedAccount<'a, T> {
 }
 
 impl<'a, T: AnyBitPattern> DeserializedAccount<'a, T> {
-    pub fn zerocopy(
-        account: Option<&'a AccountInfo<'a>>,
-    ) -> Result<Option<Self>, ProgramError> {
+    pub fn zerocopy(account: Option<&'a AccountInfo<'a>>) -> Result<Option<Self>, ProgramError> {
         match account {
-            Some(account_info) => {
-                Ok(Some(Self {
-                    account_info,
-                    data: Box::new(
-                        *bytemuck::from_bytes::<T>(&account_info.data.borrow()),
-                    ),
-                }))
-            }
+            Some(account_info) => Ok(Some(Self {
+                account_info,
+                data: Box::new(*bytemuck::from_bytes::<T>(&account_info.data.borrow())),
+            })),
             None => Ok(None),
         }
     }
@@ -159,7 +169,9 @@ impl<'a, T: BorshDeserialize> DeserializedAccount<'a, T> {
     pub fn deserialize(account: Option<&'a AccountInfo<'a>>) -> Result<Option<Self>, ProgramError> {
         match account {
             Some(account_info) => {
+                msg!("HELLO 1");
                 let mut data: &[u8] = &(*account_info.data).borrow();
+                msg!("HELLO 2");
                 Ok(Some(Self {
                     account_info,
                     data: Box::new(

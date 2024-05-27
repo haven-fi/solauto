@@ -16,7 +16,7 @@ use crate::{
             RebalanceData, SolautoAction, SolautoStandardAccounts, UpdatePositionData,
         },
         shared::{DeserializedAccount, LendingPlatform, ReferralState},
-        solauto_position::SolautoPosition
+        solauto_position::SolautoPosition,
     },
     utils::*,
 };
@@ -35,6 +35,11 @@ pub fn process_solend_open_position_instruction<'a>(
     let (max_ltv, liq_threshold) =
         SolendClient::get_max_ltv_and_liq_threshold(&supply_reserve.data);
 
+    validation_utils::validate_solend_reserve(
+        &supply_reserve,
+        Some(ctx.accounts.supply_liquidity_mint.key),
+    )?;
+
     let solauto_position = solauto_utils::create_new_solauto_position(
         ctx.accounts.signer,
         ctx.accounts.solauto_position,
@@ -43,14 +48,16 @@ pub fn process_solend_open_position_instruction<'a>(
         ctx.accounts.supply_liquidity_mint,
         ctx.accounts.debt_liquidity_mint,
         ctx.accounts.obligation,
-        Some(max_ltv),
-        Some(liq_threshold),
+        max_ltv,
+        liq_threshold,
     )?;
     if solauto_position.data.position.is_some() {
-        let position_data = solauto_position.data.position.as_ref().unwrap();
         let current_timestamp = Clock::get()?.unix_timestamp as u64;
-        validation_utils::validate_position_settings(position_data, current_timestamp)?;
-        validation_utils::validate_dca_settings(position_data, current_timestamp)?;
+        validation_utils::validate_position_settings(&solauto_position.data, current_timestamp)?;
+        validation_utils::validate_dca_settings(
+            solauto_position.data.position.as_ref().unwrap(),
+            current_timestamp,
+        )?;
     }
 
     solauto_utils::init_solauto_fees_supply_ta(
@@ -108,25 +115,20 @@ pub fn process_solend_refresh_data<'a>(accounts: &'a [AccountInfo<'a>]) -> Progr
     msg!("Instruction is currently a WIP");
 
     let ctx = SolendRefreshDataAccounts::context(accounts)?;
-    let solauto_position =
-        DeserializedAccount::<SolautoPosition>::deserialize(ctx.accounts.solauto_position)?;
+    let mut solauto_position =
+        DeserializedAccount::<SolautoPosition>::deserialize(Some(ctx.accounts.solauto_position))?
+            .unwrap();
 
-    if solauto_position.is_some() {
-        validation_utils::validate_instruction(
-            ctx.accounts.signer,
-            solauto_position.as_ref().unwrap(),
-            false,
-            true,
+    validation_utils::validate_instruction(ctx.accounts.signer, &solauto_position, false, false)?;
+
+    if !solauto_position.data.self_managed {
+        validation_utils::validate_lending_program_accounts_with_position(
+            LendingPlatform::Solend,
+            &solauto_position,
+            ctx.accounts.obligation,
+            Some(ctx.accounts.supply_reserve),
+            Some(ctx.accounts.debt_reserve),
         )?;
-
-        if ctx.accounts.obligation.is_some() {
-            validation_utils::validate_lending_program_accounts_with_position(
-                solauto_position.as_ref().unwrap(),
-                ctx.accounts.obligation.unwrap(),
-                Some(ctx.accounts.supply_reserve),
-                ctx.accounts.debt_reserve,
-            )?;
-        }
     }
 
     validation_utils::validate_lending_program_account(
@@ -134,7 +136,17 @@ pub fn process_solend_refresh_data<'a>(accounts: &'a [AccountInfo<'a>]) -> Progr
         LendingPlatform::Solend,
     )?;
 
-    refresh::solend_refresh_accounts(ctx, solauto_position)
+    refresh::solend_refresh_accounts(
+        ctx.accounts.lending_market,
+        ctx.accounts.obligation,
+        ctx.accounts.supply_reserve,
+        ctx.accounts.supply_reserve_pyth_oracle,
+        ctx.accounts.supply_reserve_switchboard_oracle,
+        ctx.accounts.debt_reserve,
+        ctx.accounts.debt_reserve_pyth_oracle,
+        ctx.accounts.debt_reserve_switchboard_oracle,
+        &mut solauto_position,
+    )
 }
 
 pub fn process_solend_interaction_instruction<'a>(
