@@ -5,16 +5,40 @@
 //! [https://github.com/metaplex-foundation/kinobi]
 //!
 
-pub(crate) mod r#general_position_data;
+pub(crate) mod r#automation_settings;
+pub(crate) mod r#automation_settings_inp;
+pub(crate) mod r#d_c_a_settings;
+pub(crate) mod r#d_c_a_settings_inp;
+pub(crate) mod r#fee_type;
 pub(crate) mod r#lending_platform;
-pub(crate) mod r#new_position_data;
-pub(crate) mod r#protocol_action;
+pub(crate) mod r#pod_bool;
+pub(crate) mod r#position_data;
+pub(crate) mod r#position_state;
+pub(crate) mod r#position_token_usage;
+pub(crate) mod r#rebalance_data;
+pub(crate) mod r#solauto_action;
+pub(crate) mod r#solauto_rebalance_type;
 pub(crate) mod r#solauto_settings_parameters;
-pub(crate) mod r#solend_position_data;
+pub(crate) mod r#solauto_settings_parameters_inp;
+pub(crate) mod r#token_amount;
+pub(crate) mod r#token_balance_amount;
+pub(crate) mod r#update_position_data;
 
-pub use self::r#general_position_data::*;
+pub use self::r#automation_settings::*;
+pub use self::r#automation_settings_inp::*;
+pub use self::r#d_c_a_settings::*;
+pub use self::r#d_c_a_settings_inp::*;
+pub use self::r#fee_type::*;
 pub use self::r#lending_platform::*;
-pub use self::r#new_position_data::*;
-pub use self::r#protocol_action::*;
+pub use self::r#pod_bool::*;
+pub use self::r#position_data::*;
+pub use self::r#position_state::*;
+pub use self::r#position_token_usage::*;
+pub use self::r#rebalance_data::*;
+pub use self::r#solauto_action::*;
+pub use self::r#solauto_rebalance_type::*;
 pub use self::r#solauto_settings_parameters::*;
-pub use self::r#solend_position_data::*;
+pub use self::r#solauto_settings_parameters_inp::*;
+pub use self::r#token_amount::*;
+pub use self::r#token_balance_amount::*;
+pub use self::r#update_position_data::*;

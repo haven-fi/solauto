@@ -1,64 +1,99 @@
-use thiserror::Error;
-use borsh;
-use borsh::{ BorshDeserialize, BorshSerialize };
-use shank::{ ShankAccount, ShankType };
+use borsh::{BorshDeserialize, BorshSerialize};
+use bytemuck::AnyBitPattern;
+use bytemuck::Pod;
+use bytemuck::Zeroable;
+use shank::ShankType;
 use solana_program::{
     account_info::AccountInfo,
     program_error::ProgramError,
-    program_pack::{ IsInitialized, Pack },
-    pubkey::Pubkey,
+    program_pack::{IsInitialized, Pack},
 };
+use std::fmt;
+use thiserror::Error;
 
-#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType)]
-pub enum ProtocolAction {
-    Deposit,
-    Borrow,
-    Repay,
-    Withdraw,
-}
-
-#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType)]
-#[borsh(use_discriminant = true)]
+#[repr(u8)]
+#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, PartialEq, Copy)]
 pub enum LendingPlatform {
-    Solend = 0,
-    Kamino = 1,
-    Marginfi = 2,
+    Marginfi,
+    Kamino,
 }
 
-#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType)]
-pub struct SolautoSettingsParameters {
-    pub repay_from_bps: u16,
-    pub repay_to_bps: u16,
-    pub boost_from_bps: u16,
-    pub boost_to_bps: u16,
+unsafe impl Zeroable for LendingPlatform {}
+unsafe impl Pod for LendingPlatform {}
+
+impl Default for LendingPlatform {
+    fn default() -> Self {
+        LendingPlatform::Marginfi
+    }
 }
 
-#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType)]
-pub struct SolendPositionData {
-    pub supply_reserve: Pubkey,
-    pub debt_reserve: Option<Pubkey>,
-    pub obligation: Pubkey,
+#[repr(C)]
+#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, PartialEq, Copy)]
+pub struct PodBool {
+    pub val: bool,
 }
 
-#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, Default)]
-pub struct GeneralPositionData {
-    pub utilization_rate_bps: u16,
-    pub net_worth_usd_base_amount: u64,
-    pub base_amount_liquidity_net_worth: u64,
-    pub base_amount_supplied: u64,
-    pub base_amount_borrowed: u64,
+unsafe impl Zeroable for PodBool {}
+unsafe impl Pod for PodBool {}
+
+impl PodBool {
+    pub fn new(val: bool) -> Self {
+        Self { val }
+    }
 }
 
-pub const POSITION_LEN: usize = 307;
-#[derive(ShankAccount, BorshDeserialize, BorshSerialize, Clone, Debug)]
-pub struct Position {
-    pub position_id: u8,
-    pub authority: Pubkey,
-    pub lending_platform: LendingPlatform,
-    pub setting_params: SolautoSettingsParameters,
-    pub general_data: GeneralPositionData,
-    pub solend_data: Option<SolendPositionData>,
-    pub _padding: [u8; 136],
+#[derive(PartialEq)]
+pub enum TokenType {
+    Supply,
+    Debt,
+}
+
+impl fmt::Display for TokenType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            TokenType::Supply => write!(f, "supply"),
+            TokenType::Debt => write!(f, "debt"),
+        }
+    }
+}
+
+#[repr(u8)]
+#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, PartialEq, Copy)]
+pub enum FeeType {
+    Small,
+    Default,
+}
+
+unsafe impl Zeroable for FeeType {}
+unsafe impl Pod for FeeType {}
+
+#[derive(Debug)]
+pub struct RefreshedTokenData {
+    pub decimals: u8,
+    pub amount_used: u64,
+    pub amount_can_be_used: u64,
+    pub market_price: f64,
+    pub borrow_fee_bps: Option<u16>,
+}
+
+#[derive(Debug)]
+pub struct RefreshStateProps {
+    pub max_ltv: f64,
+    pub liq_threshold: f64,
+    pub supply: RefreshedTokenData,
+    pub debt: RefreshedTokenData,
+}
+
+#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, PartialEq)]
+pub enum TokenBalanceAmount {
+    Some(u64),
+    All,
+}
+
+#[derive(Debug, PartialEq)]
+pub enum RebalanceStep {
+    Initial,
+    Final,
 }
 
 #[derive(Clone)]
@@ -67,20 +102,13 @@ pub struct DeserializedAccount<'a, T> {
     pub data: Box<T>,
 }
 
-impl<'a, T: BorshDeserialize> DeserializedAccount<'a, T> {
-    pub fn deserialize(account: Option<&'a AccountInfo<'a>>) -> Result<Option<Self>, ProgramError> {
+impl<'a, T: AnyBitPattern> DeserializedAccount<'a, T> {
+    pub fn zerocopy(account: Option<&'a AccountInfo<'a>>) -> Result<Option<Self>, ProgramError> {
         match account {
-            Some(account_info) => {
-                let deserialized_data = T::try_from_slice(&account_info.data.borrow()).map_err(
-                    |_| SolautoError::FailedAccountDeserialization
-                )?;
-                Ok(
-                    Some(Self {
-                        account_info,
-                        data: Box::new(deserialized_data),
-                    })
-                )
-            }
+            Some(account_info) => Ok(Some(Self {
+                account_info,
+                data: Box::new(*bytemuck::from_bytes::<T>(&account_info.data.borrow())),
+            })),
             None => Ok(None),
         }
     }
@@ -90,15 +118,12 @@ impl<'a, T: Pack + IsInitialized> DeserializedAccount<'a, T> {
     pub fn unpack(account: Option<&'a AccountInfo<'a>>) -> Result<Option<Self>, ProgramError> {
         match account {
             Some(account_info) => {
-                let deserialized_data = T::unpack(&account_info.data.borrow()).map_err(
-                    |_| SolautoError::FailedAccountDeserialization
-                )?;
-                Ok(
-                    Some(Self {
-                        account_info,
-                        data: Box::new(deserialized_data),
-                    })
-                )
+                let deserialized_data = T::unpack(&account_info.data.borrow())
+                    .map_err(|_| SolautoError::FailedAccountDeserialization)?;
+                Ok(Some(Self {
+                    account_info,
+                    data: Box::new(deserialized_data),
+                }))
             }
             None => Ok(None),
         }
@@ -107,14 +132,32 @@ impl<'a, T: Pack + IsInitialized> DeserializedAccount<'a, T> {
 
 #[derive(Error, Debug)]
 pub enum SolautoError {
-    #[error("Invalid position data given")]
-    InvalidPositionSettings,
+    #[error("Missing or incorrect accounts provided for the given instruction")]
+    IncorrectAccounts,
     #[error("Failed to deserialize account data, incorrect account was likely given")]
     FailedAccountDeserialization,
-    #[error("Stale protocol data. Refresh instruction must be invoked before taking a protocol action")]
+    #[error("Invalid position settings given")]
+    InvalidPositionSettings,
+    #[error("Invalid DCA settings given")]
+    InvalidDCASettings,
+    #[error("Invalid automation data given")]
+    InvalidAutomationData,
+    #[error(
+        "Stale protocol data. Refresh instruction must be invoked before taking a protocol action"
+    )]
     StaleProtocolData,
-    #[error("Incorrect fee receiver account provided")]
-    IncorrectFeeReceiver,
+    #[error("Unable to adjust position to the desired utilization rate")]
+    UnableToReposition,
+    #[error("Desired action brought the utilization rate to an unsafe amount")]
+    ExceededValidUtilizationRate,
+    #[error("Invalid position condition to rebalance")]
+    InvalidRebalanceCondition,
+    #[error("Unable to invoke instruction through a CPI")]
+    InstructionIsCPI,
+    #[error("Too many rebalance instruction invocations in the same transaction")]
+    RebalanceAbuse,
+    #[error("Incorrect set of instructions in the transaction")]
+    IncorrectInstructions,
 }
 
 impl From<SolautoError> for ProgramError {

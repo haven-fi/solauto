@@ -1,5 +1,4 @@
-pub mod lending_protocol;
 pub mod instruction;
-pub mod obligation_position;
-pub mod solauto_manager;
+pub mod lending_protocol;
 pub mod shared;
+pub mod solauto_manager;

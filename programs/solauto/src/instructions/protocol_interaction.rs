@@ -1,30 +1,69 @@
 use solana_program::entrypoint::ProgramResult;
 
 use crate::{
-    solend::client::SolendClient,
+    clients::marginfi::MarginfiClient,
     types::{
         instruction::{
-            accounts::{ Context, SolendProtocolInteractionAccounts },
-            ProtocolInteractionArgs,
+            accounts::{Context, MarginfiProtocolInteractionAccounts},
+            SolautoAction, SolautoStandardAccounts,
         },
-        shared::{ DeserializedAccount, Position },
-        solauto_manager::SolautoManager,
+        lending_protocol::{LendingProtocolClient, LendingProtocolTokenAccounts},
+        solauto_manager::{SolautoManager, SolautoManagerAccounts},
     },
+    utils::ix_utils,
 };
 
-pub fn solend_interaction<'a>(
-    mut ctx: Context<'a, SolendProtocolInteractionAccounts<'a>>,
-    mut solauto_position: &mut Option<DeserializedAccount<Position>>,
-    args: ProtocolInteractionArgs
+pub fn marginfi_interaction<'a>(
+    ctx: Context<'a, MarginfiProtocolInteractionAccounts<'a>>,
+    std_accounts: Box<SolautoStandardAccounts<'a>>,
+    action: SolautoAction,
 ) -> ProgramResult {
-    let (solend_client, obligation_position) = SolendClient::from(&mut ctx)?;
-    let solauto_manager = SolautoManager::from(&solend_client, &obligation_position)?;
+    let supply_tas = LendingProtocolTokenAccounts::from(
+        None,
+        ctx.accounts.position_supply_ta,
+        None,
+        ctx.accounts.vault_supply_ta,
+    )?;
+    let debt_tas = LendingProtocolTokenAccounts::from(
+        None,
+        ctx.accounts.position_debt_ta,
+        None,
+        ctx.accounts.vault_debt_ta,
+    )?;
 
-    // TODO take action based on args
+    let marginfi_client = Box::new(MarginfiClient::from(
+        ctx.accounts.signer,
+        ctx.accounts.marginfi_program,
+        ctx.accounts.marginfi_group,
+        ctx.accounts.marginfi_account,
+        ctx.accounts.supply_bank,
+        ctx.accounts.supply_price_oracle,
+        supply_tas.clone(),
+        ctx.accounts.supply_vault_authority,
+        ctx.accounts.debt_bank,
+        ctx.accounts.debt_price_oracle,
+        debt_tas.clone(),
+        ctx.accounts.debt_vault_authority,
+    )?);
+    let solauto_manager_accounts =
+        Box::new(SolautoManagerAccounts::from(supply_tas, debt_tas, None)?);
 
-    if !ctx.accounts.solauto_position.is_none() {
-        SolautoManager::refresh_position(&obligation_position, solauto_position.as_mut().unwrap())?;
-    }
+    protocol_interaction(
+        marginfi_client,
+        solauto_manager_accounts,
+        std_accounts,
+        action,
+    )
+}
 
-    Ok(())
+fn protocol_interaction<'a>(
+    client: Box<dyn LendingProtocolClient<'a> + 'a>,
+    solauto_manager_accounts: Box<SolautoManagerAccounts<'a>>,
+    std_accounts: Box<SolautoStandardAccounts<'a>>,
+    action: SolautoAction,
+) -> ProgramResult {
+    let mut solauto_manager = SolautoManager::from(client, solauto_manager_accounts, std_accounts)?;
+    solauto_manager.protocol_interaction(action)?;
+
+    ix_utils::update_data(&mut solauto_manager.std_accounts.solauto_position)
 }

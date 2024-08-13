@@ -1,0 +1,1 @@
+{"version":3,"file":"bankVaultType.d.ts","sourceRoot":"","sources":["../../../src/marginfi-sdk/types/bankVaultType.ts"],"names":[],"mappings":"AAAA;;;;;;GAMG;AAEH,OAAO,EAAE,UAAU,EAAc,MAAM,sCAAsC,CAAC;AAE9E,oBAAY,aAAa;IACvB,SAAS,IAAA;IACT,SAAS,IAAA;IACT,GAAG,IAAA;CACJ;AAED,MAAM,MAAM,iBAAiB,GAAG,aAAa,CAAC;AAE9C,wBAAgB,0BAA0B,IAAI,UAAU,CACtD,iBAAiB,EACjB,aAAa,CACd,CAIA"}

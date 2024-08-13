@@ -1,144 +1,110 @@
-// use solana_program::program_pack::Pack;
-// use solana_program::pubkey::Pubkey;
-// use serde_json::json;
-// use solauto_sdk::state::{test, DeserializedAccount, Position};
-// use solend_sdk::math::{ TryDiv, BPS_SCALER, U192, WAD };
-// use std::result::Result;
-// use std::str::FromStr;
-// use std::mem;
-// use solend_sdk::state::{ Obligation, Reserve };
-// use serde::{ Deserialize, Serialize };
-// use serde::{ Deserializer, de::Error as DeError };
+// use std::{ borrow::Borrow, ops::Div, str::FromStr };
 
-// use solauto::utils::math_utils::{ decimal_to_f64, decimal_to_f64_div_wad };
+// use borsh::BorshDeserialize;
+// use bytemuck::{ Pod, Zeroable };
+// use fixed::types::I80F48;
+// use marginfi_sdk::generated::accounts::{ Bank, MarginfiAccount };
+// use solana_client::rpc_client::RpcClient;
+// use solana_sdk::pubkey::Pubkey;
+// use solauto::{ types::shared::DeserializedAccount, utils::math_utils::{self, i80f48_to_f64, i80f48_to_u64} };
 
-// // Custom deserializer for the base64-encoded data
-// fn decode_base64<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error> where D: Deserializer<'de> {
-//     let s = String::deserialize(deserializer)?;
-//     base64::decode(&s).map_err(DeError::custom)
-// }
+fn main() {
+    // let rpc_url = String::from("https://api.mainnet-beta.solana.com/");
+    // let client = RpcClient::new(rpc_url);
 
-// #[derive(Serialize, Deserialize, Debug)]
-// struct ApiResponse {
-//     jsonrpc: String,
-//     result: ResultField,
-//     id: u64,
-// }
+    // let pubkey = Pubkey::from_str("CCKtUs6Cgwo4aaQUmBPmyoApH2gUDErxNZCAntD6LYGh").unwrap(); // SOL
+    // // let pubkey = Pubkey::from_str("2s37akK2eyBbp8DZgCm7RtsaEz8eJP3Nxd4urLHQv7yB").unwrap(); // USDC
+    // // let pubkey = Pubkey::from_str("Guu5uBc8k1WK1U2ihGosNaCy57LSgCkpWAabtzQqrQf8").unwrap(); // JUP
+    // match client.get_account(&pubkey) {
+    //     Ok(account_info) => {
+    //         // let bank = Bank::deserialize(&mut account_info.data.as_slice()).unwrap();
+    //         let bank = bytemuck::from_bytes::<Bank>(&account_info.data.borrow());
+    //         // let bank = Ref::<_, Bank>::new(account_info.data.borrow()).unwrap();
+    //         println!("{:?}", bank);
+    //         println!("total asset shares {}", I80F48::from_le_bytes(bank.total_asset_shares.value));
+    //         println!("asset share value {}", I80F48::from_le_bytes(bank.asset_share_value.value));
+    //         println!(
+    //             "asset weight init {}",
+    //             I80F48::from_le_bytes(bank.config.asset_weight_init.value)
+    //         );
+    //         println!(
+    //             "asset weight maint {}",
+    //             I80F48::from_le_bytes(bank.config.asset_weight_maint.value)
+    //         );
+    //         println!(
+    //             "liability weight init {}",
+    //             I80F48::from_le_bytes(bank.config.liability_weight_init.value)
+    //         );
+    //         println!(
+    //             "liability weight maint {}",
+    //             I80F48::from_le_bytes(bank.config.liability_weight_maint.value)
+    //         );
 
-// #[derive(Serialize, Deserialize, Debug)]
-// struct ResultField {
-//     context: Context,
-//     value: AccountInfo,
-// }
+    //         let pubkey = Pubkey::from_str("9Bfew9kzE83H8gPS7coUUzhytRhnJ1U2pzuaW2TTcKVD").unwrap();
+    //         match client.get_account(&pubkey) {
+    //             Ok(account_info) => {
+    //                 let marginfi_account = bytemuck::from_bytes::<MarginfiAccount>(
+    //                     &account_info.data.borrow()
+    //                 );
+    //                 println!("{:?}", marginfi_account);
 
-// #[derive(Serialize, Deserialize, Debug)]
-// struct Context {
-//     apiVersion: String,
-//     slot: u64,
-// }
+    //                 let shares = I80F48::from_le_bytes(
+    //                     marginfi_account.lending_account.balances[0].asset_shares.value
+    //                 );
+    //                 println!(
+    //                     "account asset shares {}",
+    //                     shares
+    //                 );
 
-// #[derive(Serialize, Deserialize, Debug)]
-// struct AccountInfo {
-//     data: Vec<String>, // First element is the base64-encoded data
-//     executable: bool,
-//     lamports: u64,
-//     owner: String,
-//     rentEpoch: u64,
-//     space: u64,
-// }
+    //                 let calculated_shares = shares * I80F48::from_le_bytes(bank.asset_share_value.value);
+    //                 println!("calculated shares {}", calculated_shares);
 
-// #[derive(Debug)]
-// enum MyError {
-//     Reqwest(reqwest::Error),
-//     Decode(base64::DecodeError),
-//     Unpack(solana_program::program_error::ProgramError), // Assuming ProgramError is already defined in your context
-//     // You can add more error types as needed
-// }
+    //                 println!("as u64: {}", i80f48_to_u64(calculated_shares));
+    //                 println!("test {}", i80f48_to_f64(calculated_shares) as u64);
 
-// impl std::fmt::Display for MyError {
-//     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-//         write!(f, "{:?}", self)
-//     }
-// }
+    //             }
+    //             Err(e) => println!("An error occurred: {}", e),
+    //         }
 
-// impl std::error::Error for MyError {}
+    //     }
+    //     Err(e) => println!("An error occurred: {}", e),
+    // }
 
-// impl From<reqwest::Error> for MyError {
-//     fn from(err: reqwest::Error) -> MyError {
-//         MyError::Reqwest(err)
-//     }
-// }
+    // // let supply = Pubkey::from_str("CCKtUs6Cgwo4aaQUmBPmyoApH2gUDErxNZCAntD6LYGh").unwrap(); // SOL
+    // // let debt = Pubkey::from_str("2s37akK2eyBbp8DZgCm7RtsaEz8eJP3Nxd4urLHQv7yB").unwrap(); // USDC
 
-// impl From<base64::DecodeError> for MyError {
-//     fn from(err: base64::DecodeError) -> MyError {
-//         MyError::Decode(err)
-//     }
-// }
+    // // let supply_bank = client.get_account(&supply).expect("should work");
+    // // let debt_bank = client.get_account(&debt).expect("should work");
 
-// // Assuming `ProgramError` is the error type from your context
-// impl From<solana_program::program_error::ProgramError> for MyError {
-//     fn from(err: solana_program::program_error::ProgramError) -> MyError {
-//         MyError::Unpack(err)
-//     }
-// }
+    // // let supply_acc = bytemuck::from_bytes::<Bank>(&supply_bank.data.borrow());
+    // // let debt_acc = bytemuck::from_bytes::<Bank>(&debt_bank.data.borrow());
 
-// async fn get_account(account_pubkey: Pubkey) -> Result<Vec<u8>, MyError> {
-//     let rpc_url = "https://api.mainnet-beta.solana.com";
+    // // println!(
+    // //     "{}",
+    // //     math_utils::i80f48_to_f64(I80F48::from_le_bytes(supply_acc.config.asset_weight_init.value))
+    // // );
+    // // println!(
+    // //     "{}",
+    // //     math_utils::i80f48_to_f64(
+    // //         I80F48::from_le_bytes(debt_acc.config.liability_weight_init.value)
+    // //     )
+    // // );
 
-//     let client = reqwest::Client::new();
-//     let request_body =
-//         json!({
-//         "jsonrpc": "2.0",
-//         "id": 1,
-//         "method": "getAccountInfo",
-//         "params": [
-//             account_pubkey.to_string(),
-//             {
-//                 "encoding": "base64"
-//             }
-//         ]
-//     });
+    // // let max_ltv = math_utils
+    // //     ::i80f48_to_f64(I80F48::from_le_bytes(supply_acc.config.asset_weight_init.value))
+    // //     .div(
+    // //         math_utils::i80f48_to_f64(
+    // //             I80F48::from_le_bytes(debt_acc.config.liability_weight_init.value)
+    // //         )
+    // //     );
 
-//     let response = client.post(rpc_url).json(&request_body).send().await?;
+    // // let liq_threshold = math_utils
+    // //     ::i80f48_to_f64(I80F48::from_le_bytes(supply_acc.config.asset_weight_maint.value))
+    // //     .div(
+    // //         math_utils::i80f48_to_f64(
+    // //             I80F48::from_le_bytes(debt_acc.config.liability_weight_maint.value)
+    // //         )
+    // //     );
 
-//     let response_text = response.text().await?;
-//     let api_response: ApiResponse = serde_json::from_str(&response_text).unwrap();
-
-//     let base64_data = &api_response.result.value.data[0]; // Access the base64 string
-//     let decoded_data = base64::decode(base64_data).expect("Failed to decode base64 data");
-
-//     Ok(decoded_data)
-// }
-
-// #[tokio::main]
-// async fn main() -> Result<(), MyError> {
-//     let reserve_data = get_account(
-//         // Pubkey::from_str("8PbodeaosQP19SjYFx855UMqWxH2HynZLdBXmsrbac36").unwrap() // SOL
-//         Pubkey::from_str("BgxfHJDzm44T7XG68MYKx7YisTjZu73tVovyZSjJMpmw").unwrap() // USDC
-//         // Pubkey::from_str("8K9WC8xoh2rtQNY7iEGXtPvfbDCi563SdWhCAhuMP2xE").unwrap() // USDT
-//     ).await?; // reserve
-//     let obligation_data = get_account(
-//         Pubkey::from_str("94h74NyQRX6waYiJGJAGNFkwdbFkWrysK381ttKPkEQK").unwrap()
-//     ).await?; // obligation
-
-//     let reserve = Reserve::unpack(&reserve_data)?;
-//     let obligation = Obligation::unpack(&obligation_data)?;
-
-//     println!("{:?}", reserve);
-//     println!("{:?}", obligation);
-
-//     Ok(())
-// }
-
-// #[tokio::main]
-// async fn main() -> Result<(), MyError> {
-//     let position_data = get_account(
-//         Pubkey::from_str("AwgtJe3D9bhBHLB3T3gmxTtcpd2F3tytTmyNY29ZqcwS").unwrap()
-//     ).await?;
-
-//     test(position_data.as_slice());
-
-//     Ok(())
-// }
-
-fn main() {}
+    // // println!("{}, {}", max_ltv, liq_threshold);
+}
