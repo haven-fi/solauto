@@ -257,7 +257,6 @@ export async function getComputeUnitPriceEstimate(
   umi: Umi,
   tx: TransactionBuilder,
   prioritySetting: PriorityFeeSetting,
-  attemptNum?: number,
 ): Promise<number> {
   const web3Transaction = toWeb3JsTransaction(
     (await tx.setLatestBlockhash(umi, { commitment: "finalized" })).build(umi)
@@ -288,7 +287,7 @@ export async function sendSingleOptimizedTransaction(
   console.log("Instructions: ", tx.getInstructions().length);
   console.log("Serialized transaction size: ", tx.getTransactionSize(umi));
 
-  const feeEstimate = await getComputeUnitPriceEstimate(umi, tx, prioritySetting, attemptNum);
+  const feeEstimate = await getComputeUnitPriceEstimate(umi, tx, prioritySetting);
   console.log("Compute unit price: ", feeEstimate);
 
   const simulationResult = await retryWithExponentialBackoff(

@@ -186,7 +186,7 @@ function getJupSwapRebalanceDetails(client, values, targetLiqUtilizationRateBps,
         inputMint: (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(input.mint),
         outputMint: (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(output.mint),
         destinationWallet: client.solautoPosition,
-        slippageBpsIncFactor: 0.1 + ((attemptNum ?? 0) * 0.2),
+        slippageBpsIncFactor: 0.25 + ((attemptNum ?? 0) * 0.2),
         amount: rebalancingToZero
             ? client.solautoPositionState.debt.amountUsed.baseUnit +
                 BigInt(Math.round(Number(client.solautoPositionState.debt.amountUsed.baseUnit) *

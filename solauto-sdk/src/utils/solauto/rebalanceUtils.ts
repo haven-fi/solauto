@@ -342,7 +342,7 @@ export function getJupSwapRebalanceDetails(
     inputMint: toWeb3JsPublicKey(input.mint),
     outputMint: toWeb3JsPublicKey(output.mint),
     destinationWallet: client.solautoPosition,
-    slippageBpsIncFactor: 0.1 + ((attemptNum ?? 0) * 0.2),
+    slippageBpsIncFactor: 0.25 + ((attemptNum ?? 0) * 0.2),
     amount: rebalancingToZero
       ? client.solautoPositionState!.debt.amountUsed.baseUnit +
         BigInt(

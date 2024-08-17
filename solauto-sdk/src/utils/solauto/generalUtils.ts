@@ -319,11 +319,13 @@ export async function getAllPositionsByAuthority(
   return allPositions;
 }
 
-export async function positionStateWithLatestPrices(
+export async function positionStateWithPrices(
   umi: Umi,
   state: PositionState,
   protocolAccount: PublicKey,
-  lendingPlatform: LendingPlatform
+  lendingPlatform: LendingPlatform,
+  supplyPrice?: number,
+  debtPrice?: number
 ): Promise<PositionState | undefined> {
   if (currentUnixSeconds() - Number(state.lastUpdated) > 60 * 60 * 24 * 7) {
     if (lendingPlatform === LendingPlatform.Marginfi) {
@@ -338,10 +340,12 @@ export async function positionStateWithLatestPrices(
     }
   }
 
-  const [supplyPrice, debtPrice] = await getTokenPrices([
-    toWeb3JsPublicKey(state.supply.mint),
-    toWeb3JsPublicKey(state.debt.mint),
-  ]);
+  if (!supplyPrice || !debtPrice) {
+    [supplyPrice, debtPrice] = await getTokenPrices([
+      toWeb3JsPublicKey(state.supply.mint),
+      toWeb3JsPublicKey(state.debt.mint),
+    ]);
+  }
 
   const supplyUsd =
     fromBaseUnit(state.supply.amountUsed.baseUnit, state.supply.decimals) *

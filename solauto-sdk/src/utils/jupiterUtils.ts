@@ -73,6 +73,7 @@ export async function getJupSwapTransaction(
 
   const finalPriceSlippageBps = Math.round(
     Math.max(
+      50,
       quoteResponse.slippageBps,
       Math.round(toBps(parseFloat(quoteResponse.priceImpactPct))) + 1
     ) *

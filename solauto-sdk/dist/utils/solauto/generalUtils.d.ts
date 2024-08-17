@@ -17,7 +17,7 @@ export declare function getSolautoManagedPositions(umi: Umi, authority?: PublicK
 export declare function getAllReferralStates(umi: Umi): Promise<PublicKey[]>;
 export declare function getReferralsByUser(umi: Umi, user: PublicKey): Promise<PublicKey[]>;
 export declare function getAllPositionsByAuthority(umi: Umi, user: PublicKey): Promise<SolautoPositionDetails[]>;
-export declare function positionStateWithLatestPrices(umi: Umi, state: PositionState, protocolAccount: PublicKey, lendingPlatform: LendingPlatform): Promise<PositionState | undefined>;
+export declare function positionStateWithPrices(umi: Umi, state: PositionState, protocolAccount: PublicKey, lendingPlatform: LendingPlatform, supplyPrice?: number, debtPrice?: number): Promise<PositionState | undefined>;
 type PositionAdjustment = {
     type: "supply";
     value: bigint;

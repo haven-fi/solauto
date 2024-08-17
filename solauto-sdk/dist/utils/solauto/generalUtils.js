@@ -12,7 +12,7 @@ exports.getSolautoManagedPositions = getSolautoManagedPositions;
 exports.getAllReferralStates = getAllReferralStates;
 exports.getReferralsByUser = getReferralsByUser;
 exports.getAllPositionsByAuthority = getAllPositionsByAuthority;
-exports.positionStateWithLatestPrices = positionStateWithLatestPrices;
+exports.positionStateWithPrices = positionStateWithPrices;
 const web3_js_1 = require("@solana/web3.js");
 const umi_1 = require("@metaplex-foundation/umi");
 const generated_1 = require("../../generated");
@@ -211,7 +211,7 @@ async function getAllPositionsByAuthority(umi, user) {
     // TODO support other platforms
     return allPositions;
 }
-async function positionStateWithLatestPrices(umi, state, protocolAccount, lendingPlatform) {
+async function positionStateWithPrices(umi, state, protocolAccount, lendingPlatform, supplyPrice, debtPrice) {
     if ((0, generalUtils_1.currentUnixSeconds)() - Number(state.lastUpdated) > 60 * 60 * 24 * 7) {
         if (lendingPlatform === generated_1.LendingPlatform.Marginfi) {
             return await (0, marginfiUtils_1.getMarginfiAccountPositionState)(umi, protocolAccount, (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(state.supply.mint), (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(state.debt.mint));
@@ -220,10 +220,12 @@ async function positionStateWithLatestPrices(umi, state, protocolAccount, lendin
             throw new Error("Lending platorm not yet supported");
         }
     }
-    const [supplyPrice, debtPrice] = await (0, generalUtils_1.getTokenPrices)([
-        (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(state.supply.mint),
-        (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(state.debt.mint),
-    ]);
+    if (!supplyPrice || !debtPrice) {
+        [supplyPrice, debtPrice] = await (0, generalUtils_1.getTokenPrices)([
+            (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(state.supply.mint),
+            (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(state.debt.mint),
+        ]);
+    }
     const supplyUsd = (0, numberUtils_1.fromBaseUnit)(state.supply.amountUsed.baseUnit, state.supply.decimals) *
         supplyPrice;
     const debtUsd = (0, numberUtils_1.fromBaseUnit)(state.debt.amountUsed.baseUnit, state.debt.decimals) *

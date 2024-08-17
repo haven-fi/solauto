@@ -4,4 +4,5 @@ export declare const TOKEN_DECIMALS: {
     [x: string]: number;
     EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v: number;
 };
+export declare const STABLECOINS: string[];
 //# sourceMappingURL=tokenConstants.d.ts.map
