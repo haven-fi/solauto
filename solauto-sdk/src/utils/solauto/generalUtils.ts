@@ -325,15 +325,6 @@ export async function getAllPositionsByAuthority(
   return allPositions;
 }
 
-interface GetLatestStateProps {
-  state: PositionState;
-  umi?: Umi;
-  protocolAccount?: PublicKey;
-  lendingPlatform?: LendingPlatform;
-  supplyPrice?: number;
-  debtPrice?: number;
-}
-
 export async function positionStateWithPrices({
   state,
   supplyPrice,
@@ -341,7 +332,14 @@ export async function positionStateWithPrices({
   umi,
   protocolAccount,
   lendingPlatform,
-}: GetLatestStateProps): Promise<PositionState | undefined> {
+}: {
+  state: PositionState;
+  umi?: Umi;
+  protocolAccount?: PublicKey;
+  lendingPlatform?: LendingPlatform;
+  supplyPrice?: number;
+  debtPrice?: number;
+}): Promise<PositionState | undefined> {
   if (currentUnixSeconds() - Number(state.lastUpdated) > 60 * 60 * 24 * 7) {
     if (
       umi === undefined ||
