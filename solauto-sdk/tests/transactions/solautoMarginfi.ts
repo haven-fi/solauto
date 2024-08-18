@@ -19,7 +19,6 @@ import {
 } from "../../src/transactions/transactionsManager";
 import { PublicKey } from "@solana/web3.js";
 import { USDC_MINT } from "../../src/constants";
-import { positionStateWithLatestPrices } from "../../src/utils/solauto/generalUtils";
 
 describe("Solauto Marginfi tests", async () => {
   // const signer = setupTest();
