@@ -14,6 +14,7 @@ import {
   Account as SplTokenAccount,
 } from "@solana/spl-token";
 import {
+  FeeType,
   LendingPlatform,
   ReferralState,
   SOLAUTO_PROGRAM_ID,
@@ -38,6 +39,7 @@ import {
   getRebalanceValues,
 } from "../utils/solauto/rebalanceUtils";
 import {
+  currentUnixSeconds,
   getSolanaAccountCreated,
   rpcAccountCreated,
 } from "../utils/generalUtils";
@@ -55,6 +57,7 @@ import {
   getLendingAccountWithdrawInstructionDataSerializer,
   MARGINFI_PROGRAM_ID,
 } from "../marginfi-sdk";
+import { PRICES } from "../constants";
 
 interface wSolTokenUsage {
   wSolTokenAccount: PublicKey;
@@ -547,7 +550,6 @@ export async function getTransactionChores(
   return [choresBefore, choresAfter];
 }
 
-
 export async function buildSolautoRebalanceTransaction(
   client: SolautoClient,
   targetLiqUtilizationRateBps?: number,
@@ -568,14 +570,24 @@ export async function buildSolautoRebalanceTransaction(
         client.livePositionUpdates.settings ??
           client.solautoPositionData?.position.settingParams!,
         client.livePositionUpdates.activeDca ??
-          client.solautoPositionData?.position.dca!
+          client.solautoPositionData?.position.dca!,
+        currentUnixSeconds()
       ))
   ) {
     client.log("Not eligible for a rebalance");
     return undefined;
   }
 
-  const values = getRebalanceValues(client, targetLiqUtilizationRateBps);
+  const values = getRebalanceValues(
+    client.solautoPositionState!,
+    client.solautoPositionSettings(),
+    client.solautoPositionActiveDca(),
+    client.solautoPositionData?.feeType ?? FeeType.Small,
+    currentUnixSeconds(),
+    PRICES[client.supplyMint.toString()].price,
+    PRICES[client.debtMint.toString()].price,
+    targetLiqUtilizationRateBps
+  );
   client.log("Rebalance values: ", values);
 
   const swapDetails = getJupSwapRebalanceDetails(

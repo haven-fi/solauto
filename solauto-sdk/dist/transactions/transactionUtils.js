@@ -17,6 +17,7 @@ const numberUtils_1 = require("../utils/numberUtils");
 const generalUtils_2 = require("../utils/solauto/generalUtils");
 const accountUtils_1 = require("../utils/accountUtils");
 const marginfi_sdk_1 = require("../marginfi-sdk");
+const constants_1 = require("../constants");
 function getWSolUsage(client, solautoActions, initiatingDcaIn, cancellingDcaIn) {
     const supplyIsWsol = client.supplyMint.equals(spl_token_1.NATIVE_MINT);
     const debtIsWsol = client.debtMint.equals(spl_token_1.NATIVE_MINT);
@@ -324,11 +325,11 @@ async function buildSolautoRebalanceTransaction(client, targetLiqUtilizationRate
         (targetLiqUtilizationRateBps === undefined &&
             !(0, generalUtils_2.eligibleForRebalance)(client.solautoPositionState, client.livePositionUpdates.settings ??
                 client.solautoPositionData?.position.settingParams, client.livePositionUpdates.activeDca ??
-                client.solautoPositionData?.position.dca))) {
+                client.solautoPositionData?.position.dca, (0, generalUtils_1.currentUnixSeconds)()))) {
         client.log("Not eligible for a rebalance");
         return undefined;
     }
-    const values = (0, rebalanceUtils_1.getRebalanceValues)(client, targetLiqUtilizationRateBps);
+    const values = (0, rebalanceUtils_1.getRebalanceValues)(client.solautoPositionState, client.solautoPositionSettings(), client.solautoPositionActiveDca(), client.solautoPositionData?.feeType ?? generated_1.FeeType.Small, (0, generalUtils_1.currentUnixSeconds)(), constants_1.PRICES[client.supplyMint.toString()].price, constants_1.PRICES[client.debtMint.toString()].price, targetLiqUtilizationRateBps);
     client.log("Rebalance values: ", values);
     const swapDetails = (0, rebalanceUtils_1.getJupSwapRebalanceDetails)(client, values, targetLiqUtilizationRateBps, attemptNum);
     const { jupQuote, lookupTableAddresses, setupInstructions, tokenLedgerIx, swapIx, } = await (0, jupiterUtils_1.getJupSwapTransaction)(client.signer, swapDetails, attemptNum);
