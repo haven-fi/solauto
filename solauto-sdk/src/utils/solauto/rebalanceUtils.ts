@@ -136,7 +136,7 @@ function getTargetRateAndDcaAmount(
 
   if (settings === undefined) {
     throw new Error(
-      "If rebalancing a self-managed position, settings, and DCA should be provided"
+      "If rebalancing a self-managed position, settings and DCA should be provided"
     );
   }
 

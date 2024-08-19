@@ -154,9 +154,9 @@ export function eligibleForRebalance(
   const repayFrom = positionSettings.repayToBps + positionSettings.repayGap;
   const boostFrom = boostToBps - positionSettings.boostGap;
 
-  if (positionState.liqUtilizationRateBps <= boostFrom) {
+  if (positionState.liqUtilizationRateBps < boostFrom) {
     return "boost";
-  } else if (positionState.liqUtilizationRateBps >= repayFrom) {
+  } else if (positionState.liqUtilizationRateBps > repayFrom) {
     return "repay";
   }
 
