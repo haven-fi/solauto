@@ -46,15 +46,15 @@ export async function getMaxLtvAndLiqThreshold(
   umi: Umi,
   supply: {
     mint: PublicKey;
-    bank: Bank | null;
+    bank?: Bank | null;
   },
   debt: {
     mint: PublicKey;
-    bank: Bank | null;
+    bank?: Bank | null;
   },
   supplyPrice?: number
 ): Promise<[number, number]> {
-  if (!supply.bank) {
+  if (!supply.bank || supply.bank === null) {
     supply.bank = await safeFetchBank(
       umi,
       publicKey(
@@ -65,7 +65,7 @@ export async function getMaxLtvAndLiqThreshold(
     );
   }
 
-  if (!debt.bank && !debt.mint.equals(PublicKey.default)) {
+  if ((!debt.bank || debt.bank === null) && !debt.mint.equals(PublicKey.default)) {
     debt.bank = await safeFetchBank(
       umi,
       publicKey(
@@ -83,7 +83,7 @@ export async function getMaxLtvAndLiqThreshold(
     supplyPrice = price;
   }
 
-  if (debt.bank === null) {
+  if (!debt.bank || debt.bank === null) {
     return [0, 0];
   }
 

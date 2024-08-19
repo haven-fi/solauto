@@ -1,6 +1,6 @@
 import { PublicKey } from "@solana/web3.js";
 import { Umi } from "@metaplex-foundation/umi";
-import { AutomationSettings, DCASettings, DCASettingsInpArgs, FeeType, LendingPlatform, PositionState, SolautoSettingsParameters, SolautoSettingsParametersInpArgs } from "../../generated";
+import { AutomationSettings, DCASettings, DCASettingsInpArgs, FeeType, PositionState, SolautoSettingsParameters, SolautoSettingsParametersInpArgs } from "../../generated";
 import { RebalanceAction, SolautoPositionDetails } from "../../types/solauto";
 export declare function nextAutomationPeriodTimestamp(automation: AutomationSettings): number;
 export declare function eligibleForNextAutomationPeriod(automation: AutomationSettings, currentUnixTime: number): boolean;
@@ -11,26 +11,17 @@ export declare function getSolautoFeesBps(isReferred: boolean, feeType: FeeType)
     referrer: number;
     total: number;
 };
-export declare function eligibleForRebalance(positionState: PositionState, positionSettings: SolautoSettingsParameters, positionDca: DCASettings, currentUnixSecs: number): RebalanceAction | undefined;
+export declare function eligibleForRebalance(positionState: PositionState, positionSettings: SolautoSettingsParameters, positionDca: DCASettings | undefined, currentUnixSecs: number): RebalanceAction | undefined;
 export declare function eligibleForRefresh(positionState: PositionState, positionSettings: SolautoSettingsParameters, currentUnixTime: number): boolean;
 export declare function getSolautoManagedPositions(umi: Umi, authority?: PublicKey): Promise<SolautoPositionDetails[]>;
 export declare function getAllReferralStates(umi: Umi): Promise<PublicKey[]>;
 export declare function getReferralsByUser(umi: Umi, user: PublicKey): Promise<PublicKey[]>;
 export declare function getAllPositionsByAuthority(umi: Umi, user: PublicKey): Promise<SolautoPositionDetails[]>;
-interface GetLatestStateProps {
-    state: PositionState;
-    umi?: Umi;
-    protocolAccount?: PublicKey;
-    lendingPlatform?: LendingPlatform;
-    supplyPrice?: number;
-    debtPrice?: number;
-}
-export declare function positionStateWithPrices({ state, supplyPrice, debtPrice, umi, protocolAccount, lendingPlatform, }: GetLatestStateProps): Promise<PositionState | undefined>;
+export declare function positionStateWithLatestPrices(state: PositionState, supplyPrice?: number, debtPrice?: number): Promise<PositionState>;
 interface AssetProps {
-    amountUsedBaseUnit: bigint;
-    decimals: number;
-    price: number;
     mint: PublicKey;
+    price: number;
+    amountUsed: number;
 }
 export declare function createFakePositionState(supply: AssetProps, debt: AssetProps, maxLtvBps: number, liqThresholdBps: number): PositionState;
 type PositionAdjustment = {

@@ -77,23 +77,23 @@ export function getDebtAdjustmentUsd(
   return debtAdjustmentUsd;
 }
 
-export function getMaxLiqUtilizationRate(
+export function getMaxLiqUtilizationRateBps(
   maxLtvBps: number,
   liqThresholdBps: number
 ): number {
   return toBps((fromBps(maxLtvBps) - 0.015) / fromBps(liqThresholdBps)) - 1; // -1 to account for any rounding issues
 }
 
-export function maxRepayFrom(maxLtvBps: number, liqThresholdBps: number) {
+export function maxRepayFromBps(maxLtvBps: number, liqThresholdBps: number) {
   return Math.min(
     9000,
-    getMaxLiqUtilizationRate(maxLtvBps, liqThresholdBps - 1000)
+    getMaxLiqUtilizationRateBps(maxLtvBps, liqThresholdBps - 1000)
   );
 }
 
-export function maxRepayTo(maxLtvBps: number, liqThresholdBps: number) {
+export function maxRepayToBps(maxLtvBps: number, liqThresholdBps: number) {
   return Math.min(
-    maxRepayFrom(maxLtvBps, liqThresholdBps) - MAX_REPAY_GAP_BPS,
-    getMaxLiqUtilizationRate(maxLtvBps, liqThresholdBps)
+    maxRepayFromBps(maxLtvBps, liqThresholdBps) - MAX_REPAY_GAP_BPS,
+    getMaxLiqUtilizationRateBps(maxLtvBps, liqThresholdBps)
   );
 }

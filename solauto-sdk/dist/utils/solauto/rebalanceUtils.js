@@ -19,21 +19,20 @@ function getAdditionalAmountToDcaIn(dca) {
 }
 function getStandardTargetLiqUtilizationRateBps(state, settings) {
     const adjustedSettings = (0, generalUtils_1.getAdjustedSettingsFromAutomation)(settings, (0, generalUtils_2.currentUnixSeconds)());
-    const repayFrom = adjustedSettings.repayToBps - adjustedSettings.repayGap;
-    const boostFrom = adjustedSettings.boostToBps + adjustedSettings.boostGap;
+    const repayFrom = adjustedSettings.repayToBps + adjustedSettings.repayGap;
+    const boostFrom = adjustedSettings.boostToBps - adjustedSettings.boostGap;
     if (state.liqUtilizationRateBps < boostFrom) {
         return adjustedSettings.boostToBps;
     }
-    else if (state.liqUtilizationRateBps > repayFrom ||
-        repayFrom - state.liqUtilizationRateBps < repayFrom * 0.015) {
+    else if (state.liqUtilizationRateBps > repayFrom) {
         return adjustedSettings.repayToBps;
     }
     else {
         throw new Error("Invalid rebalance condition");
     }
 }
-function targetLiqUtilizationRateBpsFromDCA(state, settings, dca) {
-    const adjustedSettings = (0, generalUtils_1.getAdjustedSettingsFromAutomation)(settings, (0, generalUtils_2.currentUnixSeconds)());
+function targetLiqUtilizationRateBpsFromDCA(state, settings, dca, currentUnixTime) {
+    const adjustedSettings = (0, generalUtils_1.getAdjustedSettingsFromAutomation)(settings, currentUnixTime);
     let targetRateBps = 0;
     if (dca.debtToAddBaseUnit > BigInt(0)) {
         targetRateBps = Math.max(state.liqUtilizationRateBps, adjustedSettings.boostToBps);
@@ -47,7 +46,7 @@ function isDcaRebalance(state, settings, dca, currentUnixTime) {
     if (dca === undefined || dca.automation.targetPeriods === 0) {
         return false;
     }
-    const adjustedSettings = (0, generalUtils_1.getAdjustedSettingsFromAutomation)(settings, (0, generalUtils_2.currentUnixSeconds)());
+    const adjustedSettings = (0, generalUtils_1.getAdjustedSettingsFromAutomation)(settings, currentUnixTime);
     if (state.liqUtilizationRateBps >
         adjustedSettings.repayToBps + adjustedSettings.repayGap) {
         return false;
@@ -68,7 +67,7 @@ function getTargetRateAndDcaAmount(state, settings, dca, currentUnixTime, target
     }
     if (isDcaRebalance(state, settings, dca, currentUnixTime)) {
         const amountToDcaIn = getAdditionalAmountToDcaIn(dca);
-        const targetLiqUtilizationRateBps = targetLiqUtilizationRateBpsFromDCA(state, settings, dca);
+        const targetLiqUtilizationRateBps = targetLiqUtilizationRateBpsFromDCA(state, settings, dca, currentUnixTime);
         return {
             targetRateBps: targetLiqUtilizationRateBps,
             amountToDcaIn,
@@ -134,7 +133,7 @@ function getFlashLoanDetails(client, values, jupQuote) {
     const tempLiqUtilizationRateBps = (0, numberUtils_1.getLiqUtilzationRateBps)(supplyUsd, debtUsd, client.solautoPositionState.liqThresholdBps);
     const requiresFlashLoan = supplyUsd <= 0 ||
         tempLiqUtilizationRateBps >
-            (0, numberUtils_1.getMaxLiqUtilizationRate)(client.solautoPositionState.maxLtvBps, client.solautoPositionState.liqThresholdBps);
+            (0, numberUtils_1.getMaxLiqUtilizationRateBps)(client.solautoPositionState.maxLtvBps, client.solautoPositionState.liqThresholdBps);
     let flashLoanToken = undefined;
     let flashLoanTokenPrice = 0;
     if (values.increasingLeverage) {

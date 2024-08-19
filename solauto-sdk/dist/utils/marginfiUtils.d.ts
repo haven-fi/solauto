@@ -10,10 +10,10 @@ export declare function findMarginfiAccounts({ mint, bank, }: {
 }): MarginfiAssetAccounts;
 export declare function getMaxLtvAndLiqThreshold(umi: Umi, supply: {
     mint: PublicKey;
-    bank: Bank | null;
+    bank?: Bank | null;
 }, debt: {
     mint: PublicKey;
-    bank: Bank | null;
+    bank?: Bank | null;
 }, supplyPrice?: number): Promise<[number, number]>;
 export declare function getAllMarginfiAccountsByAuthority(umi: Umi, authority: PublicKey, compatibleWithSolauto?: boolean): Promise<{
     marginfiAccount: PublicKey;

@@ -12,7 +12,7 @@ exports.getSolautoManagedPositions = getSolautoManagedPositions;
 exports.getAllReferralStates = getAllReferralStates;
 exports.getReferralsByUser = getReferralsByUser;
 exports.getAllPositionsByAuthority = getAllPositionsByAuthority;
-exports.positionStateWithPrices = positionStateWithPrices;
+exports.positionStateWithLatestPrices = positionStateWithLatestPrices;
 exports.createFakePositionState = createFakePositionState;
 const web3_js_1 = require("@solana/web3.js");
 const umi_1 = require("@metaplex-foundation/umi");
@@ -68,7 +68,8 @@ function getSolautoFeesBps(isReferred, feeType) {
     };
 }
 function eligibleForRebalance(positionState, positionSettings, positionDca, currentUnixSecs) {
-    if (positionDca.automation.targetPeriods > 0 &&
+    if (positionDca &&
+        positionDca.automation.targetPeriods > 0 &&
         eligibleForNextAutomationPeriod(positionDca.automation, currentUnixSecs)) {
         return "dca";
     }
@@ -212,20 +213,7 @@ async function getAllPositionsByAuthority(umi, user) {
     // TODO support other platforms
     return allPositions;
 }
-async function positionStateWithPrices({ state, supplyPrice, debtPrice, umi, protocolAccount, lendingPlatform, }) {
-    if ((0, generalUtils_1.currentUnixSeconds)() - Number(state.lastUpdated) > 60 * 60 * 24 * 7) {
-        if (umi === undefined ||
-            protocolAccount === undefined ||
-            lendingPlatform === undefined) {
-            throw new Error("Missing required parameters");
-        }
-        if (lendingPlatform === generated_1.LendingPlatform.Marginfi) {
-            return await (0, marginfiUtils_1.getMarginfiAccountPositionState)(umi, protocolAccount, (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(state.supply.mint), (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(state.debt.mint));
-        }
-        else {
-            throw new Error("Lending platorm not yet supported");
-        }
-    }
+async function positionStateWithLatestPrices(state, supplyPrice, debtPrice) {
     if (!supplyPrice || !debtPrice) {
         [supplyPrice, debtPrice] = await (0, generalUtils_1.getTokenPrices)([
             (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(state.supply.mint),
@@ -260,22 +248,24 @@ async function positionStateWithPrices({ state, supplyPrice, debtPrice, umi, pro
     };
 }
 function createFakePositionState(supply, debt, maxLtvBps, liqThresholdBps) {
-    const supplyUsd = (0, numberUtils_1.fromBaseUnit)(supply.amountUsedBaseUnit, supply.decimals) * supply.price;
-    const debtUsd = (0, numberUtils_1.fromBaseUnit)(debt.amountUsedBaseUnit, debt.decimals) * debt.price;
+    const supplyDecimals = constants_1.TOKEN_DECIMALS[supply.mint.toString()];
+    const debtDecimals = constants_1.TOKEN_DECIMALS[debt.mint.toString()];
+    const supplyUsd = supply.amountUsed * supply.price;
+    const debtUsd = debt.amountUsed * debt.price;
     return {
         liqUtilizationRateBps: (0, numberUtils_1.getLiqUtilzationRateBps)(supplyUsd, debtUsd, liqThresholdBps),
         supply: {
             amountUsed: {
-                baseUnit: supply.amountUsedBaseUnit,
+                baseUnit: (0, numberUtils_1.toBaseUnit)(supply.amountUsed, supplyDecimals),
                 baseAmountUsdValue: (0, numberUtils_1.toBaseUnit)(supplyUsd, constants_1.USD_DECIMALS),
             },
             amountCanBeUsed: {
-                baseUnit: (0, numberUtils_1.toBaseUnit)(1000000, supply.decimals),
+                baseUnit: (0, numberUtils_1.toBaseUnit)(1000000, supplyDecimals),
                 baseAmountUsdValue: BigInt(Math.round(1000000 * supply.price)),
             },
             baseAmountMarketPriceUsd: (0, numberUtils_1.toBaseUnit)(supply.price, constants_1.USD_DECIMALS),
             borrowFeeBps: 0,
-            decimals: supply.decimals,
+            decimals: supplyDecimals,
             flashLoanFeeBps: 0,
             mint: (0, umi_1.publicKey)(supply.mint),
             padding1: [],
@@ -284,16 +274,16 @@ function createFakePositionState(supply, debt, maxLtvBps, liqThresholdBps) {
         },
         debt: {
             amountUsed: {
-                baseUnit: debt.amountUsedBaseUnit,
+                baseUnit: (0, numberUtils_1.toBaseUnit)(debt.amountUsed, debtDecimals),
                 baseAmountUsdValue: (0, numberUtils_1.toBaseUnit)(debtUsd, constants_1.USD_DECIMALS),
             },
             amountCanBeUsed: {
-                baseUnit: (0, numberUtils_1.toBaseUnit)(1000000, debt.decimals),
+                baseUnit: (0, numberUtils_1.toBaseUnit)(1000000, debtDecimals),
                 baseAmountUsdValue: BigInt(Math.round(1000000 * debt.price)),
             },
             baseAmountMarketPriceUsd: (0, numberUtils_1.toBaseUnit)(debt.price, constants_1.USD_DECIMALS),
             borrowFeeBps: 0,
-            decimals: debt.decimals,
+            decimals: debtDecimals,
             flashLoanFeeBps: 0,
             mint: (0, umi_1.publicKey)(debt.mint),
             padding1: [],
@@ -301,7 +291,7 @@ function createFakePositionState(supply, debt, maxLtvBps, liqThresholdBps) {
             padding: new Uint8Array([]),
         },
         netWorth: {
-            baseUnit: (0, numberUtils_1.toBaseUnit)((supplyUsd - debtUsd) / supply.price, supply.decimals),
+            baseUnit: (0, numberUtils_1.toBaseUnit)((supplyUsd - debtUsd) / supply.price, supplyDecimals),
             baseAmountUsdValue: (0, numberUtils_1.toBaseUnit)(supplyUsd - debtUsd, constants_1.USD_DECIMALS),
         },
         maxLtvBps,

@@ -10,7 +10,7 @@ import {
   SolautoSettingsParametersInpArgs,
 } from "../../src/generated";
 import { buildSolautoRebalanceTransaction } from "../../src/transactions/transactionUtils";
-import { getMaxLiqUtilizationRate, toBaseUnit } from "../../src/utils/numberUtils";
+import { getMaxLiqUtilizationRateBps, toBaseUnit } from "../../src/utils/numberUtils";
 import { NATIVE_MINT } from "@solana/spl-token";
 import { getTokenPrices } from "../../src/utils/generalUtils";
 import {
@@ -82,7 +82,7 @@ describe("Solauto Marginfi tests", async () => {
     //   );
     // }
 
-    // const maxLiqRate = getMaxLiqUtilizationRate(client.solautoPositionState!.maxLtvBps, client.solautoPositionState!.liqThresholdBps);
+    // const maxLiqRate = getMaxLiqUtilizationRateBps(client.solautoPositionState!.maxLtvBps, client.solautoPositionState!.liqThresholdBps);
     // transactionItems.push(
     //   new TransactionItem(
     //     async () => ({

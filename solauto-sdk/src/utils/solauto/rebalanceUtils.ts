@@ -22,7 +22,7 @@ import {
   fromBps,
   getDebtAdjustmentUsd,
   getLiqUtilzationRateBps,
-  getMaxLiqUtilizationRate,
+  getMaxLiqUtilizationRateBps,
   toBaseUnit,
 } from "../numberUtils";
 import { USD_DECIMALS } from "../../constants/generalAccounts";
@@ -57,15 +57,12 @@ function getStandardTargetLiqUtilizationRateBps(
     currentUnixSeconds()
   );
 
-  const repayFrom = adjustedSettings.repayToBps - adjustedSettings.repayGap;
-  const boostFrom = adjustedSettings.boostToBps + adjustedSettings.boostGap;
+  const repayFrom = adjustedSettings.repayToBps + adjustedSettings.repayGap;
+  const boostFrom = adjustedSettings.boostToBps - adjustedSettings.boostGap;
 
   if (state.liqUtilizationRateBps < boostFrom) {
     return adjustedSettings.boostToBps;
-  } else if (
-    state.liqUtilizationRateBps > repayFrom ||
-    repayFrom - state.liqUtilizationRateBps < repayFrom * 0.015
-  ) {
+  } else if (state.liqUtilizationRateBps > repayFrom) {
     return adjustedSettings.repayToBps;
   } else {
     throw new Error("Invalid rebalance condition");
@@ -75,11 +72,12 @@ function getStandardTargetLiqUtilizationRateBps(
 function targetLiqUtilizationRateBpsFromDCA(
   state: PositionState,
   settings: SolautoSettingsParameters,
-  dca: DCASettings
+  dca: DCASettings,
+  currentUnixTime: number
 ) {
   const adjustedSettings = getAdjustedSettingsFromAutomation(
     settings,
-    currentUnixSeconds()
+    currentUnixTime
   );
 
   let targetRateBps = 0;
@@ -106,7 +104,7 @@ function isDcaRebalance(
 
   const adjustedSettings = getAdjustedSettingsFromAutomation(
     settings,
-    currentUnixSeconds()
+    currentUnixTime
   );
 
   if (
@@ -147,7 +145,8 @@ function getTargetRateAndDcaAmount(
     const targetLiqUtilizationRateBps = targetLiqUtilizationRateBpsFromDCA(
       state,
       settings,
-      dca!
+      dca!,
+      currentUnixTime
     );
 
     return {
@@ -289,7 +288,7 @@ export function getFlashLoanDetails(
   const requiresFlashLoan =
     supplyUsd <= 0 ||
     tempLiqUtilizationRateBps >
-      getMaxLiqUtilizationRate(
+      getMaxLiqUtilizationRateBps(
         client.solautoPositionState!.maxLtvBps,
         client.solautoPositionState!.liqThresholdBps
       );

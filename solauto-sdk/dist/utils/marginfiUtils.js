@@ -28,12 +28,12 @@ function findMarginfiAccounts({ mint, bank, }) {
     throw new Error(`Marginfi accounts not found by the mint: ${mint}`);
 }
 async function getMaxLtvAndLiqThreshold(umi, supply, debt, supplyPrice) {
-    if (!supply.bank) {
+    if (!supply.bank || supply.bank === null) {
         supply.bank = await (0, marginfi_sdk_1.safeFetchBank)(umi, (0, umi_1.publicKey)(findMarginfiAccounts({
             mint: supply.mint.toString(),
         }).bank));
     }
-    if (!debt.bank && !debt.mint.equals(web3_js_1.PublicKey.default)) {
+    if ((!debt.bank || debt.bank === null) && !debt.mint.equals(web3_js_1.PublicKey.default)) {
         debt.bank = await (0, marginfi_sdk_1.safeFetchBank)(umi, (0, umi_1.publicKey)(findMarginfiAccounts({
             mint: debt.mint.toString(),
         }).bank));
@@ -44,7 +44,7 @@ async function getMaxLtvAndLiqThreshold(umi, supply, debt, supplyPrice) {
         ]);
         supplyPrice = price;
     }
-    if (debt.bank === null) {
+    if (!debt.bank || debt.bank === null) {
         return [0, 0];
     }
     let maxLtv = (0, numberUtils_1.bytesToI80F48)(supply.bank.config.assetWeightInit.value) /

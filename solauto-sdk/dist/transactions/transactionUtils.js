@@ -366,7 +366,7 @@ async function buildSolautoRebalanceTransaction(client, targetLiqUtilizationRate
         ]);
     }
     if (client.solautoPositionState.liqUtilizationRateBps >
-        (0, numberUtils_1.getMaxLiqUtilizationRate)(client.solautoPositionState.maxLtvBps, client.solautoPositionState.liqThresholdBps)) {
+        (0, numberUtils_1.getMaxLiqUtilizationRateBps)(client.solautoPositionState.maxLtvBps, client.solautoPositionState.liqThresholdBps)) {
         tx = tx.prepend(client.refresh());
     }
     return {

@@ -22,7 +22,11 @@ import {
 } from "../numberUtils";
 import { getReferralState } from "../accountUtils";
 import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
-import { ALL_SUPPORTED_TOKENS, USD_DECIMALS } from "../../constants";
+import {
+  ALL_SUPPORTED_TOKENS,
+  TOKEN_DECIMALS,
+  USD_DECIMALS,
+} from "../../constants";
 import {
   getAllMarginfiAccountsByAuthority,
   getMarginfiAccountPositionState,
@@ -122,10 +126,11 @@ export function getSolautoFeesBps(
 export function eligibleForRebalance(
   positionState: PositionState,
   positionSettings: SolautoSettingsParameters,
-  positionDca: DCASettings,
+  positionDca: DCASettings | undefined,
   currentUnixSecs: number
 ): RebalanceAction | undefined {
   if (
+    positionDca &&
     positionDca.automation.targetPeriods > 0 &&
     eligibleForNextAutomationPeriod(positionDca.automation, currentUnixSecs)
   ) {
@@ -325,42 +330,11 @@ export async function getAllPositionsByAuthority(
   return allPositions;
 }
 
-export async function positionStateWithPrices({
-  state,
-  supplyPrice,
-  debtPrice,
-  umi,
-  protocolAccount,
-  lendingPlatform,
-}: {
-  state: PositionState;
-  umi?: Umi;
-  protocolAccount?: PublicKey;
-  lendingPlatform?: LendingPlatform;
-  supplyPrice?: number;
-  debtPrice?: number;
-}): Promise<PositionState | undefined> {
-  if (currentUnixSeconds() - Number(state.lastUpdated) > 60 * 60 * 24 * 7) {
-    if (
-      umi === undefined ||
-      protocolAccount === undefined ||
-      lendingPlatform === undefined
-    ) {
-      throw new Error("Missing required parameters");
-    }
-
-    if (lendingPlatform === LendingPlatform.Marginfi) {
-      return await getMarginfiAccountPositionState(
-        umi,
-        protocolAccount,
-        toWeb3JsPublicKey(state.supply.mint),
-        toWeb3JsPublicKey(state.debt.mint)
-      );
-    } else {
-      throw new Error("Lending platorm not yet supported");
-    }
-  }
-
+export async function positionStateWithLatestPrices(
+  state: PositionState,
+  supplyPrice?: number,
+  debtPrice?: number
+): Promise<PositionState> {
   if (!supplyPrice || !debtPrice) {
     [supplyPrice, debtPrice] = await getTokenPrices([
       toWeb3JsPublicKey(state.supply.mint),
@@ -406,10 +380,9 @@ export async function positionStateWithPrices({
 }
 
 interface AssetProps {
-  amountUsedBaseUnit: bigint;
-  decimals: number;
-  price: number;
   mint: PublicKey;
+  price: number;
+  amountUsed: number;
 }
 
 export function createFakePositionState(
@@ -418,10 +391,11 @@ export function createFakePositionState(
   maxLtvBps: number,
   liqThresholdBps: number
 ): PositionState {
-  const supplyUsd =
-    fromBaseUnit(supply.amountUsedBaseUnit, supply.decimals) * supply.price;
-  const debtUsd =
-    fromBaseUnit(debt.amountUsedBaseUnit, debt.decimals) * debt.price;
+  const supplyDecimals = TOKEN_DECIMALS[supply.mint.toString()];
+  const debtDecimals = TOKEN_DECIMALS[debt.mint.toString()];
+
+  const supplyUsd = supply.amountUsed * supply.price;
+  const debtUsd = debt.amountUsed * debt.price;
 
   return {
     liqUtilizationRateBps: getLiqUtilzationRateBps(
@@ -431,16 +405,16 @@ export function createFakePositionState(
     ),
     supply: {
       amountUsed: {
-        baseUnit: supply.amountUsedBaseUnit,
+        baseUnit: toBaseUnit(supply.amountUsed, supplyDecimals),
         baseAmountUsdValue: toBaseUnit(supplyUsd, USD_DECIMALS),
       },
       amountCanBeUsed: {
-        baseUnit: toBaseUnit(1000000, supply.decimals),
+        baseUnit: toBaseUnit(1000000, supplyDecimals),
         baseAmountUsdValue: BigInt(Math.round(1000000 * supply.price)),
       },
       baseAmountMarketPriceUsd: toBaseUnit(supply.price, USD_DECIMALS),
       borrowFeeBps: 0,
-      decimals: supply.decimals,
+      decimals: supplyDecimals,
       flashLoanFeeBps: 0,
       mint: publicKey(supply.mint),
       padding1: [],
@@ -449,16 +423,16 @@ export function createFakePositionState(
     },
     debt: {
       amountUsed: {
-        baseUnit: debt.amountUsedBaseUnit,
+        baseUnit: toBaseUnit(debt.amountUsed, debtDecimals),
         baseAmountUsdValue: toBaseUnit(debtUsd, USD_DECIMALS),
       },
       amountCanBeUsed: {
-        baseUnit: toBaseUnit(1000000, debt.decimals),
+        baseUnit: toBaseUnit(1000000, debtDecimals),
         baseAmountUsdValue: BigInt(Math.round(1000000 * debt.price)),
       },
       baseAmountMarketPriceUsd: toBaseUnit(debt.price, USD_DECIMALS),
       borrowFeeBps: 0,
-      decimals: debt.decimals,
+      decimals: debtDecimals,
       flashLoanFeeBps: 0,
       mint: publicKey(debt.mint),
       padding1: [],
@@ -468,7 +442,7 @@ export function createFakePositionState(
     netWorth: {
       baseUnit: toBaseUnit(
         (supplyUsd - debtUsd) / supply.price,
-        supply.decimals
+        supplyDecimals
       ),
       baseAmountUsdValue: toBaseUnit(supplyUsd - debtUsd, USD_DECIMALS),
     },

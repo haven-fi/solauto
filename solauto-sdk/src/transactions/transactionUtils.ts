@@ -45,7 +45,7 @@ import {
 } from "../utils/generalUtils";
 import { SolautoMarginfiClient } from "../clients/solautoMarginfiClient";
 import {
-  getMaxLiqUtilizationRate,
+  getMaxLiqUtilizationRateBps,
   uint8ArrayToBigInt,
 } from "../utils/numberUtils";
 import { eligibleForRebalance } from "../utils/solauto/generalUtils";
@@ -670,7 +670,7 @@ export async function buildSolautoRebalanceTransaction(
 
   if (
     client.solautoPositionState!.liqUtilizationRateBps >
-    getMaxLiqUtilizationRate(
+    getMaxLiqUtilizationRateBps(
       client.solautoPositionState!.maxLtvBps,
       client.solautoPositionState!.liqThresholdBps
     )

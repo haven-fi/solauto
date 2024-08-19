@@ -8,9 +8,9 @@ exports.toBps = toBps;
 exports.bytesToI80F48 = bytesToI80F48;
 exports.uint8ArrayToBigInt = uint8ArrayToBigInt;
 exports.getDebtAdjustmentUsd = getDebtAdjustmentUsd;
-exports.getMaxLiqUtilizationRate = getMaxLiqUtilizationRate;
-exports.maxRepayFrom = maxRepayFrom;
-exports.maxRepayTo = maxRepayTo;
+exports.getMaxLiqUtilizationRateBps = getMaxLiqUtilizationRateBps;
+exports.maxRepayFromBps = maxRepayFromBps;
+exports.maxRepayToBps = maxRepayToBps;
 const constants_1 = require("../constants");
 function getLiqUtilzationRateBps(supplyUsd, debtUsd, liqThresholdBps) {
     if (supplyUsd === 0) {
@@ -63,12 +63,12 @@ function getDebtAdjustmentUsd(liqThresholdBps, supplyUsd, debtUsd, targetLiqUtil
     const debtAdjustmentUsd = (targetLiqUtilizationRate * supplyUsd * liqThreshold - debtUsd) / (1 - targetLiqUtilizationRate * (1 - adjustmentFee) * liqThreshold);
     return debtAdjustmentUsd;
 }
-function getMaxLiqUtilizationRate(maxLtvBps, liqThresholdBps) {
+function getMaxLiqUtilizationRateBps(maxLtvBps, liqThresholdBps) {
     return toBps((fromBps(maxLtvBps) - 0.015) / fromBps(liqThresholdBps)) - 1; // -1 to account for any rounding issues
 }
-function maxRepayFrom(maxLtvBps, liqThresholdBps) {
-    return Math.min(9000, getMaxLiqUtilizationRate(maxLtvBps, liqThresholdBps - 1000));
+function maxRepayFromBps(maxLtvBps, liqThresholdBps) {
+    return Math.min(9000, getMaxLiqUtilizationRateBps(maxLtvBps, liqThresholdBps - 1000));
 }
-function maxRepayTo(maxLtvBps, liqThresholdBps) {
-    return Math.min(maxRepayFrom(maxLtvBps, liqThresholdBps) - constants_1.MAX_REPAY_GAP_BPS, getMaxLiqUtilizationRate(maxLtvBps, liqThresholdBps));
+function maxRepayToBps(maxLtvBps, liqThresholdBps) {
+    return Math.min(maxRepayFromBps(maxLtvBps, liqThresholdBps) - constants_1.MAX_REPAY_GAP_BPS, getMaxLiqUtilizationRateBps(maxLtvBps, liqThresholdBps));
 }
