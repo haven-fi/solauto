@@ -127,12 +127,12 @@ export function eligibleForRebalance(
   positionState: PositionState,
   positionSettings: SolautoSettingsParameters,
   positionDca: DCASettings | undefined,
-  currentUnixSecs: number
+  currentUnixTime: number
 ): RebalanceAction | undefined {
   if (
     positionDca &&
     positionDca.automation.targetPeriods > 0 &&
-    eligibleForNextAutomationPeriod(positionDca.automation, currentUnixSecs)
+    eligibleForNextAutomationPeriod(positionDca.automation, currentUnixTime)
   ) {
     return "dca";
   }
@@ -142,13 +142,13 @@ export function eligibleForRebalance(
   }
 
   const boostToBps =
-    eligibleForRefresh(positionState, positionSettings, currentUnixSecs) &&
+    eligibleForRefresh(positionState, positionSettings, currentUnixTime) &&
     positionSettings.automation.targetPeriods > 0
       ? getUpdatedValueFromAutomation(
           positionSettings.boostToBps,
           positionSettings.targetBoostToBps,
           positionSettings.automation,
-          currentUnixSecs
+          currentUnixTime
         )
       : positionSettings.boostToBps;
   const repayFrom = positionSettings.repayToBps + positionSettings.repayGap;

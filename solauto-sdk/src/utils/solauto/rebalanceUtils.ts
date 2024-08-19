@@ -57,8 +57,8 @@ function getStandardTargetLiqUtilizationRateBps(
     currentUnixSeconds()
   );
 
-  const repayFrom = adjustedSettings.repayToBps + adjustedSettings.repayGap;
-  const boostFrom = adjustedSettings.boostToBps - adjustedSettings.boostGap;
+  const repayFrom = settings.repayToBps + settings.repayGap;
+  const boostFrom = adjustedSettings.boostToBps - settings.boostGap;
 
   if (state.liqUtilizationRateBps < boostFrom) {
     return adjustedSettings.boostToBps;
