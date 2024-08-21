@@ -235,8 +235,8 @@ async function positionStateWithLatestPrices(state, supplyPrice, debtPrice) {
     };
 }
 function createFakePositionState(supply, debt, maxLtvBps, liqThresholdBps) {
-    const supplyDecimals = constants_1.TOKEN_DECIMALS[supply.mint.toString()];
-    const debtDecimals = constants_1.TOKEN_DECIMALS[debt.mint.toString()];
+    const supplyDecimals = constants_1.TOKEN_INFO[supply.mint.toString()].decimals;
+    const debtDecimals = constants_1.TOKEN_INFO[debt.mint.toString()].decimals;
     const supplyUsd = supply.amountUsed * supply.price;
     const debtUsd = debt.amountUsed * debt.price;
     return {

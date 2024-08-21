@@ -23,23 +23,16 @@ import { USD_DECIMALS } from "../constants/generalAccounts";
 import { LivePositionUpdates } from "./solauto/generalUtils";
 import { currentUnixSecondsSolana } from "./solanaUtils";
 
-export function findMarginfiAccounts({
-  mint,
-  bank,
-}: {
-  mint?: string;
-  bank?: string;
-}): MarginfiAssetAccounts {
+export function findMarginfiAccounts(bank: PublicKey): MarginfiAssetAccounts {
   for (const key in MARGINFI_ACCOUNTS) {
     const account = MARGINFI_ACCOUNTS[key];
-    if (mint && account.mint.toString().toLowerCase() === mint.toLowerCase()) {
-      return account;
-    }
-    if (bank && account.bank.toString().toLowerCase() === bank.toLowerCase()) {
+    if (
+      account.bank.toString().toLowerCase() === bank.toString().toLowerCase()
+    ) {
       return account;
     }
   }
-  throw new Error(`Marginfi accounts not found by the mint: ${mint}`);
+  throw new Error(`Marginfi accounts not found by the bank: ${bank}`);
 }
 
 export async function getMaxLtvAndLiqThreshold(
@@ -57,21 +50,18 @@ export async function getMaxLtvAndLiqThreshold(
   if (!supply.bank || supply.bank === null) {
     supply.bank = await safeFetchBank(
       umi,
-      publicKey(
-        findMarginfiAccounts({
-          mint: supply.mint.toString(),
-        }).bank
-      )
+      publicKey(MARGINFI_ACCOUNTS[supply.mint.toString()].bank)
     );
   }
 
-  if ((!debt.bank || debt.bank === null) && !debt.mint.equals(PublicKey.default)) {
+  if (
+    (!debt.bank || debt.bank === null) &&
+    !debt.mint.equals(PublicKey.default)
+  ) {
     debt.bank = await safeFetchBank(
       umi,
       publicKey(
-        findMarginfiAccounts({
-          mint: debt.mint.toString(),
-        }).bank
+        MARGINFI_ACCOUNTS[debt.mint.toString()].bank
       )
     );
   }
@@ -248,14 +238,14 @@ export async function getMarginfiAccountPositionState(
     supplyMint && supplyMint !== PublicKey.default
       ? await safeFetchBank(
           umi,
-          publicKey(findMarginfiAccounts({ mint: supplyMint.toString() }).bank)
+          publicKey(MARGINFI_ACCOUNTS[supplyMint.toString()].bank)
         )
       : null;
   let debtBank: Bank | null =
     debtMint && debtMint !== PublicKey.default
       ? await safeFetchBank(
           umi,
-          publicKey(findMarginfiAccounts({ mint: debtMint.toString() }).bank)
+          publicKey(MARGINFI_ACCOUNTS[debtMint.toString()].bank)
         )
       : null;
 

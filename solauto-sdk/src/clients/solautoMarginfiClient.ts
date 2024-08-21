@@ -16,6 +16,7 @@ import { SolautoClient, SolautoClientArgs } from "./solautoClient";
 import { MarginfiAssetAccounts } from "../types/accounts";
 import {
   DEFAULT_MARGINFI_GROUP,
+  MARGINFI_ACCOUNTS,
   MARGINFI_ACCOUNTS_LOOKUP_TABLE,
 } from "../constants/marginfiAccounts";
 import {
@@ -108,12 +109,9 @@ export class SolautoMarginfiClient extends SolautoClient {
       ? toWeb3JsPublicKey(marginfiAccountData.group)
       : args.marginfiGroup ?? new PublicKey(DEFAULT_MARGINFI_GROUP);
 
-    this.marginfiSupplyAccounts = findMarginfiAccounts({
-      mint: this.supplyMint.toString(),
-    })!;
-    this.marginfiDebtAccounts = findMarginfiAccounts({
-      mint: this.debtMint.toString(),
-    })!;
+    this.marginfiSupplyAccounts =
+      MARGINFI_ACCOUNTS[this.supplyMint.toString()]!;
+    this.marginfiDebtAccounts = MARGINFI_ACCOUNTS[this.debtMint.toString()]!;
 
     if (!this.initialized) {
       await this.setIntermediaryMarginfiDetails();
@@ -171,7 +169,9 @@ export class SolautoMarginfiClient extends SolautoClient {
     return [
       ...super.lutAccountsToAdd(),
       this.marginfiAccountPk,
-      ...(this.signer.publicKey.toString() === this.authority.toString() ? [this.intermediaryMarginfiAccountPk] : []),
+      ...(this.signer.publicKey.toString() === this.authority.toString()
+        ? [this.intermediaryMarginfiAccountPk]
+        : []),
     ];
   }
 
@@ -358,17 +358,13 @@ export class SolautoMarginfiClient extends SolautoClient {
           : this.positionDebtTa
       );
       vaultDebtTa = publicKey(this.marginfiDebtAccounts.liquidityVault);
-      debtVaultAuthority = publicKey(
-        this.marginfiDebtAccounts.vaultAuthority
-      );
+      debtVaultAuthority = publicKey(this.marginfiDebtAccounts.vaultAuthority);
     }
 
     let supplyPriceOracle: UmiPublicKey | undefined = undefined;
     let debtPriceOracle: UmiPublicKey | undefined = undefined;
     if (args.__kind === "Withdraw" || args.__kind === "Borrow") {
-      supplyPriceOracle = publicKey(
-        this.marginfiSupplyAccounts.priceOracle
-      );
+      supplyPriceOracle = publicKey(this.marginfiSupplyAccounts.priceOracle);
       debtPriceOracle = publicKey(this.marginfiDebtAccounts.priceOracle);
     }
 
@@ -512,8 +508,7 @@ export class SolautoMarginfiClient extends SolautoClient {
               },
               {
                 pubkey: publicKey(
-                  findMarginfiAccounts({ bank: x.bankPk.toString() })
-                    .priceOracle
+                  findMarginfiAccounts(toWeb3JsPublicKey(x.bankPk)).priceOracle
                 ),
                 isSigner: false,
                 isWritable: false,

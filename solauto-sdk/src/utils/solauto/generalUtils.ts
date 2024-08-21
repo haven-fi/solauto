@@ -23,7 +23,7 @@ import { getReferralState } from "../accountUtils";
 import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 import {
   ALL_SUPPORTED_TOKENS,
-  TOKEN_DECIMALS,
+  TOKEN_INFO,
   USD_DECIMALS,
 } from "../../constants";
 import {
@@ -368,8 +368,8 @@ export function createFakePositionState(
   maxLtvBps: number,
   liqThresholdBps: number
 ): PositionState {
-  const supplyDecimals = TOKEN_DECIMALS[supply.mint.toString()];
-  const debtDecimals = TOKEN_DECIMALS[debt.mint.toString()];
+  const supplyDecimals = TOKEN_INFO[supply.mint.toString()].decimals;
+  const debtDecimals = TOKEN_INFO[debt.mint.toString()].decimals;
 
   const supplyUsd = supply.amountUsed * supply.price;
   const debtUsd = debt.amountUsed * debt.price;

@@ -28,7 +28,9 @@ function getSolautoPositionAccountDataSerializer() {
         ['position', (0, types_1.getPositionDataSerializer)()],
         ['state', (0, types_1.getPositionStateSerializer)()],
         ['rebalance', (0, types_1.getRebalanceDataSerializer)()],
-        ['padding', (0, serializers_1.array)((0, serializers_1.u32)(), { size: 32 })],
+        ['feeType', (0, types_1.getFeeTypeSerializer)()],
+        ['padding2', (0, serializers_1.array)((0, serializers_1.u8)(), { size: 7 })],
+        ['padding', (0, serializers_1.array)((0, serializers_1.u32)(), { size: 30 })],
     ], { description: 'SolautoPositionAccountData' });
 }
 function deserializeSolautoPosition(rawAccount) {
@@ -68,7 +70,9 @@ function getSolautoPositionGpaBuilder(context) {
         position: [40, (0, types_1.getPositionDataSerializer)()],
         state: [360, (0, types_1.getPositionStateSerializer)()],
         rebalance: [648, (0, types_1.getRebalanceDataSerializer)()],
-        padding: [704, (0, serializers_1.array)((0, serializers_1.u32)(), { size: 32 })],
+        feeType: [704, (0, types_1.getFeeTypeSerializer)()],
+        padding2: [705, (0, serializers_1.array)((0, serializers_1.u8)(), { size: 7 })],
+        padding: [712, (0, serializers_1.array)((0, serializers_1.u32)(), { size: 30 })],
     })
         .deserializeUsing((account) => deserializeSolautoPosition(account));
 }

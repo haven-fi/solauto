@@ -384,7 +384,7 @@ mod tests {
             AutomationSettingsInp, DCASettings, DCASettingsInp, PositionState, PositionTokenUsage,
             RebalanceData, SolautoSettingsParameters,
         },
-        types::shared::TokenType,
+        types::shared::{FeeType, TokenType},
         utils::math_utils,
     };
 
@@ -476,7 +476,7 @@ mod tests {
         );
         let solauto_fees = solauto_utils::get_solauto_fees_bps(
             false,
-            false,
+            FeeType::Default,
             solauto_position.state.net_worth.usd_value(),
         );
 
@@ -521,7 +521,7 @@ mod tests {
         let adjustment_fee_bps = if boosting {
             solauto_utils::get_solauto_fees_bps(
                 false,
-                false,
+                FeeType::Default,
                 solauto_position.state.net_worth.usd_value(),
             )
             .total

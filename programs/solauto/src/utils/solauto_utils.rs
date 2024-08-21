@@ -17,7 +17,7 @@ use crate::{
     },
     types::{
         instruction::UpdatePositionData,
-        shared::{DeserializedAccount, LendingPlatform, SolautoError},
+        shared::{DeserializedAccount, FeeType, LendingPlatform, SolautoError},
     },
 };
 
@@ -305,7 +305,7 @@ pub struct SolautoFeesBps {
 }
 pub fn get_solauto_fees_bps(
     has_been_referred: bool,
-    self_managed: bool,
+    fee_type: FeeType,
     position_net_worth_usd: f64,
 ) -> SolautoFeesBps {
     let min_size: f64 = 10000.0; // Minimum position size
@@ -314,7 +314,7 @@ pub fn get_solauto_fees_bps(
     let min_fee_bps: f64 = 100.0; // Fee in basis points for max_size (1%)
 
     let mut fee_bps: f64 = 0.0;
-    if self_managed {
+    if fee_type == FeeType::Small {
         fee_bps = 100.0;
     } else if position_net_worth_usd <= min_size {
         fee_bps = max_fee_bps;

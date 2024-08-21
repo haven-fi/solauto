@@ -2,6 +2,7 @@ import { PublicKey } from "@solana/web3.js";
 import { SolautoClient } from "../../clients/solautoClient";
 import {
   DCASettings,
+  FeeType,
   PositionState,
   PositionTokenUsage,
   SolautoSettingsParameters,
@@ -170,6 +171,7 @@ export function getRebalanceValues(
   state: PositionState,
   settings: SolautoSettingsParameters | undefined,
   dca: DCASettings | undefined,
+  feeType: FeeType,
   currentUnixTime: number,
   supplyPrice: number,
   debtPrice: number,
@@ -204,7 +206,7 @@ export function getRebalanceValues(
   if (increasingLeverage) {
     adjustmentFeeBps = getSolautoFeesBps(
       false,
-      settings === undefined,
+      feeType,
       fromBaseUnit(state.netWorth.baseAmountUsdValue, USD_DECIMALS)
     ).total;
   }

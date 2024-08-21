@@ -25,6 +25,7 @@ __exportStar(require("./automationSettings"), exports);
 __exportStar(require("./automationSettingsInp"), exports);
 __exportStar(require("./dCASettings"), exports);
 __exportStar(require("./dCASettingsInp"), exports);
+__exportStar(require("./feeType"), exports);
 __exportStar(require("./lendingPlatform"), exports);
 __exportStar(require("./podBool"), exports);
 __exportStar(require("./positionData"), exports);

@@ -9,6 +9,7 @@ import { publicKey } from "@metaplex-foundation/umi";
 import { SolautoClient } from "../../src/clients/solautoClient";
 import {
   DCASettings,
+  FeeType,
   LendingPlatform,
   SolautoRebalanceType,
   SolautoSettingsParameters,
@@ -48,6 +49,7 @@ function assertAccurateRebalance(
       client.solautoPositionState!,
       client.solautoPositionSettings(),
       client.solautoPositionActiveDca(),
+      client.solautoPositionData!.feeType,
       currentUnixSeconds(),
       PRICES[client.supplyMint.toString()].price,
       PRICES[client.debtMint.toString()].price,
@@ -58,7 +60,7 @@ function assertAccurateRebalance(
   if (increasingLeverage) {
     adjustmentFeeBps = getSolautoFeesBps(
       client.referredByState !== undefined,
-      client.selfManaged,
+      client.solautoPositionData!.feeType,
       fromBaseUnit(
         client.solautoPositionState?.netWorth.baseAmountUsdValue ?? BigInt(0),
         USD_DECIMALS
@@ -178,7 +180,9 @@ async function getFakePosition(
       padding2: [],
       padding: new Uint8Array([]),
     },
+    feeType: FeeType.Default,
     padding1: [],
+    padding2: [],
     padding: [],
     publicKey: publicKey(PublicKey.default),
     header: {

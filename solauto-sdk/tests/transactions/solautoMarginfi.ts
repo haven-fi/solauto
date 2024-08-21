@@ -20,12 +20,12 @@ import { PublicKey } from "@solana/web3.js";
 import { USDC_MINT } from "../../src/constants";
 
 describe("Solauto Marginfi tests", async () => {
-  // const signer = setupTest();
-  const signer = setupTest("solauto-manager");
+  const signer = setupTest();
+  // const signer = setupTest("solauto-manager");
 
   const payForTransactions = false;
   const useJitoBundle = false;
-  const positionId = 1;
+  const positionId = 2;
 
   it("open - deposit - borrow - rebalance to 0 - withdraw - close", async () => {
     const client = new SolautoMarginfiClient(process.env.HELIUS_API_KEY!, true);
@@ -66,19 +66,19 @@ describe("Solauto Marginfi tests", async () => {
     //     }, "open position")
     //   );
 
-    //   const initialSupplyUsd = 50;
-    //   transactionItems.push(
-    //     new TransactionItem(async () => {
-    //       const [supplyPrice] = await getTokenPrices([supply]);
-    //       return {
-    //         tx: client.protocolInteraction(
-    //           solautoAction("Deposit", [
-    //             toBaseUnit(initialSupplyUsd / supplyPrice, supplyDecimals),
-    //           ])
-    //         ),
-    //       };
-    //     }, "deposit")
-    //   );
+      // const initialSupplyUsd = 150;
+      // transactionItems.push(
+      //   new TransactionItem(async () => {
+      //     const [supplyPrice] = await getTokenPrices([supply]);
+      //     return {
+      //       tx: client.protocolInteraction(
+      //         solautoAction("Deposit", [
+      //           toBaseUnit(initialSupplyUsd / supplyPrice, supplyDecimals),
+      //         ])
+      //       ),
+      //     };
+      //   }, "deposit")
+      // );
     // }
 
     // const maxLtvBps = client.solautoPositionState!.maxLtvBps;

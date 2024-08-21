@@ -580,6 +580,7 @@ export async function buildSolautoRebalanceTransaction(
     client.solautoPositionState!,
     client.solautoPositionSettings(),
     client.solautoPositionActiveDca(),
+    client.solautoPositionData!.feeType,
     currentUnixSeconds(),
     PRICES[client.supplyMint.toString()].price,
     PRICES[client.debtMint.toString()].price,

@@ -5,6 +5,7 @@
 //! [https://github.com/metaplex-foundation/kinobi]
 //!
 
+use crate::generated::types::FeeType;
 use crate::generated::types::PodBool;
 use crate::generated::types::PositionData;
 use crate::generated::types::PositionState;
@@ -28,7 +29,9 @@ pub struct SolautoPosition {
     pub position: PositionData,
     pub state: PositionState,
     pub rebalance: RebalanceData,
-    pub padding: [u32; 32],
+    pub fee_type: FeeType,
+    pub padding2: [u8; 7],
+    pub padding: [u32; 30],
 }
 
 impl SolautoPosition {

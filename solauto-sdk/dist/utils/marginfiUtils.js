@@ -15,28 +15,22 @@ const solautoConstants_1 = require("../constants/solautoConstants");
 const marginfiAccounts_1 = require("../constants/marginfiAccounts");
 const generalAccounts_1 = require("../constants/generalAccounts");
 const solanaUtils_1 = require("./solanaUtils");
-function findMarginfiAccounts({ mint, bank, }) {
+function findMarginfiAccounts(bank) {
     for (const key in marginfiAccounts_1.MARGINFI_ACCOUNTS) {
         const account = marginfiAccounts_1.MARGINFI_ACCOUNTS[key];
-        if (mint && account.mint.toString().toLowerCase() === mint.toLowerCase()) {
-            return account;
-        }
-        if (bank && account.bank.toString().toLowerCase() === bank.toLowerCase()) {
+        if (account.bank.toString().toLowerCase() === bank.toString().toLowerCase()) {
             return account;
         }
     }
-    throw new Error(`Marginfi accounts not found by the mint: ${mint}`);
+    throw new Error(`Marginfi accounts not found by the bank: ${bank}`);
 }
 async function getMaxLtvAndLiqThreshold(umi, supply, debt, supplyPrice) {
     if (!supply.bank || supply.bank === null) {
-        supply.bank = await (0, marginfi_sdk_1.safeFetchBank)(umi, (0, umi_1.publicKey)(findMarginfiAccounts({
-            mint: supply.mint.toString(),
-        }).bank));
+        supply.bank = await (0, marginfi_sdk_1.safeFetchBank)(umi, (0, umi_1.publicKey)(marginfiAccounts_1.MARGINFI_ACCOUNTS[supply.mint.toString()].bank));
     }
-    if ((!debt.bank || debt.bank === null) && !debt.mint.equals(web3_js_1.PublicKey.default)) {
-        debt.bank = await (0, marginfi_sdk_1.safeFetchBank)(umi, (0, umi_1.publicKey)(findMarginfiAccounts({
-            mint: debt.mint.toString(),
-        }).bank));
+    if ((!debt.bank || debt.bank === null) &&
+        !debt.mint.equals(web3_js_1.PublicKey.default)) {
+        debt.bank = await (0, marginfi_sdk_1.safeFetchBank)(umi, (0, umi_1.publicKey)(marginfiAccounts_1.MARGINFI_ACCOUNTS[debt.mint.toString()].bank));
     }
     if (!supplyPrice) {
         const [price] = await (0, generalUtils_1.getTokenPrices)([
@@ -141,10 +135,10 @@ async function getTokenUsage(umi, bank, isAsset, shares, amountUsedAdjustment) {
 async function getMarginfiAccountPositionState(umi, marginfiAccountPk, supplyMint, debtMint, livePositionUpdates) {
     let marginfiAccount = await (0, marginfi_sdk_1.safeFetchMarginfiAccount)(umi, (0, umi_1.publicKey)(marginfiAccountPk));
     let supplyBank = supplyMint && supplyMint !== web3_js_1.PublicKey.default
-        ? await (0, marginfi_sdk_1.safeFetchBank)(umi, (0, umi_1.publicKey)(findMarginfiAccounts({ mint: supplyMint.toString() }).bank))
+        ? await (0, marginfi_sdk_1.safeFetchBank)(umi, (0, umi_1.publicKey)(marginfiAccounts_1.MARGINFI_ACCOUNTS[supplyMint.toString()].bank))
         : null;
     let debtBank = debtMint && debtMint !== web3_js_1.PublicKey.default
-        ? await (0, marginfi_sdk_1.safeFetchBank)(umi, (0, umi_1.publicKey)(findMarginfiAccounts({ mint: debtMint.toString() }).bank))
+        ? await (0, marginfi_sdk_1.safeFetchBank)(umi, (0, umi_1.publicKey)(marginfiAccounts_1.MARGINFI_ACCOUNTS[debtMint.toString()].bank))
         : null;
     let supplyUsage = undefined;
     let debtUsage = undefined;

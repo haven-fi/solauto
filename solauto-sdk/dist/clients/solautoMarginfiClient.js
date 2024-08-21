@@ -40,12 +40,9 @@ class SolautoMarginfiClient extends solautoClient_1.SolautoClient {
         this.marginfiGroup = marginfiAccountData
             ? (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(marginfiAccountData.group)
             : args.marginfiGroup ?? new web3_js_1.PublicKey(marginfiAccounts_1.DEFAULT_MARGINFI_GROUP);
-        this.marginfiSupplyAccounts = (0, marginfiUtils_1.findMarginfiAccounts)({
-            mint: this.supplyMint.toString(),
-        });
-        this.marginfiDebtAccounts = (0, marginfiUtils_1.findMarginfiAccounts)({
-            mint: this.debtMint.toString(),
-        });
+        this.marginfiSupplyAccounts =
+            marginfiAccounts_1.MARGINFI_ACCOUNTS[this.supplyMint.toString()];
+        this.marginfiDebtAccounts = marginfiAccounts_1.MARGINFI_ACCOUNTS[this.debtMint.toString()];
         if (!this.initialized) {
             await this.setIntermediaryMarginfiDetails();
         }
@@ -78,7 +75,9 @@ class SolautoMarginfiClient extends solautoClient_1.SolautoClient {
         return [
             ...super.lutAccountsToAdd(),
             this.marginfiAccountPk,
-            ...(this.signer.publicKey.toString() === this.authority.toString() ? [this.intermediaryMarginfiAccountPk] : []),
+            ...(this.signer.publicKey.toString() === this.authority.toString()
+                ? [this.intermediaryMarginfiAccountPk]
+                : []),
         ];
     }
     marginfiAccountInitialize() {
@@ -344,8 +343,7 @@ class SolautoMarginfiClient extends solautoClient_1.SolautoClient {
                             isWritable: false,
                         },
                         {
-                            pubkey: (0, umi_1.publicKey)((0, marginfiUtils_1.findMarginfiAccounts)({ bank: x.bankPk.toString() })
-                                .priceOracle),
+                            pubkey: (0, umi_1.publicKey)((0, marginfiUtils_1.findMarginfiAccounts)((0, umi_web3js_adapters_1.toWeb3JsPublicKey)(x.bankPk)).priceOracle),
                             isSigner: false,
                             isWritable: false,
                         },
