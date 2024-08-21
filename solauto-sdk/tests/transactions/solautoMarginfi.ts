@@ -5,12 +5,11 @@ import {
   SolautoMarginfiClient,
 } from "../../src/clients/solautoMarginfiClient";
 import {
-  LendingPlatform,
   solautoAction,
   SolautoSettingsParametersInpArgs,
 } from "../../src/generated";
 import { buildSolautoRebalanceTransaction } from "../../src/transactions/transactionUtils";
-import { getMaxLiqUtilizationRateBps, toBaseUnit } from "../../src/utils/numberUtils";
+import { maxBoostToBps, maxRepayFromBps, maxRepayToBps, toBaseUnit } from "../../src/utils/numberUtils";
 import { NATIVE_MINT } from "@solana/spl-token";
 import { getTokenPrices } from "../../src/utils/generalUtils";
 import {
@@ -82,7 +81,11 @@ describe("Solauto Marginfi tests", async () => {
     //   );
     // }
 
-    // const maxLiqRate = getMaxLiqUtilizationRateBps(client.solautoPositionState!.maxLtvBps, client.solautoPositionState!.liqThresholdBps);
+    // const maxLtvBps = client.solautoPositionState!.maxLtvBps;
+    // const liqThresholdBps = client.solautoPositionState!.liqThresholdBps;
+    // const maxRepayFrom = maxRepayFromBps(maxLtvBps, liqThresholdBps);
+    // const maxRepayTo = maxRepayToBps(maxLtvBps, liqThresholdBps);
+    // const maxBoostTo = maxBoostToBps(maxLtvBps, liqThresholdBps);
     // transactionItems.push(
     //   new TransactionItem(
     //     async () => ({
@@ -90,10 +93,10 @@ describe("Solauto Marginfi tests", async () => {
     //         positionId: client.positionId,
     //         settingParams: some({
     //           ...settingParams,
+    //           boostToBps: maxBoostTo,
     //           boostGap: 50,
-    //           boostToBps: maxLiqRate,
-    //           repayGap: 100,
-    //           repayToBps: maxLiqRate
+    //           repayToBps: maxRepayTo,
+    //           repayGap: maxRepayFrom - maxRepayTo
     //         }),
     //         dca: null,
     //       }),
