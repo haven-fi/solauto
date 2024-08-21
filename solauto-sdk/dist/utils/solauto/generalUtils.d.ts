@@ -1,17 +1,12 @@
 import { PublicKey } from "@solana/web3.js";
 import { Umi } from "@metaplex-foundation/umi";
-import { AutomationSettings, DCASettings, DCASettingsInpArgs, FeeType, PositionState, SolautoSettingsParameters, SolautoSettingsParametersInpArgs } from "../../generated";
+import { AutomationSettings, DCASettings, DCASettingsInpArgs, PositionState, SolautoSettingsParameters, SolautoSettingsParametersInpArgs } from "../../generated";
 import { RebalanceAction, SolautoPositionDetails } from "../../types/solauto";
 export declare function nextAutomationPeriodTimestamp(automation: AutomationSettings): number;
 export declare function eligibleForNextAutomationPeriod(automation: AutomationSettings, currentUnixTime: number): boolean;
 export declare function getUpdatedValueFromAutomation(currValue: number, targetValue: number, automation: AutomationSettings, currentUnixTimestamp: number): number;
 export declare function getAdjustedSettingsFromAutomation(settings: SolautoSettingsParameters, currentUnixTime: number): SolautoSettingsParameters;
-export declare function getSolautoFeesBps(isReferred: boolean, feeType: FeeType): {
-    solauto: number;
-    referrer: number;
-    total: number;
-};
-export declare function eligibleForRebalance(positionState: PositionState, positionSettings: SolautoSettingsParameters, positionDca: DCASettings | undefined, currentUnixSecs: number): RebalanceAction | undefined;
+export declare function eligibleForRebalance(positionState: PositionState, positionSettings: SolautoSettingsParameters, positionDca: DCASettings | undefined, currentUnixTime: number): RebalanceAction | undefined;
 export declare function eligibleForRefresh(positionState: PositionState, positionSettings: SolautoSettingsParameters, currentUnixTime: number): boolean;
 export declare function getSolautoManagedPositions(umi: Umi, authority?: PublicKey): Promise<SolautoPositionDetails[]>;
 export declare function getAllReferralStates(umi: Umi): Promise<PublicKey[]>;

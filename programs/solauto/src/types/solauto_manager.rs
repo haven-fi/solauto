@@ -12,7 +12,7 @@ use std::{
 use super::{
     instruction::{RebalanceSettings, SolautoAction, SolautoStandardAccounts},
     lending_protocol::{LendingProtocolClient, LendingProtocolTokenAccounts},
-    shared::{FeeType, RefreshStateProps, SolautoError, TokenBalanceAmount, TokenType},
+    shared::{RefreshStateProps, SolautoError, TokenBalanceAmount, TokenType},
 };
 use crate::{
     constants::DEFAULT_LIMIT_GAP_BPS,
@@ -57,7 +57,13 @@ impl<'a> SolautoManager<'a> {
         client.validate(&std_accounts)?;
         let solauto_fees_bps = solauto_utils::get_solauto_fees_bps(
             std_accounts.referred_by_supply_ta.is_some(),
-            std_accounts.solauto_position.data.fee_type,
+            std_accounts.solauto_position.data.self_managed.val,
+            std_accounts
+                .solauto_position
+                .data
+                .state
+                .net_worth
+                .usd_value(),
         );
         Ok(Self {
             client,
@@ -369,9 +375,6 @@ impl<'a> SolautoManager<'a> {
         }
 
         self.std_accounts.solauto_position.data.rebalance = RebalanceData::default();
-        if !self.std_accounts.solauto_position.data.self_managed.val {
-            self.std_accounts.solauto_position.data.fee_type = FeeType::Default;
-        }
         Ok(())
     }
 

@@ -1,6 +1,5 @@
 import {
   Instruction,
-  Signer,
   TransactionBuilder,
   Umi,
   publicKey,
@@ -14,7 +13,6 @@ import {
   Account as SplTokenAccount,
 } from "@solana/spl-token";
 import {
-  FeeType,
   LendingPlatform,
   ReferralState,
   SOLAUTO_PROGRAM_ID,
@@ -582,7 +580,6 @@ export async function buildSolautoRebalanceTransaction(
     client.solautoPositionState!,
     client.solautoPositionSettings(),
     client.solautoPositionActiveDca(),
-    client.solautoPositionData?.feeType ?? FeeType.Small,
     currentUnixSeconds(),
     PRICES[client.supplyMint.toString()].price,
     PRICES[client.debtMint.toString()].price,
@@ -672,7 +669,8 @@ export async function buildSolautoRebalanceTransaction(
     client.solautoPositionState!.liqUtilizationRateBps >
     getMaxLiqUtilizationRateBps(
       client.solautoPositionState!.maxLtvBps,
-      client.solautoPositionState!.liqThresholdBps
+      client.solautoPositionState!.liqThresholdBps,
+      0.01
     )
   ) {
     tx = tx.prepend(client.refresh());

@@ -7,7 +7,7 @@
  */
 import { Account, Context, Pda, PublicKey, RpcAccount, RpcGetAccountOptions, RpcGetAccountsOptions } from '@metaplex-foundation/umi';
 import { Serializer } from '@metaplex-foundation/umi/serializers';
-import { FeeType, FeeTypeArgs, PodBool, PodBoolArgs, PositionData, PositionDataArgs, PositionState, PositionStateArgs, RebalanceData, RebalanceDataArgs } from '../types';
+import { PodBool, PodBoolArgs, PositionData, PositionDataArgs, PositionState, PositionStateArgs, RebalanceData, RebalanceDataArgs } from '../types';
 export type SolautoPosition = Account<SolautoPositionAccountData>;
 export type SolautoPositionAccountData = {
     bump: Array<number>;
@@ -18,8 +18,6 @@ export type SolautoPositionAccountData = {
     position: PositionData;
     state: PositionState;
     rebalance: RebalanceData;
-    feeType: FeeType;
-    padding2: Array<number>;
     padding: Array<number>;
 };
 export type SolautoPositionAccountDataArgs = {
@@ -31,8 +29,6 @@ export type SolautoPositionAccountDataArgs = {
     position: PositionDataArgs;
     state: PositionStateArgs;
     rebalance: RebalanceDataArgs;
-    feeType: FeeTypeArgs;
-    padding2: Array<number>;
     padding: Array<number>;
 };
 export declare function getSolautoPositionAccountDataSerializer(): Serializer<SolautoPositionAccountDataArgs, SolautoPositionAccountData>;
@@ -50,8 +46,6 @@ export declare function getSolautoPositionGpaBuilder(context: Pick<Context, 'rpc
     position: PositionDataArgs;
     state: PositionStateArgs;
     rebalance: RebalanceDataArgs;
-    feeType: FeeTypeArgs;
-    padding2: Array<number>;
     padding: Array<number>;
 }>;
 export declare function getSolautoPositionSize(): number;

@@ -17,7 +17,7 @@ use crate::{
     },
     types::{
         instruction::UpdatePositionData,
-        shared::{DeserializedAccount, FeeType, LendingPlatform, SolautoError},
+        shared::{DeserializedAccount, LendingPlatform, SolautoError},
     },
 };
 
@@ -303,18 +303,37 @@ pub struct SolautoFeesBps {
     pub referrer: u16,
     pub total: u16,
 }
-pub fn get_solauto_fees_bps(has_been_referred: bool, fee_type: FeeType) -> SolautoFeesBps {
-    let total = if fee_type == FeeType::Small { 100 } else { 500 };
+pub fn get_solauto_fees_bps(
+    has_been_referred: bool,
+    self_managed: bool,
+    position_net_worth_usd: f64,
+) -> SolautoFeesBps {
+    let min_size: f64 = 10000.0; // Minimum position size
+    let max_size: f64 = 1000000.0; // Maximum position size
+    let max_fee_bps: f64 = 500.0; // Fee in basis points for min_size (5%)
+    let min_fee_bps: f64 = 100.0; // Fee in basis points for max_size (1%)
 
-    let referrer = if has_been_referred {
-        (total as f64).div(4.0) as u16
+    let mut fee_bps: f64 = 0.0;
+    if self_managed {
+        fee_bps = 100.0;
+    } else if position_net_worth_usd <= min_size {
+        fee_bps = max_fee_bps;
+    } else if position_net_worth_usd >= max_size {
+        fee_bps = min_fee_bps;
     } else {
-        0
+        let t = (position_net_worth_usd.ln() - min_size.ln()) / (max_size.ln() - min_size.ln());
+        fee_bps = (min_fee_bps + (max_fee_bps - min_fee_bps) * (1.0 - t)).round();
+    }
+
+    let referrer_fee = if has_been_referred {
+        fee_bps.div(4.0).floor()
+    } else {
+        0.0
     };
 
     SolautoFeesBps {
-        solauto: total - referrer,
-        referrer,
-        total,
+        solauto: (fee_bps - referrer_fee) as u16,
+        referrer: referrer_fee as u16,
+        total: fee_bps as u16,
     }
 }

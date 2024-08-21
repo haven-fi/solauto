@@ -894,26 +894,11 @@
             }
           },
           {
-            "name": "feeType",
-            "type": {
-              "defined": "FeeType"
-            }
-          },
-          {
-            "name": "padding2",
-            "type": {
-              "array": [
-                "u8",
-                7
-              ]
-            }
-          },
-          {
             "name": "padding",
             "type": {
               "array": [
                 "u32",
-                30
+                32
               ]
             }
           }
@@ -1556,20 +1541,6 @@
           },
           {
             "name": "Kamino"
-          }
-        ]
-      }
-    },
-    {
-      "name": "FeeType",
-      "type": {
-        "kind": "enum",
-        "variants": [
-          {
-            "name": "Small"
-          },
-          {
-            "name": "Default"
           }
         ]
       }

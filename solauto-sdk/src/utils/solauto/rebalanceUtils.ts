@@ -2,7 +2,6 @@ import { PublicKey } from "@solana/web3.js";
 import { SolautoClient } from "../../clients/solautoClient";
 import {
   DCASettings,
-  FeeType,
   PositionState,
   PositionTokenUsage,
   SolautoSettingsParameters,
@@ -10,7 +9,6 @@ import {
 import {
   eligibleForNextAutomationPeriod,
   getAdjustedSettingsFromAutomation,
-  getSolautoFeesBps,
   getUpdatedValueFromAutomation,
 } from "./generalUtils";
 import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
@@ -23,6 +21,7 @@ import {
   getDebtAdjustmentUsd,
   getLiqUtilzationRateBps,
   getMaxLiqUtilizationRateBps,
+  getSolautoFeesBps,
   toBaseUnit,
 } from "../numberUtils";
 import { USD_DECIMALS } from "../../constants/generalAccounts";
@@ -171,7 +170,6 @@ export function getRebalanceValues(
   state: PositionState,
   settings: SolautoSettingsParameters | undefined,
   dca: DCASettings | undefined,
-  feeType: FeeType,
   currentUnixTime: number,
   supplyPrice: number,
   debtPrice: number,
@@ -204,7 +202,11 @@ export function getRebalanceValues(
     amountUsdToDcaIn > 0 || state.liqUtilizationRateBps < targetRateBps;
   let adjustmentFeeBps = 0;
   if (increasingLeverage) {
-    adjustmentFeeBps = getSolautoFeesBps(false, feeType).total;
+    adjustmentFeeBps = getSolautoFeesBps(
+      false,
+      settings === undefined,
+      fromBaseUnit(state.netWorth.baseAmountUsdValue, USD_DECIMALS)
+    ).total;
   }
 
   const supplyUsd =
@@ -290,7 +292,8 @@ export function getFlashLoanDetails(
     tempLiqUtilizationRateBps >
       getMaxLiqUtilizationRateBps(
         client.solautoPositionState!.maxLtvBps,
-        client.solautoPositionState!.liqThresholdBps
+        client.solautoPositionState!.liqThresholdBps,
+        0.01
       );
 
   let flashLoanToken: PositionTokenUsage | undefined = undefined;

@@ -1,6 +1,6 @@
 import { PublicKey } from "@solana/web3.js";
 import { SolautoClient } from "../../clients/solautoClient";
-import { DCASettings, FeeType, PositionState, SolautoSettingsParameters } from "../../generated";
+import { DCASettings, PositionState, SolautoSettingsParameters } from "../../generated";
 import { QuoteResponse } from "@jup-ag/api";
 import { JupSwapDetails } from "../jupiterUtils";
 export interface RebalanceValues {
@@ -9,7 +9,7 @@ export interface RebalanceValues {
     amountToDcaIn: number;
     amountUsdToDcaIn: number;
 }
-export declare function getRebalanceValues(state: PositionState, settings: SolautoSettingsParameters | undefined, dca: DCASettings | undefined, feeType: FeeType, currentUnixTime: number, supplyPrice: number, debtPrice: number, targetLiqUtilizationRateBps?: number, limitGapBps?: number): RebalanceValues;
+export declare function getRebalanceValues(state: PositionState, settings: SolautoSettingsParameters | undefined, dca: DCASettings | undefined, currentUnixTime: number, supplyPrice: number, debtPrice: number, targetLiqUtilizationRateBps?: number, limitGapBps?: number): RebalanceValues;
 export interface FlashLoanDetails {
     baseUnitAmount: bigint;
     mint: PublicKey;

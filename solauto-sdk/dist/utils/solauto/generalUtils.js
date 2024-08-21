@@ -5,7 +5,6 @@ exports.nextAutomationPeriodTimestamp = nextAutomationPeriodTimestamp;
 exports.eligibleForNextAutomationPeriod = eligibleForNextAutomationPeriod;
 exports.getUpdatedValueFromAutomation = getUpdatedValueFromAutomation;
 exports.getAdjustedSettingsFromAutomation = getAdjustedSettingsFromAutomation;
-exports.getSolautoFeesBps = getSolautoFeesBps;
 exports.eligibleForRebalance = eligibleForRebalance;
 exports.eligibleForRefresh = eligibleForRefresh;
 exports.getSolautoManagedPositions = getSolautoManagedPositions;
@@ -55,30 +54,18 @@ function getAdjustedSettingsFromAutomation(settings, currentUnixTime) {
         boostToBps,
     };
 }
-function getSolautoFeesBps(isReferred, feeType) {
-    const fees = feeType === generated_1.FeeType.Small ? 100 : 500;
-    let referrer = 0;
-    if (isReferred) {
-        referrer = fees / 4;
-    }
-    return {
-        solauto: fees - referrer,
-        referrer,
-        total: fees,
-    };
-}
-function eligibleForRebalance(positionState, positionSettings, positionDca, currentUnixSecs) {
+function eligibleForRebalance(positionState, positionSettings, positionDca, currentUnixTime) {
     if (positionDca &&
         positionDca.automation.targetPeriods > 0 &&
-        eligibleForNextAutomationPeriod(positionDca.automation, currentUnixSecs)) {
+        eligibleForNextAutomationPeriod(positionDca.automation, currentUnixTime)) {
         return "dca";
     }
     if (positionState.supply.amountUsed.baseUnit === BigInt(0)) {
         return undefined;
     }
-    const boostToBps = eligibleForRefresh(positionState, positionSettings, currentUnixSecs) &&
+    const boostToBps = eligibleForRefresh(positionState, positionSettings, currentUnixTime) &&
         positionSettings.automation.targetPeriods > 0
-        ? getUpdatedValueFromAutomation(positionSettings.boostToBps, positionSettings.targetBoostToBps, positionSettings.automation, currentUnixSecs)
+        ? getUpdatedValueFromAutomation(positionSettings.boostToBps, positionSettings.targetBoostToBps, positionSettings.automation, currentUnixTime)
         : positionSettings.boostToBps;
     const repayFrom = positionSettings.repayToBps + positionSettings.repayGap;
     const boostFrom = boostToBps - positionSettings.boostGap;

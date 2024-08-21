@@ -10,7 +10,6 @@ export * from './automationSettings';
 export * from './automationSettingsInp';
 export * from './dCASettings';
 export * from './dCASettingsInp';
-export * from './feeType';
 export * from './lendingPlatform';
 export * from './podBool';
 export * from './positionData';

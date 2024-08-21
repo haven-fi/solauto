@@ -23,7 +23,7 @@ use crate::{
     },
 };
 
-use super::math_utils::{get_max_repay_from, get_max_repay_to};
+use super::math_utils::{get_max_boost_to, get_max_repay_from, get_max_repay_to};
 
 pub fn generic_instruction_validation(
     accounts: &Box<SolautoStandardAccounts>,
@@ -129,6 +129,15 @@ pub fn validate_position_settings(
     let data = &solauto_position.position;
     if data.setting_params.repay_to_bps < data.setting_params.boost_to_bps {
         return invalid_params("repay_to_bps value must be greater than boost_to_bps value");
+    }
+    let max_boost_to = get_max_boost_to(
+        solauto_position.state.max_ltv_bps,
+        solauto_position.state.liq_threshold_bps,
+    );
+    if data.setting_params.boost_to_bps > max_boost_to {
+        return invalid_params(
+            format!("Exceeds the maximum boost-to of {}", max_boost_to).as_str(),
+        );
     }
     if data.setting_params.repay_to_bps < data.setting_params.target_boost_to_bps {
         return invalid_params("repay_to_bps value must be greater than target_boost_to_bps value");

@@ -9,7 +9,6 @@ import { publicKey } from "@metaplex-foundation/umi";
 import { SolautoClient } from "../../src/clients/solautoClient";
 import {
   DCASettings,
-  FeeType,
   LendingPlatform,
   SolautoRebalanceType,
   SolautoSettingsParameters,
@@ -18,6 +17,7 @@ import {
   fromBaseUnit,
   fromBps,
   getLiqUtilzationRateBps,
+  getSolautoFeesBps,
   toBaseUnit,
 } from "../../src/utils/numberUtils";
 import { USD_DECIMALS } from "../../src/constants/generalAccounts";
@@ -25,7 +25,6 @@ import {
   createFakePositionState,
   eligibleForNextAutomationPeriod,
   getAdjustedSettingsFromAutomation,
-  getSolautoFeesBps,
   getUpdatedValueFromAutomation,
   positionStateWithLatestPrices,
 } from "../../src/utils/solauto/generalUtils";
@@ -49,7 +48,6 @@ function assertAccurateRebalance(
       client.solautoPositionState!,
       client.solautoPositionSettings(),
       client.solautoPositionActiveDca(),
-      client.solautoPositionData?.feeType ?? FeeType.Small,
       currentUnixSeconds(),
       PRICES[client.supplyMint.toString()].price,
       PRICES[client.debtMint.toString()].price,
@@ -60,7 +58,11 @@ function assertAccurateRebalance(
   if (increasingLeverage) {
     adjustmentFeeBps = getSolautoFeesBps(
       client.referredByState !== undefined,
-      client.solautoPositionData!.feeType
+      client.selfManaged,
+      fromBaseUnit(
+        client.solautoPositionState?.netWorth.baseAmountUsdValue ?? BigInt(0),
+        USD_DECIMALS
+      )
     ).total;
   }
 
@@ -176,9 +178,7 @@ async function getFakePosition(
       padding2: [],
       padding: new Uint8Array([]),
     },
-    feeType: FeeType.Default,
     padding1: [],
-    padding2: [],
     padding: [],
     publicKey: publicKey(PublicKey.default),
     header: {
@@ -285,28 +285,28 @@ describe("Rebalance tests", async () => {
     ]);
   });
 
-  // it("Standard rebalance with target rate", async () => {
-  //   const client = await getFakePosition(supplyPrice, debtPrice, 3450, {
-  //     boostToBps: 500,
-  //     boostGap: 100,
-  //     repayToBps: 7000,
-  //     repayGap: 250,
-  //     automation: {
-  //       targetPeriods: 0,
-  //       periodsPassed: 0,
-  //       unixStartDate: BigInt(0),
-  //       intervalSeconds: BigInt(0),
-  //       padding1: [],
-  //       padding: new Uint8Array([]),
-  //     },
-  //     targetBoostToBps: 0,
-  //     padding1: [],
-  //     padding: new Uint8Array([]),
-  //   });
+  it("Standard rebalance with target rate", async () => {
+    const client = await getFakePosition(supplyPrice, debtPrice, 3450, {
+      boostToBps: 500,
+      boostGap: 100,
+      repayToBps: 7000,
+      repayGap: 250,
+      automation: {
+        targetPeriods: 0,
+        periodsPassed: 0,
+        unixStartDate: BigInt(0),
+        intervalSeconds: BigInt(0),
+        padding1: [],
+        padding: new Uint8Array([]),
+      },
+      targetBoostToBps: 0,
+      padding1: [],
+      padding: new Uint8Array([]),
+    });
 
-  //   assertAccurateRebalance(client, 5000, 5000);
-  //   assertAccurateRebalance(client, 1000, 1000);
-  // });
+    assertAccurateRebalance(client, 5000, 5000);
+    assertAccurateRebalance(client, 1000, 1000);
+  });
 
   it("Standard boost or repay", async () => {
     const settings: SolautoSettingsParameters = {

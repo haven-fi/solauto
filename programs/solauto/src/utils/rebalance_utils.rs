@@ -248,13 +248,7 @@ fn get_std_target_liq_utilization_rate(
 
     let target_rate_bps: Result<u16, SolautoError> =
         if solauto_position.state.liq_utilization_rate_bps >= setting_params.repay_from_bps() {
-            Ok(min(
-                setting_params.repay_to_bps,
-                math_utils::get_max_liq_utilization_rate(
-                    solauto_position.state.max_ltv_bps,
-                    solauto_position.state.liq_threshold_bps,
-                ),
-            ))
+            Ok(setting_params.repay_to_bps)
         } else if solauto_position.state.liq_utilization_rate_bps <= setting_params.boost_from_bps()
         {
             Ok(setting_params.boost_to_bps)
@@ -390,7 +384,7 @@ mod tests {
             AutomationSettingsInp, DCASettings, DCASettingsInp, PositionState, PositionTokenUsage,
             RebalanceData, SolautoSettingsParameters,
         },
-        types::shared::{FeeType, TokenType},
+        types::shared::TokenType,
         utils::math_utils,
     };
 
@@ -480,7 +474,11 @@ mod tests {
             dca_settings.clone(),
             current_liq_utilization_rate_bps,
         );
-        let solauto_fees = solauto_utils::get_solauto_fees_bps(false, FeeType::Small);
+        let solauto_fees = solauto_utils::get_solauto_fees_bps(
+            false,
+            false,
+            solauto_position.state.net_worth.usd_value(),
+        );
 
         if rebalance_args.is_none() {
             rebalance_args = Some(RebalanceSettings::default());
@@ -519,17 +517,14 @@ mod tests {
                 expected_liq_utilization_rate_bps,
                 current_liq_utilization_rate_bps,
             );
-        } else {
-            expected_liq_utilization_rate_bps = min(
-                expected_liq_utilization_rate_bps,
-                math_utils::get_max_liq_utilization_rate(
-                    solauto_position.state.max_ltv_bps,
-                    solauto_position.state.liq_threshold_bps,
-                ),
-            );
         }
         let adjustment_fee_bps = if boosting {
-            solauto_utils::get_solauto_fees_bps(false, FeeType::Small).total
+            solauto_utils::get_solauto_fees_bps(
+                false,
+                false,
+                solauto_position.state.net_worth.usd_value(),
+            )
+            .total
         } else {
             0
         };

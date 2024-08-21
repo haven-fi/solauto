@@ -19,8 +19,8 @@ function getAdditionalAmountToDcaIn(dca) {
 }
 function getStandardTargetLiqUtilizationRateBps(state, settings) {
     const adjustedSettings = (0, generalUtils_1.getAdjustedSettingsFromAutomation)(settings, (0, generalUtils_2.currentUnixSeconds)());
-    const repayFrom = adjustedSettings.repayToBps + adjustedSettings.repayGap;
-    const boostFrom = adjustedSettings.boostToBps - adjustedSettings.boostGap;
+    const repayFrom = settings.repayToBps + settings.repayGap;
+    const boostFrom = adjustedSettings.boostToBps - settings.boostGap;
     if (state.liqUtilizationRateBps < boostFrom) {
         return adjustedSettings.boostToBps;
     }
@@ -63,7 +63,7 @@ function getTargetRateAndDcaAmount(state, settings, dca, currentUnixTime, target
         };
     }
     if (settings === undefined) {
-        throw new Error("If rebalancing a self-managed position, settings, and DCA should be provided");
+        throw new Error("If rebalancing a self-managed position, settings and DCA should be provided");
     }
     if (isDcaRebalance(state, settings, dca, currentUnixTime)) {
         const amountToDcaIn = getAdditionalAmountToDcaIn(dca);
@@ -79,7 +79,7 @@ function getTargetRateAndDcaAmount(state, settings, dca, currentUnixTime, target
         };
     }
 }
-function getRebalanceValues(state, settings, dca, feeType, currentUnixTime, supplyPrice, debtPrice, targetLiqUtilizationRateBps, limitGapBps) {
+function getRebalanceValues(state, settings, dca, currentUnixTime, supplyPrice, debtPrice, targetLiqUtilizationRateBps, limitGapBps) {
     if (state === undefined ||
         state.lastUpdated <
             BigInt(Math.round((0, generalUtils_2.currentUnixSeconds)() - solautoConstants_1.MIN_POSITION_STATE_FRESHNESS_SECS))) {
@@ -91,7 +91,7 @@ function getRebalanceValues(state, settings, dca, feeType, currentUnixTime, supp
     const increasingLeverage = amountUsdToDcaIn > 0 || state.liqUtilizationRateBps < targetRateBps;
     let adjustmentFeeBps = 0;
     if (increasingLeverage) {
-        adjustmentFeeBps = (0, generalUtils_1.getSolautoFeesBps)(false, feeType).total;
+        adjustmentFeeBps = (0, numberUtils_1.getSolautoFeesBps)(false, settings === undefined, (0, numberUtils_1.fromBaseUnit)(state.netWorth.baseAmountUsdValue, generalAccounts_1.USD_DECIMALS)).total;
     }
     const supplyUsd = (0, numberUtils_1.fromBaseUnit)(state.supply.amountUsed.baseAmountUsdValue, generalAccounts_1.USD_DECIMALS) +
         amountUsdToDcaIn;
@@ -133,7 +133,7 @@ function getFlashLoanDetails(client, values, jupQuote) {
     const tempLiqUtilizationRateBps = (0, numberUtils_1.getLiqUtilzationRateBps)(supplyUsd, debtUsd, client.solautoPositionState.liqThresholdBps);
     const requiresFlashLoan = supplyUsd <= 0 ||
         tempLiqUtilizationRateBps >
-            (0, numberUtils_1.getMaxLiqUtilizationRateBps)(client.solautoPositionState.maxLtvBps, client.solautoPositionState.liqThresholdBps);
+            (0, numberUtils_1.getMaxLiqUtilizationRateBps)(client.solautoPositionState.maxLtvBps, client.solautoPositionState.liqThresholdBps, 0.01);
     let flashLoanToken = undefined;
     let flashLoanTokenPrice = 0;
     if (values.increasingLeverage) {

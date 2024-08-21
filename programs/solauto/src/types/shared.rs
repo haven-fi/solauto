@@ -57,16 +57,6 @@ impl fmt::Display for TokenType {
     }
 }
 
-#[repr(u8)]
-#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, PartialEq, Copy)]
-pub enum FeeType {
-    Small,
-    Default,
-}
-
-unsafe impl Zeroable for FeeType {}
-unsafe impl Pod for FeeType {}
-
 #[derive(Debug)]
 pub struct RefreshedTokenData {
     pub decimals: u8,

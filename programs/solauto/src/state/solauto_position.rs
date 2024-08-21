@@ -10,7 +10,7 @@ use std::{
 
 use crate::{
     constants::USD_DECIMALS,
-    types::shared::{FeeType, PodBool, TokenType},
+    types::shared::{PodBool, TokenType},
     utils::math_utils::{
         from_base_unit, from_bps, get_liq_utilization_rate_bps, net_worth_base_amount, to_base_unit,
     },
@@ -357,9 +357,7 @@ pub struct SolautoPosition {
     pub position: PositionData,
     pub state: PositionState,
     pub rebalance: RebalanceData,
-    pub fee_type: FeeType,
-    _padding2: [u8; 7],
-    _padding: [u32; 30],
+    _padding: [u32; 32],
 }
 
 impl SolautoPosition {
@@ -381,9 +379,7 @@ impl SolautoPosition {
             position,
             state,
             rebalance: RebalanceData::default(),
-            fee_type: FeeType::Small,
-            _padding2: [0; 7],
-            _padding: [0; 30],
+            _padding: [0; 32],
         }
     }
     #[inline(always)]

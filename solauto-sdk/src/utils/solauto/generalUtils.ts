@@ -4,7 +4,6 @@ import {
   AutomationSettings,
   DCASettings,
   DCASettingsInpArgs,
-  FeeType,
   LendingPlatform,
   PositionState,
   SOLAUTO_PROGRAM_ID,
@@ -29,7 +28,6 @@ import {
 } from "../../constants";
 import {
   getAllMarginfiAccountsByAuthority,
-  getMarginfiAccountPositionState,
 } from "../marginfiUtils";
 import { RebalanceAction, SolautoPositionDetails } from "../../types/solauto";
 
@@ -99,27 +97,6 @@ export function getAdjustedSettingsFromAutomation(
   return {
     ...settings,
     boostToBps,
-  };
-}
-
-export function getSolautoFeesBps(
-  isReferred: boolean,
-  feeType: FeeType
-): {
-  solauto: number;
-  referrer: number;
-  total: number;
-} {
-  const fees = feeType === FeeType.Small ? 100 : 500;
-  let referrer = 0;
-  if (isReferred) {
-    referrer = fees / 4;
-  }
-
-  return {
-    solauto: fees - referrer,
-    referrer,
-    total: fees,
   };
 }
 
