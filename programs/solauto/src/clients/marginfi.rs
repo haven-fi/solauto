@@ -178,6 +178,10 @@ impl<'a> MarginfiClient<'a> {
         mut max_ltv: f64,
     ) -> Result<(RefreshedTokenData, f64), ProgramError> {
         let bank = DeserializedAccount::<Bank>::zerocopy(Some(supply_bank))?.unwrap();
+        if price_oracle.key != &bank.data.config.oracle_keys[0] {
+            msg!("Incorrect price oracle provided");
+            return Err(SolautoError::IncorrectAccounts.into());
+        }
 
         let asset_share_value = I80F48::from_le_bytes(bank.data.asset_share_value.value);
 
@@ -226,6 +230,10 @@ impl<'a> MarginfiClient<'a> {
         price_oracle: &'a AccountInfo<'a>,
     ) -> Result<RefreshedTokenData, ProgramError> {
         let bank = DeserializedAccount::<Bank>::zerocopy(Some(debt_bank))?.unwrap();
+        if price_oracle.key != &bank.data.config.oracle_keys[0] {
+            msg!("Incorrect price oracle provided");
+            return Err(SolautoError::IncorrectAccounts.into());
+        }
 
         let liability_share_value = I80F48::from_le_bytes(bank.data.liability_share_value.value);
 
