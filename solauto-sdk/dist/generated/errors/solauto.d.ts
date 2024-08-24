@@ -42,8 +42,8 @@ export declare class StaleProtocolDataError extends ProgramError {
     readonly code: number;
     constructor(program: Program, cause?: Error);
 }
-/** UnableToReposition: Unable to adjust position to the desired utilization rate */
-export declare class UnableToRepositionError extends ProgramError {
+/** UnableToRebalance: Unable to adjust position to the desired utilization rate */
+export declare class UnableToRebalanceError extends ProgramError {
     readonly name: string;
     readonly code: number;
     constructor(program: Program, cause?: Error);

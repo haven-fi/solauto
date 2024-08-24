@@ -20,6 +20,8 @@ export declare class SolautoMarginfiClient extends SolautoClient {
     marginfiGroup: PublicKey;
     marginfiSupplyAccounts: MarginfiAssetAccounts;
     marginfiDebtAccounts: MarginfiAssetAccounts;
+    supplyPriceOracle: PublicKey;
+    debtPriceOracle: PublicKey;
     intermediaryMarginfiAccountSigner?: Signer;
     intermediaryMarginfiAccountPk: PublicKey;
     intermediaryMarginfiAccount?: MarginfiAccount;

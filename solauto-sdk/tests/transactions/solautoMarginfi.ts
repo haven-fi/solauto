@@ -20,8 +20,8 @@ import { PublicKey } from "@solana/web3.js";
 import { USDC_MINT } from "../../src/constants";
 
 describe("Solauto Marginfi tests", async () => {
-  const signer = setupTest();
-  // const signer = setupTest("solauto-manager");
+  // const signer = setupTest();
+  const signer = setupTest("solauto-manager");
 
   const payForTransactions = false;
   const useJitoBundle = false;

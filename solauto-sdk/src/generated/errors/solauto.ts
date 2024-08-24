@@ -108,9 +108,9 @@ export class StaleProtocolDataError extends ProgramError {
 codeToErrorMap.set(0x5, StaleProtocolDataError);
 nameToErrorMap.set('StaleProtocolData', StaleProtocolDataError);
 
-/** UnableToReposition: Unable to adjust position to the desired utilization rate */
-export class UnableToRepositionError extends ProgramError {
-  override readonly name: string = 'UnableToReposition';
+/** UnableToRebalance: Unable to adjust position to the desired utilization rate */
+export class UnableToRebalanceError extends ProgramError {
+  override readonly name: string = 'UnableToRebalance';
 
   readonly code: number = 0x6; // 6
 
@@ -122,8 +122,8 @@ export class UnableToRepositionError extends ProgramError {
     );
   }
 }
-codeToErrorMap.set(0x6, UnableToRepositionError);
-nameToErrorMap.set('UnableToReposition', UnableToRepositionError);
+codeToErrorMap.set(0x6, UnableToRebalanceError);
+nameToErrorMap.set('UnableToRebalance', UnableToRebalanceError);
 
 /** ExceededValidUtilizationRate: Desired action brought the utilization rate to an unsafe amount */
 export class ExceededValidUtilizationRateError extends ProgramError {

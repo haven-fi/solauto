@@ -358,8 +358,8 @@ pub struct SolautoPosition {
     pub state: PositionState,
     pub rebalance: RebalanceData,
     pub fee_type: FeeType,
-    pub _padding2: [u8; 7],
-    pub _padding: [u32; 30],
+    _padding2: [u8; 7],
+    _padding: [u32; 30],
 }
 
 impl SolautoPosition {

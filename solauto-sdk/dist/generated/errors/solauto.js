@@ -7,7 +7,7 @@
  * @see https://github.com/metaplex-foundation/kinobi
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.IncorrectInstructionsError = exports.RebalanceAbuseError = exports.InstructionIsCPIError = exports.InvalidRebalanceConditionError = exports.ExceededValidUtilizationRateError = exports.UnableToRepositionError = exports.StaleProtocolDataError = exports.InvalidAutomationDataError = exports.InvalidDCASettingsError = exports.InvalidPositionSettingsError = exports.FailedAccountDeserializationError = exports.IncorrectAccountsError = void 0;
+exports.IncorrectInstructionsError = exports.RebalanceAbuseError = exports.InstructionIsCPIError = exports.InvalidRebalanceConditionError = exports.ExceededValidUtilizationRateError = exports.UnableToRebalanceError = exports.StaleProtocolDataError = exports.InvalidAutomationDataError = exports.InvalidDCASettingsError = exports.InvalidPositionSettingsError = exports.FailedAccountDeserializationError = exports.IncorrectAccountsError = void 0;
 exports.getSolautoErrorFromCode = getSolautoErrorFromCode;
 exports.getSolautoErrorFromName = getSolautoErrorFromName;
 const umi_1 = require("@metaplex-foundation/umi");
@@ -79,17 +79,17 @@ class StaleProtocolDataError extends umi_1.ProgramError {
 exports.StaleProtocolDataError = StaleProtocolDataError;
 codeToErrorMap.set(0x5, StaleProtocolDataError);
 nameToErrorMap.set('StaleProtocolData', StaleProtocolDataError);
-/** UnableToReposition: Unable to adjust position to the desired utilization rate */
-class UnableToRepositionError extends umi_1.ProgramError {
+/** UnableToRebalance: Unable to adjust position to the desired utilization rate */
+class UnableToRebalanceError extends umi_1.ProgramError {
     constructor(program, cause) {
         super('Unable to adjust position to the desired utilization rate', program, cause);
-        this.name = 'UnableToReposition';
+        this.name = 'UnableToRebalance';
         this.code = 0x6; // 6
     }
 }
-exports.UnableToRepositionError = UnableToRepositionError;
-codeToErrorMap.set(0x6, UnableToRepositionError);
-nameToErrorMap.set('UnableToReposition', UnableToRepositionError);
+exports.UnableToRebalanceError = UnableToRebalanceError;
+codeToErrorMap.set(0x6, UnableToRebalanceError);
+nameToErrorMap.set('UnableToRebalance', UnableToRebalanceError);
 /** ExceededValidUtilizationRate: Desired action brought the utilization rate to an unsafe amount */
 class ExceededValidUtilizationRateError extends umi_1.ProgramError {
     constructor(program, cause) {

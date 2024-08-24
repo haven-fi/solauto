@@ -14,8 +14,9 @@ var OracleSetup;
 (function (OracleSetup) {
     OracleSetup[OracleSetup["None"] = 0] = "None";
     OracleSetup[OracleSetup["PythLegacy"] = 1] = "PythLegacy";
-    OracleSetup[OracleSetup["SwitchboardV2"] = 2] = "SwitchboardV2";
+    OracleSetup[OracleSetup["SwitchboardLegacy"] = 2] = "SwitchboardLegacy";
     OracleSetup[OracleSetup["PythPushOracle"] = 3] = "PythPushOracle";
+    OracleSetup[OracleSetup["SwitchboardPull"] = 4] = "SwitchboardPull";
 })(OracleSetup || (exports.OracleSetup = OracleSetup = {}));
 function getOracleSetupSerializer() {
     return (0, serializers_1.scalarEnum)(OracleSetup, {

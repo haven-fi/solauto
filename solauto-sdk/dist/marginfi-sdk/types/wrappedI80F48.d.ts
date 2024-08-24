@@ -5,7 +5,7 @@
  *
  * @see https://github.com/metaplex-foundation/kinobi
  */
-import { Serializer } from '@metaplex-foundation/umi/serializers';
+import { Serializer } from "@metaplex-foundation/umi/serializers";
 export type WrappedI80F48 = {
     value: number[];
 };

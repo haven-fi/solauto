@@ -343,7 +343,7 @@ impl<'a> SolautoManager<'a> {
             self.repay(amount)?;
         } else {
             msg!("Missing required position liquidity to rebalance position");
-            return Err(SolautoError::UnableToReposition.into());
+            return Err(SolautoError::UnableToRebalance.into());
         }
 
         if flash_loan_amount > 0 {

@@ -9,8 +9,9 @@ import { Serializer } from '@metaplex-foundation/umi/serializers';
 export declare enum OracleSetup {
     None = 0,
     PythLegacy = 1,
-    SwitchboardV2 = 2,
-    PythPushOracle = 3
+    SwitchboardLegacy = 2,
+    PythPushOracle = 3,
+    SwitchboardPull = 4
 }
 export type OracleSetupArgs = OracleSetup;
 export declare function getOracleSetupSerializer(): Serializer<OracleSetupArgs, OracleSetup>;

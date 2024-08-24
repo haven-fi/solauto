@@ -34,6 +34,7 @@ import {
 import { getMarginfiAccountPDA, getTokenAccount } from "../utils/accountUtils";
 import { generateRandomU64 } from "../utils/generalUtils";
 import {
+  Bank,
   MARGINFI_PROGRAM_ID,
   MarginfiAccount,
   lendingAccountBorrow,
@@ -43,7 +44,9 @@ import {
   lendingAccountStartFlashloan,
   lendingAccountWithdraw,
   marginfiAccountInitialize,
+  safeFetchAllBank,
   safeFetchAllMarginfiAccount,
+  safeFetchBank,
   safeFetchMarginfiAccount,
 } from "../marginfi-sdk";
 import { JupSwapDetails } from "../utils/jupiterUtils";
@@ -74,6 +77,9 @@ export class SolautoMarginfiClient extends SolautoClient {
 
   public marginfiSupplyAccounts!: MarginfiAssetAccounts;
   public marginfiDebtAccounts!: MarginfiAssetAccounts;
+
+  public supplyPriceOracle!: PublicKey;
+  public debtPriceOracle!: PublicKey;
 
   // For flash loans
   public intermediaryMarginfiAccountSigner?: Signer;
@@ -112,6 +118,17 @@ export class SolautoMarginfiClient extends SolautoClient {
     this.marginfiSupplyAccounts =
       MARGINFI_ACCOUNTS[this.supplyMint.toString()]!;
     this.marginfiDebtAccounts = MARGINFI_ACCOUNTS[this.debtMint.toString()]!;
+
+    // TODO: Don't dynamically pull from bank until Marginfi sorts out their price oracle issues.
+    // const [supplyBank, debtBank] = await safeFetchAllBank(this.umi, [
+    //   publicKey(this.marginfiSupplyAccounts.bank),
+    //   publicKey(this.marginfiDebtAccounts.bank),
+    // ]);
+    // this.supplyPriceOracle = toWeb3JsPublicKey(supplyBank.config.oracleKeys[0]);
+    // this.debtPriceOracle = toWeb3JsPublicKey(debtBank.config.oracleKeys[0]);
+
+    this.supplyPriceOracle = new PublicKey(this.marginfiSupplyAccounts.priceOracle);
+    this.debtPriceOracle = new PublicKey(this.marginfiDebtAccounts.priceOracle);
 
     if (!this.initialized) {
       await this.setIntermediaryMarginfiDetails();
@@ -246,9 +263,9 @@ export class SolautoMarginfiClient extends SolautoClient {
       marginfiGroup: publicKey(this.marginfiGroup),
       marginfiAccount: publicKey(this.marginfiAccount),
       supplyBank: publicKey(this.marginfiSupplyAccounts.bank),
-      supplyPriceOracle: publicKey(this.marginfiSupplyAccounts.priceOracle),
+      supplyPriceOracle: publicKey(this.supplyPriceOracle),
       debtBank: publicKey(this.marginfiDebtAccounts.bank),
-      debtPriceOracle: publicKey(this.marginfiDebtAccounts.priceOracle),
+      debtPriceOracle: publicKey(this.debtPriceOracle),
       solautoPosition: publicKey(this.solautoPosition),
     });
   }
@@ -364,8 +381,8 @@ export class SolautoMarginfiClient extends SolautoClient {
     let supplyPriceOracle: UmiPublicKey | undefined = undefined;
     let debtPriceOracle: UmiPublicKey | undefined = undefined;
     if (args.__kind === "Withdraw" || args.__kind === "Borrow") {
-      supplyPriceOracle = publicKey(this.marginfiSupplyAccounts.priceOracle);
-      debtPriceOracle = publicKey(this.marginfiDebtAccounts.priceOracle);
+      supplyPriceOracle = publicKey(this.supplyPriceOracle);
+      debtPriceOracle = publicKey(this.debtPriceOracle);
     }
 
     return marginfiProtocolInteraction(this.umi, {
@@ -427,7 +444,7 @@ export class SolautoMarginfiClient extends SolautoClient {
         )
       ),
       supplyBank: publicKey(this.marginfiSupplyAccounts.bank),
-      supplyPriceOracle: publicKey(this.marginfiSupplyAccounts.priceOracle),
+      supplyPriceOracle: publicKey(this.supplyPriceOracle),
       positionSupplyTa: publicKey(this.positionSupplyTa),
       signerSupplyTa: this.selfManaged
         ? publicKey(this.signerSupplyTa)
@@ -439,7 +456,7 @@ export class SolautoMarginfiClient extends SolautoClient {
         ? publicKey(this.marginfiSupplyAccounts.vaultAuthority)
         : undefined,
       debtBank: publicKey(this.marginfiDebtAccounts.bank),
-      debtPriceOracle: publicKey(this.marginfiDebtAccounts.priceOracle),
+      debtPriceOracle: publicKey(this.debtPriceOracle),
       positionDebtTa: publicKey(this.positionDebtTa),
       signerDebtTa: this.selfManaged ? publicKey(this.signerDebtTa) : undefined,
       vaultDebtTa: needDebtAccounts
@@ -485,19 +502,24 @@ export class SolautoMarginfiClient extends SolautoClient {
   }
 
   flashRepay(flashLoanDetails: FlashLoanDetails): TransactionBuilder {
-    const bank = flashLoanDetails.mint.equals(this.supplyMint)
-      ? this.marginfiSupplyAccounts
-      : this.marginfiDebtAccounts;
+    const accounts = flashLoanDetails.mint.equals(this.supplyMint)
+      ? { data: this.marginfiSupplyAccounts, oracle: this.supplyPriceOracle }
+      : { data: this.marginfiDebtAccounts, oracle: this.debtPriceOracle };
 
     const remainingAccounts: AccountMeta[] = [];
     let includedFlashLoanToken = false;
 
     if (this.intermediaryMarginfiAccount) {
-      this.intermediaryMarginfiAccount.lendingAccount.balances.forEach((x) => {
+      this.intermediaryMarginfiAccount.lendingAccount.balances.forEach(async (x) => {
         if (x.active) {
-          if (x.bankPk === bank.bank) {
+          if (x.bankPk === accounts.data.bank) {
             includedFlashLoanToken = true;
           }
+
+          // TODO: Don't dynamically pull from bank until Marginfi sorts out their price oracle issues.
+          // const bankData = await safeFetchBank(this.umi, publicKey(accounts.data.bank));
+          // const priceOracle = bankData!.config.oracleKeys[0];
+          const priceOracle = publicKey(findMarginfiAccounts(toWeb3JsPublicKey(x.bankPk)).priceOracle);
 
           remainingAccounts.push(
             ...[
@@ -507,9 +529,7 @@ export class SolautoMarginfiClient extends SolautoClient {
                 isWritable: false,
               },
               {
-                pubkey: publicKey(
-                  findMarginfiAccounts(toWeb3JsPublicKey(x.bankPk)).priceOracle
-                ),
+                pubkey: priceOracle,
                 isSigner: false,
                 isWritable: false,
               },
@@ -522,12 +542,12 @@ export class SolautoMarginfiClient extends SolautoClient {
       remainingAccounts.push(
         ...[
           {
-            pubkey: fromWeb3JsPublicKey(new PublicKey(bank.bank)),
+            pubkey: fromWeb3JsPublicKey(new PublicKey(accounts.data.bank)),
             isSigner: false,
             isWritable: false,
           },
           {
-            pubkey: fromWeb3JsPublicKey(new PublicKey(bank.priceOracle)),
+            pubkey: fromWeb3JsPublicKey(new PublicKey(accounts.oracle)),
             isSigner: false,
             isWritable: false,
           },
@@ -540,8 +560,8 @@ export class SolautoMarginfiClient extends SolautoClient {
         lendingAccountRepay(this.umi, {
           amount: flashLoanDetails.baseUnitAmount,
           repayAll: null,
-          bank: publicKey(bank.bank),
-          bankLiquidityVault: publicKey(bank.liquidityVault),
+          bank: publicKey(accounts.data.bank),
+          bankLiquidityVault: publicKey(accounts.data.liquidityVault),
           marginfiAccount: publicKey(this.intermediaryMarginfiAccountPk),
           marginfiGroup: publicKey(DEFAULT_MARGINFI_GROUP),
           signer: this.signer,
