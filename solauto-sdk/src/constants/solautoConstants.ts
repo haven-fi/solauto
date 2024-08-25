@@ -13,10 +13,12 @@ import {
 import { SOLAUTO_PROGRAM_ID } from "../generated";
 import { SOLAUTO_MANAGER } from "./generalAccounts";
 
-export const DEFAULT_RISK_AVERSION_BPS = 1500;
+export const BASIS_POINTS = 10000;
+
 export const DEFAULT_LIMIT_GAP_BPS = 1000;
 export const MIN_POSITION_STATE_FRESHNESS_SECS = 5;
-export const MAX_REPAY_GAP_BPS = 100;
+export const MIN_REPAY_GAP_BPS = 100;
+export const MIN_BOOST_GAP_BPS = 50;
 
 // export const JITO_BLOCK_ENGINE = "ny.mainnet.block-engine.jito.wtf";
 // export const JITO_CONNECTION = new JitoRpcConnection(

@@ -14,6 +14,7 @@ import {
   fromBaseUnit,
   getLiqUtilzationRateBps,
   toBaseUnit,
+  toBps,
 } from "./numberUtils";
 import { PRICES } from "../constants/solautoConstants";
 import { MARGINFI_ACCOUNTS } from "../constants/marginfiAccounts";
@@ -353,7 +354,7 @@ export async function getMarginfiAccountPositionState(
     liqUtilizationRateBps: getLiqUtilzationRateBps(
       supplyUsd,
       debtUsd,
-      Math.round(liqThreshold * 10000)
+      toBps(liqThreshold)
     ),
     netWorth: {
       baseAmountUsdValue: toBaseUnit(supplyUsd - debtUsd, USD_DECIMALS),
@@ -364,8 +365,8 @@ export async function getMarginfiAccountPositionState(
     },
     supply: supplyUsage!,
     debt: debtUsage!,
-    maxLtvBps: Math.round(maxLtv * 10000),
-    liqThresholdBps: Math.round(liqThreshold * 10000),
+    maxLtvBps: toBps(maxLtv),
+    liqThresholdBps: toBps(liqThreshold),
     lastUpdated: BigInt(currentUnixSeconds()),
     padding1: [],
     padding2: [],

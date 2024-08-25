@@ -1,4 +1,4 @@
-import { MAX_REPAY_GAP_BPS } from "../constants";
+import { BASIS_POINTS, MIN_REPAY_GAP_BPS } from "../constants";
 import { FeeType } from "../generated";
 
 export function getLiqUtilzationRateBps(
@@ -22,11 +22,11 @@ export function fromBaseUnit(value: bigint, decimals: number): number {
 }
 
 export function fromBps(value: number): number {
-  return value / 10000;
+  return value / BASIS_POINTS;
 }
 
 export function toBps(value: number): number {
-  return Math.round(value * 10000);
+  return Math.round(value * BASIS_POINTS);
 }
 
 export function bytesToI80F48(bytes: number[]): number {
@@ -148,7 +148,7 @@ export function maxRepayFromBps(maxLtvBps: number, liqThresholdBps: number) {
 
 export function maxRepayToBps(maxLtvBps: number, liqThresholdBps: number) {
   return Math.min(
-    maxRepayFromBps(maxLtvBps, liqThresholdBps) - MAX_REPAY_GAP_BPS,
+    maxRepayFromBps(maxLtvBps, liqThresholdBps) - MIN_REPAY_GAP_BPS,
     getMaxLiqUtilizationRateBps(maxLtvBps, liqThresholdBps, 0.005)
   );
 }

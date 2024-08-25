@@ -189,15 +189,15 @@ async function getMarginfiAccountPositionState(umi, marginfiAccountPk, supplyMin
     const supplyUsd = (0, numberUtils_1.fromBaseUnit)(supplyUsage.amountUsed.baseAmountUsdValue, generalAccounts_1.USD_DECIMALS);
     const debtUsd = (0, numberUtils_1.fromBaseUnit)(debtUsage?.amountUsed?.baseAmountUsdValue ?? BigInt(0), generalAccounts_1.USD_DECIMALS);
     return {
-        liqUtilizationRateBps: (0, numberUtils_1.getLiqUtilzationRateBps)(supplyUsd, debtUsd, Math.round(liqThreshold * 10000)),
+        liqUtilizationRateBps: (0, numberUtils_1.getLiqUtilzationRateBps)(supplyUsd, debtUsd, (0, numberUtils_1.toBps)(liqThreshold)),
         netWorth: {
             baseAmountUsdValue: (0, numberUtils_1.toBaseUnit)(supplyUsd - debtUsd, generalAccounts_1.USD_DECIMALS),
             baseUnit: (0, numberUtils_1.toBaseUnit)((supplyUsd - debtUsd) / supplyPrice, supplyUsage.decimals),
         },
         supply: supplyUsage,
         debt: debtUsage,
-        maxLtvBps: Math.round(maxLtv * 10000),
-        liqThresholdBps: Math.round(liqThreshold * 10000),
+        maxLtvBps: (0, numberUtils_1.toBps)(maxLtv),
+        liqThresholdBps: (0, numberUtils_1.toBps)(liqThreshold),
         lastUpdated: BigInt((0, generalUtils_1.currentUnixSeconds)()),
         padding1: [],
         padding2: [],

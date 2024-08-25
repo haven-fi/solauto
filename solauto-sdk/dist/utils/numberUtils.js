@@ -28,10 +28,10 @@ function fromBaseUnit(value, decimals) {
     return Number(value) / Math.pow(10, decimals);
 }
 function fromBps(value) {
-    return value / 10000;
+    return value / constants_1.BASIS_POINTS;
 }
 function toBps(value) {
-    return Math.round(value * 10000);
+    return Math.round(value * constants_1.BASIS_POINTS);
 }
 function bytesToI80F48(bytes) {
     if (bytes.length !== 16) {
@@ -107,5 +107,5 @@ function maxRepayFromBps(maxLtvBps, liqThresholdBps) {
     return Math.min(9000, getMaxLiqUtilizationRateBps(maxLtvBps, liqThresholdBps - 1000, 0.005));
 }
 function maxRepayToBps(maxLtvBps, liqThresholdBps) {
-    return Math.min(maxRepayFromBps(maxLtvBps, liqThresholdBps) - constants_1.MAX_REPAY_GAP_BPS, getMaxLiqUtilizationRateBps(maxLtvBps, liqThresholdBps, 0.005));
+    return Math.min(maxRepayFromBps(maxLtvBps, liqThresholdBps) - constants_1.MIN_REPAY_GAP_BPS, getMaxLiqUtilizationRateBps(maxLtvBps, liqThresholdBps, 0.005));
 }
