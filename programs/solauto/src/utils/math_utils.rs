@@ -5,7 +5,7 @@ use std::{
     ops::{Div, Mul},
 };
 
-use crate::constants::{MAX_REPAY_GAP_BPS, USD_DECIMALS};
+use crate::constants::{MAX_BASIS_POINTS, MIN_REPAY_GAP_BPS, USD_DECIMALS};
 
 #[inline(always)]
 pub fn from_base_unit<T, U, V>(base_units: T, decimals: U) -> V
@@ -40,7 +40,12 @@ pub fn base_unit_to_usd_value(base_unit: u64, decimals: u8, market_price: f64) -
 
 #[inline(always)]
 pub fn from_bps(value_bps: u16) -> f64 {
-    (value_bps as f64).div(10000.0)
+    (value_bps as f64).div(MAX_BASIS_POINTS as f64)
+}
+
+#[inline(always)]
+pub fn to_bps(value: f64) -> u16 {
+    value.mul(MAX_BASIS_POINTS as f64) as u16
 }
 
 #[inline(always)]
@@ -59,7 +64,7 @@ pub fn get_liq_utilization_rate_bps(supply_usd: f64, debt_usd: f64, liq_threshol
         return 0;
     }
 
-    debt_usd.div(supply_usd.mul(liq_threshold)).mul(10000.0) as u16
+    to_bps(debt_usd.div(supply_usd.mul(liq_threshold)))
 }
 
 #[inline(always)]
@@ -114,34 +119,33 @@ pub fn get_std_debt_adjustment_usd(
 }
 
 #[inline(always)]
-pub fn get_max_liq_utilization_rate(
+pub fn get_max_liq_utilization_rate_bps(
     max_ltv_bps: u16,
     liq_threshold_bps: u16,
     offset_from_max_ltv: f64,
 ) -> u16 {
-    (from_bps(max_ltv_bps) - offset_from_max_ltv)
-        .div(from_bps(liq_threshold_bps))
-        .mul(10000.0) as u16
+    let val = (from_bps(max_ltv_bps) - offset_from_max_ltv).div(from_bps(liq_threshold_bps));
+    to_bps(val)
 }
 
 #[inline(always)]
-pub fn get_max_boost_to(max_ltv_bps: u16, liq_threshold_bps: u16) -> u16 {
-    get_max_liq_utilization_rate(max_ltv_bps, liq_threshold_bps, 0.015)
+pub fn get_max_boost_to_bps(max_ltv_bps: u16, liq_threshold_bps: u16) -> u16 {
+    get_max_liq_utilization_rate_bps(max_ltv_bps, liq_threshold_bps, 0.015)
 }
 
 #[inline(always)]
-pub fn get_max_repay_from(max_ltv_bps: u16, liq_threshold_bps: u16) -> u16 {
+pub fn get_max_repay_from_bps(max_ltv_bps: u16, liq_threshold_bps: u16) -> u16 {
     min(
         9000,
-        get_max_liq_utilization_rate(max_ltv_bps, liq_threshold_bps - 1000, 0.005),
+        get_max_liq_utilization_rate_bps(max_ltv_bps, liq_threshold_bps - 1000, 0.005),
     )
 }
 
 #[inline(always)]
-pub fn get_max_repay_to(max_ltv_bps: u16, liq_threshold_bps: u16) -> u16 {
+pub fn get_max_repay_to_bps(max_ltv_bps: u16, liq_threshold_bps: u16) -> u16 {
     min(
-        get_max_repay_from(max_ltv_bps, liq_threshold_bps) - MAX_REPAY_GAP_BPS,
-        get_max_liq_utilization_rate(max_ltv_bps, liq_threshold_bps, 0.005),
+        get_max_repay_from_bps(max_ltv_bps, liq_threshold_bps) - MIN_REPAY_GAP_BPS,
+        get_max_liq_utilization_rate_bps(max_ltv_bps, liq_threshold_bps, 0.005),
     )
 }
 
@@ -169,7 +173,7 @@ mod tests {
             liq_threshold,
             supply_usd,
             debt_usd,
-            target_liq_utilization_rate.mul(10000.0) as u16,
+            to_bps(target_liq_utilization_rate),
             0,
         );
 

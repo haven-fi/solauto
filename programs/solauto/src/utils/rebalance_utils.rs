@@ -9,7 +9,7 @@ use solana_program::{
     sysvar::instructions::load_current_index_checked,
 };
 use std::{
-    cmp::{max, min},
+    cmp::max,
     ops::Mul,
 };
 

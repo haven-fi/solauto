@@ -4,9 +4,9 @@ use solana_program::{
 };
 use spl_associated_token_account::get_associated_token_address;
 use spl_token::state::{Account as TokenAccount, Mint};
-use std::ops::{Div, Mul};
+use std::ops::Div;
 
-use super::solana_utils::{account_has_data, init_account, init_ata_if_needed, spl_token_transfer};
+use super::{math_utils::to_bps, solana_utils::{account_has_data, init_account, init_ata_if_needed, spl_token_transfer}};
 use crate::{
     constants::{SOLAUTO_FEES_WALLET, WSOL_MINT},
     state::{
@@ -43,15 +43,15 @@ pub fn create_new_solauto_position<'a>(
     max_ltv: f64,
     liq_threshold: f64,
 ) -> Result<DeserializedAccount<'a, SolautoPosition>, ProgramError> {
+    if account_has_data(solauto_position) {
+        msg!("Cannot open new position on an existing Solauto position");
+        return Err(SolautoError::IncorrectAccounts.into());
+    }
+
     let data = if update_position_data.setting_params.is_some() {
         if update_position_data.position_id == 0 {
             msg!("Position ID 0 is reserved for self-managed positions");
             return Err(ProgramError::InvalidInstructionData.into());
-        }
-
-        if account_has_data(solauto_position) {
-            msg!("Cannot use open position instruction on an existing Solauto position");
-            return Err(SolautoError::IncorrectAccounts.into());
         }
 
         let supply = DeserializedAccount::<Mint>::unpack(Some(supply_mint))?.unwrap();
@@ -61,8 +61,8 @@ pub fn create_new_solauto_position<'a>(
         state.supply.decimals = supply.data.decimals;
         state.debt.mint = *debt.account_info.key;
         state.debt.decimals = debt.data.decimals;
-        state.max_ltv_bps = max_ltv.mul(10000.0) as u16;
-        state.liq_threshold_bps = liq_threshold.mul(10000.0) as u16;
+        state.max_ltv_bps = to_bps(max_ltv);
+        state.liq_threshold_bps = to_bps(liq_threshold);
 
         let mut position_data = PositionData::default();
         position_data.lending_platform = lending_platform;
@@ -261,7 +261,7 @@ pub fn cancel_dca_in_if_necessary<'a, 'b>(
 ) -> ProgramResult {
     let active_dca = &solauto_position.data.position.dca;
 
-    if active_dca.dca_in() && solauto_position.data.position.dca.debt_to_add_base_unit > 0 {
+    if active_dca.dca_in() {
         if debt_mint.is_none() || position_debt_ta.is_none() || signer_debt_ta.is_none() {
             msg!(
                 "Requires debt_mint, position_debt_ta & signer_debt_ta in order to cancel the active DCA-in"
@@ -313,7 +313,7 @@ pub fn get_solauto_fees_bps(
     let max_fee_bps: f64 = 500.0; // Fee in basis points for min_size (5%)
     let min_fee_bps: f64 = 100.0; // Fee in basis points for max_size (1%)
 
-    let mut fee_bps: f64 = 0.0;
+    let fee_bps: f64;
     if fee_type == FeeType::Small {
         fee_bps = 100.0;
     } else if position_net_worth_usd <= min_size {

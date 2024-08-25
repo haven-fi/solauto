@@ -27,4 +27,7 @@ pub const WSOL_MINT: Pubkey = Pubkey::new_from_array([
 pub const USD_DECIMALS: u8 = 9;
 
 pub const DEFAULT_LIMIT_GAP_BPS: u16 = 1000;
-pub const MAX_REPAY_GAP_BPS: u16 = 100;
+pub const MIN_REPAY_GAP_BPS: u16 = 100;
+pub const MIN_BOOST_GAP_BPS: u16 = 50;
+
+pub const MAX_BASIS_POINTS: u16 = 10000;
