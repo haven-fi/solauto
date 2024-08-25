@@ -459,7 +459,7 @@ pub fn validate_referral_signer(referral_state: &DeserializedAccount<ReferralSta
     if !signer.is_signer {
         return Err(ProgramError::MissingRequiredSignature.into());
     }
-    if signer.key != &referral_state.data.authority || (allow_solauto_manager && signer.key != &SOLAUTO_MANAGER)
+    if signer.key != &referral_state.data.authority && (!allow_solauto_manager || signer.key != &SOLAUTO_MANAGER)
     {
         msg!("Instruction has not been signed by the right account");
         return Err(SolautoError::IncorrectAccounts.into());

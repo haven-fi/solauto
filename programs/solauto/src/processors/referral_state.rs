@@ -155,7 +155,7 @@ pub fn process_claim_referral_fees<'a>(accounts: &'a [AccountInfo<'a>]) -> Progr
 
     let referral_state = DeserializedAccount::<ReferralState>::zerocopy(Some(ctx.accounts.referral_state))?.unwrap();
 
-    validation_utils::validate_referral_signer(&referral_state, ctx.accounts.signer, true)?;
+    validation_utils::validate_referral_signer(&referral_state, ctx.accounts.signer, false)?;
     validation_utils::validate_sysvar_accounts(
         Some(ctx.accounts.system_program),
         Some(ctx.accounts.token_program),
