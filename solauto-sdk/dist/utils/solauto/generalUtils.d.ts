@@ -15,8 +15,8 @@ export declare function getAllPositionsByAuthority(umi: Umi, user: PublicKey): P
 export declare function positionStateWithLatestPrices(state: PositionState, supplyPrice?: number, debtPrice?: number): Promise<PositionState>;
 interface AssetProps {
     mint: PublicKey;
-    price: number;
-    amountUsed: number;
+    price?: number;
+    amountUsed?: number;
 }
 export declare function createFakePositionState(supply: AssetProps, debt: AssetProps, maxLtvBps: number, liqThresholdBps: number): PositionState;
 type PositionAdjustment = {

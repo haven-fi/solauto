@@ -13,6 +13,7 @@ const marginfi_sdk_1 = require("../marginfi-sdk");
 const marginfiUtils_1 = require("../utils/marginfiUtils");
 const numberUtils_1 = require("../utils/numberUtils");
 const constants_1 = require("../constants");
+const utils_1 = require("../utils");
 class SolautoMarginfiClient extends solautoClient_1.SolautoClient {
     constructor() {
         super(...arguments);
@@ -52,6 +53,10 @@ class SolautoMarginfiClient extends solautoClient_1.SolautoClient {
         // this.debtPriceOracle = toWeb3JsPublicKey(debtBank.config.oracleKeys[0]);
         this.supplyPriceOracle = new web3_js_1.PublicKey(this.marginfiSupplyAccounts.priceOracle);
         this.debtPriceOracle = new web3_js_1.PublicKey(this.marginfiDebtAccounts.priceOracle);
+        if (!this.solautoPositionState) {
+            const [maxLtv, liqThreshold] = await (0, marginfiUtils_1.getMaxLtvAndLiqThreshold)(this.umi, { mint: this.supplyMint }, { mint: this.debtMint });
+            this.solautoPositionState = (0, utils_1.createFakePositionState)({ mint: this.supplyMint }, { mint: this.debtMint }, (0, numberUtils_1.toBps)(maxLtv), (0, numberUtils_1.toBps)(liqThreshold));
+        }
         if (!this.initialized) {
             await this.setIntermediaryMarginfiDetails();
         }

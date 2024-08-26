@@ -55,9 +55,11 @@ import {
   findMarginfiAccounts,
   getAllMarginfiAccountsByAuthority,
   getMarginfiAccountPositionState,
+  getMaxLtvAndLiqThreshold,
 } from "../utils/marginfiUtils";
-import { bytesToI80F48 } from "../utils/numberUtils";
+import { bytesToI80F48, toBps } from "../utils/numberUtils";
 import { SOLAUTO_MANAGER } from "../constants";
+import { createFakePositionState } from "../utils";
 
 export interface SolautoMarginfiClientArgs extends SolautoClientArgs {
   marginfiAccount?: PublicKey | Signer;
@@ -127,8 +129,24 @@ export class SolautoMarginfiClient extends SolautoClient {
     // this.supplyPriceOracle = toWeb3JsPublicKey(supplyBank.config.oracleKeys[0]);
     // this.debtPriceOracle = toWeb3JsPublicKey(debtBank.config.oracleKeys[0]);
 
-    this.supplyPriceOracle = new PublicKey(this.marginfiSupplyAccounts.priceOracle);
+    this.supplyPriceOracle = new PublicKey(
+      this.marginfiSupplyAccounts.priceOracle
+    );
     this.debtPriceOracle = new PublicKey(this.marginfiDebtAccounts.priceOracle);
+
+    if (!this.solautoPositionState) {
+      const [maxLtv, liqThreshold] = await getMaxLtvAndLiqThreshold(
+        this.umi,
+        { mint: this.supplyMint },
+        { mint: this.debtMint }
+      );
+      this.solautoPositionState = createFakePositionState(
+        { mint: this.supplyMint },
+        { mint: this.debtMint },
+        toBps(maxLtv),
+        toBps(liqThreshold)
+      );
+    }
 
     if (!this.initialized) {
       await this.setIntermediaryMarginfiDetails();
@@ -510,33 +528,37 @@ export class SolautoMarginfiClient extends SolautoClient {
     let includedFlashLoanToken = false;
 
     if (this.intermediaryMarginfiAccount) {
-      this.intermediaryMarginfiAccount.lendingAccount.balances.forEach(async (x) => {
-        if (x.active) {
-          if (x.bankPk === accounts.data.bank) {
-            includedFlashLoanToken = true;
+      this.intermediaryMarginfiAccount.lendingAccount.balances.forEach(
+        async (x) => {
+          if (x.active) {
+            if (x.bankPk === accounts.data.bank) {
+              includedFlashLoanToken = true;
+            }
+
+            // TODO: Don't dynamically pull from bank until Marginfi sorts out their price oracle issues.
+            // const bankData = await safeFetchBank(this.umi, publicKey(accounts.data.bank));
+            // const priceOracle = bankData!.config.oracleKeys[0];
+            const priceOracle = publicKey(
+              findMarginfiAccounts(toWeb3JsPublicKey(x.bankPk)).priceOracle
+            );
+
+            remainingAccounts.push(
+              ...[
+                {
+                  pubkey: x.bankPk,
+                  isSigner: false,
+                  isWritable: false,
+                },
+                {
+                  pubkey: priceOracle,
+                  isSigner: false,
+                  isWritable: false,
+                },
+              ]
+            );
           }
-
-          // TODO: Don't dynamically pull from bank until Marginfi sorts out their price oracle issues.
-          // const bankData = await safeFetchBank(this.umi, publicKey(accounts.data.bank));
-          // const priceOracle = bankData!.config.oracleKeys[0];
-          const priceOracle = publicKey(findMarginfiAccounts(toWeb3JsPublicKey(x.bankPk)).priceOracle);
-
-          remainingAccounts.push(
-            ...[
-              {
-                pubkey: x.bankPk,
-                isSigner: false,
-                isWritable: false,
-              },
-              {
-                pubkey: priceOracle,
-                isSigner: false,
-                isWritable: false,
-              },
-            ]
-          );
         }
-      });
+      );
     }
     if (!this.intermediaryMarginfiAccount || !includedFlashLoanToken) {
       remainingAccounts.push(

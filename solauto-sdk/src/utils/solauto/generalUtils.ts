@@ -26,9 +26,7 @@ import {
   TOKEN_INFO,
   USD_DECIMALS,
 } from "../../constants";
-import {
-  getAllMarginfiAccountsByAuthority,
-} from "../marginfiUtils";
+import { getAllMarginfiAccountsByAuthority } from "../marginfiUtils";
 import { RebalanceAction, SolautoPositionDetails } from "../../types/solauto";
 
 function newPeriodsPassed(
@@ -358,8 +356,8 @@ export async function positionStateWithLatestPrices(
 
 interface AssetProps {
   mint: PublicKey;
-  price: number;
-  amountUsed: number;
+  price?: number;
+  amountUsed?: number;
 }
 
 export function createFakePositionState(
@@ -371,8 +369,8 @@ export function createFakePositionState(
   const supplyDecimals = TOKEN_INFO[supply.mint.toString()].decimals;
   const debtDecimals = TOKEN_INFO[debt.mint.toString()].decimals;
 
-  const supplyUsd = supply.amountUsed * supply.price;
-  const debtUsd = debt.amountUsed * debt.price;
+  const supplyUsd = (supply.amountUsed ?? 0) * (supply.price ?? 0);
+  const debtUsd = (debt.amountUsed ?? 0) * (debt.price ?? 0);
 
   return {
     liqUtilizationRateBps: getLiqUtilzationRateBps(
@@ -382,14 +380,14 @@ export function createFakePositionState(
     ),
     supply: {
       amountUsed: {
-        baseUnit: toBaseUnit(supply.amountUsed, supplyDecimals),
+        baseUnit: toBaseUnit(supply.amountUsed ?? 0, supplyDecimals),
         baseAmountUsdValue: toBaseUnit(supplyUsd, USD_DECIMALS),
       },
       amountCanBeUsed: {
         baseUnit: toBaseUnit(1000000, supplyDecimals),
-        baseAmountUsdValue: BigInt(Math.round(1000000 * supply.price)),
+        baseAmountUsdValue: BigInt(Math.round(1000000 * (supply.price ?? 0))),
       },
-      baseAmountMarketPriceUsd: toBaseUnit(supply.price, USD_DECIMALS),
+      baseAmountMarketPriceUsd: toBaseUnit(supply.price ?? 0, USD_DECIMALS),
       borrowFeeBps: 0,
       decimals: supplyDecimals,
       flashLoanFeeBps: 0,
@@ -400,14 +398,14 @@ export function createFakePositionState(
     },
     debt: {
       amountUsed: {
-        baseUnit: toBaseUnit(debt.amountUsed, debtDecimals),
+        baseUnit: toBaseUnit(debt.amountUsed ?? 0, debtDecimals),
         baseAmountUsdValue: toBaseUnit(debtUsd, USD_DECIMALS),
       },
       amountCanBeUsed: {
         baseUnit: toBaseUnit(1000000, debtDecimals),
-        baseAmountUsdValue: BigInt(Math.round(1000000 * debt.price)),
+        baseAmountUsdValue: BigInt(Math.round(1000000 * (debt.price ?? 0))),
       },
-      baseAmountMarketPriceUsd: toBaseUnit(debt.price, USD_DECIMALS),
+      baseAmountMarketPriceUsd: toBaseUnit(debt.price ?? 0, USD_DECIMALS),
       borrowFeeBps: 0,
       decimals: debtDecimals,
       flashLoanFeeBps: 0,
@@ -417,10 +415,9 @@ export function createFakePositionState(
       padding: new Uint8Array([]),
     },
     netWorth: {
-      baseUnit: toBaseUnit(
-        (supplyUsd - debtUsd) / supply.price,
-        supplyDecimals
-      ),
+      baseUnit: supply.price
+        ? toBaseUnit((supplyUsd - debtUsd) / supply.price, supplyDecimals)
+        : BigInt(0),
       baseAmountUsdValue: toBaseUnit(supplyUsd - debtUsd, USD_DECIMALS),
     },
     maxLtvBps,
