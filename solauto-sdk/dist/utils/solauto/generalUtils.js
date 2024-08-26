@@ -198,7 +198,15 @@ async function getAllPositionsByAuthority(umi, user) {
         debtMint: x.debtMint,
     })));
     // TODO support other platforms
-    return allPositions;
+    return allPositions.sort((a, b) => {
+        if (a.positionId === 0 && b.positionId !== 0) {
+            return 1;
+        }
+        if (b.positionId === 0 && a.positionId !== 0) {
+            return -1;
+        }
+        return a.positionId - b.positionId;
+    });
 }
 async function positionStateWithLatestPrices(state, supplyPrice, debtPrice) {
     if (!supplyPrice || !debtPrice) {
