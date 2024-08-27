@@ -429,6 +429,41 @@ export function createFakePositionState(
   };
 }
 
+export function createSolautoSettings(settings: SolautoSettingsParametersInpArgs): SolautoSettingsParameters {
+  return {
+    automation:
+      isOption(settings.automation) && isSome(settings.automation)
+        ? {
+            ...settings.automation.value,
+            intervalSeconds: BigInt(
+              settings.automation.value.intervalSeconds
+            ),
+            unixStartDate: BigInt(settings.automation.value.unixStartDate),
+            padding: new Uint8Array([]),
+            padding1: [],
+          }
+        : {
+            targetPeriods: 0,
+            periodsPassed: 0,
+            intervalSeconds: BigInt(0),
+            unixStartDate: BigInt(0),
+            padding: new Uint8Array([]),
+            padding1: [],
+          },
+    targetBoostToBps:
+      isOption(settings.targetBoostToBps) &&
+      isSome(settings.targetBoostToBps)
+        ? settings.targetBoostToBps.value
+        : 0,
+    boostGap: settings.boostGap,
+    boostToBps: settings.boostToBps,
+    repayGap: settings.repayGap,
+    repayToBps: settings.repayToBps,
+    padding: new Uint8Array([]),
+    padding1: [],
+  };
+}
+
 type PositionAdjustment =
   | { type: "supply"; value: bigint }
   | { type: "debt"; value: bigint }
@@ -452,38 +487,7 @@ export class LivePositionUpdates {
       this.debtTaBalanceAdjustment += update.value;
     } else if (update.type === "settings") {
       const settings = update.value;
-      this.settings = {
-        automation:
-          isOption(settings.automation) && isSome(settings.automation)
-            ? {
-                ...settings.automation.value,
-                intervalSeconds: BigInt(
-                  settings.automation.value.intervalSeconds
-                ),
-                unixStartDate: BigInt(settings.automation.value.unixStartDate),
-                padding: new Uint8Array([]),
-                padding1: [],
-              }
-            : {
-                targetPeriods: 0,
-                periodsPassed: 0,
-                intervalSeconds: BigInt(0),
-                unixStartDate: BigInt(0),
-                padding: new Uint8Array([]),
-                padding1: [],
-              },
-        targetBoostToBps:
-          isOption(settings.targetBoostToBps) &&
-          isSome(settings.targetBoostToBps)
-            ? settings.targetBoostToBps.value
-            : 0,
-        boostGap: settings.boostGap,
-        boostToBps: settings.boostToBps,
-        repayGap: settings.repayGap,
-        repayToBps: settings.repayToBps,
-        padding: new Uint8Array([]),
-        padding1: [],
-      };
+      this.settings = createSolautoSettings(settings);
     } else if (update.type === "dca") {
       const dca = update.value;
       this.activeDca = {

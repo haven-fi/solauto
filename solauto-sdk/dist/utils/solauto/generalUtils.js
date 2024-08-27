@@ -13,6 +13,7 @@ exports.getReferralsByUser = getReferralsByUser;
 exports.getAllPositionsByAuthority = getAllPositionsByAuthority;
 exports.positionStateWithLatestPrices = positionStateWithLatestPrices;
 exports.createFakePositionState = createFakePositionState;
+exports.createSolautoSettings = createSolautoSettings;
 const web3_js_1 = require("@solana/web3.js");
 const umi_1 = require("@metaplex-foundation/umi");
 const generated_1 = require("../../generated");
@@ -198,15 +199,7 @@ async function getAllPositionsByAuthority(umi, user) {
         debtMint: x.debtMint,
     })));
     // TODO support other platforms
-    return allPositions.sort((a, b) => {
-        if (a.positionId === 0 && b.positionId !== 0) {
-            return 1;
-        }
-        if (b.positionId === 0 && a.positionId !== 0) {
-            return -1;
-        }
-        return a.positionId - b.positionId;
-    });
+    return allPositions;
 }
 async function positionStateWithLatestPrices(state, supplyPrice, debtPrice) {
     if (!supplyPrice || !debtPrice) {
@@ -299,6 +292,36 @@ function createFakePositionState(supply, debt, maxLtvBps, liqThresholdBps) {
         padding: [],
     };
 }
+function createSolautoSettings(settings) {
+    return {
+        automation: (0, umi_1.isOption)(settings.automation) && (0, umi_1.isSome)(settings.automation)
+            ? {
+                ...settings.automation.value,
+                intervalSeconds: BigInt(settings.automation.value.intervalSeconds),
+                unixStartDate: BigInt(settings.automation.value.unixStartDate),
+                padding: new Uint8Array([]),
+                padding1: [],
+            }
+            : {
+                targetPeriods: 0,
+                periodsPassed: 0,
+                intervalSeconds: BigInt(0),
+                unixStartDate: BigInt(0),
+                padding: new Uint8Array([]),
+                padding1: [],
+            },
+        targetBoostToBps: (0, umi_1.isOption)(settings.targetBoostToBps) &&
+            (0, umi_1.isSome)(settings.targetBoostToBps)
+            ? settings.targetBoostToBps.value
+            : 0,
+        boostGap: settings.boostGap,
+        boostToBps: settings.boostToBps,
+        repayGap: settings.repayGap,
+        repayToBps: settings.repayToBps,
+        padding: new Uint8Array([]),
+        padding1: [],
+    };
+}
 class LivePositionUpdates {
     constructor() {
         this.supplyAdjustment = BigInt(0);
@@ -319,34 +342,7 @@ class LivePositionUpdates {
         }
         else if (update.type === "settings") {
             const settings = update.value;
-            this.settings = {
-                automation: (0, umi_1.isOption)(settings.automation) && (0, umi_1.isSome)(settings.automation)
-                    ? {
-                        ...settings.automation.value,
-                        intervalSeconds: BigInt(settings.automation.value.intervalSeconds),
-                        unixStartDate: BigInt(settings.automation.value.unixStartDate),
-                        padding: new Uint8Array([]),
-                        padding1: [],
-                    }
-                    : {
-                        targetPeriods: 0,
-                        periodsPassed: 0,
-                        intervalSeconds: BigInt(0),
-                        unixStartDate: BigInt(0),
-                        padding: new Uint8Array([]),
-                        padding1: [],
-                    },
-                targetBoostToBps: (0, umi_1.isOption)(settings.targetBoostToBps) &&
-                    (0, umi_1.isSome)(settings.targetBoostToBps)
-                    ? settings.targetBoostToBps.value
-                    : 0,
-                boostGap: settings.boostGap,
-                boostToBps: settings.boostToBps,
-                repayGap: settings.repayGap,
-                repayToBps: settings.repayToBps,
-                padding: new Uint8Array([]),
-                padding1: [],
-            };
+            this.settings = createSolautoSettings(settings);
         }
         else if (update.type === "dca") {
             const dca = update.value;
