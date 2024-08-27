@@ -26,7 +26,11 @@ use crate::{
 pub fn update_data<T: BorshSerialize>(account: &mut DeserializedAccount<T>) -> ProgramResult {
     account
         .data
-        .serialize(&mut &mut account.account_info.data.borrow_mut()[..])?;
+        .serialize(&mut &mut account.account_info.data.borrow_mut()[..])
+        .map_err(|err| {
+            msg!("{}", err);
+            err
+        })?;
     Ok(())
 }
 

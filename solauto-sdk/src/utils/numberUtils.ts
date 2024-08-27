@@ -1,32 +1,37 @@
-import { MAX_REPAY_GAP_BPS } from "../constants";
+import { BASIS_POINTS, MIN_REPAY_GAP_BPS } from "../constants";
+import { FeeType } from "../generated";
 
-export function getLiqUtilzationRateBps(supplyUsd: number, debtUsd: number, liqThresholdBps: number): number {
+export function getLiqUtilzationRateBps(
+  supplyUsd: number,
+  debtUsd: number,
+  liqThresholdBps: number
+): number {
   if (supplyUsd === 0) {
     return 0;
   }
-  
+
   return toBps(debtUsd / (supplyUsd * fromBps(liqThresholdBps)));
 }
 
 export function toBaseUnit(value: number, decimals: number): bigint {
-    return BigInt(Math.round(value * Math.pow(10, decimals)));
-  }
-  
+  return BigInt(Math.round(value * Math.pow(10, decimals)));
+}
+
 export function fromBaseUnit(value: bigint, decimals: number): number {
   return Number(value) / Math.pow(10, decimals);
 }
 
 export function fromBps(value: number): number {
-  return value / 10000;
+  return value / BASIS_POINTS;
 }
 
 export function toBps(value: number): number {
-  return Math.round(value * 10000);
+  return Math.round(value * BASIS_POINTS);
 }
 
 export function bytesToI80F48(bytes: number[]): number {
   if (bytes.length !== 16) {
-    throw new Error('Byte array must be exactly 16 bytes.');
+    throw new Error("Byte array must be exactly 16 bytes.");
   }
 
   const reversedBytes = bytes.slice().reverse();
@@ -44,12 +49,14 @@ export function bytesToI80F48(bytes: number[]): number {
 
   const fullValue = integerPart * BigInt(2 ** 48) + fractionalPart;
 
-  return Number(fullValue) / (2 ** 48);
+  return Number(fullValue) / 2 ** 48;
 }
 
 export function uint8ArrayToBigInt(uint8Array: Uint8Array): bigint {
   if (uint8Array.length !== 8) {
-    throw new Error('Uint8Array must be exactly 8 bytes long to convert to u64.');
+    throw new Error(
+      "Uint8Array must be exactly 8 bytes long to convert to u64."
+    );
   }
 
   const buffer = uint8Array.buffer;
@@ -59,7 +66,7 @@ export function uint8ArrayToBigInt(uint8Array: Uint8Array): bigint {
   const low = dataView.getUint32(0, true);
   const high = dataView.getUint32(4, true);
 
-  return BigInt(high) << 32n | BigInt(low);
+  return (BigInt(high) << 32n) | BigInt(low);
 }
 
 export function getDebtAdjustmentUsd(
@@ -69,31 +76,79 @@ export function getDebtAdjustmentUsd(
   targetLiqUtilizationRateBps: number,
   adjustmentFeeBps?: number
 ) {
-  const adjustmentFee = adjustmentFeeBps && adjustmentFeeBps > 0 ? fromBps(adjustmentFeeBps) : 0;
+  const adjustmentFee =
+    adjustmentFeeBps && adjustmentFeeBps > 0 ? fromBps(adjustmentFeeBps) : 0;
   const liqThreshold = fromBps(liqThresholdBps);
   const targetLiqUtilizationRate = fromBps(targetLiqUtilizationRateBps);
 
-  const debtAdjustmentUsd = (targetLiqUtilizationRate * supplyUsd * liqThreshold - debtUsd) / (1 - targetLiqUtilizationRate * (1 - adjustmentFee) * liqThreshold);
+  const debtAdjustmentUsd =
+    (targetLiqUtilizationRate * supplyUsd * liqThreshold - debtUsd) /
+    (1 - targetLiqUtilizationRate * (1 - adjustmentFee) * liqThreshold);
   return debtAdjustmentUsd;
 }
 
-export function getMaxLiqUtilizationRate(
-  maxLtvBps: number,
-  liqThresholdBps: number
-): number {
-  return toBps((fromBps(maxLtvBps) - 0.015) / fromBps(liqThresholdBps)) - 1; // -1 to account for any rounding issues
+export function getSolautoFeesBps(
+  isReferred: boolean,
+  feeType: FeeType,
+  positionNetWorthUsd: number
+): {
+  solauto: number;
+  referrer: number;
+  total: number;
+} {
+  const minSize = 10000; // Minimum position size
+  const maxSize = 1000000; // Maximum position size
+  const maxFeeBps = 500; // Fee in basis points for minSize (5%)
+  const minFeeBps = 100; // Fee in basis points for maxSize (1%)
+
+  let feeBps: number = 0;
+  if (feeType === FeeType.Small) {
+    feeBps = 100;
+  } else if (positionNetWorthUsd <= minSize) {
+    feeBps = maxFeeBps;
+  } else if (positionNetWorthUsd >= maxSize) {
+    feeBps = minFeeBps;
+  } else {
+    const t =
+      (Math.log(positionNetWorthUsd) - Math.log(minSize)) /
+      (Math.log(maxSize) - Math.log(minSize));
+    feeBps = Math.round(minFeeBps + (maxFeeBps - minFeeBps) * (1 - t));
+  }
+
+  let referrer = 0;
+  if (isReferred) {
+    referrer = Math.floor(feeBps / 4);
+  }
+
+  return {
+    solauto: feeBps - referrer,
+    referrer,
+    total: feeBps,
+  };
 }
 
-export function maxRepayFrom(maxLtvBps: number, liqThresholdBps: number) {
+export function getMaxLiqUtilizationRateBps(
+  maxLtvBps: number,
+  liqThresholdBps: number,
+  offsetFromMaxLtv: number
+): number {
+  return toBps((fromBps(maxLtvBps) - offsetFromMaxLtv) / fromBps(liqThresholdBps)) - 1; // -1 to account for any rounding issues
+}
+
+export function maxBoostToBps(maxLtvBps: number, liqThresholdBps: number) {
+  return getMaxLiqUtilizationRateBps(maxLtvBps, liqThresholdBps, 0.015);
+}
+
+export function maxRepayFromBps(maxLtvBps: number, liqThresholdBps: number) {
   return Math.min(
     9000,
-    getMaxLiqUtilizationRate(maxLtvBps, liqThresholdBps - 1000)
+    getMaxLiqUtilizationRateBps(maxLtvBps, liqThresholdBps - 1000, 0.005)
   );
 }
 
-export function maxRepayTo(maxLtvBps: number, liqThresholdBps: number) {
+export function maxRepayToBps(maxLtvBps: number, liqThresholdBps: number) {
   return Math.min(
-    maxRepayFrom(maxLtvBps, liqThresholdBps) - MAX_REPAY_GAP_BPS,
-    getMaxLiqUtilizationRate(maxLtvBps, liqThresholdBps)
+    maxRepayFromBps(maxLtvBps, liqThresholdBps) - MIN_REPAY_GAP_BPS,
+    getMaxLiqUtilizationRateBps(maxLtvBps, liqThresholdBps, 0.005)
   );
 }

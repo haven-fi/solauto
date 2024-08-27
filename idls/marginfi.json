@@ -714,7 +714,9 @@
     },
     {
       "name": "marginfiAccountInitialize",
-      "docs": ["Initialize a marginfi account for a given group"],
+      "docs": [
+        "Initialize a marginfi account for a given group"
+      ],
       "accounts": [
         {
           "name": "marginfiGroup",
@@ -1445,7 +1447,9 @@
           "name": "admin",
           "isMut": false,
           "isSigner": true,
-          "docs": ["Admin only"]
+          "docs": [
+            "Admin only"
+          ]
         }
       ],
       "args": [
@@ -1472,7 +1476,9 @@
           "name": "admin",
           "isMut": false,
           "isSigner": true,
-          "docs": ["Admin only"]
+          "docs": [
+            "Admin only"
+          ]
         }
       ],
       "args": [
@@ -1549,7 +1555,10 @@
           {
             "name": "padding",
             "type": {
-              "array": ["u64", 63]
+              "array": [
+                "u64",
+                63
+              ]
             }
           }
         ]
@@ -1567,13 +1576,19 @@
           {
             "name": "padding0",
             "type": {
-              "array": ["u128", 32]
+              "array": [
+                "u128",
+                32
+              ]
             }
           },
           {
             "name": "padding1",
             "type": {
-              "array": ["u128", 32]
+              "array": [
+                "u128",
+                32
+              ]
             }
           }
         ]
@@ -1599,7 +1614,10 @@
           {
             "name": "auto_padding_0",
             "type": {
-              "array": ["u8", 7]
+              "array": [
+                "u8",
+                7
+              ]
             }
           },
           {
@@ -1641,7 +1659,10 @@
           {
             "name": "auto_padding_1",
             "type": {
-              "array": ["u8", 4]
+              "array": [
+                "u8",
+                4
+              ]
             }
           },
           {
@@ -1665,7 +1686,10 @@
           {
             "name": "auto_padding_2",
             "type": {
-              "array": ["u8", 6]
+              "array": [
+                "u8",
+                6
+              ]
             }
           },
           {
@@ -1728,13 +1752,19 @@
           {
             "name": "padding0",
             "type": {
-              "array": ["u128", 28]
+              "array": [
+                "u128",
+                28
+              ]
             }
           },
           {
             "name": "padding1",
             "type": {
-              "array": ["u128", 32]
+              "array": [
+                "u128",
+                32
+              ]
             }
           }
         ]
@@ -1829,7 +1859,10 @@
           {
             "name": "padding",
             "type": {
-              "array": ["u64", 8]
+              "array": [
+                "u64",
+                8
+              ]
             }
           }
         ]
@@ -1851,7 +1884,10 @@
           {
             "name": "auto_padding_0",
             "type": {
-              "array": ["u8", 7]
+              "array": [
+                "u8",
+                7
+              ]
             }
           },
           {
@@ -1879,7 +1915,10 @@
           {
             "name": "padding",
             "type": {
-              "array": ["u64", 1]
+              "array": [
+                "u64",
+                1
+              ]
             }
           }
         ]
@@ -1999,7 +2038,10 @@
           {
             "name": "padding",
             "type": {
-              "array": ["u128", 8]
+              "array": [
+                "u128",
+                8
+              ]
             }
           }
         ]
@@ -2130,7 +2172,10 @@
           {
             "name": "auto_padding_0",
             "type": {
-              "array": ["u8", 6]
+              "array": [
+                "u8",
+                6
+              ]
             }
           },
           {
@@ -2146,7 +2191,10 @@
           {
             "name": "auto_padding_1",
             "type": {
-              "array": ["u8", 7]
+              "array": [
+                "u8",
+                7
+              ]
             }
           },
           {
@@ -2223,13 +2271,19 @@
           {
             "name": "oracleKeys",
             "type": {
-              "array": ["publicKey", 5]
+              "array": [
+                "publicKey",
+                5
+              ]
             }
           },
           {
             "name": "auto_padding_0",
             "type": {
-              "array": ["u8", 6]
+              "array": [
+                "u8",
+                6
+              ]
             }
           },
           {
@@ -2245,7 +2299,10 @@
           {
             "name": "auto_padding_1",
             "type": {
-              "array": ["u8", 7]
+              "array": [
+                "u8",
+                7
+              ]
             }
           },
           {
@@ -2265,7 +2322,10 @@
           {
             "name": "padding",
             "type": {
-              "array": ["u64", 5]
+              "array": [
+                "u64",
+                5
+              ]
             }
           }
         ]
@@ -2387,7 +2447,10 @@
           {
             "name": "keys",
             "type": {
-              "array": ["publicKey", 5]
+              "array": [
+                "publicKey",
+                5
+              ]
             }
           }
         ]
@@ -2541,10 +2604,13 @@
             "name": "PythLegacy"
           },
           {
-            "name": "SwitchboardV2"
+            "name": "SwitchboardLegacy"
           },
           {
             "name": "PythPushOracle"
+          },
+          {
+            "name": "SwitchboardPull"
           }
         ]
       }

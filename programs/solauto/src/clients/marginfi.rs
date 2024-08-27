@@ -287,6 +287,12 @@ impl<'a> MarginfiClient<'a> {
         bank: &DeserializedAccount<Bank>,
         price_oracle: &AccountInfo,
     ) -> Result<f64, ProgramError> {
+        // TODO: Don't validate this until Marginfi's sorted out their price oracle issues and this is congruent with what they use.
+        // if price_oracle.key != &bank.data.config.oracle_keys[0] {
+        //     msg!("Incorrect price oracle provided");
+        //     return Err(SolautoError::IncorrectAccounts.into());
+        // }
+
         let clock = Clock::get()?;
         let max_price_age = 120; // Default used by Marginfi is 60
 
@@ -348,7 +354,7 @@ impl<'a> MarginfiClient<'a> {
 
                 Ok(price)
             }
-            OracleSetup::SwitchboardV2 => {
+            OracleSetup::SwitchboardLegacy => {
                 let data = price_oracle.data.borrow();
                 let aggregator_account = AggregatorAccountData::new_from_bytes(&data)?;
                 aggregator_account.check_staleness(clock.unix_timestamp, max_price_age as i64)?;
@@ -364,6 +370,10 @@ impl<'a> MarginfiClient<'a> {
                 };
 
                 Ok(price)
+            }
+            OracleSetup::SwitchboardPull => {
+                // TODO
+                Ok(0.0)
             }
         }
     }

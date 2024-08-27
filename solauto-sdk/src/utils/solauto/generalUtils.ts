@@ -1,10 +1,9 @@
 import { PublicKey } from "@solana/web3.js";
-import { isOption, isSome, Umi } from "@metaplex-foundation/umi";
+import { isOption, isSome, publicKey, Umi } from "@metaplex-foundation/umi";
 import {
   AutomationSettings,
   DCASettings,
   DCASettingsInpArgs,
-  FeeType,
   LendingPlatform,
   PositionState,
   SOLAUTO_PROGRAM_ID,
@@ -22,11 +21,12 @@ import {
 } from "../numberUtils";
 import { getReferralState } from "../accountUtils";
 import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
-import { ALL_SUPPORTED_TOKENS, USD_DECIMALS } from "../../constants";
 import {
-  getAllMarginfiAccountsByAuthority,
-  getMarginfiAccountPositionState,
-} from "../marginfiUtils";
+  ALL_SUPPORTED_TOKENS,
+  TOKEN_INFO,
+  USD_DECIMALS,
+} from "../../constants";
+import { getAllMarginfiAccountsByAuthority } from "../marginfiUtils";
 import { RebalanceAction, SolautoPositionDetails } from "../../types/solauto";
 
 function newPeriodsPassed(
@@ -53,9 +53,10 @@ export function nextAutomationPeriodTimestamp(
 }
 
 export function eligibleForNextAutomationPeriod(
-  automation: AutomationSettings
+  automation: AutomationSettings,
+  currentUnixTime: number
 ): boolean {
-  return currentUnixSeconds() >= nextAutomationPeriodTimestamp(automation);
+  return currentUnixTime >= nextAutomationPeriodTimestamp(automation);
 }
 
 export function getUpdatedValueFromAutomation(
@@ -78,16 +79,16 @@ export function getUpdatedValueFromAutomation(
 
 export function getAdjustedSettingsFromAutomation(
   settings: SolautoSettingsParameters,
-  currentUnixSeconds: number
+  currentUnixTime: number
 ): SolautoSettingsParameters {
   const boostToBps =
     settings.automation.targetPeriods > 0 &&
-    eligibleForNextAutomationPeriod(settings.automation)
+    eligibleForNextAutomationPeriod(settings.automation, currentUnixTime)
       ? getUpdatedValueFromAutomation(
           settings.boostToBps,
           settings.targetBoostToBps,
           settings.automation,
-          currentUnixSeconds
+          currentUnixTime
         )
       : settings.boostToBps;
 
@@ -97,35 +98,16 @@ export function getAdjustedSettingsFromAutomation(
   };
 }
 
-export function getSolautoFeesBps(
-  isReferred: boolean,
-  feeType: FeeType
-): {
-  solauto: number;
-  referrer: number;
-  total: number;
-} {
-  const fees = feeType === FeeType.Small ? 100 : 500;
-  let referrer = 0;
-  if (isReferred) {
-    referrer = fees / 4;
-  }
-
-  return {
-    solauto: fees - referrer,
-    referrer,
-    total: fees,
-  };
-}
-
 export function eligibleForRebalance(
   positionState: PositionState,
   positionSettings: SolautoSettingsParameters,
-  positionDca: DCASettings
+  positionDca: DCASettings | undefined,
+  currentUnixTime: number
 ): RebalanceAction | undefined {
   if (
+    positionDca &&
     positionDca.automation.targetPeriods > 0 &&
-    eligibleForNextAutomationPeriod(positionDca.automation)
+    eligibleForNextAutomationPeriod(positionDca.automation, currentUnixTime)
   ) {
     return "dca";
   }
@@ -135,21 +117,21 @@ export function eligibleForRebalance(
   }
 
   const boostToBps =
-    eligibleForRefresh(positionState, positionSettings) &&
+    eligibleForRefresh(positionState, positionSettings, currentUnixTime) &&
     positionSettings.automation.targetPeriods > 0
       ? getUpdatedValueFromAutomation(
           positionSettings.boostToBps,
           positionSettings.targetBoostToBps,
           positionSettings.automation,
-          currentUnixSeconds()
+          currentUnixTime
         )
       : positionSettings.boostToBps;
   const repayFrom = positionSettings.repayToBps + positionSettings.repayGap;
   const boostFrom = boostToBps - positionSettings.boostGap;
 
-  if (positionState.liqUtilizationRateBps <= boostFrom) {
+  if (positionState.liqUtilizationRateBps < boostFrom) {
     return "boost";
-  } else if (positionState.liqUtilizationRateBps >= repayFrom) {
+  } else if (positionState.liqUtilizationRateBps > repayFrom) {
     return "repay";
   }
 
@@ -158,10 +140,14 @@ export function eligibleForRebalance(
 
 export function eligibleForRefresh(
   positionState: PositionState,
-  positionSettings: SolautoSettingsParameters
+  positionSettings: SolautoSettingsParameters,
+  currentUnixTime: number
 ): boolean {
   if (positionSettings.automation.targetPeriods > 0) {
-    return eligibleForNextAutomationPeriod(positionSettings.automation);
+    return eligibleForNextAutomationPeriod(
+      positionSettings.automation,
+      currentUnixTime
+    );
   } else {
     return (
       currentUnixSeconds() - Number(positionState.lastUpdated) >
@@ -320,28 +306,16 @@ export async function getAllPositionsByAuthority(
 }
 
 export async function positionStateWithLatestPrices(
-  umi: Umi,
   state: PositionState,
-  protocolAccount: PublicKey,
-  lendingPlatform: LendingPlatform
-): Promise<PositionState | undefined> {
-  if (currentUnixSeconds() - Number(state.lastUpdated) > 60 * 60 * 24 * 7) {
-    if (lendingPlatform === LendingPlatform.Marginfi) {
-      return await getMarginfiAccountPositionState(
-        umi,
-        protocolAccount,
-        toWeb3JsPublicKey(state.supply.mint),
-        toWeb3JsPublicKey(state.debt.mint)
-      );
-    } else {
-      throw new Error("Lending platorm not yet supported");
-    }
+  supplyPrice?: number,
+  debtPrice?: number
+): Promise<PositionState> {
+  if (!supplyPrice || !debtPrice) {
+    [supplyPrice, debtPrice] = await getTokenPrices([
+      toWeb3JsPublicKey(state.supply.mint),
+      toWeb3JsPublicKey(state.debt.mint),
+    ]);
   }
-
-  const [supplyPrice, debtPrice] = await getTokenPrices([
-    toWeb3JsPublicKey(state.supply.mint),
-    toWeb3JsPublicKey(state.debt.mint),
-  ]);
 
   const supplyUsd =
     fromBaseUnit(state.supply.amountUsed.baseUnit, state.supply.decimals) *
@@ -357,7 +331,10 @@ export async function positionStateWithLatestPrices(
       state.liqThresholdBps
     ),
     netWorth: {
-      ...state.netWorth,
+      baseUnit: toBaseUnit(
+        (supplyUsd - debtUsd) / supplyPrice,
+        state.supply.decimals
+      ),
       baseAmountUsdValue: toBaseUnit(supplyUsd - debtUsd, USD_DECIMALS),
     },
     supply: {
@@ -374,6 +351,81 @@ export async function positionStateWithLatestPrices(
         baseAmountUsdValue: toBaseUnit(debtUsd, USD_DECIMALS),
       },
     },
+  };
+}
+
+interface AssetProps {
+  mint: PublicKey;
+  price?: number;
+  amountUsed?: number;
+}
+
+export function createFakePositionState(
+  supply: AssetProps,
+  debt: AssetProps,
+  maxLtvBps: number,
+  liqThresholdBps: number
+): PositionState {
+  const supplyDecimals = TOKEN_INFO[supply.mint.toString()].decimals;
+  const debtDecimals = TOKEN_INFO[debt.mint.toString()].decimals;
+
+  const supplyUsd = (supply.amountUsed ?? 0) * (supply.price ?? 0);
+  const debtUsd = (debt.amountUsed ?? 0) * (debt.price ?? 0);
+
+  return {
+    liqUtilizationRateBps: getLiqUtilzationRateBps(
+      supplyUsd,
+      debtUsd,
+      liqThresholdBps
+    ),
+    supply: {
+      amountUsed: {
+        baseUnit: toBaseUnit(supply.amountUsed ?? 0, supplyDecimals),
+        baseAmountUsdValue: toBaseUnit(supplyUsd, USD_DECIMALS),
+      },
+      amountCanBeUsed: {
+        baseUnit: toBaseUnit(1000000, supplyDecimals),
+        baseAmountUsdValue: BigInt(Math.round(1000000 * (supply.price ?? 0))),
+      },
+      baseAmountMarketPriceUsd: toBaseUnit(supply.price ?? 0, USD_DECIMALS),
+      borrowFeeBps: 0,
+      decimals: supplyDecimals,
+      flashLoanFeeBps: 0,
+      mint: publicKey(supply.mint),
+      padding1: [],
+      padding2: [],
+      padding: new Uint8Array([]),
+    },
+    debt: {
+      amountUsed: {
+        baseUnit: toBaseUnit(debt.amountUsed ?? 0, debtDecimals),
+        baseAmountUsdValue: toBaseUnit(debtUsd, USD_DECIMALS),
+      },
+      amountCanBeUsed: {
+        baseUnit: toBaseUnit(1000000, debtDecimals),
+        baseAmountUsdValue: BigInt(Math.round(1000000 * (debt.price ?? 0))),
+      },
+      baseAmountMarketPriceUsd: toBaseUnit(debt.price ?? 0, USD_DECIMALS),
+      borrowFeeBps: 0,
+      decimals: debtDecimals,
+      flashLoanFeeBps: 0,
+      mint: publicKey(debt.mint),
+      padding1: [],
+      padding2: [],
+      padding: new Uint8Array([]),
+    },
+    netWorth: {
+      baseUnit: supply.price
+        ? toBaseUnit((supplyUsd - debtUsd) / supply.price, supplyDecimals)
+        : BigInt(0),
+      baseAmountUsdValue: toBaseUnit(supplyUsd - debtUsd, USD_DECIMALS),
+    },
+    maxLtvBps,
+    liqThresholdBps,
+    lastUpdated: BigInt(currentUnixSeconds()),
+    padding1: [],
+    padding2: [],
+    padding: [],
   };
 }
 

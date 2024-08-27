@@ -147,7 +147,7 @@ pub enum SolautoError {
     )]
     StaleProtocolData,
     #[error("Unable to adjust position to the desired utilization rate")]
-    UnableToReposition,
+    UnableToRebalance,
     #[error("Desired action brought the utilization rate to an unsafe amount")]
     ExceededValidUtilizationRate,
     #[error("Invalid position condition to rebalance")]

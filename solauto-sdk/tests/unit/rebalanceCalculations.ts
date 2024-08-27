@@ -4,7 +4,6 @@ import { NATIVE_MINT } from "@solana/spl-token";
 import { assert } from "chai";
 import { SolautoMarginfiClient } from "../../src/clients/solautoMarginfiClient";
 import { setupTest } from "../shared";
-import { MARGINFI_ACCOUNTS } from "../../src/constants/marginfiAccounts";
 import { getRebalanceValues } from "../../src/utils/solauto/rebalanceUtils";
 import { publicKey } from "@metaplex-foundation/umi";
 import { SolautoClient } from "../../src/clients/solautoClient";
@@ -19,22 +18,25 @@ import {
   fromBaseUnit,
   fromBps,
   getLiqUtilzationRateBps,
+  getSolautoFeesBps,
   toBaseUnit,
 } from "../../src/utils/numberUtils";
 import { USD_DECIMALS } from "../../src/constants/generalAccounts";
 import {
+  createFakePositionState,
   eligibleForNextAutomationPeriod,
   getAdjustedSettingsFromAutomation,
-  getSolautoFeesBps,
   getUpdatedValueFromAutomation,
+  positionStateWithLatestPrices,
 } from "../../src/utils/solauto/generalUtils";
 import {
   currentUnixSeconds,
   getTokenPrices,
 } from "../../src/utils/generalUtils";
 import { USDC_MINT } from "../../src/constants/tokenConstants";
+import { PRICES } from "../../src/constants";
 
-const signer = setupTest();
+const signer = setupTest(undefined, true);
 
 function assertAccurateRebalance(
   client: SolautoClient,
@@ -43,19 +45,34 @@ function assertAccurateRebalance(
   expectedUsdToDcaIn?: number
 ) {
   const { increasingLeverage, debtAdjustmentUsd, amountUsdToDcaIn } =
-    getRebalanceValues(client, targetLiqUtilizationRateBps);
+    getRebalanceValues(
+      client.solautoPositionState!,
+      client.solautoPositionSettings(),
+      client.solautoPositionActiveDca(),
+      client.solautoPositionData!.feeType,
+      currentUnixSeconds(),
+      PRICES[client.supplyMint.toString()].price,
+      PRICES[client.debtMint.toString()].price,
+      targetLiqUtilizationRateBps
+    );
 
   let adjustmentFeeBps = 0;
   if (increasingLeverage) {
     adjustmentFeeBps = getSolautoFeesBps(
       client.referredByState !== undefined,
-      client.solautoPositionData!.feeType
+      client.solautoPositionData!.feeType,
+      fromBaseUnit(
+        client.solautoPositionState?.netWorth.baseAmountUsdValue ?? BigInt(0),
+        USD_DECIMALS
+      )
     ).total;
   }
 
   assert(
     Math.round(amountUsdToDcaIn) === Math.round(expectedUsdToDcaIn ?? 0),
-    `Expected DCA-in amount does not match ${Math.round(amountUsdToDcaIn)}, ${Math.round(expectedUsdToDcaIn ?? 0)}`
+    `Expected DCA-in amount does not match ${Math.round(
+      amountUsdToDcaIn
+    )}, ${Math.round(expectedUsdToDcaIn ?? 0)}`
   );
 
   const newSupply =
@@ -77,8 +94,9 @@ function assertAccurateRebalance(
     client.solautoPositionState!.liqThresholdBps
   );
   assert(
-    Math.round(newLiqUtilizationRateBps) === expectedLiqUtilizationRateBps,
-    `Expected liq utilization rate does not match ${Math.round(newLiqUtilizationRateBps)}, ${expectedLiqUtilizationRateBps}`
+    Math.round(newLiqUtilizationRateBps) ===
+      Math.round(expectedLiqUtilizationRateBps),
+    `Expected liq utilization rate does not match ${newLiqUtilizationRateBps}, ${expectedLiqUtilizationRateBps}`
   );
 }
 
@@ -97,10 +115,33 @@ async function getFakePosition(
     positionId: 1,
     signer,
     supplyMint: new PublicKey(NATIVE_MINT),
-    debtMint: new PublicKey(MARGINFI_ACCOUNTS.USDC.mint),
+    debtMint: new PublicKey(USDC_MINT),
   });
 
-  const state = await client.getFreshPositionState();
+  const supplyUsd = 1000;
+  const maxLtvBps = 6400;
+  const liqThresholdBps = 8181;
+  client.solautoPositionState = await positionStateWithLatestPrices(
+    createFakePositionState(
+      {
+        amountUsed: supplyUsd / supplyPrice,
+        price: PRICES[NATIVE_MINT.toString()].price,
+        mint: NATIVE_MINT,
+      },
+      {
+        amountUsed:
+          (supplyUsd *
+            fromBps(liqThresholdBps) *
+            fromBps(fakeLiqUtilizationRateBps)) /
+          debtPrice,
+        price: 1,
+        mint: new PublicKey(USDC_MINT),
+      },
+      maxLtvBps,
+      liqThresholdBps
+    )
+  );
+
   client.solautoPositionData = {
     positionId: [1],
     bump: [0],
@@ -129,7 +170,7 @@ async function getFakePosition(
       padding1: [],
       padding: [],
     },
-    state: state!,
+    state: client.solautoPositionState!,
     rebalance: {
       rebalanceType: SolautoRebalanceType.Regular,
       targetLiqUtilizationRateBps: 0,
@@ -139,7 +180,7 @@ async function getFakePosition(
       padding2: [],
       padding: new Uint8Array([]),
     },
-    feeType: FeeType.Small,
+    feeType: FeeType.Default,
     padding1: [],
     padding2: [],
     padding: [],
@@ -155,23 +196,6 @@ async function getFakePosition(
     },
   };
 
-  const supplyUsd = 1000;
-  client.livePositionUpdates.new({
-    type: "supply",
-    value: toBaseUnit(supplyUsd / supplyPrice, state!.supply.decimals),
-  });
-  client.livePositionUpdates.new({
-    type: "debt",
-    value: toBaseUnit(
-      (supplyUsd *
-        fromBps(state!.liqThresholdBps) *
-        fromBps(fakeLiqUtilizationRateBps)) /
-        debtPrice,
-      state!.debt.decimals
-    ),
-  });
-
-  client.solautoPositionState = await client.getFreshPositionState();
   client.solautoPositionState!.lastUpdated = BigInt(currentUnixSeconds());
 
   return client;
@@ -227,7 +251,8 @@ async function dcaRebalanceFromFakePosition(
       : adjustedSettings.boostToBps;
 
   const expectedDcaInAmount =
-    dca.debtToAddBaseUnit > 0 && eligibleForNextAutomationPeriod(dca.automation)
+    dca.debtToAddBaseUnit > 0 &&
+    eligibleForNextAutomationPeriod(dca.automation, currentUnixSeconds())
       ? dca.debtToAddBaseUnit -
         BigInt(
           Math.round(
@@ -265,23 +290,23 @@ describe("Rebalance tests", async () => {
   });
 
   it("Standard rebalance with target rate", async () => {
-    const client = new SolautoMarginfiClient(
-      process.env.HELIUS_API_KEY ?? "",
-      true
-    );
-    await client.initialize({
-      positionId: 1,
-      signer,
-      supplyMint: new PublicKey(NATIVE_MINT),
-      debtMint: new PublicKey(MARGINFI_ACCOUNTS.USDC.mint),
+    const client = await getFakePosition(supplyPrice, debtPrice, 3450, {
+      boostToBps: 500,
+      boostGap: 100,
+      repayToBps: 7000,
+      repayGap: 250,
+      automation: {
+        targetPeriods: 0,
+        periodsPassed: 0,
+        unixStartDate: BigInt(0),
+        intervalSeconds: BigInt(0),
+        padding1: [],
+        padding: new Uint8Array([]),
+      },
+      targetBoostToBps: 0,
+      padding1: [],
+      padding: new Uint8Array([]),
     });
-
-    client.livePositionUpdates.new({
-      type: "supply",
-      value: BigInt(10000000000),
-    });
-    client.solautoPositionState = await client.getFreshPositionState();
-    client.solautoPositionState!.lastUpdated = BigInt(currentUnixSeconds());
 
     assertAccurateRebalance(client, 5000, 5000);
     assertAccurateRebalance(client, 1000, 1000);
@@ -393,14 +418,14 @@ describe("Rebalance tests", async () => {
   it("Rebalance DCA in", async () => {
     const settings: SolautoSettingsParameters = {
       automation: {
-        targetPeriods: 4,
+        targetPeriods: 3,
         periodsPassed: 0,
         intervalSeconds: BigInt(5),
         unixStartDate: BigInt(currentUnixSeconds()),
         padding1: [],
         padding: new Uint8Array([]),
       },
-      targetBoostToBps: 0,
+      targetBoostToBps: 5000,
       boostGap: 1000,
       boostToBps: 4000,
       repayGap: 1000,

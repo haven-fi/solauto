@@ -140,7 +140,7 @@ async function simulateTransaction(connection, transaction) {
     }
     return simulationResult;
 }
-async function getComputeUnitPriceEstimate(umi, tx, prioritySetting, attemptNum) {
+async function getComputeUnitPriceEstimate(umi, tx, prioritySetting) {
     const web3Transaction = (0, umi_web3js_adapters_1.toWeb3JsTransaction)((await tx.setLatestBlockhash(umi, { commitment: "finalized" })).build(umi));
     const serializedTransaction = bs58_1.default.encode(web3Transaction.serialize());
     const resp = await umi.rpc.call("getPriorityFeeEstimate", [
@@ -158,7 +158,7 @@ async function sendSingleOptimizedTransaction(umi, connection, tx, simulateOnly,
     console.log("Sending single optimized transaction...");
     console.log("Instructions: ", tx.getInstructions().length);
     console.log("Serialized transaction size: ", tx.getTransactionSize(umi));
-    const feeEstimate = await getComputeUnitPriceEstimate(umi, tx, prioritySetting, attemptNum);
+    const feeEstimate = await getComputeUnitPriceEstimate(umi, tx, prioritySetting);
     console.log("Compute unit price: ", feeEstimate);
     const simulationResult = await (0, generalUtils_1.retryWithExponentialBackoff)(async () => await simulateTransaction(connection, (0, umi_web3js_adapters_1.toWeb3JsTransaction)(await (await assembleFinalTransaction(umi.identity, tx, feeEstimate, 1400000).setLatestBlockhash(umi)).build(umi))));
     const computeUnitLimit = Math.round(simulationResult.value.unitsConsumed * 1.1);

@@ -1,1 +1,1 @@
-{"version":3,"file":"accounts.d.ts","sourceRoot":"","sources":["../../src/types/accounts.ts"],"names":[],"mappings":"AAAA,MAAM,WAAW,qBAAqB;IACpC,IAAI,EAAE,MAAM,CAAC;IACb,IAAI,EAAE,MAAM,CAAC;IACb,cAAc,EAAE,MAAM,CAAC;IACvB,cAAc,EAAE,MAAM,CAAC;IACvB,WAAW,EAAE,MAAM,CAAC;CACrB"}
+{"version":3,"file":"accounts.d.ts","sourceRoot":"","sources":["../../src/types/accounts.ts"],"names":[],"mappings":"AAAA,MAAM,WAAW,qBAAqB;IACpC,IAAI,EAAE,MAAM,CAAC;IACb,cAAc,EAAE,MAAM,CAAC;IACvB,cAAc,EAAE,MAAM,CAAC;IACvB,WAAW,EAAE,MAAM,CAAC;CACrB"}

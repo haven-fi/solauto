@@ -5,7 +5,6 @@ exports.nextAutomationPeriodTimestamp = nextAutomationPeriodTimestamp;
 exports.eligibleForNextAutomationPeriod = eligibleForNextAutomationPeriod;
 exports.getUpdatedValueFromAutomation = getUpdatedValueFromAutomation;
 exports.getAdjustedSettingsFromAutomation = getAdjustedSettingsFromAutomation;
-exports.getSolautoFeesBps = getSolautoFeesBps;
 exports.eligibleForRebalance = eligibleForRebalance;
 exports.eligibleForRefresh = eligibleForRefresh;
 exports.getSolautoManagedPositions = getSolautoManagedPositions;
@@ -13,6 +12,7 @@ exports.getAllReferralStates = getAllReferralStates;
 exports.getReferralsByUser = getReferralsByUser;
 exports.getAllPositionsByAuthority = getAllPositionsByAuthority;
 exports.positionStateWithLatestPrices = positionStateWithLatestPrices;
+exports.createFakePositionState = createFakePositionState;
 const web3_js_1 = require("@solana/web3.js");
 const umi_1 = require("@metaplex-foundation/umi");
 const generated_1 = require("../../generated");
@@ -33,8 +33,8 @@ function nextAutomationPeriodTimestamp(automation) {
         : Number(automation.unixStartDate) +
             automation.periodsPassed * Number(automation.intervalSeconds);
 }
-function eligibleForNextAutomationPeriod(automation) {
-    return (0, generalUtils_1.currentUnixSeconds)() >= nextAutomationPeriodTimestamp(automation);
+function eligibleForNextAutomationPeriod(automation, currentUnixTime) {
+    return currentUnixTime >= nextAutomationPeriodTimestamp(automation);
 }
 function getUpdatedValueFromAutomation(currValue, targetValue, automation, currentUnixTimestamp) {
     const currRateDiff = currValue - targetValue;
@@ -44,53 +44,42 @@ function getUpdatedValueFromAutomation(currValue, targetValue, automation, curre
     const newValue = currValue - currRateDiff * progressPct;
     return newValue;
 }
-function getAdjustedSettingsFromAutomation(settings, currentUnixSeconds) {
+function getAdjustedSettingsFromAutomation(settings, currentUnixTime) {
     const boostToBps = settings.automation.targetPeriods > 0 &&
-        eligibleForNextAutomationPeriod(settings.automation)
-        ? getUpdatedValueFromAutomation(settings.boostToBps, settings.targetBoostToBps, settings.automation, currentUnixSeconds)
+        eligibleForNextAutomationPeriod(settings.automation, currentUnixTime)
+        ? getUpdatedValueFromAutomation(settings.boostToBps, settings.targetBoostToBps, settings.automation, currentUnixTime)
         : settings.boostToBps;
     return {
         ...settings,
         boostToBps,
     };
 }
-function getSolautoFeesBps(isReferred, feeType) {
-    const fees = feeType === generated_1.FeeType.Small ? 100 : 500;
-    let referrer = 0;
-    if (isReferred) {
-        referrer = fees / 4;
-    }
-    return {
-        solauto: fees - referrer,
-        referrer,
-        total: fees,
-    };
-}
-function eligibleForRebalance(positionState, positionSettings, positionDca) {
-    if (positionDca.automation.targetPeriods > 0 &&
-        eligibleForNextAutomationPeriod(positionDca.automation)) {
+function eligibleForRebalance(positionState, positionSettings, positionDca, currentUnixTime) {
+    if (positionDca &&
+        positionDca.automation.targetPeriods > 0 &&
+        eligibleForNextAutomationPeriod(positionDca.automation, currentUnixTime)) {
         return "dca";
     }
     if (positionState.supply.amountUsed.baseUnit === BigInt(0)) {
         return undefined;
     }
-    const boostToBps = eligibleForRefresh(positionState, positionSettings) &&
+    const boostToBps = eligibleForRefresh(positionState, positionSettings, currentUnixTime) &&
         positionSettings.automation.targetPeriods > 0
-        ? getUpdatedValueFromAutomation(positionSettings.boostToBps, positionSettings.targetBoostToBps, positionSettings.automation, (0, generalUtils_1.currentUnixSeconds)())
+        ? getUpdatedValueFromAutomation(positionSettings.boostToBps, positionSettings.targetBoostToBps, positionSettings.automation, currentUnixTime)
         : positionSettings.boostToBps;
     const repayFrom = positionSettings.repayToBps + positionSettings.repayGap;
     const boostFrom = boostToBps - positionSettings.boostGap;
-    if (positionState.liqUtilizationRateBps <= boostFrom) {
+    if (positionState.liqUtilizationRateBps < boostFrom) {
         return "boost";
     }
-    else if (positionState.liqUtilizationRateBps >= repayFrom) {
+    else if (positionState.liqUtilizationRateBps > repayFrom) {
         return "repay";
     }
     return undefined;
 }
-function eligibleForRefresh(positionState, positionSettings) {
+function eligibleForRefresh(positionState, positionSettings, currentUnixTime) {
     if (positionSettings.automation.targetPeriods > 0) {
-        return eligibleForNextAutomationPeriod(positionSettings.automation);
+        return eligibleForNextAutomationPeriod(positionSettings.automation, currentUnixTime);
     }
     else {
         return ((0, generalUtils_1.currentUnixSeconds)() - Number(positionState.lastUpdated) >
@@ -209,21 +198,23 @@ async function getAllPositionsByAuthority(umi, user) {
         debtMint: x.debtMint,
     })));
     // TODO support other platforms
-    return allPositions;
+    return allPositions.sort((a, b) => {
+        if (a.positionId === 0 && b.positionId !== 0) {
+            return 1;
+        }
+        if (b.positionId === 0 && a.positionId !== 0) {
+            return -1;
+        }
+        return a.positionId - b.positionId;
+    });
 }
-async function positionStateWithLatestPrices(umi, state, protocolAccount, lendingPlatform) {
-    if ((0, generalUtils_1.currentUnixSeconds)() - Number(state.lastUpdated) > 60 * 60 * 24 * 7) {
-        if (lendingPlatform === generated_1.LendingPlatform.Marginfi) {
-            return await (0, marginfiUtils_1.getMarginfiAccountPositionState)(umi, protocolAccount, (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(state.supply.mint), (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(state.debt.mint));
-        }
-        else {
-            throw new Error("Lending platorm not yet supported");
-        }
+async function positionStateWithLatestPrices(state, supplyPrice, debtPrice) {
+    if (!supplyPrice || !debtPrice) {
+        [supplyPrice, debtPrice] = await (0, generalUtils_1.getTokenPrices)([
+            (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(state.supply.mint),
+            (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(state.debt.mint),
+        ]);
     }
-    const [supplyPrice, debtPrice] = await (0, generalUtils_1.getTokenPrices)([
-        (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(state.supply.mint),
-        (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(state.debt.mint),
-    ]);
     const supplyUsd = (0, numberUtils_1.fromBaseUnit)(state.supply.amountUsed.baseUnit, state.supply.decimals) *
         supplyPrice;
     const debtUsd = (0, numberUtils_1.fromBaseUnit)(state.debt.amountUsed.baseUnit, state.debt.decimals) *
@@ -232,7 +223,7 @@ async function positionStateWithLatestPrices(umi, state, protocolAccount, lendin
         ...state,
         liqUtilizationRateBps: (0, numberUtils_1.getLiqUtilzationRateBps)(supplyUsd, debtUsd, state.liqThresholdBps),
         netWorth: {
-            ...state.netWorth,
+            baseUnit: (0, numberUtils_1.toBaseUnit)((supplyUsd - debtUsd) / supplyPrice, state.supply.decimals),
             baseAmountUsdValue: (0, numberUtils_1.toBaseUnit)(supplyUsd - debtUsd, constants_1.USD_DECIMALS),
         },
         supply: {
@@ -249,6 +240,63 @@ async function positionStateWithLatestPrices(umi, state, protocolAccount, lendin
                 baseAmountUsdValue: (0, numberUtils_1.toBaseUnit)(debtUsd, constants_1.USD_DECIMALS),
             },
         },
+    };
+}
+function createFakePositionState(supply, debt, maxLtvBps, liqThresholdBps) {
+    const supplyDecimals = constants_1.TOKEN_INFO[supply.mint.toString()].decimals;
+    const debtDecimals = constants_1.TOKEN_INFO[debt.mint.toString()].decimals;
+    const supplyUsd = (supply.amountUsed ?? 0) * (supply.price ?? 0);
+    const debtUsd = (debt.amountUsed ?? 0) * (debt.price ?? 0);
+    return {
+        liqUtilizationRateBps: (0, numberUtils_1.getLiqUtilzationRateBps)(supplyUsd, debtUsd, liqThresholdBps),
+        supply: {
+            amountUsed: {
+                baseUnit: (0, numberUtils_1.toBaseUnit)(supply.amountUsed ?? 0, supplyDecimals),
+                baseAmountUsdValue: (0, numberUtils_1.toBaseUnit)(supplyUsd, constants_1.USD_DECIMALS),
+            },
+            amountCanBeUsed: {
+                baseUnit: (0, numberUtils_1.toBaseUnit)(1000000, supplyDecimals),
+                baseAmountUsdValue: BigInt(Math.round(1000000 * (supply.price ?? 0))),
+            },
+            baseAmountMarketPriceUsd: (0, numberUtils_1.toBaseUnit)(supply.price ?? 0, constants_1.USD_DECIMALS),
+            borrowFeeBps: 0,
+            decimals: supplyDecimals,
+            flashLoanFeeBps: 0,
+            mint: (0, umi_1.publicKey)(supply.mint),
+            padding1: [],
+            padding2: [],
+            padding: new Uint8Array([]),
+        },
+        debt: {
+            amountUsed: {
+                baseUnit: (0, numberUtils_1.toBaseUnit)(debt.amountUsed ?? 0, debtDecimals),
+                baseAmountUsdValue: (0, numberUtils_1.toBaseUnit)(debtUsd, constants_1.USD_DECIMALS),
+            },
+            amountCanBeUsed: {
+                baseUnit: (0, numberUtils_1.toBaseUnit)(1000000, debtDecimals),
+                baseAmountUsdValue: BigInt(Math.round(1000000 * (debt.price ?? 0))),
+            },
+            baseAmountMarketPriceUsd: (0, numberUtils_1.toBaseUnit)(debt.price ?? 0, constants_1.USD_DECIMALS),
+            borrowFeeBps: 0,
+            decimals: debtDecimals,
+            flashLoanFeeBps: 0,
+            mint: (0, umi_1.publicKey)(debt.mint),
+            padding1: [],
+            padding2: [],
+            padding: new Uint8Array([]),
+        },
+        netWorth: {
+            baseUnit: supply.price
+                ? (0, numberUtils_1.toBaseUnit)((supplyUsd - debtUsd) / supply.price, supplyDecimals)
+                : BigInt(0),
+            baseAmountUsdValue: (0, numberUtils_1.toBaseUnit)(supplyUsd - debtUsd, constants_1.USD_DECIMALS),
+        },
+        maxLtvBps,
+        liqThresholdBps,
+        lastUpdated: BigInt((0, generalUtils_1.currentUnixSeconds)()),
+        padding1: [],
+        padding2: [],
+        padding: [],
     };
 }
 class LivePositionUpdates {

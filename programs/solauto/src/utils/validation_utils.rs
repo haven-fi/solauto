@@ -12,7 +12,7 @@ use spl_associated_token_account::ID as ata_program_id;
 use spl_token::{state::Account as TokenAccount, ID as token_program_id};
 
 use crate::{
-    constants::{KAMINO_PROGRAM, MAX_REPAY_GAP_BPS, SOLAUTO_FEES_WALLET, SOLAUTO_MANAGER},
+    constants::{KAMINO_PROGRAM, MAX_BASIS_POINTS, MIN_BOOST_GAP_BPS, MIN_REPAY_GAP_BPS, SOLAUTO_FEES_WALLET, SOLAUTO_MANAGER},
     state::{
         referral_state::ReferralState,
         solauto_position::{AutomationSettings, PositionData, SolautoPosition},
@@ -23,7 +23,7 @@ use crate::{
     },
 };
 
-use super::math_utils::{get_max_repay_from, get_max_repay_to};
+use super::math_utils::{get_max_boost_to_bps, get_max_repay_from_bps, get_max_repay_to_bps};
 
 pub fn generic_instruction_validation(
     accounts: &Box<SolautoStandardAccounts>,
@@ -130,17 +130,26 @@ pub fn validate_position_settings(
     if data.setting_params.repay_to_bps < data.setting_params.boost_to_bps {
         return invalid_params("repay_to_bps value must be greater than boost_to_bps value");
     }
+    let max_boost_to = get_max_boost_to_bps(
+        solauto_position.state.max_ltv_bps,
+        solauto_position.state.liq_threshold_bps,
+    );
+    if data.setting_params.boost_to_bps > max_boost_to {
+        return invalid_params(
+            format!("Exceeds the maximum boost-to of {}", max_boost_to).as_str(),
+        );
+    }
     if data.setting_params.repay_to_bps < data.setting_params.target_boost_to_bps {
         return invalid_params("repay_to_bps value must be greater than target_boost_to_bps value");
     }
 
-    if data.setting_params.repay_gap < MAX_REPAY_GAP_BPS {
+    if data.setting_params.repay_gap < MIN_REPAY_GAP_BPS {
         return invalid_params(
-            format!("repay_gap must be {} or greater", MAX_REPAY_GAP_BPS).as_str(),
+            format!("repay_gap must be {} or greater", MIN_REPAY_GAP_BPS).as_str(),
         );
     }
-    if data.setting_params.boost_gap < 50 {
-        return invalid_params("boost_gap must be 50 or greater");
+    if data.setting_params.boost_gap < MIN_BOOST_GAP_BPS {
+        return invalid_params(format!("boost_gap must be {} or greater", MIN_BOOST_GAP_BPS).as_str());
     }
 
     if data.setting_params.automation.is_active() {
@@ -151,11 +160,11 @@ pub fn validate_position_settings(
         );
     }
 
-    if data.setting_params.target_boost_to_bps > 10000 {
-        return invalid_params("target_boost_to_bps must be less than 10000");
+    if data.setting_params.target_boost_to_bps > MAX_BASIS_POINTS {
+        return invalid_params(format!("target_boost_to_bps must be less than {}", MAX_BASIS_POINTS).as_str());
     }
 
-    let max_repay_to_bps = get_max_repay_to(
+    let max_repay_to_bps = get_max_repay_to_bps(
         solauto_position.state.max_ltv_bps,
         solauto_position.state.liq_threshold_bps,
     );
@@ -164,7 +173,7 @@ pub fn validate_position_settings(
             format!("For the given max_ltv and liq_threshold of the supplied asset, repay_to_bps must be lower or equal to {} in order to bring the utilization rate to an allowed position", max_repay_to_bps).as_str()
         );
     }
-    let max_repay_from_bps = get_max_repay_from(
+    let max_repay_from_bps = get_max_repay_from_bps(
         solauto_position.state.max_ltv_bps,
         solauto_position.state.liq_threshold_bps,
     );
@@ -437,6 +446,28 @@ pub fn token_account_owned_by(
         && &token_account.data.owner == expected_owner
 }
 
+pub fn validate_referral_signer(referral_state: &DeserializedAccount<ReferralState>, signer: &AccountInfo, allow_solauto_manager: bool) -> ProgramResult {
+    let referral_state_pda = Pubkey::create_program_address(
+        referral_state.data.seeds_with_bump().as_slice(),
+        &crate::ID,
+    )?;
+    if &referral_state_pda != referral_state.account_info.key {
+        msg!("Incorrect referral state account provided");
+        return Err(SolautoError::IncorrectAccounts.into());
+    }
+
+    if !signer.is_signer {
+        return Err(ProgramError::MissingRequiredSignature.into());
+    }
+    if signer.key != &referral_state.data.authority && (!allow_solauto_manager || signer.key != &SOLAUTO_MANAGER)
+    {
+        msg!("Instruction has not been signed by the right account");
+        return Err(SolautoError::IncorrectAccounts.into());
+    }
+
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use crate::state::solauto_position::{
@@ -472,14 +503,14 @@ mod tests {
 
         test_position_settings(
             SolautoSettingsParameters::from(SolautoSettingsParametersInp {
-                boost_gap: 25,
+                boost_gap: MIN_BOOST_GAP_BPS - 10,
                 ..default_settings_args
             }),
             default_liq_threshold_bps,
         );
         test_position_settings(
             SolautoSettingsParameters::from(SolautoSettingsParametersInp {
-                repay_gap: 50,
+                repay_gap: MIN_REPAY_GAP_BPS - 10,
                 ..default_settings_args
             }),
             default_liq_threshold_bps,

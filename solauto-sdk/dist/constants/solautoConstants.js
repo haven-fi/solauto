@@ -1,15 +1,16 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.STANDARD_LUT_ACCOUNTS = exports.JUPITER_PROGRAM_ID = exports.SOLAUTO_LUT = exports.PRICES = exports.MAX_REPAY_GAP_BPS = exports.MIN_POSITION_STATE_FRESHNESS_SECS = exports.DEFAULT_LIMIT_GAP_BPS = exports.DEFAULT_RISK_AVERSION_BPS = void 0;
+exports.STANDARD_LUT_ACCOUNTS = exports.JUPITER_PROGRAM_ID = exports.SOLAUTO_LUT = exports.PRICES = exports.MIN_BOOST_GAP_BPS = exports.MIN_REPAY_GAP_BPS = exports.MIN_POSITION_STATE_FRESHNESS_SECS = exports.DEFAULT_LIMIT_GAP_BPS = exports.BASIS_POINTS = void 0;
 const web3_js_1 = require("@solana/web3.js");
 const spl_token_1 = require("@solana/spl-token");
 // import { JitoRpcConnection } from "jito-ts";
 const generated_1 = require("../generated");
 const generalAccounts_1 = require("./generalAccounts");
-exports.DEFAULT_RISK_AVERSION_BPS = 1500;
+exports.BASIS_POINTS = 10000;
 exports.DEFAULT_LIMIT_GAP_BPS = 1000;
 exports.MIN_POSITION_STATE_FRESHNESS_SECS = 5;
-exports.MAX_REPAY_GAP_BPS = 100;
+exports.MIN_REPAY_GAP_BPS = 100;
+exports.MIN_BOOST_GAP_BPS = 50;
 // export const JITO_BLOCK_ENGINE = "ny.mainnet.block-engine.jito.wtf";
 // export const JITO_CONNECTION = new JitoRpcConnection(
 //   `https://${JITO_BLOCK_ENGINE}`,

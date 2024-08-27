@@ -49,14 +49,12 @@ import {
 } from "../utils/accountUtils";
 import {
   SOLAUTO_FEES_WALLET,
-  SOLAUTO_MANAGER,
 } from "../constants/generalAccounts";
 import { JupSwapDetails } from "../utils/jupiterUtils";
 import {
   getSolanaRpcConnection,
   getWrappedInstruction,
   splTokenTransferUmiIx,
-  systemTransferUmiIx,
 } from "../utils/solanaUtils";
 import { FlashLoanDetails } from "../utils/solauto/rebalanceUtils";
 import { NATIVE_MINT } from "@solana/spl-token";
@@ -66,7 +64,6 @@ import {
 } from "../constants/solautoConstants";
 import { currentUnixSeconds } from "../utils/generalUtils";
 import { LivePositionUpdates } from "../utils/solauto/generalUtils";
-import { toBaseUnit } from "../utils";
 
 export interface SolautoClientArgs {
   authority?: PublicKey;

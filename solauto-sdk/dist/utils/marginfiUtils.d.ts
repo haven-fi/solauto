@@ -4,16 +4,13 @@ import { Bank } from "../marginfi-sdk";
 import { MarginfiAssetAccounts } from "../types/accounts";
 import { PositionState } from "../generated";
 import { LivePositionUpdates } from "./solauto/generalUtils";
-export declare function findMarginfiAccounts({ mint, bank, }: {
-    mint?: string;
-    bank?: string;
-}): MarginfiAssetAccounts;
+export declare function findMarginfiAccounts(bank: PublicKey): MarginfiAssetAccounts;
 export declare function getMaxLtvAndLiqThreshold(umi: Umi, supply: {
     mint: PublicKey;
-    bank: Bank | null;
+    bank?: Bank | null;
 }, debt: {
     mint: PublicKey;
-    bank: Bank | null;
+    bank?: Bank | null;
 }, supplyPrice?: number): Promise<[number, number]>;
 export declare function getAllMarginfiAccountsByAuthority(umi: Umi, authority: PublicKey, compatibleWithSolauto?: boolean): Promise<{
     marginfiAccount: PublicKey;

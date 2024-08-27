@@ -5,14 +5,13 @@ use solana_program::{
     instruction::{get_stack_height, TRANSACTION_LEVEL_STACK_HEIGHT},
     msg,
     program_error::ProgramError,
-    pubkey::Pubkey,
     sysvar::instructions::{load_current_index_checked, load_instruction_at_checked},
 };
 use spl_associated_token_account::get_associated_token_address;
 use spl_token::state::Account as TokenAccount;
 
 use crate::{
-    constants::{SOLAUTO_MANAGER, WSOL_MINT},
+    constants::WSOL_MINT,
     instructions::referral_fees,
     state::referral_state::ReferralState,
     types::{
@@ -96,26 +95,7 @@ pub fn process_convert_referral_fees<'a>(accounts: &'a [AccountInfo<'a>]) -> Pro
     let referral_state =
         DeserializedAccount::<ReferralState>::zerocopy(Some(ctx.accounts.referral_state))?.unwrap();
 
-    let referral_state_pda = Pubkey::create_program_address(
-        referral_state.data.seeds_with_bump().as_slice(),
-        &crate::ID,
-    )?;
-    if &referral_state_pda != referral_state.account_info.key {
-        msg!("Incorrect referral state account provided");
-        return Err(SolautoError::IncorrectAccounts.into());
-    }
-
-    if !ctx.accounts.signer.is_signer {
-        return Err(ProgramError::MissingRequiredSignature.into());
-    }
-
-    if ctx.accounts.signer.key != &referral_state.data.authority
-        && ctx.accounts.signer.key != &SOLAUTO_MANAGER
-    {
-        msg!("Instruction must be invoked by the referral state authority or Solauto manager");
-        return Err(SolautoError::IncorrectAccounts.into());
-    }
-
+    validation_utils::validate_referral_signer(&referral_state, ctx.accounts.signer, true)?;
     validation_utils::validate_sysvar_accounts(
         Some(ctx.accounts.system_program),
         Some(ctx.accounts.token_program),
@@ -173,10 +153,9 @@ pub fn process_claim_referral_fees<'a>(accounts: &'a [AccountInfo<'a>]) -> Progr
     msg!("Instruction: Claim referral fees");
     let ctx = ClaimReferralFeesAccounts::context(accounts)?;
 
-    if !ctx.accounts.signer.is_signer {
-        return Err(ProgramError::MissingRequiredSignature.into());
-    }
+    let referral_state = DeserializedAccount::<ReferralState>::zerocopy(Some(ctx.accounts.referral_state))?.unwrap();
 
+    validation_utils::validate_referral_signer(&referral_state, ctx.accounts.signer, false)?;
     validation_utils::validate_sysvar_accounts(
         Some(ctx.accounts.system_program),
         Some(ctx.accounts.token_program),
@@ -184,18 +163,6 @@ pub fn process_claim_referral_fees<'a>(accounts: &'a [AccountInfo<'a>]) -> Progr
         Some(ctx.accounts.rent),
         None,
     )?;
-
-    let referral_state =
-        DeserializedAccount::<ReferralState>::zerocopy(Some(ctx.accounts.referral_state))?.unwrap();
-
-    let expected_referral_state_address = Pubkey::create_program_address(
-        referral_state.data.seeds_with_bump().as_slice(),
-        &crate::ID,
-    )?;
-    if referral_state.account_info.key != &expected_referral_state_address {
-        msg!("Incorrect referral state provided for the given signer");
-        return Err(SolautoError::IncorrectAccounts.into());
-    }
 
     if ctx.accounts.referral_fees_dest_ta.key
         != &get_associated_token_address(

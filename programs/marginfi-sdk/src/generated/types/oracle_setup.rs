@@ -19,6 +19,7 @@ unsafe impl Pod for OracleSetup {}
 pub enum OracleSetup {
     None,
     PythLegacy,
-    SwitchboardV2,
+    SwitchboardLegacy,
     PythPushOracle,
+    SwitchboardPull,
 }

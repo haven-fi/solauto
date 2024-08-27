@@ -12,6 +12,6 @@ export declare function closeTokenAccountUmiIx(signer: Signer, tokenAccount: Pub
 export declare function splTokenTransferUmiIx(signer: Signer, fromTa: PublicKey, toTa: PublicKey, authority: PublicKey, amount: bigint): WrappedInstruction;
 export declare function getAdressLookupInputs(umi: Umi, lookupTableAddresses: string[]): Promise<AddressLookupTableInput[]>;
 export declare function assembleFinalTransaction(signer: Signer, tx: TransactionBuilder, computeUnitPrice: number, computeUnitLimit?: number): TransactionBuilder;
-export declare function getComputeUnitPriceEstimate(umi: Umi, tx: TransactionBuilder, prioritySetting: PriorityFeeSetting, attemptNum?: number): Promise<number>;
+export declare function getComputeUnitPriceEstimate(umi: Umi, tx: TransactionBuilder, prioritySetting: PriorityFeeSetting): Promise<number>;
 export declare function sendSingleOptimizedTransaction(umi: Umi, connection: Connection, tx: TransactionBuilder, simulateOnly?: boolean, attemptNum?: number, prioritySetting?: PriorityFeeSetting): Promise<Uint8Array | undefined>;
 //# sourceMappingURL=solanaUtils.d.ts.map

@@ -1,4 +1,4 @@
-use math_utils::{from_base_unit, from_bps};
+use math_utils::{from_base_unit, from_bps, to_bps};
 use solana_program::{
     account_info::AccountInfo, clock::Clock, entrypoint::ProgramResult, msg,
     program_error::ProgramError, sysvar::Sysvar,
@@ -58,6 +58,12 @@ impl<'a> SolautoManager<'a> {
         let solauto_fees_bps = solauto_utils::get_solauto_fees_bps(
             std_accounts.referred_by_supply_ta.is_some(),
             std_accounts.solauto_position.data.fee_type,
+            std_accounts
+                .solauto_position
+                .data
+                .state
+                .net_worth
+                .usd_value(),
         );
         Ok(Self {
             client,
@@ -337,7 +343,7 @@ impl<'a> SolautoManager<'a> {
             self.repay(amount)?;
         } else {
             msg!("Missing required position liquidity to rebalance position");
-            return Err(SolautoError::UnableToReposition.into());
+            return Err(SolautoError::UnableToRebalance.into());
         }
 
         if flash_loan_amount > 0 {
@@ -474,8 +480,8 @@ impl<'a> SolautoManager<'a> {
         updated_data: RefreshStateProps,
         clock: Clock,
     ) -> ProgramResult {
-        solauto_position.state.max_ltv_bps = updated_data.max_ltv.mul(10000.0) as u16;
-        solauto_position.state.liq_threshold_bps = updated_data.liq_threshold.mul(10000.0) as u16;
+        solauto_position.state.max_ltv_bps = to_bps(updated_data.max_ltv);
+        solauto_position.state.liq_threshold_bps = to_bps(updated_data.liq_threshold);
 
         solauto_position.state.supply.decimals = updated_data.supply.decimals;
         solauto_position.state.debt.decimals = updated_data.debt.decimals;

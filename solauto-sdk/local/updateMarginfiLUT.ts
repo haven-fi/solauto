@@ -14,7 +14,7 @@ async function addBanks() {
     const accounts = MARGINFI_ACCOUNTS[key];
     await updateLookupTable(
       [
-        accounts.mint,
+        key,
         accounts.bank,
         accounts.liquidityVault,
         accounts.vaultAuthority,

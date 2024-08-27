@@ -21,6 +21,7 @@ fn main() {
     //         let bank = bytemuck::from_bytes::<Bank>(&account_info.data.borrow());
     //         // let bank = Ref::<_, Bank>::new(account_info.data.borrow()).unwrap();
     //         println!("{:?}", bank);
+    //         println!("price oracle {}", bank.config.oracle_keys[0]);
     //         println!("total asset shares {}", I80F48::from_le_bytes(bank.total_asset_shares.value));
     //         println!("asset share value {}", I80F48::from_le_bytes(bank.asset_share_value.value));
     //         println!(
@@ -40,31 +41,31 @@ fn main() {
     //             I80F48::from_le_bytes(bank.config.liability_weight_maint.value)
     //         );
 
-    //         let pubkey = Pubkey::from_str("9Bfew9kzE83H8gPS7coUUzhytRhnJ1U2pzuaW2TTcKVD").unwrap();
-    //         match client.get_account(&pubkey) {
-    //             Ok(account_info) => {
-    //                 let marginfi_account = bytemuck::from_bytes::<MarginfiAccount>(
-    //                     &account_info.data.borrow()
-    //                 );
-    //                 println!("{:?}", marginfi_account);
+    //         // let pubkey = Pubkey::from_str("9Bfew9kzE83H8gPS7coUUzhytRhnJ1U2pzuaW2TTcKVD").unwrap();
+    //         // match client.get_account(&pubkey) {
+    //         //     Ok(account_info) => {
+    //         //         let marginfi_account = bytemuck::from_bytes::<MarginfiAccount>(
+    //         //             &account_info.data.borrow()
+    //         //         );
+    //         //         println!("{:?}", marginfi_account);
 
-    //                 let shares = I80F48::from_le_bytes(
-    //                     marginfi_account.lending_account.balances[0].asset_shares.value
-    //                 );
-    //                 println!(
-    //                     "account asset shares {}",
-    //                     shares
-    //                 );
+    //         //         let shares = I80F48::from_le_bytes(
+    //         //             marginfi_account.lending_account.balances[0].asset_shares.value
+    //         //         );
+    //         //         println!(
+    //         //             "account asset shares {}",
+    //         //             shares
+    //         //         );
 
-    //                 let calculated_shares = shares * I80F48::from_le_bytes(bank.asset_share_value.value);
-    //                 println!("calculated shares {}", calculated_shares);
+    //         //         let calculated_shares = shares * I80F48::from_le_bytes(bank.asset_share_value.value);
+    //         //         println!("calculated shares {}", calculated_shares);
 
-    //                 println!("as u64: {}", i80f48_to_u64(calculated_shares));
-    //                 println!("test {}", i80f48_to_f64(calculated_shares) as u64);
+    //         //         println!("as u64: {}", i80f48_to_u64(calculated_shares));
+    //         //         println!("test {}", i80f48_to_f64(calculated_shares) as u64);
 
-    //             }
-    //             Err(e) => println!("An error occurred: {}", e),
-    //         }
+    //         //     }
+    //         //     Err(e) => println!("An error occurred: {}", e),
+    //         // }
 
     //     }
     //     Err(e) => println!("An error occurred: {}", e),
