@@ -1,4 +1,5 @@
 import { NATIVE_MINT } from "@solana/spl-token";
+import { PublicKey } from "@solana/web3.js";
 
 // When adding token ensure a price feed is provided in pythConstants.ts & the token is in TOKEN_INFO
 export const USDC_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
@@ -20,6 +21,9 @@ interface TokenInfo {
 }
 
 export const TOKEN_INFO: { [key: string]: TokenInfo } = {
+    [PublicKey.default.toString()]: {
+        decimals: 1
+    },
     [NATIVE_MINT.toString()]: {
         decimals: 9,
     },

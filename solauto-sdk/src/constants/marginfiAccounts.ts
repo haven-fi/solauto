@@ -1,10 +1,18 @@
 import { NATIVE_MINT } from "@solana/spl-token";
 import { B_SOL, JUP, USDC_MINT } from "./tokenConstants";
 import { MarginfiAssetAccounts } from "../types/accounts";
+import { PublicKey } from "@solana/web3.js";
 
 export const DEFAULT_MARGINFI_GROUP = "4qp6Fx6tnZkY5Wropq9wUYgtFxXKwE6viZxFHg3rdAG8";
 
+const DEFAULT_PUBKEY = PublicKey.default.toString();
 export const MARGINFI_ACCOUNTS: { [key: string]: MarginfiAssetAccounts } = {
+  [DEFAULT_PUBKEY]: {
+    bank: DEFAULT_PUBKEY,
+    liquidityVault: DEFAULT_PUBKEY,
+    vaultAuthority: DEFAULT_PUBKEY,
+    priceOracle: DEFAULT_PUBKEY,
+  },
   [NATIVE_MINT.toString()]: {
     bank: "CCKtUs6Cgwo4aaQUmBPmyoApH2gUDErxNZCAntD6LYGh",
     liquidityVault: "2eicbpitfJXDwqCuFAmPgDP7t2oUotnAzbGzRKLMgSLe",
@@ -28,7 +36,7 @@ export const MARGINFI_ACCOUNTS: { [key: string]: MarginfiAssetAccounts } = {
     liquidityVault: "4w49W4fNDn778wsBa6TNq9hvebZKU17ymsptrEZ8zrsm",
     vaultAuthority: "2MBwwAhL3c73Jy7HkWd9ofzh1bU39JBabrZCFQR2tUof",
     priceOracle: "7dbob1psH1iZBS7qPsm3Kwbf5DzSXK8Jyg31CTgTnxH5",
-  }
+  },
 };
 
 export const MARGINFI_ACCOUNTS_LOOKUP_TABLE = "GAjmWmBPcH5Gxbiykasydj6RsCEaCLyHEvK6kHdFigc6";

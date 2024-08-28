@@ -25,6 +25,9 @@ function findMarginfiAccounts(bank) {
     throw new Error(`Marginfi accounts not found by the bank: ${bank}`);
 }
 async function getMaxLtvAndLiqThreshold(umi, supply, debt, supplyPrice) {
+    if (!supply.bank && supply.mint.equals(web3_js_1.PublicKey.default)) {
+        return [0, 0];
+    }
     if (!supply.bank || supply.bank === null) {
         supply.bank = await (0, marginfi_sdk_1.safeFetchBank)(umi, (0, umi_1.publicKey)(marginfiAccounts_1.MARGINFI_ACCOUNTS[supply.mint.toString()].bank));
     }
