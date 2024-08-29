@@ -15,6 +15,7 @@ export const ALL_SUPPORTED_TOKENS = [
 ];
 
 interface TokenInfo {
+    ticker: string;
     decimals: number;
     isStableCoin?: boolean;
     isLST?: boolean;
@@ -22,20 +23,25 @@ interface TokenInfo {
 
 export const TOKEN_INFO: { [key: string]: TokenInfo } = {
     [PublicKey.default.toString()]: {
+        ticker: "",
         decimals: 1
     },
     [NATIVE_MINT.toString()]: {
+        ticker: "SOL",
         decimals: 9,
     },
     [USDC_MINT]: {
+        ticker: "USDC",
         decimals: 6,
         isStableCoin: true
     },
     [B_SOL]: {
+        ticker: "BSOL",
         decimals: 9,
         isLST: true
     },
     [JUP]: {
+        ticker: "JUP",
         decimals: 6
     }
 };

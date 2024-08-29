@@ -15,20 +15,25 @@ exports.ALL_SUPPORTED_TOKENS = [
 ];
 exports.TOKEN_INFO = {
     [web3_js_1.PublicKey.default.toString()]: {
+        ticker: "",
         decimals: 1
     },
     [spl_token_1.NATIVE_MINT.toString()]: {
+        ticker: "SOL",
         decimals: 9,
     },
     [exports.USDC_MINT]: {
+        ticker: "USDC",
         decimals: 6,
         isStableCoin: true
     },
     [exports.B_SOL]: {
+        ticker: "BSOL",
         decimals: 9,
         isLST: true
     },
     [exports.JUP]: {
+        ticker: "JUP",
         decimals: 6
     }
 };

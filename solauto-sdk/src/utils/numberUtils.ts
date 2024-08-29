@@ -135,10 +135,6 @@ export function getMaxLiqUtilizationRateBps(
   return toBps((fromBps(maxLtvBps) - offsetFromMaxLtv) / fromBps(liqThresholdBps)) - 1; // -1 to account for any rounding issues
 }
 
-export function maxBoostToBps(maxLtvBps: number, liqThresholdBps: number) {
-  return getMaxLiqUtilizationRateBps(maxLtvBps, liqThresholdBps, 0.015);
-}
-
 export function maxRepayFromBps(maxLtvBps: number, liqThresholdBps: number) {
   return Math.min(
     9000,
@@ -150,5 +146,12 @@ export function maxRepayToBps(maxLtvBps: number, liqThresholdBps: number) {
   return Math.min(
     maxRepayFromBps(maxLtvBps, liqThresholdBps) - MIN_REPAY_GAP_BPS,
     getMaxLiqUtilizationRateBps(maxLtvBps, liqThresholdBps, 0.005)
+  );
+}
+
+export function maxBoostToBps(maxLtvBps: number, liqThresholdBps: number) {
+  return Math.min(
+    maxRepayToBps(maxLtvBps, liqThresholdBps),
+    getMaxLiqUtilizationRateBps(maxLtvBps, liqThresholdBps, 0.015)
   );
 }
