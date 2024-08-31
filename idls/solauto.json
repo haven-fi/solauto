@@ -115,6 +115,12 @@
           "isSigner": true
         },
         {
+          "name": "signerWsolTa",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
           "name": "systemProgram",
           "isMut": false,
           "isSigner": false
@@ -143,6 +149,12 @@
           "name": "referralFeesDestMint",
           "isMut": false,
           "isSigner": false
+        },
+        {
+          "name": "referralAuthority",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
         },
         {
           "name": "feesDestinationTa",

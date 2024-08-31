@@ -37,12 +37,14 @@ pub enum Instruction {
 
     /// Claim the accumulated fees from referrals
     #[account(signer, name = "signer")]
+    #[account(mut, optional, name = "signer_wsol_ta")]
     #[account(name = "system_program")]
     #[account(name = "token_program")]
     #[account(name = "rent")]
     #[account(name = "referral_state")]
     #[account(mut, name = "referral_fees_dest_ta")]
     #[account(name = "referral_fees_dest_mint")]
+    #[account(mut, optional, name = "referral_authority")]
     #[account(mut, optional, name = "fees_destination_ta")]
     ClaimReferralFees,
 

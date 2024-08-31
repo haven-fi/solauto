@@ -405,6 +405,8 @@ export abstract class SolautoClient {
         : undefined;
     return claimReferralFees(this.umi, {
       signer: this.signer,
+      signerWsolTa: publicKey(getTokenAccount(toWeb3JsPublicKey(this.signer.publicKey), NATIVE_MINT)),
+      referralAuthority: publicKey(this.authorityReferralStateData!.authority),
       referralState: publicKey(this.authorityReferralState),
       referralFeesDestTa: publicKey(this.authorityReferralDestTa),
       referralFeesDestMint: publicKey(this.authorityReferralFeesDestMint),

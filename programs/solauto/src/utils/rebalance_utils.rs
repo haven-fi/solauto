@@ -8,10 +8,7 @@ use solana_program::{
     pubkey::Pubkey,
     sysvar::instructions::load_current_index_checked,
 };
-use std::{
-    cmp::max,
-    ops::Mul,
-};
+use std::{cmp::max, ops::Mul};
 
 use crate::{
     state::solauto_position::{DCASettings, PositionData, SolautoPosition, SolautoRebalanceType},

@@ -153,9 +153,21 @@ pub fn process_claim_referral_fees<'a>(accounts: &'a [AccountInfo<'a>]) -> Progr
     msg!("Instruction: Claim referral fees");
     let ctx = ClaimReferralFeesAccounts::context(accounts)?;
 
-    let referral_state = DeserializedAccount::<ReferralState>::zerocopy(Some(ctx.accounts.referral_state))?.unwrap();
+    let referral_state =
+        DeserializedAccount::<ReferralState>::zerocopy(Some(ctx.accounts.referral_state))?.unwrap();
 
-    validation_utils::validate_referral_signer(&referral_state, ctx.accounts.signer, false)?;
+    validation_utils::validate_referral_signer(
+        &referral_state,
+        ctx.accounts.signer,
+        ctx.accounts.referral_fees_dest_mint.key == &WSOL_MINT,
+    )?;
+    if ctx.accounts.referral_authority.is_some()
+        && ctx.accounts.referral_authority.unwrap().key != &referral_state.data.authority
+    {
+        msg!("Provided incorrect referral authority");
+        return Err(SolautoError::IncorrectAccounts.into());
+    }
+
     validation_utils::validate_sysvar_accounts(
         Some(ctx.accounts.system_program),
         Some(ctx.accounts.token_program),

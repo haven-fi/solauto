@@ -1,4 +1,4 @@
-use solana_program::{entrypoint::ProgramResult, program_pack::Pack};
+use solana_program::{entrypoint::ProgramResult, program_pack::Pack, rent::Rent, sysvar::Sysvar};
 use spl_token::state::Account as TokenAccount;
 
 use crate::{
@@ -36,10 +36,23 @@ pub fn claim_referral_fees(
     let referral_state_seeds = &referral_state.data.seeds_with_bump();
 
     if ctx.accounts.referral_fees_dest_mint.key == &WSOL_MINT {
+        if ctx.accounts.signer.key != &referral_state.data.authority {
+            let rent = Rent::get()?;
+            let account_rent = rent.minimum_balance(TokenAccount::LEN);
+            solana_utils::spl_token_transfer(
+                ctx.accounts.token_program,
+                ctx.accounts.referral_fees_dest_ta,
+                ctx.accounts.referral_state,
+                ctx.accounts.signer_wsol_ta.unwrap(),
+                account_rent,
+                Some(referral_state_seeds),
+            )?;
+        }
+
         solana_utils::close_token_account(
             ctx.accounts.token_program,
             ctx.accounts.referral_fees_dest_ta,
-            ctx.accounts.signer,
+            ctx.accounts.referral_authority.unwrap(),
             ctx.accounts.referral_state,
             Some(referral_state_seeds),
         )?;

@@ -148,7 +148,7 @@ pub fn get_max_repay_to_bps(max_ltv_bps: u16, liq_threshold_bps: u16) -> u16 {
 pub fn get_max_boost_to_bps(max_ltv_bps: u16, liq_threshold_bps: u16) -> u16 {
     min(
         get_max_repay_to_bps(max_ltv_bps, liq_threshold_bps),
-        get_max_liq_utilization_rate_bps(max_ltv_bps, liq_threshold_bps, 0.015)
+        get_max_liq_utilization_rate_bps(max_ltv_bps, liq_threshold_bps, 0.015),
     )
 }
 
