@@ -19,6 +19,7 @@ interface AssetProps {
     amountUsed?: number;
 }
 export declare function createFakePositionState(supply: AssetProps, debt: AssetProps, maxLtvBps: number, liqThresholdBps: number): PositionState;
+export declare function createSolautoSettings(settings: SolautoSettingsParametersInpArgs): SolautoSettingsParameters;
 type PositionAdjustment = {
     type: "supply";
     value: bigint;

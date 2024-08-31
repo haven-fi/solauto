@@ -10,9 +10,9 @@ exports.uint8ArrayToBigInt = uint8ArrayToBigInt;
 exports.getDebtAdjustmentUsd = getDebtAdjustmentUsd;
 exports.getSolautoFeesBps = getSolautoFeesBps;
 exports.getMaxLiqUtilizationRateBps = getMaxLiqUtilizationRateBps;
-exports.maxBoostToBps = maxBoostToBps;
 exports.maxRepayFromBps = maxRepayFromBps;
 exports.maxRepayToBps = maxRepayToBps;
+exports.maxBoostToBps = maxBoostToBps;
 const constants_1 = require("../constants");
 const generated_1 = require("../generated");
 function getLiqUtilzationRateBps(supplyUsd, debtUsd, liqThresholdBps) {
@@ -100,12 +100,12 @@ function getSolautoFeesBps(isReferred, feeType, positionNetWorthUsd) {
 function getMaxLiqUtilizationRateBps(maxLtvBps, liqThresholdBps, offsetFromMaxLtv) {
     return toBps((fromBps(maxLtvBps) - offsetFromMaxLtv) / fromBps(liqThresholdBps)) - 1; // -1 to account for any rounding issues
 }
-function maxBoostToBps(maxLtvBps, liqThresholdBps) {
-    return getMaxLiqUtilizationRateBps(maxLtvBps, liqThresholdBps, 0.015);
-}
 function maxRepayFromBps(maxLtvBps, liqThresholdBps) {
     return Math.min(9000, getMaxLiqUtilizationRateBps(maxLtvBps, liqThresholdBps - 1000, 0.005));
 }
 function maxRepayToBps(maxLtvBps, liqThresholdBps) {
     return Math.min(maxRepayFromBps(maxLtvBps, liqThresholdBps) - constants_1.MIN_REPAY_GAP_BPS, getMaxLiqUtilizationRateBps(maxLtvBps, liqThresholdBps, 0.005));
+}
+function maxBoostToBps(maxLtvBps, liqThresholdBps) {
+    return Math.min(maxRepayToBps(maxLtvBps, liqThresholdBps), getMaxLiqUtilizationRateBps(maxLtvBps, liqThresholdBps, 0.015));
 }

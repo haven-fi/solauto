@@ -48,6 +48,10 @@ export async function getMaxLtvAndLiqThreshold(
   },
   supplyPrice?: number
 ): Promise<[number, number]> {
+  if (!supply.bank && supply.mint.equals(PublicKey.default)) {
+    return [0, 0];
+  }
+
   if (!supply.bank || supply.bank === null) {
     supply.bank = await safeFetchBank(
       umi,

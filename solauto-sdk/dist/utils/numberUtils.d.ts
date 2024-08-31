@@ -13,7 +13,7 @@ export declare function getSolautoFeesBps(isReferred: boolean, feeType: FeeType,
     total: number;
 };
 export declare function getMaxLiqUtilizationRateBps(maxLtvBps: number, liqThresholdBps: number, offsetFromMaxLtv: number): number;
-export declare function maxBoostToBps(maxLtvBps: number, liqThresholdBps: number): number;
 export declare function maxRepayFromBps(maxLtvBps: number, liqThresholdBps: number): number;
 export declare function maxRepayToBps(maxLtvBps: number, liqThresholdBps: number): number;
+export declare function maxBoostToBps(maxLtvBps: number, liqThresholdBps: number): number;
 //# sourceMappingURL=numberUtils.d.ts.map

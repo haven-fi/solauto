@@ -12,7 +12,10 @@ use spl_associated_token_account::ID as ata_program_id;
 use spl_token::{state::Account as TokenAccount, ID as token_program_id};
 
 use crate::{
-    constants::{KAMINO_PROGRAM, MAX_BASIS_POINTS, MIN_BOOST_GAP_BPS, MIN_REPAY_GAP_BPS, SOLAUTO_FEES_WALLET, SOLAUTO_MANAGER},
+    constants::{
+        KAMINO_PROGRAM, MAX_BASIS_POINTS, MIN_BOOST_GAP_BPS, MIN_REPAY_GAP_BPS,
+        SOLAUTO_FEES_WALLET, SOLAUTO_MANAGER,
+    },
     state::{
         referral_state::ReferralState,
         solauto_position::{AutomationSettings, PositionData, SolautoPosition},
@@ -149,7 +152,9 @@ pub fn validate_position_settings(
         );
     }
     if data.setting_params.boost_gap < MIN_BOOST_GAP_BPS {
-        return invalid_params(format!("boost_gap must be {} or greater", MIN_BOOST_GAP_BPS).as_str());
+        return invalid_params(
+            format!("boost_gap must be {} or greater", MIN_BOOST_GAP_BPS).as_str(),
+        );
     }
 
     if data.setting_params.automation.is_active() {
@@ -161,7 +166,9 @@ pub fn validate_position_settings(
     }
 
     if data.setting_params.target_boost_to_bps > MAX_BASIS_POINTS {
-        return invalid_params(format!("target_boost_to_bps must be less than {}", MAX_BASIS_POINTS).as_str());
+        return invalid_params(
+            format!("target_boost_to_bps must be less than {}", MAX_BASIS_POINTS).as_str(),
+        );
     }
 
     let max_repay_to_bps = get_max_repay_to_bps(
@@ -446,7 +453,11 @@ pub fn token_account_owned_by(
         && &token_account.data.owner == expected_owner
 }
 
-pub fn validate_referral_signer(referral_state: &DeserializedAccount<ReferralState>, signer: &AccountInfo, allow_solauto_manager: bool) -> ProgramResult {
+pub fn validate_referral_signer(
+    referral_state: &DeserializedAccount<ReferralState>,
+    signer: &AccountInfo,
+    allow_solauto_manager: bool,
+) -> ProgramResult {
     let referral_state_pda = Pubkey::create_program_address(
         referral_state.data.seeds_with_bump().as_slice(),
         &crate::ID,
@@ -459,7 +470,8 @@ pub fn validate_referral_signer(referral_state: &DeserializedAccount<ReferralSta
     if !signer.is_signer {
         return Err(ProgramError::MissingRequiredSignature.into());
     }
-    if signer.key != &referral_state.data.authority && (!allow_solauto_manager || signer.key != &SOLAUTO_MANAGER)
+    if signer.key != &referral_state.data.authority
+        && (!allow_solauto_manager || signer.key != &SOLAUTO_MANAGER)
     {
         msg!("Instruction has not been signed by the right account");
         return Err(SolautoError::IncorrectAccounts.into());

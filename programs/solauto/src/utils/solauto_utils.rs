@@ -6,7 +6,10 @@ use spl_associated_token_account::get_associated_token_address;
 use spl_token::state::{Account as TokenAccount, Mint};
 use std::ops::Div;
 
-use super::{math_utils::to_bps, solana_utils::{account_has_data, init_account, init_ata_if_needed, spl_token_transfer}};
+use super::{
+    math_utils::to_bps,
+    solana_utils::{account_has_data, init_account, init_ata_if_needed, spl_token_transfer},
+};
 use crate::{
     constants::{SOLAUTO_FEES_WALLET, WSOL_MINT},
     state::{

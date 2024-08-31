@@ -30,12 +30,14 @@ import {
 // Accounts.
 export type ClaimReferralFeesInstructionAccounts = {
   signer: Signer;
+  signerWsolTa?: PublicKey | Pda;
   systemProgram?: PublicKey | Pda;
   tokenProgram?: PublicKey | Pda;
   rent?: PublicKey | Pda;
   referralState: PublicKey | Pda;
   referralFeesDestTa: PublicKey | Pda;
   referralFeesDestMint: PublicKey | Pda;
+  referralAuthority?: PublicKey | Pda;
   feesDestinationTa?: PublicKey | Pda;
 };
 
@@ -81,34 +83,44 @@ export function claimReferralFees(
       isWritable: false as boolean,
       value: input.signer ?? null,
     },
-    systemProgram: {
+    signerWsolTa: {
       index: 1,
+      isWritable: true as boolean,
+      value: input.signerWsolTa ?? null,
+    },
+    systemProgram: {
+      index: 2,
       isWritable: false as boolean,
       value: input.systemProgram ?? null,
     },
     tokenProgram: {
-      index: 2,
+      index: 3,
       isWritable: false as boolean,
       value: input.tokenProgram ?? null,
     },
-    rent: { index: 3, isWritable: false as boolean, value: input.rent ?? null },
+    rent: { index: 4, isWritable: false as boolean, value: input.rent ?? null },
     referralState: {
-      index: 4,
+      index: 5,
       isWritable: false as boolean,
       value: input.referralState ?? null,
     },
     referralFeesDestTa: {
-      index: 5,
+      index: 6,
       isWritable: true as boolean,
       value: input.referralFeesDestTa ?? null,
     },
     referralFeesDestMint: {
-      index: 6,
+      index: 7,
       isWritable: false as boolean,
       value: input.referralFeesDestMint ?? null,
     },
+    referralAuthority: {
+      index: 8,
+      isWritable: true as boolean,
+      value: input.referralAuthority ?? null,
+    },
     feesDestinationTa: {
-      index: 7,
+      index: 9,
       isWritable: true as boolean,
       value: input.feesDestinationTa ?? null,
     },

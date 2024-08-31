@@ -3,8 +3,16 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.MARGINFI_ACCOUNTS_LOOKUP_TABLE = exports.MARGINFI_ACCOUNTS = exports.DEFAULT_MARGINFI_GROUP = void 0;
 const spl_token_1 = require("@solana/spl-token");
 const tokenConstants_1 = require("./tokenConstants");
+const web3_js_1 = require("@solana/web3.js");
 exports.DEFAULT_MARGINFI_GROUP = "4qp6Fx6tnZkY5Wropq9wUYgtFxXKwE6viZxFHg3rdAG8";
+const DEFAULT_PUBKEY = web3_js_1.PublicKey.default.toString();
 exports.MARGINFI_ACCOUNTS = {
+    [DEFAULT_PUBKEY]: {
+        bank: DEFAULT_PUBKEY,
+        liquidityVault: DEFAULT_PUBKEY,
+        vaultAuthority: DEFAULT_PUBKEY,
+        priceOracle: DEFAULT_PUBKEY,
+    },
     [spl_token_1.NATIVE_MINT.toString()]: {
         bank: "CCKtUs6Cgwo4aaQUmBPmyoApH2gUDErxNZCAntD6LYGh",
         liquidityVault: "2eicbpitfJXDwqCuFAmPgDP7t2oUotnAzbGzRKLMgSLe",
@@ -28,6 +36,6 @@ exports.MARGINFI_ACCOUNTS = {
         liquidityVault: "4w49W4fNDn778wsBa6TNq9hvebZKU17ymsptrEZ8zrsm",
         vaultAuthority: "2MBwwAhL3c73Jy7HkWd9ofzh1bU39JBabrZCFQR2tUof",
         priceOracle: "7dbob1psH1iZBS7qPsm3Kwbf5DzSXK8Jyg31CTgTnxH5",
-    }
+    },
 };
 exports.MARGINFI_ACCOUNTS_LOOKUP_TABLE = "GAjmWmBPcH5Gxbiykasydj6RsCEaCLyHEvK6kHdFigc6";
