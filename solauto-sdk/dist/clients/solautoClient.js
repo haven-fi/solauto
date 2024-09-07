@@ -208,6 +208,8 @@ class SolautoClient {
             : undefined;
         return (0, generated_1.claimReferralFees)(this.umi, {
             signer: this.signer,
+            signerWsolTa: (0, umi_1.publicKey)((0, accountUtils_1.getTokenAccount)((0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.signer.publicKey), spl_token_1.NATIVE_MINT)),
+            referralAuthority: (0, umi_1.publicKey)(this.authorityReferralStateData.authority),
             referralState: (0, umi_1.publicKey)(this.authorityReferralState),
             referralFeesDestTa: (0, umi_1.publicKey)(this.authorityReferralDestTa),
             referralFeesDestMint: (0, umi_1.publicKey)(this.authorityReferralFeesDestMint),

@@ -9,12 +9,14 @@ import { Context, Pda, PublicKey, Signer, TransactionBuilder } from '@metaplex-f
 import { Serializer } from '@metaplex-foundation/umi/serializers';
 export type ClaimReferralFeesInstructionAccounts = {
     signer: Signer;
+    signerWsolTa?: PublicKey | Pda;
     systemProgram?: PublicKey | Pda;
     tokenProgram?: PublicKey | Pda;
     rent?: PublicKey | Pda;
     referralState: PublicKey | Pda;
     referralFeesDestTa: PublicKey | Pda;
     referralFeesDestMint: PublicKey | Pda;
+    referralAuthority?: PublicKey | Pda;
     feesDestinationTa?: PublicKey | Pda;
 };
 export type ClaimReferralFeesInstructionData = {

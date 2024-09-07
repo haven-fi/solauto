@@ -28,34 +28,44 @@ function claimReferralFees(context, input) {
             isWritable: false,
             value: input.signer ?? null,
         },
-        systemProgram: {
+        signerWsolTa: {
             index: 1,
+            isWritable: true,
+            value: input.signerWsolTa ?? null,
+        },
+        systemProgram: {
+            index: 2,
             isWritable: false,
             value: input.systemProgram ?? null,
         },
         tokenProgram: {
-            index: 2,
+            index: 3,
             isWritable: false,
             value: input.tokenProgram ?? null,
         },
-        rent: { index: 3, isWritable: false, value: input.rent ?? null },
+        rent: { index: 4, isWritable: false, value: input.rent ?? null },
         referralState: {
-            index: 4,
+            index: 5,
             isWritable: false,
             value: input.referralState ?? null,
         },
         referralFeesDestTa: {
-            index: 5,
+            index: 6,
             isWritable: true,
             value: input.referralFeesDestTa ?? null,
         },
         referralFeesDestMint: {
-            index: 6,
+            index: 7,
             isWritable: false,
             value: input.referralFeesDestMint ?? null,
         },
+        referralAuthority: {
+            index: 8,
+            isWritable: true,
+            value: input.referralAuthority ?? null,
+        },
         feesDestinationTa: {
-            index: 7,
+            index: 9,
             isWritable: true,
             value: input.feesDestinationTa ?? null,
         },

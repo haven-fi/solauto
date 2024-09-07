@@ -2,6 +2,7 @@ import { PublicKey } from "@solana/web3.js";
 import { Umi } from "@metaplex-foundation/umi";
 import { AutomationSettings, DCASettings, DCASettingsInpArgs, PositionState, SolautoSettingsParameters, SolautoSettingsParametersInpArgs } from "../../generated";
 import { RebalanceAction, SolautoPositionDetails } from "../../types/solauto";
+export declare function findMintByTicker(ticker: string): PublicKey;
 export declare function nextAutomationPeriodTimestamp(automation: AutomationSettings): number;
 export declare function eligibleForNextAutomationPeriod(automation: AutomationSettings, currentUnixTime: number): boolean;
 export declare function getUpdatedValueFromAutomation(currValue: number, targetValue: number, automation: AutomationSettings, currentUnixTimestamp: number): number;

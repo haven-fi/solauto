@@ -1,6 +1,6 @@
 {
   "name": "@haven-fi/solauto-sdk",
-  "version": "1.0.80",
+  "version": "1.0.81",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "description": "Typescript SDK for the Solauto program on the Solana blockchain",
