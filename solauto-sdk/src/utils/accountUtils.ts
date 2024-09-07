@@ -26,11 +26,11 @@ export function getTokenAccounts(wallet: PublicKey, tokenMints: PublicKey[]): Pu
   return tokenMints.map(x => getTokenAccount(wallet, x));
 }
 
-export async function getSolautoPositionAccount(
+export function getSolautoPositionAccount(
   signer: PublicKey,
   positionId: number
 ) {
-  const [positionAccount, _] = await PublicKey.findProgramAddress(
+  const [positionAccount, _] = PublicKey.findProgramAddressSync(
     [bufferFromU8(positionId), signer.toBuffer()],
     new PublicKey(SOLAUTO_PROGRAM_ID)
   );
@@ -38,11 +38,11 @@ export async function getSolautoPositionAccount(
   return positionAccount;
 }
 
-export async function getReferralState(authority: PublicKey) {
+export function getReferralState(authority: PublicKey) {
   const str = "referral_state";
   const strBuffer = Buffer.from(str, "utf-8");
 
-  const [ReferralState, _] = await PublicKey.findProgramAddress(
+  const [ReferralState, _] = PublicKey.findProgramAddressSync(
     [strBuffer, authority.toBuffer()],
     new PublicKey(SOLAUTO_PROGRAM_ID)
   );

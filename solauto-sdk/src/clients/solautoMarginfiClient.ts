@@ -44,9 +44,7 @@ import {
   lendingAccountStartFlashloan,
   lendingAccountWithdraw,
   marginfiAccountInitialize,
-  safeFetchAllBank,
   safeFetchAllMarginfiAccount,
-  safeFetchBank,
   safeFetchMarginfiAccount,
 } from "../marginfi-sdk";
 import { JupSwapDetails } from "../utils/jupiterUtils";
@@ -243,7 +241,7 @@ export class SolautoMarginfiClient extends SolautoClient {
       solautoManager: publicKey(SOLAUTO_MANAGER),
       solautoFeesWallet: publicKey(this.solautoFeesWallet),
       solautoFeesSupplyTa: publicKey(this.solautoFeesSupplyTa),
-      signerReferralState: publicKey(this.authorityReferralState),
+      signerReferralState: publicKey(this.referralStateManager.referralState),
       referredByState: this.referredByState
         ? publicKey(this.referredByState)
         : undefined,
@@ -448,7 +446,7 @@ export class SolautoMarginfiClient extends SolautoClient {
       ixsSysvar: publicKey(SYSVAR_INSTRUCTIONS_PUBKEY),
       solautoFeesSupplyTa:
         rebalanceStep === "B" ? publicKey(this.solautoFeesSupplyTa) : undefined,
-      authorityReferralState: publicKey(this.authorityReferralState),
+      authorityReferralState: publicKey(this.referralStateManager.referralState),
       referredBySupplyTa: this.referredBySupplyTa
         ? publicKey(this.referredBySupplyTa)
         : undefined,

@@ -2,10 +2,11 @@ import "rpc-websockets/dist/lib/client";
 import { Connection, PublicKey } from "@solana/web3.js";
 import { Signer, TransactionBuilder, Umi } from "@metaplex-foundation/umi";
 import { WalletAdapter } from "@metaplex-foundation/umi-signer-wallet-adapters";
-import { DCASettings, DCASettingsInpArgs, LendingPlatform, PositionState, ReferralState, SolautoActionArgs, SolautoPosition, SolautoRebalanceTypeArgs, SolautoSettingsParameters, SolautoSettingsParametersInpArgs, UpdatePositionDataArgs } from "../generated";
+import { DCASettings, DCASettingsInpArgs, LendingPlatform, PositionState, SolautoActionArgs, SolautoPosition, SolautoRebalanceTypeArgs, SolautoSettingsParameters, SolautoSettingsParametersInpArgs, UpdatePositionDataArgs } from "../generated";
 import { JupSwapDetails } from "../utils/jupiterUtils";
 import { FlashLoanDetails } from "../utils/solauto/rebalanceUtils";
 import { LivePositionUpdates } from "../utils/solauto/generalUtils";
+import { ReferralStateManager } from "./referralStateManager";
 export interface SolautoClientArgs {
     authority?: PublicKey;
     positionId: number;
@@ -13,11 +14,11 @@ export interface SolautoClientArgs {
     wallet?: WalletAdapter;
     supplyMint?: PublicKey;
     debtMint?: PublicKey;
-    referralFeesDestMint?: PublicKey;
     referredByAuthority?: PublicKey;
 }
 export declare abstract class SolautoClient {
     localTest?: boolean | undefined;
+    private heliusApiKey;
     umi: Umi;
     connection: Connection;
     lendingPlatform: LendingPlatform;
@@ -34,10 +35,7 @@ export declare abstract class SolautoClient {
     debtMint: PublicKey;
     positionDebtTa: PublicKey;
     signerDebtTa: PublicKey;
-    authorityReferralState: PublicKey;
-    authorityReferralStateData: ReferralState | null;
-    authorityReferralFeesDestMint: PublicKey;
-    authorityReferralDestTa: PublicKey;
+    referralStateManager: ReferralStateManager;
     referredByState?: PublicKey;
     referredByAuthority?: PublicKey;
     referredBySupplyTa?: PublicKey;
@@ -59,8 +57,6 @@ export declare abstract class SolautoClient {
     } | undefined>;
     solautoPositionSettings(): SolautoSettingsParameters | undefined;
     solautoPositionActiveDca(): DCASettings | undefined;
-    updateReferralStatesIx(): TransactionBuilder;
-    claimReferralFeesIx(): TransactionBuilder;
     openPosition(settingParams?: SolautoSettingsParametersInpArgs, dca?: DCASettingsInpArgs): TransactionBuilder;
     updatePositionIx(args: UpdatePositionDataArgs): TransactionBuilder;
     closePositionIx(): TransactionBuilder;

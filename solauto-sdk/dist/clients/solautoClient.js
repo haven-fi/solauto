@@ -10,15 +10,16 @@ const generated_1 = require("../generated");
 const accountUtils_1 = require("../utils/accountUtils");
 const generalAccounts_1 = require("../constants/generalAccounts");
 const solanaUtils_1 = require("../utils/solanaUtils");
-const spl_token_1 = require("@solana/spl-token");
 const solautoConstants_1 = require("../constants/solautoConstants");
 const generalUtils_1 = require("../utils/generalUtils");
 const generalUtils_2 = require("../utils/solauto/generalUtils");
+const referralStateManager_1 = require("./referralStateManager");
 class SolautoClient {
     constructor(heliusApiKey, localTest) {
         this.localTest = localTest;
         this.livePositionUpdates = new generalUtils_2.LivePositionUpdates();
-        const [connection, umi] = (0, solanaUtils_1.getSolanaRpcConnection)(heliusApiKey);
+        this.heliusApiKey = heliusApiKey;
+        const [connection, umi] = (0, solanaUtils_1.getSolanaRpcConnection)(this.heliusApiKey);
         this.connection = connection;
         this.umi = umi.use({
             install(umi) {
@@ -38,7 +39,7 @@ class SolautoClient {
         this.positionId = args.positionId;
         this.selfManaged = this.positionId === 0;
         this.lendingPlatform = lendingPlatform;
-        this.solautoPosition = await (0, accountUtils_1.getSolautoPositionAccount)(this.authority, this.positionId);
+        this.solautoPosition = (0, accountUtils_1.getSolautoPositionAccount)(this.authority, this.positionId);
         this.solautoPositionData = await (0, generated_1.safeFetchSolautoPosition)(this.umi, (0, umi_1.publicKey)(this.solautoPosition));
         this.solautoPositionState = this.solautoPositionData?.state;
         this.supplyMint =
@@ -51,16 +52,15 @@ class SolautoClient {
                 (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.solautoPositionData.position.debtMint);
         this.positionDebtTa = (0, accountUtils_1.getTokenAccount)(this.solautoPosition, this.debtMint);
         this.signerDebtTa = (0, accountUtils_1.getTokenAccount)((0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.signer.publicKey), this.debtMint);
-        this.authorityReferralState = await (0, accountUtils_1.getReferralState)(this.authority);
-        this.authorityReferralStateData = await (0, generated_1.safeFetchReferralState)(this.umi, (0, umi_1.publicKey)(this.authorityReferralState));
-        this.authorityReferralFeesDestMint = args.referralFeesDestMint
-            ? args.referralFeesDestMint
-            : this.authorityReferralStateData?.destFeesMint
-                ? (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.authorityReferralStateData?.destFeesMint)
-                : spl_token_1.NATIVE_MINT;
-        this.authorityReferralDestTa = (0, accountUtils_1.getTokenAccount)(this.authorityReferralState, this.authorityReferralFeesDestMint);
-        const hasReferredBy = this.authorityReferralStateData &&
-            this.authorityReferralStateData.referredByState !==
+        this.referralStateManager = new referralStateManager_1.ReferralStateManager(this.heliusApiKey);
+        await this.referralStateManager.initialize({
+            referralAuthority: this.authority,
+            signer: args.signer,
+            wallet: args.wallet
+        });
+        const authorityReferralStateData = this.referralStateManager.referralStateData;
+        const hasReferredBy = authorityReferralStateData &&
+            authorityReferralStateData.referredByState !==
                 (0, umi_1.publicKey)(web3_js_1.PublicKey.default);
         const referredByAuthority = !hasReferredBy &&
             args.referredByAuthority &&
@@ -68,9 +68,9 @@ class SolautoClient {
             ? args.referredByAuthority
             : undefined;
         this.referredByState = hasReferredBy
-            ? (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.authorityReferralStateData.referredByState)
+            ? (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(authorityReferralStateData.referredByState)
             : referredByAuthority
-                ? await (0, accountUtils_1.getReferralState)(referredByAuthority)
+                ? (0, accountUtils_1.getReferralState)(referredByAuthority)
                 : undefined;
         this.referredByAuthority = referredByAuthority;
         if (this.referredByState !== undefined) {
@@ -78,8 +78,8 @@ class SolautoClient {
         }
         this.solautoFeesWallet = generalAccounts_1.SOLAUTO_FEES_WALLET;
         this.solautoFeesSupplyTa = (0, accountUtils_1.getTokenAccount)(this.solautoFeesWallet, this.supplyMint);
-        this.authorityLutAddress = this.authorityReferralStateData?.lookupTable
-            ? (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.authorityReferralStateData?.lookupTable)
+        this.authorityLutAddress = authorityReferralStateData?.lookupTable
+            ? (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(authorityReferralStateData?.lookupTable)
             : undefined;
         this.upToDateLutAccounts = (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.signer.publicKey).equals(this.authority)
             ? await this.fetchExistingAuthorityLutAccounts()
@@ -128,7 +128,7 @@ class SolautoClient {
             this.solautoPosition,
             this.positionSupplyTa,
             this.positionDebtTa,
-            this.authorityReferralState,
+            this.referralStateManager.referralState,
             ...(this.referredBySupplyTa ? [this.referredBySupplyTa] : []),
         ];
     }
@@ -185,36 +185,6 @@ class SolautoClient {
     solautoPositionActiveDca() {
         return (this.livePositionUpdates.activeDca ??
             this.solautoPositionData?.position.dca);
-    }
-    updateReferralStatesIx() {
-        return (0, generated_1.updateReferralStates)(this.umi, {
-            signer: this.signer,
-            signerReferralState: (0, umi_1.publicKey)(this.authorityReferralState),
-            referralFeesDestMint: (0, umi_1.publicKey)(this.authorityReferralFeesDestMint),
-            referredByState: this.referredByState
-                ? (0, umi_1.publicKey)(this.referredByState)
-                : undefined,
-            referredByAuthority: this.referredByAuthority
-                ? (0, umi_1.publicKey)(this.referredByAuthority)
-                : undefined,
-            addressLookupTable: this.authorityLutAddress
-                ? (0, umi_1.some)((0, umi_1.publicKey)(this.authorityLutAddress))
-                : null,
-        });
-    }
-    claimReferralFeesIx() {
-        const feesDestinationTa = this.authorityReferralFeesDestMint !== spl_token_1.NATIVE_MINT
-            ? (0, umi_1.publicKey)((0, accountUtils_1.getTokenAccount)((0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.signer.publicKey), this.authorityReferralFeesDestMint))
-            : undefined;
-        return (0, generated_1.claimReferralFees)(this.umi, {
-            signer: this.signer,
-            signerWsolTa: (0, umi_1.publicKey)((0, accountUtils_1.getTokenAccount)((0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.signer.publicKey), spl_token_1.NATIVE_MINT)),
-            referralAuthority: (0, umi_1.publicKey)(this.authorityReferralStateData.authority),
-            referralState: (0, umi_1.publicKey)(this.authorityReferralState),
-            referralFeesDestTa: (0, umi_1.publicKey)(this.authorityReferralDestTa),
-            referralFeesDestMint: (0, umi_1.publicKey)(this.authorityReferralFeesDestMint),
-            feesDestinationTa,
-        });
     }
     openPosition(settingParams, dca) {
         if (dca && dca.debtToAddBaseUnit > 0) {

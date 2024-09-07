@@ -26,14 +26,14 @@ function getTokenAccount(wallet, tokenMint) {
 function getTokenAccounts(wallet, tokenMints) {
     return tokenMints.map(x => getTokenAccount(wallet, x));
 }
-async function getSolautoPositionAccount(signer, positionId) {
-    const [positionAccount, _] = await web3_js_1.PublicKey.findProgramAddress([bufferFromU8(positionId), signer.toBuffer()], new web3_js_1.PublicKey(generated_1.SOLAUTO_PROGRAM_ID));
+function getSolautoPositionAccount(signer, positionId) {
+    const [positionAccount, _] = web3_js_1.PublicKey.findProgramAddressSync([bufferFromU8(positionId), signer.toBuffer()], new web3_js_1.PublicKey(generated_1.SOLAUTO_PROGRAM_ID));
     return positionAccount;
 }
-async function getReferralState(authority) {
+function getReferralState(authority) {
     const str = "referral_state";
     const strBuffer = Buffer.from(str, "utf-8");
-    const [ReferralState, _] = await web3_js_1.PublicKey.findProgramAddress([strBuffer, authority.toBuffer()], new web3_js_1.PublicKey(generated_1.SOLAUTO_PROGRAM_ID));
+    const [ReferralState, _] = web3_js_1.PublicKey.findProgramAddressSync([strBuffer, authority.toBuffer()], new web3_js_1.PublicKey(generated_1.SOLAUTO_PROGRAM_ID));
     return ReferralState;
 }
 async function getMarginfiAccountPDA(solautoPositionAccount, marginfiAccountSeedIdx) {

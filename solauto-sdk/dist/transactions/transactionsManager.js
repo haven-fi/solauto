@@ -141,11 +141,7 @@ class TransactionsManager {
             }
             const transaction = item.tx.setAddressLookupTables(await this.lookupTables.getLutInputs(item.lookupTableAddresses));
             if (!transaction.fitsInOneTransaction(this.client.umi)) {
-                // TODO: revert me
-                // throw new Error(
-                //   `Transaction exceeds max transaction size (${transaction.getTransactionSize(this.client.umi)})`
-                // );
-                transactionSets.push(new TransactionSet(this.client, this.lookupTables, [item]));
+                throw new Error(`Transaction exceeds max transaction size (${transaction.getTransactionSize(this.client.umi)})`);
             }
             else {
                 let newSet = new TransactionSet(this.client, this.lookupTables, [item]);

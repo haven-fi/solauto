@@ -14,7 +14,6 @@ import {
   isSome,
   transactionBuilder,
   signerIdentity,
-  some,
 } from "@metaplex-foundation/umi";
 import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 import {
@@ -26,7 +25,6 @@ import {
   DCASettingsInpArgs,
   LendingPlatform,
   PositionState,
-  ReferralState,
   SolautoActionArgs,
   SolautoPosition,
   SolautoRebalanceTypeArgs,
@@ -34,13 +32,10 @@ import {
   SolautoSettingsParametersInpArgs,
   UpdatePositionDataArgs,
   cancelDCA,
-  claimReferralFees,
   closePosition,
   createSolautoProgram,
-  safeFetchReferralState,
   safeFetchSolautoPosition,
   updatePosition,
-  updateReferralStates,
 } from "../generated";
 import {
   getReferralState,
@@ -64,6 +59,7 @@ import {
 } from "../constants/solautoConstants";
 import { currentUnixSeconds } from "../utils/generalUtils";
 import { LivePositionUpdates } from "../utils/solauto/generalUtils";
+import { ReferralStateManager } from "./referralStateManager";
 
 export interface SolautoClientArgs {
   authority?: PublicKey;
@@ -74,11 +70,11 @@ export interface SolautoClientArgs {
   supplyMint?: PublicKey;
   debtMint?: PublicKey;
 
-  referralFeesDestMint?: PublicKey;
   referredByAuthority?: PublicKey;
 }
 
 export abstract class SolautoClient {
+  private heliusApiKey!: string;
   public umi!: Umi;
   public connection!: Connection;
   public lendingPlatform!: LendingPlatform;
@@ -100,10 +96,7 @@ export abstract class SolautoClient {
   public positionDebtTa!: PublicKey;
   public signerDebtTa!: PublicKey;
 
-  public authorityReferralState!: PublicKey;
-  public authorityReferralStateData!: ReferralState | null;
-  public authorityReferralFeesDestMint!: PublicKey;
-  public authorityReferralDestTa!: PublicKey;
+  public referralStateManager!: ReferralStateManager;
 
   public referredByState?: PublicKey;
   public referredByAuthority?: PublicKey;
@@ -121,7 +114,8 @@ export abstract class SolautoClient {
     heliusApiKey: string,
     public localTest?: boolean
   ) {
-    const [connection, umi] = getSolanaRpcConnection(heliusApiKey);
+    this.heliusApiKey = heliusApiKey;
+    const [connection, umi] = getSolanaRpcConnection(this.heliusApiKey);
     this.connection = connection;
     this.umi = umi.use({
       install(umi) {
@@ -146,7 +140,7 @@ export abstract class SolautoClient {
     this.positionId = args.positionId;
     this.selfManaged = this.positionId === 0;
     this.lendingPlatform = lendingPlatform;
-    this.solautoPosition = await getSolautoPositionAccount(
+    this.solautoPosition = getSolautoPositionAccount(
       this.authority,
       this.positionId
     );
@@ -177,35 +171,28 @@ export abstract class SolautoClient {
       this.debtMint
     );
 
-    this.authorityReferralState = await getReferralState(this.authority);
-    this.authorityReferralStateData = await safeFetchReferralState(
-      this.umi,
-      publicKey(this.authorityReferralState)
-    );
-    this.authorityReferralFeesDestMint = args.referralFeesDestMint
-      ? args.referralFeesDestMint
-      : this.authorityReferralStateData?.destFeesMint
-        ? toWeb3JsPublicKey(this.authorityReferralStateData?.destFeesMint)
-        : NATIVE_MINT;
-    this.authorityReferralDestTa = getTokenAccount(
-      this.authorityReferralState,
-      this.authorityReferralFeesDestMint
-    );
+    this.referralStateManager = new ReferralStateManager(this.heliusApiKey)
+    await this.referralStateManager.initialize({
+      referralAuthority: this.authority,
+      signer: args.signer,
+      wallet: args.wallet
+    });
 
+    const authorityReferralStateData = this.referralStateManager.referralStateData;
     const hasReferredBy =
-      this.authorityReferralStateData &&
-      this.authorityReferralStateData.referredByState !==
-        publicKey(PublicKey.default);
+    authorityReferralStateData &&
+    authorityReferralStateData.referredByState !==
+      publicKey(PublicKey.default);
     const referredByAuthority =
       !hasReferredBy &&
-      args.referredByAuthority &&
-      !args.referredByAuthority.equals(toWeb3JsPublicKey(this.signer.publicKey))
+        args.referredByAuthority &&
+        !args.referredByAuthority.equals(toWeb3JsPublicKey(this.signer.publicKey))
         ? args.referredByAuthority
         : undefined;
     this.referredByState = hasReferredBy
-      ? toWeb3JsPublicKey(this.authorityReferralStateData!.referredByState)
+      ? toWeb3JsPublicKey(authorityReferralStateData!.referredByState)
       : referredByAuthority
-        ? await getReferralState(referredByAuthority!)
+        ? getReferralState(referredByAuthority!)
         : undefined;
     this.referredByAuthority = referredByAuthority;
     if (this.referredByState !== undefined) {
@@ -221,8 +208,8 @@ export abstract class SolautoClient {
       this.supplyMint
     );
 
-    this.authorityLutAddress = this.authorityReferralStateData?.lookupTable
-      ? toWeb3JsPublicKey(this.authorityReferralStateData?.lookupTable)
+    this.authorityLutAddress = authorityReferralStateData?.lookupTable
+      ? toWeb3JsPublicKey(authorityReferralStateData?.lookupTable)
       : undefined;
     this.upToDateLutAccounts = toWeb3JsPublicKey(this.signer.publicKey).equals(
       this.authority
@@ -286,7 +273,7 @@ export abstract class SolautoClient {
       this.solautoPosition,
       this.positionSupplyTa,
       this.positionDebtTa,
-      this.authorityReferralState,
+      this.referralStateManager.referralState,
       ...(this.referredBySupplyTa ? [this.referredBySupplyTa] : []),
     ];
   }
@@ -353,7 +340,7 @@ export abstract class SolautoClient {
     const addingReferredBy =
       accountsToAdd.length === 1 &&
       accountsToAdd[0].toString().toLowerCase() ===
-        this.referredBySupplyTa?.toString().toLowerCase();
+      this.referredBySupplyTa?.toString().toLowerCase();
 
     if (tx.getInstructions().length > 0) {
       this.log("Updating authority lookup table...");
@@ -374,44 +361,6 @@ export abstract class SolautoClient {
       this.livePositionUpdates.activeDca ??
       this.solautoPositionData?.position.dca
     );
-  }
-
-  updateReferralStatesIx(): TransactionBuilder {
-    return updateReferralStates(this.umi, {
-      signer: this.signer,
-      signerReferralState: publicKey(this.authorityReferralState),
-      referralFeesDestMint: publicKey(this.authorityReferralFeesDestMint),
-      referredByState: this.referredByState
-        ? publicKey(this.referredByState)
-        : undefined,
-      referredByAuthority: this.referredByAuthority
-        ? publicKey(this.referredByAuthority)
-        : undefined,
-      addressLookupTable: this.authorityLutAddress
-        ? some(publicKey(this.authorityLutAddress))
-        : null,
-    });
-  }
-
-  claimReferralFeesIx(): TransactionBuilder {
-    const feesDestinationTa =
-      this.authorityReferralFeesDestMint !== NATIVE_MINT
-        ? publicKey(
-            getTokenAccount(
-              toWeb3JsPublicKey(this.signer.publicKey),
-              this.authorityReferralFeesDestMint
-            )
-          )
-        : undefined;
-    return claimReferralFees(this.umi, {
-      signer: this.signer,
-      signerWsolTa: publicKey(getTokenAccount(toWeb3JsPublicKey(this.signer.publicKey), NATIVE_MINT)),
-      referralAuthority: publicKey(this.authorityReferralStateData!.authority),
-      referralState: publicKey(this.authorityReferralState),
-      referralFeesDestTa: publicKey(this.authorityReferralDestTa),
-      referralFeesDestMint: publicKey(this.authorityReferralFeesDestMint),
-      feesDestinationTa,
-    });
   }
 
   openPosition(
@@ -575,7 +524,7 @@ export abstract class SolautoClient {
               BigInt(
                 Math.round(
                   Number(this.solautoPositionState!.debt.amountUsed.baseUnit) *
-                    1.01
+                  1.01
                 )
               )
             )
@@ -647,7 +596,7 @@ export abstract class SolautoClient {
     if (
       Boolean(this.solautoPositionState) &&
       Number(this.solautoPositionState!.lastUpdated) >
-        currentUnixSeconds() - MIN_POSITION_STATE_FRESHNESS_SECS &&
+      currentUnixSeconds() - MIN_POSITION_STATE_FRESHNESS_SECS &&
       !this.livePositionUpdates.hasUpdates()
     ) {
       return this.solautoPositionState;

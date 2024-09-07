@@ -109,15 +109,15 @@ async function transactionChoresBefore(
   let chores = transactionBuilder();
 
   if (
-    client.authorityReferralStateData === null ||
+    client.referralStateManager.referralState === null ||
     (client.referredByState !== undefined &&
-      client.authorityReferralStateData.referredByState ===
-        publicKey(PublicKey.default)) ||
+      client.referralStateManager.referralStateData!.referredByState ===
+      publicKey(PublicKey.default)) ||
     (client.authorityLutAddress !== undefined &&
-      client.authorityReferralStateData.lookupTable ==
-        publicKey(PublicKey.default))
+      client.referralStateManager.referralStateData!.lookupTable ==
+      publicKey(PublicKey.default))
   ) {
-    chores = chores.add(client.updateReferralStatesIx());
+    chores = chores.add(client.referralStateManager.updateReferralStatesIx(undefined, client.referredByAuthority, client.authorityLutAddress));
   }
 
   if (client.selfManaged) {
@@ -379,7 +379,7 @@ function getRebalanceInstructions(tx: TransactionBuilder): Instruction[] {
         if (data.discriminator === discriminator) {
           return true;
         }
-      } catch {}
+      } catch { }
       return false;
     }
   });
@@ -400,7 +400,7 @@ function getSolautoActions(tx: TransactionBuilder): SolautoAction[] {
         if (data.discriminator === discriminator) {
           solautoActions?.push(data.solautoAction);
         }
-      } catch {}
+      } catch { }
     }
 
     if (x.programId === MARGINFI_PROGRAM_ID) {
@@ -423,7 +423,7 @@ function getSolautoActions(tx: TransactionBuilder): SolautoAction[] {
             fields: [data.amount],
           });
         }
-      } catch {}
+      } catch { }
 
       try {
         const serializer = getLendingAccountBorrowInstructionDataSerializer();
@@ -444,7 +444,7 @@ function getSolautoActions(tx: TransactionBuilder): SolautoAction[] {
             fields: [data.amount],
           });
         }
-      } catch {}
+      } catch { }
 
       try {
         const serializer = getLendingAccountWithdrawInstructionDataSerializer();
@@ -466,16 +466,16 @@ function getSolautoActions(tx: TransactionBuilder): SolautoAction[] {
             fields: [
               data.withdrawAll
                 ? {
-                    __kind: "All",
-                  }
+                  __kind: "All",
+                }
                 : {
-                    __kind: "Some",
-                    fields: [data.amount],
-                  },
+                  __kind: "Some",
+                  fields: [data.amount],
+                },
             ],
           });
         }
-      } catch {}
+      } catch { }
 
       try {
         const serializer = getLendingAccountRepayInstructionDataSerializer();
@@ -497,16 +497,16 @@ function getSolautoActions(tx: TransactionBuilder): SolautoAction[] {
             fields: [
               data.repayAll
                 ? {
-                    __kind: "All",
-                  }
+                  __kind: "All",
+                }
                 : {
-                    __kind: "Some",
-                    fields: [data.amount],
-                  },
+                  __kind: "Some",
+                  fields: [data.amount],
+                },
             ],
           });
         }
-      } catch {}
+      } catch { }
     }
 
     // TODO support other platforms
@@ -554,9 +554,9 @@ export async function buildSolautoRebalanceTransaction(
   attemptNum?: number
 ): Promise<
   | {
-      tx: TransactionBuilder;
-      lookupTableAddresses: string[];
-    }
+    tx: TransactionBuilder;
+    lookupTableAddresses: string[];
+  }
   | undefined
 > {
   client.solautoPositionState = await client.getFreshPositionState();
@@ -566,9 +566,9 @@ export async function buildSolautoRebalanceTransaction(
       !eligibleForRebalance(
         client.solautoPositionState!,
         client.livePositionUpdates.settings ??
-          client.solautoPositionData?.position.settingParams!,
+        client.solautoPositionData?.position.settingParams!,
         client.livePositionUpdates.activeDca ??
-          client.solautoPositionData?.position.dca!,
+        client.solautoPositionData?.position.dca!,
         currentUnixSeconds()
       ))
   ) {
@@ -624,14 +624,14 @@ export async function buildSolautoRebalanceTransaction(
       ),
       ...(addFirstRebalance
         ? [
-            client.rebalance(
-              "A",
-              swapDetails,
-              rebalanceType,
-              flashLoan,
-              targetLiqUtilizationRateBps
-            ),
-          ]
+          client.rebalance(
+            "A",
+            swapDetails,
+            rebalanceType,
+            flashLoan,
+            targetLiqUtilizationRateBps
+          ),
+        ]
         : []),
       swapIx,
       client.rebalance(

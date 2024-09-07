@@ -1,7 +1,6 @@
 import bs58 from "bs58";
 import {
   AddressLookupTableInput,
-  Instruction,
   transactionBuilder,
   TransactionBuilder,
 } from "@metaplex-foundation/umi";
@@ -15,7 +14,6 @@ import {
   retryWithExponentialBackoff,
 } from "../utils/generalUtils";
 import { getTransactionChores } from "./transactionUtils";
-import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 import { PriorityFeeSetting } from "../types";
 // import { sendJitoBundledTransactions } from "../utils/jitoUtils";
 
@@ -213,12 +211,8 @@ export class TransactionsManager {
         await this.lookupTables.getLutInputs(item.lookupTableAddresses)
       );
       if (!transaction.fitsInOneTransaction(this.client.umi)) {
-        // TODO: revert me
-        // throw new Error(
-        //   `Transaction exceeds max transaction size (${transaction.getTransactionSize(this.client.umi)})`
-        // );
-        transactionSets.push(
-          new TransactionSet(this.client, this.lookupTables, [item])
+        throw new Error(
+          `Transaction exceeds max transaction size (${transaction.getTransactionSize(this.client.umi)})`
         );
       } else {
         let newSet = new TransactionSet(this.client, this.lookupTables, [item]);

@@ -250,7 +250,7 @@ export async function getReferralsByUser(
   // authority: Pubkey,
   // referred_by_state: Pubkey,
 
-  const userReferralState = await getReferralState(user);
+  const userReferralState = getReferralState(user);
   const accounts = await umi.rpc.getProgramAccounts(SOLAUTO_PROGRAM_ID, {
     commitment: "finalized",
     dataSlice: {
