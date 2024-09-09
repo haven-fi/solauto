@@ -52,7 +52,6 @@ import {
   splTokenTransferUmiIx,
 } from "../utils/solanaUtils";
 import { FlashLoanDetails } from "../utils/solauto/rebalanceUtils";
-import { NATIVE_MINT } from "@solana/spl-token";
 import {
   MIN_POSITION_STATE_FRESHNESS_SECS,
   SOLAUTO_LUT,
@@ -256,6 +255,8 @@ export abstract class SolautoClient {
     }
     this.livePositionUpdates.reset();
   }
+
+  abstract protocolAccount(): PublicKey;
 
   defaultLookupTables(): string[] {
     return [SOLAUTO_LUT];

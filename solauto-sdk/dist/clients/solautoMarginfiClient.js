@@ -82,6 +82,9 @@ class SolautoMarginfiClient extends solautoClient_1.SolautoClient {
         this.intermediaryMarginfiAccount =
             emptyMarginfiAccounts.length > 0 ? emptyMarginfiAccounts[0] : undefined;
     }
+    protocolAccount() {
+        return this.marginfiAccountPk;
+    }
     defaultLookupTables() {
         return [marginfiAccounts_1.MARGINFI_ACCOUNTS_LOOKUP_TABLE, ...super.defaultLookupTables()];
     }

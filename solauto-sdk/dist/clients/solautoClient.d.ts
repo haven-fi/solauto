@@ -48,6 +48,7 @@ export declare abstract class SolautoClient {
     initialize(args: SolautoClientArgs, lendingPlatform: LendingPlatform): Promise<void>;
     log(...args: any[]): void;
     resetLivePositionUpdates(): Promise<void>;
+    abstract protocolAccount(): PublicKey;
     defaultLookupTables(): string[];
     lutAccountsToAdd(): PublicKey[];
     fetchExistingAuthorityLutAccounts(): Promise<PublicKey[]>;

@@ -27,6 +27,7 @@ export declare class SolautoMarginfiClient extends SolautoClient {
     intermediaryMarginfiAccount?: MarginfiAccount;
     initialize(args: SolautoMarginfiClientArgs): Promise<void>;
     setIntermediaryMarginfiDetails(): Promise<void>;
+    protocolAccount(): PublicKey;
     defaultLookupTables(): string[];
     lutAccountsToAdd(): PublicKey[];
     marginfiAccountInitialize(): TransactionBuilder;

@@ -34,7 +34,6 @@ import {
 import { getMarginfiAccountPDA, getTokenAccount } from "../utils/accountUtils";
 import { generateRandomU64 } from "../utils/generalUtils";
 import {
-  Bank,
   MARGINFI_PROGRAM_ID,
   MarginfiAccount,
   lendingAccountBorrow,
@@ -192,6 +191,10 @@ export class SolautoMarginfiClient extends SolautoClient {
         : toWeb3JsPublicKey(this.intermediaryMarginfiAccountSigner!.publicKey);
     this.intermediaryMarginfiAccount =
       emptyMarginfiAccounts.length > 0 ? emptyMarginfiAccounts[0] : undefined;
+  }
+
+  protocolAccount(): PublicKey {
+    return this.marginfiAccountPk;
   }
 
   defaultLookupTables(): string[] {
