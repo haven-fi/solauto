@@ -17,3 +17,4 @@ Object.defineProperty(exports, "__esModule", { value: true });
 __exportStar(require("./solautoMarginfiClient"), exports);
 __exportStar(require("./solautoClient"), exports);
 __exportStar(require("./referralStateManager"), exports);
+__exportStar(require("./txHandler"), exports);

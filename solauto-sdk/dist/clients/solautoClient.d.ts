@@ -1,12 +1,13 @@
 import "rpc-websockets/dist/lib/client";
-import { Connection, PublicKey } from "@solana/web3.js";
-import { Signer, TransactionBuilder, Umi } from "@metaplex-foundation/umi";
+import { PublicKey } from "@solana/web3.js";
+import { Signer, TransactionBuilder } from "@metaplex-foundation/umi";
 import { WalletAdapter } from "@metaplex-foundation/umi-signer-wallet-adapters";
 import { DCASettings, DCASettingsInpArgs, LendingPlatform, PositionState, SolautoActionArgs, SolautoPosition, SolautoRebalanceTypeArgs, SolautoSettingsParameters, SolautoSettingsParametersInpArgs, UpdatePositionDataArgs } from "../generated";
 import { JupSwapDetails } from "../utils/jupiterUtils";
 import { FlashLoanDetails } from "../utils/solauto/rebalanceUtils";
 import { LivePositionUpdates } from "../utils/solauto/generalUtils";
 import { ReferralStateManager } from "./referralStateManager";
+import { TxHandler } from "./txHandler";
 export interface SolautoClientArgs {
     authority?: PublicKey;
     positionId: number;
@@ -16,11 +17,8 @@ export interface SolautoClientArgs {
     debtMint?: PublicKey;
     referredByAuthority?: PublicKey;
 }
-export declare abstract class SolautoClient {
+export declare abstract class SolautoClient extends TxHandler {
     localTest?: boolean | undefined;
-    private heliusApiKey;
-    umi: Umi;
-    connection: Connection;
     lendingPlatform: LendingPlatform;
     authority: PublicKey;
     signer: Signer;
@@ -46,8 +44,7 @@ export declare abstract class SolautoClient {
     livePositionUpdates: LivePositionUpdates;
     constructor(heliusApiKey: string, localTest?: boolean | undefined);
     initialize(args: SolautoClientArgs, lendingPlatform: LendingPlatform): Promise<void>;
-    log(...args: any[]): void;
-    resetLivePositionUpdates(): Promise<void>;
+    resetLiveTxUpdates(): Promise<void>;
     abstract protocolAccount(): PublicKey;
     defaultLookupTables(): string[];
     lutAccountsToAdd(): PublicKey[];

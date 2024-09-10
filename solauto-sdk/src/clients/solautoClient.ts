@@ -59,6 +59,7 @@ import {
 import { currentUnixSeconds } from "../utils/generalUtils";
 import { LivePositionUpdates } from "../utils/solauto/generalUtils";
 import { ReferralStateManager } from "./referralStateManager";
+import { TxHandler } from "./txHandler";
 
 export interface SolautoClientArgs {
   authority?: PublicKey;
@@ -72,10 +73,7 @@ export interface SolautoClientArgs {
   referredByAuthority?: PublicKey;
 }
 
-export abstract class SolautoClient {
-  private heliusApiKey!: string;
-  public umi!: Umi;
-  public connection!: Connection;
+export abstract class SolautoClient extends TxHandler {
   public lendingPlatform!: LendingPlatform;
 
   public authority!: PublicKey;
@@ -113,10 +111,9 @@ export abstract class SolautoClient {
     heliusApiKey: string,
     public localTest?: boolean
   ) {
-    this.heliusApiKey = heliusApiKey;
-    const [connection, umi] = getSolanaRpcConnection(this.heliusApiKey);
-    this.connection = connection;
-    this.umi = umi.use({
+    super(heliusApiKey, localTest);
+
+    this.umi = this.umi.use({
       install(umi) {
         umi.programs.add(createSolautoProgram(), false);
       },
@@ -230,13 +227,7 @@ export abstract class SolautoClient {
     );
   }
 
-  log(...args: any[]): void {
-    if (this.localTest) {
-      console.log(...args);
-    }
-  }
-
-  async resetLivePositionUpdates() {
+  async resetLiveTxUpdates() {
     if (!this.solautoPositionData) {
       this.solautoPositionData = await safeFetchSolautoPosition(
         this.umi,
@@ -259,7 +250,7 @@ export abstract class SolautoClient {
   abstract protocolAccount(): PublicKey;
 
   defaultLookupTables(): string[] {
-    return [SOLAUTO_LUT];
+    return [SOLAUTO_LUT, ...(this.authorityLutAddress ? [this.authorityLutAddress.toString()] : [])];
   }
 
   lutAccountsToAdd(): PublicKey[] {

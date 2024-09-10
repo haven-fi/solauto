@@ -1,12 +1,13 @@
-import { AddressLookupTableInput, TransactionBuilder } from "@metaplex-foundation/umi";
+import { AddressLookupTableInput, TransactionBuilder, Umi } from "@metaplex-foundation/umi";
 import { SolautoClient } from "../clients/solautoClient";
 import { ErrorsToThrow } from "../utils/generalUtils";
 import { PriorityFeeSetting } from "../types";
+import { TxHandler } from "../clients";
 declare class LookupTables {
-    private client;
     defaultLuts: string[];
+    private umi;
     cache: AddressLookupTableInput[];
-    constructor(client: SolautoClient);
+    constructor(defaultLuts: string[], umi: Umi);
     getLutInputs(additionalAddresses: string[]): Promise<AddressLookupTableInput[]>;
 }
 export declare class TransactionItem {
@@ -26,10 +27,10 @@ export declare class TransactionItem {
     uniqueAccounts(): string[];
 }
 declare class TransactionSet {
-    private client;
+    private txHandler;
     lookupTables: LookupTables;
     items: TransactionItem[];
-    constructor(client: SolautoClient, lookupTables: LookupTables, items?: TransactionItem[]);
+    constructor(txHandler: TxHandler, lookupTables: LookupTables, items?: TransactionItem[]);
     fitsWith(item: TransactionItem): Promise<boolean>;
     add(...items: TransactionItem[]): void;
     refetchAll(attemptNum: number): Promise<void>;
@@ -49,19 +50,19 @@ export type TransactionManagerStatuses = {
     txSig?: string;
 }[];
 export declare class TransactionsManager {
-    private client;
-    private items;
+    private txHandler;
     private statusCallback?;
     private simulateOnly?;
     private mustBeAtomic?;
     private errorsToThrow?;
     private statuses;
     private lookupTables;
-    constructor(client: SolautoClient, items: TransactionItem[], statusCallback?: ((statuses: TransactionManagerStatuses) => void) | undefined, simulateOnly?: boolean | undefined, mustBeAtomic?: boolean | undefined, errorsToThrow?: ErrorsToThrow | undefined);
+    constructor(txHandler: TxHandler, statusCallback?: ((statuses: TransactionManagerStatuses) => void) | undefined, simulateOnly?: boolean | undefined, mustBeAtomic?: boolean | undefined, errorsToThrow?: ErrorsToThrow | undefined);
     private assembleTransactionSets;
     updateStatus(name: string, status: TransactionStatus, txSig?: string): void;
     debugAccounts(itemSet: TransactionSet, tx: TransactionBuilder): Promise<void>;
-    send(prioritySetting?: PriorityFeeSetting): Promise<void>;
+    sendWithClient(items: TransactionItem[], client: SolautoClient, prioritySetting?: PriorityFeeSetting): Promise<void>;
+    send(items: TransactionItem[], prioritySetting?: PriorityFeeSetting, initialized?: boolean): Promise<void>;
 }
 export {};
 //# sourceMappingURL=transactionsManager.d.ts.map

@@ -66,19 +66,19 @@ describe("Solauto Marginfi tests", async () => {
     //     }, "open position")
     //   );
 
-      // const initialSupplyUsd = 150;
-      // transactionItems.push(
-      //   new TransactionItem(async () => {
-      //     const [supplyPrice] = await getTokenPrices([supply]);
-      //     return {
-      //       tx: client.protocolInteraction(
-      //         solautoAction("Deposit", [
-      //           toBaseUnit(initialSupplyUsd / supplyPrice, supplyDecimals),
-      //         ])
-      //       ),
-      //     };
-      //   }, "deposit")
-      // );
+    // const initialSupplyUsd = 150;
+    // transactionItems.push(
+    //   new TransactionItem(async () => {
+    //     const [supplyPrice] = await getTokenPrices([supply]);
+    //     return {
+    //       tx: client.protocolInteraction(
+    //         solautoAction("Deposit", [
+    //           toBaseUnit(initialSupplyUsd / supplyPrice, supplyDecimals),
+    //         ])
+    //       ),
+    //     };
+    //   }, "deposit")
+    // );
     // }
 
     // const maxLtvBps = client.solautoPositionState!.maxLtvBps;
@@ -118,7 +118,7 @@ describe("Solauto Marginfi tests", async () => {
     //     };
     //   }, "deposit")
     // );
-    
+
     transactionItems.push(
       new TransactionItem(
         async (attemptNum) =>
@@ -156,10 +156,9 @@ describe("Solauto Marginfi tests", async () => {
 
     await new TransactionsManager(
       client,
-      transactionItems,
       undefined,
       !payForTransactions,
       useJitoBundle
-    ).send();
+    ).sendWithClient(transactionItems, client);
   });
 });

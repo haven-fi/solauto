@@ -5,6 +5,7 @@ import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 import { WalletAdapter, walletAdapterIdentity } from "@metaplex-foundation/umi-signer-wallet-adapters";
 import { claimReferralFees, createSolautoProgram, ReferralState, safeFetchReferralState, updateReferralStates } from "../generated";
 import { getReferralState, getSolanaRpcConnection, getTokenAccount } from "../utils";
+import { TxHandler } from "./txHandler";
 
 interface ReferralStateManagerArgs {
     referralAuthority?: PublicKey;
@@ -12,7 +13,7 @@ interface ReferralStateManagerArgs {
     wallet?: WalletAdapter;
 }
 
-export class ReferralStateManager {
+export class ReferralStateManager extends TxHandler {
     public umi!: Umi;
     public signer!: Signer;
 
@@ -20,9 +21,9 @@ export class ReferralStateManager {
     public referralState!: PublicKey;
     public referralStateData!: ReferralState | null;
 
-    constructor(heliusApiKey: string) {
-        const [_, umi] = getSolanaRpcConnection(heliusApiKey);
-        this.umi = umi.use({
+    constructor(heliusApiKey: string, public localTest?: boolean) {
+        super(heliusApiKey, localTest)
+        this.umi = this.umi.use({
             install(umi) {
                 umi.programs.add(createSolautoProgram(), false);
             },
@@ -42,6 +43,10 @@ export class ReferralStateManager {
         this.signer = this.umi.identity;
         this.referralState = getReferralState(args.referralAuthority ?? toWeb3JsPublicKey(this.signer.publicKey));
         this.referralStateData = await safeFetchReferralState(this.umi, publicKey(this.referralState));
+    }
+
+    defaultLookupTables(): string[] {
+        return this.referralStateData?.lookupTable ? [this.referralStateData?.lookupTable.toString()] : [];
     }
 
     updateReferralStatesIx(destFeesMint?: PublicKey, referredBy?: PublicKey, lookupTable?: PublicKey): TransactionBuilder {
@@ -85,4 +90,5 @@ export class ReferralStateManager {
         });
     }
 
+    async resetLiveTxUpdates(): Promise<void> { }
 }

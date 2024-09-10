@@ -323,9 +323,7 @@ async function buildSolautoRebalanceTransaction(client, targetLiqUtilizationRate
     client.solautoPositionState = await client.getFreshPositionState();
     if (client.solautoPositionState?.supply.amountUsed.baseUnit === BigInt(0) ||
         (targetLiqUtilizationRateBps === undefined &&
-            !(0, generalUtils_2.eligibleForRebalance)(client.solautoPositionState, client.livePositionUpdates.settings ??
-                client.solautoPositionData?.position.settingParams, client.livePositionUpdates.activeDca ??
-                client.solautoPositionData?.position.dca, (0, generalUtils_1.currentUnixSeconds)()))) {
+            !(0, generalUtils_2.eligibleForRebalance)(client.solautoPositionState, client.solautoPositionSettings(), client.solautoPositionActiveDca(), (0, generalUtils_1.currentUnixSeconds)()))) {
         client.log("Not eligible for a rebalance");
         return undefined;
     }

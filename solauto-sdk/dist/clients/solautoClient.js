@@ -14,14 +14,13 @@ const solautoConstants_1 = require("../constants/solautoConstants");
 const generalUtils_1 = require("../utils/generalUtils");
 const generalUtils_2 = require("../utils/solauto/generalUtils");
 const referralStateManager_1 = require("./referralStateManager");
-class SolautoClient {
+const txHandler_1 = require("./txHandler");
+class SolautoClient extends txHandler_1.TxHandler {
     constructor(heliusApiKey, localTest) {
+        super(heliusApiKey, localTest);
         this.localTest = localTest;
         this.livePositionUpdates = new generalUtils_2.LivePositionUpdates();
-        this.heliusApiKey = heliusApiKey;
-        const [connection, umi] = (0, solanaUtils_1.getSolanaRpcConnection)(this.heliusApiKey);
-        this.connection = connection;
-        this.umi = umi.use({
+        this.umi = this.umi.use({
             install(umi) {
                 umi.programs.add((0, generated_1.createSolautoProgram)(), false);
             },
@@ -91,12 +90,7 @@ class SolautoClient {
             ? this.solautoPositionData?.position?.dca
             : undefined);
     }
-    log(...args) {
-        if (this.localTest) {
-            console.log(...args);
-        }
-    }
-    async resetLivePositionUpdates() {
+    async resetLiveTxUpdates() {
         if (!this.solautoPositionData) {
             this.solautoPositionData = await (0, generated_1.safeFetchSolautoPosition)(this.umi, (0, umi_1.publicKey)(this.solautoPosition));
         }
@@ -114,7 +108,7 @@ class SolautoClient {
         this.livePositionUpdates.reset();
     }
     defaultLookupTables() {
-        return [solautoConstants_1.SOLAUTO_LUT];
+        return [solautoConstants_1.SOLAUTO_LUT, ...(this.authorityLutAddress ? [this.authorityLutAddress.toString()] : [])];
     }
     lutAccountsToAdd() {
         return [

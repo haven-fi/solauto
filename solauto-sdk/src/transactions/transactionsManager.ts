@@ -3,6 +3,7 @@ import {
   AddressLookupTableInput,
   transactionBuilder,
   TransactionBuilder,
+  Umi,
 } from "@metaplex-foundation/umi";
 import { SolautoClient } from "../clients/solautoClient";
 import {
@@ -15,14 +16,14 @@ import {
 } from "../utils/generalUtils";
 import { getTransactionChores } from "./transactionUtils";
 import { PriorityFeeSetting } from "../types";
+import { Connection, PublicKey } from "@solana/web3.js";
+import { TxHandler } from "../clients";
 // import { sendJitoBundledTransactions } from "../utils/jitoUtils";
 
 class LookupTables {
-  defaultLuts: string[] = [];
   cache: AddressLookupTableInput[] = [];
 
-  constructor(private client: SolautoClient) {
-    this.defaultLuts = [...client.defaultLookupTables()];
+  constructor(public defaultLuts: string[], private umi: Umi) {
   }
 
   async getLutInputs(
@@ -30,7 +31,6 @@ class LookupTables {
   ): Promise<AddressLookupTableInput[]> {
     const addresses = [
       ...this.defaultLuts,
-      this.client.authorityLutAddress!.toString(),
       ...additionalAddresses,
     ];
     const currentCacheAddresses = this.cache.map((x) => x.publicKey.toString());
@@ -40,7 +40,7 @@ class LookupTables {
     );
     if (missingAddresses) {
       const additionalInputs = await getAdressLookupInputs(
-        this.client.umi,
+        this.umi,
         missingAddresses
       );
       this.cache.push(...additionalInputs);
@@ -61,7 +61,7 @@ export class TransactionItem {
       { tx: TransactionBuilder; lookupTableAddresses?: string[] } | undefined
     >,
     public name?: string
-  ) {}
+  ) { }
 
   async initialize() {
     await this.refetch(0);
@@ -89,10 +89,10 @@ export class TransactionItem {
 
 class TransactionSet {
   constructor(
-    private client: SolautoClient,
+    private txHandler: TxHandler,
     public lookupTables: LookupTables,
     public items: TransactionItem[] = []
-  ) {}
+  ) { }
 
   async fitsWith(item: TransactionItem): Promise<boolean> {
     if (!item.tx) {
@@ -117,7 +117,7 @@ class TransactionSet {
           ...item.lookupTableAddresses,
         ])
       )
-      .fitsInOneTransaction(this.client.umi);
+      .fitsInOneTransaction(this.txHandler.umi);
   }
 
   add(...items: TransactionItem[]) {
@@ -127,7 +127,7 @@ class TransactionSet {
   }
 
   async refetchAll(attemptNum: number) {
-    await this.client.resetLivePositionUpdates();
+    await this.txHandler.resetLiveTxUpdates();
     for (const item of this.items) {
       await item.refetch(attemptNum);
     }
@@ -183,23 +183,22 @@ export class TransactionsManager {
   private lookupTables: LookupTables;
 
   constructor(
-    private client: SolautoClient,
-    private items: TransactionItem[],
+    private txHandler: TxHandler,
     private statusCallback?: (statuses: TransactionManagerStatuses) => void,
     private simulateOnly?: boolean,
     private mustBeAtomic?: boolean,
     private errorsToThrow?: ErrorsToThrow
   ) {
-    this.lookupTables = new LookupTables(client);
+    this.lookupTables = new LookupTables(this.txHandler.defaultLookupTables(), this.txHandler.umi);
   }
 
   private async assembleTransactionSets(
     items: TransactionItem[]
   ): Promise<TransactionSet[]> {
     let transactionSets: TransactionSet[] = [];
-    this.client.log(`Reassembling ${items.length} items`);
+    this.txHandler.log(`Reassembling ${items.length} items`);
 
-    for (let i = 0; i < items.length; ) {
+    for (let i = 0; i < items.length;) {
       let item = items[i];
       i++;
 
@@ -210,12 +209,12 @@ export class TransactionsManager {
       const transaction = item.tx.setAddressLookupTables(
         await this.lookupTables.getLutInputs(item.lookupTableAddresses)
       );
-      if (!transaction.fitsInOneTransaction(this.client.umi)) {
+      if (!transaction.fitsInOneTransaction(this.txHandler.umi)) {
         throw new Error(
-          `Transaction exceeds max transaction size (${transaction.getTransactionSize(this.client.umi)})`
+          `Transaction exceeds max transaction size (${transaction.getTransactionSize(this.txHandler.umi)})`
         );
       } else {
-        let newSet = new TransactionSet(this.client, this.lookupTables, [item]);
+        let newSet = new TransactionSet(this.txHandler, this.lookupTables, [item]);
         for (let j = i; j < items.length; j++) {
           if (await newSet.fitsWith(items[j])) {
             newSet.add(items[j]);
@@ -243,7 +242,7 @@ export class TransactionsManager {
         this.statuses.push({ name, status, txSig });
       }
     }
-    this.client.log(`${name} is ${status.toString().toLowerCase()}`);
+    this.txHandler.log(`${name} is ${status.toString().toLowerCase()}`);
     this.statusCallback?.(this.statuses);
   }
 
@@ -256,18 +255,18 @@ export class TransactionsManager {
       const accountsNotInLut = ixAccounts.filter(
         (x) => !lutAccounts.includes(x)
       );
-      this.client.log(`Program ${ix.programId}, data len: ${ix.data.length}, LUT accounts data: ${ix.keys.filter((x) => lutAccounts.includes(x.pubkey)).length * 3}`);
+      this.txHandler.log(`Program ${ix.programId}, data len: ${ix.data.length}, LUT accounts data: ${ix.keys.filter((x) => lutAccounts.includes(x.pubkey)).length * 3}`);
       if (accountsNotInLut.length > 0) {
-        this.client.log(`${accountsNotInLut.length} accounts not in LUT:`);
+        this.txHandler.log(`${accountsNotInLut.length} accounts not in LUT:`);
         for (const key of accountsNotInLut) {
-          this.client.log(key.toString());
+          this.txHandler.log(key.toString());
         }
       }
     }
   }
 
-  async send(prioritySetting?: PriorityFeeSetting) {
-    const updateLookupTable = await this.client.updateLookupTable();
+  async sendWithClient(items: TransactionItem[], client: SolautoClient, prioritySetting?: PriorityFeeSetting) {
+    const updateLookupTable = await client.updateLookupTable();
     if (
       updateLookupTable &&
       updateLookupTable.updateLutTx.getInstructions().length > 0 &&
@@ -277,8 +276,8 @@ export class TransactionsManager {
       await retryWithExponentialBackoff(
         async (attemptNum) =>
           await sendSingleOptimizedTransaction(
-            this.client.umi,
-            this.client.connection,
+            this.txHandler.umi,
+            this.txHandler.connection,
             updateLookupTable.updateLutTx,
             this.simulateOnly,
             attemptNum
@@ -290,14 +289,16 @@ export class TransactionsManager {
       this.updateStatus("update lookup table", TransactionStatus.Successful);
     }
 
-    for (const item of this.items) {
+    this.lookupTables.defaultLuts = client.defaultLookupTables();
+
+    for (const item of items) {
       await item.initialize();
     }
 
     const [choresBefore, choresAfter] = await getTransactionChores(
-      this.client,
+      client,
       transactionBuilder().add(
-        this.items
+        items
           .filter((x) => x.tx && x.tx.getInstructions().length > 0)
           .map((x) => x.tx!)
       )
@@ -311,17 +312,31 @@ export class TransactionsManager {
         "create account(s)"
       );
       await chore.initialize();
-      this.items.unshift(chore);
-      this.client.log("Chores before: ", choresBefore.getInstructions().length);
+      items.unshift(chore);
+      this.txHandler.log("Chores before: ", choresBefore.getInstructions().length);
     }
     if (choresAfter.getInstructions().length > 0) {
       const chore = new TransactionItem(async () => ({ tx: choresAfter }));
       await chore.initialize();
-      this.items.push(chore);
-      this.client.log("Chores after: ", choresAfter.getInstructions().length);
+      items.push(chore);
+      this.txHandler.log("Chores after: ", choresAfter.getInstructions().length);
     }
 
-    const itemSets = await this.assembleTransactionSets(this.items);
+    await this.send(items, prioritySetting, true);
+
+    if (!this.simulateOnly) {
+      await client.resetLiveTxUpdates();
+    }
+  }
+
+  async send(items: TransactionItem[], prioritySetting?: PriorityFeeSetting, initialized?: boolean) {
+    if (!initialized) {
+      for (const item of items) {
+        await item.initialize();
+      }
+    }
+
+    const itemSets = await this.assembleTransactionSets(items);
     const statusesStartIdx = this.statuses.length;
     for (const itemSet of itemSets) {
       this.updateStatus(itemSet.name(), TransactionStatus.Queued);
@@ -366,7 +381,7 @@ export class TransactionsManager {
                 status: TransactionStatus.Queued,
               }))
             );
-            this.client.log(this.statuses);
+            this.txHandler.log(this.statuses);
             itemSets.splice(
               i + 1,
               itemSets.length - i - 1,
@@ -393,13 +408,13 @@ export class TransactionsManager {
             } else {
               this.updateStatus(itemSet.name(), TransactionStatus.Processing);
 
-              if (this.client.localTest) {
+              if (this.txHandler.localTest) {
                 await this.debugAccounts(itemSet, tx);
               }
 
               const txSig = await sendSingleOptimizedTransaction(
-                this.client.umi,
-                this.client.connection,
+                this.txHandler.umi,
+                this.txHandler.connection,
                 tx,
                 this.simulateOnly,
                 attemptNum,
@@ -417,10 +432,6 @@ export class TransactionsManager {
           this.errorsToThrow
         );
       }
-    }
-
-    if (!this.simulateOnly) {
-      await this.client.resetLivePositionUpdates();
     }
   }
 }

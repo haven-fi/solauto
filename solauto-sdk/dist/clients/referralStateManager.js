@@ -7,10 +7,12 @@ const umi_web3js_adapters_1 = require("@metaplex-foundation/umi-web3js-adapters"
 const umi_signer_wallet_adapters_1 = require("@metaplex-foundation/umi-signer-wallet-adapters");
 const generated_1 = require("../generated");
 const utils_1 = require("../utils");
-class ReferralStateManager {
-    constructor(heliusApiKey) {
-        const [_, umi] = (0, utils_1.getSolanaRpcConnection)(heliusApiKey);
-        this.umi = umi.use({
+const txHandler_1 = require("./txHandler");
+class ReferralStateManager extends txHandler_1.TxHandler {
+    constructor(heliusApiKey, localTest) {
+        super(heliusApiKey, localTest);
+        this.localTest = localTest;
+        this.umi = this.umi.use({
             install(umi) {
                 umi.programs.add((0, generated_1.createSolautoProgram)(), false);
             },
@@ -26,6 +28,9 @@ class ReferralStateManager {
         this.signer = this.umi.identity;
         this.referralState = (0, utils_1.getReferralState)(args.referralAuthority ?? (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.signer.publicKey));
         this.referralStateData = await (0, generated_1.safeFetchReferralState)(this.umi, (0, umi_1.publicKey)(this.referralState));
+    }
+    defaultLookupTables() {
+        return this.referralStateData?.lookupTable ? [this.referralStateData?.lookupTable.toString()] : [];
     }
     updateReferralStatesIx(destFeesMint, referredBy, lookupTable) {
         return (0, generated_1.updateReferralStates)(this.umi, {
@@ -59,5 +64,6 @@ class ReferralStateManager {
             feesDestinationTa,
         });
     }
+    async resetLiveTxUpdates() { }
 }
 exports.ReferralStateManager = ReferralStateManager;
