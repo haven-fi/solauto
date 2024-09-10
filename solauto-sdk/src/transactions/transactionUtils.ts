@@ -565,10 +565,8 @@ export async function buildSolautoRebalanceTransaction(
     (targetLiqUtilizationRateBps === undefined &&
       !eligibleForRebalance(
         client.solautoPositionState!,
-        client.livePositionUpdates.settings ??
-        client.solautoPositionData?.position.settingParams!,
-        client.livePositionUpdates.activeDca ??
-        client.solautoPositionData?.position.dca!,
+        client.solautoPositionSettings()!,
+        client.solautoPositionActiveDca()!,
         currentUnixSeconds()
       ))
   ) {
