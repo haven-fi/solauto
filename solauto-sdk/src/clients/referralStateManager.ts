@@ -4,13 +4,13 @@ import { publicKey, Signer, signerIdentity, TransactionBuilder, Umi } from "@met
 import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 import { WalletAdapter, walletAdapterIdentity } from "@metaplex-foundation/umi-signer-wallet-adapters";
 import { claimReferralFees, createSolautoProgram, ReferralState, safeFetchReferralState, updateReferralStates } from "../generated";
-import { getReferralState, getSolanaRpcConnection, getTokenAccount } from "../utils";
+import { getReferralState, getTokenAccount } from "../utils";
 import { TxHandler } from "./txHandler";
 
 interface ReferralStateManagerArgs {
-    referralAuthority?: PublicKey;
     signer?: Signer;
     wallet?: WalletAdapter;
+    referralAuthority?: PublicKey;
 }
 
 export class ReferralStateManager extends TxHandler {

@@ -1,5 +1,5 @@
 import { PublicKey } from "@solana/web3.js";
-import { publicKey, Umi } from "@metaplex-foundation/umi";
+import { publicKey, RpcAccount, Umi } from "@metaplex-foundation/umi";
 import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 import {
   Bank,
@@ -23,6 +23,7 @@ import { PositionState, PositionTokenUsage } from "../generated";
 import { USD_DECIMALS } from "../constants/generalAccounts";
 import { LivePositionUpdates } from "./solauto/generalUtils";
 import { currentUnixSecondsSolana } from "./solanaUtils";
+import { getSolautoPositionAccount } from "./accountUtils";
 
 export function findMarginfiAccounts(bank: PublicKey): MarginfiAssetAccounts {
   for (const key in MARGINFI_ACCOUNTS) {
@@ -94,7 +95,7 @@ export async function getMaxLtvAndLiqThreshold(
       BigInt(
         Math.round(
           bytesToI80F48(supply.bank!.totalAssetShares.value) *
-            bytesToI80F48(supply.bank!.assetShareValue.value)
+          bytesToI80F48(supply.bank!.assetShareValue.value)
         )
       ),
       supply.bank!.mintDecimals
@@ -190,7 +191,7 @@ async function getTokenUsage(
     amountCanBeUsed = isAsset
       ? Number(bank.config.depositLimit) - totalDeposited
       : totalDeposited -
-        bytesToI80F48(bank.totalLiabilityShares.value) * liabilityShareValue;
+      bytesToI80F48(bank.totalLiabilityShares.value) * liabilityShareValue;
   }
 
   return {
@@ -200,22 +201,22 @@ async function getTokenUsage(
       baseUnit: BigInt(Math.round(amountUsed)),
       baseAmountUsdValue: bank
         ? toBaseUnit(
-            fromBaseUnit(BigInt(Math.round(amountUsed)), bank.mintDecimals) *
-              marketPrice,
-            USD_DECIMALS
-          )
+          fromBaseUnit(BigInt(Math.round(amountUsed)), bank.mintDecimals) *
+          marketPrice,
+          USD_DECIMALS
+        )
         : BigInt(0),
     },
     amountCanBeUsed: {
       baseUnit: BigInt(Math.round(amountCanBeUsed)),
       baseAmountUsdValue: bank
         ? toBaseUnit(
-            fromBaseUnit(
-              BigInt(Math.round(amountCanBeUsed)),
-              bank.mintDecimals
-            ) * marketPrice,
-            USD_DECIMALS
-          )
+          fromBaseUnit(
+            BigInt(Math.round(amountCanBeUsed)),
+            bank.mintDecimals
+          ) * marketPrice,
+          USD_DECIMALS
+        )
         : BigInt(0),
     },
     baseAmountMarketPriceUsd: toBaseUnit(marketPrice, USD_DECIMALS),
@@ -242,16 +243,16 @@ export async function getMarginfiAccountPositionState(
   let supplyBank: Bank | null =
     supplyMint && supplyMint !== PublicKey.default
       ? await safeFetchBank(
-          umi,
-          publicKey(MARGINFI_ACCOUNTS[supplyMint.toString()].bank)
-        )
+        umi,
+        publicKey(MARGINFI_ACCOUNTS[supplyMint.toString()].bank)
+      )
       : null;
   let debtBank: Bank | null =
     debtMint && debtMint !== PublicKey.default
       ? await safeFetchBank(
-          umi,
-          publicKey(MARGINFI_ACCOUNTS[debtMint.toString()].bank)
-        )
+        umi,
+        publicKey(MARGINFI_ACCOUNTS[debtMint.toString()].bank)
+      )
       : null;
 
   let supplyUsage: PositionTokenUsage | undefined = undefined;

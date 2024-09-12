@@ -17,7 +17,7 @@ import {
 import { getTransactionChores } from "./transactionUtils";
 import { PriorityFeeSetting } from "../types";
 import { Connection, PublicKey } from "@solana/web3.js";
-import { TxHandler } from "../clients";
+import { ReferralStateManager, TxHandler } from "../clients";
 // import { sendJitoBundledTransactions } from "../utils/jitoUtils";
 
 class LookupTables {
@@ -183,7 +183,7 @@ export class TransactionsManager {
   private lookupTables: LookupTables;
 
   constructor(
-    private txHandler: TxHandler,
+    private txHandler: SolautoClient | ReferralStateManager,
     private statusCallback?: (statuses: TransactionManagerStatuses) => void,
     private simulateOnly?: boolean,
     private mustBeAtomic?: boolean,
@@ -265,7 +265,9 @@ export class TransactionsManager {
     }
   }
 
-  async sendWithClient(items: TransactionItem[], client: SolautoClient, prioritySetting?: PriorityFeeSetting) {
+  async clientSend(items: TransactionItem[], prioritySetting?: PriorityFeeSetting) {
+    const client = this.txHandler as SolautoClient;
+
     const updateLookupTable = await client.updateLookupTable();
     if (
       updateLookupTable &&

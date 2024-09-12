@@ -159,6 +159,6 @@ describe("Solauto Marginfi tests", async () => {
       undefined,
       !payForTransactions,
       useJitoBundle
-    ).sendWithClient(transactionItems, client);
+    ).clientSend(transactionItems);
   });
 });

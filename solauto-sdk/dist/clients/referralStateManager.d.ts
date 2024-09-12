@@ -4,9 +4,9 @@ import { WalletAdapter } from "@metaplex-foundation/umi-signer-wallet-adapters";
 import { ReferralState } from "../generated";
 import { TxHandler } from "./txHandler";
 interface ReferralStateManagerArgs {
-    referralAuthority?: PublicKey;
     signer?: Signer;
     wallet?: WalletAdapter;
+    referralAuthority?: PublicKey;
 }
 export declare class ReferralStateManager extends TxHandler {
     localTest?: boolean | undefined;

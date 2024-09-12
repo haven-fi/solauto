@@ -189,7 +189,8 @@ class TransactionsManager {
             }
         }
     }
-    async sendWithClient(items, client, prioritySetting) {
+    async clientSend(items, prioritySetting) {
+        const client = this.txHandler;
         const updateLookupTable = await client.updateLookupTable();
         if (updateLookupTable &&
             updateLookupTable.updateLutTx.getInstructions().length > 0 &&

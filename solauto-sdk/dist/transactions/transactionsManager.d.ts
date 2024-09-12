@@ -2,7 +2,7 @@ import { AddressLookupTableInput, TransactionBuilder, Umi } from "@metaplex-foun
 import { SolautoClient } from "../clients/solautoClient";
 import { ErrorsToThrow } from "../utils/generalUtils";
 import { PriorityFeeSetting } from "../types";
-import { TxHandler } from "../clients";
+import { ReferralStateManager, TxHandler } from "../clients";
 declare class LookupTables {
     defaultLuts: string[];
     private umi;
@@ -57,11 +57,11 @@ export declare class TransactionsManager {
     private errorsToThrow?;
     private statuses;
     private lookupTables;
-    constructor(txHandler: TxHandler, statusCallback?: ((statuses: TransactionManagerStatuses) => void) | undefined, simulateOnly?: boolean | undefined, mustBeAtomic?: boolean | undefined, errorsToThrow?: ErrorsToThrow | undefined);
+    constructor(txHandler: SolautoClient | ReferralStateManager, statusCallback?: ((statuses: TransactionManagerStatuses) => void) | undefined, simulateOnly?: boolean | undefined, mustBeAtomic?: boolean | undefined, errorsToThrow?: ErrorsToThrow | undefined);
     private assembleTransactionSets;
     updateStatus(name: string, status: TransactionStatus, txSig?: string): void;
     debugAccounts(itemSet: TransactionSet, tx: TransactionBuilder): Promise<void>;
-    sendWithClient(items: TransactionItem[], client: SolautoClient, prioritySetting?: PriorityFeeSetting): Promise<void>;
+    clientSend(items: TransactionItem[], prioritySetting?: PriorityFeeSetting): Promise<void>;
     send(items: TransactionItem[], prioritySetting?: PriorityFeeSetting, initialized?: boolean): Promise<void>;
 }
 export {};
