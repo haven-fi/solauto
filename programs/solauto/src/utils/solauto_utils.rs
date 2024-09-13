@@ -312,20 +312,21 @@ pub fn get_solauto_fees_bps(
     position_net_worth_usd: f64,
 ) -> SolautoFeesBps {
     let min_size: f64 = 10000.0; // Minimum position size
-    let max_size: f64 = 1000000.0; // Maximum position size
+    let max_size: f64 = 500000.0; // Maximum position size
     let max_fee_bps: f64 = 500.0; // Fee in basis points for min_size (5%)
-    let min_fee_bps: f64 = 100.0; // Fee in basis points for max_size (1%)
+    let min_fee_bps: f64 = 50.0; // Fee in basis points for max_size (0.5%)
+    let k = 0.55;
 
     let fee_bps: f64;
     if fee_type == FeeType::Small {
-        fee_bps = 100.0;
+        fee_bps = min_fee_bps;
     } else if position_net_worth_usd <= min_size {
         fee_bps = max_fee_bps;
     } else if position_net_worth_usd >= max_size {
         fee_bps = min_fee_bps;
     } else {
         let t = (position_net_worth_usd.ln() - min_size.ln()) / (max_size.ln() - min_size.ln());
-        fee_bps = (min_fee_bps + (max_fee_bps - min_fee_bps) * (1.0 - t)).round();
+        fee_bps = (min_fee_bps + (max_fee_bps - min_fee_bps) * (1.0 - t.powf(k))).round();
     }
 
     let referrer_fee = if has_been_referred {

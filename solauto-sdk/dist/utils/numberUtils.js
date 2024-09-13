@@ -69,12 +69,13 @@ function getDebtAdjustmentUsd(liqThresholdBps, supplyUsd, debtUsd, targetLiqUtil
 }
 function getSolautoFeesBps(isReferred, feeType, positionNetWorthUsd) {
     const minSize = 10000; // Minimum position size
-    const maxSize = 1000000; // Maximum position size
+    const maxSize = 500000; // Maximum position size
     const maxFeeBps = 500; // Fee in basis points for minSize (5%)
-    const minFeeBps = 100; // Fee in basis points for maxSize (1%)
+    const minFeeBps = 50; // Fee in basis points for maxSize (0.5%)
+    const k = 0.55;
     let feeBps = 0;
     if (feeType === generated_1.FeeType.Small) {
-        feeBps = 100;
+        feeBps = minFeeBps;
     }
     else if (positionNetWorthUsd <= minSize) {
         feeBps = maxFeeBps;
@@ -85,7 +86,7 @@ function getSolautoFeesBps(isReferred, feeType, positionNetWorthUsd) {
     else {
         const t = (Math.log(positionNetWorthUsd) - Math.log(minSize)) /
             (Math.log(maxSize) - Math.log(minSize));
-        feeBps = Math.round(minFeeBps + (maxFeeBps - minFeeBps) * (1 - t));
+        feeBps = Math.round(minFeeBps + (maxFeeBps - minFeeBps) * (1 - Math.pow(t, k)));
     }
     let referrer = 0;
     if (isReferred) {

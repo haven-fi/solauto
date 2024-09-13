@@ -96,14 +96,16 @@ export function getSolautoFeesBps(
   referrer: number;
   total: number;
 } {
-  const minSize = 10000; // Minimum position size
-  const maxSize = 1000000; // Maximum position size
+  const minSize = 10_000; // Minimum position size
+  const maxSize = 500_000; // Maximum position size
   const maxFeeBps = 500; // Fee in basis points for minSize (5%)
-  const minFeeBps = 100; // Fee in basis points for maxSize (1%)
+  const minFeeBps = 50; // Fee in basis points for maxSize (0.5%)
+  const k = 0.55;
 
   let feeBps: number = 0;
+
   if (feeType === FeeType.Small) {
-    feeBps = 100;
+    feeBps = minFeeBps;
   } else if (positionNetWorthUsd <= minSize) {
     feeBps = maxFeeBps;
   } else if (positionNetWorthUsd >= maxSize) {
@@ -112,7 +114,7 @@ export function getSolautoFeesBps(
     const t =
       (Math.log(positionNetWorthUsd) - Math.log(minSize)) /
       (Math.log(maxSize) - Math.log(minSize));
-    feeBps = Math.round(minFeeBps + (maxFeeBps - minFeeBps) * (1 - t));
+    feeBps = Math.round(minFeeBps + (maxFeeBps - minFeeBps) * (1 - Math.pow(t, k)));
   }
 
   let referrer = 0;
