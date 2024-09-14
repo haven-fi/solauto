@@ -176,8 +176,8 @@ export abstract class SolautoClient extends TxHandler {
 
     const authorityReferralStateData = this.referralStateManager.referralStateData;
     const hasReferredBy =
-    authorityReferralStateData &&
-    authorityReferralStateData.referredByState !==
+      authorityReferralStateData &&
+      authorityReferralStateData.referredByState !==
       publicKey(PublicKey.default);
     const referredByAuthority =
       !hasReferredBy &&
@@ -204,7 +204,7 @@ export abstract class SolautoClient extends TxHandler {
       this.supplyMint
     );
 
-    this.authorityLutAddress = authorityReferralStateData?.lookupTable
+    this.authorityLutAddress = authorityReferralStateData?.lookupTable && !toWeb3JsPublicKey(authorityReferralStateData.lookupTable).equals(PublicKey.default)
       ? toWeb3JsPublicKey(authorityReferralStateData?.lookupTable)
       : undefined;
     this.upToDateLutAccounts = toWeb3JsPublicKey(this.signer.publicKey).equals(
