@@ -8,5 +8,5 @@ export declare function buildSolautoRebalanceTransaction(client: SolautoClient, 
     tx: TransactionBuilder;
     lookupTableAddresses: string[];
 } | undefined>;
-export declare function convertReferralFeesToDestination(umi: Umi, referralState: ReferralState, tokenAccount: SplTokenAccount): Promise<[TransactionBuilder, string[]]>;
+export declare function convertReferralFeesToDestination(umi: Umi, referralState: ReferralState, tokenAccount: SplTokenAccount): Promise<[TransactionBuilder, string[]] | undefined>;
 //# sourceMappingURL=transactionUtils.d.ts.map

@@ -40,7 +40,6 @@ export declare abstract class SolautoClient extends TxHandler {
     solautoFeesWallet: PublicKey;
     solautoFeesSupplyTa: PublicKey;
     authorityLutAddress?: PublicKey;
-    upToDateLutAccounts: PublicKey[];
     livePositionUpdates: LivePositionUpdates;
     constructor(heliusApiKey: string, localTest?: boolean | undefined);
     initialize(args: SolautoClientArgs, lendingPlatform: LendingPlatform): Promise<void>;

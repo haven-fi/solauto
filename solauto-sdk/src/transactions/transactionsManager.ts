@@ -16,7 +16,6 @@ import {
 } from "../utils/generalUtils";
 import { getTransactionChores } from "./transactionUtils";
 import { PriorityFeeSetting } from "../types";
-import { Connection, PublicKey } from "@solana/web3.js";
 import { ReferralStateManager, TxHandler } from "../clients";
 // import { sendJitoBundledTransactions } from "../utils/jitoUtils";
 

@@ -80,9 +80,6 @@ class SolautoClient extends txHandler_1.TxHandler {
         this.authorityLutAddress = authorityReferralStateData?.lookupTable && !(0, umi_web3js_adapters_1.toWeb3JsPublicKey)(authorityReferralStateData.lookupTable).equals(web3_js_1.PublicKey.default)
             ? (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(authorityReferralStateData.lookupTable)
             : undefined;
-        this.upToDateLutAccounts = (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.signer.publicKey).equals(this.authority)
-            ? await this.fetchExistingAuthorityLutAccounts()
-            : [];
         this.log("Position state: ", this.solautoPositionState);
         this.log("Position settings: ", this.solautoPositionData?.position?.settingParams);
         this.log("Position DCA: ", (this.solautoPositionData?.position?.dca?.automation?.targetPeriods ??
@@ -127,35 +124,41 @@ class SolautoClient extends txHandler_1.TxHandler {
         ];
     }
     async fetchExistingAuthorityLutAccounts() {
+        console.log("Fetching lut accounts", this.authorityLutAddress?.toString());
         const lookupTable = this.authorityLutAddress
             ? await this.connection.getAddressLookupTable(this.authorityLutAddress)
             : null;
+        console.log(lookupTable?.value);
         if (!lookupTable || lookupTable?.value === null) {
             this.authorityLutAddress = undefined;
         }
         return lookupTable?.value?.state.addresses ?? [];
     }
     async updateLookupTable() {
+        console.log("Getting existing accoutns");
         const existingLutAccounts = await this.fetchExistingAuthorityLutAccounts();
+        console.log("existing accoutns", existingLutAccounts.length);
         if (this.lutAccountsToAdd().every((element) => existingLutAccounts
             .map((x) => x.toString().toLowerCase())
             .includes(element.toString().toLowerCase()))) {
             return undefined;
         }
         let tx = (0, umi_1.transactionBuilder)();
+        console.log("lut address", this.authorityLutAddress?.toString());
         if (this.authorityLutAddress === undefined) {
             const [createLookupTableInst, lookupTableAddress] = web3_js_1.AddressLookupTableProgram.createLookupTable({
                 authority: this.authority,
                 payer: (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.signer.publicKey),
                 recentSlot: await this.umi.rpc.getSlot({ commitment: "finalized" }),
             });
+            console.log("new luit", lookupTableAddress.toString());
             this.authorityLutAddress = lookupTableAddress;
             tx = tx.add((0, solanaUtils_1.getWrappedInstruction)(this.signer, createLookupTableInst));
         }
         const accountsToAdd = this.lutAccountsToAdd().filter((x) => !existingLutAccounts
             .map((x) => x.toString().toLowerCase())
             .includes(x.toString().toLowerCase()));
-        this.upToDateLutAccounts = [...existingLutAccounts, ...accountsToAdd];
+        console.log("add accounts", accountsToAdd.length);
         if (accountsToAdd.length > 0) {
             tx = tx.add((0, solanaUtils_1.getWrappedInstruction)(this.signer, web3_js_1.AddressLookupTableProgram.extendLookupTable({
                 payer: (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.signer.publicKey),
@@ -164,12 +167,14 @@ class SolautoClient extends txHandler_1.TxHandler {
                 addresses: accountsToAdd,
             })));
         }
+        console.log("Hello");
         const addingReferredBy = accountsToAdd.length === 1 &&
             accountsToAdd[0].toString().toLowerCase() ===
                 this.referredBySupplyTa?.toString().toLowerCase();
         if (tx.getInstructions().length > 0) {
             this.log("Updating authority lookup table...");
         }
+        console.log("instructions", tx.getInstructions().length);
         return { updateLutTx: tx, needsToBeIsolated: !addingReferredBy };
     }
     solautoPositionSettings() {

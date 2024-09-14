@@ -11,7 +11,6 @@ import {
   ACCOUNT_SIZE as TOKEN_ACCOUNT_SIZE,
   NATIVE_MINT,
   Account as SplTokenAccount,
-  AccountLayout as SplTokenAccountLayout
 } from "@solana/spl-token";
 import {
   FeeType,
@@ -685,14 +684,8 @@ export async function buildSolautoRebalanceTransaction(
 export async function convertReferralFeesToDestination(
   umi: Umi,
   referralState: ReferralState,
-  tokenAccount: PublicKey
+  tokenAccount: SplTokenAccount
 ): Promise<[TransactionBuilder, string[]] | undefined> {
-  const fetchedTokenAccount = await umi.rpc.getAccount(publicKey(tokenAccount));
-  if (!fetchedTokenAccount.exists) {
-    return undefined;
-  }
-  SplTokenAccount
-
   const { lookupTableAddresses, setupInstructions, swapIx } =
     await getJupSwapTransaction(umi.identity, {
       amount: tokenAccount.amount,
