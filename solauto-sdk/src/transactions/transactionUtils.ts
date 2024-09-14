@@ -13,6 +13,7 @@ import {
   Account as SplTokenAccount,
 } from "@solana/spl-token";
 import {
+  FeeType,
   LendingPlatform,
   ReferralState,
   SOLAUTO_PROGRAM_ID,
@@ -578,7 +579,7 @@ export async function buildSolautoRebalanceTransaction(
     client.solautoPositionState!,
     client.solautoPositionSettings(),
     client.solautoPositionActiveDca(),
-    client.solautoPositionData!.feeType,
+    client.solautoPositionData?.feeType ?? FeeType.Small,
     currentUnixSeconds(),
     PRICES[client.supplyMint.toString()].price,
     PRICES[client.debtMint.toString()].price,

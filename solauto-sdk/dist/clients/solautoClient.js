@@ -78,7 +78,7 @@ class SolautoClient extends txHandler_1.TxHandler {
         this.solautoFeesWallet = generalAccounts_1.SOLAUTO_FEES_WALLET;
         this.solautoFeesSupplyTa = (0, accountUtils_1.getTokenAccount)(this.solautoFeesWallet, this.supplyMint);
         this.authorityLutAddress = authorityReferralStateData?.lookupTable && !(0, umi_web3js_adapters_1.toWeb3JsPublicKey)(authorityReferralStateData.lookupTable).equals(web3_js_1.PublicKey.default)
-            ? (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(authorityReferralStateData?.lookupTable)
+            ? (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(authorityReferralStateData.lookupTable)
             : undefined;
         this.upToDateLutAccounts = (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.signer.publicKey).equals(this.authority)
             ? await this.fetchExistingAuthorityLutAccounts()
@@ -130,7 +130,7 @@ class SolautoClient extends txHandler_1.TxHandler {
         const lookupTable = this.authorityLutAddress
             ? await this.connection.getAddressLookupTable(this.authorityLutAddress)
             : null;
-        if (lookupTable === null) {
+        if (!lookupTable || lookupTable?.value === null) {
             this.authorityLutAddress = undefined;
         }
         return lookupTable?.value?.state.addresses ?? [];
