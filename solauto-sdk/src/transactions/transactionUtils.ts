@@ -11,6 +11,7 @@ import {
   ACCOUNT_SIZE as TOKEN_ACCOUNT_SIZE,
   NATIVE_MINT,
   Account as SplTokenAccount,
+  AccountLayout as SplTokenAccountLayout
 } from "@solana/spl-token";
 import {
   FeeType,
@@ -110,9 +111,9 @@ async function transactionChoresBefore(
   let chores = transactionBuilder();
 
   if (
-    client.referralStateManager.referralState === null ||
+    client.referralStateManager.referralStateData === null ||
     (client.referredByState !== undefined &&
-      client.referralStateManager.referralStateData!.referredByState ===
+      client.referralStateManager.referralStateData?.referredByState ===
       publicKey(PublicKey.default)) ||
     (client.authorityLutAddress !== undefined &&
       client.referralStateManager.referralStateData!.lookupTable ==
@@ -553,11 +554,10 @@ export async function buildSolautoRebalanceTransaction(
   client: SolautoClient,
   targetLiqUtilizationRateBps?: number,
   attemptNum?: number
-): Promise<
-  | {
-    tx: TransactionBuilder;
-    lookupTableAddresses: string[];
-  }
+): Promise<{
+  tx: TransactionBuilder;
+  lookupTableAddresses: string[];
+}
   | undefined
 > {
   client.solautoPositionState = await client.getFreshPositionState();
@@ -685,8 +685,14 @@ export async function buildSolautoRebalanceTransaction(
 export async function convertReferralFeesToDestination(
   umi: Umi,
   referralState: ReferralState,
-  tokenAccount: SplTokenAccount
-): Promise<[TransactionBuilder, string[]]> {
+  tokenAccount: PublicKey
+): Promise<[TransactionBuilder, string[]] | undefined> {
+  const fetchedTokenAccount = await umi.rpc.getAccount(publicKey(tokenAccount));
+  if (!fetchedTokenAccount.exists) {
+    return undefined;
+  }
+  SplTokenAccount
+
   const { lookupTableAddresses, setupInstructions, swapIx } =
     await getJupSwapTransaction(umi.identity, {
       amount: tokenAccount.amount,

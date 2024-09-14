@@ -47,9 +47,9 @@ function getWSolUsage(client, solautoActions, initiatingDcaIn, cancellingDcaIn) 
 }
 async function transactionChoresBefore(client, accountsGettingCreated, solautoActions, initiatingDcaIn) {
     let chores = (0, umi_1.transactionBuilder)();
-    if (client.referralStateManager.referralState === null ||
+    if (client.referralStateManager.referralStateData === null ||
         (client.referredByState !== undefined &&
-            client.referralStateManager.referralStateData.referredByState ===
+            client.referralStateManager.referralStateData?.referredByState ===
                 (0, umi_1.publicKey)(web3_js_1.PublicKey.default)) ||
         (client.authorityLutAddress !== undefined &&
             client.referralStateManager.referralStateData.lookupTable ==
