@@ -10,7 +10,7 @@ import { ReferralStateManager } from "./referralStateManager";
 import { TxHandler } from "./txHandler";
 export interface SolautoClientArgs {
     authority?: PublicKey;
-    positionId: number;
+    positionId?: number;
     signer?: Signer;
     wallet?: WalletAdapter;
     supplyMint?: PublicKey;

@@ -63,7 +63,7 @@ import { TxHandler } from "./txHandler";
 
 export interface SolautoClientArgs {
   authority?: PublicKey;
-  positionId: number;
+  positionId?: number;
   signer?: Signer;
   wallet?: WalletAdapter;
 
@@ -133,7 +133,7 @@ export abstract class SolautoClient extends TxHandler {
     this.signer = this.umi.identity;
     this.authority = args.authority ?? toWeb3JsPublicKey(this.signer.publicKey);
 
-    this.positionId = args.positionId;
+    this.positionId = args.positionId ?? 0;
     this.selfManaged = this.positionId === 0;
     this.lendingPlatform = lendingPlatform;
     this.solautoPosition = getSolautoPositionAccount(
@@ -586,6 +586,7 @@ export abstract class SolautoClient extends TxHandler {
 
   async getFreshPositionState(): Promise<PositionState | undefined> {
     if (
+      Boolean(this.solautoPositionData) &&
       Boolean(this.solautoPositionState) &&
       Number(this.solautoPositionState!.lastUpdated) >
       currentUnixSeconds() - MIN_POSITION_STATE_FRESHNESS_SECS &&

@@ -35,7 +35,7 @@ class SolautoClient extends txHandler_1.TxHandler {
             : (0, umi_signer_wallet_adapters_1.walletAdapterIdentity)(args.wallet, true));
         this.signer = this.umi.identity;
         this.authority = args.authority ?? (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.signer.publicKey);
-        this.positionId = args.positionId;
+        this.positionId = args.positionId ?? 0;
         this.selfManaged = this.positionId === 0;
         this.lendingPlatform = lendingPlatform;
         this.solautoPosition = (0, accountUtils_1.getSolautoPositionAccount)(this.authority, this.positionId);
@@ -344,7 +344,8 @@ class SolautoClient extends txHandler_1.TxHandler {
         return tx;
     }
     async getFreshPositionState() {
-        if (Boolean(this.solautoPositionState) &&
+        if (Boolean(this.solautoPositionData) &&
+            Boolean(this.solautoPositionState) &&
             Number(this.solautoPositionState.lastUpdated) >
                 (0, generalUtils_1.currentUnixSeconds)() - solautoConstants_1.MIN_POSITION_STATE_FRESHNESS_SECS &&
             !this.livePositionUpdates.hasUpdates()) {
