@@ -205,7 +205,7 @@ export abstract class SolautoClient extends TxHandler {
     );
 
     this.authorityLutAddress = authorityReferralStateData?.lookupTable && !toWeb3JsPublicKey(authorityReferralStateData.lookupTable).equals(PublicKey.default)
-      ? toWeb3JsPublicKey(authorityReferralStateData?.lookupTable)
+      ? toWeb3JsPublicKey(authorityReferralStateData.lookupTable)
       : undefined;
     this.upToDateLutAccounts = toWeb3JsPublicKey(this.signer.publicKey).equals(
       this.authority
