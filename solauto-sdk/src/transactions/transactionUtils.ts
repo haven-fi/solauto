@@ -48,7 +48,7 @@ import {
   uint8ArrayToBigInt,
 } from "../utils/numberUtils";
 import { eligibleForRebalance } from "../utils/solauto/generalUtils";
-import { getTokenAccount } from "../utils/accountUtils";
+import { getTokenAccount, getTokenAccountData } from "../utils/accountUtils";
 import {
   getLendingAccountBorrowInstructionDataSerializer,
   getLendingAccountDepositInstructionDataSerializer,
@@ -684,13 +684,18 @@ export async function buildSolautoRebalanceTransaction(
 export async function convertReferralFeesToDestination(
   umi: Umi,
   referralState: ReferralState,
-  tokenAccount: SplTokenAccount
+  tokenAccount: PublicKey
 ): Promise<[TransactionBuilder, string[]] | undefined> {
+  const tokenAccountData = await getTokenAccountData(umi, tokenAccount);
+  if (!tokenAccountData || tokenAccountData.amount === BigInt(0)) {
+    return undefined;
+  }
+
   const { lookupTableAddresses, setupInstructions, swapIx } =
     await getJupSwapTransaction(umi.identity, {
-      amount: tokenAccount.amount,
+      amount: tokenAccountData.amount,
       destinationWallet: toWeb3JsPublicKey(referralState.publicKey),
-      inputMint: tokenAccount.mint,
+      inputMint: tokenAccountData.mint,
       outputMint: toWeb3JsPublicKey(referralState.destFeesMint),
       exactIn: true,
       slippageBpsIncFactor: 0.15,
@@ -704,12 +709,12 @@ export async function convertReferralFeesToDestination(
         intermediaryTa: publicKey(
           getTokenAccount(
             toWeb3JsPublicKey(umi.identity.publicKey),
-            tokenAccount.mint
+            tokenAccountData.mint
           )
         ),
         ixsSysvar: publicKey(SYSVAR_INSTRUCTIONS_PUBKEY),
         referralState: referralState.publicKey,
-        referralFeesTa: publicKey(tokenAccount.address),
+        referralFeesTa: publicKey(tokenAccount),
       })
     )
     .add(swapIx);

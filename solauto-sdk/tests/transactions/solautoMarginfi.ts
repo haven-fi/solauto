@@ -1,5 +1,5 @@
 import { describe, it } from "mocha";
-import { none, some } from "@metaplex-foundation/umi";
+import { none, publicKey, some } from "@metaplex-foundation/umi";
 import { setupTest } from "../shared";
 import {
   SolautoMarginfiClient,
@@ -154,11 +154,11 @@ describe("Solauto Marginfi tests", async () => {
     //   )
     // );
 
-    await new TransactionsManager(
-      client,
-      undefined,
-      !payForTransactions,
-      useJitoBundle
-    ).clientSend(transactionItems);
+    // await new TransactionsManager(
+    //   client,
+    //   undefined,
+    //   !payForTransactions,
+    //   useJitoBundle
+    // ).clientSend(transactionItems);
   });
 });

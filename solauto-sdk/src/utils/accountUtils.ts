@@ -1,6 +1,7 @@
 import { PublicKey } from "@solana/web3.js";
-import { getAssociatedTokenAddressSync } from "@solana/spl-token";
+import { AccountLayout as SplTokenAccountLayout, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { SOLAUTO_PROGRAM_ID } from "../generated";
+import { publicKey, Umi } from "@metaplex-foundation/umi";
 
 export function bufferFromU8(num: number): Buffer {
   const buffer = Buffer.alloc(1);
@@ -24,6 +25,15 @@ export function getTokenAccount(wallet: PublicKey, tokenMint: PublicKey): Public
 
 export function getTokenAccounts(wallet: PublicKey, tokenMints: PublicKey[]): PublicKey[] {
   return tokenMints.map(x => getTokenAccount(wallet, x));
+}
+
+export async function getTokenAccountData(umi: Umi, tokenAccount: PublicKey) {
+  const resp = await umi.rpc.getAccount(publicKey(tokenAccount));
+  if (resp.exists) {
+    return SplTokenAccountLayout.decode(resp.data);
+  } else {
+    return undefined;
+  }
 }
 
 export function getSolautoPositionAccount(

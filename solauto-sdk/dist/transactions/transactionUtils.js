@@ -373,10 +373,14 @@ async function buildSolautoRebalanceTransaction(client, targetLiqUtilizationRate
     };
 }
 async function convertReferralFeesToDestination(umi, referralState, tokenAccount) {
+    const tokenAccountData = await (0, accountUtils_1.getTokenAccountData)(umi, tokenAccount);
+    if (!tokenAccountData || tokenAccountData.amount === BigInt(0)) {
+        return undefined;
+    }
     const { lookupTableAddresses, setupInstructions, swapIx } = await (0, jupiterUtils_1.getJupSwapTransaction)(umi.identity, {
-        amount: tokenAccount.amount,
+        amount: tokenAccountData.amount,
         destinationWallet: (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(referralState.publicKey),
-        inputMint: tokenAccount.mint,
+        inputMint: tokenAccountData.mint,
         outputMint: (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(referralState.destFeesMint),
         exactIn: true,
         slippageBpsIncFactor: 0.15,
@@ -385,10 +389,10 @@ async function convertReferralFeesToDestination(umi, referralState, tokenAccount
         .add(setupInstructions)
         .add((0, generated_1.convertReferralFees)(umi, {
         signer: umi.identity,
-        intermediaryTa: (0, umi_1.publicKey)((0, accountUtils_1.getTokenAccount)((0, umi_web3js_adapters_1.toWeb3JsPublicKey)(umi.identity.publicKey), tokenAccount.mint)),
+        intermediaryTa: (0, umi_1.publicKey)((0, accountUtils_1.getTokenAccount)((0, umi_web3js_adapters_1.toWeb3JsPublicKey)(umi.identity.publicKey), tokenAccountData.mint)),
         ixsSysvar: (0, umi_1.publicKey)(web3_js_1.SYSVAR_INSTRUCTIONS_PUBKEY),
         referralState: referralState.publicKey,
-        referralFeesTa: (0, umi_1.publicKey)(tokenAccount.address),
+        referralFeesTa: (0, umi_1.publicKey)(tokenAccount),
     }))
         .add(swapIx);
     return [tx, lookupTableAddresses];

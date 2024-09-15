@@ -4,12 +4,14 @@ exports.bufferFromU8 = bufferFromU8;
 exports.bufferFromU64 = bufferFromU64;
 exports.getTokenAccount = getTokenAccount;
 exports.getTokenAccounts = getTokenAccounts;
+exports.getTokenAccountData = getTokenAccountData;
 exports.getSolautoPositionAccount = getSolautoPositionAccount;
 exports.getReferralState = getReferralState;
 exports.getMarginfiAccountPDA = getMarginfiAccountPDA;
 const web3_js_1 = require("@solana/web3.js");
 const spl_token_1 = require("@solana/spl-token");
 const generated_1 = require("../generated");
+const umi_1 = require("@metaplex-foundation/umi");
 function bufferFromU8(num) {
     const buffer = Buffer.alloc(1);
     buffer.writeUInt8(num);
@@ -25,6 +27,15 @@ function getTokenAccount(wallet, tokenMint) {
 }
 function getTokenAccounts(wallet, tokenMints) {
     return tokenMints.map(x => getTokenAccount(wallet, x));
+}
+async function getTokenAccountData(umi, tokenAccount) {
+    const resp = await umi.rpc.getAccount((0, umi_1.publicKey)(tokenAccount));
+    if (resp.exists) {
+        return spl_token_1.AccountLayout.decode(resp.data);
+    }
+    else {
+        return undefined;
+    }
 }
 function getSolautoPositionAccount(signer, positionId) {
     const [positionAccount, _] = web3_js_1.PublicKey.findProgramAddressSync([bufferFromU8(positionId), signer.toBuffer()], new web3_js_1.PublicKey(generated_1.SOLAUTO_PROGRAM_ID));

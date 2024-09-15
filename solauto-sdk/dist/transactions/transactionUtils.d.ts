@@ -1,5 +1,5 @@
 import { TransactionBuilder, Umi } from "@metaplex-foundation/umi";
-import { Account as SplTokenAccount } from "@solana/spl-token";
+import { PublicKey } from "@solana/web3.js";
 import { ReferralState } from "../generated";
 import { SolautoClient } from "../clients/solautoClient";
 export declare function rebalanceChoresBefore(client: SolautoClient, tx: TransactionBuilder, accountsGettingCreated: string[]): Promise<TransactionBuilder>;
@@ -8,5 +8,5 @@ export declare function buildSolautoRebalanceTransaction(client: SolautoClient, 
     tx: TransactionBuilder;
     lookupTableAddresses: string[];
 } | undefined>;
-export declare function convertReferralFeesToDestination(umi: Umi, referralState: ReferralState, tokenAccount: SplTokenAccount): Promise<[TransactionBuilder, string[]] | undefined>;
+export declare function convertReferralFeesToDestination(umi: Umi, referralState: ReferralState, tokenAccount: PublicKey): Promise<[TransactionBuilder, string[]] | undefined>;
 //# sourceMappingURL=transactionUtils.d.ts.map
