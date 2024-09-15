@@ -321,9 +321,9 @@ export async function sendSingleOptimizedTransaction(
     ).sendAndConfirm(umi, {
       send: {
         skipPreflight: true,
-        commitment: "finalized",
+        commitment: "confirmed",
       },
-      confirm: { commitment: "finalized" },
+      confirm: { commitment: "confirmed" },
     });
     console.log(`https://solscan.io/tx/${bs58.encode(result.signature)}`);
     if (result.result.value.err !== null) {

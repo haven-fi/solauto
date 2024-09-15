@@ -167,9 +167,9 @@ async function sendSingleOptimizedTransaction(umi, connection, tx, simulateOnly,
         const result = await assembleFinalTransaction(umi.identity, tx, feeEstimate, 800000).sendAndConfirm(umi, {
             send: {
                 skipPreflight: true,
-                commitment: "finalized",
+                commitment: "confirmed",
             },
-            confirm: { commitment: "finalized" },
+            confirm: { commitment: "confirmed" },
         });
         console.log(`https://solscan.io/tx/${bs58_1.default.encode(result.signature)}`);
         if (result.result.value.err !== null) {
