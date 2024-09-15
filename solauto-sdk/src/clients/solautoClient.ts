@@ -262,7 +262,6 @@ export abstract class SolautoClient extends TxHandler {
   }
 
   async fetchExistingAuthorityLutAccounts(): Promise<PublicKey[]> {
-    console.log("Fetching lut accounts", this.authorityLutAddress?.toString());
     const lookupTable = this.authorityLutAddress
       ? await this.connection.getAddressLookupTable(this.authorityLutAddress)
       : null;
@@ -276,9 +275,7 @@ export abstract class SolautoClient extends TxHandler {
   async updateLookupTable(): Promise<
     { updateLutTx: TransactionBuilder; needsToBeIsolated: boolean } | undefined
   > {
-    console.log("Getting existing accoutns");
     const existingLutAccounts = await this.fetchExistingAuthorityLutAccounts();
-    console.log("existing accoutns", existingLutAccounts.length);
     if (
       this.lutAccountsToAdd().every((element) =>
         existingLutAccounts
@@ -291,7 +288,6 @@ export abstract class SolautoClient extends TxHandler {
 
     let tx = transactionBuilder();
 
-    console.log("lut address", this.authorityLutAddress?.toString());
     if (this.authorityLutAddress === undefined) {
       const [createLookupTableInst, lookupTableAddress] =
         AddressLookupTableProgram.createLookupTable({
@@ -299,7 +295,6 @@ export abstract class SolautoClient extends TxHandler {
           payer: toWeb3JsPublicKey(this.signer.publicKey),
           recentSlot: await this.umi.rpc.getSlot({ commitment: "finalized" }),
         });
-      console.log("new luit", lookupTableAddress.toString());
       this.authorityLutAddress = lookupTableAddress;
       tx = tx.add(getWrappedInstruction(this.signer, createLookupTableInst));
     }
@@ -310,8 +305,6 @@ export abstract class SolautoClient extends TxHandler {
           .map((x) => x.toString().toLowerCase())
           .includes(x.toString().toLowerCase())
     );
-    console.log("add accounts", accountsToAdd.length);
-
     if (accountsToAdd.length > 0) {
       tx = tx.add(
         getWrappedInstruction(
@@ -325,7 +318,6 @@ export abstract class SolautoClient extends TxHandler {
         )
       );
     }
-    console.log("Hello");
 
     const addingReferredBy =
       accountsToAdd.length === 1 &&
@@ -335,7 +327,6 @@ export abstract class SolautoClient extends TxHandler {
     if (tx.getInstructions().length > 0) {
       this.log("Updating authority lookup table...");
     }
-    console.log("instructions", tx.getInstructions().length);
 
     return { updateLutTx: tx, needsToBeIsolated: !addingReferredBy };
   }
