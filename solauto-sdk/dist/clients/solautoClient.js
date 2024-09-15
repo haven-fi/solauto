@@ -42,13 +42,13 @@ class SolautoClient extends txHandler_1.TxHandler {
         this.solautoPositionData = await (0, generated_1.safeFetchSolautoPosition)(this.umi, (0, umi_1.publicKey)(this.solautoPosition));
         this.solautoPositionState = this.solautoPositionData?.state;
         this.supplyMint =
-            args.supplyMint ??
-                (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.solautoPositionData.position.supplyMint);
+            (args.supplyMint ??
+                this.solautoPositionData) ? (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.solautoPositionData.position.supplyMint) : web3_js_1.PublicKey.default;
         this.positionSupplyTa = (0, accountUtils_1.getTokenAccount)(this.solautoPosition, this.supplyMint);
         this.signerSupplyTa = (0, accountUtils_1.getTokenAccount)((0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.signer.publicKey), this.supplyMint);
         this.debtMint =
-            args.debtMint ??
-                (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.solautoPositionData.position.debtMint);
+            (args.debtMint ??
+                this.solautoPositionData) ? (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.solautoPositionData.position.debtMint) : web3_js_1.PublicKey.default;
         this.positionDebtTa = (0, accountUtils_1.getTokenAccount)(this.solautoPosition, this.debtMint);
         this.signerDebtTa = (0, accountUtils_1.getTokenAccount)((0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.signer.publicKey), this.debtMint);
         this.referralStateManager = new referralStateManager_1.ReferralStateManager(this.heliusApiKey);

@@ -144,7 +144,7 @@ export abstract class SolautoClient extends TxHandler {
 
     this.supplyMint =
       args.supplyMint ??
-      toWeb3JsPublicKey(this.solautoPositionData!.position.supplyMint);
+      this.solautoPositionData ? toWeb3JsPublicKey(this.solautoPositionData!.position.supplyMint) : PublicKey.default;
     this.positionSupplyTa = getTokenAccount(
       this.solautoPosition,
       this.supplyMint
@@ -156,7 +156,7 @@ export abstract class SolautoClient extends TxHandler {
 
     this.debtMint =
       args.debtMint ??
-      toWeb3JsPublicKey(this.solautoPositionData!.position.debtMint);
+      this.solautoPositionData ? toWeb3JsPublicKey(this.solautoPositionData!.position.debtMint) : PublicKey.default;
     this.positionDebtTa = getTokenAccount(this.solautoPosition, this.debtMint);
     this.signerDebtTa = getTokenAccount(
       toWeb3JsPublicKey(this.signer.publicKey),

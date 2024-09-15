@@ -235,10 +235,10 @@ export async function rebalanceChoresBefore(
   }
 
   const usesAccount = (key: PublicKey) =>
-    rebalanceInstructions.some((t) =>
+    tx.getInstructions().some((t) =>
       t.keys.some((k) => toWeb3JsPublicKey(k.pubkey).equals(key))
     );
-
+  
   const checkReferralSupplyTa =
     client.referredBySupplyTa && usesAccount(client.referredBySupplyTa);
   const checkSolautoFeesTa = usesAccount(client.solautoFeesSupplyTa);

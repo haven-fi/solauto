@@ -20,12 +20,12 @@ import { PublicKey } from "@solana/web3.js";
 import { USDC_MINT } from "../../src/constants";
 
 describe("Solauto Marginfi tests", async () => {
-  // const signer = setupTest();
-  const signer = setupTest("solauto-manager");
+  const signer = setupTest();
+  // const signer = setupTest("solauto-manager");
 
   const payForTransactions = false;
   const useJitoBundle = false;
-  const positionId = 255;
+  const positionId = 1;
 
   it("open - deposit - borrow - rebalance to 0 - withdraw - close", async () => {
 
@@ -39,7 +39,7 @@ describe("Solauto Marginfi tests", async () => {
       {
         signer,
         positionId,
-        authority: new PublicKey("92xmP49BQycn3t2HkGxLAweN3jjrExxSNpywA3xF7mYY")
+        // authority: new PublicKey("92xmP49BQycn3t2HkGxLAweN3jjrExxSNpywA3xF7mYY")
         // marginfiAccount: new PublicKey(
         //   "4nNvUXF5YqHFcH2nGweSiuvy1ct7V5FXfoCLKFYUN36z"
         // ),
@@ -123,7 +123,7 @@ describe("Solauto Marginfi tests", async () => {
     transactionItems.push(
       new TransactionItem(
         async (attemptNum) =>
-          await buildSolautoRebalanceTransaction(client, undefined, attemptNum),
+          await buildSolautoRebalanceTransaction(client, 1500, attemptNum),
         "rebalance"
       )
     );

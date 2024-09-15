@@ -69,18 +69,18 @@ fn initialize_solauto_position<'a, 'b>(
             SolautoPosition::LEN,
         )?;
 
-        if solauto_manager.key != &SOLAUTO_MANAGER {
-            msg!("Provided incorrect Solauto Manager account");
-            return Err(SolautoError::IncorrectAccounts.into());
-        } else if !solauto_position.data.self_managed.val {
-            // Tip Solauto Manager
-            solana_utils::system_transfer(
-                signer,
-                solauto_manager,
-                to_base_unit::<f64, u8, u64>(0.1, 9),
-                None,
-            )?;
-        }
+        // if solauto_manager.key != &SOLAUTO_MANAGER {
+        //     msg!("Provided incorrect Solauto Manager account");
+        //     return Err(SolautoError::IncorrectAccounts.into());
+        // } else if !solauto_position.data.self_managed.val {
+        //     // Tip Solauto Manager
+        //     solana_utils::system_transfer(
+        //         signer,
+        //         solauto_manager,
+        //         to_base_unit::<f64, u8, u64>(0.1, 9),
+        //         None,
+        //     )?;
+        // }
     }
 
     solana_utils::init_ata_if_needed(
