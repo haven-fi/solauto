@@ -20,6 +20,8 @@ pub struct ClosePosition {
 
     pub solauto_position: solana_program::pubkey::Pubkey,
 
+    pub protocol_account: solana_program::pubkey::Pubkey,
+
     pub signer_supply_ta: solana_program::pubkey::Pubkey,
 
     pub position_supply_ta: solana_program::pubkey::Pubkey,
@@ -40,7 +42,7 @@ impl ClosePosition {
         &self,
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
-        let mut accounts = Vec::with_capacity(10 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(11 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.signer,
             true,
@@ -59,6 +61,10 @@ impl ClosePosition {
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.solauto_position,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            self.protocol_account,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
@@ -119,11 +125,12 @@ impl ClosePositionInstructionData {
 ///   2. `[optional]` token_program (default to `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA`)
 ///   3. `[optional]` ata_program (default to `ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL`)
 ///   4. `[writable]` solauto_position
-///   5. `[writable]` signer_supply_ta
-///   6. `[writable]` position_supply_ta
-///   7. `[writable, optional]` position_supply_collateral_ta
-///   8. `[writable]` position_debt_ta
-///   9. `[writable]` signer_debt_ta
+///   5. `[writable]` protocol_account
+///   6. `[writable]` signer_supply_ta
+///   7. `[writable]` position_supply_ta
+///   8. `[writable, optional]` position_supply_collateral_ta
+///   9. `[writable]` position_debt_ta
+///   10. `[writable]` signer_debt_ta
 #[derive(Default)]
 pub struct ClosePositionBuilder {
     signer: Option<solana_program::pubkey::Pubkey>,
@@ -131,6 +138,7 @@ pub struct ClosePositionBuilder {
     token_program: Option<solana_program::pubkey::Pubkey>,
     ata_program: Option<solana_program::pubkey::Pubkey>,
     solauto_position: Option<solana_program::pubkey::Pubkey>,
+    protocol_account: Option<solana_program::pubkey::Pubkey>,
     signer_supply_ta: Option<solana_program::pubkey::Pubkey>,
     position_supply_ta: Option<solana_program::pubkey::Pubkey>,
     position_supply_collateral_ta: Option<solana_program::pubkey::Pubkey>,
@@ -172,6 +180,14 @@ impl ClosePositionBuilder {
         solauto_position: solana_program::pubkey::Pubkey,
     ) -> &mut Self {
         self.solauto_position = Some(solauto_position);
+        self
+    }
+    #[inline(always)]
+    pub fn protocol_account(
+        &mut self,
+        protocol_account: solana_program::pubkey::Pubkey,
+    ) -> &mut Self {
+        self.protocol_account = Some(protocol_account);
         self
     }
     #[inline(always)]
@@ -244,6 +260,7 @@ impl ClosePositionBuilder {
                 "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
             )),
             solauto_position: self.solauto_position.expect("solauto_position is not set"),
+            protocol_account: self.protocol_account.expect("protocol_account is not set"),
             signer_supply_ta: self.signer_supply_ta.expect("signer_supply_ta is not set"),
             position_supply_ta: self
                 .position_supply_ta
@@ -268,6 +285,8 @@ pub struct ClosePositionCpiAccounts<'a, 'b> {
     pub ata_program: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub solauto_position: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub protocol_account: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub signer_supply_ta: &'b solana_program::account_info::AccountInfo<'a>,
 
@@ -295,6 +314,8 @@ pub struct ClosePositionCpi<'a, 'b> {
 
     pub solauto_position: &'b solana_program::account_info::AccountInfo<'a>,
 
+    pub protocol_account: &'b solana_program::account_info::AccountInfo<'a>,
+
     pub signer_supply_ta: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub position_supply_ta: &'b solana_program::account_info::AccountInfo<'a>,
@@ -318,6 +339,7 @@ impl<'a, 'b> ClosePositionCpi<'a, 'b> {
             token_program: accounts.token_program,
             ata_program: accounts.ata_program,
             solauto_position: accounts.solauto_position,
+            protocol_account: accounts.protocol_account,
             signer_supply_ta: accounts.signer_supply_ta,
             position_supply_ta: accounts.position_supply_ta,
             position_supply_collateral_ta: accounts.position_supply_collateral_ta,
@@ -358,7 +380,7 @@ impl<'a, 'b> ClosePositionCpi<'a, 'b> {
             bool,
         )],
     ) -> solana_program::entrypoint::ProgramResult {
-        let mut accounts = Vec::with_capacity(10 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(11 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             *self.signer.key,
             true,
@@ -377,6 +399,10 @@ impl<'a, 'b> ClosePositionCpi<'a, 'b> {
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
             *self.solauto_position.key,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            *self.protocol_account.key,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
@@ -420,13 +446,14 @@ impl<'a, 'b> ClosePositionCpi<'a, 'b> {
             accounts,
             data,
         };
-        let mut account_infos = Vec::with_capacity(10 + 1 + remaining_accounts.len());
+        let mut account_infos = Vec::with_capacity(11 + 1 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
         account_infos.push(self.signer.clone());
         account_infos.push(self.system_program.clone());
         account_infos.push(self.token_program.clone());
         account_infos.push(self.ata_program.clone());
         account_infos.push(self.solauto_position.clone());
+        account_infos.push(self.protocol_account.clone());
         account_infos.push(self.signer_supply_ta.clone());
         account_infos.push(self.position_supply_ta.clone());
         if let Some(position_supply_collateral_ta) = self.position_supply_collateral_ta {
@@ -455,11 +482,12 @@ impl<'a, 'b> ClosePositionCpi<'a, 'b> {
 ///   2. `[]` token_program
 ///   3. `[]` ata_program
 ///   4. `[writable]` solauto_position
-///   5. `[writable]` signer_supply_ta
-///   6. `[writable]` position_supply_ta
-///   7. `[writable, optional]` position_supply_collateral_ta
-///   8. `[writable]` position_debt_ta
-///   9. `[writable]` signer_debt_ta
+///   5. `[writable]` protocol_account
+///   6. `[writable]` signer_supply_ta
+///   7. `[writable]` position_supply_ta
+///   8. `[writable, optional]` position_supply_collateral_ta
+///   9. `[writable]` position_debt_ta
+///   10. `[writable]` signer_debt_ta
 pub struct ClosePositionCpiBuilder<'a, 'b> {
     instruction: Box<ClosePositionCpiBuilderInstruction<'a, 'b>>,
 }
@@ -473,6 +501,7 @@ impl<'a, 'b> ClosePositionCpiBuilder<'a, 'b> {
             token_program: None,
             ata_program: None,
             solauto_position: None,
+            protocol_account: None,
             signer_supply_ta: None,
             position_supply_ta: None,
             position_supply_collateral_ta: None,
@@ -520,6 +549,14 @@ impl<'a, 'b> ClosePositionCpiBuilder<'a, 'b> {
         solauto_position: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
         self.instruction.solauto_position = Some(solauto_position);
+        self
+    }
+    #[inline(always)]
+    pub fn protocol_account(
+        &mut self,
+        protocol_account: &'b solana_program::account_info::AccountInfo<'a>,
+    ) -> &mut Self {
+        self.instruction.protocol_account = Some(protocol_account);
         self
     }
     #[inline(always)]
@@ -629,6 +666,11 @@ impl<'a, 'b> ClosePositionCpiBuilder<'a, 'b> {
                 .solauto_position
                 .expect("solauto_position is not set"),
 
+            protocol_account: self
+                .instruction
+                .protocol_account
+                .expect("protocol_account is not set"),
+
             signer_supply_ta: self
                 .instruction
                 .signer_supply_ta
@@ -665,6 +707,7 @@ struct ClosePositionCpiBuilderInstruction<'a, 'b> {
     token_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     ata_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     solauto_position: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    protocol_account: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     signer_supply_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     position_supply_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     position_supply_collateral_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,

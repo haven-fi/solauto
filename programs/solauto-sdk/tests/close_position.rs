@@ -9,7 +9,6 @@ mod close_position {
         signer::Signer,
         transaction::Transaction,
     };
-    use solauto::constants::SOLAUTO_FEES_WALLET;
     use spl_token::state::Account as TokenAccount;
     use spl_associated_token_account::get_associated_token_address;
 

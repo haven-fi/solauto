@@ -13,7 +13,10 @@ use solana_sdk::{
     system_instruction,
     transaction::Transaction,
 };
-use solauto::{ constants::{SOLAUTO_FEES_WALLET, SOLAUTO_MANAGER}, state::referral_state::ReferralState };
+use solauto::{
+    constants::{ SOLAUTO_FEES_WALLET, SOLAUTO_MANAGER },
+    state::referral_state::ReferralState,
+};
 use solauto_sdk::{
     generated::{
         instructions::{
@@ -167,10 +170,7 @@ impl<'a> GeneralTestData<'a> {
             &args.supply_mint.pubkey()
         );
 
-        let signer_debt_ta = get_associated_token_address(
-            &signer_pubkey,
-            &args.debt_mint.pubkey()
-        );
+        let signer_debt_ta = get_associated_token_address(&signer_pubkey, &args.debt_mint.pubkey());
         let position_debt_ta = get_associated_token_address(
             &solauto_position,
             &args.debt_mint.pubkey()
@@ -425,7 +425,8 @@ impl<'a> GeneralTestData<'a> {
             .position_supply_ta(self.position_supply_ta)
             .signer_supply_ta(self.signer_supply_ta)
             .position_debt_ta(self.position_debt_ta)
-            .signer_debt_ta(self.signer_debt_ta);
+            .signer_debt_ta(self.signer_debt_ta)
+            .protocol_account(self.solauto_position);
         builder
     }
 

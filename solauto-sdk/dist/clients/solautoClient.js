@@ -253,6 +253,7 @@ class SolautoClient extends txHandler_1.TxHandler {
             positionSupplyTa: (0, umi_1.publicKey)(this.positionSupplyTa),
             positionDebtTa: (0, umi_1.publicKey)(this.positionDebtTa),
             signerDebtTa: (0, umi_1.publicKey)(this.signerDebtTa),
+            protocolAccount: (0, umi_1.publicKey)(this.protocolAccount())
         });
     }
     cancelDCAIx() {

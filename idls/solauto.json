@@ -253,6 +253,11 @@
           "isSigner": false
         },
         {
+          "name": "protocolAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
           "name": "signerSupplyTa",
           "isMut": true,
           "isSigner": false

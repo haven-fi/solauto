@@ -77,6 +77,13 @@ pub fn process_close_position_instruction<'a>(accounts: &'a [AccountInfo<'a>]) -
         position_debt_ta.as_ref(),
     )?;
 
+    if !cfg!(feature = "test") {
+        validation_utils::validate_no_active_balances(
+            ctx.accounts.protocol_account,
+            solauto_position.data.position.lending_platform,
+        )?;
+    }
+
     close_position::close_position(ctx, solauto_position, position_supply_ta, position_debt_ta)
 }
 

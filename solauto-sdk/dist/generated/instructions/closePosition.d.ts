@@ -13,6 +13,7 @@ export type ClosePositionInstructionAccounts = {
     tokenProgram?: PublicKey | Pda;
     ataProgram?: PublicKey | Pda;
     solautoPosition: PublicKey | Pda;
+    protocolAccount: PublicKey | Pda;
     signerSupplyTa: PublicKey | Pda;
     positionSupplyTa: PublicKey | Pda;
     positionSupplyCollateralTa?: PublicKey | Pda;

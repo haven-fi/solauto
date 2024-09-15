@@ -437,6 +437,7 @@ export abstract class SolautoClient extends TxHandler {
       positionSupplyTa: publicKey(this.positionSupplyTa),
       positionDebtTa: publicKey(this.positionDebtTa),
       signerDebtTa: publicKey(this.signerDebtTa),
+      protocolAccount: publicKey(this.protocolAccount())
     });
   }
 

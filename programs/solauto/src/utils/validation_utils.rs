@@ -1,4 +1,7 @@
-use marginfi_sdk::{generated::accounts::Bank, MARGINFI_ID};
+use marginfi_sdk::{
+    generated::accounts::{Bank, MarginfiAccount},
+    MARGINFI_ID,
+};
 use solana_program::{
     account_info::AccountInfo,
     entrypoint::ProgramResult,
@@ -478,6 +481,36 @@ pub fn validate_referral_signer(
     }
 
     Ok(())
+}
+
+pub fn validate_no_active_balances<'a>(
+    protocol_account: &'a AccountInfo<'a>,
+    lending_platform: LendingPlatform,
+) -> ProgramResult {
+    if lending_platform == LendingPlatform::Marginfi {
+        let marginfi_account =
+            DeserializedAccount::<MarginfiAccount>::zerocopy(Some(protocol_account))?.unwrap();
+        if marginfi_account
+            .data
+            .lending_account
+            .balances
+            .iter()
+            .filter(|balance| balance.active == 1)
+            .collect::<Vec<_>>()
+            .len()
+            > 0
+        {
+            msg!(
+                "Marginfi account has active balances. Ensure all debt is repaid and supply tokens are withdrawn before closing position"
+            );
+            return Err(SolautoError::IncorrectAccounts.into());
+        }
+
+        Ok(())
+    } else {
+        msg!("Lending platform not yet supported");
+        return Err(SolautoError::IncorrectAccounts.into());
+    }
 }
 
 #[cfg(test)]
