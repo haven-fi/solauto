@@ -21,13 +21,15 @@ import { USDC_MINT } from "../../src/constants";
 
 describe("Solauto Marginfi tests", async () => {
   // const signer = setupTest();
-  const signer = setupTest("solauto-manager");
+  // const signer = setupTest("solauto-manager");
+  const signer = setupTest("newtest");
 
   const payForTransactions = false;
   const useJitoBundle = false;
-  const positionId = 2;
+  const positionId = 1;
 
   it("open - deposit - borrow - rebalance to 0 - withdraw - close", async () => {
+
     const client = new SolautoMarginfiClient(process.env.HELIUS_API_KEY!, true);
 
     const supply = NATIVE_MINT;
@@ -38,12 +40,12 @@ describe("Solauto Marginfi tests", async () => {
       {
         signer,
         positionId,
-        authority: new PublicKey("AprYCPiVeKMCgjQ2ZufwChMzvQ5kFjJo2ekTLSkXsQDm")
+        // authority: new PublicKey("AprYCPiVeKMCgjQ2ZufwChMzvQ5kFjJo2ekTLSkXsQDm")
         // marginfiAccount: new PublicKey(
         //   "4nNvUXF5YqHFcH2nGweSiuvy1ct7V5FXfoCLKFYUN36z"
         // ),
-        // supplyMint: NATIVE_MINT,
-        // debtMint: new PublicKey(USDC_MINT),
+        supplyMint: NATIVE_MINT,
+        debtMint: new PublicKey(USDC_MINT),
       }
     );
 
@@ -58,13 +60,13 @@ describe("Solauto Marginfi tests", async () => {
     };
 
     // if (client.solautoPositionData === null) {
-    //   transactionItems.push(
-    //     new TransactionItem(async () => {
-    //       return {
-    //         tx: client.openPosition(),
-    //       };
-    //     }, "open position")
-    //   );
+    transactionItems.push(
+      new TransactionItem(async () => {
+        return {
+          tx: client.openPosition(settingParams),
+        };
+      }, "open position")
+    );
 
     // const initialSupplyUsd = 150;
     // transactionItems.push(
@@ -105,19 +107,19 @@ describe("Solauto Marginfi tests", async () => {
     //   )
     // );
 
-    // const initialSupplyUsd = 50;
-    // transactionItems.push(
-    //   new TransactionItem(async () => {
-    //     const [supplyPrice] = await getTokenPrices([supply]);
-    //     return {
-    //       tx: client.protocolInteraction(
-    //         solautoAction("Deposit", [
-    //           toBaseUnit(initialSupplyUsd / supplyPrice, supplyDecimals),
-    //         ])
-    //       ),
-    //     };
-    //   }, "deposit")
-    // );
+    const initialSupplyUsd = 50;
+    transactionItems.push(
+      new TransactionItem(async () => {
+        const [supplyPrice] = await getTokenPrices([supply]);
+        return {
+          tx: client.protocolInteraction(
+            solautoAction("Deposit", [
+              toBaseUnit(initialSupplyUsd / supplyPrice, supplyDecimals),
+            ])
+          ),
+        };
+      }, "deposit")
+    );
 
     transactionItems.push(
       new TransactionItem(
@@ -154,11 +156,12 @@ describe("Solauto Marginfi tests", async () => {
     //   )
     // );
 
-    // await new TransactionsManager(
-    //   client,
-    //   undefined,
-    //   !payForTransactions,
-    //   useJitoBundle
-    // ).clientSend(transactionItems);
+    await new TransactionsManager(
+      client,
+      undefined,
+      !payForTransactions,
+      useJitoBundle
+    ).clientSend(transactionItems);
+
   });
 });

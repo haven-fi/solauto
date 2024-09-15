@@ -265,7 +265,6 @@ export abstract class SolautoClient extends TxHandler {
     const lookupTable = this.authorityLutAddress
       ? await this.connection.getAddressLookupTable(this.authorityLutAddress)
       : null;
-    console.log(lookupTable?.value);
     if (!lookupTable || lookupTable?.value === null) {
       this.authorityLutAddress = undefined;
     }
