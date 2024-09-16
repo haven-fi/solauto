@@ -381,7 +381,7 @@ mod tests {
             AutomationSettingsInp, DCASettings, DCASettingsInp, PositionState, PositionTokenUsage,
             RebalanceData, SolautoSettingsParameters,
         },
-        types::shared::{FeeType, TokenType},
+        types::shared::TokenType,
         utils::math_utils,
     };
 
@@ -471,15 +471,18 @@ mod tests {
             dca_settings.clone(),
             current_liq_utilization_rate_bps,
         );
-        let solauto_fees = solauto_utils::get_solauto_fees_bps(
-            false,
-            FeeType::Default,
-            solauto_position.state.net_worth.usd_value(),
-        );
 
         if rebalance_args.is_none() {
             rebalance_args = Some(RebalanceSettings::default());
         }
+
+        let solauto_fees = solauto_utils::get_solauto_fees_bps(
+            false,
+            rebalance_args
+                .clone()
+                .map_or(None, |args| args.target_liq_utilization_rate_bps),
+            solauto_position.state.net_worth.usd_value(),
+        );
 
         let (debt_adjustment_usd, debt_to_add) = get_rebalance_values(
             &mut solauto_position,
@@ -504,7 +507,7 @@ mod tests {
             current_liq_utilization_rate_bps,
             setting_params,
             dca_settings.clone(),
-            rebalance_args,
+            rebalance_args.clone(),
         )?;
 
         let boosting = debt_to_add.is_some()
@@ -518,7 +521,7 @@ mod tests {
         let adjustment_fee_bps = if boosting {
             solauto_utils::get_solauto_fees_bps(
                 false,
-                FeeType::Default,
+                rebalance_args.map_or(None, |args| args.target_liq_utilization_rate_bps),
                 solauto_position.state.net_worth.usd_value(),
             )
             .total

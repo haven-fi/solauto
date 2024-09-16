@@ -170,6 +170,7 @@ impl PositionTokenUsage {
         self.update_usd_values();
     }
     pub fn update_market_price(&mut self, market_price: f64) {
+        msg!("New {} price: {}", self.mint, market_price);
         self.base_amount_market_price_usd =
             to_base_unit::<f64, u8, u64>(market_price, USD_DECIMALS);
         self.update_usd_values();
@@ -357,6 +358,7 @@ pub struct SolautoPosition {
     pub position: PositionData,
     pub state: PositionState,
     pub rebalance: RebalanceData,
+    // LEGACY, can be 0, or 1, and can be replaced
     pub fee_type: FeeType,
     _padding2: [u8; 7],
     _padding: [u32; 30],

@@ -90,7 +90,6 @@ pub enum Instruction {
     #[account(name = "token_program")]
     #[account(name = "ata_program")]
     #[account(name = "rent")]
-    #[account(mut, name = "solauto_manager")]
     #[account(name = "solauto_fees_wallet")]
     #[account(mut, name = "solauto_fees_supply_ta")]
     #[account(name = "signer_referral_state")]

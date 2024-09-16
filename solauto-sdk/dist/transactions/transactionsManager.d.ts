@@ -39,10 +39,11 @@ declare class TransactionSet {
     name(): string;
 }
 export declare enum TransactionStatus {
-    Skipped = "Skipped",
-    Processing = "Processing",
-    Queued = "Queued",
-    Successful = "Successful"
+    Skipped = 0,
+    Processing = 1,
+    AwaitingSignature = 2,
+    Queued = 3,
+    Successful = 4
 }
 export type TransactionManagerStatuses = {
     name: string;

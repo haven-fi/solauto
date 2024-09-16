@@ -17,7 +17,7 @@ use crate::{
         shared::{DeserializedAccount, RebalanceStep},
         solauto_manager::{SolautoManager, SolautoManagerAccounts},
     },
-    utils::ix_utils,
+    utils::{ix_utils, solauto_utils::get_solauto_fees_bps},
 };
 
 use super::refresh;
@@ -168,7 +168,23 @@ fn rebalance<'a>(
         return Err(ProgramError::InvalidInstructionData.into());
     }
 
-    let mut solauto_manager = SolautoManager::from(client, solauto_manager_accounts, std_accounts)?;
+    let fees_bps = get_solauto_fees_bps(
+        std_accounts.referred_by_supply_ta.is_some(),
+        args.target_liq_utilization_rate_bps,
+        std_accounts
+            .solauto_position
+            .data
+            .state
+            .net_worth
+            .usd_value(),
+    );
+
+    let mut solauto_manager = SolautoManager::from(
+        client,
+        solauto_manager_accounts,
+        std_accounts,
+        Some(fees_bps),
+    )?;
     if rebalance_step == RebalanceStep::Initial {
         solauto_manager.begin_rebalance(&args)?;
     } else {

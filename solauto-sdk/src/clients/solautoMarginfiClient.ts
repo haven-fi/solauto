@@ -241,7 +241,6 @@ export class SolautoMarginfiClient extends SolautoClient {
     return marginfiOpenPosition(this.umi, {
       signer: this.signer,
       marginfiProgram: publicKey(MARGINFI_PROGRAM_ID),
-      solautoManager: publicKey(SOLAUTO_MANAGER),
       solautoFeesWallet: publicKey(this.solautoFeesWallet),
       solautoFeesSupplyTa: publicKey(this.solautoFeesSupplyTa),
       signerReferralState: publicKey(this.referralStateManager.referralState),
@@ -626,7 +625,7 @@ export class SolautoMarginfiClient extends SolautoClient {
       this.debtMint,
       this.livePositionUpdates
     );
-    this.log(freshState);
+    this.log("Fresh state:", freshState);
 
     return freshState;
   }

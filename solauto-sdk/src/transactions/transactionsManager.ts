@@ -165,10 +165,11 @@ class TransactionSet {
 }
 
 export enum TransactionStatus {
-  Skipped = "Skipped",
-  Processing = "Processing",
-  Queued = "Queued",
-  Successful = "Successful",
+  Skipped,
+  Processing,
+  AwaitingSignature,
+  Queued,
+  Successful,
 }
 
 export type TransactionManagerStatuses = {
@@ -268,12 +269,13 @@ export class TransactionsManager {
     const client = this.txHandler as SolautoClient;
 
     const updateLookupTable = await client.updateLookupTable();
+    const updateLutTxName = "update lookup table";
     if (
       updateLookupTable &&
       updateLookupTable.updateLutTx.getInstructions().length > 0 &&
       updateLookupTable?.needsToBeIsolated
     ) {
-      this.updateStatus("update lookup table", TransactionStatus.Processing);
+      this.updateStatus(updateLutTxName, TransactionStatus.Processing);
       await retryWithExponentialBackoff(
         async (attemptNum) =>
           await sendSingleOptimizedTransaction(
@@ -281,13 +283,15 @@ export class TransactionsManager {
             this.txHandler.connection,
             updateLookupTable.updateLutTx,
             this.simulateOnly,
-            attemptNum
+            attemptNum,
+            prioritySetting,
+            () => this.updateStatus(updateLutTxName, TransactionStatus.AwaitingSignature)
           ),
         3,
         150,
         this.errorsToThrow
       );
-      this.updateStatus("update lookup table", TransactionStatus.Successful);
+      this.updateStatus(updateLutTxName, TransactionStatus.Successful);
     }
 
     this.lookupTables.defaultLuts = client.defaultLookupTables();
@@ -419,7 +423,8 @@ export class TransactionsManager {
                 tx,
                 this.simulateOnly,
                 attemptNum,
-                prioritySetting
+                prioritySetting,
+                () => this.updateStatus(itemSet!.name(), TransactionStatus.AwaitingSignature)
               );
               this.updateStatus(
                 itemSet.name(),

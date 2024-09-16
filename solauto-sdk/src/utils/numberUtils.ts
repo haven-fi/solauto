@@ -1,5 +1,4 @@
 import { BASIS_POINTS, MIN_REPAY_GAP_BPS } from "../constants";
-import { FeeType } from "../generated";
 
 export function getLiqUtilzationRateBps(
   supplyUsd: number,
@@ -89,7 +88,7 @@ export function getDebtAdjustmentUsd(
 
 export function getSolautoFeesBps(
   isReferred: boolean,
-  feeType: FeeType,
+  targetLiqUtilizationRateBps: number | undefined,
   positionNetWorthUsd: number
 ): {
   solauto: number;
@@ -104,7 +103,7 @@ export function getSolautoFeesBps(
 
   let feeBps: number = 0;
 
-  if (feeType === FeeType.Small) {
+  if (targetLiqUtilizationRateBps !== undefined) {
     feeBps = minFeeBps;
   } else if (positionNetWorthUsd <= minSize) {
     feeBps = maxFeeBps;

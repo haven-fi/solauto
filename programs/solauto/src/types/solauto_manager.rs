@@ -45,7 +45,7 @@ pub struct SolautoManager<'a> {
     pub client: Box<dyn LendingProtocolClient<'a> + 'a>,
     pub accounts: Box<SolautoManagerAccounts<'a>>,
     pub std_accounts: Box<SolautoStandardAccounts<'a>>,
-    pub solauto_fees_bps: solauto_utils::SolautoFeesBps,
+    pub solauto_fees_bps: Option<solauto_utils::SolautoFeesBps>,
 }
 
 impl<'a> SolautoManager<'a> {
@@ -53,18 +53,9 @@ impl<'a> SolautoManager<'a> {
         client: Box<dyn LendingProtocolClient<'a> + 'a>,
         accounts: Box<SolautoManagerAccounts<'a>>,
         std_accounts: Box<SolautoStandardAccounts<'a>>,
+        solauto_fees_bps: Option<solauto_utils::SolautoFeesBps>,
     ) -> Result<Self, ProgramError> {
         client.validate(&std_accounts)?;
-        let solauto_fees_bps = solauto_utils::get_solauto_fees_bps(
-            std_accounts.referred_by_supply_ta.is_some(),
-            std_accounts.solauto_position.data.fee_type,
-            std_accounts
-                .solauto_position
-                .data
-                .state
-                .net_worth
-                .usd_value(),
-        );
         Ok(Self {
             client,
             accounts,
@@ -178,7 +169,7 @@ impl<'a> SolautoManager<'a> {
         let (debt_adjustment_usd, amount_to_dca_in) = rebalance_utils::get_rebalance_values(
             &mut self.std_accounts.solauto_position.data,
             rebalance_args,
-            &self.solauto_fees_bps,
+            self.solauto_fees_bps.as_ref().unwrap(),
             Clock::get()?.unix_timestamp as u64,
         )?;
 
@@ -272,7 +263,7 @@ impl<'a> SolautoManager<'a> {
             let (debt_adjustment_usd, _) = rebalance_utils::get_rebalance_values(
                 &mut self.std_accounts.solauto_position.data,
                 rebalance_args,
-                &self.solauto_fees_bps,
+                self.solauto_fees_bps.as_ref().unwrap(),
                 Clock::get()?.unix_timestamp as u64,
             )?;
             self.validate_flash_loan_amount(flash_loan_amount, debt_adjustment_usd)?;
@@ -391,8 +382,9 @@ impl<'a> SolautoManager<'a> {
 
         let position_supply_ta = &self.accounts.supply.position_ta.as_ref().unwrap();
 
-        let solauto_fees =
-            (total_available_balance as f64).mul(from_bps(self.solauto_fees_bps.solauto)) as u64;
+        let solauto_fees = (total_available_balance as f64)
+            .mul(from_bps(self.solauto_fees_bps.as_ref().unwrap().solauto))
+            as u64;
 
         solana_utils::spl_token_transfer(
             self.std_accounts.token_program,
@@ -403,8 +395,9 @@ impl<'a> SolautoManager<'a> {
             Some(&self.std_accounts.solauto_position.data.seeds_with_bump()),
         )?;
 
-        let referrer_fees =
-            (total_available_balance as f64).mul(from_bps(self.solauto_fees_bps.referrer)) as u64;
+        let referrer_fees = (total_available_balance as f64)
+            .mul(from_bps(self.solauto_fees_bps.as_ref().unwrap().referrer))
+            as u64;
 
         if referrer_fees > 0 {
             solana_utils::spl_token_transfer(
@@ -465,7 +458,7 @@ impl<'a> SolautoManager<'a> {
             > 0.15
         {
             msg!(
-                "Flash loan amount was not what was expected ({} vs. {})",
+                "Flash loan amount was not what was expected (${} vs. ${})",
                 amount_usd.abs(),
                 expected_debt_adjustment_usd.abs()
             );

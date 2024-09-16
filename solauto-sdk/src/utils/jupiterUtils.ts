@@ -66,7 +66,7 @@ export async function getJupSwapTransaction(
             ? "ExactIn"
             : undefined,
         slippageBps: 10,
-        maxAccounts: 60,
+        maxAccounts: !swapDetails.exactOut ? 60 : undefined,
       }),
     3
   );

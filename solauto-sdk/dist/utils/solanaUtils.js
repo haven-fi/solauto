@@ -130,7 +130,7 @@ function assembleFinalTransaction(signer, tx, computeUnitPrice, computeUnitLimit
 async function simulateTransaction(connection, transaction) {
     const simulationResult = await connection.simulateTransaction(transaction, {
         sigVerify: false,
-        commitment: "processed"
+        commitment: "processed",
     });
     if (simulationResult.value.err) {
         simulationResult.value.logs?.forEach((x) => {
@@ -154,16 +154,18 @@ async function getComputeUnitPriceEstimate(umi, tx, prioritySetting) {
     const feeEstimate = Math.round(resp.priorityFeeEstimate);
     return feeEstimate;
 }
-async function sendSingleOptimizedTransaction(umi, connection, tx, simulateOnly, attemptNum, prioritySetting = types_1.PriorityFeeSetting.Default) {
+async function sendSingleOptimizedTransaction(umi, connection, tx, simulateOnly, attemptNum, prioritySetting = types_1.PriorityFeeSetting.Default, onAwaitingSign) {
     console.log("Sending single optimized transaction...");
     console.log("Instructions: ", tx.getInstructions().length);
     console.log("Serialized transaction size: ", tx.getTransactionSize(umi));
     const feeEstimate = await getComputeUnitPriceEstimate(umi, tx, prioritySetting);
     console.log("Compute unit price: ", feeEstimate);
-    const simulationResult = await (0, generalUtils_1.retryWithExponentialBackoff)(async () => await simulateTransaction(connection, (0, umi_web3js_adapters_1.toWeb3JsTransaction)(await (await assembleFinalTransaction(umi.identity, tx, feeEstimate, 1400000).setLatestBlockhash(umi)).build(umi))));
+    // TODO: we should only retry simulation if it's not a solauto error
+    const simulationResult = await (0, generalUtils_1.retryWithExponentialBackoff)(async () => await simulateTransaction(connection, (0, umi_web3js_adapters_1.toWeb3JsTransaction)(await (await assembleFinalTransaction(umi.identity, tx, feeEstimate, 1400000).setLatestBlockhash(umi)).build(umi))), 3);
     const computeUnitLimit = Math.round(simulationResult.value.unitsConsumed * 1.1);
     console.log("Compute unit limit: ", computeUnitLimit);
     if (!simulateOnly) {
+        onAwaitingSign?.();
         const result = await assembleFinalTransaction(umi.identity, tx, feeEstimate, 800000).sendAndConfirm(umi, {
             send: {
                 skipPreflight: true,

@@ -38,7 +38,9 @@ import {
 } from "../marginfi-sdk";
 import { PriorityFeeSetting } from "../types";
 
-export function getSolanaRpcConnection(heliusApiKey: string): [Connection, Umi] {
+export function getSolanaRpcConnection(
+  heliusApiKey: string
+): [Connection, Umi] {
   const connection = new Connection(
     `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`,
     "finalized"
@@ -242,7 +244,7 @@ async function simulateTransaction(
 ): Promise<RpcResponseAndContext<SimulatedTransactionResponse>> {
   const simulationResult = await connection.simulateTransaction(transaction, {
     sigVerify: false,
-    commitment: "processed"
+    commitment: "processed",
   });
   if (simulationResult.value.err) {
     simulationResult.value.logs?.forEach((x: any) => {
@@ -256,7 +258,7 @@ async function simulateTransaction(
 export async function getComputeUnitPriceEstimate(
   umi: Umi,
   tx: TransactionBuilder,
-  prioritySetting: PriorityFeeSetting,
+  prioritySetting: PriorityFeeSetting
 ): Promise<number> {
   const web3Transaction = toWeb3JsTransaction(
     (await tx.setLatestBlockhash(umi, { commitment: "finalized" })).build(umi)
@@ -281,15 +283,21 @@ export async function sendSingleOptimizedTransaction(
   tx: TransactionBuilder,
   simulateOnly?: boolean,
   attemptNum?: number,
-  prioritySetting: PriorityFeeSetting = PriorityFeeSetting.Default
+  prioritySetting: PriorityFeeSetting = PriorityFeeSetting.Default,
+  onAwaitingSign?: () => void
 ): Promise<Uint8Array | undefined> {
   console.log("Sending single optimized transaction...");
   console.log("Instructions: ", tx.getInstructions().length);
   console.log("Serialized transaction size: ", tx.getTransactionSize(umi));
 
-  const feeEstimate = await getComputeUnitPriceEstimate(umi, tx, prioritySetting);
+  const feeEstimate = await getComputeUnitPriceEstimate(
+    umi,
+    tx,
+    prioritySetting
+  );
   console.log("Compute unit price: ", feeEstimate);
 
+  // TODO: we should only retry simulation if it's not a solauto error
   const simulationResult = await retryWithExponentialBackoff(
     async () =>
       await simulateTransaction(
@@ -304,7 +312,8 @@ export async function sendSingleOptimizedTransaction(
             ).setLatestBlockhash(umi)
           ).build(umi)
         )
-      )
+      ),
+    3
   );
 
   const computeUnitLimit = Math.round(
@@ -313,6 +322,7 @@ export async function sendSingleOptimizedTransaction(
   console.log("Compute unit limit: ", computeUnitLimit);
 
   if (!simulateOnly) {
+    onAwaitingSign?.();
     const result = await assembleFinalTransaction(
       umi.identity,
       tx,

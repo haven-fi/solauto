@@ -10,10 +10,8 @@ import { PublicKey, SYSVAR_INSTRUCTIONS_PUBKEY } from "@solana/web3.js";
 import {
   ACCOUNT_SIZE as TOKEN_ACCOUNT_SIZE,
   NATIVE_MINT,
-  Account as SplTokenAccount,
 } from "@solana/spl-token";
 import {
-  FeeType,
   LendingPlatform,
   ReferralState,
   SOLAUTO_PROGRAM_ID,
@@ -578,7 +576,6 @@ export async function buildSolautoRebalanceTransaction(
     client.solautoPositionState!,
     client.solautoPositionSettings(),
     client.solautoPositionActiveDca(),
-    client.solautoPositionData?.feeType ?? FeeType.Small,
     currentUnixSeconds(),
     PRICES[client.supplyMint.toString()].price,
     PRICES[client.debtMint.toString()].price,

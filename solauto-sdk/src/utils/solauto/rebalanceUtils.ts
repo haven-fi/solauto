@@ -171,7 +171,6 @@ export function getRebalanceValues(
   state: PositionState,
   settings: SolautoSettingsParameters | undefined,
   dca: DCASettings | undefined,
-  feeType: FeeType,
   currentUnixTime: number,
   supplyPrice: number,
   debtPrice: number,
@@ -206,7 +205,7 @@ export function getRebalanceValues(
   if (increasingLeverage) {
     adjustmentFeeBps = getSolautoFeesBps(
       false,
-      feeType,
+      targetLiqUtilizationRateBps,
       fromBaseUnit(state.netWorth.baseAmountUsdValue, USD_DECIMALS)
     ).total;
   }

@@ -14,7 +14,6 @@ exports.maxRepayFromBps = maxRepayFromBps;
 exports.maxRepayToBps = maxRepayToBps;
 exports.maxBoostToBps = maxBoostToBps;
 const constants_1 = require("../constants");
-const generated_1 = require("../generated");
 function getLiqUtilzationRateBps(supplyUsd, debtUsd, liqThresholdBps) {
     if (supplyUsd === 0) {
         return 0;
@@ -67,14 +66,14 @@ function getDebtAdjustmentUsd(liqThresholdBps, supplyUsd, debtUsd, targetLiqUtil
         (1 - targetLiqUtilizationRate * (1 - adjustmentFee) * liqThreshold);
     return debtAdjustmentUsd;
 }
-function getSolautoFeesBps(isReferred, feeType, positionNetWorthUsd) {
+function getSolautoFeesBps(isReferred, targetLiqUtilizationRateBps, positionNetWorthUsd) {
     const minSize = 10000; // Minimum position size
     const maxSize = 500000; // Maximum position size
     const maxFeeBps = 500; // Fee in basis points for minSize (5%)
     const minFeeBps = 50; // Fee in basis points for maxSize (0.5%)
     const k = 0.55;
     let feeBps = 0;
-    if (feeType === generated_1.FeeType.Small) {
+    if (targetLiqUtilizationRateBps !== undefined) {
         feeBps = minFeeBps;
     }
     else if (positionNetWorthUsd <= minSize) {

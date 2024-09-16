@@ -64,9 +64,6 @@ pub enum JupiterError {
     /// 6017 (0x1781) - Exact out amount doesn't match
     #[error("Exact out amount doesn't match")]
     ExactOutAmountNotMatched,
-    /// 6018 (0x1782) - Source mint and destination mint cannot the same
-    #[error("Source mint and destination mint cannot the same")]
-    SourceAndDestinationMintCannotBeTheSame,
 }
 
 impl solana_program::program_error::PrintProgramError for JupiterError {

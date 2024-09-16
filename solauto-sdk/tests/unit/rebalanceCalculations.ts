@@ -49,7 +49,6 @@ function assertAccurateRebalance(
       client.solautoPositionState!,
       client.solautoPositionSettings(),
       client.solautoPositionActiveDca(),
-      client.solautoPositionData!.feeType,
       currentUnixSeconds(),
       PRICES[client.supplyMint.toString()].price,
       PRICES[client.debtMint.toString()].price,
@@ -60,7 +59,7 @@ function assertAccurateRebalance(
   if (increasingLeverage) {
     adjustmentFeeBps = getSolautoFeesBps(
       client.referredByState !== undefined,
-      client.solautoPositionData!.feeType,
+      targetLiqUtilizationRateBps,
       fromBaseUnit(
         client.solautoPositionState?.netWorth.baseAmountUsdValue ?? BigInt(0),
         USD_DECIMALS

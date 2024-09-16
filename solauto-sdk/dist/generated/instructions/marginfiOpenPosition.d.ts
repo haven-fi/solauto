@@ -15,7 +15,6 @@ export type MarginfiOpenPositionInstructionAccounts = {
     tokenProgram?: PublicKey | Pda;
     ataProgram?: PublicKey | Pda;
     rent?: PublicKey | Pda;
-    solautoManager: PublicKey | Pda;
     solautoFeesWallet: PublicKey | Pda;
     solautoFeesSupplyTa: PublicKey | Pda;
     signerReferralState: PublicKey | Pda;

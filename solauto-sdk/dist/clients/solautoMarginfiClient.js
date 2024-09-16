@@ -12,7 +12,6 @@ const generalUtils_1 = require("../utils/generalUtils");
 const marginfi_sdk_1 = require("../marginfi-sdk");
 const marginfiUtils_1 = require("../utils/marginfiUtils");
 const numberUtils_1 = require("../utils/numberUtils");
-const constants_1 = require("../constants");
 const utils_1 = require("../utils");
 class SolautoMarginfiClient extends solautoClient_1.SolautoClient {
     constructor() {
@@ -118,7 +117,6 @@ class SolautoMarginfiClient extends solautoClient_1.SolautoClient {
         return (0, generated_1.marginfiOpenPosition)(this.umi, {
             signer: this.signer,
             marginfiProgram: (0, umi_1.publicKey)(marginfi_sdk_1.MARGINFI_PROGRAM_ID),
-            solautoManager: (0, umi_1.publicKey)(constants_1.SOLAUTO_MANAGER),
             solautoFeesWallet: (0, umi_1.publicKey)(this.solautoFeesWallet),
             solautoFeesSupplyTa: (0, umi_1.publicKey)(this.solautoFeesSupplyTa),
             signerReferralState: (0, umi_1.publicKey)(this.referralStateManager.referralState),
@@ -416,7 +414,7 @@ class SolautoMarginfiClient extends solautoClient_1.SolautoClient {
             return state;
         }
         const freshState = await (0, marginfiUtils_1.getMarginfiAccountPositionState)(this.umi, this.marginfiAccountPk, this.supplyMint, this.debtMint, this.livePositionUpdates);
-        this.log(freshState);
+        this.log("Fresh state:", freshState);
         return freshState;
     }
 }

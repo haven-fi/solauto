@@ -116,4 +116,11 @@ pub enum Swap {
     PerpsV2,
     PerpsV2AddLiquidity,
     PerpsV2RemoveLiquidity,
+    MoonshotWrappedBuy,
+    MoonshotWrappedSell,
+    StabbleStableSwap,
+    StabbleWeightedSwap,
+    Obric {
+        x_to_y: bool,
+    },
 }

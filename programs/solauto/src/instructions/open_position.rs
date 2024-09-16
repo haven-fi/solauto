@@ -1,13 +1,11 @@
-use math_utils::to_base_unit;
-use solana_program::{account_info::AccountInfo, entrypoint::ProgramResult, msg};
+use solana_program::{account_info::AccountInfo, entrypoint::ProgramResult};
 
 use crate::{
     clients::marginfi::MarginfiClient,
-    constants::SOLAUTO_MANAGER,
     state::solauto_position::SolautoPosition,
     types::{
         instruction::accounts::{Context, MarginfiOpenPositionAccounts},
-        shared::{DeserializedAccount, LendingPlatform, SolautoError},
+        shared::{DeserializedAccount, LendingPlatform},
     },
     utils::*,
 };
@@ -40,7 +38,6 @@ pub fn marginfi_open_position<'a>(
         ctx.accounts.debt_mint,
         ctx.accounts.position_debt_ta,
         ctx.accounts.signer_debt_ta,
-        ctx.accounts.solauto_manager,
     )?;
 
     MarginfiClient::initialize(&ctx, &solauto_position, marginfi_account_seed_idx)
@@ -57,7 +54,6 @@ fn initialize_solauto_position<'a, 'b>(
     debt_mint: &'a AccountInfo<'a>,
     position_debt_ta: &'a AccountInfo<'a>,
     signer_debt_ta: Option<&'a AccountInfo<'a>>,
-    solauto_manager: &'a AccountInfo<'a>,
 ) -> ProgramResult {
     if !solauto_position.data.self_managed.val || !account_has_data(solauto_position.account_info) {
         solana_utils::init_account(
@@ -68,19 +64,6 @@ fn initialize_solauto_position<'a, 'b>(
             Some(solauto_position.data.seeds_with_bump()),
             SolautoPosition::LEN,
         )?;
-
-        // if solauto_manager.key != &SOLAUTO_MANAGER {
-        //     msg!("Provided incorrect Solauto Manager account");
-        //     return Err(SolautoError::IncorrectAccounts.into());
-        // } else if !solauto_position.data.self_managed.val {
-        //     // Tip Solauto Manager
-        //     solana_utils::system_transfer(
-        //         signer,
-        //         solauto_manager,
-        //         to_base_unit::<f64, u8, u64>(0.1, 9),
-        //         None,
-        //     )?;
-        // }
     }
 
     solana_utils::init_ata_if_needed(

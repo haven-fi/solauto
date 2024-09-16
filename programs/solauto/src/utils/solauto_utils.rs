@@ -308,7 +308,7 @@ pub struct SolautoFeesBps {
 }
 pub fn get_solauto_fees_bps(
     has_been_referred: bool,
-    fee_type: FeeType,
+    target_liq_utilization_rate_bps: Option<u16>,
     position_net_worth_usd: f64,
 ) -> SolautoFeesBps {
     let min_size: f64 = 10000.0; // Minimum position size
@@ -318,7 +318,7 @@ pub fn get_solauto_fees_bps(
     let k = 0.55;
 
     let fee_bps: f64;
-    if fee_type == FeeType::Small {
+    if target_liq_utilization_rate_bps.is_some() {
         fee_bps = min_fee_bps;
     } else if position_net_worth_usd <= min_size {
         fee_bps = max_fee_bps;

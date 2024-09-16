@@ -14,7 +14,7 @@ use solana_sdk::{
     transaction::Transaction,
 };
 use solauto::{
-    constants::{ SOLAUTO_FEES_WALLET, SOLAUTO_MANAGER },
+    constants::SOLAUTO_FEES_WALLET,
     state::referral_state::ReferralState,
 };
 use solauto_sdk::{
@@ -521,7 +521,6 @@ impl<'a> MarginfiTestData<'a> {
         builder
             .signer(self.general.ctx.payer.pubkey())
             .marginfi_program(self.general.lending_protocol)
-            .solauto_manager(SOLAUTO_MANAGER)
             .solauto_fees_wallet(self.general.solauto_fees_wallet)
             .solauto_fees_supply_ta(self.general.solauto_fees_supply_ta)
             .signer_referral_state(self.general.signer_referral_state)

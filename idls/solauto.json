@@ -377,11 +377,6 @@
           "isSigner": false
         },
         {
-          "name": "solautoManager",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
           "name": "solautoFeesWallet",
           "isMut": false,
           "isSigner": false

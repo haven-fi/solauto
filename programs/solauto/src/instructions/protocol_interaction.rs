@@ -62,7 +62,8 @@ fn protocol_interaction<'a>(
     std_accounts: Box<SolautoStandardAccounts<'a>>,
     action: SolautoAction,
 ) -> ProgramResult {
-    let mut solauto_manager = SolautoManager::from(client, solauto_manager_accounts, std_accounts)?;
+    let mut solauto_manager =
+        SolautoManager::from(client, solauto_manager_accounts, std_accounts, None)?;
     solauto_manager.protocol_interaction(action)?;
 
     ix_utils::update_data(&mut solauto_manager.std_accounts.solauto_position)
