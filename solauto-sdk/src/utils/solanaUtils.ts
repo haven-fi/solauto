@@ -36,7 +36,7 @@ import {
   getLendingAccountEndFlashloanInstructionDataSerializer,
   getLendingAccountStartFlashloanInstructionDataSerializer,
 } from "../marginfi-sdk";
-import { PriorityFeeSetting } from "../types";
+import { PriorityFeeSetting, TransactionRunType } from "../types";
 
 export function getSolanaRpcConnection(
   heliusApiKey: string
@@ -281,7 +281,7 @@ export async function sendSingleOptimizedTransaction(
   umi: Umi,
   connection: Connection,
   tx: TransactionBuilder,
-  simulateOnly?: boolean,
+  txType?: TransactionRunType,
   attemptNum?: number,
   prioritySetting: PriorityFeeSetting = PriorityFeeSetting.Default,
   onAwaitingSign?: () => void
@@ -297,31 +297,33 @@ export async function sendSingleOptimizedTransaction(
   );
   console.log("Compute unit price: ", feeEstimate);
 
-  // TODO: we should only retry simulation if it's not a solauto error
-  const simulationResult = await retryWithExponentialBackoff(
-    async () =>
-      await simulateTransaction(
-        connection,
-        toWeb3JsTransaction(
-          await (
-            await assembleFinalTransaction(
-              umi.identity,
-              tx,
-              feeEstimate,
-              1_400_000
-            ).setLatestBlockhash(umi)
-          ).build(umi)
-        )
-      ),
-    3
-  );
+  if (txType !== "skip-simulation") {
+    // TODO: we should only retry simulation if it's not a solauto error
+    const simulationResult = await retryWithExponentialBackoff(
+      async () =>
+        await simulateTransaction(
+          connection,
+          toWeb3JsTransaction(
+            await (
+              await assembleFinalTransaction(
+                umi.identity,
+                tx,
+                feeEstimate,
+                1_400_000
+              ).setLatestBlockhash(umi)
+            ).build(umi)
+          )
+        ),
+      3
+    );
+  
+    const computeUnitLimit = Math.round(
+      simulationResult.value.unitsConsumed! * 1.1
+    );
+    console.log("Compute unit limit: ", computeUnitLimit);
+  }
 
-  const computeUnitLimit = Math.round(
-    simulationResult.value.unitsConsumed! * 1.1
-  );
-  console.log("Compute unit limit: ", computeUnitLimit);
-
-  if (!simulateOnly) {
+  if (txType !== "only-simulate") {
     onAwaitingSign?.();
     const result = await assembleFinalTransaction(
       umi.identity,

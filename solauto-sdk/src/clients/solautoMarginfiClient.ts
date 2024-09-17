@@ -625,7 +625,6 @@ export class SolautoMarginfiClient extends SolautoClient {
       this.debtMint,
       this.livePositionUpdates
     );
-    this.log("Fresh state:", freshState);
 
     return freshState;
   }

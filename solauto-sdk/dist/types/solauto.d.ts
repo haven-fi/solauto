@@ -14,4 +14,5 @@ export declare enum PriorityFeeSetting {
     High = "High"
 }
 export type RebalanceAction = "boost" | "repay" | "dca";
+export type TransactionRunType = "skip-simulation" | "only-simulate" | "normal";
 //# sourceMappingURL=solauto.d.ts.map

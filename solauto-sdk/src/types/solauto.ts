@@ -17,3 +17,5 @@ export enum PriorityFeeSetting {
 }
 
 export type RebalanceAction = "boost" | "repay" | "dca";
+
+export type TransactionRunType = "skip-simulation" | "only-simulate" | "normal";

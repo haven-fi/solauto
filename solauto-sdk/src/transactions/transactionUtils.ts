@@ -298,6 +298,7 @@ export async function rebalanceChoresBefore(
     checkIntermediaryMfiAccount &&
     !rpcAccountCreated(intermediaryMarginfiAccount)
   ) {
+    client.log("Creating intermediary marginfi account");
     chores = chores.add(
       (client as SolautoMarginfiClient).createIntermediaryMarginfiAccount()
     );

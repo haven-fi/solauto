@@ -15,7 +15,7 @@ import {
   retryWithExponentialBackoff,
 } from "../utils/generalUtils";
 import { getTransactionChores } from "./transactionUtils";
-import { PriorityFeeSetting } from "../types";
+import { PriorityFeeSetting, TransactionRunType } from "../types";
 import { ReferralStateManager, TxHandler } from "../clients";
 // import { sendJitoBundledTransactions } from "../utils/jitoUtils";
 
@@ -184,7 +184,7 @@ export class TransactionsManager {
   constructor(
     private txHandler: SolautoClient | ReferralStateManager,
     private statusCallback?: (statuses: TransactionManagerStatuses) => void,
-    private simulateOnly?: boolean,
+    private txType?: TransactionRunType,
     private mustBeAtomic?: boolean,
     private errorsToThrow?: ErrorsToThrow
   ) {
@@ -272,9 +272,10 @@ export class TransactionsManager {
   }
 
   async clientSend(
-    items: TransactionItem[],
+    transactions: TransactionItem[],
     prioritySetting?: PriorityFeeSetting
   ) {
+    const items = [...transactions];
     const client = this.txHandler as SolautoClient;
 
     const updateLookupTable = await client.updateLookupTable();
@@ -291,7 +292,7 @@ export class TransactionsManager {
             this.txHandler.umi,
             this.txHandler.connection,
             updateLookupTable.updateLutTx,
-            this.simulateOnly,
+            this.txType,
             attemptNum,
             prioritySetting,
             () =>
@@ -351,7 +352,7 @@ export class TransactionsManager {
       throw e;
     });
 
-    if (!this.simulateOnly) {
+    if (this.txType !== "only-simulate") {
       await client.resetLiveTxUpdates();
     }
   }
@@ -389,7 +390,7 @@ export class TransactionsManager {
       // itemSets.forEach((set) => {
       //   this.updateStatus(set.name(), TransactionStatus.Successful);
       // });
-    } else if (!this.simulateOnly || itemSets.length === 1) {
+    } else if (this.txType !== "only-simulate" || itemSets.length === 1) {
       for (let i = 0; i < itemSets.length; i++) {
         const getFreshItemSet = async (
           itemSet: TransactionSet,
@@ -447,7 +448,7 @@ export class TransactionsManager {
                 this.txHandler.umi,
                 this.txHandler.connection,
                 tx,
-                this.simulateOnly,
+                this.txType,
                 attemptNum,
                 prioritySetting,
                 () =>

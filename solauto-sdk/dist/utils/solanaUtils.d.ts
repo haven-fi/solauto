@@ -1,6 +1,6 @@
 import { AddressLookupTableInput, Signer, TransactionBuilder, Umi, WrappedInstruction } from "@metaplex-foundation/umi";
 import { Connection, PublicKey, TransactionInstruction } from "@solana/web3.js";
-import { PriorityFeeSetting } from "../types";
+import { PriorityFeeSetting, TransactionRunType } from "../types";
 export declare function getSolanaRpcConnection(heliusApiKey: string): [Connection, Umi];
 export declare function currentUnixSecondsSolana(umi: Umi): Promise<number>;
 export declare function getWrappedInstruction(signer: Signer, ix: TransactionInstruction): WrappedInstruction;
@@ -13,5 +13,5 @@ export declare function splTokenTransferUmiIx(signer: Signer, fromTa: PublicKey,
 export declare function getAdressLookupInputs(umi: Umi, lookupTableAddresses: string[]): Promise<AddressLookupTableInput[]>;
 export declare function assembleFinalTransaction(signer: Signer, tx: TransactionBuilder, computeUnitPrice: number, computeUnitLimit?: number): TransactionBuilder;
 export declare function getComputeUnitPriceEstimate(umi: Umi, tx: TransactionBuilder, prioritySetting: PriorityFeeSetting): Promise<number>;
-export declare function sendSingleOptimizedTransaction(umi: Umi, connection: Connection, tx: TransactionBuilder, simulateOnly?: boolean, attemptNum?: number, prioritySetting?: PriorityFeeSetting, onAwaitingSign?: () => void): Promise<Uint8Array | undefined>;
+export declare function sendSingleOptimizedTransaction(umi: Umi, connection: Connection, tx: TransactionBuilder, txType?: TransactionRunType, attemptNum?: number, prioritySetting?: PriorityFeeSetting, onAwaitingSign?: () => void): Promise<Uint8Array | undefined>;
 //# sourceMappingURL=solanaUtils.d.ts.map

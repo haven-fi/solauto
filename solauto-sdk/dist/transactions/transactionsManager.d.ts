@@ -1,7 +1,7 @@
 import { AddressLookupTableInput, TransactionBuilder, Umi } from "@metaplex-foundation/umi";
 import { SolautoClient } from "../clients/solautoClient";
 import { ErrorsToThrow } from "../utils/generalUtils";
-import { PriorityFeeSetting } from "../types";
+import { PriorityFeeSetting, TransactionRunType } from "../types";
 import { ReferralStateManager, TxHandler } from "../clients";
 declare class LookupTables {
     defaultLuts: string[];
@@ -39,11 +39,11 @@ declare class TransactionSet {
     name(): string;
 }
 export declare enum TransactionStatus {
-    Skipped = 0,
-    Processing = 1,
-    AwaitingSignature = 2,
-    Queued = 3,
-    Successful = 4
+    Skipped = "Skipped",
+    Processing = "Processing",
+    AwaitingSignature = "Awaiting Signature",
+    Queued = "Queued",
+    Successful = "Successful"
 }
 export type TransactionManagerStatuses = {
     name: string;
@@ -53,16 +53,16 @@ export type TransactionManagerStatuses = {
 export declare class TransactionsManager {
     private txHandler;
     private statusCallback?;
-    private simulateOnly?;
+    private txType?;
     private mustBeAtomic?;
     private errorsToThrow?;
     private statuses;
     private lookupTables;
-    constructor(txHandler: SolautoClient | ReferralStateManager, statusCallback?: ((statuses: TransactionManagerStatuses) => void) | undefined, simulateOnly?: boolean | undefined, mustBeAtomic?: boolean | undefined, errorsToThrow?: ErrorsToThrow | undefined);
+    constructor(txHandler: SolautoClient | ReferralStateManager, statusCallback?: ((statuses: TransactionManagerStatuses) => void) | undefined, txType?: TransactionRunType | undefined, mustBeAtomic?: boolean | undefined, errorsToThrow?: ErrorsToThrow | undefined);
     private assembleTransactionSets;
     updateStatus(name: string, status: TransactionStatus, txSig?: string): void;
     debugAccounts(itemSet: TransactionSet, tx: TransactionBuilder): Promise<void>;
-    clientSend(items: TransactionItem[], prioritySetting?: PriorityFeeSetting): Promise<void>;
+    clientSend(transactions: TransactionItem[], prioritySetting?: PriorityFeeSetting): Promise<void>;
     send(items: TransactionItem[], prioritySetting?: PriorityFeeSetting, initialized?: boolean): Promise<void>;
 }
 export {};

@@ -49,14 +49,14 @@ describe("Solauto Marginfi tests", async () => {
     );
 
     const transactionItems: TransactionItem[] = [];
-    const settingParams: SolautoSettingsParametersInpArgs = {
-      boostToBps: 4000,
-      boostGap: 500,
-      repayToBps: 7456,
-      repayGap: 500,
-      automation: none(),
-      targetBoostToBps: none(),
-    };
+    // const settingParams: SolautoSettingsParametersInpArgs = {
+    //   boostToBps: 4000,
+    //   boostGap: 500,
+    //   repayToBps: 7456,
+    //   repayGap: 500,
+    //   automation: none(),
+    //   targetBoostToBps: none(),
+    // };
 
     // if (client.solautoPositionData === null) {
     // transactionItems.push(
@@ -158,9 +158,8 @@ describe("Solauto Marginfi tests", async () => {
     await new TransactionsManager(
       client,
       undefined,
-      !payForTransactions,
+      !payForTransactions ? "only-simulate" : "normal",
       useJitoBundle
     ).clientSend(transactionItems);
-
   });
 });

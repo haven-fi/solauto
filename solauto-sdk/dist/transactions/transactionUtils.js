@@ -149,6 +149,7 @@ async function rebalanceChoresBefore(client, tx, accountsGettingCreated) {
     }
     if (checkIntermediaryMfiAccount &&
         !(0, generalUtils_1.rpcAccountCreated)(intermediaryMarginfiAccount)) {
+        client.log("Creating intermediary marginfi account");
         chores = chores.add(client.createIntermediaryMarginfiAccount());
     }
     if (checkSignerSupplyTa &&
