@@ -164,11 +164,11 @@ class TransactionSet {
 }
 
 export enum TransactionStatus {
-  Skipped,
-  Processing,
-  AwaitingSignature,
-  Queued,
-  Successful,
+  Skipped = "Skipped",
+  Processing = "Processing",
+  AwaitingSignature = "Awaiting Signature",
+  Queued = "Queued",
+  Successful = "Successful",
 }
 
 export type TransactionManagerStatuses = {
