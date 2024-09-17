@@ -20,7 +20,7 @@ use crate::{
     },
     types::{
         instruction::UpdatePositionData,
-        shared::{DeserializedAccount, FeeType, LendingPlatform, SolautoError},
+        shared::{DeserializedAccount, LendingPlatform, SolautoError},
     },
 };
 

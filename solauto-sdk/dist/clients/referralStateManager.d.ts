@@ -20,7 +20,7 @@ export declare class ReferralStateManager extends TxHandler {
     defaultLookupTables(): string[];
     updateReferralStatesIx(destFeesMint?: PublicKey, referredBy?: PublicKey, lookupTable?: PublicKey): TransactionBuilder;
     claimReferralFeesIx(destFeesMint?: PublicKey): TransactionBuilder;
-    resetLiveTxUpdates(): Promise<void>;
+    resetLiveTxUpdates(success?: boolean): Promise<void>;
 }
 export {};
 //# sourceMappingURL=referralStateManager.d.ts.map

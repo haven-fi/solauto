@@ -90,5 +90,5 @@ export class ReferralStateManager extends TxHandler {
         });
     }
 
-    async resetLiveTxUpdates(): Promise<void> { }
+    async resetLiveTxUpdates(success?: boolean): Promise<void> { }
 }

@@ -64,6 +64,6 @@ class ReferralStateManager extends txHandler_1.TxHandler {
             feesDestinationTa,
         });
     }
-    async resetLiveTxUpdates() { }
+    async resetLiveTxUpdates(success) { }
 }
 exports.ReferralStateManager = ReferralStateManager;

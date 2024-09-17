@@ -2,7 +2,6 @@ import { PublicKey } from "@solana/web3.js";
 import { SolautoClient } from "../../clients/solautoClient";
 import {
   DCASettings,
-  FeeType,
   PositionState,
   PositionTokenUsage,
   SolautoSettingsParameters,

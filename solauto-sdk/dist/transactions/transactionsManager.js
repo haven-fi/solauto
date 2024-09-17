@@ -17,10 +17,7 @@ class LookupTables {
         this.cache = [];
     }
     async getLutInputs(additionalAddresses) {
-        const addresses = [
-            ...this.defaultLuts,
-            ...additionalAddresses,
-        ];
+        const addresses = [...this.defaultLuts, ...additionalAddresses];
         const currentCacheAddresses = this.cache.map((x) => x.publicKey.toString());
         const missingAddresses = addresses.filter((x) => !currentCacheAddresses.includes(x));
         if (missingAddresses) {
@@ -142,7 +139,9 @@ class TransactionsManager {
                 throw new Error(`Transaction exceeds max transaction size (${transaction.getTransactionSize(this.txHandler.umi)})`);
             }
             else {
-                let newSet = new TransactionSet(this.txHandler, this.lookupTables, [item]);
+                let newSet = new TransactionSet(this.txHandler, this.lookupTables, [
+                    item,
+                ]);
                 for (let j = i; j < items.length; j++) {
                     if (await newSet.fitsWith(items[j])) {
                         newSet.add(items[j]);
@@ -223,7 +222,10 @@ class TransactionsManager {
             items.push(chore);
             this.txHandler.log("Chores after: ", choresAfter.getInstructions().length);
         }
-        await this.send(items, prioritySetting, true);
+        await this.send(items, prioritySetting, true).catch((e) => {
+            client.resetLiveTxUpdates(false);
+            throw e;
+        });
         if (!this.simulateOnly) {
             await client.resetLiveTxUpdates();
         }

@@ -87,20 +87,22 @@ class SolautoClient extends txHandler_1.TxHandler {
             ? this.solautoPositionData?.position?.dca
             : undefined);
     }
-    async resetLiveTxUpdates() {
-        if (!this.solautoPositionData) {
-            this.solautoPositionData = await (0, generated_1.safeFetchSolautoPosition)(this.umi, (0, umi_1.publicKey)(this.solautoPosition));
-        }
-        else {
-            if (this.livePositionUpdates.activeDca) {
-                this.solautoPositionData.position.dca =
-                    this.livePositionUpdates.activeDca;
+    async resetLiveTxUpdates(success) {
+        if (success) {
+            if (!this.solautoPositionData) {
+                this.solautoPositionData = await (0, generated_1.safeFetchSolautoPosition)(this.umi, (0, umi_1.publicKey)(this.solautoPosition));
             }
-            if (this.livePositionUpdates.settings) {
-                this.solautoPositionData.position.settingParams =
-                    this.livePositionUpdates.settings;
+            else {
+                if (this.livePositionUpdates.activeDca) {
+                    this.solautoPositionData.position.dca =
+                        this.livePositionUpdates.activeDca;
+                }
+                if (this.livePositionUpdates.settings) {
+                    this.solautoPositionData.position.settingParams =
+                        this.livePositionUpdates.settings;
+                }
+                // All other live position updates can be derived by getting a fresh position state, so we don't need to do anything else form livePositionUpdates
             }
-            // All other live position updates can be derived by getting a fresh position state, so we don't need to do anything else form livePositionUpdates
         }
         this.livePositionUpdates.reset();
     }

@@ -218,22 +218,24 @@ export abstract class SolautoClient extends TxHandler {
     );
   }
 
-  async resetLiveTxUpdates() {
-    if (!this.solautoPositionData) {
-      this.solautoPositionData = await safeFetchSolautoPosition(
-        this.umi,
-        publicKey(this.solautoPosition)
-      );
-    } else {
-      if (this.livePositionUpdates.activeDca) {
-        this.solautoPositionData.position.dca =
-          this.livePositionUpdates.activeDca;
+  async resetLiveTxUpdates(success?: boolean) {
+    if (success) {
+      if (!this.solautoPositionData) {
+        this.solautoPositionData = await safeFetchSolautoPosition(
+          this.umi,
+          publicKey(this.solautoPosition)
+        );
+      } else {
+        if (this.livePositionUpdates.activeDca) {
+          this.solautoPositionData.position.dca =
+            this.livePositionUpdates.activeDca;
+        }
+        if (this.livePositionUpdates.settings) {
+          this.solautoPositionData.position.settingParams =
+            this.livePositionUpdates.settings;
+        }
+        // All other live position updates can be derived by getting a fresh position state, so we don't need to do anything else form livePositionUpdates
       }
-      if (this.livePositionUpdates.settings) {
-        this.solautoPositionData.position.settingParams =
-          this.livePositionUpdates.settings;
-      }
-      // All other live position updates can be derived by getting a fresh position state, so we don't need to do anything else form livePositionUpdates
     }
     this.livePositionUpdates.reset();
   }

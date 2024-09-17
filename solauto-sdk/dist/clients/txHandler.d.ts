@@ -8,6 +8,6 @@ export declare abstract class TxHandler {
     constructor(heliusApiKey: string, localTest?: boolean | undefined);
     log(...args: any[]): void;
     abstract defaultLookupTables(): string[];
-    abstract resetLiveTxUpdates(): Promise<void>;
+    abstract resetLiveTxUpdates(success?: boolean): Promise<void>;
 }
 //# sourceMappingURL=txHandler.d.ts.map

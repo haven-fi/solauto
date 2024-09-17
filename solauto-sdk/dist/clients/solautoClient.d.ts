@@ -43,7 +43,7 @@ export declare abstract class SolautoClient extends TxHandler {
     livePositionUpdates: LivePositionUpdates;
     constructor(heliusApiKey: string, localTest?: boolean | undefined);
     initialize(args: SolautoClientArgs, lendingPlatform: LendingPlatform): Promise<void>;
-    resetLiveTxUpdates(): Promise<void>;
+    resetLiveTxUpdates(success?: boolean): Promise<void>;
     abstract protocolAccount(): PublicKey;
     defaultLookupTables(): string[];
     lutAccountsToAdd(): PublicKey[];

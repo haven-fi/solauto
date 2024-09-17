@@ -24,5 +24,5 @@ export abstract class TxHandler {
 
   abstract defaultLookupTables(): string[];
 
-  abstract resetLiveTxUpdates(): Promise<void>;
+  abstract resetLiveTxUpdates(success?: boolean): Promise<void>;
 }
