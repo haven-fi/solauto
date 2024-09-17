@@ -105,7 +105,7 @@ async function getSolautoManagedPositions(umi, authority) {
     // authority: Pubkey
     // lending_platform: u8
     const accounts = await umi.rpc.getProgramAccounts(generated_1.SOLAUTO_PROGRAM_ID, {
-        commitment: "finalized",
+        commitment: "confirmed",
         dataSlice: {
             offset: 0,
             length: 1 + 1 + 1 + 5 + 32 + 1, // bump + position_id + self_managed + padding + authority (pubkey) + lending_platform
@@ -147,7 +147,7 @@ async function getSolautoManagedPositions(umi, authority) {
 }
 async function getAllReferralStates(umi) {
     const accounts = await umi.rpc.getProgramAccounts(generated_1.SOLAUTO_PROGRAM_ID, {
-        commitment: "finalized",
+        commitment: "confirmed",
         dataSlice: {
             offset: 0,
             length: 0,
@@ -167,7 +167,7 @@ async function getReferralsByUser(umi, user) {
     // referred_by_state: Pubkey,
     const userReferralState = (0, accountUtils_1.getReferralState)(user);
     const accounts = await umi.rpc.getProgramAccounts(generated_1.SOLAUTO_PROGRAM_ID, {
-        commitment: "finalized",
+        commitment: "confirmed",
         dataSlice: {
             offset: 0,
             length: 0,

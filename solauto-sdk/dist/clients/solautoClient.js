@@ -39,7 +39,7 @@ class SolautoClient extends txHandler_1.TxHandler {
         this.selfManaged = this.positionId === 0;
         this.lendingPlatform = lendingPlatform;
         this.solautoPosition = (0, accountUtils_1.getSolautoPositionAccount)(this.authority, this.positionId);
-        this.solautoPositionData = await (0, generated_1.safeFetchSolautoPosition)(this.umi, (0, umi_1.publicKey)(this.solautoPosition));
+        this.solautoPositionData = await (0, generated_1.safeFetchSolautoPosition)(this.umi, (0, umi_1.publicKey)(this.solautoPosition), { commitment: "confirmed" });
         this.solautoPositionState = this.solautoPositionData?.state;
         this.supplyMint =
             (args.supplyMint ??

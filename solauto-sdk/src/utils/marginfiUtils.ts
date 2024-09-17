@@ -23,7 +23,6 @@ import { PositionState, PositionTokenUsage } from "../generated";
 import { USD_DECIMALS } from "../constants/generalAccounts";
 import { LivePositionUpdates } from "./solauto/generalUtils";
 import { currentUnixSecondsSolana } from "./solanaUtils";
-import { getSolautoPositionAccount } from "./accountUtils";
 
 export function findMarginfiAccounts(bank: PublicKey): MarginfiAssetAccounts {
   for (const key in MARGINFI_ACCOUNTS) {
@@ -123,7 +122,7 @@ export async function getAllMarginfiAccountsByAuthority(
   const marginfiAccounts = await umi.rpc.getProgramAccounts(
     MARGINFI_PROGRAM_ID,
     {
-      commitment: "finalized",
+      commitment: "confirmed",
       dataSlice: {
         offset: 0,
         length: 0,
@@ -237,21 +236,24 @@ export async function getMarginfiAccountPositionState(
 ): Promise<PositionState | undefined> {
   let marginfiAccount = await safeFetchMarginfiAccount(
     umi,
-    publicKey(marginfiAccountPk)
+    publicKey(marginfiAccountPk),
+    { commitment: "confirmed" }
   );
 
   let supplyBank: Bank | null =
     supplyMint && supplyMint !== PublicKey.default
       ? await safeFetchBank(
         umi,
-        publicKey(MARGINFI_ACCOUNTS[supplyMint.toString()].bank)
+        publicKey(MARGINFI_ACCOUNTS[supplyMint.toString()].bank),
+        { commitment: "confirmed" }
       )
       : null;
   let debtBank: Bank | null =
     debtMint && debtMint !== PublicKey.default
       ? await safeFetchBank(
         umi,
-        publicKey(MARGINFI_ACCOUNTS[debtMint.toString()].bank)
+        publicKey(MARGINFI_ACCOUNTS[debtMint.toString()].bank),
+        { commitment: "confirmed" }
       )
       : null;
 

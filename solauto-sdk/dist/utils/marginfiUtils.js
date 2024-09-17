@@ -60,7 +60,7 @@ async function getMaxLtvAndLiqThreshold(umi, supply, debt, supplyPrice) {
 }
 async function getAllMarginfiAccountsByAuthority(umi, authority, compatibleWithSolauto) {
     const marginfiAccounts = await umi.rpc.getProgramAccounts(marginfi_sdk_1.MARGINFI_PROGRAM_ID, {
-        commitment: "finalized",
+        commitment: "confirmed",
         dataSlice: {
             offset: 0,
             length: 0,
@@ -136,12 +136,12 @@ async function getTokenUsage(umi, bank, isAsset, shares, amountUsedAdjustment) {
     };
 }
 async function getMarginfiAccountPositionState(umi, marginfiAccountPk, supplyMint, debtMint, livePositionUpdates) {
-    let marginfiAccount = await (0, marginfi_sdk_1.safeFetchMarginfiAccount)(umi, (0, umi_1.publicKey)(marginfiAccountPk));
+    let marginfiAccount = await (0, marginfi_sdk_1.safeFetchMarginfiAccount)(umi, (0, umi_1.publicKey)(marginfiAccountPk), { commitment: "confirmed" });
     let supplyBank = supplyMint && supplyMint !== web3_js_1.PublicKey.default
-        ? await (0, marginfi_sdk_1.safeFetchBank)(umi, (0, umi_1.publicKey)(marginfiAccounts_1.MARGINFI_ACCOUNTS[supplyMint.toString()].bank))
+        ? await (0, marginfi_sdk_1.safeFetchBank)(umi, (0, umi_1.publicKey)(marginfiAccounts_1.MARGINFI_ACCOUNTS[supplyMint.toString()].bank), { commitment: "confirmed" })
         : null;
     let debtBank = debtMint && debtMint !== web3_js_1.PublicKey.default
-        ? await (0, marginfi_sdk_1.safeFetchBank)(umi, (0, umi_1.publicKey)(marginfiAccounts_1.MARGINFI_ACCOUNTS[debtMint.toString()].bank))
+        ? await (0, marginfi_sdk_1.safeFetchBank)(umi, (0, umi_1.publicKey)(marginfiAccounts_1.MARGINFI_ACCOUNTS[debtMint.toString()].bank), { commitment: "confirmed" })
         : null;
     let supplyUsage = undefined;
     let debtUsage = undefined;

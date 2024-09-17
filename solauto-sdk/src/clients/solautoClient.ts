@@ -139,6 +139,7 @@ export abstract class SolautoClient extends TxHandler {
     this.solautoPositionData = await safeFetchSolautoPosition(
       this.umi,
       publicKey(this.solautoPosition),
+      { commitment: "confirmed" }
     );
     this.solautoPositionState = this.solautoPositionData?.state;
 
