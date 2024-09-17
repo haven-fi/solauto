@@ -55,11 +55,11 @@ pub fn marginfi_rebalance<'a>(
         debt_tas.clone(),
         ctx.accounts.debt_vault_authority,
     )?);
-    let solauto_manager_accounts = Box::new(SolautoManagerAccounts::from(
+    let solauto_manager_accounts = SolautoManagerAccounts::from(
         supply_tas,
         debt_tas,
         ctx.accounts.intermediary_ta,
-    )?);
+    )?;
 
     if rebalance_step == RebalanceStep::Initial
         || std_accounts.solauto_position.data.rebalance.rebalance_type
@@ -154,7 +154,7 @@ fn needs_refresh(
 
 fn rebalance<'a>(
     client: Box<dyn LendingProtocolClient<'a> + 'a>,
-    solauto_manager_accounts: Box<SolautoManagerAccounts<'a>>,
+    solauto_manager_accounts: SolautoManagerAccounts<'a>,
     std_accounts: Box<SolautoStandardAccounts<'a>>,
     rebalance_step: RebalanceStep,
     args: RebalanceSettings,

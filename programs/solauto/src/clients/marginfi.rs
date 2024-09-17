@@ -434,7 +434,7 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
                 .account_info
         };
 
-        let cpi = Box::new(LendingAccountDepositCpi::new(
+        let cpi = LendingAccountDepositCpi::new(
             self.program,
             LendingAccountDepositCpiAccounts {
                 marginfi_group: self.marginfi_group,
@@ -448,7 +448,7 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
             LendingAccountDepositInstructionArgs {
                 amount: base_unit_amount,
             },
-        ));
+        );
 
         if !std_accounts.solauto_position.data.self_managed.val {
             cpi.invoke_signed(&[std_accounts
@@ -475,7 +475,7 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
             0
         };
 
-        let cpi = Box::new(LendingAccountWithdrawCpi::new(
+        let cpi = LendingAccountWithdrawCpi::new(
             self.program,
             LendingAccountWithdrawCpiAccounts {
                 marginfi_group: self.marginfi_group,
@@ -491,17 +491,16 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
                 amount: base_unit_amount,
                 withdraw_all: Some(amount == TokenBalanceAmount::All),
             },
-        ));
+        );
 
-        let active_balances = Box::new(
+        let active_balances = 
             self.marginfi_account
                 .data
                 .lending_account
                 .balances
                 .iter()
                 .filter(|balance| balance.active == 1)
-                .collect::<Vec<_>>(),
-        );
+                .collect::<Vec<_>>();
 
         let mut remaining_accounts = Vec::new();
 
@@ -549,7 +548,7 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
     ) -> ProgramResult {
         let authority = get_owner(&std_accounts.solauto_position, self.signer);
 
-        let cpi = Box::new(LendingAccountBorrowCpi::new(
+        let cpi = LendingAccountBorrowCpi::new(
             self.program,
             LendingAccountBorrowCpiAccounts {
                 marginfi_group: self.marginfi_group,
@@ -564,7 +563,7 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
             LendingAccountBorrowInstructionArgs {
                 amount: base_unit_amount,
             },
-        ));
+        );
 
         let mut remaining_accounts = Vec::with_capacity(4);
         remaining_accounts.push((self.supply.bank.account_info, false, false));
@@ -615,7 +614,7 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
                 .account_info
         };
 
-        let cpi = Box::new(LendingAccountRepayCpi::new(
+        let cpi = LendingAccountRepayCpi::new(
             self.program,
             LendingAccountRepayCpiAccounts {
                 marginfi_group: self.marginfi_group,
@@ -630,7 +629,7 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
                 amount: base_unit_amount,
                 repay_all: Some(amount == TokenBalanceAmount::All),
             },
-        ));
+        );
 
         if !std_accounts.solauto_position.data.self_managed.val {
             cpi.invoke_signed(&[std_accounts

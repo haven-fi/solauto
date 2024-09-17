@@ -43,7 +43,7 @@ impl<'a> SolautoManagerAccounts<'a> {
 
 pub struct SolautoManager<'a> {
     pub client: Box<dyn LendingProtocolClient<'a> + 'a>,
-    pub accounts: Box<SolautoManagerAccounts<'a>>,
+    pub accounts: SolautoManagerAccounts<'a>,
     pub std_accounts: Box<SolautoStandardAccounts<'a>>,
     pub solauto_fees_bps: Option<solauto_utils::SolautoFeesBps>,
 }
@@ -51,7 +51,7 @@ pub struct SolautoManager<'a> {
 impl<'a> SolautoManager<'a> {
     pub fn from(
         client: Box<dyn LendingProtocolClient<'a> + 'a>,
-        accounts: Box<SolautoManagerAccounts<'a>>,
+        accounts: SolautoManagerAccounts<'a>,
         std_accounts: Box<SolautoStandardAccounts<'a>>,
         solauto_fees_bps: Option<solauto_utils::SolautoFeesBps>,
     ) -> Result<Self, ProgramError> {

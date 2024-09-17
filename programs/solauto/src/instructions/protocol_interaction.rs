@@ -46,7 +46,7 @@ pub fn marginfi_interaction<'a>(
         ctx.accounts.debt_vault_authority,
     )?);
     let solauto_manager_accounts =
-        Box::new(SolautoManagerAccounts::from(supply_tas, debt_tas, None)?);
+        SolautoManagerAccounts::from(supply_tas, debt_tas, None)?;
 
     protocol_interaction(
         marginfi_client,
@@ -58,7 +58,7 @@ pub fn marginfi_interaction<'a>(
 
 fn protocol_interaction<'a>(
     client: Box<dyn LendingProtocolClient<'a> + 'a>,
-    solauto_manager_accounts: Box<SolautoManagerAccounts<'a>>,
+    solauto_manager_accounts: SolautoManagerAccounts<'a>,
     std_accounts: Box<SolautoStandardAccounts<'a>>,
     action: SolautoAction,
 ) -> ProgramResult {

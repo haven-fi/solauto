@@ -73,42 +73,43 @@ fn pick_ix_data(req: PickIxDataReq) -> Result<PickIxDataResp, SanitizeError> {
         account_indices,
     } = req;
 
-    let data = &ixs_sysvar
+    let data = Box::new(ixs_sysvar
         .try_borrow_data()
-        .expect("Should retrieve IXS sysvar data");
+        .expect("Should retrieve IXS sysvar data"));
 
     // First byte indicates the number of instructions
     let mut current = 2 + ix_idx * 2;
-    let ix_start = read_u16(&mut current, data)?;
+    let ix_start = read_u16(&mut current, &data)?;
 
     current = ix_start as usize;
-    let num_accounts = read_u16(&mut current, data)?;
+    let num_accounts = read_u16(&mut current, &data)?;
 
     let indices = account_indices.unwrap_or(vec![]);
     let mut accounts = Vec::with_capacity(indices.len());
     for idx in 0..num_accounts {
         if indices.contains(&idx) {
             current += 1;
-            accounts.push(read_pubkey(&mut current, data)?);
+            accounts.push(read_pubkey(&mut current, &data)?);
         } else {
             // Skip byte that indicates if account is signer / writable
             current += 1 + std::mem::size_of::<Pubkey>();
         }
     }
 
-    let program_id = read_pubkey(&mut current, data)?;
-    let instruction_data_len = read_u16(&mut current, data)? as usize;
+    let program_id = read_pubkey(&mut current, &data)?;
+    let instruction_data_len = read_u16(&mut current, &data)? as usize;
 
     let data_start = data_start_idx.unwrap_or(0) as usize;
     let data_end =
         data_start + (data_len.unwrap_or((instruction_data_len - data_start) as u64) as usize);
 
     current += data_start;
-    let data = read_slice(&mut current, data, data_end)?;
+    let picked_data = read_slice(&mut current, &data, data_end)?;
 
+    drop(data);
     Ok(PickIxDataResp {
         program_id,
-        data,
+        data: picked_data,
         accounts,
     })
 }
