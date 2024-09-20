@@ -111,7 +111,6 @@ var TransactionStatus;
 (function (TransactionStatus) {
     TransactionStatus["Skipped"] = "Skipped";
     TransactionStatus["Processing"] = "Processing";
-    TransactionStatus["AwaitingSignature"] = "Awaiting Signature";
     TransactionStatus["Queued"] = "Queued";
     TransactionStatus["Successful"] = "Successful";
 })(TransactionStatus || (exports.TransactionStatus = TransactionStatus = {}));
@@ -198,7 +197,7 @@ class TransactionsManager {
             updateLookupTable.updateLutTx.getInstructions().length > 0 &&
             updateLookupTable?.needsToBeIsolated) {
             this.updateStatus(updateLutTxName, TransactionStatus.Processing);
-            await (0, generalUtils_1.retryWithExponentialBackoff)(async (attemptNum) => await (0, solanaUtils_1.sendSingleOptimizedTransaction)(this.txHandler.umi, this.txHandler.connection, updateLookupTable.updateLutTx, this.txType, attemptNum, prioritySetting, () => this.updateStatus(updateLutTxName, TransactionStatus.AwaitingSignature)), 3, 150, this.errorsToThrow);
+            await (0, generalUtils_1.retryWithExponentialBackoff)(async (attemptNum) => await (0, solanaUtils_1.sendSingleOptimizedTransaction)(this.txHandler.umi, this.txHandler.connection, updateLookupTable.updateLutTx, this.txType, attemptNum, prioritySetting), 3, 150, this.errorsToThrow);
             this.updateStatus(updateLutTxName, TransactionStatus.Successful);
         }
         this.lookupTables.defaultLuts = client.defaultLookupTables();
@@ -212,13 +211,13 @@ class TransactionsManager {
             choresBefore.prepend(updateLookupTable.updateLutTx);
         }
         if (choresBefore.getInstructions().length > 0) {
-            const chore = new TransactionItem(async () => ({ tx: choresBefore }), "create account(s)");
+            const chore = new TransactionItem(async () => ({ tx: choresBefore }));
             await chore.initialize();
             items.unshift(chore);
             this.txHandler.log("Chores before: ", choresBefore.getInstructions().length);
         }
         if (choresAfter.getInstructions().length > 0) {
-            const chore = new TransactionItem(async () => ({ tx: choresAfter }));
+            const chore = new TransactionItem(async () => ({ tx: choresAfter }), "closing temp accounts");
             await chore.initialize();
             items.push(chore);
             this.txHandler.log("Chores after: ", choresAfter.getInstructions().length);
@@ -296,7 +295,7 @@ class TransactionsManager {
                         if (this.txHandler.localTest) {
                             await this.debugAccounts(itemSet, tx);
                         }
-                        const txSig = await (0, solanaUtils_1.sendSingleOptimizedTransaction)(this.txHandler.umi, this.txHandler.connection, tx, this.txType, attemptNum, prioritySetting, () => this.updateStatus(itemSet.name(), TransactionStatus.AwaitingSignature));
+                        const txSig = await (0, solanaUtils_1.sendSingleOptimizedTransaction)(this.txHandler.umi, this.txHandler.connection, tx, this.txType, attemptNum, prioritySetting);
                         this.updateStatus(itemSet.name(), TransactionStatus.Successful, txSig ? bs58_1.default.encode(txSig) : undefined);
                     }
                 }, 4, 150, this.errorsToThrow);

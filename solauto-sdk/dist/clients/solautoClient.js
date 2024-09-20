@@ -42,20 +42,24 @@ class SolautoClient extends txHandler_1.TxHandler {
         this.solautoPositionData = await (0, generated_1.safeFetchSolautoPosition)(this.umi, (0, umi_1.publicKey)(this.solautoPosition), { commitment: "confirmed" });
         this.solautoPositionState = this.solautoPositionData?.state;
         this.supplyMint =
-            (args.supplyMint ??
-                this.solautoPositionData) ? (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.solautoPositionData.position.supplyMint) : web3_js_1.PublicKey.default;
+            args.supplyMint ??
+                (this.solautoPositionData
+                    ? (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.solautoPositionData.position.supplyMint)
+                    : web3_js_1.PublicKey.default);
         this.positionSupplyTa = (0, accountUtils_1.getTokenAccount)(this.solautoPosition, this.supplyMint);
         this.signerSupplyTa = (0, accountUtils_1.getTokenAccount)((0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.signer.publicKey), this.supplyMint);
         this.debtMint =
-            (args.debtMint ??
-                this.solautoPositionData) ? (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.solautoPositionData.position.debtMint) : web3_js_1.PublicKey.default;
+            args.debtMint ??
+                (this.solautoPositionData
+                    ? (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.solautoPositionData.position.debtMint)
+                    : web3_js_1.PublicKey.default);
         this.positionDebtTa = (0, accountUtils_1.getTokenAccount)(this.solautoPosition, this.debtMint);
         this.signerDebtTa = (0, accountUtils_1.getTokenAccount)((0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.signer.publicKey), this.debtMint);
         this.referralStateManager = new referralStateManager_1.ReferralStateManager(this.heliusApiKey);
         await this.referralStateManager.initialize({
             referralAuthority: this.authority,
             signer: args.signer,
-            wallet: args.wallet
+            wallet: args.wallet,
         });
         const authorityReferralStateData = this.referralStateManager.referralStateData;
         const hasReferredBy = authorityReferralStateData &&
@@ -77,9 +81,11 @@ class SolautoClient extends txHandler_1.TxHandler {
         }
         this.solautoFeesWallet = generalAccounts_1.SOLAUTO_FEES_WALLET;
         this.solautoFeesSupplyTa = (0, accountUtils_1.getTokenAccount)(this.solautoFeesWallet, this.supplyMint);
-        this.authorityLutAddress = authorityReferralStateData?.lookupTable && !(0, umi_web3js_adapters_1.toWeb3JsPublicKey)(authorityReferralStateData.lookupTable).equals(web3_js_1.PublicKey.default)
-            ? (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(authorityReferralStateData.lookupTable)
-            : undefined;
+        this.authorityLutAddress =
+            authorityReferralStateData?.lookupTable &&
+                !(0, umi_web3js_adapters_1.toWeb3JsPublicKey)(authorityReferralStateData.lookupTable).equals(web3_js_1.PublicKey.default)
+                ? (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(authorityReferralStateData.lookupTable)
+                : undefined;
         this.log("Position state: ", this.solautoPositionState);
         this.log("Position settings: ", this.solautoPositionData?.position?.settingParams);
         this.log("Position DCA: ", (this.solautoPositionData?.position?.dca?.automation?.targetPeriods ??
@@ -107,7 +113,12 @@ class SolautoClient extends txHandler_1.TxHandler {
         this.livePositionUpdates.reset();
     }
     defaultLookupTables() {
-        return [solautoConstants_1.SOLAUTO_LUT, ...(this.authorityLutAddress ? [this.authorityLutAddress.toString()] : [])];
+        return [
+            solautoConstants_1.SOLAUTO_LUT,
+            ...(this.authorityLutAddress
+                ? [this.authorityLutAddress.toString()]
+                : []),
+        ];
     }
     lutAccountsToAdd() {
         return [
@@ -255,7 +266,7 @@ class SolautoClient extends txHandler_1.TxHandler {
             positionSupplyTa: (0, umi_1.publicKey)(this.positionSupplyTa),
             positionDebtTa: (0, umi_1.publicKey)(this.positionDebtTa),
             signerDebtTa: (0, umi_1.publicKey)(this.signerDebtTa),
-            protocolAccount: (0, umi_1.publicKey)(this.protocolAccount())
+            protocolAccount: (0, umi_1.publicKey)(this.protocolAccount()),
         });
     }
     cancelDCAIx() {

@@ -1,8 +1,5 @@
 import "rpc-websockets/dist/lib/client";
-import {
-  AddressLookupTableProgram,
-  PublicKey,
-} from "@solana/web3.js";
+import { AddressLookupTableProgram, PublicKey } from "@solana/web3.js";
 import {
   Signer,
   TransactionBuilder,
@@ -40,9 +37,7 @@ import {
   getSolautoPositionAccount,
   getTokenAccount,
 } from "../utils/accountUtils";
-import {
-  SOLAUTO_FEES_WALLET,
-} from "../constants/generalAccounts";
+import { SOLAUTO_FEES_WALLET } from "../constants/generalAccounts";
 import { JupSwapDetails } from "../utils/jupiterUtils";
 import {
   getWrappedInstruction,
@@ -145,7 +140,9 @@ export abstract class SolautoClient extends TxHandler {
 
     this.supplyMint =
       args.supplyMint ??
-      this.solautoPositionData ? toWeb3JsPublicKey(this.solautoPositionData!.position.supplyMint) : PublicKey.default;
+      (this.solautoPositionData
+        ? toWeb3JsPublicKey(this.solautoPositionData!.position.supplyMint)
+        : PublicKey.default);
     this.positionSupplyTa = getTokenAccount(
       this.solautoPosition,
       this.supplyMint
@@ -157,29 +154,32 @@ export abstract class SolautoClient extends TxHandler {
 
     this.debtMint =
       args.debtMint ??
-      this.solautoPositionData ? toWeb3JsPublicKey(this.solautoPositionData!.position.debtMint) : PublicKey.default;
+      (this.solautoPositionData
+        ? toWeb3JsPublicKey(this.solautoPositionData!.position.debtMint)
+        : PublicKey.default);
     this.positionDebtTa = getTokenAccount(this.solautoPosition, this.debtMint);
     this.signerDebtTa = getTokenAccount(
       toWeb3JsPublicKey(this.signer.publicKey),
       this.debtMint
     );
 
-    this.referralStateManager = new ReferralStateManager(this.heliusApiKey)
+    this.referralStateManager = new ReferralStateManager(this.heliusApiKey);
     await this.referralStateManager.initialize({
       referralAuthority: this.authority,
       signer: args.signer,
-      wallet: args.wallet
+      wallet: args.wallet,
     });
 
-    const authorityReferralStateData = this.referralStateManager.referralStateData;
+    const authorityReferralStateData =
+      this.referralStateManager.referralStateData;
     const hasReferredBy =
       authorityReferralStateData &&
       authorityReferralStateData.referredByState !==
-      publicKey(PublicKey.default);
+        publicKey(PublicKey.default);
     const referredByAuthority =
       !hasReferredBy &&
-        args.referredByAuthority &&
-        !args.referredByAuthority.equals(toWeb3JsPublicKey(this.signer.publicKey))
+      args.referredByAuthority &&
+      !args.referredByAuthority.equals(toWeb3JsPublicKey(this.signer.publicKey))
         ? args.referredByAuthority
         : undefined;
     this.referredByState = hasReferredBy
@@ -201,9 +201,13 @@ export abstract class SolautoClient extends TxHandler {
       this.supplyMint
     );
 
-    this.authorityLutAddress = authorityReferralStateData?.lookupTable && !toWeb3JsPublicKey(authorityReferralStateData.lookupTable).equals(PublicKey.default)
-      ? toWeb3JsPublicKey(authorityReferralStateData.lookupTable)
-      : undefined;
+    this.authorityLutAddress =
+      authorityReferralStateData?.lookupTable &&
+      !toWeb3JsPublicKey(authorityReferralStateData.lookupTable).equals(
+        PublicKey.default
+      )
+        ? toWeb3JsPublicKey(authorityReferralStateData.lookupTable)
+        : undefined;
 
     this.log("Position state: ", this.solautoPositionState);
     this.log(
@@ -244,7 +248,12 @@ export abstract class SolautoClient extends TxHandler {
   abstract protocolAccount(): PublicKey;
 
   defaultLookupTables(): string[] {
-    return [SOLAUTO_LUT, ...(this.authorityLutAddress ? [this.authorityLutAddress.toString()] : [])];
+    return [
+      SOLAUTO_LUT,
+      ...(this.authorityLutAddress
+        ? [this.authorityLutAddress.toString()]
+        : []),
+    ];
   }
 
   lutAccountsToAdd(): PublicKey[] {
@@ -324,7 +333,7 @@ export abstract class SolautoClient extends TxHandler {
     const addingReferredBy =
       accountsToAdd.length === 1 &&
       accountsToAdd[0].toString().toLowerCase() ===
-      this.referredBySupplyTa?.toString().toLowerCase();
+        this.referredBySupplyTa?.toString().toLowerCase();
 
     if (tx.getInstructions().length > 0) {
       this.log("Updating authority lookup table...");
@@ -440,7 +449,7 @@ export abstract class SolautoClient extends TxHandler {
       positionSupplyTa: publicKey(this.positionSupplyTa),
       positionDebtTa: publicKey(this.positionDebtTa),
       signerDebtTa: publicKey(this.signerDebtTa),
-      protocolAccount: publicKey(this.protocolAccount())
+      protocolAccount: publicKey(this.protocolAccount()),
     });
   }
 
@@ -509,7 +518,7 @@ export abstract class SolautoClient extends TxHandler {
               BigInt(
                 Math.round(
                   Number(this.solautoPositionState!.debt.amountUsed.baseUnit) *
-                  1.01
+                    1.01
                 )
               )
             )
@@ -572,9 +581,10 @@ export abstract class SolautoClient extends TxHandler {
     rebalanceStep: "A" | "B",
     swapDetails: JupSwapDetails,
     rebalanceType: SolautoRebalanceTypeArgs,
+    slippageBps: number,
     flashLoan?: FlashLoanDetails,
     targetLiqUtilizationRateBps?: number,
-    limitGapBps?: number
+    limitGapBps?: number,
   ): TransactionBuilder;
 
   async getFreshPositionState(): Promise<PositionState | undefined> {
@@ -582,7 +592,7 @@ export abstract class SolautoClient extends TxHandler {
       Boolean(this.solautoPositionData) &&
       Boolean(this.solautoPositionState) &&
       Number(this.solautoPositionState!.lastUpdated) >
-      currentUnixSeconds() - MIN_POSITION_STATE_FRESHNESS_SECS &&
+        currentUnixSeconds() - MIN_POSITION_STATE_FRESHNESS_SECS &&
       !this.livePositionUpdates.hasUpdates()
     ) {
       return this.solautoPositionState;

@@ -266,6 +266,7 @@ impl<'a> SolautoManager<'a> {
                 self.solauto_fees_bps.as_ref().unwrap(),
                 Clock::get()?.unix_timestamp as u64,
             )?;
+            msg!("Expected debt adjustment: {}", debt_adjustment_usd);
             self.validate_flash_loan_amount(flash_loan_amount, debt_adjustment_usd)?;
         }
 
@@ -380,7 +381,7 @@ impl<'a> SolautoManager<'a> {
             return Err(SolautoError::IncorrectAccounts.into());
         }
 
-        let position_supply_ta = &self.accounts.supply.position_ta.as_ref().unwrap();
+        let position_supply_ta = self.accounts.supply.position_ta.as_ref().unwrap();
 
         let solauto_fees = (total_available_balance as f64)
             .mul(from_bps(self.solauto_fees_bps.as_ref().unwrap().solauto))
@@ -458,7 +459,7 @@ impl<'a> SolautoManager<'a> {
             > 0.15
         {
             msg!(
-                "Flash loan amount was not what was expected (${} vs. ${})",
+                "Flash loan amount was not what was expected (Provided: ${} vs. expected: ${})",
                 amount_usd.abs(),
                 expected_debt_adjustment_usd.abs()
             );

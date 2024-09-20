@@ -55,11 +55,8 @@ pub fn marginfi_rebalance<'a>(
         debt_tas.clone(),
         ctx.accounts.debt_vault_authority,
     )?);
-    let solauto_manager_accounts = SolautoManagerAccounts::from(
-        supply_tas,
-        debt_tas,
-        ctx.accounts.intermediary_ta,
-    )?;
+    let solauto_manager_accounts =
+        SolautoManagerAccounts::from(supply_tas, debt_tas, ctx.accounts.intermediary_ta)?;
 
     if rebalance_step == RebalanceStep::Initial
         || std_accounts.solauto_position.data.rebalance.rebalance_type

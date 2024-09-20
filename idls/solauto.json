@@ -1470,6 +1470,10 @@
         "kind": "struct",
         "fields": [
           {
+            "name": "slippageBps",
+            "type": "u16"
+          },
+          {
             "name": "rebalanceType",
             "type": {
               "defined": "SolautoRebalanceType"

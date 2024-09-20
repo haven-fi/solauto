@@ -166,7 +166,6 @@ class TransactionSet {
 export enum TransactionStatus {
   Skipped = "Skipped",
   Processing = "Processing",
-  AwaitingSignature = "Awaiting Signature",
   Queued = "Queued",
   Successful = "Successful",
 }
@@ -294,12 +293,7 @@ export class TransactionsManager {
             updateLookupTable.updateLutTx,
             this.txType,
             attemptNum,
-            prioritySetting,
-            () =>
-              this.updateStatus(
-                updateLutTxName,
-                TransactionStatus.AwaitingSignature
-              )
+            prioritySetting
           ),
         3,
         150,
@@ -326,10 +320,7 @@ export class TransactionsManager {
       choresBefore.prepend(updateLookupTable.updateLutTx);
     }
     if (choresBefore.getInstructions().length > 0) {
-      const chore = new TransactionItem(
-        async () => ({ tx: choresBefore }),
-        "create account(s)"
-      );
+      const chore = new TransactionItem(async () => ({ tx: choresBefore }));
       await chore.initialize();
       items.unshift(chore);
       this.txHandler.log(
@@ -338,7 +329,10 @@ export class TransactionsManager {
       );
     }
     if (choresAfter.getInstructions().length > 0) {
-      const chore = new TransactionItem(async () => ({ tx: choresAfter }));
+      const chore = new TransactionItem(
+        async () => ({ tx: choresAfter }),
+        "closing temp accounts"
+      );
       await chore.initialize();
       items.push(chore);
       this.txHandler.log(
@@ -450,12 +444,7 @@ export class TransactionsManager {
                 tx,
                 this.txType,
                 attemptNum,
-                prioritySetting,
-                () =>
-                  this.updateStatus(
-                    itemSet!.name(),
-                    TransactionStatus.AwaitingSignature
-                  )
+                prioritySetting
               );
               this.updateStatus(
                 itemSet.name(),

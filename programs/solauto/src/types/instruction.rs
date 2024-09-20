@@ -210,6 +210,7 @@ pub enum SolautoAction {
 
 #[derive(BorshDeserialize, Clone, Debug, Default, ShankType)]
 pub struct RebalanceSettings {
+    pub slippage_bps: u16,
     pub rebalance_type: SolautoRebalanceType,
     /// Target liq utilization rate. Only used/allowed if signed by the position authority.
     pub target_liq_utilization_rate_bps: Option<u16>,

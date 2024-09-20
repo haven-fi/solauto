@@ -73,9 +73,11 @@ fn pick_ix_data(req: PickIxDataReq) -> Result<PickIxDataResp, SanitizeError> {
         account_indices,
     } = req;
 
-    let data = Box::new(ixs_sysvar
-        .try_borrow_data()
-        .expect("Should retrieve IXS sysvar data"));
+    let data = Box::new(
+        ixs_sysvar
+            .try_borrow_data()
+            .expect("Should retrieve IXS sysvar data"),
+    );
 
     // First byte indicates the number of instructions
     let mut current = 2 + ix_idx * 2;
@@ -259,7 +261,7 @@ pub fn validate_jup_instruction<'a>(
 pub fn get_marginfi_flash_loan_amount<'a>(
     ixs_sysvar: &'a AccountInfo<'a>,
     ix_idx: usize,
-    expected_destination_tas: &[&Pubkey],
+    expected_destination_tas: Option<&[&Pubkey]>,
 ) -> Result<u64, ProgramError> {
     let res = pick_ix_data(PickIxDataReq {
         ixs_sysvar,
@@ -271,9 +273,11 @@ pub fn get_marginfi_flash_loan_amount<'a>(
     .expect("Should pick data");
     let args = LendingAccountBorrowInstructionArgs::deserialize(&mut res.data.as_slice())?;
 
-    if !expected_destination_tas
-        .iter()
-        .any(|x| x == &&res.accounts[0])
+    if expected_destination_tas.is_some()
+        && !expected_destination_tas
+            .unwrap()
+            .iter()
+            .any(|x| x == &&res.accounts[0])
     {
         msg!("Moving funds into an incorrect token account");
         return Err(SolautoError::IncorrectInstructions.into());

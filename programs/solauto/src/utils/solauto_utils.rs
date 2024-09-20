@@ -313,9 +313,9 @@ pub fn get_solauto_fees_bps(
 ) -> SolautoFeesBps {
     let min_size: f64 = 10000.0; // Minimum position size
     let max_size: f64 = 500000.0; // Maximum position size
-    let max_fee_bps: f64 = 500.0; // Fee in basis points for min_size (5%)
+    let max_fee_bps: f64 = 200.0; // Fee in basis points for min_size (2%)
     let min_fee_bps: f64 = 50.0; // Fee in basis points for max_size (0.5%)
-    let k = 0.55;
+    let k = 1.5;
 
     let fee_bps: f64;
     if target_liq_utilization_rate_bps.is_some() {

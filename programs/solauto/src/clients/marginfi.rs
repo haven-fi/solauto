@@ -493,14 +493,14 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
             },
         );
 
-        let active_balances = 
-            self.marginfi_account
-                .data
-                .lending_account
-                .balances
-                .iter()
-                .filter(|balance| balance.active == 1)
-                .collect::<Vec<_>>();
+        let active_balances = self
+            .marginfi_account
+            .data
+            .lending_account
+            .balances
+            .iter()
+            .filter(|balance| balance.active == 1)
+            .collect::<Vec<_>>();
 
         let mut remaining_accounts = Vec::new();
 

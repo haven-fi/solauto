@@ -111,12 +111,18 @@ async function transactionChoresBefore(
     client.referralStateManager.referralStateData === null ||
     (client.referredByState !== undefined &&
       client.referralStateManager.referralStateData?.referredByState ===
-      publicKey(PublicKey.default)) ||
+        publicKey(PublicKey.default)) ||
     (client.authorityLutAddress !== undefined &&
       client.referralStateManager.referralStateData!.lookupTable ==
-      publicKey(PublicKey.default))
+        publicKey(PublicKey.default))
   ) {
-    chores = chores.add(client.referralStateManager.updateReferralStatesIx(undefined, client.referredByAuthority, client.authorityLutAddress));
+    chores = chores.add(
+      client.referralStateManager.updateReferralStatesIx(
+        undefined,
+        client.referredByAuthority,
+        client.authorityLutAddress
+      )
+    );
   }
 
   if (client.selfManaged) {
@@ -233,10 +239,10 @@ export async function rebalanceChoresBefore(
   }
 
   const usesAccount = (key: PublicKey) =>
-    tx.getInstructions().some((t) =>
-      t.keys.some((k) => toWeb3JsPublicKey(k.pubkey).equals(key))
-    );
-  
+    tx
+      .getInstructions()
+      .some((t) => t.keys.some((k) => toWeb3JsPublicKey(k.pubkey).equals(key)));
+
   const checkReferralSupplyTa =
     client.referredBySupplyTa && usesAccount(client.referredBySupplyTa);
   const checkSolautoFeesTa = usesAccount(client.solautoFeesSupplyTa);
@@ -371,6 +377,7 @@ function getRebalanceInstructions(tx: TransactionBuilder): Instruction[] {
       try {
         const serializer = getMarginfiRebalanceInstructionDataSerializer();
         const discriminator = serializer.serialize({
+          slippageBps: 0,
           limitGapBps: 0,
           rebalanceType: SolautoRebalanceType.None,
           targetLiqUtilizationRateBps: 0,
@@ -379,7 +386,7 @@ function getRebalanceInstructions(tx: TransactionBuilder): Instruction[] {
         if (data.discriminator === discriminator) {
           return true;
         }
-      } catch { }
+      } catch {}
       return false;
     }
   });
@@ -400,7 +407,7 @@ function getSolautoActions(tx: TransactionBuilder): SolautoAction[] {
         if (data.discriminator === discriminator) {
           solautoActions?.push(data.solautoAction);
         }
-      } catch { }
+      } catch {}
     }
 
     if (x.programId === MARGINFI_PROGRAM_ID) {
@@ -423,7 +430,7 @@ function getSolautoActions(tx: TransactionBuilder): SolautoAction[] {
             fields: [data.amount],
           });
         }
-      } catch { }
+      } catch {}
 
       try {
         const serializer = getLendingAccountBorrowInstructionDataSerializer();
@@ -444,7 +451,7 @@ function getSolautoActions(tx: TransactionBuilder): SolautoAction[] {
             fields: [data.amount],
           });
         }
-      } catch { }
+      } catch {}
 
       try {
         const serializer = getLendingAccountWithdrawInstructionDataSerializer();
@@ -466,16 +473,16 @@ function getSolautoActions(tx: TransactionBuilder): SolautoAction[] {
             fields: [
               data.withdrawAll
                 ? {
-                  __kind: "All",
-                }
+                    __kind: "All",
+                  }
                 : {
-                  __kind: "Some",
-                  fields: [data.amount],
-                },
+                    __kind: "Some",
+                    fields: [data.amount],
+                  },
             ],
           });
         }
-      } catch { }
+      } catch {}
 
       try {
         const serializer = getLendingAccountRepayInstructionDataSerializer();
@@ -497,16 +504,16 @@ function getSolautoActions(tx: TransactionBuilder): SolautoAction[] {
             fields: [
               data.repayAll
                 ? {
-                  __kind: "All",
-                }
+                    __kind: "All",
+                  }
                 : {
-                  __kind: "Some",
-                  fields: [data.amount],
-                },
+                    __kind: "Some",
+                    fields: [data.amount],
+                  },
             ],
           });
         }
-      } catch { }
+      } catch {}
     }
 
     // TODO support other platforms
@@ -552,10 +559,11 @@ export async function buildSolautoRebalanceTransaction(
   client: SolautoClient,
   targetLiqUtilizationRateBps?: number,
   attemptNum?: number
-): Promise<{
-  tx: TransactionBuilder;
-  lookupTableAddresses: string[];
-}
+): Promise<
+  | {
+      tx: TransactionBuilder;
+      lookupTableAddresses: string[];
+    }
   | undefined
 > {
   client.solautoPositionState = await client.getFreshPositionState();
@@ -620,20 +628,22 @@ export async function buildSolautoRebalanceTransaction(
       ),
       ...(addFirstRebalance
         ? [
-          client.rebalance(
-            "A",
-            swapDetails,
-            rebalanceType,
-            flashLoan,
-            targetLiqUtilizationRateBps
-          ),
-        ]
+            client.rebalance(
+              "A",
+              swapDetails,
+              rebalanceType,
+              jupQuote.slippageBps,
+              flashLoan,
+              targetLiqUtilizationRateBps
+            ),
+          ]
         : []),
       swapIx,
       client.rebalance(
         "B",
         swapDetails,
         rebalanceType,
+        jupQuote.slippageBps,
         flashLoan,
         targetLiqUtilizationRateBps
       ),
@@ -648,6 +658,7 @@ export async function buildSolautoRebalanceTransaction(
         "A",
         swapDetails,
         rebalanceType,
+        jupQuote.slippageBps,
         undefined,
         targetLiqUtilizationRateBps
       ),
@@ -656,7 +667,8 @@ export async function buildSolautoRebalanceTransaction(
         "B",
         swapDetails,
         rebalanceType,
-        undefined,
+            jupQuote.slippageBps,
+            undefined,
         targetLiqUtilizationRateBps
       ),
     ]);

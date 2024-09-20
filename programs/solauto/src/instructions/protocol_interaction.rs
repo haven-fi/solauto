@@ -45,8 +45,7 @@ pub fn marginfi_interaction<'a>(
         debt_tas.clone(),
         ctx.accounts.debt_vault_authority,
     )?);
-    let solauto_manager_accounts =
-        SolautoManagerAccounts::from(supply_tas, debt_tas, None)?;
+    let solauto_manager_accounts = SolautoManagerAccounts::from(supply_tas, debt_tas, None)?;
 
     protocol_interaction(
         marginfi_client,

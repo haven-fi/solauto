@@ -41,7 +41,6 @@ declare class TransactionSet {
 export declare enum TransactionStatus {
     Skipped = "Skipped",
     Processing = "Processing",
-    AwaitingSignature = "Awaiting Signature",
     Queued = "Queued",
     Successful = "Successful"
 }

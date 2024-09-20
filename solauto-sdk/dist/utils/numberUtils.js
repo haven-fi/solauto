@@ -69,9 +69,9 @@ function getDebtAdjustmentUsd(liqThresholdBps, supplyUsd, debtUsd, targetLiqUtil
 function getSolautoFeesBps(isReferred, targetLiqUtilizationRateBps, positionNetWorthUsd) {
     const minSize = 10000; // Minimum position size
     const maxSize = 500000; // Maximum position size
-    const maxFeeBps = 500; // Fee in basis points for minSize (5%)
+    const maxFeeBps = 200; // Fee in basis points for minSize (2%)
     const minFeeBps = 50; // Fee in basis points for maxSize (0.5%)
-    const k = 0.55;
+    const k = 1.5;
     let feeBps = 0;
     if (targetLiqUtilizationRateBps !== undefined) {
         feeBps = minFeeBps;

@@ -66,12 +66,14 @@ export type MarginfiRebalanceInstructionAccounts = {
 // Data.
 export type MarginfiRebalanceInstructionData = {
   discriminator: number;
+  slippageBps: number;
   rebalanceType: SolautoRebalanceType;
   targetLiqUtilizationRateBps: Option<number>;
   limitGapBps: Option<number>;
 };
 
 export type MarginfiRebalanceInstructionDataArgs = {
+  slippageBps: number;
   rebalanceType: SolautoRebalanceTypeArgs;
   targetLiqUtilizationRateBps: OptionOrNullable<number>;
   limitGapBps: OptionOrNullable<number>;
@@ -89,6 +91,7 @@ export function getMarginfiRebalanceInstructionDataSerializer(): Serializer<
     struct<MarginfiRebalanceInstructionData>(
       [
         ['discriminator', u8()],
+        ['slippageBps', u16()],
         ['rebalanceType', getSolautoRebalanceTypeSerializer()],
         ['targetLiqUtilizationRateBps', option(u16())],
         ['limitGapBps', option(u16())],

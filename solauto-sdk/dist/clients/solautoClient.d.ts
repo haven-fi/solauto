@@ -62,7 +62,7 @@ export declare abstract class SolautoClient extends TxHandler {
     protocolInteraction(args: SolautoActionArgs): TransactionBuilder;
     abstract flashBorrow(flashLoanDetails: FlashLoanDetails, destinationTokenAccount: PublicKey): TransactionBuilder;
     abstract flashRepay(flashLoanDetails: FlashLoanDetails): TransactionBuilder;
-    abstract rebalance(rebalanceStep: "A" | "B", swapDetails: JupSwapDetails, rebalanceType: SolautoRebalanceTypeArgs, flashLoan?: FlashLoanDetails, targetLiqUtilizationRateBps?: number, limitGapBps?: number): TransactionBuilder;
+    abstract rebalance(rebalanceStep: "A" | "B", swapDetails: JupSwapDetails, rebalanceType: SolautoRebalanceTypeArgs, slippageBps: number, flashLoan?: FlashLoanDetails, targetLiqUtilizationRateBps?: number, limitGapBps?: number): TransactionBuilder;
     getFreshPositionState(): Promise<PositionState | undefined>;
 }
 //# sourceMappingURL=solautoClient.d.ts.map

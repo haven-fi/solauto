@@ -54,8 +54,8 @@ import {
   getMarginfiAccountPositionState,
   getMaxLtvAndLiqThreshold,
 } from "../utils/marginfiUtils";
-import { bytesToI80F48, toBps } from "../utils/numberUtils";
-import { SOLAUTO_MANAGER } from "../constants";
+import { bytesToI80F48, fromBaseUnit, toBps } from "../utils/numberUtils";
+import { PRICES, SOLAUTO_MANAGER } from "../constants";
 import { createFakePositionState } from "../utils";
 
 export interface SolautoMarginfiClientArgs extends SolautoClientArgs {
@@ -427,9 +427,10 @@ export class SolautoMarginfiClient extends SolautoClient {
     rebalanceStep: "A" | "B",
     swapDetails: JupSwapDetails,
     rebalanceType: SolautoRebalanceTypeArgs,
+    slippageBps: number,
     flashLoan?: FlashLoanDetails,
     targetLiqUtilizationRateBps?: number,
-    limitGapBps?: number
+    limitGapBps?: number,
   ): TransactionBuilder {
     const inputIsSupply = swapDetails.inputMint.equals(this.supplyMint);
     const outputIsSupply = swapDetails.outputMint.equals(this.supplyMint);
@@ -486,6 +487,7 @@ export class SolautoMarginfiClient extends SolautoClient {
       rebalanceType,
       targetLiqUtilizationRateBps: targetLiqUtilizationRateBps ?? null,
       limitGapBps: limitGapBps ?? null,
+      slippageBps: slippageBps ?? 0
     });
   }
 
@@ -625,6 +627,18 @@ export class SolautoMarginfiClient extends SolautoClient {
       this.debtMint,
       this.livePositionUpdates
     );
+
+    if (freshState) {
+      this.log("Fresh state", freshState);
+      const supplyPrice = PRICES[(freshState?.supply.mint ?? PublicKey.default).toString()].price;
+      const debtPrice = PRICES[(freshState?.debt.mint ?? PublicKey.default).toString()].price;
+      this.log("Supply price: ", supplyPrice);
+      this.log("Debt price: ", debtPrice);
+      this.log("Liq threshold bps:", freshState.liqThresholdBps);
+      this.log("Liq utilization rate bps:", freshState.liqUtilizationRateBps);
+      this.log("Supply USD:", fromBaseUnit(freshState.supply.amountUsed.baseUnit, freshState.supply.decimals) * supplyPrice);
+      this.log("Debt USD:", fromBaseUnit(freshState.debt.amountUsed.baseUnit, freshState.debt.decimals) * debtPrice);
+    }
 
     return freshState;
   }
