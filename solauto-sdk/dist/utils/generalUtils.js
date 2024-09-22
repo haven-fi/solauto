@@ -81,7 +81,7 @@ async function fetchTokenPrices(mints) {
     return prices;
 }
 function safeGetPrice(mint) {
-    if (mint.toString() in solautoConstants_1.PRICES) {
+    if (mint && mint?.toString() in solautoConstants_1.PRICES) {
         return solautoConstants_1.PRICES[mint.toString()].price;
     }
     return undefined;

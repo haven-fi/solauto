@@ -217,7 +217,7 @@ class TransactionsManager {
             this.txHandler.log("Chores before: ", choresBefore.getInstructions().length);
         }
         if (choresAfter.getInstructions().length > 0) {
-            const chore = new TransactionItem(async () => ({ tx: choresAfter }), "closing temp accounts");
+            const chore = new TransactionItem(async () => ({ tx: choresAfter }), "close temp accounts");
             await chore.initialize();
             items.push(chore);
             this.txHandler.log("Chores after: ", choresAfter.getInstructions().length);

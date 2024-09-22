@@ -94,9 +94,9 @@ export async function fetchTokenPrices(mints: PublicKey[]): Promise<number[]> {
   return prices;
 }
 
-export function safeGetPrice(mint: PublicKey | UmiPublicKey): number | undefined {
-  if (mint.toString() in PRICES) {
-    return PRICES[mint.toString()].price;
+export function safeGetPrice(mint: PublicKey | UmiPublicKey | undefined): number | undefined {
+  if (mint && mint?.toString() in PRICES) {
+    return PRICES[mint!.toString()].price;
   }
   return undefined;
 }
