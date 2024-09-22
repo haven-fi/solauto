@@ -12,7 +12,6 @@ const generalUtils_1 = require("../utils/generalUtils");
 const marginfi_sdk_1 = require("../marginfi-sdk");
 const marginfiUtils_1 = require("../utils/marginfiUtils");
 const numberUtils_1 = require("../utils/numberUtils");
-const constants_1 = require("../constants");
 const utils_1 = require("../utils");
 class SolautoMarginfiClient extends solautoClient_1.SolautoClient {
     constructor() {
@@ -418,8 +417,8 @@ class SolautoMarginfiClient extends solautoClient_1.SolautoClient {
         const freshState = await (0, marginfiUtils_1.getMarginfiAccountPositionState)(this.umi, this.marginfiAccountPk, this.supplyMint, this.debtMint, this.livePositionUpdates);
         if (freshState) {
             this.log("Fresh state", freshState);
-            const supplyPrice = constants_1.PRICES[(freshState?.supply.mint ?? web3_js_1.PublicKey.default).toString()].price;
-            const debtPrice = constants_1.PRICES[(freshState?.debt.mint ?? web3_js_1.PublicKey.default).toString()].price;
+            const supplyPrice = (0, generalUtils_1.safeGetPrice)(freshState?.supply.mint);
+            const debtPrice = (0, generalUtils_1.safeGetPrice)(freshState?.debt.mint);
             this.log("Supply price: ", supplyPrice);
             this.log("Debt price: ", debtPrice);
             this.log("Liq threshold bps:", freshState.liqThresholdBps);

@@ -331,7 +331,7 @@ export class TransactionsManager {
     if (choresAfter.getInstructions().length > 0) {
       const chore = new TransactionItem(
         async () => ({ tx: choresAfter }),
-        "closing temp accounts"
+        "close temp accounts"
       );
       await chore.initialize();
       items.push(chore);

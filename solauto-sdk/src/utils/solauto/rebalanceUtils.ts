@@ -14,7 +14,7 @@ import {
 import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 import { QuoteResponse } from "@jup-ag/api";
 import { JupSwapDetails } from "../jupiterUtils";
-import { currentUnixSeconds } from "../generalUtils";
+import { currentUnixSeconds, safeGetPrice } from "../generalUtils";
 import {
   fromBaseUnit,
   fromBps,
@@ -300,10 +300,10 @@ export function getFlashLoanDetails(
   let flashLoanTokenPrice = 0;
   if (values.increasingLeverage) {
     flashLoanToken = client.solautoPositionState!.debt;
-    flashLoanTokenPrice = PRICES[client.debtMint.toString()].price;
+    flashLoanTokenPrice = safeGetPrice(client.debtMint)!;
   } else {
     flashLoanToken = client.solautoPositionState!.supply;
-    flashLoanTokenPrice = PRICES[client.supplyMint.toString()].price;
+    flashLoanTokenPrice = safeGetPrice(client.supplyMint)!;
   }
 
   const exactAmountBaseUnit =
@@ -346,8 +346,8 @@ export function getJupSwapRebalanceDetails(
     Math.abs(values.debtAdjustmentUsd) + values.amountUsdToDcaIn;
 
   const inputPrice = values.increasingLeverage
-    ? PRICES[client.debtMint.toString()].price
-    : PRICES[client.supplyMint.toString()].price;
+    ? safeGetPrice(client.debtMint)
+    : safeGetPrice(client.supplyMint);
   const inputAmount = toBaseUnit(usdToSwap / inputPrice!, input.decimals);
 
   const rebalancingToZero = targetLiqUtilizationRateBps === 0;
@@ -355,7 +355,7 @@ export function getJupSwapRebalanceDetails(
     inputMint: toWeb3JsPublicKey(input.mint),
     outputMint: toWeb3JsPublicKey(output.mint),
     destinationWallet: client.solautoPosition,
-    slippageBpsIncFactor: 0.25 + (attemptNum ?? 0) * 0.2,
+    slippageBpsIncFactor: 0.5 + (attemptNum ?? 0) * 0.2,
     amount: rebalancingToZero
       ? client.solautoPositionState!.debt.amountUsed.baseUnit +
         BigInt(

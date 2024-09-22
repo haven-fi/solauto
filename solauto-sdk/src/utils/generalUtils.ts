@@ -1,5 +1,5 @@
 import { PublicKey } from "@solana/web3.js";
-import { MaybeRpcAccount, publicKey, Umi } from "@metaplex-foundation/umi";
+import { MaybeRpcAccount, publicKey, Umi, PublicKey as UmiPublicKey } from "@metaplex-foundation/umi";
 import { PYTH_PRICE_FEED_IDS } from "../constants/pythConstants";
 import { fromBaseUnit, toBaseUnit } from "./numberUtils";
 import { PRICES } from "../constants/solautoConstants";
@@ -45,7 +45,7 @@ export function arraysAreEqual(arrayA: number[], arrayB: number[]): boolean {
   return true;
 }
 
-export async function getTokenPrices(mints: PublicKey[]): Promise<number[]> {
+export async function fetchTokenPrices(mints: PublicKey[]): Promise<number[]> {
   const currentTime = currentUnixSeconds();
   if (
     !mints.some(
@@ -92,6 +92,13 @@ export async function getTokenPrices(mints: PublicKey[]): Promise<number[]> {
   }
 
   return prices;
+}
+
+export function safeGetPrice(mint: PublicKey | UmiPublicKey): number | undefined {
+  if (mint.toString() in PRICES) {
+    return PRICES[mint.toString()].price;
+  }
+  return undefined;
 }
 
 export type ErrorsToThrow = Array<new (...args: any[]) => Error>;

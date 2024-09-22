@@ -31,7 +31,8 @@ import {
 } from "../../src/utils/solauto/generalUtils";
 import {
   currentUnixSeconds,
-  getTokenPrices,
+  fetchTokenPrices,
+  safeGetPrice,
 } from "../../src/utils/generalUtils";
 import { USDC_MINT } from "../../src/constants/tokenConstants";
 import { PRICES } from "../../src/constants";
@@ -50,8 +51,8 @@ function assertAccurateRebalance(
       client.solautoPositionSettings(),
       client.solautoPositionActiveDca(),
       currentUnixSeconds(),
-      PRICES[client.supplyMint.toString()].price,
-      PRICES[client.debtMint.toString()].price,
+      safeGetPrice(client.supplyMint)!,
+      safeGetPrice(client.debtMint)!,
       targetLiqUtilizationRateBps
     );
 
@@ -124,7 +125,7 @@ async function getFakePosition(
     createFakePositionState(
       {
         amountUsed: supplyUsd / supplyPrice,
-        price: PRICES[NATIVE_MINT.toString()].price,
+        price: safeGetPrice(NATIVE_MINT)!,
         mint: NATIVE_MINT,
       },
       {
@@ -282,7 +283,7 @@ describe("Rebalance tests", async () => {
   let supplyPrice: number, debtPrice: number;
 
   before(async () => {
-    [supplyPrice, debtPrice] = await getTokenPrices([
+    [supplyPrice, debtPrice] = await fetchTokenPrices([
       NATIVE_MINT,
       new PublicKey(USDC_MINT),
     ]);

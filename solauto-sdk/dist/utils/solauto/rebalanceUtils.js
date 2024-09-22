@@ -138,11 +138,11 @@ function getFlashLoanDetails(client, values, jupQuote) {
     let flashLoanTokenPrice = 0;
     if (values.increasingLeverage) {
         flashLoanToken = client.solautoPositionState.debt;
-        flashLoanTokenPrice = solautoConstants_1.PRICES[client.debtMint.toString()].price;
+        flashLoanTokenPrice = (0, generalUtils_2.safeGetPrice)(client.debtMint);
     }
     else {
         flashLoanToken = client.solautoPositionState.supply;
-        flashLoanTokenPrice = solautoConstants_1.PRICES[client.supplyMint.toString()].price;
+        flashLoanTokenPrice = (0, generalUtils_2.safeGetPrice)(client.supplyMint);
     }
     const exactAmountBaseUnit = jupQuote && jupQuote.swapMode === "ExactOut"
         ? BigInt(parseInt(jupQuote.inAmount))
@@ -166,15 +166,15 @@ function getJupSwapRebalanceDetails(client, values, targetLiqUtilizationRateBps,
         : client.solautoPositionState.debt;
     const usdToSwap = Math.abs(values.debtAdjustmentUsd) + values.amountUsdToDcaIn;
     const inputPrice = values.increasingLeverage
-        ? solautoConstants_1.PRICES[client.debtMint.toString()].price
-        : solautoConstants_1.PRICES[client.supplyMint.toString()].price;
+        ? (0, generalUtils_2.safeGetPrice)(client.debtMint)
+        : (0, generalUtils_2.safeGetPrice)(client.supplyMint);
     const inputAmount = (0, numberUtils_1.toBaseUnit)(usdToSwap / inputPrice, input.decimals);
     const rebalancingToZero = targetLiqUtilizationRateBps === 0;
     return {
         inputMint: (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(input.mint),
         outputMint: (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(output.mint),
         destinationWallet: client.solautoPosition,
-        slippageBpsIncFactor: 0.25 + (attemptNum ?? 0) * 0.2,
+        slippageBpsIncFactor: 0.5 + (attemptNum ?? 0) * 0.2,
         amount: rebalancingToZero
             ? client.solautoPositionState.debt.amountUsed.baseUnit +
                 BigInt(Math.round(Number(client.solautoPositionState.debt.amountUsed.baseUnit) *

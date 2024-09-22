@@ -11,7 +11,6 @@ const umi_web3js_adapters_1 = require("@metaplex-foundation/umi-web3js-adapters"
 const marginfi_sdk_1 = require("../marginfi-sdk");
 const generalUtils_1 = require("./generalUtils");
 const numberUtils_1 = require("./numberUtils");
-const solautoConstants_1 = require("../constants/solautoConstants");
 const marginfiAccounts_1 = require("../constants/marginfiAccounts");
 const generalAccounts_1 = require("../constants/generalAccounts");
 const solanaUtils_1 = require("./solanaUtils");
@@ -36,7 +35,7 @@ async function getMaxLtvAndLiqThreshold(umi, supply, debt, supplyPrice) {
         debt.bank = await (0, marginfi_sdk_1.safeFetchBank)(umi, (0, umi_1.publicKey)(marginfiAccounts_1.MARGINFI_ACCOUNTS[debt.mint.toString()].bank));
     }
     if (!supplyPrice) {
-        const [price] = await (0, generalUtils_1.getTokenPrices)([
+        const [price] = await (0, generalUtils_1.fetchTokenPrices)([
             (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(supply.bank.mint),
         ]);
         supplyPrice = price;
@@ -101,7 +100,7 @@ async function getTokenUsage(umi, bank, isAsset, shares, amountUsedAdjustment) {
     let amountCanBeUsed = 0;
     let marketPrice = 0;
     if (bank !== null) {
-        [marketPrice] = await (0, generalUtils_1.getTokenPrices)([(0, umi_web3js_adapters_1.toWeb3JsPublicKey)(bank.mint)]);
+        [marketPrice] = await (0, generalUtils_1.fetchTokenPrices)([(0, umi_web3js_adapters_1.toWeb3JsPublicKey)(bank.mint)]);
         const [assetShareValue, liabilityShareValue] = await getUpToDateShareValues(umi, bank);
         const shareValue = isAsset ? assetShareValue : liabilityShareValue;
         amountUsed = shares * shareValue + Number(amountUsedAdjustment ?? 0);
@@ -181,7 +180,7 @@ async function getMarginfiAccountPositionState(umi, marginfiAccountPk, supplyMin
     if (!debtUsage) {
         debtUsage = await getTokenUsage(umi, debtBank, false, 0, livePositionUpdates?.debtAdjustment);
     }
-    const supplyPrice = solautoConstants_1.PRICES[supplyMint.toString()].price;
+    const supplyPrice = (0, generalUtils_1.safeGetPrice)(supplyMint);
     let [maxLtv, liqThreshold] = await getMaxLtvAndLiqThreshold(umi, {
         mint: (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(supplyBank.mint),
         bank: supplyBank,

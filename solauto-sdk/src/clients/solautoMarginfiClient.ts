@@ -32,7 +32,7 @@ import {
   marginfiRefreshData,
 } from "../generated";
 import { getMarginfiAccountPDA, getTokenAccount } from "../utils/accountUtils";
-import { generateRandomU64 } from "../utils/generalUtils";
+import { generateRandomU64, safeGetPrice } from "../utils/generalUtils";
 import {
   MARGINFI_PROGRAM_ID,
   MarginfiAccount,
@@ -630,8 +630,8 @@ export class SolautoMarginfiClient extends SolautoClient {
 
     if (freshState) {
       this.log("Fresh state", freshState);
-      const supplyPrice = PRICES[(freshState?.supply.mint ?? PublicKey.default).toString()].price;
-      const debtPrice = PRICES[(freshState?.debt.mint ?? PublicKey.default).toString()].price;
+      const supplyPrice = safeGetPrice(freshState?.supply.mint)!;
+      const debtPrice = safeGetPrice(freshState?.debt.mint)!;
       this.log("Supply price: ", supplyPrice);
       this.log("Debt price: ", debtPrice);
       this.log("Liq threshold bps:", freshState.liqThresholdBps);

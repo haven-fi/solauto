@@ -13,7 +13,7 @@ import {
   getSolautoPositionAccountDataSerializer,
   getSolautoPositionSize,
 } from "../../generated";
-import { currentUnixSeconds, getTokenPrices } from "../generalUtils";
+import { currentUnixSeconds, fetchTokenPrices } from "../generalUtils";
 import {
   fromBaseUnit,
   getLiqUtilzationRateBps,
@@ -323,7 +323,7 @@ export async function positionStateWithLatestPrices(
   debtPrice?: number
 ): Promise<PositionState> {
   if (!supplyPrice || !debtPrice) {
-    [supplyPrice, debtPrice] = await getTokenPrices([
+    [supplyPrice, debtPrice] = await fetchTokenPrices([
       toWeb3JsPublicKey(state.supply.mint),
       toWeb3JsPublicKey(state.debt.mint),
     ]);

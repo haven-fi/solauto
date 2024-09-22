@@ -213,7 +213,7 @@ async function getAllPositionsByAuthority(umi, user) {
 }
 async function positionStateWithLatestPrices(state, supplyPrice, debtPrice) {
     if (!supplyPrice || !debtPrice) {
-        [supplyPrice, debtPrice] = await (0, generalUtils_1.getTokenPrices)([
+        [supplyPrice, debtPrice] = await (0, generalUtils_1.fetchTokenPrices)([
             (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(state.supply.mint),
             (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(state.debt.mint),
         ]);

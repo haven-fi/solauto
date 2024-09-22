@@ -39,6 +39,7 @@ import {
   currentUnixSeconds,
   getSolanaAccountCreated,
   rpcAccountCreated,
+  safeGetPrice,
 } from "../utils/generalUtils";
 import { SolautoMarginfiClient } from "../clients/solautoMarginfiClient";
 import {
@@ -586,8 +587,8 @@ export async function buildSolautoRebalanceTransaction(
     client.solautoPositionSettings(),
     client.solautoPositionActiveDca(),
     currentUnixSeconds(),
-    PRICES[client.supplyMint.toString()].price,
-    PRICES[client.debtMint.toString()].price,
+    safeGetPrice(client.supplyMint)!,
+    safeGetPrice(client.debtMint)!,
     targetLiqUtilizationRateBps
   );
   client.log("Rebalance values: ", values);

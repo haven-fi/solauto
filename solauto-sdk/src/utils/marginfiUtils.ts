@@ -8,7 +8,7 @@ import {
   safeFetchBank,
   safeFetchMarginfiAccount,
 } from "../marginfi-sdk";
-import { currentUnixSeconds, getTokenPrices } from "./generalUtils";
+import { currentUnixSeconds, fetchTokenPrices, safeGetPrice } from "./generalUtils";
 import {
   bytesToI80F48,
   fromBaseUnit,
@@ -72,7 +72,7 @@ export async function getMaxLtvAndLiqThreshold(
   }
 
   if (!supplyPrice) {
-    const [price] = await getTokenPrices([
+    const [price] = await fetchTokenPrices([
       toWeb3JsPublicKey(supply.bank!.mint),
     ]);
     supplyPrice = price;
@@ -177,7 +177,7 @@ async function getTokenUsage(
   let marketPrice = 0;
 
   if (bank !== null) {
-    [marketPrice] = await getTokenPrices([toWeb3JsPublicKey(bank.mint)]);
+    [marketPrice] = await fetchTokenPrices([toWeb3JsPublicKey(bank.mint)]);
     const [assetShareValue, liabilityShareValue] = await getUpToDateShareValues(
       umi,
       bank
@@ -335,7 +335,7 @@ export async function getMarginfiAccountPositionState(
     );
   }
 
-  const supplyPrice = PRICES[supplyMint!.toString()].price;
+  const supplyPrice = safeGetPrice(supplyMint!)!;
   let [maxLtv, liqThreshold] = await getMaxLtvAndLiqThreshold(
     umi,
     {

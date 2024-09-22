@@ -6,7 +6,8 @@ exports.currentUnixSeconds = currentUnixSeconds;
 exports.getSolanaAccountCreated = getSolanaAccountCreated;
 exports.rpcAccountCreated = rpcAccountCreated;
 exports.arraysAreEqual = arraysAreEqual;
-exports.getTokenPrices = getTokenPrices;
+exports.fetchTokenPrices = fetchTokenPrices;
+exports.safeGetPrice = safeGetPrice;
 exports.retryWithExponentialBackoff = retryWithExponentialBackoff;
 const umi_1 = require("@metaplex-foundation/umi");
 const pythConstants_1 = require("../constants/pythConstants");
@@ -44,7 +45,7 @@ function arraysAreEqual(arrayA, arrayB) {
     }
     return true;
 }
-async function getTokenPrices(mints) {
+async function fetchTokenPrices(mints) {
     const currentTime = currentUnixSeconds();
     if (!mints.some((mint) => !(mint.toString() in solautoConstants_1.PRICES) ||
         currentTime - solautoConstants_1.PRICES[mint.toString()].time > 3)) {
@@ -78,6 +79,12 @@ async function getTokenPrices(mints) {
         };
     }
     return prices;
+}
+function safeGetPrice(mint) {
+    if (mint.toString() in solautoConstants_1.PRICES) {
+        return solautoConstants_1.PRICES[mint.toString()].price;
+    }
+    return undefined;
 }
 function retryWithExponentialBackoff(fn, retries = 5, delay = 150, errorsToThrow) {
     return new Promise((resolve, reject) => {

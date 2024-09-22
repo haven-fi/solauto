@@ -11,7 +11,7 @@ import {
 import { buildSolautoRebalanceTransaction } from "../../src/transactions/transactionUtils";
 import { maxBoostToBps, maxRepayFromBps, maxRepayToBps, toBaseUnit } from "../../src/utils/numberUtils";
 import { NATIVE_MINT } from "@solana/spl-token";
-import { getTokenPrices } from "../../src/utils/generalUtils";
+import { fetchTokenPrices } from "../../src/utils/generalUtils";
 import {
   TransactionItem,
   TransactionsManager,
@@ -70,7 +70,7 @@ describe("Solauto Marginfi tests", async () => {
     // const initialSupplyUsd = 150;
     // transactionItems.push(
     //   new TransactionItem(async () => {
-    //     const [supplyPrice] = await getTokenPrices([supply]);
+    //     const [supplyPrice] = await fetchTokenPrices([supply]);
     //     return {
     //       tx: client.protocolInteraction(
     //         solautoAction("Deposit", [
@@ -109,7 +109,7 @@ describe("Solauto Marginfi tests", async () => {
     // const initialSupplyUsd = 50;
     // transactionItems.push(
     //   new TransactionItem(async () => {
-    //     const [supplyPrice] = await getTokenPrices([supply]);
+    //     const [supplyPrice] = await fetchTokenPrices([supply]);
     //     return {
     //       tx: client.protocolInteraction(
     //         solautoAction("Deposit", [
