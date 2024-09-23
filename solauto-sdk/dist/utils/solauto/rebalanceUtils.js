@@ -83,7 +83,7 @@ function getRebalanceValues(state, settings, dca, currentUnixTime, supplyPrice, 
     if (state === undefined ||
         state.lastUpdated <
             BigInt(Math.round((0, generalUtils_2.currentUnixSeconds)() - solautoConstants_1.MIN_POSITION_STATE_FRESHNESS_SECS))) {
-        throw new Error("Requires a fresh position state to get rebalance details");
+        console.warn("Requires a fresh position state to get rebalance details");
     }
     const { targetRateBps, amountToDcaIn } = getTargetRateAndDcaAmount(state, settings, dca, currentUnixTime, targetLiqUtilizationRateBps);
     const amountUsdToDcaIn = (0, numberUtils_1.fromBaseUnit)(BigInt(Math.round(amountToDcaIn ?? 0)), state.debt.decimals) *

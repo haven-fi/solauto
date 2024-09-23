@@ -176,16 +176,6 @@ export function getRebalanceValues(
   targetLiqUtilizationRateBps?: number,
   limitGapBps?: number
 ): RebalanceValues {
-  if (
-    state === undefined ||
-    state.lastUpdated <
-      BigInt(
-        Math.round(currentUnixSeconds() - MIN_POSITION_STATE_FRESHNESS_SECS)
-      )
-  ) {
-    throw new Error("Requires a fresh position state to get rebalance details");
-  }
-
   const { targetRateBps, amountToDcaIn } = getTargetRateAndDcaAmount(
     state,
     settings,
