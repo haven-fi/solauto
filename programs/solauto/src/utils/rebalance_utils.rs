@@ -250,6 +250,7 @@ fn get_std_target_liq_utilization_rate(
         {
             Ok(setting_params.boost_to_bps)
         } else {
+            msg!("Invalid rebalance condition. Current utilizatiion rate is: {}", solauto_position.state.liq_utilization_rate_bps);
             return Err(SolautoError::InvalidRebalanceCondition.into());
         };
 
