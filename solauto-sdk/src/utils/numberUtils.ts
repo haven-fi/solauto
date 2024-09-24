@@ -104,7 +104,7 @@ export function getSolautoFeesBps(
   let feeBps: number = 0;
 
   if (targetLiqUtilizationRateBps !== undefined) {
-    feeBps = 10;
+    feeBps = 25;
   } else if (positionNetWorthUsd <= minSize) {
     feeBps = maxFeeBps;
   } else if (positionNetWorthUsd >= maxSize) {

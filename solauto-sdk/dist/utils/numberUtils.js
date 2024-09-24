@@ -74,7 +74,7 @@ function getSolautoFeesBps(isReferred, targetLiqUtilizationRateBps, positionNetW
     const k = 1.5;
     let feeBps = 0;
     if (targetLiqUtilizationRateBps !== undefined) {
-        feeBps = 10;
+        feeBps = 25;
     }
     else if (positionNetWorthUsd <= minSize) {
         feeBps = maxFeeBps;

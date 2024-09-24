@@ -80,11 +80,6 @@ function getTargetRateAndDcaAmount(state, settings, dca, currentUnixTime, target
     }
 }
 function getRebalanceValues(state, settings, dca, currentUnixTime, supplyPrice, debtPrice, targetLiqUtilizationRateBps, limitGapBps) {
-    if (state === undefined ||
-        state.lastUpdated <
-            BigInt(Math.round((0, generalUtils_2.currentUnixSeconds)() - solautoConstants_1.MIN_POSITION_STATE_FRESHNESS_SECS))) {
-        console.warn("Requires a fresh position state to get rebalance details");
-    }
     const { targetRateBps, amountToDcaIn } = getTargetRateAndDcaAmount(state, settings, dca, currentUnixTime, targetLiqUtilizationRateBps);
     const amountUsdToDcaIn = (0, numberUtils_1.fromBaseUnit)(BigInt(Math.round(amountToDcaIn ?? 0)), state.debt.decimals) *
         debtPrice;

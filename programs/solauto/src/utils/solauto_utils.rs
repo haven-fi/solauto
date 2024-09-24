@@ -319,7 +319,7 @@ pub fn get_solauto_fees_bps(
 
     let fee_bps: f64;
     if target_liq_utilization_rate_bps.is_some() {
-        fee_bps = 10.0;
+        fee_bps = 25.0;
     } else if position_net_worth_usd <= min_size {
         fee_bps = max_fee_bps;
     } else if position_net_worth_usd >= max_size {
