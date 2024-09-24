@@ -231,11 +231,6 @@ pub fn process_marginfi_rebalance<'a>(
             ctx.accounts.position_debt_ta.key,
         ],
     )?;
-    std_accounts
-        .solauto_position
-        .data
-        .rebalance
-        .price_slippage_bps = args.slippage_bps;
 
     rebalance::marginfi_rebalance(ctx, std_accounts, rebalance_step, args)
 }
