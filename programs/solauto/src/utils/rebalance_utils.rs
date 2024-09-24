@@ -142,12 +142,12 @@ pub fn get_rebalance_step(
     if !has_rebalance_data {
         let ix_indices = validate_rebalance_instructions(std_accounts, args.rebalance_type)?;
 
+        // Deserializing jup swap ix to pull slippage bps causes OOM issues, will return to this in the future if there is a solution.
         // let (swap_source_ta, price_slippage_bps) = ix_utils::validate_jup_instruction(
         //     std_accounts.ixs_sysvar.unwrap(),
         //     ix_indices.jup_swap,
         //     position_tas.as_slice(),
         // )?;
-
         // std_accounts
         //     .solauto_position
         //     .data
