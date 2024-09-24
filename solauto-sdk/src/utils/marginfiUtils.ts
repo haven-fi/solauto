@@ -1,5 +1,5 @@
 import { PublicKey } from "@solana/web3.js";
-import { publicKey, RpcAccount, Umi } from "@metaplex-foundation/umi";
+import { publicKey, Umi } from "@metaplex-foundation/umi";
 import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 import {
   Bank,
@@ -16,13 +16,13 @@ import {
   toBaseUnit,
   toBps,
 } from "./numberUtils";
-import { PRICES } from "../constants/solautoConstants";
 import { MARGINFI_ACCOUNTS } from "../constants/marginfiAccounts";
 import { MarginfiAssetAccounts } from "../types/accounts";
 import { PositionState, PositionTokenUsage } from "../generated";
 import { USD_DECIMALS } from "../constants/generalAccounts";
 import { LivePositionUpdates } from "./solauto/generalUtils";
 import { currentUnixSecondsSolana } from "./solanaUtils";
+import { USDC_MINT } from "../constants";
 
 export function findMarginfiAccounts(bank: PublicKey): MarginfiAssetAccounts {
   for (const key in MARGINFI_ACCOUNTS) {
