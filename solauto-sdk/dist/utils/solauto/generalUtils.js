@@ -27,7 +27,8 @@ const marginfiUtils_1 = require("../marginfiUtils");
 function findMintByTicker(ticker) {
     for (const key in constants_1.TOKEN_INFO) {
         const account = constants_1.TOKEN_INFO[key];
-        if (account.ticker.toString().toLowerCase() === ticker.toString().toLowerCase()) {
+        if (account.ticker.toString().toLowerCase() ===
+            ticker.toString().toLowerCase()) {
             return new web3_js_1.PublicKey(key);
         }
     }
@@ -102,13 +103,17 @@ async function getSolautoManagedPositions(umi, authority) {
     // position_id: [u8; 1]
     // self_managed: u8 - (1 for true, 0 for false)
     // padding: [u8; 5]
-    // authority: Pubkey
+    // authority: pubkey
     // lending_platform: u8
+    // padding: [u8; 7]
+    // protocol account: pubkey
+    // supply mint: pubkey
+    // debt mint: pubkey
     const accounts = await umi.rpc.getProgramAccounts(generated_1.SOLAUTO_PROGRAM_ID, {
         commitment: "confirmed",
         dataSlice: {
             offset: 0,
-            length: 1 + 1 + 1 + 5 + 32 + 1, // bump + position_id + self_managed + padding + authority (pubkey) + lending_platform
+            length: 1 + 1 + 1 + 5 + 32 + 1 + 7 + 32 + 32 + 32, // bump + position_id + self_managed + padding (5) + authority (pubkey) + lending_platform + padding (7) + protocol account (pubkey) + supply mint (pubkey) + debt mint (pubkey)
         },
         filters: [
             {
@@ -142,6 +147,9 @@ async function getSolautoManagedPositions(umi, authority) {
             authority: (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(position.authority),
             positionId: position.positionId[0],
             lendingPlatform: position.position.lendingPlatform,
+            protocolAccount: (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(position.position.protocolAccount),
+            supplyMint: (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(position.position.supplyMint),
+            debtMint: (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(position.position.debtMint),
         };
     });
 }
@@ -187,29 +195,32 @@ async function getReferralsByUser(umi, user) {
     return accounts.map((x) => (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(x.publicKey));
 }
 async function getAllPositionsByAuthority(umi, user) {
-    const allPositions = [];
-    const solautoManagedPositions = await getSolautoManagedPositions(umi, user);
-    allPositions.push(...solautoManagedPositions.map((x) => ({
-        publicKey: x.publicKey,
-        authority: user,
-        positionId: x.positionId,
-        lendingPlatform: x.lendingPlatform,
-    })));
-    let marginfiPositions = await (0, marginfiUtils_1.getAllMarginfiAccountsByAuthority)(umi, user, true);
-    marginfiPositions = marginfiPositions.filter((x) => x.supplyMint &&
-        (x.debtMint.equals(web3_js_1.PublicKey.default) ||
-            constants_1.ALL_SUPPORTED_TOKENS.includes(x.debtMint.toString())));
-    allPositions.push(...marginfiPositions.map((x) => ({
-        publicKey: x.marginfiAccount,
-        authority: user,
-        positionId: 0,
-        lendingPlatform: generated_1.LendingPlatform.Marginfi,
-        protocolAccount: x.marginfiAccount,
-        supplyMint: x.supplyMint,
-        debtMint: x.debtMint,
-    })));
-    // TODO support other platforms
-    return allPositions;
+    const solautoCompatiblePositions = await Promise.all([
+        (async () => {
+            const solautoManagedPositions = await getSolautoManagedPositions(umi, user);
+            return solautoManagedPositions.map((x) => ({
+                ...x,
+                authority: user,
+            }));
+        })(),
+        (async () => {
+            let marginfiPositions = await (0, marginfiUtils_1.getAllMarginfiAccountsByAuthority)(umi, user, true);
+            marginfiPositions = marginfiPositions.filter((x) => x.supplyMint &&
+                (x.debtMint.equals(web3_js_1.PublicKey.default) ||
+                    constants_1.ALL_SUPPORTED_TOKENS.includes(x.debtMint.toString())));
+            return marginfiPositions.map((x) => ({
+                publicKey: x.marginfiAccount,
+                authority: user,
+                positionId: 0,
+                lendingPlatform: generated_1.LendingPlatform.Marginfi,
+                protocolAccount: x.marginfiAccount,
+                supplyMint: x.supplyMint,
+                debtMint: x.debtMint,
+            }));
+        })(),
+        // TODO support other platforms
+    ]);
+    return solautoCompatiblePositions.flat();
 }
 async function positionStateWithLatestPrices(state, supplyPrice, debtPrice) {
     if (!supplyPrice || !debtPrice) {
@@ -320,8 +331,7 @@ function createSolautoSettings(settings) {
                 padding: new Uint8Array([]),
                 padding1: [],
             },
-        targetBoostToBps: (0, umi_1.isOption)(settings.targetBoostToBps) &&
-            (0, umi_1.isSome)(settings.targetBoostToBps)
+        targetBoostToBps: (0, umi_1.isOption)(settings.targetBoostToBps) && (0, umi_1.isSome)(settings.targetBoostToBps)
             ? settings.targetBoostToBps.value
             : 0,
         boostGap: settings.boostGap,

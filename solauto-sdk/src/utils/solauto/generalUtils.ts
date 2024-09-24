@@ -12,6 +12,7 @@ import {
   getReferralStateSize,
   getSolautoPositionAccountDataSerializer,
   getSolautoPositionSize,
+  safeFetchAllSolautoPosition,
 } from "../../generated";
 import { currentUnixSeconds, fetchTokenPrices } from "../generalUtils";
 import {
@@ -33,7 +34,8 @@ export function findMintByTicker(ticker: string): PublicKey {
   for (const key in TOKEN_INFO) {
     const account = TOKEN_INFO[key];
     if (
-      account.ticker.toString().toLowerCase() === ticker.toString().toLowerCase()
+      account.ticker.toString().toLowerCase() ===
+      ticker.toString().toLowerCase()
     ) {
       return new PublicKey(key);
     }
@@ -176,14 +178,18 @@ export async function getSolautoManagedPositions(
   // position_id: [u8; 1]
   // self_managed: u8 - (1 for true, 0 for false)
   // padding: [u8; 5]
-  // authority: Pubkey
+  // authority: pubkey
   // lending_platform: u8
+  // padding: [u8; 7]
+  // protocol account: pubkey
+  // supply mint: pubkey
+  // debt mint: pubkey
 
   const accounts = await umi.rpc.getProgramAccounts(SOLAUTO_PROGRAM_ID, {
     commitment: "confirmed",
     dataSlice: {
       offset: 0,
-      length: 1 + 1 + 1 + 5 + 32 + 1, // bump + position_id + self_managed + padding + authority (pubkey) + lending_platform
+      length: 1 + 1 + 1 + 5 + 32 + 1 + 7 + 32 + 32 + 32, // bump + position_id + self_managed + padding (5) + authority (pubkey) + lending_platform + padding (7) + protocol account (pubkey) + supply mint (pubkey) + debt mint (pubkey)
     },
     filters: [
       {
@@ -220,6 +226,9 @@ export async function getSolautoManagedPositions(
       authority: toWeb3JsPublicKey(position.authority),
       positionId: position.positionId[0],
       lendingPlatform: position.position.lendingPlatform,
+      protocolAccount: toWeb3JsPublicKey(position.position.protocolAccount),
+      supplyMint: toWeb3JsPublicKey(position.position.supplyMint),
+      debtMint: toWeb3JsPublicKey(position.position.debtMint),
     };
   });
 }
@@ -277,44 +286,44 @@ export async function getAllPositionsByAuthority(
   umi: Umi,
   user: PublicKey
 ): Promise<SolautoPositionDetails[]> {
-  const allPositions: SolautoPositionDetails[] = [];
+  const solautoCompatiblePositions: SolautoPositionDetails[][] =
+    await Promise.all([
+      (async () => {
+        const solautoManagedPositions = await getSolautoManagedPositions(
+          umi,
+          user
+        );
+        return solautoManagedPositions.map((x) => ({
+          ...x,
+          authority: user,
+        }));
+      })(),
+      (async () => {
+        let marginfiPositions = await getAllMarginfiAccountsByAuthority(
+          umi,
+          user,
+          true
+        );
+        marginfiPositions = marginfiPositions.filter(
+          (x) =>
+            x.supplyMint &&
+            (x.debtMint!.equals(PublicKey.default) ||
+              ALL_SUPPORTED_TOKENS.includes(x.debtMint!.toString()))
+        );
+        return marginfiPositions.map((x) => ({
+          publicKey: x.marginfiAccount,
+          authority: user,
+          positionId: 0,
+          lendingPlatform: LendingPlatform.Marginfi,
+          protocolAccount: x.marginfiAccount,
+          supplyMint: x.supplyMint,
+          debtMint: x.debtMint,
+        }));
+      })(),
+      // TODO support other platforms
+    ]);
 
-  const solautoManagedPositions = await getSolautoManagedPositions(umi, user);
-  allPositions.push(
-    ...solautoManagedPositions.map((x) => ({
-      publicKey: x.publicKey,
-      authority: user,
-      positionId: x.positionId,
-      lendingPlatform: x.lendingPlatform,
-    }))
-  );
-
-  let marginfiPositions = await getAllMarginfiAccountsByAuthority(
-    umi,
-    user,
-    true
-  );
-  marginfiPositions = marginfiPositions.filter(
-    (x) =>
-      x.supplyMint &&
-      (x.debtMint!.equals(PublicKey.default) ||
-        ALL_SUPPORTED_TOKENS.includes(x.debtMint!.toString()))
-  );
-  allPositions.push(
-    ...marginfiPositions.map((x) => ({
-      publicKey: x.marginfiAccount,
-      authority: user,
-      positionId: 0,
-      lendingPlatform: LendingPlatform.Marginfi,
-      protocolAccount: x.marginfiAccount,
-      supplyMint: x.supplyMint,
-      debtMint: x.debtMint,
-    }))
-  );
-
-  // TODO support other platforms
-
-  return allPositions;
+  return solautoCompatiblePositions.flat();
 }
 
 export async function positionStateWithLatestPrices(
@@ -441,15 +450,15 @@ export function createFakePositionState(
   };
 }
 
-export function createSolautoSettings(settings: SolautoSettingsParametersInpArgs): SolautoSettingsParameters {
+export function createSolautoSettings(
+  settings: SolautoSettingsParametersInpArgs
+): SolautoSettingsParameters {
   return {
     automation:
       isOption(settings.automation) && isSome(settings.automation)
         ? {
             ...settings.automation.value,
-            intervalSeconds: BigInt(
-              settings.automation.value.intervalSeconds
-            ),
+            intervalSeconds: BigInt(settings.automation.value.intervalSeconds),
             unixStartDate: BigInt(settings.automation.value.unixStartDate),
             padding: new Uint8Array([]),
             padding1: [],
@@ -463,8 +472,7 @@ export function createSolautoSettings(settings: SolautoSettingsParametersInpArgs
             padding1: [],
           },
     targetBoostToBps:
-      isOption(settings.targetBoostToBps) &&
-      isSome(settings.targetBoostToBps)
+      isOption(settings.targetBoostToBps) && isSome(settings.targetBoostToBps)
         ? settings.targetBoostToBps.value
         : 0,
     boostGap: settings.boostGap,
