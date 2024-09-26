@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.getRebalanceValues = getRebalanceValues;
 exports.getFlashLoanDetails = getFlashLoanDetails;
 exports.getJupSwapRebalanceDetails = getJupSwapRebalanceDetails;
+const generated_1 = require("../../generated");
 const generalUtils_1 = require("./generalUtils");
 const umi_web3js_adapters_1 = require("@metaplex-foundation/umi-web3js-adapters");
 const generalUtils_2 = require("../generalUtils");
@@ -10,10 +11,10 @@ const numberUtils_1 = require("../numberUtils");
 const generalAccounts_1 = require("../../constants/generalAccounts");
 const solautoConstants_1 = require("../../constants/solautoConstants");
 function getAdditionalAmountToDcaIn(dca) {
-    if (dca.debtToAddBaseUnit === BigInt(0)) {
+    if (dca.dcaInBaseUnit === BigInt(0)) {
         return 0;
     }
-    const debtBalance = Number(dca.debtToAddBaseUnit);
+    const debtBalance = Number(dca.dcaInBaseUnit);
     const updatedDebtBalance = (0, generalUtils_1.getUpdatedValueFromAutomation)(debtBalance, 0, dca.automation, (0, generalUtils_2.currentUnixSeconds)());
     return debtBalance - updatedDebtBalance;
 }
@@ -34,7 +35,7 @@ function getStandardTargetLiqUtilizationRateBps(state, settings) {
 function targetLiqUtilizationRateBpsFromDCA(state, settings, dca, currentUnixTime) {
     const adjustedSettings = (0, generalUtils_1.getAdjustedSettingsFromAutomation)(settings, currentUnixTime);
     let targetRateBps = 0;
-    if (dca.debtToAddBaseUnit > BigInt(0)) {
+    if (dca.dcaInBaseUnit > BigInt(0)) {
         targetRateBps = Math.max(state.liqUtilizationRateBps, adjustedSettings.boostToBps);
     }
     else {
@@ -110,10 +111,11 @@ function getRebalanceValues(state, settings, dca, currentUnixTime, supplyPrice, 
         debtAdjustmentUsd,
         amountToDcaIn: amountToDcaIn ?? 0,
         amountUsdToDcaIn,
+        dcaTokenType: dca?.tokenType
     };
 }
 function getFlashLoanDetails(client, values, jupQuote) {
-    let supplyUsd = (0, numberUtils_1.fromBaseUnit)(client.solautoPositionState.supply.amountUsed.baseAmountUsdValue, generalAccounts_1.USD_DECIMALS);
+    let supplyUsd = (0, numberUtils_1.fromBaseUnit)(client.solautoPositionState.supply.amountUsed.baseAmountUsdValue, generalAccounts_1.USD_DECIMALS) + (values.dcaTokenType === generated_1.TokenType.Supply ? values.amountUsdToDcaIn : 0);
     let debtUsd = (0, numberUtils_1.fromBaseUnit)(client.solautoPositionState.debt.amountUsed.baseAmountUsdValue, generalAccounts_1.USD_DECIMALS);
     const debtAdjustmentWithSlippage = Math.abs(values.debtAdjustmentUsd) +
         Math.abs(values.debtAdjustmentUsd) * (0, numberUtils_1.fromBps)(jupQuote.slippageBps);
@@ -159,7 +161,7 @@ function getJupSwapRebalanceDetails(client, values, targetLiqUtilizationRateBps,
     const output = values.increasingLeverage
         ? client.solautoPositionState.supply
         : client.solautoPositionState.debt;
-    const usdToSwap = Math.abs(values.debtAdjustmentUsd) + values.amountUsdToDcaIn;
+    const usdToSwap = Math.abs(values.debtAdjustmentUsd) + (values.dcaTokenType === generated_1.TokenType.Debt ? values.amountUsdToDcaIn : 0);
     const inputPrice = values.increasingLeverage
         ? (0, generalUtils_2.safeGetPrice)(client.debtMint)
         : (0, generalUtils_2.safeGetPrice)(client.supplyMint);

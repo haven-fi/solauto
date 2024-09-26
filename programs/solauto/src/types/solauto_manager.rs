@@ -4,6 +4,7 @@ use solana_program::{
     program_error::ProgramError, sysvar::Sysvar,
 };
 use solana_utils::spl_token_transfer;
+use spl_token::state::Account as TokenAccount;
 use std::{
     cmp::min,
     ops::{Add, Div, Mul, Sub},
@@ -12,7 +13,7 @@ use std::{
 use super::{
     instruction::{RebalanceSettings, SolautoAction, SolautoStandardAccounts},
     lending_protocol::{LendingProtocolClient, LendingProtocolTokenAccounts},
-    shared::{FeeType, RefreshStateProps, SolautoError, TokenBalanceAmount, TokenType},
+    shared::{DeserializedAccount, RefreshStateProps, SolautoError, TokenBalanceAmount, TokenType},
 };
 use crate::{
     constants::DEFAULT_LIMIT_GAP_BPS,
@@ -139,27 +140,14 @@ impl<'a> SolautoManager<'a> {
             SolautoAction::Borrow(base_unit_amount) => {
                 self.borrow(
                     base_unit_amount,
-                    self.accounts
-                        .debt
-                        .position_ta
-                        .as_ref()
-                        .unwrap()
-                        .account_info,
+                    self.accounts.debt.position_ta.as_ref().unwrap(),
                 )?;
             }
             SolautoAction::Repay(amount) => {
                 self.repay(amount)?;
             }
             SolautoAction::Withdraw(amount) => {
-                self.withdraw(
-                    amount,
-                    self.accounts
-                        .supply
-                        .position_ta
-                        .as_ref()
-                        .unwrap()
-                        .account_info,
-                )?;
+                self.withdraw(amount, self.accounts.supply.position_ta.as_ref().unwrap())?;
             }
         }
         Ok(())
@@ -174,19 +162,26 @@ impl<'a> SolautoManager<'a> {
         )?;
 
         if amount_to_dca_in.is_some() {
-            solana_utils::spl_token_transfer(
-                self.std_accounts.token_program,
-                self.accounts
-                    .debt
-                    .position_ta
-                    .as_ref()
-                    .unwrap()
-                    .account_info,
-                self.std_accounts.solauto_position.account_info,
-                self.accounts.intermediary_ta.unwrap(),
-                amount_to_dca_in.unwrap(),
-                Some(&self.std_accounts.solauto_position.data.seeds_with_bump()),
-            )?;
+            if self
+                .std_accounts
+                .solauto_position
+                .data
+                .position
+                .dca
+                .token_type
+                == TokenType::Supply
+            {
+                self.deposit(amount_to_dca_in.unwrap())?;
+            } else {
+                solana_utils::spl_token_transfer(
+                    self.std_accounts.token_program,
+                    self.accounts.debt.position_ta.as_ref().unwrap(),
+                    self.std_accounts.solauto_position.account_info,
+                    self.accounts.intermediary_ta.unwrap(),
+                    amount_to_dca_in.unwrap(),
+                    Some(&self.std_accounts.solauto_position.data.seeds_with_bump()),
+                )?;
+            }
         }
 
         if self
@@ -270,31 +265,51 @@ impl<'a> SolautoManager<'a> {
             self.validate_flash_loan_amount(flash_loan_amount, debt_adjustment_usd)?;
         }
 
-        let position_supply_ta = self.accounts.supply.position_ta.as_ref().unwrap();
-        let position_debt_ta = self.accounts.debt.position_ta.as_ref().unwrap();
-
-        let available_supply_balance = position_supply_ta.data.amount;
-
-        let available_debt_balance = if self.std_accounts.solauto_position.data.self_managed.val {
-            position_debt_ta.data.amount
-        } else {
-            position_debt_ta.data.amount
-                - self
+        let mut available_supply_balance =
+            DeserializedAccount::<TokenAccount>::unpack(self.accounts.supply.position_ta)?
+                .unwrap()
+                .data
+                .amount;
+        let mut available_debt_balance =
+            DeserializedAccount::<TokenAccount>::unpack(self.accounts.debt.position_ta)?
+                .unwrap()
+                .data
+                .amount;
+        if !self.std_accounts.solauto_position.data.self_managed.val {
+            if self
+                .std_accounts
+                .solauto_position
+                .data
+                .position
+                .dca
+                .token_type
+                == TokenType::Supply
+            {
+                available_supply_balance -= self
                     .std_accounts
                     .solauto_position
                     .data
                     .position
                     .dca
-                    .debt_to_add_base_unit
-        };
+                    .dca_in_base_unit;
+            } else {
+                available_debt_balance -= self
+                    .std_accounts
+                    .solauto_position
+                    .data
+                    .position
+                    .dca
+                    .dca_in_base_unit;
+            }
+        }
 
-        let transfer_to_signer_ta = |token_accounts: &LendingProtocolTokenAccounts<'a>,
-                                     amount: u64| {
+        let transfer_to_authority_ta = |token_accounts: &LendingProtocolTokenAccounts<'a>,
+                                        amount: u64| {
             spl_token_transfer(
                 self.std_accounts.token_program,
-                token_accounts.position_ta.clone().unwrap().account_info,
+                token_accounts.position_ta.clone().unwrap(),
                 self.std_accounts.solauto_position.account_info,
-                token_accounts.signer_ta.clone().unwrap().account_info,
+                token_accounts.authority_ta.clone().unwrap(),
                 amount,
                 Some(&self.std_accounts.solauto_position.data.seeds_with_bump()),
             )
@@ -304,7 +319,7 @@ impl<'a> SolautoManager<'a> {
         if boosting {
             let amount_after_fees = self.payout_fees(available_supply_balance)?;
             if self.std_accounts.solauto_position.data.self_managed.val {
-                transfer_to_signer_ta(&self.accounts.supply, amount_after_fees)?;
+                transfer_to_authority_ta(&self.accounts.supply, amount_after_fees)?;
             }
             self.deposit(amount_after_fees)?;
         } else if available_debt_balance > 0 {
@@ -330,7 +345,7 @@ impl<'a> SolautoManager<'a> {
                 ))
             };
             if self.std_accounts.solauto_position.data.self_managed.val {
-                transfer_to_signer_ta(&self.accounts.debt, available_debt_balance)?;
+                transfer_to_authority_ta(&self.accounts.debt, available_debt_balance)?;
             }
             self.repay(amount)?;
         } else {
@@ -367,9 +382,6 @@ impl<'a> SolautoManager<'a> {
         }
 
         self.std_accounts.solauto_position.data.rebalance = RebalanceData::default();
-        if !self.std_accounts.solauto_position.data.self_managed.val {
-            self.std_accounts.solauto_position.data.fee_type = FeeType::Default;
-        }
         Ok(())
     }
 
@@ -389,7 +401,7 @@ impl<'a> SolautoManager<'a> {
 
         solana_utils::spl_token_transfer(
             self.std_accounts.token_program,
-            position_supply_ta.account_info,
+            position_supply_ta,
             self.std_accounts.solauto_position.account_info,
             self.std_accounts.solauto_fees_supply_ta.unwrap(),
             solauto_fees,
@@ -403,7 +415,7 @@ impl<'a> SolautoManager<'a> {
         if referrer_fees > 0 {
             solana_utils::spl_token_transfer(
                 self.std_accounts.token_program,
-                position_supply_ta.account_info,
+                position_supply_ta,
                 self.std_accounts.solauto_position.account_info,
                 self.std_accounts.referred_by_supply_ta.unwrap(),
                 referrer_fees,

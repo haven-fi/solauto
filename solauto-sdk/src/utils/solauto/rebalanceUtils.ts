@@ -5,6 +5,7 @@ import {
   PositionState,
   PositionTokenUsage,
   SolautoSettingsParameters,
+  TokenType,
 } from "../../generated";
 import {
   eligibleForNextAutomationPeriod,
@@ -27,16 +28,14 @@ import {
 import { USD_DECIMALS } from "../../constants/generalAccounts";
 import {
   DEFAULT_LIMIT_GAP_BPS,
-  MIN_POSITION_STATE_FRESHNESS_SECS,
-  PRICES,
 } from "../../constants/solautoConstants";
 
 function getAdditionalAmountToDcaIn(dca: DCASettings): number {
-  if (dca.debtToAddBaseUnit === BigInt(0)) {
+  if (dca.dcaInBaseUnit === BigInt(0)) {
     return 0;
   }
 
-  const debtBalance = Number(dca.debtToAddBaseUnit);
+  const debtBalance = Number(dca.dcaInBaseUnit);
   const updatedDebtBalance = getUpdatedValueFromAutomation(
     debtBalance,
     0,
@@ -80,7 +79,7 @@ function targetLiqUtilizationRateBpsFromDCA(
   );
 
   let targetRateBps = 0;
-  if (dca.debtToAddBaseUnit > BigInt(0)) {
+  if (dca.dcaInBaseUnit > BigInt(0)) {
     targetRateBps = Math.max(
       state.liqUtilizationRateBps,
       adjustedSettings.boostToBps
@@ -126,7 +125,7 @@ function getTargetRateAndDcaAmount(
   dca: DCASettings | undefined,
   currentUnixTime: number,
   targetLiqUtilizationRateBps?: number
-): { targetRateBps: number; amountToDcaIn?: number } {
+): { targetRateBps: number; amountToDcaIn?: number; } {
   if (targetLiqUtilizationRateBps !== undefined) {
     return {
       targetRateBps: targetLiqUtilizationRateBps,
@@ -164,6 +163,7 @@ export interface RebalanceValues {
   debtAdjustmentUsd: number;
   amountToDcaIn: number;
   amountUsdToDcaIn: number;
+  dcaTokenType?: TokenType;
 }
 
 export function getRebalanceValues(
@@ -238,6 +238,7 @@ export function getRebalanceValues(
     debtAdjustmentUsd,
     amountToDcaIn: amountToDcaIn ?? 0,
     amountUsdToDcaIn,
+    dcaTokenType: dca?.tokenType
   };
 }
 
@@ -254,7 +255,7 @@ export function getFlashLoanDetails(
   let supplyUsd = fromBaseUnit(
     client.solautoPositionState!.supply.amountUsed.baseAmountUsdValue,
     USD_DECIMALS
-  );
+  ) + (values.dcaTokenType === TokenType.Supply ? values.amountUsdToDcaIn : 0);
   let debtUsd = fromBaseUnit(
     client.solautoPositionState!.debt.amountUsed.baseAmountUsdValue,
     USD_DECIMALS
@@ -333,7 +334,7 @@ export function getJupSwapRebalanceDetails(
     : client.solautoPositionState!.debt;
 
   const usdToSwap =
-    Math.abs(values.debtAdjustmentUsd) + values.amountUsdToDcaIn;
+    Math.abs(values.debtAdjustmentUsd) + (values.dcaTokenType === TokenType.Debt ? values.amountUsdToDcaIn : 0);
 
   const inputPrice = values.increasingLeverage
     ? safeGetPrice(client.debtMint)

@@ -45,20 +45,20 @@ function updatePosition(context, input) {
             isWritable: true,
             value: input.solautoPosition ?? null,
         },
-        debtMint: {
+        dcaMint: {
             index: 4,
             isWritable: false,
-            value: input.debtMint ?? null,
+            value: input.dcaMint ?? null,
         },
-        positionDebtTa: {
+        positionDcaTa: {
             index: 5,
             isWritable: true,
-            value: input.positionDebtTa ?? null,
+            value: input.positionDcaTa ?? null,
         },
-        signerDebtTa: {
+        signerDcaTa: {
             index: 6,
             isWritable: true,
-            value: input.signerDebtTa ?? null,
+            value: input.signerDcaTa ?? null,
         },
     };
     // Arguments.

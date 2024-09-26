@@ -1,6 +1,6 @@
 import { PublicKey } from "@solana/web3.js";
 import { Umi } from "@metaplex-foundation/umi";
-import { AutomationSettings, DCASettings, DCASettingsInpArgs, PositionState, SolautoSettingsParameters, SolautoSettingsParametersInpArgs } from "../../generated";
+import { AutomationSettings, DCASettings, DCASettingsInpArgs, PositionState, SolautoSettingsParameters, SolautoSettingsParametersInpArgs, TokenType } from "../../generated";
 import { RebalanceAction, SolautoPositionDetails } from "../../types/solauto";
 export declare function findMintByTicker(ticker: string): PublicKey;
 export declare function nextAutomationPeriodTimestamp(automation: AutomationSettings): number;
@@ -28,21 +28,31 @@ type PositionAdjustment = {
     type: "debt";
     value: bigint;
 } | {
-    type: "debtDcaIn";
-    value: bigint;
-} | {
     type: "settings";
     value: SolautoSettingsParametersInpArgs;
 } | {
     type: "dca";
     value: DCASettingsInpArgs;
+} | {
+    type: "dcaInBalance";
+    value: {
+        amount: bigint;
+        tokenType: TokenType;
+    };
+} | {
+    type: "cancellingDca";
+    value: TokenType;
 };
 export declare class LivePositionUpdates {
     supplyAdjustment: bigint;
     debtAdjustment: bigint;
-    debtTaBalanceAdjustment: bigint;
     settings: SolautoSettingsParameters | undefined;
     activeDca: DCASettings | undefined;
+    dcaInBalance?: {
+        amount: bigint;
+        tokenType: TokenType;
+    };
+    cancellingDca: TokenType | undefined;
     new(update: PositionAdjustment): void;
     reset(): void;
     hasUpdates(): boolean;

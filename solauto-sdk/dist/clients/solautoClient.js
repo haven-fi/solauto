@@ -190,10 +190,13 @@ class SolautoClient extends txHandler_1.TxHandler {
             this.solautoPositionData?.position.dca);
     }
     openPosition(settingParams, dca) {
-        if (dca && dca.debtToAddBaseUnit > 0) {
+        if (dca && dca.dcaInBaseUnit > 0) {
             this.livePositionUpdates.new({
-                type: "debtDcaIn",
-                value: BigInt(dca.debtToAddBaseUnit),
+                type: "dcaInBalance",
+                value: {
+                    amount: BigInt(dca.dcaInBaseUnit),
+                    tokenType: dca.tokenType
+                },
             });
         }
         if (settingParams) {
@@ -211,30 +214,32 @@ class SolautoClient extends txHandler_1.TxHandler {
         return (0, umi_1.transactionBuilder)();
     }
     updatePositionIx(args) {
-        let debtMint = undefined;
-        let positionDebtTa = undefined;
-        let signerDebtTa = undefined;
+        let dcaMint = undefined;
+        let positionDcaTa = undefined;
+        let signerDcaTa = undefined;
         if ((0, umi_1.isOption)(args.dca) && (0, umi_1.isSome)(args.dca)) {
-            debtMint = (0, umi_1.publicKey)(this.debtMint);
-            positionDebtTa = (0, umi_1.publicKey)(this.positionDebtTa);
-            signerDebtTa = (0, umi_1.publicKey)(this.signerDebtTa);
+            if (args.dca.value.tokenType === generated_1.TokenType.Supply) {
+                dcaMint = (0, umi_1.publicKey)(this.supplyMint);
+                positionDcaTa = (0, umi_1.publicKey)(this.positionSupplyTa);
+                signerDcaTa = (0, umi_1.publicKey)(this.signerSupplyTa);
+            }
+            else {
+                dcaMint = (0, umi_1.publicKey)(this.debtMint);
+                positionDcaTa = (0, umi_1.publicKey)(this.positionDebtTa);
+                signerDcaTa = (0, umi_1.publicKey)(this.signerDebtTa);
+            }
             let addingToPos = false;
             if ((0, umi_1.isOption)(args.dca) &&
                 (0, umi_1.isSome)(args.dca) &&
-                args.dca.value.debtToAddBaseUnit > 0) {
+                args.dca.value.dcaInBaseUnit > 0) {
                 this.livePositionUpdates.new({
-                    type: "debtDcaIn",
-                    value: BigInt(args.dca.value.debtToAddBaseUnit),
+                    type: "dcaInBalance",
+                    value: {
+                        amount: BigInt(args.dca.value.dcaInBaseUnit),
+                        tokenType: args.dca.value.tokenType
+                    },
                 });
                 addingToPos = true;
-            }
-            if (this.solautoPositionData?.position.dca.debtToAddBaseUnit &&
-                !addingToPos) {
-                this.livePositionUpdates.new({
-                    type: "debtDcaIn",
-                    value: this.solautoPositionData.position.dca.debtToAddBaseUnit *
-                        BigInt(-1),
-                });
             }
         }
         if ((0, umi_1.isOption)(args.settingParams) && (0, umi_1.isSome)(args.settingParams)) {
@@ -252,9 +257,9 @@ class SolautoClient extends txHandler_1.TxHandler {
         return (0, generated_1.updatePosition)(this.umi, {
             signer: this.signer,
             solautoPosition: (0, umi_1.publicKey)(this.solautoPosition),
-            debtMint,
-            positionDebtTa,
-            signerDebtTa,
+            dcaMint,
+            positionDcaTa,
+            signerDcaTa,
             updatePositionData: args,
         });
     }
@@ -270,27 +275,32 @@ class SolautoClient extends txHandler_1.TxHandler {
         });
     }
     cancelDCAIx() {
-        let debtMint = undefined;
-        let positionDebtTa = undefined;
-        let signerDebtTa = undefined;
-        if (this.solautoPositionData !== null && !this.selfManaged) {
-            const positionData = this.solautoPositionData.position;
-            if (positionData.dca.debtToAddBaseUnit) {
-                debtMint = (0, umi_1.publicKey)(this.debtMint);
-                positionDebtTa = (0, umi_1.publicKey)(this.positionDebtTa);
-                signerDebtTa = (0, umi_1.publicKey)(this.signerDebtTa);
-                this.livePositionUpdates.new({
-                    type: "debtDcaIn",
-                    value: positionData.dca.debtToAddBaseUnit * BigInt(-1),
-                });
+        let dcaMint = undefined;
+        let positionDcaTa = undefined;
+        let signerDcaTa = undefined;
+        const currDca = this.solautoPositionActiveDca();
+        if (currDca.dcaInBaseUnit > 0) {
+            if (currDca.tokenType === generated_1.TokenType.Supply) {
+                dcaMint = (0, umi_1.publicKey)(this.supplyMint);
+                positionDcaTa = (0, umi_1.publicKey)(this.positionSupplyTa);
+                signerDcaTa = (0, umi_1.publicKey)(this.signerSupplyTa);
             }
+            else {
+                dcaMint = (0, umi_1.publicKey)(this.debtMint);
+                positionDcaTa = (0, umi_1.publicKey)(this.positionDebtTa);
+                signerDcaTa = (0, umi_1.publicKey)(this.signerDebtTa);
+            }
+            this.livePositionUpdates.new({
+                type: "cancellingDca",
+                value: this.solautoPositionData.position.dca.tokenType,
+            });
         }
         return (0, generated_1.cancelDCA)(this.umi, {
             signer: this.signer,
             solautoPosition: (0, umi_1.publicKey)(this.solautoPosition),
-            debtMint,
-            positionDebtTa,
-            signerDebtTa,
+            dcaMint,
+            positionDcaTa,
+            signerDcaTa,
         });
     }
     protocolInteraction(args) {

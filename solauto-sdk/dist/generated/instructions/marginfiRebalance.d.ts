@@ -24,13 +24,13 @@ export type MarginfiRebalanceInstructionAccounts = {
     supplyBank: PublicKey | Pda;
     supplyPriceOracle?: PublicKey | Pda;
     positionSupplyTa: PublicKey | Pda;
-    signerSupplyTa?: PublicKey | Pda;
+    authoritySupplyTa?: PublicKey | Pda;
     vaultSupplyTa?: PublicKey | Pda;
     supplyVaultAuthority?: PublicKey | Pda;
     debtBank: PublicKey | Pda;
     debtPriceOracle?: PublicKey | Pda;
     positionDebtTa: PublicKey | Pda;
-    signerDebtTa?: PublicKey | Pda;
+    authorityDebtTa?: PublicKey | Pda;
     vaultDebtTa?: PublicKey | Pda;
     debtVaultAuthority?: PublicKey | Pda;
 };

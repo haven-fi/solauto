@@ -402,9 +402,9 @@ impl<'a> GeneralTestData<'a> {
         builder
             .signer(self.ctx.payer.pubkey())
             .solauto_position(self.solauto_position)
-            .debt_mint(Some(self.debt_mint.pubkey()))
-            .position_debt_ta(Some(self.position_debt_ta))
-            .signer_debt_ta(Some(self.signer_debt_ta))
+            .dca_mint(Some(self.debt_mint.pubkey()))
+            .position_dca_ta(Some(self.position_debt_ta))
+            .signer_dca_ta(Some(self.signer_debt_ta))
             .update_position_data(position_data);
         builder
     }
@@ -435,9 +435,9 @@ impl<'a> GeneralTestData<'a> {
         builder
             .signer(self.ctx.payer.pubkey())
             .solauto_position(self.solauto_position)
-            .debt_mint(Some(self.debt_mint.pubkey()))
-            .position_debt_ta(Some(self.position_debt_ta))
-            .signer_debt_ta(Some(self.signer_debt_ta));
+            .dca_mint(Some(self.debt_mint.pubkey()))
+            .position_dca_ta(Some(self.position_debt_ta))
+            .signer_dca_ta(Some(self.signer_debt_ta));
         builder
     }
 }

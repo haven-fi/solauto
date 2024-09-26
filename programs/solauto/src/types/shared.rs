@@ -42,10 +42,20 @@ impl PodBool {
     }
 }
 
-#[derive(PartialEq)]
+#[repr(u8)]
+#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, PartialEq, Copy)]
 pub enum TokenType {
     Supply,
     Debt,
+}
+
+unsafe impl Zeroable for TokenType {}
+unsafe impl Pod for TokenType {}
+
+impl Default for TokenType {
+    fn default() -> Self {
+        TokenType::Supply
+    }
 }
 
 impl fmt::Display for TokenType {
@@ -56,16 +66,6 @@ impl fmt::Display for TokenType {
         }
     }
 }
-
-#[repr(u8)]
-#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, PartialEq, Copy)]
-pub enum FeeType {
-    Small,
-    Default,
-}
-
-unsafe impl Zeroable for FeeType {}
-unsafe impl Pod for FeeType {}
 
 #[derive(Debug)]
 pub struct RefreshedTokenData {

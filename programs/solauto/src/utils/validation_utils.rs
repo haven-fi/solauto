@@ -162,10 +162,6 @@ pub fn validate_position_settings(
 
     if data.setting_params.automation.is_active() {
         validate_automation_settings(&data.setting_params.automation, current_unix_timestamp)?;
-    } else if data.dca.is_active() && !data.dca.dca_in() {
-        return invalid_params(
-            "target_boost_to_bps & settings automation must be set if position has an active_dca without a debt_to_add_base_unit"
-        );
     }
 
     if data.setting_params.target_boost_to_bps > MAX_BASIS_POINTS {
@@ -384,23 +380,20 @@ pub fn validate_lending_program_accounts_with_position<'a>(
     Ok(())
 }
 
-pub fn validate_token_accounts(
-    signer: &AccountInfo,
-    solauto_position: &DeserializedAccount<SolautoPosition>,
-    source_supply_ta: Option<&DeserializedAccount<TokenAccount>>,
-    source_debt_ta: Option<&DeserializedAccount<TokenAccount>>,
+pub fn validate_token_accounts<'a, 'b>(
+    solauto_position: &'b DeserializedAccount<'a, SolautoPosition>,
+    source_supply_ta: Option<&'a AccountInfo<'a>>,
+    source_debt_ta: Option<&'a AccountInfo<'a>>,
 ) -> ProgramResult {
     validate_token_account(
-        signer,
         solauto_position,
-        source_supply_ta,
+        DeserializedAccount::<TokenAccount>::unpack(source_supply_ta)?.as_ref(),
         Some(TokenType::Supply),
         None,
     )?;
     validate_token_account(
-        signer,
         solauto_position,
-        source_debt_ta,
+        DeserializedAccount::<TokenAccount>::unpack(source_debt_ta)?.as_ref(),
         Some(TokenType::Debt),
         None,
     )?;
@@ -408,14 +401,13 @@ pub fn validate_token_accounts(
 }
 
 pub fn validate_token_account(
-    signer: &AccountInfo,
     solauto_position: &DeserializedAccount<SolautoPosition>,
     source_ta: Option<&DeserializedAccount<TokenAccount>>,
     token_type: Option<TokenType>,
     token_mint: Option<&Pubkey>,
 ) -> ProgramResult {
     if source_ta.is_some()
-        && !token_account_owned_by(source_ta.unwrap(), signer.key)
+        && !token_account_owned_by(source_ta.unwrap(), &solauto_position.data.authority)
         && !token_account_owned_by(source_ta.unwrap(), solauto_position.account_info.key)
     {
         msg!(

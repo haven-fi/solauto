@@ -7,7 +7,7 @@ use crate::{
             accounts::{Context, UpdatePositionAccounts},
             UpdatePositionData,
         },
-        shared::{DeserializedAccount, SolautoError},
+        shared::{DeserializedAccount, SolautoError, TokenType},
     },
     utils::{ix_utils, solana_utils, solauto_utils, validation_utils},
 };
@@ -40,26 +40,22 @@ fn update_dca<'a, 'b>(
 ) -> ProgramResult {
     let new_dca = new_data.dca.as_ref().unwrap();
 
-    if solauto_position.data.position.dca.is_active()
-        && solauto_position.data.position.dca.dca_in()
-        && solauto_position.data.position.dca.debt_to_add_base_unit > 0
+    if solauto_position.data.position.dca.is_active() && solauto_position.data.position.dca.dca_in()
     {
-        solauto_utils::cancel_dca_in_if_necessary(
-            ctx.accounts.signer,
-            ctx.accounts.system_program,
-            ctx.accounts.token_program,
-            solauto_position,
-            ctx.accounts.debt_mint,
-            ctx.accounts.position_debt_ta,
-            ctx.accounts.signer_debt_ta,
-        )?;
+        msg!("Existing DCA must be canceled first through the cancel DCA instruction");
+        return Err(SolautoError::IncorrectInstructions.into());
     }
 
     solauto_position.data.position.dca = DCASettings::from(new_data.dca.as_ref().unwrap().clone());
 
-    if new_dca.debt_to_add_base_unit > 0 {
-        if solauto_position.data.position.debt_mint != *ctx.accounts.debt_mint.unwrap().key {
-            msg!("Incorrect debt mint account provided for the given Solauto position");
+    if new_dca.dca_in_base_unit > 0 {
+        if (new_dca.token_type == TokenType::Debt
+            && solauto_position.data.position.debt_mint != *ctx.accounts.dca_mint.unwrap().key)
+            || (new_dca.token_type == TokenType::Supply
+                && solauto_position.data.position.supply_mint
+                    != *ctx.accounts.dca_mint.unwrap().key)
+        {
+            msg!("Incorrect dca mint account provided for the given DCA");
             return Err(SolautoError::IncorrectAccounts.into());
         }
 
@@ -68,16 +64,16 @@ fn update_dca<'a, 'b>(
             ctx.accounts.system_program,
             ctx.accounts.signer,
             solauto_position.account_info,
-            ctx.accounts.position_debt_ta.unwrap(),
-            ctx.accounts.debt_mint.unwrap(),
+            ctx.accounts.position_dca_ta.unwrap(),
+            ctx.accounts.dca_mint.unwrap(),
         )?;
 
         solauto_utils::initiate_dca_in_if_necessary(
             ctx.accounts.token_program,
             solauto_position,
-            ctx.accounts.position_debt_ta,
+            ctx.accounts.position_dca_ta,
             ctx.accounts.signer,
-            ctx.accounts.signer_debt_ta,
+            ctx.accounts.signer_dca_ta,
         )?;
     }
 

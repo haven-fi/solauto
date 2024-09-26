@@ -465,9 +465,7 @@ export class SolautoMarginfiClient extends SolautoClient {
       supplyBank: publicKey(this.marginfiSupplyAccounts.bank),
       supplyPriceOracle: publicKey(this.supplyPriceOracle),
       positionSupplyTa: publicKey(this.positionSupplyTa),
-      signerSupplyTa: this.selfManaged
-        ? publicKey(this.signerSupplyTa)
-        : undefined,
+      authoritySupplyTa: publicKey(getTokenAccount(this.authority, this.supplyMint)),
       vaultSupplyTa: needSupplyAccounts
         ? publicKey(this.marginfiSupplyAccounts.liquidityVault)
         : undefined,
@@ -477,7 +475,7 @@ export class SolautoMarginfiClient extends SolautoClient {
       debtBank: publicKey(this.marginfiDebtAccounts.bank),
       debtPriceOracle: publicKey(this.debtPriceOracle),
       positionDebtTa: publicKey(this.positionDebtTa),
-      signerDebtTa: this.selfManaged ? publicKey(this.signerDebtTa) : undefined,
+      authorityDebtTa: publicKey(getTokenAccount(this.authority, this.debtMint)),
       vaultDebtTa: needDebtAccounts
         ? publicKey(this.marginfiDebtAccounts.liquidityVault)
         : undefined,

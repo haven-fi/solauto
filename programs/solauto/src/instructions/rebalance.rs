@@ -31,13 +31,13 @@ pub fn marginfi_rebalance<'a>(
     let supply_tas = LendingProtocolTokenAccounts::from(
         None,
         Some(ctx.accounts.position_supply_ta),
-        ctx.accounts.signer_supply_ta,
+        ctx.accounts.authority_supply_ta,
         ctx.accounts.vault_supply_ta,
     )?;
     let debt_tas = LendingProtocolTokenAccounts::from(
         None,
         Some(ctx.accounts.position_debt_ta),
-        ctx.accounts.signer_debt_ta,
+        ctx.accounts.authority_debt_ta,
         ctx.accounts.vault_debt_ta,
     )?;
 

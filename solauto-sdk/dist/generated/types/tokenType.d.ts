@@ -6,10 +6,10 @@
  * @see https://github.com/metaplex-foundation/kinobi
  */
 import { Serializer } from '@metaplex-foundation/umi/serializers';
-export declare enum FeeType {
-    Small = 0,
-    Default = 1
+export declare enum TokenType {
+    Supply = 0,
+    Debt = 1
 }
-export type FeeTypeArgs = FeeType;
-export declare function getFeeTypeSerializer(): Serializer<FeeTypeArgs, FeeType>;
-//# sourceMappingURL=feeType.d.ts.map
+export type TokenTypeArgs = TokenType;
+export declare function getTokenTypeSerializer(): Serializer<TokenTypeArgs, TokenType>;
+//# sourceMappingURL=tokenType.d.ts.map

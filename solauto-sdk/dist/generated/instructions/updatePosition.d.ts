@@ -13,9 +13,9 @@ export type UpdatePositionInstructionAccounts = {
     systemProgram?: PublicKey | Pda;
     tokenProgram?: PublicKey | Pda;
     solautoPosition: PublicKey | Pda;
-    debtMint?: PublicKey | Pda;
-    positionDebtTa?: PublicKey | Pda;
-    signerDebtTa?: PublicKey | Pda;
+    dcaMint?: PublicKey | Pda;
+    positionDcaTa?: PublicKey | Pda;
+    signerDcaTa?: PublicKey | Pda;
 };
 export type UpdatePositionInstructionData = {
     discriminator: number;

@@ -193,19 +193,19 @@
           "isSigner": false
         },
         {
-          "name": "debtMint",
+          "name": "dcaMint",
           "isMut": false,
           "isSigner": false,
           "isOptional": true
         },
         {
-          "name": "positionDebtTa",
+          "name": "positionDcaTa",
           "isMut": true,
           "isSigner": false,
           "isOptional": true
         },
         {
-          "name": "signerDebtTa",
+          "name": "signerDcaTa",
           "isMut": true,
           "isSigner": false,
           "isOptional": true
@@ -258,20 +258,14 @@
           "isSigner": false
         },
         {
-          "name": "signerSupplyTa",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
           "name": "positionSupplyTa",
           "isMut": true,
           "isSigner": false
         },
         {
-          "name": "positionSupplyCollateralTa",
+          "name": "signerSupplyTa",
           "isMut": true,
-          "isSigner": false,
-          "isOptional": true
+          "isSigner": false
         },
         {
           "name": "positionDebtTa",
@@ -319,19 +313,19 @@
           "isSigner": false
         },
         {
-          "name": "debtMint",
+          "name": "dcaMint",
           "isMut": false,
           "isSigner": false,
           "isOptional": true
         },
         {
-          "name": "positionDebtTa",
+          "name": "positionDcaTa",
           "isMut": true,
           "isSigner": false,
           "isOptional": true
         },
         {
-          "name": "signerDebtTa",
+          "name": "signerDcaTa",
           "isMut": true,
           "isSigner": false,
           "isOptional": true
@@ -727,7 +721,7 @@
           "isSigner": false
         },
         {
-          "name": "signerSupplyTa",
+          "name": "authoritySupplyTa",
           "isMut": true,
           "isSigner": false,
           "isOptional": true
@@ -761,7 +755,7 @@
           "isSigner": false
         },
         {
-          "name": "signerDebtTa",
+          "name": "authorityDebtTa",
           "isMut": true,
           "isSigner": false,
           "isOptional": true
@@ -906,26 +900,11 @@
             }
           },
           {
-            "name": "feeType",
-            "type": {
-              "defined": "FeeType"
-            }
-          },
-          {
-            "name": "padding2",
-            "type": {
-              "array": [
-                "u8",
-                7
-              ]
-            }
-          },
-          {
             "name": "padding",
             "type": {
               "array": [
                 "u32",
-                30
+                32
               ]
             }
           }
@@ -1095,8 +1074,14 @@
             }
           },
           {
-            "name": "debtToAddBaseUnit",
+            "name": "dcaInBaseUnit",
             "type": "u64"
+          },
+          {
+            "name": "tokenType",
+            "type": {
+              "defined": "TokenType"
+            }
           }
         ]
       }
@@ -1113,15 +1098,21 @@
             }
           },
           {
-            "name": "debtToAddBaseUnit",
+            "name": "dcaInBaseUnit",
             "type": "u64"
+          },
+          {
+            "name": "tokenType",
+            "type": {
+              "defined": "TokenType"
+            }
           },
           {
             "name": "padding",
             "type": {
               "array": [
                 "u8",
-                32
+                31
               ]
             }
           }
@@ -1577,15 +1568,15 @@
       }
     },
     {
-      "name": "FeeType",
+      "name": "TokenType",
       "type": {
         "kind": "enum",
         "variants": [
           {
-            "name": "Small"
+            "name": "Supply"
           },
           {
-            "name": "Default"
+            "name": "Debt"
           }
         ]
       }

@@ -8,16 +8,15 @@
 
 import { Serializer, scalarEnum } from '@metaplex-foundation/umi/serializers';
 
-export enum FeeType {
-  Small,
-  Default,
+export enum TokenType {
+  Supply,
+  Debt,
 }
 
-export type FeeTypeArgs = FeeType;
+export type TokenTypeArgs = TokenType;
 
-export function getFeeTypeSerializer(): Serializer<FeeTypeArgs, FeeType> {
-  return scalarEnum<FeeType>(FeeType, { description: 'FeeType' }) as Serializer<
-    FeeTypeArgs,
-    FeeType
-  >;
+export function getTokenTypeSerializer(): Serializer<TokenTypeArgs, TokenType> {
+  return scalarEnum<TokenType>(TokenType, {
+    description: 'TokenType',
+  }) as Serializer<TokenTypeArgs, TokenType>;
 }

@@ -53,28 +53,23 @@ function closePosition(context, input) {
             isWritable: true,
             value: input.protocolAccount ?? null,
         },
-        signerSupplyTa: {
-            index: 6,
-            isWritable: true,
-            value: input.signerSupplyTa ?? null,
-        },
         positionSupplyTa: {
-            index: 7,
+            index: 6,
             isWritable: true,
             value: input.positionSupplyTa ?? null,
         },
-        positionSupplyCollateralTa: {
-            index: 8,
+        signerSupplyTa: {
+            index: 7,
             isWritable: true,
-            value: input.positionSupplyCollateralTa ?? null,
+            value: input.signerSupplyTa ?? null,
         },
         positionDebtTa: {
-            index: 9,
+            index: 8,
             isWritable: true,
             value: input.positionDebtTa ?? null,
         },
         signerDebtTa: {
-            index: 10,
+            index: 9,
             isWritable: true,
             value: input.signerDebtTa ?? null,
         },

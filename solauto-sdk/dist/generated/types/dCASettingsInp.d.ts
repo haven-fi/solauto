@@ -6,14 +6,16 @@
  * @see https://github.com/metaplex-foundation/kinobi
  */
 import { Serializer } from '@metaplex-foundation/umi/serializers';
-import { AutomationSettingsInp, AutomationSettingsInpArgs } from '.';
+import { AutomationSettingsInp, AutomationSettingsInpArgs, TokenType, TokenTypeArgs } from '.';
 export type DCASettingsInp = {
     automation: AutomationSettingsInp;
-    debtToAddBaseUnit: bigint;
+    dcaInBaseUnit: bigint;
+    tokenType: TokenType;
 };
 export type DCASettingsInpArgs = {
     automation: AutomationSettingsInpArgs;
-    debtToAddBaseUnit: number | bigint;
+    dcaInBaseUnit: number | bigint;
+    tokenType: TokenTypeArgs;
 };
 export declare function getDCASettingsInpSerializer(): Serializer<DCASettingsInpArgs, DCASettingsInp>;
 //# sourceMappingURL=dCASettingsInp.d.ts.map

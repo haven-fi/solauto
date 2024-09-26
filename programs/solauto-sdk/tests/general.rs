@@ -16,7 +16,7 @@ mod general {
     };
     use solauto_sdk::generated::{
         accounts::SolautoPosition,
-        types::{ AutomationSettingsInp, DCASettingsInp },
+        types::{ AutomationSettingsInp, DCASettingsInp, TokenType },
     };
     use spl_associated_token_account::get_associated_token_address;
     use spl_token::state::Account as TokenAccount;
@@ -208,7 +208,8 @@ mod general {
                 periods_passed: 0,
                 target_periods: 5,
             },
-            debt_to_add_base_unit: dca_amount,
+            dca_in_base_unit: dca_amount,
+            token_type: TokenType::Debt
         };
         data.open_position(
             Some(data.general.default_setting_params.clone()),
@@ -223,7 +224,7 @@ mod general {
             data.general.solauto_position
         ).await;
         assert!(solauto_position.position.dca.automation.target_periods == 0);
-        assert!(solauto_position.position.dca.debt_to_add_base_unit == 0);
+        assert!(solauto_position.position.dca.dca_in_base_unit == 0);
 
         let signer_debt_ta = data.general.unpack_account_data::<TokenAccount>(
             data.general.signer_debt_ta
@@ -258,7 +259,8 @@ mod general {
                 periods_passed: 0,
                 target_periods: 5,
             },
-            debt_to_add_base_unit: dca_amount,
+            dca_in_base_unit: dca_amount,
+            token_type: TokenType::Debt
         };
         data.open_position(
             Some(data.general.default_setting_params.clone()),

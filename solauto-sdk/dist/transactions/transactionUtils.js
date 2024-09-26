@@ -24,17 +24,18 @@ function getWSolUsage(client, solautoActions, initiatingDcaIn, cancellingDcaIn) 
         return undefined;
     }
     const usingSupplyTaAction = solautoActions?.find((args) => (0, generated_1.isSolautoAction)("Deposit", args) || (0, generated_1.isSolautoAction)("Withdraw", args));
-    const usingDebtTaAction = solautoActions?.find((args) => (0, generated_1.isSolautoAction)("Borrow", args) ||
-        (0, generated_1.isSolautoAction)("Repay", args) ||
-        initiatingDcaIn ||
-        cancellingDcaIn);
-    if (supplyIsWsol && usingSupplyTaAction) {
+    const usingDebtTaAction = solautoActions?.find((args) => (0, generated_1.isSolautoAction)("Borrow", args) || (0, generated_1.isSolautoAction)("Repay", args));
+    const dcaSupply = (initiatingDcaIn && initiatingDcaIn.tokenType === generated_1.TokenType.Supply) ||
+        (cancellingDcaIn !== undefined && cancellingDcaIn === generated_1.TokenType.Supply);
+    const dcaDebt = (initiatingDcaIn && initiatingDcaIn.tokenType === generated_1.TokenType.Debt) ||
+        (cancellingDcaIn !== undefined && cancellingDcaIn === generated_1.TokenType.Debt);
+    if (supplyIsWsol && (usingSupplyTaAction || dcaSupply)) {
         return {
             wSolTokenAccount: client.signerSupplyTa,
             solautoAction: usingSupplyTaAction,
         };
     }
-    else if (debtIsWsol && usingDebtTaAction) {
+    else if (debtIsWsol && (usingDebtTaAction || dcaDebt)) {
         return {
             wSolTokenAccount: client.signerDebtTa,
             solautoAction: usingDebtTaAction,
@@ -72,16 +73,17 @@ async function transactionChoresBefore(client, accountsGettingCreated, solautoAc
             chores = chores.add((0, solanaUtils_1.closeTokenAccountUmiIx)(client.signer, wSolUsage.wSolTokenAccount, (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(client.signer.publicKey)));
         }
         let amountToTransfer = BigInt(0);
-        if ((0, generated_1.isSolautoAction)("Deposit", wSolUsage.solautoAction)) {
+        if (wSolUsage.solautoAction &&
+            (0, generated_1.isSolautoAction)("Deposit", wSolUsage.solautoAction)) {
             amountToTransfer = BigInt(wSolUsage.solautoAction.fields[0]);
         }
-        else if ((0, generated_1.isSolautoAction)("Repay", wSolUsage.solautoAction) &&
+        else if (wSolUsage.solautoAction &&
+            (0, generated_1.isSolautoAction)("Repay", wSolUsage.solautoAction) &&
             wSolUsage.solautoAction.fields[0].__kind === "Some") {
             amountToTransfer = BigInt(wSolUsage.solautoAction.fields[0].fields[0]);
         }
-        else if (initiatingDcaIn &&
-            client.debtMint.toString() === spl_token_1.NATIVE_MINT.toString()) {
-            amountToTransfer = initiatingDcaIn;
+        else if (initiatingDcaIn) {
+            amountToTransfer = initiatingDcaIn.amount;
         }
         if (amountToTransfer > 0) {
             const amount = amountToTransfer +
@@ -314,12 +316,10 @@ async function getTransactionChores(client, tx) {
     const accountsGettingCreated = [];
     const solautoActions = getSolautoActions(tx);
     choresBefore = choresBefore.add([
-        await transactionChoresBefore(client, accountsGettingCreated, solautoActions, client.livePositionUpdates.debtTaBalanceAdjustment > 0
-            ? client.livePositionUpdates.debtTaBalanceAdjustment
-            : undefined),
+        await transactionChoresBefore(client, accountsGettingCreated, solautoActions, client.livePositionUpdates.dcaInBalance),
         await rebalanceChoresBefore(client, tx, accountsGettingCreated),
     ]);
-    choresAfter = choresAfter.add(transactionChoresAfter(client, solautoActions, client.livePositionUpdates.debtTaBalanceAdjustment < 0));
+    choresAfter = choresAfter.add(transactionChoresAfter(client, solautoActions, client.livePositionUpdates.cancellingDca));
     return [choresBefore, choresAfter];
 }
 async function buildSolautoRebalanceTransaction(client, targetLiqUtilizationRateBps, attemptNum) {

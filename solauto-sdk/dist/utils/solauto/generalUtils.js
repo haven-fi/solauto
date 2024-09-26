@@ -346,9 +346,10 @@ class LivePositionUpdates {
     constructor() {
         this.supplyAdjustment = BigInt(0);
         this.debtAdjustment = BigInt(0);
-        this.debtTaBalanceAdjustment = BigInt(0);
         this.settings = undefined;
         this.activeDca = undefined;
+        this.dcaInBalance = undefined;
+        this.cancellingDca = undefined;
     }
     new(update) {
         if (update.type === "supply") {
@@ -356,9 +357,6 @@ class LivePositionUpdates {
         }
         else if (update.type === "debt") {
             this.debtAdjustment += update.value;
-        }
-        else if (update.type === "debtDcaIn") {
-            this.debtTaBalanceAdjustment += update.value;
         }
         else if (update.type === "settings") {
             const settings = update.value;
@@ -374,23 +372,32 @@ class LivePositionUpdates {
                     padding: new Uint8Array([]),
                     padding1: [],
                 },
-                debtToAddBaseUnit: BigInt(dca.debtToAddBaseUnit),
-                padding: new Uint8Array([]),
+                dcaInBaseUnit: BigInt(dca.dcaInBaseUnit),
+                tokenType: dca.tokenType,
+                padding: [],
             };
+        }
+        else if (update.type === "cancellingDca") {
+            this.cancellingDca = update.value;
+        }
+        else if (update.type === "dcaInBalance") {
+            this.dcaInBalance = update.value;
         }
     }
     reset() {
         this.supplyAdjustment = BigInt(0);
         this.debtAdjustment = BigInt(0);
-        this.debtTaBalanceAdjustment = BigInt(0);
         this.settings = undefined;
         this.activeDca = undefined;
+        this.dcaInBalance = undefined;
+        this.cancellingDca = undefined;
     }
     hasUpdates() {
         return (this.supplyAdjustment !== BigInt(0) ||
             this.debtAdjustment !== BigInt(0) ||
-            this.debtTaBalanceAdjustment !== BigInt(0) ||
-            this.settings !== undefined);
+            this.dcaInBalance !== undefined ||
+            this.settings !== undefined ||
+            this.cancellingDca !== undefined);
     }
 }
 exports.LivePositionUpdates = LivePositionUpdates;

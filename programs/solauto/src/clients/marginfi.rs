@@ -395,18 +395,16 @@ impl<'a> MarginfiClient<'a> {
 }
 
 impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
-    fn validate(&self, std_accounts: &Box<SolautoStandardAccounts>) -> ProgramResult {
+    fn validate(&self, std_accounts: &Box<SolautoStandardAccounts<'a>>) -> ProgramResult {
         validate_token_accounts(
-            std_accounts.signer,
             &std_accounts.solauto_position,
-            self.supply.token_accounts.position_ta.as_ref(),
-            self.debt.token_accounts.position_ta.as_ref(),
+            self.supply.token_accounts.position_ta,
+            self.debt.token_accounts.position_ta,
         )?;
         validate_token_accounts(
-            std_accounts.signer,
             &std_accounts.solauto_position,
-            self.supply.token_accounts.signer_ta.as_ref(),
-            self.debt.token_accounts.signer_ta.as_ref(),
+            self.supply.token_accounts.authority_ta,
+            self.debt.token_accounts.authority_ta,
         )?;
         Ok(())
     }
@@ -419,19 +417,9 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
         let authority = get_owner(&std_accounts.solauto_position, self.signer);
 
         let signer_token_account = if !std_accounts.solauto_position.data.self_managed.val {
-            self.supply
-                .token_accounts
-                .position_ta
-                .as_ref()
-                .unwrap()
-                .account_info
+            self.supply.token_accounts.position_ta.as_ref().unwrap()
         } else {
-            self.supply
-                .token_accounts
-                .signer_ta
-                .as_ref()
-                .unwrap()
-                .account_info
+            self.supply.token_accounts.authority_ta.as_ref().unwrap()
         };
 
         let cpi = LendingAccountDepositCpi::new(
@@ -599,19 +587,9 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
         };
 
         let signer_token_account = if !std_accounts.solauto_position.data.self_managed.val {
-            self.debt
-                .token_accounts
-                .position_ta
-                .as_ref()
-                .unwrap()
-                .account_info
+            self.debt.token_accounts.position_ta.as_ref().unwrap()
         } else {
-            self.debt
-                .token_accounts
-                .signer_ta
-                .as_ref()
-                .unwrap()
-                .account_info
+            self.debt.token_accounts.authority_ta.as_ref().unwrap()
         };
 
         let cpi = LendingAccountRepayCpi::new(

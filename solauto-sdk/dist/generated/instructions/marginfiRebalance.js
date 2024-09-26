@@ -103,10 +103,10 @@ function marginfiRebalance(context, input) {
             isWritable: true,
             value: input.positionSupplyTa ?? null,
         },
-        signerSupplyTa: {
+        authoritySupplyTa: {
             index: 15,
             isWritable: true,
-            value: input.signerSupplyTa ?? null,
+            value: input.authoritySupplyTa ?? null,
         },
         vaultSupplyTa: {
             index: 16,
@@ -133,10 +133,10 @@ function marginfiRebalance(context, input) {
             isWritable: true,
             value: input.positionDebtTa ?? null,
         },
-        signerDebtTa: {
+        authorityDebtTa: {
             index: 21,
             isWritable: true,
-            value: input.signerDebtTa ?? null,
+            value: input.authorityDebtTa ?? null,
         },
         vaultDebtTa: {
             index: 22,

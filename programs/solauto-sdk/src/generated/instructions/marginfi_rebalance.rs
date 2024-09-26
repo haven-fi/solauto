@@ -41,7 +41,7 @@ pub struct MarginfiRebalance {
 
     pub position_supply_ta: solana_program::pubkey::Pubkey,
 
-    pub signer_supply_ta: Option<solana_program::pubkey::Pubkey>,
+    pub authority_supply_ta: Option<solana_program::pubkey::Pubkey>,
 
     pub vault_supply_ta: Option<solana_program::pubkey::Pubkey>,
 
@@ -53,7 +53,7 @@ pub struct MarginfiRebalance {
 
     pub position_debt_ta: solana_program::pubkey::Pubkey,
 
-    pub signer_debt_ta: Option<solana_program::pubkey::Pubkey>,
+    pub authority_debt_ta: Option<solana_program::pubkey::Pubkey>,
 
     pub vault_debt_ta: Option<solana_program::pubkey::Pubkey>,
 
@@ -162,9 +162,9 @@ impl MarginfiRebalance {
             self.position_supply_ta,
             false,
         ));
-        if let Some(signer_supply_ta) = self.signer_supply_ta {
+        if let Some(authority_supply_ta) = self.authority_supply_ta {
             accounts.push(solana_program::instruction::AccountMeta::new(
-                signer_supply_ta,
+                authority_supply_ta,
                 false,
             ));
         } else {
@@ -214,9 +214,9 @@ impl MarginfiRebalance {
             self.position_debt_ta,
             false,
         ));
-        if let Some(signer_debt_ta) = self.signer_debt_ta {
+        if let Some(authority_debt_ta) = self.authority_debt_ta {
             accounts.push(solana_program::instruction::AccountMeta::new(
-                signer_debt_ta,
+                authority_debt_ta,
                 false,
             ));
         } else {
@@ -301,13 +301,13 @@ pub struct MarginfiRebalanceInstructionArgs {
 ///   12. `[writable]` supply_bank
 ///   13. `[optional]` supply_price_oracle
 ///   14. `[writable]` position_supply_ta
-///   15. `[writable, optional]` signer_supply_ta
+///   15. `[writable, optional]` authority_supply_ta
 ///   16. `[writable, optional]` vault_supply_ta
 ///   17. `[writable, optional]` supply_vault_authority
 ///   18. `[writable]` debt_bank
 ///   19. `[optional]` debt_price_oracle
 ///   20. `[writable]` position_debt_ta
-///   21. `[writable, optional]` signer_debt_ta
+///   21. `[writable, optional]` authority_debt_ta
 ///   22. `[writable, optional]` vault_debt_ta
 ///   23. `[writable, optional]` debt_vault_authority
 #[derive(Default)]
@@ -327,13 +327,13 @@ pub struct MarginfiRebalanceBuilder {
     supply_bank: Option<solana_program::pubkey::Pubkey>,
     supply_price_oracle: Option<solana_program::pubkey::Pubkey>,
     position_supply_ta: Option<solana_program::pubkey::Pubkey>,
-    signer_supply_ta: Option<solana_program::pubkey::Pubkey>,
+    authority_supply_ta: Option<solana_program::pubkey::Pubkey>,
     vault_supply_ta: Option<solana_program::pubkey::Pubkey>,
     supply_vault_authority: Option<solana_program::pubkey::Pubkey>,
     debt_bank: Option<solana_program::pubkey::Pubkey>,
     debt_price_oracle: Option<solana_program::pubkey::Pubkey>,
     position_debt_ta: Option<solana_program::pubkey::Pubkey>,
-    signer_debt_ta: Option<solana_program::pubkey::Pubkey>,
+    authority_debt_ta: Option<solana_program::pubkey::Pubkey>,
     vault_debt_ta: Option<solana_program::pubkey::Pubkey>,
     debt_vault_authority: Option<solana_program::pubkey::Pubkey>,
     slippage_bps: Option<u16>,
@@ -457,11 +457,11 @@ impl MarginfiRebalanceBuilder {
     }
     /// `[optional account]`
     #[inline(always)]
-    pub fn signer_supply_ta(
+    pub fn authority_supply_ta(
         &mut self,
-        signer_supply_ta: Option<solana_program::pubkey::Pubkey>,
+        authority_supply_ta: Option<solana_program::pubkey::Pubkey>,
     ) -> &mut Self {
-        self.signer_supply_ta = signer_supply_ta;
+        self.authority_supply_ta = authority_supply_ta;
         self
     }
     /// `[optional account]`
@@ -506,11 +506,11 @@ impl MarginfiRebalanceBuilder {
     }
     /// `[optional account]`
     #[inline(always)]
-    pub fn signer_debt_ta(
+    pub fn authority_debt_ta(
         &mut self,
-        signer_debt_ta: Option<solana_program::pubkey::Pubkey>,
+        authority_debt_ta: Option<solana_program::pubkey::Pubkey>,
     ) -> &mut Self {
-        self.signer_debt_ta = signer_debt_ta;
+        self.authority_debt_ta = authority_debt_ta;
         self
     }
     /// `[optional account]`
@@ -600,13 +600,13 @@ impl MarginfiRebalanceBuilder {
             position_supply_ta: self
                 .position_supply_ta
                 .expect("position_supply_ta is not set"),
-            signer_supply_ta: self.signer_supply_ta,
+            authority_supply_ta: self.authority_supply_ta,
             vault_supply_ta: self.vault_supply_ta,
             supply_vault_authority: self.supply_vault_authority,
             debt_bank: self.debt_bank.expect("debt_bank is not set"),
             debt_price_oracle: self.debt_price_oracle,
             position_debt_ta: self.position_debt_ta.expect("position_debt_ta is not set"),
-            signer_debt_ta: self.signer_debt_ta,
+            authority_debt_ta: self.authority_debt_ta,
             vault_debt_ta: self.vault_debt_ta,
             debt_vault_authority: self.debt_vault_authority,
         };
@@ -656,7 +656,7 @@ pub struct MarginfiRebalanceCpiAccounts<'a, 'b> {
 
     pub position_supply_ta: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub signer_supply_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    pub authority_supply_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
     pub vault_supply_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
@@ -668,7 +668,7 @@ pub struct MarginfiRebalanceCpiAccounts<'a, 'b> {
 
     pub position_debt_ta: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub signer_debt_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    pub authority_debt_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
     pub vault_debt_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
@@ -710,7 +710,7 @@ pub struct MarginfiRebalanceCpi<'a, 'b> {
 
     pub position_supply_ta: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub signer_supply_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    pub authority_supply_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
     pub vault_supply_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
@@ -722,7 +722,7 @@ pub struct MarginfiRebalanceCpi<'a, 'b> {
 
     pub position_debt_ta: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub signer_debt_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    pub authority_debt_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
     pub vault_debt_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
@@ -754,13 +754,13 @@ impl<'a, 'b> MarginfiRebalanceCpi<'a, 'b> {
             supply_bank: accounts.supply_bank,
             supply_price_oracle: accounts.supply_price_oracle,
             position_supply_ta: accounts.position_supply_ta,
-            signer_supply_ta: accounts.signer_supply_ta,
+            authority_supply_ta: accounts.authority_supply_ta,
             vault_supply_ta: accounts.vault_supply_ta,
             supply_vault_authority: accounts.supply_vault_authority,
             debt_bank: accounts.debt_bank,
             debt_price_oracle: accounts.debt_price_oracle,
             position_debt_ta: accounts.position_debt_ta,
-            signer_debt_ta: accounts.signer_debt_ta,
+            authority_debt_ta: accounts.authority_debt_ta,
             vault_debt_ta: accounts.vault_debt_ta,
             debt_vault_authority: accounts.debt_vault_authority,
             __args: args,
@@ -888,9 +888,9 @@ impl<'a, 'b> MarginfiRebalanceCpi<'a, 'b> {
             *self.position_supply_ta.key,
             false,
         ));
-        if let Some(signer_supply_ta) = self.signer_supply_ta {
+        if let Some(authority_supply_ta) = self.authority_supply_ta {
             accounts.push(solana_program::instruction::AccountMeta::new(
-                *signer_supply_ta.key,
+                *authority_supply_ta.key,
                 false,
             ));
         } else {
@@ -940,9 +940,9 @@ impl<'a, 'b> MarginfiRebalanceCpi<'a, 'b> {
             *self.position_debt_ta.key,
             false,
         ));
-        if let Some(signer_debt_ta) = self.signer_debt_ta {
+        if let Some(authority_debt_ta) = self.authority_debt_ta {
             accounts.push(solana_program::instruction::AccountMeta::new(
-                *signer_debt_ta.key,
+                *authority_debt_ta.key,
                 false,
             ));
         } else {
@@ -1016,8 +1016,8 @@ impl<'a, 'b> MarginfiRebalanceCpi<'a, 'b> {
             account_infos.push(supply_price_oracle.clone());
         }
         account_infos.push(self.position_supply_ta.clone());
-        if let Some(signer_supply_ta) = self.signer_supply_ta {
-            account_infos.push(signer_supply_ta.clone());
+        if let Some(authority_supply_ta) = self.authority_supply_ta {
+            account_infos.push(authority_supply_ta.clone());
         }
         if let Some(vault_supply_ta) = self.vault_supply_ta {
             account_infos.push(vault_supply_ta.clone());
@@ -1030,8 +1030,8 @@ impl<'a, 'b> MarginfiRebalanceCpi<'a, 'b> {
             account_infos.push(debt_price_oracle.clone());
         }
         account_infos.push(self.position_debt_ta.clone());
-        if let Some(signer_debt_ta) = self.signer_debt_ta {
-            account_infos.push(signer_debt_ta.clone());
+        if let Some(authority_debt_ta) = self.authority_debt_ta {
+            account_infos.push(authority_debt_ta.clone());
         }
         if let Some(vault_debt_ta) = self.vault_debt_ta {
             account_infos.push(vault_debt_ta.clone());
@@ -1070,13 +1070,13 @@ impl<'a, 'b> MarginfiRebalanceCpi<'a, 'b> {
 ///   12. `[writable]` supply_bank
 ///   13. `[optional]` supply_price_oracle
 ///   14. `[writable]` position_supply_ta
-///   15. `[writable, optional]` signer_supply_ta
+///   15. `[writable, optional]` authority_supply_ta
 ///   16. `[writable, optional]` vault_supply_ta
 ///   17. `[writable, optional]` supply_vault_authority
 ///   18. `[writable]` debt_bank
 ///   19. `[optional]` debt_price_oracle
 ///   20. `[writable]` position_debt_ta
-///   21. `[writable, optional]` signer_debt_ta
+///   21. `[writable, optional]` authority_debt_ta
 ///   22. `[writable, optional]` vault_debt_ta
 ///   23. `[writable, optional]` debt_vault_authority
 pub struct MarginfiRebalanceCpiBuilder<'a, 'b> {
@@ -1102,13 +1102,13 @@ impl<'a, 'b> MarginfiRebalanceCpiBuilder<'a, 'b> {
             supply_bank: None,
             supply_price_oracle: None,
             position_supply_ta: None,
-            signer_supply_ta: None,
+            authority_supply_ta: None,
             vault_supply_ta: None,
             supply_vault_authority: None,
             debt_bank: None,
             debt_price_oracle: None,
             position_debt_ta: None,
-            signer_debt_ta: None,
+            authority_debt_ta: None,
             vault_debt_ta: None,
             debt_vault_authority: None,
             slippage_bps: None,
@@ -1245,11 +1245,11 @@ impl<'a, 'b> MarginfiRebalanceCpiBuilder<'a, 'b> {
     }
     /// `[optional account]`
     #[inline(always)]
-    pub fn signer_supply_ta(
+    pub fn authority_supply_ta(
         &mut self,
-        signer_supply_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+        authority_supply_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     ) -> &mut Self {
-        self.instruction.signer_supply_ta = signer_supply_ta;
+        self.instruction.authority_supply_ta = authority_supply_ta;
         self
     }
     /// `[optional account]`
@@ -1297,11 +1297,11 @@ impl<'a, 'b> MarginfiRebalanceCpiBuilder<'a, 'b> {
     }
     /// `[optional account]`
     #[inline(always)]
-    pub fn signer_debt_ta(
+    pub fn authority_debt_ta(
         &mut self,
-        signer_debt_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+        authority_debt_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     ) -> &mut Self {
-        self.instruction.signer_debt_ta = signer_debt_ta;
+        self.instruction.authority_debt_ta = authority_debt_ta;
         self
     }
     /// `[optional account]`
@@ -1465,7 +1465,7 @@ impl<'a, 'b> MarginfiRebalanceCpiBuilder<'a, 'b> {
                 .position_supply_ta
                 .expect("position_supply_ta is not set"),
 
-            signer_supply_ta: self.instruction.signer_supply_ta,
+            authority_supply_ta: self.instruction.authority_supply_ta,
 
             vault_supply_ta: self.instruction.vault_supply_ta,
 
@@ -1480,7 +1480,7 @@ impl<'a, 'b> MarginfiRebalanceCpiBuilder<'a, 'b> {
                 .position_debt_ta
                 .expect("position_debt_ta is not set"),
 
-            signer_debt_ta: self.instruction.signer_debt_ta,
+            authority_debt_ta: self.instruction.authority_debt_ta,
 
             vault_debt_ta: self.instruction.vault_debt_ta,
 
@@ -1511,13 +1511,13 @@ struct MarginfiRebalanceCpiBuilderInstruction<'a, 'b> {
     supply_bank: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     supply_price_oracle: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     position_supply_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    signer_supply_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    authority_supply_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     vault_supply_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     supply_vault_authority: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     debt_bank: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     debt_price_oracle: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     position_debt_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    signer_debt_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    authority_debt_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     vault_debt_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     debt_vault_authority: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     slippage_bps: Option<u16>,

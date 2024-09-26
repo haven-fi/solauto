@@ -17,6 +17,7 @@ import {
   SOLAUTO_PROGRAM_ID,
   SolautoAction,
   SolautoRebalanceType,
+  TokenType,
   convertReferralFees,
   getMarginfiProtocolInteractionInstructionDataSerializer,
   getMarginfiRebalanceInstructionDataSerializer,
@@ -55,18 +56,20 @@ import {
   getLendingAccountWithdrawInstructionDataSerializer,
   MARGINFI_PROGRAM_ID,
 } from "../marginfi-sdk";
-import { PRICES } from "../constants";
 
 interface wSolTokenUsage {
   wSolTokenAccount: PublicKey;
-  solautoAction: SolautoAction;
+  solautoAction?: SolautoAction;
 }
 
 function getWSolUsage(
   client: SolautoClient,
   solautoActions?: SolautoAction[],
-  initiatingDcaIn?: bigint,
-  cancellingDcaIn?: boolean
+  initiatingDcaIn?: {
+    amount: bigint;
+    tokenType: TokenType;
+  },
+  cancellingDcaIn?: TokenType
 ): wSolTokenUsage | undefined {
   const supplyIsWsol = client.supplyMint.equals(NATIVE_MINT);
   const debtIsWsol = client.debtMint.equals(NATIVE_MINT);
@@ -79,18 +82,23 @@ function getWSolUsage(
       isSolautoAction("Deposit", args) || isSolautoAction("Withdraw", args)
   );
   const usingDebtTaAction = solautoActions?.find(
-    (args) =>
-      isSolautoAction("Borrow", args) ||
-      isSolautoAction("Repay", args) ||
-      initiatingDcaIn ||
-      cancellingDcaIn
+    (args) => isSolautoAction("Borrow", args) || isSolautoAction("Repay", args)
   );
-  if (supplyIsWsol && usingSupplyTaAction) {
+
+  const dcaSupply =
+    (initiatingDcaIn && initiatingDcaIn.tokenType === TokenType.Supply) ||
+    (cancellingDcaIn !== undefined && cancellingDcaIn === TokenType.Supply);
+
+  const dcaDebt =
+    (initiatingDcaIn && initiatingDcaIn.tokenType === TokenType.Debt) ||
+    (cancellingDcaIn !== undefined && cancellingDcaIn === TokenType.Debt);
+
+  if (supplyIsWsol && (usingSupplyTaAction || dcaSupply)) {
     return {
       wSolTokenAccount: client.signerSupplyTa,
       solautoAction: usingSupplyTaAction,
     };
-  } else if (debtIsWsol && usingDebtTaAction) {
+  } else if (debtIsWsol && (usingDebtTaAction || dcaDebt)) {
     return {
       wSolTokenAccount: client.signerDebtTa,
       solautoAction: usingDebtTaAction,
@@ -104,7 +112,10 @@ async function transactionChoresBefore(
   client: SolautoClient,
   accountsGettingCreated: string[],
   solautoActions?: SolautoAction[],
-  initiatingDcaIn?: bigint
+  initiatingDcaIn?: {
+    amount: bigint;
+    tokenType: TokenType;
+  }
 ): Promise<TransactionBuilder> {
   let chores = transactionBuilder();
 
@@ -162,18 +173,19 @@ async function transactionChoresBefore(
     }
 
     let amountToTransfer = BigInt(0);
-    if (isSolautoAction("Deposit", wSolUsage.solautoAction)) {
+    if (
+      wSolUsage.solautoAction &&
+      isSolautoAction("Deposit", wSolUsage.solautoAction)
+    ) {
       amountToTransfer = BigInt(wSolUsage.solautoAction.fields[0]);
     } else if (
+      wSolUsage.solautoAction &&
       isSolautoAction("Repay", wSolUsage.solautoAction) &&
       wSolUsage.solautoAction.fields[0].__kind === "Some"
     ) {
       amountToTransfer = BigInt(wSolUsage.solautoAction.fields[0].fields[0]);
-    } else if (
-      initiatingDcaIn &&
-      client.debtMint.toString() === NATIVE_MINT.toString()
-    ) {
-      amountToTransfer = initiatingDcaIn;
+    } else if (initiatingDcaIn) {
+      amountToTransfer = initiatingDcaIn.amount;
     }
 
     if (amountToTransfer > 0) {
@@ -349,7 +361,7 @@ export async function rebalanceChoresBefore(
 function transactionChoresAfter(
   client: SolautoClient,
   solautoActions?: SolautoAction[],
-  cancellingDcaIn?: boolean
+  cancellingDcaIn?: TokenType
 ): TransactionBuilder {
   let chores = transactionBuilder();
 
@@ -538,9 +550,7 @@ export async function getTransactionChores(
       client,
       accountsGettingCreated,
       solautoActions,
-      client.livePositionUpdates.debtTaBalanceAdjustment > 0
-        ? client.livePositionUpdates.debtTaBalanceAdjustment
-        : undefined
+      client.livePositionUpdates.dcaInBalance
     ),
     await rebalanceChoresBefore(client, tx, accountsGettingCreated),
   ]);
@@ -549,7 +559,7 @@ export async function getTransactionChores(
     transactionChoresAfter(
       client,
       solautoActions,
-      client.livePositionUpdates.debtTaBalanceAdjustment < 0
+      client.livePositionUpdates.cancellingDca
     )
   );
 
@@ -668,8 +678,8 @@ export async function buildSolautoRebalanceTransaction(
         "B",
         swapDetails,
         rebalanceType,
-            jupQuote.slippageBps,
-            undefined,
+        jupQuote.slippageBps,
+        undefined,
         targetLiqUtilizationRateBps
       ),
     ]);

@@ -35,13 +35,12 @@ pub fn process_update_position_instruction<'a>(
         None,
     )?;
 
-    if ctx.accounts.position_debt_ta.is_some() {
+    if args.dca.is_some() {
         validation_utils::validate_token_account(
-            ctx.accounts.signer,
             &solauto_position,
-            DeserializedAccount::<TokenAccount>::unpack(ctx.accounts.position_debt_ta)?.as_ref(),
+            DeserializedAccount::<TokenAccount>::unpack(ctx.accounts.position_dca_ta)?.as_ref(),
+            Some(args.dca.as_ref().unwrap().token_type),
             None,
-            Some(ctx.accounts.debt_mint.unwrap().key),
         )?;
     }
 
@@ -51,15 +50,9 @@ pub fn process_update_position_instruction<'a>(
 pub fn process_close_position_instruction<'a>(accounts: &'a [AccountInfo<'a>]) -> ProgramResult {
     msg!("Instruction: Close position");
     let ctx = ClosePositionAccounts::context(accounts)?;
-    let solauto_position =
+    let mut solauto_position =
         DeserializedAccount::<SolautoPosition>::zerocopy(Some(ctx.accounts.solauto_position))?
             .unwrap();
-
-    let position_supply_ta =
-        DeserializedAccount::<TokenAccount>::unpack(Some(ctx.accounts.position_supply_ta))?
-            .unwrap();
-    let position_debt_ta =
-        DeserializedAccount::<TokenAccount>::unpack(Some(ctx.accounts.position_debt_ta))?;
 
     validation_utils::validate_instruction(ctx.accounts.signer, &solauto_position, true, true)?;
     validation_utils::validate_sysvar_accounts(
@@ -71,10 +64,9 @@ pub fn process_close_position_instruction<'a>(accounts: &'a [AccountInfo<'a>]) -
     )?;
 
     validation_utils::validate_token_accounts(
-        ctx.accounts.signer,
         &solauto_position,
-        Some(&position_supply_ta),
-        position_debt_ta.as_ref(),
+        Some(ctx.accounts.position_supply_ta),
+        Some(ctx.accounts.position_debt_ta),
     )?;
 
     if !cfg!(feature = "test") {
@@ -84,7 +76,12 @@ pub fn process_close_position_instruction<'a>(accounts: &'a [AccountInfo<'a>]) -
         )?;
     }
 
-    close_position::close_position(ctx, solauto_position, position_supply_ta, position_debt_ta)
+    close_position::close_position(
+        &ctx,
+        &solauto_position,
+        ctx.accounts.position_supply_ta,
+        ctx.accounts.position_debt_ta,
+    )
 }
 
 pub fn process_cancel_dca<'a>(accounts: &'a [AccountInfo<'a>]) -> ProgramResult {
@@ -108,26 +105,21 @@ pub fn process_cancel_dca<'a>(accounts: &'a [AccountInfo<'a>]) -> ProgramResult 
         return Err(SolautoError::IncorrectAccounts.into());
     }
 
-    let debt_mint_pubkey = ctx
-        .accounts
-        .debt_mint
-        .map_or_else(|| None, |mint| Some(mint.key));
     validation_utils::validate_token_account(
-        ctx.accounts.signer,
         &solauto_position,
-        DeserializedAccount::<TokenAccount>::unpack(ctx.accounts.position_debt_ta)?.as_ref(),
+        DeserializedAccount::<TokenAccount>::unpack(ctx.accounts.position_dca_ta)?.as_ref(),
+        Some(solauto_position.data.position.dca.token_type),
         None,
-        debt_mint_pubkey,
     )?;
 
-    solauto_utils::cancel_dca_in_if_necessary(
+    solauto_utils::cancel_dca_in(
         ctx.accounts.signer,
         ctx.accounts.system_program,
         ctx.accounts.token_program,
         &mut solauto_position,
-        ctx.accounts.debt_mint,
-        ctx.accounts.position_debt_ta,
-        ctx.accounts.signer_debt_ta,
+        ctx.accounts.dca_mint,
+        ctx.accounts.position_dca_ta,
+        ctx.accounts.signer_dca_ta,
     )?;
 
     validation_utils::validate_position_settings(

@@ -9,10 +9,10 @@ import { publicKey } from "@metaplex-foundation/umi";
 import { SolautoClient } from "../../src/clients/solautoClient";
 import {
   DCASettings,
-  FeeType,
   LendingPlatform,
   SolautoRebalanceType,
   SolautoSettingsParameters,
+  TokenType,
 } from "../../src/generated";
 import {
   fromBaseUnit,
@@ -35,7 +35,6 @@ import {
   safeGetPrice,
 } from "../../src/utils/generalUtils";
 import { USDC_MINT } from "../../src/constants/tokenConstants";
-import { PRICES } from "../../src/constants";
 
 const signer = setupTest(undefined, true);
 
@@ -159,8 +158,9 @@ async function getFakePosition(
           padding1: [],
           padding: new Uint8Array([]),
         },
-        debtToAddBaseUnit: BigInt(0),
-        padding: new Uint8Array([]),
+        dcaInBaseUnit: BigInt(0),
+        tokenType: TokenType.Debt,
+        padding: [],
       },
       lendingPlatform: LendingPlatform.Marginfi,
       supplyMint: publicKey(client.supplyMint),
@@ -180,9 +180,7 @@ async function getFakePosition(
       padding2: [],
       padding: new Uint8Array([]),
     },
-    feeType: FeeType.Default,
     padding1: [],
-    padding2: [],
     padding: [],
     publicKey: publicKey(PublicKey.default),
     header: {
@@ -246,18 +244,18 @@ async function dcaRebalanceFromFakePosition(
     currentUnixSeconds()
   );
   const expectedLiqUtilizationRateBps =
-    dca.debtToAddBaseUnit > BigInt(0)
+    dca.dcaInBaseUnit > BigInt(0)
       ? Math.max(fakeLiqUtilizationRateBps, adjustedSettings.boostToBps)
       : adjustedSettings.boostToBps;
 
   const expectedDcaInAmount =
-    dca.debtToAddBaseUnit > 0 &&
+    dca.dcaInBaseUnit > BigInt(0) &&
     eligibleForNextAutomationPeriod(dca.automation, currentUnixSeconds())
-      ? dca.debtToAddBaseUnit -
+      ? dca.dcaInBaseUnit -
         BigInt(
           Math.round(
             getUpdatedValueFromAutomation(
-              Number(dca.debtToAddBaseUnit),
+              Number(dca.dcaInBaseUnit),
               0,
               dca.automation,
               currentUnixSeconds()
@@ -390,8 +388,9 @@ describe("Rebalance tests", async () => {
         padding1: [],
         padding: new Uint8Array([]),
       },
-      debtToAddBaseUnit: BigInt(0),
-      padding: new Uint8Array([]),
+      dcaInBaseUnit: BigInt(0),
+      tokenType: TokenType.Debt,
+      padding: [],
     };
     await dcaRebalanceFromFakePosition(
       supplyPrice,
@@ -442,8 +441,9 @@ describe("Rebalance tests", async () => {
         padding1: [],
         padding: new Uint8Array([]),
       },
-      debtToAddBaseUnit: toBaseUnit(debtPrice * 300, 6),
-      padding: new Uint8Array([]),
+      dcaInBaseUnit: toBaseUnit(debtPrice * 300, 6),
+      tokenType: TokenType.Debt,
+      padding: [],
     };
     await dcaRebalanceFromFakePosition(
       supplyPrice,

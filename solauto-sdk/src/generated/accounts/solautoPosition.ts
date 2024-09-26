@@ -28,8 +28,6 @@ import {
   u8,
 } from '@metaplex-foundation/umi/serializers';
 import {
-  FeeType,
-  FeeTypeArgs,
   PodBool,
   PodBoolArgs,
   PositionData,
@@ -38,7 +36,6 @@ import {
   PositionStateArgs,
   RebalanceData,
   RebalanceDataArgs,
-  getFeeTypeSerializer,
   getPodBoolSerializer,
   getPositionDataSerializer,
   getPositionStateSerializer,
@@ -56,8 +53,6 @@ export type SolautoPositionAccountData = {
   position: PositionData;
   state: PositionState;
   rebalance: RebalanceData;
-  feeType: FeeType;
-  padding2: Array<number>;
   padding: Array<number>;
 };
 
@@ -70,8 +65,6 @@ export type SolautoPositionAccountDataArgs = {
   position: PositionDataArgs;
   state: PositionStateArgs;
   rebalance: RebalanceDataArgs;
-  feeType: FeeTypeArgs;
-  padding2: Array<number>;
   padding: Array<number>;
 };
 
@@ -89,9 +82,7 @@ export function getSolautoPositionAccountDataSerializer(): Serializer<
       ['position', getPositionDataSerializer()],
       ['state', getPositionStateSerializer()],
       ['rebalance', getRebalanceDataSerializer()],
-      ['feeType', getFeeTypeSerializer()],
-      ['padding2', array(u8(), { size: 7 })],
-      ['padding', array(u32(), { size: 30 })],
+      ['padding', array(u32(), { size: 32 })],
     ],
     { description: 'SolautoPositionAccountData' }
   ) as Serializer<SolautoPositionAccountDataArgs, SolautoPositionAccountData>;
@@ -179,8 +170,6 @@ export function getSolautoPositionGpaBuilder(
       position: PositionDataArgs;
       state: PositionStateArgs;
       rebalance: RebalanceDataArgs;
-      feeType: FeeTypeArgs;
-      padding2: Array<number>;
       padding: Array<number>;
     }>({
       bump: [0, array(u8(), { size: 1 })],
@@ -191,9 +180,7 @@ export function getSolautoPositionGpaBuilder(
       position: [40, getPositionDataSerializer()],
       state: [360, getPositionStateSerializer()],
       rebalance: [648, getRebalanceDataSerializer()],
-      feeType: [704, getFeeTypeSerializer()],
-      padding2: [705, array(u8(), { size: 7 })],
-      padding: [712, array(u32(), { size: 30 })],
+      padding: [704, array(u32(), { size: 32 })],
     })
     .deserializeUsing<SolautoPosition>((account) =>
       deserializeSolautoPosition(account)

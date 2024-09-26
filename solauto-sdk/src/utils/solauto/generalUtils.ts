@@ -9,6 +9,7 @@ import {
   SOLAUTO_PROGRAM_ID,
   SolautoSettingsParameters,
   SolautoSettingsParametersInpArgs,
+  TokenType,
   getReferralStateSize,
   getSolautoPositionAccountDataSerializer,
   getSolautoPositionSize,
@@ -487,24 +488,24 @@ export function createSolautoSettings(
 type PositionAdjustment =
   | { type: "supply"; value: bigint }
   | { type: "debt"; value: bigint }
-  | { type: "debtDcaIn"; value: bigint }
   | { type: "settings"; value: SolautoSettingsParametersInpArgs }
-  | { type: "dca"; value: DCASettingsInpArgs };
+  | { type: "dca"; value: DCASettingsInpArgs }
+  | { type: "dcaInBalance"; value: { amount: bigint; tokenType: TokenType; } }
+  | { type: "cancellingDca"; value: TokenType; };
 
 export class LivePositionUpdates {
-  public supplyAdjustment: bigint = BigInt(0);
-  public debtAdjustment: bigint = BigInt(0);
-  public debtTaBalanceAdjustment: bigint = BigInt(0);
+  public supplyAdjustment = BigInt(0);
+  public debtAdjustment = BigInt(0);
   public settings: SolautoSettingsParameters | undefined = undefined;
   public activeDca: DCASettings | undefined = undefined;
-
+  public dcaInBalance?: { amount: bigint; tokenType: TokenType; } = undefined;
+  public cancellingDca: TokenType | undefined = undefined;
+  
   new(update: PositionAdjustment) {
     if (update.type === "supply") {
       this.supplyAdjustment += update.value;
     } else if (update.type === "debt") {
       this.debtAdjustment += update.value;
-    } else if (update.type === "debtDcaIn") {
-      this.debtTaBalanceAdjustment += update.value;
     } else if (update.type === "settings") {
       const settings = update.value;
       this.settings = createSolautoSettings(settings);
@@ -518,26 +519,33 @@ export class LivePositionUpdates {
           padding: new Uint8Array([]),
           padding1: [],
         },
-        debtToAddBaseUnit: BigInt(dca.debtToAddBaseUnit),
-        padding: new Uint8Array([]),
+        dcaInBaseUnit: BigInt(dca.dcaInBaseUnit),
+        tokenType: dca.tokenType,
+        padding: [],
       };
+    } else if (update.type === "cancellingDca") {
+      this.cancellingDca = update.value;
+    } else if (update.type === "dcaInBalance") {
+      this.dcaInBalance = update.value;
     }
   }
 
   reset() {
     this.supplyAdjustment = BigInt(0);
     this.debtAdjustment = BigInt(0);
-    this.debtTaBalanceAdjustment = BigInt(0);
     this.settings = undefined;
     this.activeDca = undefined;
+    this.dcaInBalance = undefined;
+    this.cancellingDca = undefined;
   }
 
   hasUpdates(): boolean {
     return (
       this.supplyAdjustment !== BigInt(0) ||
       this.debtAdjustment !== BigInt(0) ||
-      this.debtTaBalanceAdjustment !== BigInt(0) ||
-      this.settings !== undefined
+      this.dcaInBalance !== undefined ||
+      this.settings !== undefined ||
+      this.cancellingDca !== undefined
     );
   }
 }

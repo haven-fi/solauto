@@ -13,7 +13,7 @@ use num_derive::FromPrimitive;
     BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq, PartialOrd, Hash, FromPrimitive,
 )]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub enum FeeType {
-    Small,
-    Default,
+pub enum TokenType {
+    Supply,
+    Debt,
 }

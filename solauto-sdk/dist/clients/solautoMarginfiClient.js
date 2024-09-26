@@ -293,9 +293,7 @@ class SolautoMarginfiClient extends solautoClient_1.SolautoClient {
             supplyBank: (0, umi_1.publicKey)(this.marginfiSupplyAccounts.bank),
             supplyPriceOracle: (0, umi_1.publicKey)(this.supplyPriceOracle),
             positionSupplyTa: (0, umi_1.publicKey)(this.positionSupplyTa),
-            signerSupplyTa: this.selfManaged
-                ? (0, umi_1.publicKey)(this.signerSupplyTa)
-                : undefined,
+            authoritySupplyTa: (0, umi_1.publicKey)((0, accountUtils_1.getTokenAccount)(this.authority, this.supplyMint)),
             vaultSupplyTa: needSupplyAccounts
                 ? (0, umi_1.publicKey)(this.marginfiSupplyAccounts.liquidityVault)
                 : undefined,
@@ -305,7 +303,7 @@ class SolautoMarginfiClient extends solautoClient_1.SolautoClient {
             debtBank: (0, umi_1.publicKey)(this.marginfiDebtAccounts.bank),
             debtPriceOracle: (0, umi_1.publicKey)(this.debtPriceOracle),
             positionDebtTa: (0, umi_1.publicKey)(this.positionDebtTa),
-            signerDebtTa: this.selfManaged ? (0, umi_1.publicKey)(this.signerDebtTa) : undefined,
+            authorityDebtTa: (0, umi_1.publicKey)((0, accountUtils_1.getTokenAccount)(this.authority, this.debtMint)),
             vaultDebtTa: needDebtAccounts
                 ? (0, umi_1.publicKey)(this.marginfiDebtAccounts.liquidityVault)
                 : undefined,

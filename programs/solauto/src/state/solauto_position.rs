@@ -10,7 +10,7 @@ use std::{
 
 use crate::{
     constants::USD_DECIMALS,
-    types::shared::{FeeType, PodBool, TokenType},
+    types::shared::{PodBool, TokenType},
     utils::math_utils::{
         from_base_unit, from_bps, get_liq_utilization_rate_bps, net_worth_base_amount, to_base_unit,
     },
@@ -180,7 +180,8 @@ impl PositionTokenUsage {
 #[derive(BorshDeserialize, Clone, Debug, Copy, Default)]
 pub struct DCASettingsInp {
     pub automation: AutomationSettingsInp,
-    pub debt_to_add_base_unit: u64,
+    pub dca_in_base_unit: u64,
+    pub token_type: TokenType,
 }
 
 #[repr(C, align(8))]
@@ -189,22 +190,24 @@ pub struct DCASettingsInp {
 )]
 pub struct DCASettings {
     pub automation: AutomationSettings,
-    // Gradually add more debt to the position during the DCA period. If this is 0, then a DCA-out is assumed.
-    pub debt_to_add_base_unit: u64,
-    _padding: [u8; 32],
+    // Gradually add more to the position during the DCA period. If this is 0, then a DCA-out is assumed.
+    pub dca_in_base_unit: u64,
+    pub token_type: TokenType,
+    _padding: [u8; 31],
 }
 
 impl DCASettings {
     pub fn from(args: DCASettingsInp) -> Self {
         Self {
             automation: AutomationSettings::from(args.automation),
-            debt_to_add_base_unit: args.debt_to_add_base_unit,
-            _padding: [0; 32],
+            dca_in_base_unit: args.dca_in_base_unit,
+            token_type: args.token_type,
+            _padding: [0; 31],
         }
     }
     #[inline(always)]
     pub fn dca_in(&self) -> bool {
-        self.debt_to_add_base_unit > 0
+        self.dca_in_base_unit > 0
     }
     #[inline(always)]
     pub fn is_active(&self) -> bool {
@@ -358,10 +361,7 @@ pub struct SolautoPosition {
     pub position: PositionData,
     pub state: PositionState,
     pub rebalance: RebalanceData,
-    // LEGACY, can be 0, or 1, and can be replaced
-    pub fee_type: FeeType,
-    _padding2: [u8; 7],
-    _padding: [u32; 30],
+    _padding: [u32; 32],
 }
 
 impl SolautoPosition {
@@ -383,9 +383,7 @@ impl SolautoPosition {
             position,
             state,
             rebalance: RebalanceData::default(),
-            fee_type: FeeType::Small,
-            _padding2: [0; 7],
-            _padding: [0; 30],
+            _padding: [0; 32],
         }
     }
     #[inline(always)]

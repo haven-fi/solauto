@@ -9,7 +9,6 @@ export * from './automationSettings';
 export * from './automationSettingsInp';
 export * from './dCASettings';
 export * from './dCASettingsInp';
-export * from './feeType';
 export * from './lendingPlatform';
 export * from './podBool';
 export * from './positionData';
@@ -22,5 +21,6 @@ export * from './solautoSettingsParameters';
 export * from './solautoSettingsParametersInp';
 export * from './tokenAmount';
 export * from './tokenBalanceAmount';
+export * from './tokenType';
 export * from './updatePositionData';
 //# sourceMappingURL=index.d.ts.map

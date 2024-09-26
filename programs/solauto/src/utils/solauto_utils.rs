@@ -205,7 +205,7 @@ pub fn initiate_dca_in_if_necessary<'a, 'b>(
     solauto_position: &'b mut DeserializedAccount<'a, SolautoPosition>,
     position_debt_ta: Option<&'a AccountInfo<'a>>,
     signer: &'a AccountInfo<'a>,
-    signer_debt_ta: Option<&'a AccountInfo<'a>>,
+    signer_dca_ta: Option<&'a AccountInfo<'a>>,
 ) -> ProgramResult {
     if solauto_position.data.self_managed.val {
         return Ok(());
@@ -220,7 +220,7 @@ pub fn initiate_dca_in_if_necessary<'a, 'b>(
         return Ok(());
     }
 
-    if position_debt_ta.is_none() || signer_debt_ta.is_none() {
+    if position_debt_ta.is_none() || signer_dca_ta.is_none() {
         msg!("Missing required accounts in order to initiate DCA-in");
         return Err(SolautoError::IncorrectAccounts.into());
     }
@@ -232,49 +232,48 @@ pub fn initiate_dca_in_if_necessary<'a, 'b>(
         return Err(SolautoError::IncorrectAccounts.into());
     }
 
-    let base_unit_amount_to_add = position.dca.debt_to_add_base_unit;
-    let signer_token_account = TokenAccount::unpack(&signer_debt_ta.unwrap().data.borrow())?;
+    let signer_token_account = TokenAccount::unpack(&signer_dca_ta.unwrap().data.borrow())?;
     let balance = signer_token_account.amount;
 
-    if base_unit_amount_to_add > balance {
+    if position.dca.dca_in_base_unit > balance {
         msg!("Provided greater DCA-in value than exists in the signer debt token account");
         return Err(ProgramError::InvalidInstructionData.into());
     }
 
     spl_token_transfer(
         token_program,
-        signer_debt_ta.unwrap(),
+        signer_dca_ta.unwrap(),
         signer,
         position_debt_ta.unwrap(),
-        base_unit_amount_to_add,
+        position.dca.dca_in_base_unit,
         None,
     )?;
 
     Ok(())
 }
 
-pub fn cancel_dca_in_if_necessary<'a, 'b>(
+pub fn cancel_dca_in<'a, 'b>(
     signer: &'a AccountInfo<'a>,
     system_program: &'a AccountInfo<'a>,
     token_program: &'a AccountInfo<'a>,
     solauto_position: &'b mut DeserializedAccount<'a, SolautoPosition>,
-    debt_mint: Option<&'a AccountInfo<'a>>,
-    position_debt_ta: Option<&'a AccountInfo<'a>>,
-    signer_debt_ta: Option<&'a AccountInfo<'a>>,
+    dca_mint: Option<&'a AccountInfo<'a>>,
+    position_dca_ta: Option<&'a AccountInfo<'a>>,
+    signer_dca_ta: Option<&'a AccountInfo<'a>>,
 ) -> ProgramResult {
     let active_dca = &solauto_position.data.position.dca;
 
     if active_dca.dca_in() {
-        if debt_mint.is_none() || position_debt_ta.is_none() || signer_debt_ta.is_none() {
+        if dca_mint.is_none() || position_dca_ta.is_none() || signer_dca_ta.is_none() {
             msg!(
-                "Requires debt_mint, position_debt_ta & signer_debt_ta in order to cancel the active DCA-in"
+                "Requires dca_mint, position_dca_ta & signer_dca_ta in order to cancel the active DCA-in"
             );
             return Err(SolautoError::IncorrectAccounts.into());
         }
 
-        let debt_ta_current_balance =
-            TokenAccount::unpack(&position_debt_ta.unwrap().data.borrow())?.amount;
-        if debt_ta_current_balance == 0 {
+        let dca_ta_current_balance =
+            TokenAccount::unpack(&position_dca_ta.unwrap().data.borrow())?.amount;
+        if dca_ta_current_balance == 0 {
             return Ok(());
         }
 
@@ -283,16 +282,16 @@ pub fn cancel_dca_in_if_necessary<'a, 'b>(
             system_program,
             signer,
             signer,
-            signer_debt_ta.unwrap(),
-            debt_mint.unwrap(),
+            signer_dca_ta.unwrap(),
+            dca_mint.unwrap(),
         )?;
 
         spl_token_transfer(
             token_program,
-            position_debt_ta.unwrap(),
+            position_dca_ta.unwrap(),
             solauto_position.account_info,
-            signer_debt_ta.unwrap(),
-            debt_ta_current_balance,
+            signer_dca_ta.unwrap(),
+            dca_ta_current_balance,
             Some(&solauto_position.data.seeds_with_bump()),
         )?;
     }

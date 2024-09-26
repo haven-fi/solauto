@@ -53,9 +53,9 @@ pub enum Instruction {
     #[account(name = "system_program")]
     #[account(name = "token_program")]
     #[account(mut, name = "solauto_position")]
-    #[account(optional, name = "debt_mint")]
-    #[account(mut, optional, name = "position_debt_ta")]
-    #[account(mut, optional, name = "signer_debt_ta")]
+    #[account(optional, name = "dca_mint")]
+    #[account(mut, optional, name = "position_dca_ta")]
+    #[account(mut, optional, name = "signer_dca_ta")]
     UpdatePosition(UpdatePositionData),
     
     /// Close the Solauto position and return the rent for the various accounts
@@ -65,9 +65,8 @@ pub enum Instruction {
     #[account(name = "ata_program")]
     #[account(mut, name = "solauto_position")]
     #[account(mut, name = "protocol_account")]
-    #[account(mut, name = "signer_supply_ta")]
     #[account(mut, name = "position_supply_ta")]
-    #[account(mut, optional, name = "position_supply_collateral_ta")]
+    #[account(mut, name = "signer_supply_ta")]
     #[account(mut, name = "position_debt_ta")]
     #[account(mut, name = "signer_debt_ta")]
     ClosePosition,
@@ -78,9 +77,9 @@ pub enum Instruction {
     #[account(name = "token_program")]
     #[account(name = "ata_program")]
     #[account(mut, name = "solauto_position")]
-    #[account(optional, name = "debt_mint")]
-    #[account(mut, optional, name = "position_debt_ta")]
-    #[account(mut, optional, name = "signer_debt_ta")]
+    #[account(optional, name = "dca_mint")]
+    #[account(mut, optional, name = "position_dca_ta")]
+    #[account(mut, optional, name = "signer_dca_ta")]
     CancelDCA,
 
     /// Open a new Solauto position with Marginfi
@@ -157,13 +156,13 @@ pub enum Instruction {
     #[account(mut, name = "supply_bank")]
     #[account(optional, name = "supply_price_oracle")]
     #[account(mut, name = "position_supply_ta")]
-    #[account(mut, optional, name = "signer_supply_ta")]
+    #[account(mut, optional, name = "authority_supply_ta")]
     #[account(mut, optional, name = "vault_supply_ta")]
     #[account(mut, optional, name = "supply_vault_authority")]
     #[account(mut, name = "debt_bank")]
     #[account(optional, name = "debt_price_oracle")]
     #[account(mut, name = "position_debt_ta")]
-    #[account(mut, optional, name = "signer_debt_ta")]
+    #[account(mut, optional, name = "authority_debt_ta")]
     #[account(mut, optional, name = "vault_debt_ta")]
     #[account(mut, optional, name = "debt_vault_authority")]
     MarginfiRebalance(RebalanceSettings),

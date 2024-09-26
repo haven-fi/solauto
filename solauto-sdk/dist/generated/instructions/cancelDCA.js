@@ -48,20 +48,20 @@ function cancelDCA(context, input) {
             isWritable: true,
             value: input.solautoPosition ?? null,
         },
-        debtMint: {
+        dcaMint: {
             index: 5,
             isWritable: false,
-            value: input.debtMint ?? null,
+            value: input.dcaMint ?? null,
         },
-        positionDebtTa: {
+        positionDcaTa: {
             index: 6,
             isWritable: true,
-            value: input.positionDebtTa ?? null,
+            value: input.positionDcaTa ?? null,
         },
-        signerDebtTa: {
+        signerDcaTa: {
             index: 7,
             isWritable: true,
-            value: input.signerDebtTa ?? null,
+            value: input.signerDcaTa ?? null,
         },
     };
     // Default values.
