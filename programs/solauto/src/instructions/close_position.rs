@@ -1,5 +1,4 @@
 use solana_program::{account_info::AccountInfo, entrypoint::ProgramResult};
-use spl_token::state::Account as TokenAccount;
 
 use crate::{
     constants::WSOL_MINT,
@@ -8,7 +7,7 @@ use crate::{
         instruction::accounts::{ClosePositionAccounts, Context},
         shared::DeserializedAccount,
     },
-    utils::solana_utils,
+    utils::{solana_utils, solauto_utils},
 };
 
 pub fn close_position_ta<'a>(
@@ -17,7 +16,7 @@ pub fn close_position_ta<'a>(
     position_ta: &'a AccountInfo<'a>,
 ) -> ProgramResult {
     let solauto_position_seeds = &solauto_position.data.seeds_with_bump();
-    let position_ta_data = DeserializedAccount::<TokenAccount>::unpack(Some(position_ta))?
+    let position_ta_data = solauto_utils::safe_unpack_token_account(Some(position_ta))?
         .unwrap()
         .data;
 

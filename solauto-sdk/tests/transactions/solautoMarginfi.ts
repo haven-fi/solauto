@@ -23,7 +23,7 @@ describe("Solauto Marginfi tests", async () => {
   // const signer = setupTest();
   const signer = setupTest("solauto-manager");
 
-  const payForTransactions = false;
+  const payForTransactions = true;
   const useJitoBundle = false;
   const positionId = 1;
 
@@ -39,7 +39,7 @@ describe("Solauto Marginfi tests", async () => {
       {
         signer,
         positionId,
-        authority: new PublicKey("E5BBsR1sUToPc3jXVwhrK5ttSiy6xhWJDMdQLvkgNppe")
+        authority: new PublicKey("5UqsR2PGzbP8pGPbXEeXx86Gjz2N2UFBAuFZUSVydAEe")
         // marginfiAccount: new PublicKey(
         //   "4nNvUXF5YqHFcH2nGweSiuvy1ct7V5FXfoCLKFYUN36z"
         // ),
@@ -120,6 +120,8 @@ describe("Solauto Marginfi tests", async () => {
     //   }, "deposit")
     // );
 
+    console.log("POSITION SUPPLY TA:", client.positionSupplyTa);
+    console.log("POSITION DEBT TA:", client.positionDebtTa);
     transactionItems.push(
       new TransactionItem(
         async (attemptNum) =>

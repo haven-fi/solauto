@@ -8,7 +8,6 @@ use solana_program::{
     sysvar::instructions::{load_current_index_checked, load_instruction_at_checked},
 };
 use spl_associated_token_account::get_associated_token_address;
-use spl_token::state::Account as TokenAccount;
 
 use crate::{
     constants::WSOL_MINT,
@@ -106,7 +105,7 @@ pub fn process_convert_referral_fees<'a>(accounts: &'a [AccountInfo<'a>]) -> Pro
     )?;
 
     let token_account =
-        DeserializedAccount::<TokenAccount>::unpack(Some(ctx.accounts.referral_fees_ta))?.unwrap();
+        solauto_utils::safe_unpack_token_account(Some(ctx.accounts.referral_fees_ta))?.unwrap();
     if !validation_utils::token_account_owned_by(&token_account, ctx.accounts.referral_state.key) {
         msg!("Provided incorrect token account for the given referral state account");
         return Err(SolautoError::IncorrectAccounts.into());

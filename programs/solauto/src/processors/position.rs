@@ -1,7 +1,6 @@
 use solana_program::{
     account_info::AccountInfo, clock::Clock, entrypoint::ProgramResult, msg, sysvar::Sysvar,
 };
-use spl_token::state::Account as TokenAccount;
 
 use crate::{
     instructions::{close_position, update_position},
@@ -38,7 +37,7 @@ pub fn process_update_position_instruction<'a>(
     if args.dca.is_some() {
         validation_utils::validate_token_account(
             &solauto_position,
-            DeserializedAccount::<TokenAccount>::unpack(ctx.accounts.position_dca_ta)?.as_ref(),
+            ctx.accounts.position_dca_ta,
             Some(args.dca.as_ref().unwrap().token_type),
             None,
         )?;
@@ -107,7 +106,7 @@ pub fn process_cancel_dca<'a>(accounts: &'a [AccountInfo<'a>]) -> ProgramResult 
 
     validation_utils::validate_token_account(
         &solauto_position,
-        DeserializedAccount::<TokenAccount>::unpack(ctx.accounts.position_dca_ta)?.as_ref(),
+        ctx.accounts.position_dca_ta,
         Some(solauto_position.data.position.dca.token_type),
         None,
     )?;

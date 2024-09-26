@@ -27,7 +27,7 @@ const generalUtils_1 = require("./generalUtils");
 const marginfi_sdk_1 = require("../marginfi-sdk");
 const types_1 = require("../types");
 function getSolanaRpcConnection(heliusApiKey) {
-    const connection = new web3_js_1.Connection(`https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`, "finalized");
+    const connection = new web3_js_1.Connection(`https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`, "confirmed");
     const umi = (0, umi_bundle_defaults_1.createUmi)(connection);
     return [connection, umi];
 }

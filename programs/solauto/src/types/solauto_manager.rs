@@ -3,8 +3,6 @@ use solana_program::{
     account_info::AccountInfo, clock::Clock, entrypoint::ProgramResult, msg,
     program_error::ProgramError, sysvar::Sysvar,
 };
-use solana_utils::spl_token_transfer;
-use spl_token::state::Account as TokenAccount;
 use std::{
     cmp::min,
     ops::{Add, Div, Mul, Sub},
@@ -13,7 +11,7 @@ use std::{
 use super::{
     instruction::{RebalanceSettings, SolautoAction, SolautoStandardAccounts},
     lending_protocol::{LendingProtocolClient, LendingProtocolTokenAccounts},
-    shared::{DeserializedAccount, RefreshStateProps, SolautoError, TokenBalanceAmount, TokenType},
+    shared::{RefreshStateProps, SolautoError, TokenBalanceAmount, TokenType},
 };
 use crate::{
     constants::DEFAULT_LIMIT_GAP_BPS,
@@ -266,12 +264,12 @@ impl<'a> SolautoManager<'a> {
         }
 
         let mut available_supply_balance =
-            DeserializedAccount::<TokenAccount>::unpack(self.accounts.supply.position_ta)?
+            solauto_utils::safe_unpack_token_account(self.accounts.supply.position_ta)?
                 .unwrap()
                 .data
                 .amount;
         let mut available_debt_balance =
-            DeserializedAccount::<TokenAccount>::unpack(self.accounts.debt.position_ta)?
+        solauto_utils::safe_unpack_token_account(self.accounts.debt.position_ta)?
                 .unwrap()
                 .data
                 .amount;
@@ -305,7 +303,7 @@ impl<'a> SolautoManager<'a> {
 
         let transfer_to_authority_ta = |token_accounts: &LendingProtocolTokenAccounts<'a>,
                                         amount: u64| {
-            spl_token_transfer(
+            solana_utils::spl_token_transfer(
                 self.std_accounts.token_program,
                 token_accounts.position_ta.clone().unwrap(),
                 self.std_accounts.solauto_position.account_info,

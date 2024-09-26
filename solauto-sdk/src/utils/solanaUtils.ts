@@ -43,7 +43,7 @@ export function getSolanaRpcConnection(
 ): [Connection, Umi] {
   const connection = new Connection(
     `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`,
-    "finalized"
+    "confirmed"
   );
   const umi = createUmi(connection);
   return [connection, umi];

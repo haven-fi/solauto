@@ -340,3 +340,11 @@ pub fn get_solauto_fees_bps(
         total: fee_bps as u16,
     }
 }
+
+pub fn safe_unpack_token_account<'a>(account: Option<&'a AccountInfo<'a>>) -> Result<Option<DeserializedAccount<'a, TokenAccount>>, ProgramError> {
+    if account.is_some() && account_has_data(account.unwrap()) {
+        DeserializedAccount::<TokenAccount>::unpack(account).map_err(|_| ProgramError::InvalidAccountData)
+    } else {
+        Ok(None)
+    }
+}

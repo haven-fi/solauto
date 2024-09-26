@@ -1,7 +1,6 @@
 const path = require("path");
 const fs = require("fs");
 const k = require("@metaplex-foundation/kinobi");
-const crypto = require("crypto");
 
 const idlsDir = path.join(__dirname, "idls");
 
