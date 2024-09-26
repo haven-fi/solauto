@@ -38,6 +38,7 @@ pub fn process_update_referral_states<'a>(
     let ctx = UpdateReferralStatesAccounts::context(accounts)?;
 
     if !ctx.accounts.signer.is_signer {
+        msg!("Missing required referral signer");
         return Err(ProgramError::MissingRequiredSignature.into());
     }
 
@@ -114,6 +115,7 @@ pub fn process_convert_referral_fees<'a>(accounts: &'a [AccountInfo<'a>]) -> Pro
     let current_ix_idx = load_current_index_checked(ctx.accounts.ixs_sysvar)?;
     let current_ix = load_instruction_at_checked(current_ix_idx as usize, ctx.accounts.ixs_sysvar)?;
     if current_ix.program_id != crate::ID || get_stack_height() > TRANSACTION_LEVEL_STACK_HEIGHT {
+        msg!("Instruction is CPI");
         return Err(SolautoError::InstructionIsCPI.into());
     }
 

@@ -463,6 +463,7 @@ pub fn validate_referral_signer(
     }
 
     if !signer.is_signer {
+        msg!("Missing required referral signer");
         return Err(ProgramError::MissingRequiredSignature.into());
     }
     if signer.key != &referral_state.data.authority

@@ -123,10 +123,10 @@ class SolautoClient extends txHandler_1.TxHandler {
     lutAccountsToAdd() {
         return [
             this.authority,
-            ...(this.signer.publicKey.toString() === this.authority.toString()
+            ...((0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.signer.publicKey).equals(this.authority)
                 ? [this.signerSupplyTa]
                 : []),
-            ...(this.signer.publicKey.toString() === this.authority.toString()
+            ...((0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.signer.publicKey).equals(this.authority)
                 ? [this.signerDebtTa]
                 : []),
             this.solautoPosition,

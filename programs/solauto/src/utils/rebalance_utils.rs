@@ -36,6 +36,7 @@ pub fn validate_rebalance_instructions(
 
     let current_ix_idx = load_current_index_checked(ixs_sysvar)?;
     if get_stack_height() > TRANSACTION_LEVEL_STACK_HEIGHT {
+        msg!("Instruction is CPI");
         return Err(SolautoError::InstructionIsCPI.into());
     }
 
@@ -129,6 +130,7 @@ pub fn validate_rebalance_instructions(
             marginfi_flash_borrow: Some(((current_ix_idx as i16) + ix_2_before) as usize),
         })
     } else {
+        msg!("Incorrect rebalance instructions");
         Err(SolautoError::IncorrectInstructions.into())
     }
 }

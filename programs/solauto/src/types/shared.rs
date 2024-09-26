@@ -3,6 +3,7 @@ use bytemuck::AnyBitPattern;
 use bytemuck::Pod;
 use bytemuck::Zeroable;
 use shank::ShankType;
+use solana_program::msg;
 use solana_program::{
     account_info::AccountInfo,
     program_error::ProgramError,
@@ -118,8 +119,10 @@ impl<'a, T: Pack + IsInitialized> DeserializedAccount<'a, T> {
     pub fn unpack(account: Option<&'a AccountInfo<'a>>) -> Result<Option<Self>, ProgramError> {
         match account {
             Some(account_info) => {
-                let deserialized_data = T::unpack(&account_info.data.borrow())
-                    .map_err(|_| SolautoError::FailedAccountDeserialization)?;
+                let deserialized_data = T::unpack(&account_info.data.borrow()).map_err(|_| {
+                    msg!("Failed to deserialize account data");
+                    SolautoError::FailedAccountDeserialization
+                })?;
                 Ok(Some(Self {
                     account_info,
                     data: Box::new(deserialized_data),

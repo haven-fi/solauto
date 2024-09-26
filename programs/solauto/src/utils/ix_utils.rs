@@ -237,6 +237,7 @@ pub fn validate_jup_instruction<'a>(
             drop(args);
             Ok(return_data)
         } else {
+            msg!("Unsupported JUP instruction");
             Err(SolautoError::IncorrectInstructions.into())
         };
 
