@@ -229,7 +229,8 @@ export abstract class SolautoClient extends TxHandler {
       if (!this.solautoPositionData) {
         this.solautoPositionData = await safeFetchSolautoPosition(
           this.umi,
-          publicKey(this.solautoPosition)
+          publicKey(this.solautoPosition),
+          { commitment: "confirmed" }
         );
       } else {
         if (this.livePositionUpdates.activeDca) {

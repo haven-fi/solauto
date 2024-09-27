@@ -108,7 +108,8 @@ export class SolautoMarginfiClient extends SolautoClient {
 
     const marginfiAccountData = await safeFetchMarginfiAccount(
       this.umi,
-      publicKey(this.marginfiAccountPk)
+      publicKey(this.marginfiAccountPk),
+      { commitment: "confirmed" }
     );
     this.marginfiGroup = marginfiAccountData
       ? toWeb3JsPublicKey(marginfiAccountData.group)

@@ -42,7 +42,7 @@ export class ReferralStateManager extends TxHandler {
 
         this.signer = this.umi.identity;
         this.referralState = getReferralState(args.referralAuthority ?? toWeb3JsPublicKey(this.signer.publicKey));
-        this.referralStateData = await safeFetchReferralState(this.umi, publicKey(this.referralState));
+        this.referralStateData = await safeFetchReferralState(this.umi, publicKey(this.referralState), { commitment: "confirmed" });
     }
 
     defaultLookupTables(): string[] {

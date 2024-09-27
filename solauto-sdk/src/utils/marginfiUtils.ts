@@ -22,7 +22,6 @@ import { PositionState, PositionTokenUsage } from "../generated";
 import { USD_DECIMALS } from "../constants/generalAccounts";
 import { LivePositionUpdates } from "./solauto/generalUtils";
 import { currentUnixSecondsSolana } from "./solanaUtils";
-import { USDC_MINT } from "../constants";
 
 export function findMarginfiAccounts(bank: PublicKey): MarginfiAssetAccounts {
   for (const key in MARGINFI_ACCOUNTS) {
@@ -55,7 +54,8 @@ export async function getMaxLtvAndLiqThreshold(
   if (!supply.bank || supply.bank === null) {
     supply.bank = await safeFetchBank(
       umi,
-      publicKey(MARGINFI_ACCOUNTS[supply.mint.toString()].bank)
+      publicKey(MARGINFI_ACCOUNTS[supply.mint.toString()].bank),
+      { commitment: "confirmed" }
     );
   }
 
@@ -67,7 +67,8 @@ export async function getMaxLtvAndLiqThreshold(
       umi,
       publicKey(
         MARGINFI_ACCOUNTS[debt.mint.toString()].bank
-      )
+      ),
+      { commitment: "confirmed" }
     );
   }
 
@@ -280,7 +281,7 @@ export async function getMarginfiAccountPositionState(
 
     if (supplyBalances.length > 0) {
       if (supplyBank === null) {
-        supplyBank = await safeFetchBank(umi, supplyBalances[0].bankPk);
+        supplyBank = await safeFetchBank(umi, supplyBalances[0].bankPk, { commitment: "confirmed" });
       }
       if (!supplyMint) {
         supplyMint = toWeb3JsPublicKey(supplyBank!.mint);
@@ -296,7 +297,7 @@ export async function getMarginfiAccountPositionState(
 
     if (debtBalances.length > 0) {
       if (debtBank === null) {
-        debtBank = await safeFetchBank(umi, debtBalances[0].bankPk);
+        debtBank = await safeFetchBank(umi, debtBalances[0].bankPk, { commitment: "confirmed" });
       }
       if (!debtMint) {
         debtMint = toWeb3JsPublicKey(debtBank!.mint);

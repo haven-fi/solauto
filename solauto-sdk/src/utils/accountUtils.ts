@@ -28,7 +28,7 @@ export function getTokenAccounts(wallet: PublicKey, tokenMints: PublicKey[]): Pu
 }
 
 export async function getTokenAccountData(umi: Umi, tokenAccount: PublicKey) {
-  const resp = await umi.rpc.getAccount(publicKey(tokenAccount));
+  const resp = await umi.rpc.getAccount(publicKey(tokenAccount), { commitment: "confirmed" });
   if (resp.exists) {
     return SplTokenAccountLayout.decode(resp.data);
   } else {

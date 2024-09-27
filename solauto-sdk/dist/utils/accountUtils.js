@@ -29,7 +29,7 @@ function getTokenAccounts(wallet, tokenMints) {
     return tokenMints.map(x => getTokenAccount(wallet, x));
 }
 async function getTokenAccountData(umi, tokenAccount) {
-    const resp = await umi.rpc.getAccount((0, umi_1.publicKey)(tokenAccount));
+    const resp = await umi.rpc.getAccount((0, umi_1.publicKey)(tokenAccount), { commitment: "confirmed" });
     if (resp.exists) {
         return spl_token_1.AccountLayout.decode(resp.data);
     }

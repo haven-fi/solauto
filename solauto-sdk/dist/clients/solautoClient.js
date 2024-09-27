@@ -96,7 +96,7 @@ class SolautoClient extends txHandler_1.TxHandler {
     async resetLiveTxUpdates(success) {
         if (success) {
             if (!this.solautoPositionData) {
-                this.solautoPositionData = await (0, generated_1.safeFetchSolautoPosition)(this.umi, (0, umi_1.publicKey)(this.solautoPosition));
+                this.solautoPositionData = await (0, generated_1.safeFetchSolautoPosition)(this.umi, (0, umi_1.publicKey)(this.solautoPosition), { commitment: "confirmed" });
             }
             else {
                 if (this.livePositionUpdates.activeDca) {

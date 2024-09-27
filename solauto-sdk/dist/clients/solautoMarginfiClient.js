@@ -36,7 +36,7 @@ class SolautoMarginfiClient extends solautoClient_1.SolautoClient {
             "publicKey" in this.marginfiAccount
                 ? (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.marginfiAccount.publicKey)
                 : this.marginfiAccount;
-        const marginfiAccountData = await (0, marginfi_sdk_1.safeFetchMarginfiAccount)(this.umi, (0, umi_1.publicKey)(this.marginfiAccountPk));
+        const marginfiAccountData = await (0, marginfi_sdk_1.safeFetchMarginfiAccount)(this.umi, (0, umi_1.publicKey)(this.marginfiAccountPk), { commitment: "confirmed" });
         this.marginfiGroup = marginfiAccountData
             ? (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(marginfiAccountData.group)
             : args.marginfiGroup ?? new web3_js_1.PublicKey(marginfiAccounts_1.DEFAULT_MARGINFI_GROUP);

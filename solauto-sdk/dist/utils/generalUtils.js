@@ -28,7 +28,7 @@ function currentUnixSeconds() {
     return Math.round(new Date().getTime() / 1000);
 }
 async function getSolanaAccountCreated(umi, pk) {
-    const account = await umi.rpc.getAccount((0, umi_1.publicKey)(pk));
+    const account = await umi.rpc.getAccount((0, umi_1.publicKey)(pk), { commitment: "confirmed" });
     return rpcAccountCreated(account);
 }
 function rpcAccountCreated(account) {

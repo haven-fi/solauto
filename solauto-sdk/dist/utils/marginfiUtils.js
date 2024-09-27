@@ -28,11 +28,11 @@ async function getMaxLtvAndLiqThreshold(umi, supply, debt, supplyPrice) {
         return [0, 0];
     }
     if (!supply.bank || supply.bank === null) {
-        supply.bank = await (0, marginfi_sdk_1.safeFetchBank)(umi, (0, umi_1.publicKey)(marginfiAccounts_1.MARGINFI_ACCOUNTS[supply.mint.toString()].bank));
+        supply.bank = await (0, marginfi_sdk_1.safeFetchBank)(umi, (0, umi_1.publicKey)(marginfiAccounts_1.MARGINFI_ACCOUNTS[supply.mint.toString()].bank), { commitment: "confirmed" });
     }
     if ((!debt.bank || debt.bank === null) &&
         !debt.mint.equals(web3_js_1.PublicKey.default)) {
-        debt.bank = await (0, marginfi_sdk_1.safeFetchBank)(umi, (0, umi_1.publicKey)(marginfiAccounts_1.MARGINFI_ACCOUNTS[debt.mint.toString()].bank));
+        debt.bank = await (0, marginfi_sdk_1.safeFetchBank)(umi, (0, umi_1.publicKey)(marginfiAccounts_1.MARGINFI_ACCOUNTS[debt.mint.toString()].bank), { commitment: "confirmed" });
     }
     if (!supplyPrice) {
         const [price] = await (0, generalUtils_1.fetchTokenPrices)([
@@ -154,7 +154,7 @@ async function getMarginfiAccountPositionState(umi, marginfiAccountPk, supplyMin
         }
         if (supplyBalances.length > 0) {
             if (supplyBank === null) {
-                supplyBank = await (0, marginfi_sdk_1.safeFetchBank)(umi, supplyBalances[0].bankPk);
+                supplyBank = await (0, marginfi_sdk_1.safeFetchBank)(umi, supplyBalances[0].bankPk, { commitment: "confirmed" });
             }
             if (!supplyMint) {
                 supplyMint = (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(supplyBank.mint);
@@ -163,7 +163,7 @@ async function getMarginfiAccountPositionState(umi, marginfiAccountPk, supplyMin
         }
         if (debtBalances.length > 0) {
             if (debtBank === null) {
-                debtBank = await (0, marginfi_sdk_1.safeFetchBank)(umi, debtBalances[0].bankPk);
+                debtBank = await (0, marginfi_sdk_1.safeFetchBank)(umi, debtBalances[0].bankPk, { commitment: "confirmed" });
             }
             if (!debtMint) {
                 debtMint = (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(debtBank.mint);

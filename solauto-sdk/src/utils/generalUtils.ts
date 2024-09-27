@@ -25,7 +25,7 @@ export async function getSolanaAccountCreated(
   umi: Umi,
   pk: PublicKey
 ): Promise<boolean> {
-  const account = await umi.rpc.getAccount(publicKey(pk));
+  const account = await umi.rpc.getAccount(publicKey(pk), { commitment: "confirmed" });
   return rpcAccountCreated(account);
 }
 
