@@ -120,8 +120,6 @@ describe("Solauto Marginfi tests", async () => {
     //   }, "deposit")
     // );
 
-    console.log("POSITION SUPPLY TA:", client.positionSupplyTa);
-    console.log("POSITION DEBT TA:", client.positionDebtTa);
     transactionItems.push(
       new TransactionItem(
         async (attemptNum) =>

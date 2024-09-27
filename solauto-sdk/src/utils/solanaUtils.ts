@@ -51,7 +51,7 @@ export function getSolanaRpcConnection(
 
 export async function currentUnixSecondsSolana(umi: Umi): Promise<number> {
   return await retryWithExponentialBackoff(async () => {
-    const blockTime = await umi.rpc.getBlockTime(await umi.rpc.getSlot());
+    const blockTime = await umi.rpc.getBlockTime(await umi.rpc.getSlot(), { commitment: "confirmed" });
     if (blockTime === null) {
       throw new Error("Unable to retrieve block time");
     }
