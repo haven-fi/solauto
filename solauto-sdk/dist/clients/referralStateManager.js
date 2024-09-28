@@ -9,8 +9,8 @@ const generated_1 = require("../generated");
 const utils_1 = require("../utils");
 const txHandler_1 = require("./txHandler");
 class ReferralStateManager extends txHandler_1.TxHandler {
-    constructor(heliusApiKey, localTest) {
-        super(heliusApiKey, localTest);
+    constructor(heliusApiUrl, localTest) {
+        super(heliusApiUrl, localTest);
         this.localTest = localTest;
         this.umi = this.umi.use({
             install(umi) {

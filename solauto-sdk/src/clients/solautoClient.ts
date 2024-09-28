@@ -100,10 +100,10 @@ export abstract class SolautoClient extends TxHandler {
   public livePositionUpdates: LivePositionUpdates = new LivePositionUpdates();
 
   constructor(
-    heliusApiKey: string,
+    heliusApiUrl: string,
     public localTest?: boolean
   ) {
-    super(heliusApiKey, localTest);
+    super(heliusApiUrl, localTest);
 
     this.umi = this.umi.use({
       install(umi) {
@@ -164,7 +164,7 @@ export abstract class SolautoClient extends TxHandler {
       this.debtMint
     );
 
-    this.referralStateManager = new ReferralStateManager(this.heliusApiKey);
+    this.referralStateManager = new ReferralStateManager(this.heliusApiUrl);
     await this.referralStateManager.initialize({
       referralAuthority: this.authority,
       signer: args.signer,

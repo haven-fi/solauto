@@ -3,6 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.buildHeliusApiUrl = buildHeliusApiUrl;
 exports.getSolanaRpcConnection = getSolanaRpcConnection;
 exports.getWrappedInstruction = getWrappedInstruction;
 exports.setComputeUnitLimitUmiIx = setComputeUnitLimitUmiIx;
@@ -25,8 +26,11 @@ const accountUtils_1 = require("./accountUtils");
 const generalUtils_1 = require("./generalUtils");
 const marginfi_sdk_1 = require("../marginfi-sdk");
 const types_1 = require("../types");
-function getSolanaRpcConnection(heliusApiKey) {
-    const connection = new web3_js_1.Connection(`https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`, "confirmed");
+function buildHeliusApiUrl(heliusApiKey) {
+    return `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`;
+}
+function getSolanaRpcConnection(heliusApiUrl) {
+    const connection = new web3_js_1.Connection(heliusApiUrl, "confirmed");
     const umi = (0, umi_bundle_defaults_1.createUmi)(connection);
     return [connection, umi];
 }

@@ -38,13 +38,14 @@ import {
 } from "../marginfi-sdk";
 import { PriorityFeeSetting, TransactionRunType } from "../types";
 
+export function buildHeliusApiUrl(heliusApiKey: string) {
+  return `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`;
+}
+
 export function getSolanaRpcConnection(
-  heliusApiKey: string
+  heliusApiUrl: string
 ): [Connection, Umi] {
-  const connection = new Connection(
-    `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`,
-    "confirmed"
-  );
+  const connection = new Connection(heliusApiUrl, "confirmed");
   const umi = createUmi(connection);
   return [connection, umi];
 }
@@ -306,7 +307,7 @@ export async function sendSingleOptimizedTransaction(
         ),
       3
     );
-  
+
     const computeUnitLimit = Math.round(
       simulationResult.value.unitsConsumed! * 1.1
     );
@@ -328,7 +329,7 @@ export async function sendSingleOptimizedTransaction(
       confirm: { commitment: "confirmed" },
     });
     const txSig = bs58.encode(result.signature);
-    console.log(`Transaction signature: ${txSig}`)
+    console.log(`Transaction signature: ${txSig}`);
     console.log(`https://solscan.io/tx/${txSig}`);
     if (result.result.value.err !== null) {
       throw new Error(result.result.value.err.toString());

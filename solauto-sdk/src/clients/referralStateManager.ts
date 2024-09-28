@@ -21,8 +21,8 @@ export class ReferralStateManager extends TxHandler {
     public referralState!: PublicKey;
     public referralStateData!: ReferralState | null;
 
-    constructor(heliusApiKey: string, public localTest?: boolean) {
-        super(heliusApiKey, localTest)
+    constructor(heliusApiUrl: string, public localTest?: boolean) {
+        super(heliusApiUrl, localTest)
         this.umi = this.umi.use({
             install(umi) {
                 umi.programs.add(createSolautoProgram(), false);

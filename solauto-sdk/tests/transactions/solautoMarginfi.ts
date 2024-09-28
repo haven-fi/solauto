@@ -18,6 +18,7 @@ import {
 } from "../../src/transactions/transactionsManager";
 import { PublicKey } from "@solana/web3.js";
 import { USDC_MINT } from "../../src/constants";
+import { buildHeliusApiUrl } from "../../src/utils";
 
 describe("Solauto Marginfi tests", async () => {
   // const signer = setupTest();
@@ -29,7 +30,7 @@ describe("Solauto Marginfi tests", async () => {
 
   it("open - deposit - borrow - rebalance to 0 - withdraw - close", async () => {
 
-    const client = new SolautoMarginfiClient(process.env.HELIUS_API_KEY!, true);
+    const client = new SolautoMarginfiClient(buildHeliusApiUrl(process.env.HELIUS_API_KEY!), true);
 
     const supply = NATIVE_MINT;
     const supplyDecimals = 9;
@@ -39,7 +40,7 @@ describe("Solauto Marginfi tests", async () => {
       {
         signer,
         positionId,
-        // authority: new PublicKey("")
+        authority: new PublicKey("AprYCPiVeKMCgjQ2ZufwChMzvQ5kFjJo2ekTLSkXsQDm")
         // marginfiAccount: new PublicKey(
         //   "4nNvUXF5YqHFcH2nGweSiuvy1ct7V5FXfoCLKFYUN36z"
         // ),

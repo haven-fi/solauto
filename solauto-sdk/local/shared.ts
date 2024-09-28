@@ -8,7 +8,7 @@ import {
   VersionedTransaction,
   PublicKey,
 } from "@solana/web3.js";
-import { getSolanaRpcConnection } from "../src/utils/solanaUtils";
+import { buildHeliusApiUrl, getSolanaRpcConnection } from "../src/utils/solanaUtils";
 
 function loadSecretKey(keypairPath: string) {
   const secretKey = JSON.parse(fs.readFileSync(keypairPath, "utf8"));
@@ -22,7 +22,7 @@ export function getSecretKey(keypairFilename: string = "id"): Uint8Array {
 }
 
 const keypair = Keypair.fromSecretKey(getSecretKey());
-const [connection, _] = getSolanaRpcConnection(process.env.HELIUS_API_KEY ?? "");
+const [connection, _] = getSolanaRpcConnection(buildHeliusApiUrl(process.env.HELIUS_API_KEY ?? ""));
 
 async function createAndSendV0Tx(txInstructions: TransactionInstruction[]) {
   let latestBlockhash = await connection.getLatestBlockhash("finalized");

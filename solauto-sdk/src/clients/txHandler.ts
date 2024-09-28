@@ -2,18 +2,19 @@ import { Umi } from "@metaplex-foundation/umi";
 import { Connection } from "@solana/web3.js";
 import { getSolanaRpcConnection } from "../utils";
 
-
 export abstract class TxHandler {
-  public heliusApiKey!: string;
+  public heliusApiUrl!: string;
   public umi!: Umi;
   public connection!: Connection;
 
-  constructor(heliusApiKey: string,
-    public localTest?: boolean) {
-      this.heliusApiKey = heliusApiKey;
-      const [connection, umi] = getSolanaRpcConnection(this.heliusApiKey);
-      this.connection = connection;
-      this.umi = umi;
+  constructor(
+    heliusApiUrl: string,
+    public localTest?: boolean
+  ) {
+    this.heliusApiUrl = heliusApiUrl;
+    const [connection, umi] = getSolanaRpcConnection(this.heliusApiUrl);
+    this.connection = connection;
+    this.umi = umi;
   }
 
   log(...args: any[]): void {

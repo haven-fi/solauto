@@ -1,7 +1,8 @@
 import { AddressLookupTableInput, Signer, TransactionBuilder, Umi, WrappedInstruction } from "@metaplex-foundation/umi";
 import { Connection, PublicKey, TransactionInstruction } from "@solana/web3.js";
 import { PriorityFeeSetting, TransactionRunType } from "../types";
-export declare function getSolanaRpcConnection(heliusApiKey: string): [Connection, Umi];
+export declare function buildHeliusApiUrl(heliusApiKey: string): string;
+export declare function getSolanaRpcConnection(heliusApiUrl: string): [Connection, Umi];
 export declare function getWrappedInstruction(signer: Signer, ix: TransactionInstruction): WrappedInstruction;
 export declare function setComputeUnitLimitUmiIx(signer: Signer, maxComputeUnits: number): WrappedInstruction;
 export declare function setComputeUnitPriceUmiIx(signer: Signer, lamports: number): WrappedInstruction;

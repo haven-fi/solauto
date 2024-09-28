@@ -81,6 +81,8 @@ async function getAllMarginfiAccountsByAuthority(umi, authority, compatibleWithS
             state: await getMarginfiAccountPositionState(umi, (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(x.publicKey)),
         })));
         return positionStates
+            .sort((a, b) => (0, numberUtils_1.fromBaseUnit)(b.state?.netWorth.baseAmountUsdValue ?? BigInt(0), generalAccounts_1.USD_DECIMALS) -
+            (0, numberUtils_1.fromBaseUnit)(a.state?.netWorth.baseAmountUsdValue ?? BigInt(0), generalAccounts_1.USD_DECIMALS))
             .filter((x) => x.state !== undefined)
             .map((x) => ({
             marginfiAccount: (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(x.publicKey),
@@ -153,7 +155,9 @@ async function getMarginfiAccountPositionState(umi, marginfiAccountPk, supplyMin
         }
         if (supplyBalances.length > 0) {
             if (supplyBank === null) {
-                supplyBank = await (0, marginfi_sdk_1.safeFetchBank)(umi, supplyBalances[0].bankPk, { commitment: "confirmed" });
+                supplyBank = await (0, marginfi_sdk_1.safeFetchBank)(umi, supplyBalances[0].bankPk, {
+                    commitment: "confirmed",
+                });
             }
             if (!supplyMint) {
                 supplyMint = (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(supplyBank.mint);
@@ -162,7 +166,9 @@ async function getMarginfiAccountPositionState(umi, marginfiAccountPk, supplyMin
         }
         if (debtBalances.length > 0) {
             if (debtBank === null) {
-                debtBank = await (0, marginfi_sdk_1.safeFetchBank)(umi, debtBalances[0].bankPk, { commitment: "confirmed" });
+                debtBank = await (0, marginfi_sdk_1.safeFetchBank)(umi, debtBalances[0].bankPk, {
+                    commitment: "confirmed",
+                });
             }
             if (!debtMint) {
                 debtMint = (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(debtBank.mint);

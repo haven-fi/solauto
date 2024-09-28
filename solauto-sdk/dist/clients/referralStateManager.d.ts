@@ -15,7 +15,7 @@ export declare class ReferralStateManager extends TxHandler {
     referralAuthority: PublicKey;
     referralState: PublicKey;
     referralStateData: ReferralState | null;
-    constructor(heliusApiKey: string, localTest?: boolean | undefined);
+    constructor(heliusApiUrl: string, localTest?: boolean | undefined);
     initialize(args: ReferralStateManagerArgs): Promise<void>;
     defaultLookupTables(): string[];
     updateReferralStatesIx(destFeesMint?: PublicKey, referredBy?: PublicKey, lookupTable?: PublicKey): TransactionBuilder;

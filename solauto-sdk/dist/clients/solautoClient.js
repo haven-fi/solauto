@@ -16,8 +16,8 @@ const generalUtils_2 = require("../utils/solauto/generalUtils");
 const referralStateManager_1 = require("./referralStateManager");
 const txHandler_1 = require("./txHandler");
 class SolautoClient extends txHandler_1.TxHandler {
-    constructor(heliusApiKey, localTest) {
-        super(heliusApiKey, localTest);
+    constructor(heliusApiUrl, localTest) {
+        super(heliusApiUrl, localTest);
         this.localTest = localTest;
         this.livePositionUpdates = new generalUtils_2.LivePositionUpdates();
         this.umi = this.umi.use({
@@ -55,7 +55,7 @@ class SolautoClient extends txHandler_1.TxHandler {
                     : web3_js_1.PublicKey.default);
         this.positionDebtTa = (0, accountUtils_1.getTokenAccount)(this.solautoPosition, this.debtMint);
         this.signerDebtTa = (0, accountUtils_1.getTokenAccount)((0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.signer.publicKey), this.debtMint);
-        this.referralStateManager = new referralStateManager_1.ReferralStateManager(this.heliusApiKey);
+        this.referralStateManager = new referralStateManager_1.ReferralStateManager(this.heliusApiUrl);
         await this.referralStateManager.initialize({
             referralAuthority: this.authority,
             signer: args.signer,
