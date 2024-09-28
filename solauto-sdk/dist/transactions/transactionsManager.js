@@ -27,7 +27,7 @@ class LookupTables {
         return this.cache;
     }
     reset() {
-        this.cache = this.cache.filter(x => this.defaultLuts.includes(x.publicKey.toString()));
+        this.cache = this.cache.filter((x) => this.defaultLuts.includes(x.publicKey.toString()));
     }
 }
 class TransactionItem {
@@ -286,7 +286,7 @@ class TransactionsManager {
                         this.statuses.splice(statusesStartIdx + i, itemSets.length - i, ...newItemSets.map((x) => ({
                             name: x.name(),
                             status: TransactionStatus.Queued,
-                            attemptNum: 0.
+                            attemptNum: 0,
                         })));
                         this.txHandler.log(this.statuses);
                         itemSets.splice(i + 1, itemSets.length - i - 1, ...newItemSets.slice(1));
@@ -311,8 +311,14 @@ class TransactionsManager {
                         if (this.txHandler.localTest) {
                             await this.debugAccounts(itemSet, tx);
                         }
-                        const txSig = await (0, solanaUtils_1.sendSingleOptimizedTransaction)(this.txHandler.umi, this.txHandler.connection, tx, this.txType, attemptNum, prioritySetting);
-                        this.updateStatus(itemSet.name(), TransactionStatus.Successful, attemptNum, txSig ? bs58_1.default.encode(txSig) : undefined);
+                        try {
+                            const txSig = await (0, solanaUtils_1.sendSingleOptimizedTransaction)(this.txHandler.umi, this.txHandler.connection, tx, this.txType, attemptNum, prioritySetting);
+                            this.updateStatus(itemSet.name(), TransactionStatus.Successful, attemptNum, txSig ? bs58_1.default.encode(txSig) : undefined);
+                        }
+                        catch (e) {
+                            this.updateStatus(itemSet.name(), TransactionStatus.Failed, attemptNum);
+                            throw e;
+                        }
                     }
                 }, 4, 150, this.errorsToThrow);
             }

@@ -48,7 +48,9 @@ class LookupTables {
   }
 
   reset() {
-    this.cache = this.cache.filter(x => this.defaultLuts.includes(x.publicKey.toString()));
+    this.cache = this.cache.filter((x) =>
+      this.defaultLuts.includes(x.publicKey.toString())
+    );
   }
 }
 
@@ -239,11 +241,18 @@ export class TransactionsManager {
     return transactionSets;
   }
 
-  updateStatus(name: string, status: TransactionStatus, attemptNum: number, txSig?: string) {
+  updateStatus(
+    name: string,
+    status: TransactionStatus,
+    attemptNum: number,
+    txSig?: string
+  ) {
     if (!this.statuses.filter((x) => x.name === name)) {
       this.statuses.push({ name, status, txSig, attemptNum });
     } else {
-      const idx = this.statuses.findIndex((x) => x.name === name && x.attemptNum === attemptNum);
+      const idx = this.statuses.findIndex(
+        (x) => x.name === name && x.attemptNum === attemptNum
+      );
       if (idx !== -1) {
         this.statuses[idx].status = status;
         this.statuses[idx].txSig = txSig;
@@ -292,7 +301,11 @@ export class TransactionsManager {
     ) {
       await retryWithExponentialBackoff(
         async (attemptNum) => {
-          this.updateStatus(updateLutTxName, TransactionStatus.Processing, attemptNum);
+          this.updateStatus(
+            updateLutTxName,
+            TransactionStatus.Processing,
+            attemptNum
+          );
           try {
             const txSig = await sendSingleOptimizedTransaction(
               this.txHandler.umi,
@@ -302,9 +315,18 @@ export class TransactionsManager {
               attemptNum,
               prioritySetting
             );
-            this.updateStatus(updateLutTxName, TransactionStatus.Successful, attemptNum, txSig ? bs58.encode(txSig) : undefined);
+            this.updateStatus(
+              updateLutTxName,
+              TransactionStatus.Successful,
+              attemptNum,
+              txSig ? bs58.encode(txSig) : undefined
+            );
           } catch (e) {
-            this.updateStatus(updateLutTxName, TransactionStatus.Failed, attemptNum);
+            this.updateStatus(
+              updateLutTxName,
+              TransactionStatus.Failed,
+              attemptNum
+            );
             throw e;
           }
         },
@@ -367,7 +389,7 @@ export class TransactionsManager {
     prioritySetting?: PriorityFeeSetting,
     initialized?: boolean
   ): Promise<TransactionManagerStatuses> {
-    this.statuses = []
+    this.statuses = [];
     this.lookupTables.reset();
 
     if (!initialized) {
@@ -419,7 +441,7 @@ export class TransactionsManager {
               ...newItemSets.map((x) => ({
                 name: x.name(),
                 status: TransactionStatus.Queued,
-                attemptNum: 0.
+                attemptNum: 0,
               }))
             );
             this.txHandler.log(this.statuses);
@@ -445,28 +467,45 @@ export class TransactionsManager {
             const tx = await itemSet.getSingleTransaction();
 
             if (tx.getInstructions().length === 0) {
-              this.updateStatus(itemSet.name(), TransactionStatus.Skipped, attemptNum);
+              this.updateStatus(
+                itemSet.name(),
+                TransactionStatus.Skipped,
+                attemptNum
+              );
             } else {
-              this.updateStatus(itemSet.name(), TransactionStatus.Processing, attemptNum);
+              this.updateStatus(
+                itemSet.name(),
+                TransactionStatus.Processing,
+                attemptNum
+              );
 
               if (this.txHandler.localTest) {
                 await this.debugAccounts(itemSet, tx);
               }
 
-              const txSig = await sendSingleOptimizedTransaction(
-                this.txHandler.umi,
-                this.txHandler.connection,
-                tx,
-                this.txType,
-                attemptNum,
-                prioritySetting
-              );
-              this.updateStatus(
-                itemSet.name(),
-                TransactionStatus.Successful,
-                attemptNum,
-                txSig ? bs58.encode(txSig) : undefined,
-              );
+              try {
+                const txSig = await sendSingleOptimizedTransaction(
+                  this.txHandler.umi,
+                  this.txHandler.connection,
+                  tx,
+                  this.txType,
+                  attemptNum,
+                  prioritySetting
+                );
+                this.updateStatus(
+                  itemSet.name(),
+                  TransactionStatus.Successful,
+                  attemptNum,
+                  txSig ? bs58.encode(txSig) : undefined
+                );
+              } catch (e) {
+                this.updateStatus(
+                  itemSet.name(),
+                  TransactionStatus.Failed,
+                  attemptNum
+                );
+                throw e;
+              }
             }
           },
           4,

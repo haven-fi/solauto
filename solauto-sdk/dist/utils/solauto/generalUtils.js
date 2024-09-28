@@ -81,10 +81,10 @@ function eligibleForRebalance(positionState, positionSettings, positionDca, curr
         : positionSettings.boostToBps;
     const repayFrom = positionSettings.repayToBps + positionSettings.repayGap;
     const boostFrom = boostToBps - positionSettings.boostGap;
-    if (Math.max(0, positionState.liqUtilizationRateBps - boostFrom) / boostFrom >= bpsDistanceThreshold) {
+    if (Math.max(0, positionState.liqUtilizationRateBps - boostFrom) <= bpsDistanceThreshold) {
         return "boost";
     }
-    else if (Math.max(0, repayFrom - positionState.liqUtilizationRateBps) >= bpsDistanceThreshold) {
+    else if (Math.max(0, repayFrom - positionState.liqUtilizationRateBps) <= bpsDistanceThreshold) {
         return "repay";
     }
     return undefined;
