@@ -27,7 +27,7 @@ use solauto_sdk::{
             UpdatePositionBuilder,
             UpdateReferralStatesBuilder,
         },
-        types::{ DCASettingsInp, SolautoSettingsParametersInp, UpdatePositionData },
+        types::{ DCASettingsInp, PositionType, SolautoSettingsParametersInp, UpdatePositionData },
     },
     SOLAUTO_ID,
 };
@@ -536,6 +536,7 @@ impl<'a> MarginfiTestData<'a> {
             .debt_bank(Pubkey::default())
             .signer_debt_ta(Some(self.general.signer_debt_ta))
             .position_debt_ta(self.general.position_debt_ta)
+            .position_type(PositionType::Leverage)
             .position_data(position_data);
         if self.marginfi_account_seed_idx.is_some() {
             builder.marginfi_account_seed_idx(self.marginfi_account_seed_idx.unwrap());
