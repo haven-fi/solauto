@@ -8,7 +8,11 @@ import {
   safeFetchBank,
   safeFetchMarginfiAccount,
 } from "../marginfi-sdk";
-import { currentUnixSeconds, fetchTokenPrices, safeGetPrice } from "./generalUtils";
+import {
+  currentUnixSeconds,
+  fetchTokenPrices,
+  safeGetPrice,
+} from "./generalUtils";
 import {
   bytesToI80F48,
   fromBaseUnit,
@@ -21,7 +25,6 @@ import { MarginfiAssetAccounts } from "../types/accounts";
 import { PositionState, PositionTokenUsage } from "../generated";
 import { USD_DECIMALS } from "../constants/generalAccounts";
 import { LivePositionUpdates } from "./solauto/generalUtils";
-import { currentUnixSecondsSolana } from "./solanaUtils";
 
 export function findMarginfiAccounts(bank: PublicKey): MarginfiAssetAccounts {
   for (const key in MARGINFI_ACCOUNTS) {
@@ -65,9 +68,7 @@ export async function getMaxLtvAndLiqThreshold(
   ) {
     debt.bank = await safeFetchBank(
       umi,
-      publicKey(
-        MARGINFI_ACCOUNTS[debt.mint.toString()].bank
-      ),
+      publicKey(MARGINFI_ACCOUNTS[debt.mint.toString()].bank),
       { commitment: "confirmed" }
     );
   }
@@ -95,7 +96,7 @@ export async function getMaxLtvAndLiqThreshold(
       BigInt(
         Math.round(
           bytesToI80F48(supply.bank!.totalAssetShares.value) *
-          bytesToI80F48(supply.bank!.assetShareValue.value)
+            bytesToI80F48(supply.bank!.assetShareValue.value)
         )
       ),
       supply.bank!.mintDecimals
@@ -153,6 +154,17 @@ export async function getAllMarginfiAccountsByAuthority(
       }))
     );
     return positionStates
+      .sort(
+        (a, b) =>
+          fromBaseUnit(
+            b.state?.netWorth.baseAmountUsdValue ?? BigInt(0),
+            USD_DECIMALS
+          ) -
+          fromBaseUnit(
+            a.state?.netWorth.baseAmountUsdValue ?? BigInt(0),
+            USD_DECIMALS
+          )
+      )
       .filter((x) => x.state !== undefined)
       .map((x) => ({
         marginfiAccount: toWeb3JsPublicKey(x.publicKey),
@@ -191,7 +203,7 @@ async function getTokenUsage(
     amountCanBeUsed = isAsset
       ? Number(bank.config.depositLimit) - totalDeposited
       : totalDeposited -
-      bytesToI80F48(bank.totalLiabilityShares.value) * liabilityShareValue;
+        bytesToI80F48(bank.totalLiabilityShares.value) * liabilityShareValue;
   }
 
   return {
@@ -201,22 +213,22 @@ async function getTokenUsage(
       baseUnit: BigInt(Math.round(amountUsed)),
       baseAmountUsdValue: bank
         ? toBaseUnit(
-          fromBaseUnit(BigInt(Math.round(amountUsed)), bank.mintDecimals) *
-          marketPrice,
-          USD_DECIMALS
-        )
+            fromBaseUnit(BigInt(Math.round(amountUsed)), bank.mintDecimals) *
+              marketPrice,
+            USD_DECIMALS
+          )
         : BigInt(0),
     },
     amountCanBeUsed: {
       baseUnit: BigInt(Math.round(amountCanBeUsed)),
       baseAmountUsdValue: bank
         ? toBaseUnit(
-          fromBaseUnit(
-            BigInt(Math.round(amountCanBeUsed)),
-            bank.mintDecimals
-          ) * marketPrice,
-          USD_DECIMALS
-        )
+            fromBaseUnit(
+              BigInt(Math.round(amountCanBeUsed)),
+              bank.mintDecimals
+            ) * marketPrice,
+            USD_DECIMALS
+          )
         : BigInt(0),
     },
     baseAmountMarketPriceUsd: toBaseUnit(marketPrice, USD_DECIMALS),
@@ -244,18 +256,18 @@ export async function getMarginfiAccountPositionState(
   let supplyBank: Bank | null =
     supplyMint && supplyMint !== PublicKey.default
       ? await safeFetchBank(
-        umi,
-        publicKey(MARGINFI_ACCOUNTS[supplyMint.toString()].bank),
-        { commitment: "confirmed" }
-      )
+          umi,
+          publicKey(MARGINFI_ACCOUNTS[supplyMint.toString()].bank),
+          { commitment: "confirmed" }
+        )
       : null;
   let debtBank: Bank | null =
     debtMint && debtMint !== PublicKey.default
       ? await safeFetchBank(
-        umi,
-        publicKey(MARGINFI_ACCOUNTS[debtMint.toString()].bank),
-        { commitment: "confirmed" }
-      )
+          umi,
+          publicKey(MARGINFI_ACCOUNTS[debtMint.toString()].bank),
+          { commitment: "confirmed" }
+        )
       : null;
 
   let supplyUsage: PositionTokenUsage | undefined = undefined;
@@ -281,7 +293,9 @@ export async function getMarginfiAccountPositionState(
 
     if (supplyBalances.length > 0) {
       if (supplyBank === null) {
-        supplyBank = await safeFetchBank(umi, supplyBalances[0].bankPk, { commitment: "confirmed" });
+        supplyBank = await safeFetchBank(umi, supplyBalances[0].bankPk, {
+          commitment: "confirmed",
+        });
       }
       if (!supplyMint) {
         supplyMint = toWeb3JsPublicKey(supplyBank!.mint);
@@ -297,7 +311,9 @@ export async function getMarginfiAccountPositionState(
 
     if (debtBalances.length > 0) {
       if (debtBank === null) {
-        debtBank = await safeFetchBank(umi, debtBalances[0].bankPk, { commitment: "confirmed" });
+        debtBank = await safeFetchBank(umi, debtBalances[0].bankPk, {
+          commitment: "confirmed",
+        });
       }
       if (!debtMint) {
         debtMint = toWeb3JsPublicKey(debtBank!.mint);
@@ -447,8 +463,7 @@ export async function getUpToDateShareValues(
   umi: Umi,
   bank: Bank
 ): Promise<[number, number]> {
-  const currentTime = await currentUnixSecondsSolana(umi);
-  let timeDelta = currentTime - Number(bank.lastUpdate);
+  let timeDelta = currentUnixSeconds() - Number(bank.lastUpdate);
 
   const totalAssets =
     bytesToI80F48(bank.totalAssetShares.value) *

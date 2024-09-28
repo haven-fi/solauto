@@ -13,7 +13,6 @@ import {
   getReferralStateSize,
   getSolautoPositionAccountDataSerializer,
   getSolautoPositionSize,
-  safeFetchAllSolautoPosition,
 } from "../../generated";
 import { currentUnixSeconds, fetchTokenPrices } from "../generalUtils";
 import {

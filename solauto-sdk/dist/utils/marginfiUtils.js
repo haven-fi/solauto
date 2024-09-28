@@ -13,7 +13,6 @@ const generalUtils_1 = require("./generalUtils");
 const numberUtils_1 = require("./numberUtils");
 const marginfiAccounts_1 = require("../constants/marginfiAccounts");
 const generalAccounts_1 = require("../constants/generalAccounts");
-const solanaUtils_1 = require("./solanaUtils");
 function findMarginfiAccounts(bank) {
     for (const key in marginfiAccounts_1.MARGINFI_ACCOUNTS) {
         const account = marginfiAccounts_1.MARGINFI_ACCOUNTS[key];
@@ -236,8 +235,7 @@ function calcAccruedInterestPaymentPerPeriod(apr, timeDelta, shareValue) {
     return newValue;
 }
 async function getUpToDateShareValues(umi, bank) {
-    const currentTime = await (0, solanaUtils_1.currentUnixSecondsSolana)(umi);
-    let timeDelta = currentTime - Number(bank.lastUpdate);
+    let timeDelta = (0, generalUtils_1.currentUnixSeconds)() - Number(bank.lastUpdate);
     const totalAssets = (0, numberUtils_1.bytesToI80F48)(bank.totalAssetShares.value) *
         (0, numberUtils_1.bytesToI80F48)(bank.assetShareValue.value);
     const totalLiabilities = (0, numberUtils_1.bytesToI80F48)(bank.totalLiabilityShares.value) *

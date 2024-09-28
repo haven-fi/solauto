@@ -4,7 +4,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getSolanaRpcConnection = getSolanaRpcConnection;
-exports.currentUnixSecondsSolana = currentUnixSecondsSolana;
 exports.getWrappedInstruction = getWrappedInstruction;
 exports.setComputeUnitLimitUmiIx = setComputeUnitLimitUmiIx;
 exports.setComputeUnitPriceUmiIx = setComputeUnitPriceUmiIx;
@@ -30,15 +29,6 @@ function getSolanaRpcConnection(heliusApiKey) {
     const connection = new web3_js_1.Connection(`https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`, "confirmed");
     const umi = (0, umi_bundle_defaults_1.createUmi)(connection);
     return [connection, umi];
-}
-async function currentUnixSecondsSolana(umi) {
-    return await (0, generalUtils_1.retryWithExponentialBackoff)(async () => {
-        const blockTime = await umi.rpc.getBlockTime(await umi.rpc.getSlot(), { commitment: "confirmed" });
-        if (blockTime === null) {
-            throw new Error("Unable to retrieve block time");
-        }
-        return Number(blockTime);
-    });
 }
 function getWrappedInstruction(signer, ix) {
     return {
