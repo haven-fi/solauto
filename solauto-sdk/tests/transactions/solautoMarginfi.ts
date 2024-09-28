@@ -23,7 +23,7 @@ describe("Solauto Marginfi tests", async () => {
   // const signer = setupTest();
   const signer = setupTest("solauto-manager");
 
-  const payForTransactions = true;
+  const payForTransactions = false;
   const useJitoBundle = false;
   const positionId = 1;
 
@@ -39,7 +39,7 @@ describe("Solauto Marginfi tests", async () => {
       {
         signer,
         positionId,
-        authority: new PublicKey("5UqsR2PGzbP8pGPbXEeXx86Gjz2N2UFBAuFZUSVydAEe")
+        // authority: new PublicKey("")
         // marginfiAccount: new PublicKey(
         //   "4nNvUXF5YqHFcH2nGweSiuvy1ct7V5FXfoCLKFYUN36z"
         // ),
