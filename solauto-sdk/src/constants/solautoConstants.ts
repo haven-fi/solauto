@@ -17,7 +17,7 @@ export const BASIS_POINTS = 10000;
 
 export const DEFAULT_LIMIT_GAP_BPS = 1000;
 export const MIN_POSITION_STATE_FRESHNESS_SECS = 5;
-export const MIN_REPAY_GAP_BPS = 100;
+export const MIN_REPAY_GAP_BPS = 50;
 export const MIN_BOOST_GAP_BPS = 50;
 
 // export const JITO_BLOCK_ENGINE = "ny.mainnet.block-engine.jito.wtf";
