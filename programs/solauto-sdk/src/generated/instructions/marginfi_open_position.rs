@@ -5,6 +5,7 @@
 //! [https://github.com/metaplex-foundation/kinobi]
 //!
 
+use crate::generated::types::PositionType;
 use crate::generated::types::UpdatePositionData;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
@@ -201,6 +202,7 @@ impl MarginfiOpenPositionInstructionData {
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct MarginfiOpenPositionInstructionArgs {
+    pub position_type: PositionType,
     pub position_data: UpdatePositionData,
     pub marginfi_account_seed_idx: Option<u64>,
 }
@@ -253,6 +255,7 @@ pub struct MarginfiOpenPositionBuilder {
     debt_bank: Option<solana_program::pubkey::Pubkey>,
     position_debt_ta: Option<solana_program::pubkey::Pubkey>,
     signer_debt_ta: Option<solana_program::pubkey::Pubkey>,
+    position_type: Option<PositionType>,
     position_data: Option<UpdatePositionData>,
     marginfi_account_seed_idx: Option<u64>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
@@ -409,6 +412,11 @@ impl MarginfiOpenPositionBuilder {
         self
     }
     #[inline(always)]
+    pub fn position_type(&mut self, position_type: PositionType) -> &mut Self {
+        self.position_type = Some(position_type);
+        self
+    }
+    #[inline(always)]
     pub fn position_data(&mut self, position_data: UpdatePositionData) -> &mut Self {
         self.position_data = Some(position_data);
         self
@@ -479,6 +487,10 @@ impl MarginfiOpenPositionBuilder {
             signer_debt_ta: self.signer_debt_ta,
         };
         let args = MarginfiOpenPositionInstructionArgs {
+            position_type: self
+                .position_type
+                .clone()
+                .expect("position_type is not set"),
             position_data: self
                 .position_data
                 .clone()
@@ -869,6 +881,7 @@ impl<'a, 'b> MarginfiOpenPositionCpiBuilder<'a, 'b> {
             debt_bank: None,
             position_debt_ta: None,
             signer_debt_ta: None,
+            position_type: None,
             position_data: None,
             marginfi_account_seed_idx: None,
             __remaining_accounts: Vec::new(),
@@ -1045,6 +1058,11 @@ impl<'a, 'b> MarginfiOpenPositionCpiBuilder<'a, 'b> {
         self
     }
     #[inline(always)]
+    pub fn position_type(&mut self, position_type: PositionType) -> &mut Self {
+        self.instruction.position_type = Some(position_type);
+        self
+    }
+    #[inline(always)]
     pub fn position_data(&mut self, position_data: UpdatePositionData) -> &mut Self {
         self.instruction.position_data = Some(position_data);
         self
@@ -1097,6 +1115,11 @@ impl<'a, 'b> MarginfiOpenPositionCpiBuilder<'a, 'b> {
         signers_seeds: &[&[&[u8]]],
     ) -> solana_program::entrypoint::ProgramResult {
         let args = MarginfiOpenPositionInstructionArgs {
+            position_type: self
+                .instruction
+                .position_type
+                .clone()
+                .expect("position_type is not set"),
             position_data: self
                 .instruction
                 .position_data
@@ -1222,6 +1245,7 @@ struct MarginfiOpenPositionCpiBuilderInstruction<'a, 'b> {
     debt_bank: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     position_debt_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     signer_debt_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    position_type: Option<PositionType>,
     position_data: Option<UpdatePositionData>,
     marginfi_account_seed_idx: Option<u64>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.

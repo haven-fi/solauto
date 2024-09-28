@@ -417,7 +417,7 @@ mod tests {
             AutomationSettingsInp, DCASettings, DCASettingsInp, PositionState, PositionTokenUsage,
             RebalanceData, SolautoSettingsParameters,
         },
-        types::shared::TokenType,
+        types::shared::{PositionType, TokenType},
         utils::math_utils,
     };
 
@@ -455,8 +455,13 @@ mod tests {
             DCASettings::default()
         };
 
-        let mut position =
-            SolautoPosition::new(1, Pubkey::default(), data, PositionState::default());
+        let mut position = SolautoPosition::new(
+            1,
+            Pubkey::default(),
+            PositionType::default(),
+            data,
+            PositionState::default(),
+        );
 
         position.state.liq_threshold_bps = 8000;
         position.state.max_ltv_bps = 6500;

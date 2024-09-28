@@ -29,8 +29,8 @@ const types_1 = require("../types");
 function buildHeliusApiUrl(heliusApiKey) {
     return `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`;
 }
-function getSolanaRpcConnection(heliusApiUrl) {
-    const connection = new web3_js_1.Connection(heliusApiUrl, "confirmed");
+function getSolanaRpcConnection(rpcUrl) {
+    const connection = new web3_js_1.Connection(rpcUrl, "confirmed");
     const umi = (0, umi_bundle_defaults_1.createUmi)(connection);
     return [connection, umi];
 }

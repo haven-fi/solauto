@@ -8,6 +8,7 @@
 use crate::generated::types::PodBool;
 use crate::generated::types::PositionData;
 use crate::generated::types::PositionState;
+use crate::generated::types::PositionType;
 use crate::generated::types::RebalanceData;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
@@ -19,7 +20,8 @@ pub struct SolautoPosition {
     pub bump: [u8; 1],
     pub position_id: [u8; 1],
     pub self_managed: PodBool,
-    pub padding1: [u8; 5],
+    pub position_type: PositionType,
+    pub padding1: [u8; 4],
     #[cfg_attr(
         feature = "serde",
         serde(with = "serde_with::As::<serde_with::DisplayFromStr>")

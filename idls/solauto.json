@@ -869,11 +869,17 @@
             }
           },
           {
+            "name": "positionType",
+            "type": {
+              "defined": "PositionType"
+            }
+          },
+          {
             "name": "padding1",
             "type": {
               "array": [
                 "u8",
-                5
+                4
               ]
             }
           },
@@ -1413,6 +1419,12 @@
         "kind": "struct",
         "fields": [
           {
+            "name": "positionType",
+            "type": {
+              "defined": "PositionType"
+            }
+          },
+          {
             "name": "positionData",
             "type": {
               "defined": "UpdatePositionData"
@@ -1563,6 +1575,20 @@
           },
           {
             "name": "Kamino"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PositionType",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Leverage"
+          },
+          {
+            "name": "SafeLoan"
           }
         ]
       }

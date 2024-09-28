@@ -34,11 +34,14 @@ import {
   PositionDataArgs,
   PositionState,
   PositionStateArgs,
+  PositionType,
+  PositionTypeArgs,
   RebalanceData,
   RebalanceDataArgs,
   getPodBoolSerializer,
   getPositionDataSerializer,
   getPositionStateSerializer,
+  getPositionTypeSerializer,
   getRebalanceDataSerializer,
 } from '../types';
 
@@ -48,6 +51,7 @@ export type SolautoPositionAccountData = {
   bump: Array<number>;
   positionId: Array<number>;
   selfManaged: PodBool;
+  positionType: PositionType;
   padding1: Array<number>;
   authority: PublicKey;
   position: PositionData;
@@ -60,6 +64,7 @@ export type SolautoPositionAccountDataArgs = {
   bump: Array<number>;
   positionId: Array<number>;
   selfManaged: PodBoolArgs;
+  positionType: PositionTypeArgs;
   padding1: Array<number>;
   authority: PublicKey;
   position: PositionDataArgs;
@@ -77,7 +82,8 @@ export function getSolautoPositionAccountDataSerializer(): Serializer<
       ['bump', array(u8(), { size: 1 })],
       ['positionId', array(u8(), { size: 1 })],
       ['selfManaged', getPodBoolSerializer()],
-      ['padding1', array(u8(), { size: 5 })],
+      ['positionType', getPositionTypeSerializer()],
+      ['padding1', array(u8(), { size: 4 })],
       ['authority', publicKeySerializer()],
       ['position', getPositionDataSerializer()],
       ['state', getPositionStateSerializer()],
@@ -165,6 +171,7 @@ export function getSolautoPositionGpaBuilder(
       bump: Array<number>;
       positionId: Array<number>;
       selfManaged: PodBoolArgs;
+      positionType: PositionTypeArgs;
       padding1: Array<number>;
       authority: PublicKey;
       position: PositionDataArgs;
@@ -175,7 +182,8 @@ export function getSolautoPositionGpaBuilder(
       bump: [0, array(u8(), { size: 1 })],
       positionId: [1, array(u8(), { size: 1 })],
       selfManaged: [2, getPodBoolSerializer()],
-      padding1: [3, array(u8(), { size: 5 })],
+      positionType: [3, getPositionTypeSerializer()],
+      padding1: [4, array(u8(), { size: 4 })],
       authority: [8, publicKeySerializer()],
       position: [40, getPositionDataSerializer()],
       state: [360, getPositionStateSerializer()],

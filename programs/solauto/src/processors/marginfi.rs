@@ -49,6 +49,7 @@ pub fn process_marginfi_open_position_instruction<'a>(
     let solauto_position = solauto_utils::create_new_solauto_position(
         ctx.accounts.signer,
         ctx.accounts.solauto_position,
+        args.position_type,
         args.position_data,
         LendingPlatform::Marginfi,
         ctx.accounts.supply_mint,

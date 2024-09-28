@@ -98,11 +98,12 @@ function eligibleForRefresh(positionState, positionSettings, currentUnixTime) {
             60 * 60 * 24 * 7);
     }
 }
-async function getSolautoManagedPositions(umi, authority) {
+async function getSolautoManagedPositions(umi, authority, positionTypeFilter) {
     // bump: [u8; 1]
     // position_id: [u8; 1]
     // self_managed: u8 - (1 for true, 0 for false)
-    // padding: [u8; 5]
+    // position_type: PositionType
+    // padding: [u8; 4]
     // authority: pubkey
     // lending_platform: u8
     // padding: [u8; 7]
@@ -113,7 +114,7 @@ async function getSolautoManagedPositions(umi, authority) {
         commitment: "confirmed",
         dataSlice: {
             offset: 0,
-            length: 1 + 1 + 1 + 5 + 32 + 1 + 7 + 32 + 32 + 32, // bump + position_id + self_managed + padding (5) + authority (pubkey) + lending_platform + padding (7) + protocol account (pubkey) + supply mint (pubkey) + debt mint (pubkey)
+            length: 1 + 1 + 1 + 1 + 4 + 32 + 1 + 7 + 32 + 32 + 32, // bump + position_id + self_managed + position_type + padding (4) + authority (pubkey) + lending_platform + padding (7) + protocol account (pubkey) + supply mint (pubkey) + debt mint (pubkey)
         },
         filters: [
             {
@@ -135,6 +136,14 @@ async function getSolautoManagedPositions(umi, authority) {
                     },
                 ]
                 : []),
+            ...(positionTypeFilter !== undefined ? [
+                {
+                    memcmp: {
+                        bytes: new Uint8Array(positionTypeFilter),
+                        offset: 3
+                    }
+                }
+            ] : [])
         ],
     });
     return accounts.map((x) => {
@@ -147,6 +156,7 @@ async function getSolautoManagedPositions(umi, authority) {
             authority: (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(position.authority),
             positionId: position.positionId[0],
             lendingPlatform: position.position.lendingPlatform,
+            positionType: position.positionType,
             protocolAccount: (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(position.position.protocolAccount),
             supplyMint: (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(position.position.supplyMint),
             debtMint: (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(position.position.debtMint),
@@ -194,16 +204,19 @@ async function getReferralsByUser(umi, user) {
     });
     return accounts.map((x) => (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(x.publicKey));
 }
-async function getAllPositionsByAuthority(umi, user) {
+async function getAllPositionsByAuthority(umi, user, positionTypeFilter) {
     const solautoCompatiblePositions = await Promise.all([
         (async () => {
-            const solautoManagedPositions = await getSolautoManagedPositions(umi, user);
+            const solautoManagedPositions = await getSolautoManagedPositions(umi, user, positionTypeFilter);
             return solautoManagedPositions.map((x) => ({
                 ...x,
                 authority: user,
             }));
         })(),
         (async () => {
+            if (positionTypeFilter === generated_1.PositionType.SafeLoan) {
+                return [];
+            }
             let marginfiPositions = await (0, marginfiUtils_1.getAllMarginfiAccountsByAuthority)(umi, user, true);
             marginfiPositions = marginfiPositions.filter((x) => x.supplyMint &&
                 (x.debtMint.equals(web3_js_1.PublicKey.default) ||
@@ -212,6 +225,7 @@ async function getAllPositionsByAuthority(umi, user) {
                 publicKey: x.marginfiAccount,
                 authority: user,
                 positionId: 0,
+                positionType: generated_1.PositionType.Leverage,
                 lendingPlatform: generated_1.LendingPlatform.Marginfi,
                 protocolAccount: x.marginfiAccount,
                 supplyMint: x.supplyMint,

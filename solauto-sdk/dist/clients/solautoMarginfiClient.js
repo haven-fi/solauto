@@ -109,7 +109,7 @@ class SolautoMarginfiClient extends solautoClient_1.SolautoClient {
             .openPosition(settingParams, dca)
             .add(this.marginfiOpenPositionIx(settingParams, dca));
     }
-    marginfiOpenPositionIx(settingParams, dca) {
+    marginfiOpenPositionIx(settingParams, dca, positionType) {
         let signerDebtTa = undefined;
         if (dca) {
             signerDebtTa = (0, umi_1.publicKey)(this.signerDebtTa);
@@ -138,6 +138,7 @@ class SolautoMarginfiClient extends solautoClient_1.SolautoClient {
             debtBank: (0, umi_1.publicKey)(this.marginfiDebtAccounts.bank),
             positionDebtTa: (0, umi_1.publicKey)(this.positionDebtTa),
             signerDebtTa: signerDebtTa,
+            positionType: positionType ?? generated_1.PositionType.Leverage,
             positionData: {
                 positionId: this.positionId,
                 settingParams: settingParams ?? null,

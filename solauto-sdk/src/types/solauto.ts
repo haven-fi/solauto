@@ -1,10 +1,11 @@
 import { PublicKey } from "@solana/web3.js";
-import { LendingPlatform } from "../generated";
+import { LendingPlatform, PositionType } from "../generated";
 
 export interface SolautoPositionDetails {
   publicKey?: PublicKey;
   authority: PublicKey;
   positionId: number;
+  positionType: PositionType;
   lendingPlatform: LendingPlatform;
   protocolAccount?: PublicKey;
   supplyMint?: PublicKey;

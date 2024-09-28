@@ -30,6 +30,7 @@ __exportStar(require("./podBool"), exports);
 __exportStar(require("./positionData"), exports);
 __exportStar(require("./positionState"), exports);
 __exportStar(require("./positionTokenUsage"), exports);
+__exportStar(require("./positionType"), exports);
 __exportStar(require("./rebalanceData"), exports);
 __exportStar(require("./solautoAction"), exports);
 __exportStar(require("./solautoRebalanceType"), exports);

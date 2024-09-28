@@ -45,6 +45,22 @@ impl PodBool {
 
 #[repr(u8)]
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, PartialEq, Copy)]
+pub enum PositionType {
+    Leverage,
+    SafeLoan,
+}
+
+unsafe impl Zeroable for PositionType {}
+unsafe impl Pod for PositionType {}
+
+impl Default for PositionType {
+    fn default() -> Self {
+        PositionType::Leverage
+    }
+}
+
+#[repr(u8)]
+#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, PartialEq, Copy)]
 pub enum TokenType {
     Supply,
     Debt,

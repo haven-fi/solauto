@@ -23,6 +23,7 @@ import {
   DCASettingsInpArgs,
   LendingPlatform,
   PositionState,
+  PositionType,
   SolautoActionArgs,
   SolautoRebalanceTypeArgs,
   SolautoSettingsParametersInpArgs,
@@ -232,7 +233,8 @@ export class SolautoMarginfiClient extends SolautoClient {
 
   private marginfiOpenPositionIx(
     settingParams?: SolautoSettingsParametersInpArgs,
-    dca?: DCASettingsInpArgs
+    dca?: DCASettingsInpArgs,
+    positionType?: PositionType
   ): TransactionBuilder {
     let signerDebtTa: UmiPublicKey | undefined = undefined;
     if (dca) {
@@ -264,6 +266,7 @@ export class SolautoMarginfiClient extends SolautoClient {
       debtBank: publicKey(this.marginfiDebtAccounts.bank),
       positionDebtTa: publicKey(this.positionDebtTa),
       signerDebtTa: signerDebtTa,
+      positionType: positionType ?? PositionType.Leverage,
       positionData: {
         positionId: this.positionId!,
         settingParams: settingParams ?? null,

@@ -6,7 +6,7 @@ pub const KAMINO_PROGRAM: Pubkey = Pubkey::new_from_array([
     21, 175, 18, 182, 190, 105, 179, 67, 91, 0, 8,
 ]);
 
-// AprYCPiVeKMCgjQ2ZufwChMzvQ5kFjJo2ekTLSkXsQDm (TODO)
+// AprYCPiVeKMCgjQ2ZufwChMzvQ5kFjJo2ekTLSkXsQDm
 pub const SOLAUTO_FEES_WALLET: Pubkey = Pubkey::new_from_array([
     145, 251, 126, 53, 245, 169, 146, 209, 147, 243, 95, 78, 165, 119, 126, 212, 48, 177, 204, 152,
     35, 228, 216, 122, 54, 147, 76, 46, 180, 66, 110, 112,

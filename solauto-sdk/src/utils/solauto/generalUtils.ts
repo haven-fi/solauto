@@ -6,6 +6,7 @@ import {
   DCASettingsInpArgs,
   LendingPlatform,
   PositionState,
+  PositionType,
   SOLAUTO_PROGRAM_ID,
   SolautoSettingsParameters,
   SolautoSettingsParametersInpArgs,
@@ -173,12 +174,14 @@ export function eligibleForRefresh(
 
 export async function getSolautoManagedPositions(
   umi: Umi,
-  authority?: PublicKey
+  authority?: PublicKey,
+  positionTypeFilter?: PositionType
 ): Promise<SolautoPositionDetails[]> {
   // bump: [u8; 1]
   // position_id: [u8; 1]
   // self_managed: u8 - (1 for true, 0 for false)
-  // padding: [u8; 5]
+  // position_type: PositionType
+  // padding: [u8; 4]
   // authority: pubkey
   // lending_platform: u8
   // padding: [u8; 7]
@@ -190,7 +193,7 @@ export async function getSolautoManagedPositions(
     commitment: "confirmed",
     dataSlice: {
       offset: 0,
-      length: 1 + 1 + 1 + 5 + 32 + 1 + 7 + 32 + 32 + 32, // bump + position_id + self_managed + padding (5) + authority (pubkey) + lending_platform + padding (7) + protocol account (pubkey) + supply mint (pubkey) + debt mint (pubkey)
+      length: 1 + 1 + 1 + 1 + 4 + 32 + 1 + 7 + 32 + 32 + 32, // bump + position_id + self_managed + position_type + padding (4) + authority (pubkey) + lending_platform + padding (7) + protocol account (pubkey) + supply mint (pubkey) + debt mint (pubkey)
     },
     filters: [
       {
@@ -212,6 +215,14 @@ export async function getSolautoManagedPositions(
             },
           ]
         : []),
+      ...(positionTypeFilter !== undefined ? [
+        {
+          memcmp: {
+            bytes: new Uint8Array(positionTypeFilter),
+            offset: 3
+          }
+        }
+      ] : [])
     ],
   });
 
@@ -227,6 +238,7 @@ export async function getSolautoManagedPositions(
       authority: toWeb3JsPublicKey(position.authority),
       positionId: position.positionId[0],
       lendingPlatform: position.position.lendingPlatform,
+      positionType: position.positionType,
       protocolAccount: toWeb3JsPublicKey(position.position.protocolAccount),
       supplyMint: toWeb3JsPublicKey(position.position.supplyMint),
       debtMint: toWeb3JsPublicKey(position.position.debtMint),
@@ -285,14 +297,16 @@ export async function getReferralsByUser(
 
 export async function getAllPositionsByAuthority(
   umi: Umi,
-  user: PublicKey
+  user: PublicKey,
+  positionTypeFilter?: PositionType
 ): Promise<SolautoPositionDetails[]> {
   const solautoCompatiblePositions: SolautoPositionDetails[][] =
     await Promise.all([
       (async () => {
         const solautoManagedPositions = await getSolautoManagedPositions(
           umi,
-          user
+          user,
+          positionTypeFilter
         );
         return solautoManagedPositions.map((x) => ({
           ...x,
@@ -300,6 +314,10 @@ export async function getAllPositionsByAuthority(
         }));
       })(),
       (async () => {
+        if (positionTypeFilter === PositionType.SafeLoan) {
+          return [];
+        }
+
         let marginfiPositions = await getAllMarginfiAccountsByAuthority(
           umi,
           user,
@@ -315,6 +333,7 @@ export async function getAllPositionsByAuthority(
           publicKey: x.marginfiAccount,
           authority: user,
           positionId: 0,
+          positionType: PositionType.Leverage,
           lendingPlatform: LendingPlatform.Marginfi,
           protocolAccount: x.marginfiAccount,
           supplyMint: x.supplyMint,

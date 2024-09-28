@@ -1,6 +1,6 @@
 import { PublicKey } from "@solana/web3.js";
 import { Umi } from "@metaplex-foundation/umi";
-import { AutomationSettings, DCASettings, DCASettingsInpArgs, PositionState, SolautoSettingsParameters, SolautoSettingsParametersInpArgs, TokenType } from "../../generated";
+import { AutomationSettings, DCASettings, DCASettingsInpArgs, PositionState, PositionType, SolautoSettingsParameters, SolautoSettingsParametersInpArgs, TokenType } from "../../generated";
 import { RebalanceAction, SolautoPositionDetails } from "../../types/solauto";
 export declare function findMintByTicker(ticker: string): PublicKey;
 export declare function nextAutomationPeriodTimestamp(automation: AutomationSettings): number;
@@ -9,10 +9,10 @@ export declare function getUpdatedValueFromAutomation(currValue: number, targetV
 export declare function getAdjustedSettingsFromAutomation(settings: SolautoSettingsParameters, currentUnixTime: number): SolautoSettingsParameters;
 export declare function eligibleForRebalance(positionState: PositionState, positionSettings: SolautoSettingsParameters, positionDca: DCASettings | undefined, currentUnixTime: number, bpsDistanceThreshold?: number): RebalanceAction | undefined;
 export declare function eligibleForRefresh(positionState: PositionState, positionSettings: SolautoSettingsParameters, currentUnixTime: number): boolean;
-export declare function getSolautoManagedPositions(umi: Umi, authority?: PublicKey): Promise<SolautoPositionDetails[]>;
+export declare function getSolautoManagedPositions(umi: Umi, authority?: PublicKey, positionTypeFilter?: PositionType): Promise<SolautoPositionDetails[]>;
 export declare function getAllReferralStates(umi: Umi): Promise<PublicKey[]>;
 export declare function getReferralsByUser(umi: Umi, user: PublicKey): Promise<PublicKey[]>;
-export declare function getAllPositionsByAuthority(umi: Umi, user: PublicKey): Promise<SolautoPositionDetails[]>;
+export declare function getAllPositionsByAuthority(umi: Umi, user: PublicKey, positionTypeFilter?: PositionType): Promise<SolautoPositionDetails[]>;
 export declare function positionStateWithLatestPrices(state: PositionState, supplyPrice?: number, debtPrice?: number): Promise<PositionState>;
 interface AssetProps {
     mint: PublicKey;

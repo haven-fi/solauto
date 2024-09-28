@@ -16,6 +16,7 @@ const types_1 = require("../types");
 function getMarginfiOpenPositionInstructionDataSerializer() {
     return (0, serializers_1.mapSerializer)((0, serializers_1.struct)([
         ['discriminator', (0, serializers_1.u8)()],
+        ['positionType', (0, types_1.getPositionTypeSerializer)()],
         ['positionData', (0, types_1.getUpdatePositionDataSerializer)()],
         ['marginfiAccountSeedIdx', (0, serializers_1.option)((0, serializers_1.u64)())],
     ], { description: 'MarginfiOpenPositionInstructionData' }), (value) => ({ ...value, discriminator: 6 }));

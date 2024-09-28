@@ -10,7 +10,7 @@ use std::{
 
 use crate::{
     constants::USD_DECIMALS,
-    types::shared::{PodBool, TokenType},
+    types::shared::{PodBool, PositionType, TokenType},
     utils::math_utils::{
         from_base_unit, from_bps, get_liq_utilization_rate_bps, net_worth_base_amount, to_base_unit,
     },
@@ -356,7 +356,8 @@ pub struct SolautoPosition {
     bump: [u8; 1],
     position_id: [u8; 1],
     pub self_managed: PodBool,
-    _padding1: [u8; 5],
+    pub position_type: PositionType,
+    _padding1: [u8; 4],
     pub authority: Pubkey,
     pub position: PositionData,
     pub state: PositionState,
@@ -369,6 +370,7 @@ impl SolautoPosition {
     pub fn new(
         position_id: u8,
         authority: Pubkey,
+        position_type: PositionType,
         position: PositionData,
         state: PositionState,
     ) -> Self {
@@ -378,7 +380,8 @@ impl SolautoPosition {
             bump: [bump],
             position_id: [position_id],
             self_managed: PodBool::new(position_id == 0),
-            _padding1: [0; 5],
+            position_type: position_type,
+            _padding1: [0; 4],
             authority,
             position,
             state,
@@ -452,6 +455,7 @@ mod tests {
         let solauto_position = SolautoPosition::new(
             1,
             Pubkey::default(),
+            PositionType::default(),
             PositionData::default(),
             PositionState::default(),
         );

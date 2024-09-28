@@ -269,7 +269,7 @@ impl<'a> SolautoManager<'a> {
                 .data
                 .amount;
         let mut available_debt_balance =
-        solauto_utils::safe_unpack_token_account(self.accounts.debt.position_ta)?
+            solauto_utils::safe_unpack_token_account(self.accounts.debt.position_ta)?
                 .unwrap()
                 .data
                 .amount;

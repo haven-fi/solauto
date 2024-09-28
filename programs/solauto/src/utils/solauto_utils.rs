@@ -20,7 +20,7 @@ use crate::{
     },
     types::{
         instruction::UpdatePositionData,
-        shared::{DeserializedAccount, LendingPlatform, SolautoError},
+        shared::{DeserializedAccount, LendingPlatform, PositionType, SolautoError},
     },
 };
 
@@ -38,6 +38,7 @@ pub fn get_owner<'a, 'b>(
 pub fn create_new_solauto_position<'a>(
     signer: &AccountInfo<'a>,
     solauto_position: &'a AccountInfo<'a>,
+    position_type: PositionType,
     update_position_data: UpdatePositionData,
     lending_platform: LendingPlatform,
     supply_mint: &'a AccountInfo<'a>,
@@ -82,6 +83,7 @@ pub fn create_new_solauto_position<'a>(
         Box::new(SolautoPosition::new(
             update_position_data.position_id,
             *signer.key,
+            position_type,
             position_data,
             state,
         ))
@@ -89,6 +91,7 @@ pub fn create_new_solauto_position<'a>(
         Box::new(SolautoPosition::new(
             0,
             *signer.key,
+            position_type,
             PositionData::default(),
             PositionState::default(),
         ))
@@ -341,9 +344,12 @@ pub fn get_solauto_fees_bps(
     }
 }
 
-pub fn safe_unpack_token_account<'a>(account: Option<&'a AccountInfo<'a>>) -> Result<Option<DeserializedAccount<'a, TokenAccount>>, ProgramError> {
+pub fn safe_unpack_token_account<'a>(
+    account: Option<&'a AccountInfo<'a>>,
+) -> Result<Option<DeserializedAccount<'a, TokenAccount>>, ProgramError> {
     if account.is_some() && account_has_data(account.unwrap()) {
-        DeserializedAccount::<TokenAccount>::unpack(account).map_err(|_| ProgramError::InvalidAccountData)
+        DeserializedAccount::<TokenAccount>::unpack(account)
+            .map_err(|_| ProgramError::InvalidAccountData)
     } else {
         Ok(None)
     }

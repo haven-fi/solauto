@@ -31,8 +31,11 @@ import {
   getAccountMetasAndSigners,
 } from '../shared';
 import {
+  PositionType,
+  PositionTypeArgs,
   UpdatePositionData,
   UpdatePositionDataArgs,
+  getPositionTypeSerializer,
   getUpdatePositionDataSerializer,
 } from '../types';
 
@@ -64,11 +67,13 @@ export type MarginfiOpenPositionInstructionAccounts = {
 // Data.
 export type MarginfiOpenPositionInstructionData = {
   discriminator: number;
+  positionType: PositionType;
   positionData: UpdatePositionData;
   marginfiAccountSeedIdx: Option<bigint>;
 };
 
 export type MarginfiOpenPositionInstructionDataArgs = {
+  positionType: PositionTypeArgs;
   positionData: UpdatePositionDataArgs;
   marginfiAccountSeedIdx: OptionOrNullable<number | bigint>;
 };
@@ -85,6 +90,7 @@ export function getMarginfiOpenPositionInstructionDataSerializer(): Serializer<
     struct<MarginfiOpenPositionInstructionData>(
       [
         ['discriminator', u8()],
+        ['positionType', getPositionTypeSerializer()],
         ['positionData', getUpdatePositionDataSerializer()],
         ['marginfiAccountSeedIdx', option(u64())],
       ],

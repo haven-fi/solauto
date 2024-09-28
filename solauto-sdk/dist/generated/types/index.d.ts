@@ -14,6 +14,7 @@ export * from './podBool';
 export * from './positionData';
 export * from './positionState';
 export * from './positionTokenUsage';
+export * from './positionType';
 export * from './rebalanceData';
 export * from './solautoAction';
 export * from './solautoRebalanceType';

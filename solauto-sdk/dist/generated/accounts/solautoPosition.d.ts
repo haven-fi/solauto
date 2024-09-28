@@ -7,12 +7,13 @@
  */
 import { Account, Context, Pda, PublicKey, RpcAccount, RpcGetAccountOptions, RpcGetAccountsOptions } from '@metaplex-foundation/umi';
 import { Serializer } from '@metaplex-foundation/umi/serializers';
-import { PodBool, PodBoolArgs, PositionData, PositionDataArgs, PositionState, PositionStateArgs, RebalanceData, RebalanceDataArgs } from '../types';
+import { PodBool, PodBoolArgs, PositionData, PositionDataArgs, PositionState, PositionStateArgs, PositionType, PositionTypeArgs, RebalanceData, RebalanceDataArgs } from '../types';
 export type SolautoPosition = Account<SolautoPositionAccountData>;
 export type SolautoPositionAccountData = {
     bump: Array<number>;
     positionId: Array<number>;
     selfManaged: PodBool;
+    positionType: PositionType;
     padding1: Array<number>;
     authority: PublicKey;
     position: PositionData;
@@ -24,6 +25,7 @@ export type SolautoPositionAccountDataArgs = {
     bump: Array<number>;
     positionId: Array<number>;
     selfManaged: PodBoolArgs;
+    positionType: PositionTypeArgs;
     padding1: Array<number>;
     authority: PublicKey;
     position: PositionDataArgs;
@@ -41,6 +43,7 @@ export declare function getSolautoPositionGpaBuilder(context: Pick<Context, 'rpc
     bump: Array<number>;
     positionId: Array<number>;
     selfManaged: PodBoolArgs;
+    positionType: PositionTypeArgs;
     padding1: Array<number>;
     authority: PublicKey;
     position: PositionDataArgs;
