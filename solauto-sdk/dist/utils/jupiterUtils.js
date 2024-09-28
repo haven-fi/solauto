@@ -31,11 +31,12 @@ async function getJupSwapTransaction(signer, swapDetails, attemptNum) {
             : swapDetails.exactIn
                 ? "ExactIn"
                 : undefined,
-        slippageBps: 10,
+        slippageBps: 30,
         maxAccounts: !swapDetails.exactOut ? 60 : undefined,
     }), 3);
-    const finalPriceSlippageBps = Math.round(Math.max(50, quoteResponse.slippageBps, Math.round((0, numberUtils_1.toBps)(parseFloat(quoteResponse.priceImpactPct))) + 1) *
-        (1 + (swapDetails.slippageBpsIncFactor ?? 0)));
+    const priceImpactBps = (Math.round((0, numberUtils_1.toBps)(parseFloat(quoteResponse.priceImpactPct))) + 1);
+    const finalPriceSlippageBps = Math.round(Math.max(50, quoteResponse.slippageBps, priceImpactBps) *
+        (1 + (swapDetails.slippageIncFactor ?? 0)));
     quoteResponse.slippageBps = finalPriceSlippageBps;
     console.log(quoteResponse);
     console.log("Getting jup instructions...");
@@ -51,8 +52,12 @@ async function getJupSwapTransaction(signer, swapDetails, attemptNum) {
     if (!instructions.swapInstruction) {
         throw new Error("No swap instruction was returned by Jupiter");
     }
+    console.log("Raw price impact bps:", priceImpactBps);
+    const finalPriceImpactBps = priceImpactBps * (1 + (swapDetails.slippageIncFactor ?? 0));
+    console.log("Increased price impact bps:", finalPriceImpactBps);
     return {
         jupQuote: quoteResponse,
+        priceImpactBps: finalPriceImpactBps,
         lookupTableAddresses: instructions.addressLookupTableAddresses,
         setupInstructions: (0, umi_1.transactionBuilder)().add(instructions.setupInstructions.map((ix) => (0, solanaUtils_1.getWrappedInstruction)(signer, createTransactionInstruction(ix)))),
         tokenLedgerIx: (0, umi_1.transactionBuilder)().add(instructions.tokenLedgerInstruction !== undefined

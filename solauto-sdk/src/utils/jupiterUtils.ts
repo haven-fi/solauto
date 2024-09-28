@@ -21,7 +21,7 @@ export interface JupSwapDetails {
   outputMint: PublicKey;
   destinationWallet: PublicKey;
   amount: bigint;
-  slippageBpsIncFactor?: number;
+  slippageIncFactor?: number;
   exactOut?: boolean;
   exactIn?: boolean;
 }
@@ -42,6 +42,7 @@ function createTransactionInstruction(
 
 export interface JupSwapTransaction {
   jupQuote: QuoteResponse;
+  priceImpactBps: number;
   lookupTableAddresses: string[];
   setupInstructions: TransactionBuilder;
   tokenLedgerIx: TransactionBuilder;
@@ -65,19 +66,20 @@ export async function getJupSwapTransaction(
           : swapDetails.exactIn
             ? "ExactIn"
             : undefined,
-        slippageBps: 10,
+        slippageBps: 30,
         maxAccounts: !swapDetails.exactOut ? 60 : undefined,
       }),
     3
   );
 
+  const priceImpactBps = (Math.round(toBps(parseFloat(quoteResponse.priceImpactPct))) + 1);
   const finalPriceSlippageBps = Math.round(
     Math.max(
       50,
       quoteResponse.slippageBps,
-      Math.round(toBps(parseFloat(quoteResponse.priceImpactPct))) + 1
+      priceImpactBps
     ) *
-      (1 + (swapDetails.slippageBpsIncFactor ?? 0))
+      (1 + (swapDetails.slippageIncFactor ?? 0))
   );
   quoteResponse.slippageBps = finalPriceSlippageBps;
   console.log(quoteResponse);
@@ -100,8 +102,13 @@ export async function getJupSwapTransaction(
     throw new Error("No swap instruction was returned by Jupiter");
   }
 
+  console.log("Raw price impact bps:", priceImpactBps);
+  const finalPriceImpactBps = priceImpactBps * (1 + (swapDetails.slippageIncFactor ?? 0));
+  console.log("Increased price impact bps:", finalPriceImpactBps);
+
   return {
     jupQuote: quoteResponse,
+    priceImpactBps: finalPriceImpactBps,
     lookupTableAddresses: instructions.addressLookupTableAddresses,
     setupInstructions: transactionBuilder().add(
       instructions.setupInstructions.map((ix) =>

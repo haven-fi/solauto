@@ -611,12 +611,13 @@ export async function buildSolautoRebalanceTransaction(
   );
   const {
     jupQuote,
+    priceImpactBps,
     lookupTableAddresses,
     setupInstructions,
     tokenLedgerIx,
     swapIx,
   } = await getJupSwapTransaction(client.signer, swapDetails, attemptNum);
-  const flashLoan = getFlashLoanDetails(client, values, jupQuote);
+  const flashLoan = getFlashLoanDetails(client, values, jupQuote, priceImpactBps);
 
   let tx = transactionBuilder();
 
@@ -643,7 +644,7 @@ export async function buildSolautoRebalanceTransaction(
               "A",
               swapDetails,
               rebalanceType,
-              jupQuote.slippageBps,
+              priceImpactBps,
               flashLoan,
               targetLiqUtilizationRateBps
             ),
@@ -654,7 +655,7 @@ export async function buildSolautoRebalanceTransaction(
         "B",
         swapDetails,
         rebalanceType,
-        jupQuote.slippageBps,
+        priceImpactBps,
         flashLoan,
         targetLiqUtilizationRateBps
       ),
@@ -669,7 +670,7 @@ export async function buildSolautoRebalanceTransaction(
         "A",
         swapDetails,
         rebalanceType,
-        jupQuote.slippageBps,
+        priceImpactBps,
         undefined,
         targetLiqUtilizationRateBps
       ),
@@ -678,7 +679,7 @@ export async function buildSolautoRebalanceTransaction(
         "B",
         swapDetails,
         rebalanceType,
-        jupQuote.slippageBps,
+        priceImpactBps,
         undefined,
         targetLiqUtilizationRateBps
       ),
@@ -719,7 +720,7 @@ export async function convertReferralFeesToDestination(
       inputMint: tokenAccountData.mint,
       outputMint: toWeb3JsPublicKey(referralState.destFeesMint),
       exactIn: true,
-      slippageBpsIncFactor: 0.15,
+      slippageIncFactor: 0.15,
     });
 
   let tx = transactionBuilder()

@@ -333,8 +333,8 @@ async function buildSolautoRebalanceTransaction(client, targetLiqUtilizationRate
     const values = (0, rebalanceUtils_1.getRebalanceValues)(client.solautoPositionState, client.solautoPositionSettings(), client.solautoPositionActiveDca(), (0, generalUtils_1.currentUnixSeconds)(), (0, generalUtils_1.safeGetPrice)(client.supplyMint), (0, generalUtils_1.safeGetPrice)(client.debtMint), targetLiqUtilizationRateBps);
     client.log("Rebalance values: ", values);
     const swapDetails = (0, rebalanceUtils_1.getJupSwapRebalanceDetails)(client, values, targetLiqUtilizationRateBps, attemptNum);
-    const { jupQuote, lookupTableAddresses, setupInstructions, tokenLedgerIx, swapIx, } = await (0, jupiterUtils_1.getJupSwapTransaction)(client.signer, swapDetails, attemptNum);
-    const flashLoan = (0, rebalanceUtils_1.getFlashLoanDetails)(client, values, jupQuote);
+    const { jupQuote, priceImpactBps, lookupTableAddresses, setupInstructions, tokenLedgerIx, swapIx, } = await (0, jupiterUtils_1.getJupSwapTransaction)(client.signer, swapDetails, attemptNum);
+    const flashLoan = (0, rebalanceUtils_1.getFlashLoanDetails)(client, values, jupQuote, priceImpactBps);
     let tx = (0, umi_1.transactionBuilder)();
     if (flashLoan) {
         client.log("Flash loan details: ", flashLoan);
@@ -348,11 +348,11 @@ async function buildSolautoRebalanceTransaction(client, targetLiqUtilizationRate
             client.flashBorrow(flashLoan, (0, accountUtils_1.getTokenAccount)((0, umi_web3js_adapters_1.toWeb3JsPublicKey)(client.signer.publicKey), swapDetails.inputMint)),
             ...(addFirstRebalance
                 ? [
-                    client.rebalance("A", swapDetails, rebalanceType, jupQuote.slippageBps, flashLoan, targetLiqUtilizationRateBps),
+                    client.rebalance("A", swapDetails, rebalanceType, priceImpactBps, flashLoan, targetLiqUtilizationRateBps),
                 ]
                 : []),
             swapIx,
-            client.rebalance("B", swapDetails, rebalanceType, jupQuote.slippageBps, flashLoan, targetLiqUtilizationRateBps),
+            client.rebalance("B", swapDetails, rebalanceType, priceImpactBps, flashLoan, targetLiqUtilizationRateBps),
             client.flashRepay(flashLoan),
         ]);
     }
@@ -361,9 +361,9 @@ async function buildSolautoRebalanceTransaction(client, targetLiqUtilizationRate
         tx = tx.add([
             setupInstructions,
             tokenLedgerIx,
-            client.rebalance("A", swapDetails, rebalanceType, jupQuote.slippageBps, undefined, targetLiqUtilizationRateBps),
+            client.rebalance("A", swapDetails, rebalanceType, priceImpactBps, undefined, targetLiqUtilizationRateBps),
             swapIx,
-            client.rebalance("B", swapDetails, rebalanceType, jupQuote.slippageBps, undefined, targetLiqUtilizationRateBps),
+            client.rebalance("B", swapDetails, rebalanceType, priceImpactBps, undefined, targetLiqUtilizationRateBps),
         ]);
     }
     if (client.solautoPositionState.liqUtilizationRateBps >
@@ -386,7 +386,7 @@ async function convertReferralFeesToDestination(umi, referralState, tokenAccount
         inputMint: tokenAccountData.mint,
         outputMint: (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(referralState.destFeesMint),
         exactIn: true,
-        slippageBpsIncFactor: 0.15,
+        slippageIncFactor: 0.15,
     });
     let tx = (0, umi_1.transactionBuilder)()
         .add(setupInstructions)

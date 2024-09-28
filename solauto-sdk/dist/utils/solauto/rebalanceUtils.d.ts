@@ -15,6 +15,6 @@ export interface FlashLoanDetails {
     baseUnitAmount: bigint;
     mint: PublicKey;
 }
-export declare function getFlashLoanDetails(client: SolautoClient, values: RebalanceValues, jupQuote: QuoteResponse): FlashLoanDetails | undefined;
+export declare function getFlashLoanDetails(client: SolautoClient, values: RebalanceValues, jupQuote: QuoteResponse, priceImpactBps: number): FlashLoanDetails | undefined;
 export declare function getJupSwapRebalanceDetails(client: SolautoClient, values: RebalanceValues, targetLiqUtilizationRateBps?: number, attemptNum?: number): JupSwapDetails;
 //# sourceMappingURL=rebalanceUtils.d.ts.map

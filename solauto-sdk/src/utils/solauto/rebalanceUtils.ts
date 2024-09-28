@@ -250,7 +250,8 @@ export interface FlashLoanDetails {
 export function getFlashLoanDetails(
   client: SolautoClient,
   values: RebalanceValues,
-  jupQuote: QuoteResponse
+  jupQuote: QuoteResponse,
+  priceImpactBps: number
 ): FlashLoanDetails | undefined {
   let supplyUsd = fromBaseUnit(
     client.solautoPositionState!.supply.amountUsed.baseAmountUsdValue,
@@ -263,7 +264,7 @@ export function getFlashLoanDetails(
 
   const debtAdjustmentWithSlippage =
     Math.abs(values.debtAdjustmentUsd) +
-    Math.abs(values.debtAdjustmentUsd) * fromBps(jupQuote.slippageBps);
+    Math.abs(values.debtAdjustmentUsd) * fromBps(priceImpactBps);
   supplyUsd =
     values.debtAdjustmentUsd < 0
       ? supplyUsd - debtAdjustmentWithSlippage
@@ -308,7 +309,7 @@ export function getFlashLoanDetails(
           ? exactAmountBaseUnit +
             BigInt(
               Math.round(
-                Number(exactAmountBaseUnit) * fromBps(jupQuote.slippageBps)
+                Number(exactAmountBaseUnit) * fromBps(priceImpactBps)
               )
             )
           : toBaseUnit(
@@ -346,7 +347,7 @@ export function getJupSwapRebalanceDetails(
     inputMint: toWeb3JsPublicKey(input.mint),
     outputMint: toWeb3JsPublicKey(output.mint),
     destinationWallet: client.solautoPosition,
-    slippageBpsIncFactor: 0.5 + (attemptNum ?? 0) * 0.2,
+    slippageIncFactor: 0.5 + (attemptNum ?? 0) * 0.2,
     amount: rebalancingToZero
       ? client.solautoPositionState!.debt.amountUsed.baseUnit +
         BigInt(

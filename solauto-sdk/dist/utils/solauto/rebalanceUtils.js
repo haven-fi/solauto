@@ -114,11 +114,11 @@ function getRebalanceValues(state, settings, dca, currentUnixTime, supplyPrice, 
         dcaTokenType: dca?.tokenType
     };
 }
-function getFlashLoanDetails(client, values, jupQuote) {
+function getFlashLoanDetails(client, values, jupQuote, priceImpactBps) {
     let supplyUsd = (0, numberUtils_1.fromBaseUnit)(client.solautoPositionState.supply.amountUsed.baseAmountUsdValue, generalAccounts_1.USD_DECIMALS) + (values.dcaTokenType === generated_1.TokenType.Supply ? values.amountUsdToDcaIn : 0);
     let debtUsd = (0, numberUtils_1.fromBaseUnit)(client.solautoPositionState.debt.amountUsed.baseAmountUsdValue, generalAccounts_1.USD_DECIMALS);
     const debtAdjustmentWithSlippage = Math.abs(values.debtAdjustmentUsd) +
-        Math.abs(values.debtAdjustmentUsd) * (0, numberUtils_1.fromBps)(jupQuote.slippageBps);
+        Math.abs(values.debtAdjustmentUsd) * (0, numberUtils_1.fromBps)(priceImpactBps);
     supplyUsd =
         values.debtAdjustmentUsd < 0
             ? supplyUsd - debtAdjustmentWithSlippage
@@ -148,7 +148,7 @@ function getFlashLoanDetails(client, values, jupQuote) {
         ? {
             baseUnitAmount: exactAmountBaseUnit
                 ? exactAmountBaseUnit +
-                    BigInt(Math.round(Number(exactAmountBaseUnit) * (0, numberUtils_1.fromBps)(jupQuote.slippageBps)))
+                    BigInt(Math.round(Number(exactAmountBaseUnit) * (0, numberUtils_1.fromBps)(priceImpactBps)))
                 : (0, numberUtils_1.toBaseUnit)(debtAdjustmentWithSlippage / flashLoanTokenPrice, flashLoanToken.decimals),
             mint: (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(flashLoanToken.mint),
         }
@@ -171,7 +171,7 @@ function getJupSwapRebalanceDetails(client, values, targetLiqUtilizationRateBps,
         inputMint: (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(input.mint),
         outputMint: (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(output.mint),
         destinationWallet: client.solautoPosition,
-        slippageBpsIncFactor: 0.5 + (attemptNum ?? 0) * 0.2,
+        slippageIncFactor: 0.5 + (attemptNum ?? 0) * 0.2,
         amount: rebalancingToZero
             ? client.solautoPositionState.debt.amountUsed.baseUnit +
                 BigInt(Math.round(Number(client.solautoPositionState.debt.amountUsed.baseUnit) *
