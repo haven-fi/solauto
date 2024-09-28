@@ -43,9 +43,9 @@ export function buildHeliusApiUrl(heliusApiKey: string) {
 }
 
 export function getSolanaRpcConnection(
-  heliusApiUrl: string
+  rpcUrl: string
 ): [Connection, Umi] {
-  const connection = new Connection(heliusApiUrl, "confirmed");
+  const connection = new Connection(rpcUrl, "confirmed");
   const umi = createUmi(connection);
   return [connection, umi];
 }
