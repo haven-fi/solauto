@@ -33,7 +33,7 @@ function getSolanaRpcConnection(heliusApiKey) {
 }
 async function currentUnixSecondsSolana(umi) {
     return await (0, generalUtils_1.retryWithExponentialBackoff)(async () => {
-        const blockTime = await umi.rpc.getBlockTime(await umi.rpc.getSlot());
+        const blockTime = await umi.rpc.getBlockTime(await umi.rpc.getSlot(), { commitment: "confirmed" });
         if (blockTime === null) {
             throw new Error("Unable to retrieve block time");
         }
@@ -175,7 +175,9 @@ async function sendSingleOptimizedTransaction(umi, connection, tx, txType, attem
             },
             confirm: { commitment: "confirmed" },
         });
-        console.log(`https://solscan.io/tx/${bs58_1.default.encode(result.signature)}`);
+        const txSig = bs58_1.default.encode(result.signature);
+        console.log(`Transaction signature: ${txSig}`);
+        console.log(`https://solscan.io/tx/${txSig}`);
         if (result.result.value.err !== null) {
             throw new Error(result.result.value.err.toString());
         }

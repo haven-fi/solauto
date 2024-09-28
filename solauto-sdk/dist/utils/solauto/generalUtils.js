@@ -66,7 +66,7 @@ function getAdjustedSettingsFromAutomation(settings, currentUnixTime) {
         boostToBps,
     };
 }
-function eligibleForRebalance(positionState, positionSettings, positionDca, currentUnixTime) {
+function eligibleForRebalance(positionState, positionSettings, positionDca, currentUnixTime, bpsDistanceThreshold = 0) {
     if (positionDca &&
         positionDca.automation.targetPeriods > 0 &&
         eligibleForNextAutomationPeriod(positionDca.automation, currentUnixTime)) {
@@ -81,10 +81,10 @@ function eligibleForRebalance(positionState, positionSettings, positionDca, curr
         : positionSettings.boostToBps;
     const repayFrom = positionSettings.repayToBps + positionSettings.repayGap;
     const boostFrom = boostToBps - positionSettings.boostGap;
-    if (positionState.liqUtilizationRateBps < boostFrom) {
+    if (Math.max(0, positionState.liqUtilizationRateBps - boostFrom) / boostFrom >= bpsDistanceThreshold) {
         return "boost";
     }
-    else if (positionState.liqUtilizationRateBps > repayFrom) {
+    else if (Math.max(0, repayFrom - positionState.liqUtilizationRateBps) >= bpsDistanceThreshold) {
         return "repay";
     }
     return undefined;

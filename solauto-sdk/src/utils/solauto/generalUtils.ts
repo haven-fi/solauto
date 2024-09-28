@@ -117,7 +117,8 @@ export function eligibleForRebalance(
   positionState: PositionState,
   positionSettings: SolautoSettingsParameters,
   positionDca: DCASettings | undefined,
-  currentUnixTime: number
+  currentUnixTime: number,
+  bpsDistanceThreshold = 0
 ): RebalanceAction | undefined {
   if (
     positionDca &&
@@ -144,9 +145,9 @@ export function eligibleForRebalance(
   const repayFrom = positionSettings.repayToBps + positionSettings.repayGap;
   const boostFrom = boostToBps - positionSettings.boostGap;
 
-  if (positionState.liqUtilizationRateBps < boostFrom) {
+  if (Math.max(0, positionState.liqUtilizationRateBps - boostFrom) / boostFrom >= bpsDistanceThreshold) {
     return "boost";
-  } else if (positionState.liqUtilizationRateBps > repayFrom) {
+  } else if (Math.max(0, repayFrom - positionState.liqUtilizationRateBps) >= bpsDistanceThreshold) {
     return "repay";
   }
 

@@ -337,7 +337,9 @@ export async function sendSingleOptimizedTransaction(
       },
       confirm: { commitment: "confirmed" },
     });
-    console.log(`https://solscan.io/tx/${bs58.encode(result.signature)}`);
+    const txSig = bs58.encode(result.signature);
+    console.log(`Transaction signature: ${txSig}`)
+    console.log(`https://solscan.io/tx/${txSig}`);
     if (result.result.value.err !== null) {
       throw new Error(result.result.value.err.toString());
     }

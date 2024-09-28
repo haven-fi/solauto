@@ -7,7 +7,7 @@ export declare function nextAutomationPeriodTimestamp(automation: AutomationSett
 export declare function eligibleForNextAutomationPeriod(automation: AutomationSettings, currentUnixTime: number): boolean;
 export declare function getUpdatedValueFromAutomation(currValue: number, targetValue: number, automation: AutomationSettings, currentUnixTimestamp: number): number;
 export declare function getAdjustedSettingsFromAutomation(settings: SolautoSettingsParameters, currentUnixTime: number): SolautoSettingsParameters;
-export declare function eligibleForRebalance(positionState: PositionState, positionSettings: SolautoSettingsParameters, positionDca: DCASettings | undefined, currentUnixTime: number): RebalanceAction | undefined;
+export declare function eligibleForRebalance(positionState: PositionState, positionSettings: SolautoSettingsParameters, positionDca: DCASettings | undefined, currentUnixTime: number, bpsDistanceThreshold?: number): RebalanceAction | undefined;
 export declare function eligibleForRefresh(positionState: PositionState, positionSettings: SolautoSettingsParameters, currentUnixTime: number): boolean;
 export declare function getSolautoManagedPositions(umi: Umi, authority?: PublicKey): Promise<SolautoPositionDetails[]>;
 export declare function getAllReferralStates(umi: Umi): Promise<PublicKey[]>;

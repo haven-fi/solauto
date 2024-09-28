@@ -9,6 +9,7 @@ declare class LookupTables {
     cache: AddressLookupTableInput[];
     constructor(defaultLuts: string[], umi: Umi);
     getLutInputs(additionalAddresses: string[]): Promise<AddressLookupTableInput[]>;
+    reset(): void;
 }
 export declare class TransactionItem {
     fetchTx: (attemptNum: number) => Promise<{
@@ -42,12 +43,14 @@ export declare enum TransactionStatus {
     Skipped = "Skipped",
     Processing = "Processing",
     Queued = "Queued",
-    Successful = "Successful"
+    Successful = "Successful",
+    Failed = "Failed"
 }
 export type TransactionManagerStatuses = {
     name: string;
     status: TransactionStatus;
     txSig?: string;
+    attemptNum: number;
 }[];
 export declare class TransactionsManager {
     private txHandler;
@@ -59,10 +62,10 @@ export declare class TransactionsManager {
     private lookupTables;
     constructor(txHandler: SolautoClient | ReferralStateManager, statusCallback?: ((statuses: TransactionManagerStatuses) => void) | undefined, txType?: TransactionRunType | undefined, mustBeAtomic?: boolean | undefined, errorsToThrow?: ErrorsToThrow | undefined);
     private assembleTransactionSets;
-    updateStatus(name: string, status: TransactionStatus, txSig?: string): void;
+    updateStatus(name: string, status: TransactionStatus, attemptNum: number, txSig?: string): void;
     debugAccounts(itemSet: TransactionSet, tx: TransactionBuilder): Promise<void>;
-    clientSend(transactions: TransactionItem[], prioritySetting?: PriorityFeeSetting): Promise<void>;
-    send(items: TransactionItem[], prioritySetting?: PriorityFeeSetting, initialized?: boolean): Promise<void>;
+    clientSend(transactions: TransactionItem[], prioritySetting?: PriorityFeeSetting): Promise<TransactionManagerStatuses>;
+    send(items: TransactionItem[], prioritySetting?: PriorityFeeSetting, initialized?: boolean): Promise<TransactionManagerStatuses>;
 }
 export {};
 //# sourceMappingURL=transactionsManager.d.ts.map
