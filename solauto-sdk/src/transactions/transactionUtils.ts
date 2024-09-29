@@ -392,6 +392,7 @@ function getRebalanceInstructions(tx: TransactionBuilder): Instruction[] {
         const discriminator = serializer.serialize({
           slippageBps: 0,
           limitGapBps: 0,
+          targetInAmountBaseUnit: 0,
           rebalanceType: SolautoRebalanceType.None,
           targetLiqUtilizationRateBps: 0,
         })[0];

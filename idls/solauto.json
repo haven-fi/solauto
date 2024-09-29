@@ -684,6 +684,11 @@
           "isOptional": true
         },
         {
+          "name": "positionAuthority",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
           "name": "solautoPosition",
           "isMut": true,
           "isSigner": false
@@ -1486,6 +1491,12 @@
             "name": "targetLiqUtilizationRateBps",
             "type": {
               "option": "u16"
+            }
+          },
+          {
+            "name": "targetInAmountBaseUnit",
+            "type": {
+              "option": "u64"
             }
           },
           {

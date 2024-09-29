@@ -343,6 +343,7 @@ export function getJupSwapRebalanceDetails(
   const inputAmount = toBaseUnit(usdToSwap / inputPrice!, input.decimals);
 
   const exactOut = targetLiqUtilizationRateBps === 0;
+  const exactIn = !exactOut && targetLiqUtilizationRateBps !== undefined;
 
   return {
     inputMint: toWeb3JsPublicKey(input.mint),
@@ -358,7 +359,8 @@ export function getJupSwapRebalanceDetails(
               0.0001
           )
         )
-      : BigInt(Math.round(Number(inputAmount) * 1.01)),
+      : inputAmount,
+    exactIn: exactIn,
     exactOut: exactOut,
   };
 }

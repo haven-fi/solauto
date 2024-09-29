@@ -19,6 +19,7 @@ function getMarginfiRebalanceInstructionDataSerializer() {
         ['slippageBps', (0, serializers_1.u16)()],
         ['rebalanceType', (0, types_1.getSolautoRebalanceTypeSerializer)()],
         ['targetLiqUtilizationRateBps', (0, serializers_1.option)((0, serializers_1.u16)())],
+        ['targetInAmountBaseUnit', (0, serializers_1.option)((0, serializers_1.u64)())],
         ['limitGapBps', (0, serializers_1.option)((0, serializers_1.u16)())],
     ], { description: 'MarginfiRebalanceInstructionData' }), (value) => ({ ...value, discriminator: 9 }));
 }
@@ -68,83 +69,88 @@ function marginfiRebalance(context, input) {
             isWritable: true,
             value: input.referredBySupplyTa ?? null,
         },
-        solautoPosition: {
+        positionAuthority: {
             index: 8,
+            isWritable: true,
+            value: input.positionAuthority ?? null,
+        },
+        solautoPosition: {
+            index: 9,
             isWritable: true,
             value: input.solautoPosition ?? null,
         },
         marginfiGroup: {
-            index: 9,
+            index: 10,
             isWritable: false,
             value: input.marginfiGroup ?? null,
         },
         marginfiAccount: {
-            index: 10,
+            index: 11,
             isWritable: true,
             value: input.marginfiAccount ?? null,
         },
         intermediaryTa: {
-            index: 11,
+            index: 12,
             isWritable: true,
             value: input.intermediaryTa ?? null,
         },
         supplyBank: {
-            index: 12,
+            index: 13,
             isWritable: true,
             value: input.supplyBank ?? null,
         },
         supplyPriceOracle: {
-            index: 13,
+            index: 14,
             isWritable: false,
             value: input.supplyPriceOracle ?? null,
         },
         positionSupplyTa: {
-            index: 14,
+            index: 15,
             isWritable: true,
             value: input.positionSupplyTa ?? null,
         },
         authoritySupplyTa: {
-            index: 15,
+            index: 16,
             isWritable: true,
             value: input.authoritySupplyTa ?? null,
         },
         vaultSupplyTa: {
-            index: 16,
+            index: 17,
             isWritable: true,
             value: input.vaultSupplyTa ?? null,
         },
         supplyVaultAuthority: {
-            index: 17,
+            index: 18,
             isWritable: true,
             value: input.supplyVaultAuthority ?? null,
         },
         debtBank: {
-            index: 18,
+            index: 19,
             isWritable: true,
             value: input.debtBank ?? null,
         },
         debtPriceOracle: {
-            index: 19,
+            index: 20,
             isWritable: false,
             value: input.debtPriceOracle ?? null,
         },
         positionDebtTa: {
-            index: 20,
+            index: 21,
             isWritable: true,
             value: input.positionDebtTa ?? null,
         },
         authorityDebtTa: {
-            index: 21,
+            index: 22,
             isWritable: true,
             value: input.authorityDebtTa ?? null,
         },
         vaultDebtTa: {
-            index: 22,
+            index: 23,
             isWritable: true,
             value: input.vaultDebtTa ?? null,
         },
         debtVaultAuthority: {
-            index: 23,
+            index: 24,
             isWritable: true,
             value: input.debtVaultAuthority ?? null,
         },

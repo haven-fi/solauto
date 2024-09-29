@@ -457,6 +457,7 @@ export class SolautoMarginfiClient extends SolautoClient {
       referredBySupplyTa: this.referredBySupplyTa
         ? publicKey(this.referredBySupplyTa)
         : undefined,
+      positionAuthority: publicKey(this.authority),
       solautoPosition: publicKey(this.solautoPosition),
       marginfiGroup: publicKey(this.marginfiGroup),
       marginfiAccount: publicKey(this.marginfiAccountPk),
@@ -488,6 +489,7 @@ export class SolautoMarginfiClient extends SolautoClient {
         : undefined,
       rebalanceType,
       targetLiqUtilizationRateBps: targetLiqUtilizationRateBps ?? null,
+      targetInAmountBaseUnit: targetLiqUtilizationRateBps ? swapDetails.amount : null,
       limitGapBps: limitGapBps ?? null,
       slippageBps: slippageBps ?? 0
     });

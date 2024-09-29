@@ -17,6 +17,7 @@ export type MarginfiRebalanceInstructionAccounts = {
     solautoFeesSupplyTa?: PublicKey | Pda;
     authorityReferralState: PublicKey | Pda;
     referredBySupplyTa?: PublicKey | Pda;
+    positionAuthority: PublicKey | Pda;
     solautoPosition: PublicKey | Pda;
     marginfiGroup: PublicKey | Pda;
     marginfiAccount: PublicKey | Pda;
@@ -39,12 +40,14 @@ export type MarginfiRebalanceInstructionData = {
     slippageBps: number;
     rebalanceType: SolautoRebalanceType;
     targetLiqUtilizationRateBps: Option<number>;
+    targetInAmountBaseUnit: Option<bigint>;
     limitGapBps: Option<number>;
 };
 export type MarginfiRebalanceInstructionDataArgs = {
     slippageBps: number;
     rebalanceType: SolautoRebalanceTypeArgs;
     targetLiqUtilizationRateBps: OptionOrNullable<number>;
+    targetInAmountBaseUnit: OptionOrNullable<number | bigint>;
     limitGapBps: OptionOrNullable<number>;
 };
 export declare function getMarginfiRebalanceInstructionDataSerializer(): Serializer<MarginfiRebalanceInstructionDataArgs, MarginfiRebalanceInstructionData>;

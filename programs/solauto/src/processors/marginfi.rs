@@ -16,7 +16,7 @@ use crate::{
             },
             MarginfiOpenPositionData, RebalanceSettings, SolautoAction, SolautoStandardAccounts,
         },
-        shared::{DeserializedAccount, LendingPlatform},
+        shared::{DeserializedAccount, LendingPlatform, SolautoError},
     },
     utils::*,
 };
@@ -223,6 +223,10 @@ pub fn process_marginfi_rebalance<'a>(
         false,
         false,
     )?;
+    if &std_accounts.solauto_position.data.authority != ctx.accounts.position_authority.key {
+        msg!("Incorrect position authority provided");
+        return Err(SolautoError::IncorrectAccounts.into());
+    }
 
     let rebalance_step = get_rebalance_step(
         &mut std_accounts,

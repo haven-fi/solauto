@@ -187,6 +187,7 @@ function getRebalanceInstructions(tx) {
                 const discriminator = serializer.serialize({
                     slippageBps: 0,
                     limitGapBps: 0,
+                    targetInAmountBaseUnit: 0,
                     rebalanceType: generated_1.SolautoRebalanceType.None,
                     targetLiqUtilizationRateBps: 0,
                 })[0];

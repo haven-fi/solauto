@@ -287,6 +287,7 @@ class SolautoMarginfiClient extends solautoClient_1.SolautoClient {
             referredBySupplyTa: this.referredBySupplyTa
                 ? (0, umi_1.publicKey)(this.referredBySupplyTa)
                 : undefined,
+            positionAuthority: (0, umi_1.publicKey)(this.authority),
             solautoPosition: (0, umi_1.publicKey)(this.solautoPosition),
             marginfiGroup: (0, umi_1.publicKey)(this.marginfiGroup),
             marginfiAccount: (0, umi_1.publicKey)(this.marginfiAccountPk),
@@ -313,6 +314,7 @@ class SolautoMarginfiClient extends solautoClient_1.SolautoClient {
                 : undefined,
             rebalanceType,
             targetLiqUtilizationRateBps: targetLiqUtilizationRateBps ?? null,
+            targetInAmountBaseUnit: targetLiqUtilizationRateBps ? swapDetails.amount : null,
             limitGapBps: limitGapBps ?? null,
             slippageBps: slippageBps ?? 0
         });

@@ -1,4 +1,3 @@
-use math_utils::{from_base_unit, from_bps, to_bps};
 use solana_program::{
     account_info::AccountInfo, clock::Clock, entrypoint::ProgramResult, msg,
     program_error::ProgramError, sysvar::Sysvar,
@@ -7,6 +6,8 @@ use std::{
     cmp::min,
     ops::{Add, Div, Mul, Sub},
 };
+use validation_utils::validate_debt_adjustment;
+use math_utils::{from_bps, to_bps};
 
 use super::{
     instruction::{RebalanceSettings, SolautoAction, SolautoStandardAccounts},
@@ -190,13 +191,15 @@ impl<'a> SolautoManager<'a> {
             .rebalance_type
             == SolautoRebalanceType::DoubleRebalanceWithFL
         {
-            self.validate_flash_loan_amount(
+            validate_debt_adjustment(
+                &self.std_accounts.solauto_position.data,
                 self.std_accounts
                     .solauto_position
                     .data
                     .rebalance
                     .flash_loan_amount,
                 debt_adjustment_usd,
+                0.15
             )?;
             return Ok(());
         }
@@ -222,17 +225,24 @@ impl<'a> SolautoManager<'a> {
         let pct_of_amount_can_be_used = (1.0).sub(limit_gap);
 
         if increasing_leverage {
+            let amt = if rebalance_args.target_in_amount_base_unit.is_some() {
+                rebalance_args.target_in_amount_base_unit.unwrap()
+            } else {
+                (token.amount_can_be_used.base_unit as f64).mul(pct_of_amount_can_be_used)
+                as u64
+            };
             self.borrow(
                 min(
                     base_unit_amount,
-                    (token.amount_can_be_used.base_unit as f64).mul(pct_of_amount_can_be_used)
-                        as u64,
+                    amt,
                 ),
                 self.accounts.intermediary_ta.unwrap(),
             )
         } else {
-            self.withdraw(
-                TokenBalanceAmount::Some(min(
+            let amt = if rebalance_args.target_in_amount_base_unit.is_some() {
+                rebalance_args.target_in_amount_base_unit.unwrap()
+            } else {
+                min(
                     self.std_accounts
                         .solauto_position
                         .data
@@ -241,7 +251,10 @@ impl<'a> SolautoManager<'a> {
                         .amount_used
                         .base_unit,
                     base_unit_amount,
-                )),
+                )
+            };
+            self.withdraw(
+                TokenBalanceAmount::Some(amt),
                 self.accounts.intermediary_ta.unwrap(),
             )
         }
@@ -259,8 +272,12 @@ impl<'a> SolautoManager<'a> {
                 self.solauto_fees_bps.as_ref().unwrap(),
                 Clock::get()?.unix_timestamp as u64,
             )?;
-            msg!("Expected debt adjustment: {}", debt_adjustment_usd);
-            self.validate_flash_loan_amount(flash_loan_amount, debt_adjustment_usd)?;
+            validate_debt_adjustment(
+                &self.std_accounts.solauto_position.data,
+                flash_loan_amount,
+                debt_adjustment_usd,
+                0.15
+            )?;
         }
 
         let mut available_supply_balance =
@@ -422,61 +439,6 @@ impl<'a> SolautoManager<'a> {
         }
 
         Ok(total_available_balance - solauto_fees - referrer_fees)
-    }
-
-    fn validate_flash_loan_amount(
-        &self,
-        base_unit_amount: u64,
-        expected_debt_adjustment_usd: f64,
-    ) -> ProgramResult {
-        let amount_usd = if expected_debt_adjustment_usd > 0.0 {
-            from_base_unit::<u64, u8, f64>(
-                base_unit_amount,
-                self.std_accounts.solauto_position.data.state.debt.decimals,
-            )
-            .mul(
-                self.std_accounts
-                    .solauto_position
-                    .data
-                    .state
-                    .debt
-                    .market_price(),
-            )
-        } else {
-            from_base_unit::<u64, u8, f64>(
-                base_unit_amount,
-                self.std_accounts
-                    .solauto_position
-                    .data
-                    .state
-                    .supply
-                    .decimals,
-            )
-            .mul(
-                self.std_accounts
-                    .solauto_position
-                    .data
-                    .state
-                    .supply
-                    .market_price(),
-            )
-        };
-
-        // Checking if within 15% range due to varying price volatility
-        if (amount_usd - expected_debt_adjustment_usd.abs())
-            .abs()
-            .div(amount_usd)
-            > 0.15
-        {
-            msg!(
-                "Flash loan amount was not what was expected (Provided: ${} vs. expected: ${})",
-                amount_usd.abs(),
-                expected_debt_adjustment_usd.abs()
-            );
-            return Err(ProgramError::InvalidInstructionData.into());
-        }
-
-        Ok(())
     }
 
     pub fn refresh_position(

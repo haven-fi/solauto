@@ -1,3 +1,5 @@
+use std::ops::{Div, Mul};
+
 use marginfi_sdk::{
     generated::accounts::{Bank, MarginfiAccount},
     MARGINFI_ID,
@@ -30,7 +32,9 @@ use crate::{
 };
 
 use super::{
-    math_utils::{get_max_boost_to_bps, get_max_repay_from_bps, get_max_repay_to_bps},
+    math_utils::{
+        from_base_unit, get_max_boost_to_bps, get_max_repay_from_bps, get_max_repay_to_bps,
+    },
     solauto_utils,
 };
 
@@ -521,6 +525,39 @@ pub fn validate_no_active_balances<'a>(
         msg!("Lending platform not yet supported");
         return Err(SolautoError::IncorrectAccounts.into());
     }
+}
+
+pub fn validate_debt_adjustment(
+    solauto_position: &SolautoPosition,
+    provided_base_unit_amount: u64,
+    expected_debt_adjustment_usd: f64,
+    pct_threshold_range: f64,
+) -> ProgramResult {
+    let token = if expected_debt_adjustment_usd > 0.0 {
+        solauto_position.state.debt
+    } else {
+        solauto_position.state.supply
+    };
+
+    let amount_usd = from_base_unit::<u64, u8, f64>(provided_base_unit_amount, token.decimals)
+        .mul(token.market_price());
+
+    // Checking if within specified range due to varying price volatility
+    if (amount_usd - expected_debt_adjustment_usd.abs())
+        .abs()
+        .div(amount_usd)
+        > pct_threshold_range
+    {
+        msg!("Base unit amount provided: {}", provided_base_unit_amount);
+        msg!(
+            "Provided debt adjustment was not what was expected (Provided: ${} vs. expected: ${})",
+            amount_usd.abs(),
+            expected_debt_adjustment_usd.abs()
+        );
+        return Err(ProgramError::InvalidInstructionData.into());
+    }
+
+    Ok(())
 }
 
 #[cfg(test)]

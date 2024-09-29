@@ -1,6 +1,6 @@
 use jupiter_sdk::JUPITER_ID;
 use marginfi_sdk::MARGINFI_ID;
-use math_utils::from_bps;
+use math_utils::{from_base_unit, from_bps};
 use solana_program::{
     instruction::{get_stack_height, TRANSACTION_LEVEL_STACK_HEIGHT},
     msg,
@@ -8,7 +8,11 @@ use solana_program::{
     pubkey::Pubkey,
     sysvar::instructions::load_current_index_checked,
 };
-use std::{cmp::max, ops::Mul};
+use std::{
+    cmp::max,
+    ops::{Div, Mul},
+};
+use validation_utils::validate_debt_adjustment;
 
 use crate::{
     state::solauto_position::{DCASettings, PositionData, SolautoPosition, SolautoRebalanceType},
@@ -397,6 +401,15 @@ pub fn get_rebalance_values(
         adjustment_fee_bps,
     );
 
+    if args.target_in_amount_base_unit.is_some() {
+        validate_debt_adjustment(
+            solauto_position,
+            args.target_in_amount_base_unit.unwrap(),
+            debt_adjustment_usd,
+            0.25
+        )?;
+    }
+
     let price_slippage_bps = solauto_position.rebalance.price_slippage_bps;
     debt_adjustment_usd += debt_adjustment_usd.mul(from_bps(price_slippage_bps));
     if amount_to_dca_in_usd > 0.0 && solauto_position.position.dca.token_type == TokenType::Debt {
@@ -674,6 +687,7 @@ mod tests {
                 slippage_bps: 0,
                 rebalance_type: SolautoRebalanceType::Regular,
                 target_liq_utilization_rate_bps: Some(target_liq_utilization_rate_bps),
+                target_in_amount_base_unit: None,
                 limit_gap_bps: None,
             }),
         )

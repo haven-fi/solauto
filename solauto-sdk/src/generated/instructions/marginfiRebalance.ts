@@ -22,6 +22,7 @@ import {
   option,
   struct,
   u16,
+  u64,
   u8,
 } from '@metaplex-foundation/umi/serializers';
 import {
@@ -45,6 +46,7 @@ export type MarginfiRebalanceInstructionAccounts = {
   solautoFeesSupplyTa?: PublicKey | Pda;
   authorityReferralState: PublicKey | Pda;
   referredBySupplyTa?: PublicKey | Pda;
+  positionAuthority: PublicKey | Pda;
   solautoPosition: PublicKey | Pda;
   marginfiGroup: PublicKey | Pda;
   marginfiAccount: PublicKey | Pda;
@@ -69,6 +71,7 @@ export type MarginfiRebalanceInstructionData = {
   slippageBps: number;
   rebalanceType: SolautoRebalanceType;
   targetLiqUtilizationRateBps: Option<number>;
+  targetInAmountBaseUnit: Option<bigint>;
   limitGapBps: Option<number>;
 };
 
@@ -76,6 +79,7 @@ export type MarginfiRebalanceInstructionDataArgs = {
   slippageBps: number;
   rebalanceType: SolautoRebalanceTypeArgs;
   targetLiqUtilizationRateBps: OptionOrNullable<number>;
+  targetInAmountBaseUnit: OptionOrNullable<number | bigint>;
   limitGapBps: OptionOrNullable<number>;
 };
 
@@ -94,6 +98,7 @@ export function getMarginfiRebalanceInstructionDataSerializer(): Serializer<
         ['slippageBps', u16()],
         ['rebalanceType', getSolautoRebalanceTypeSerializer()],
         ['targetLiqUtilizationRateBps', option(u16())],
+        ['targetInAmountBaseUnit', option(u64())],
         ['limitGapBps', option(u16())],
       ],
       { description: 'MarginfiRebalanceInstructionData' }
@@ -162,83 +167,88 @@ export function marginfiRebalance(
       isWritable: true as boolean,
       value: input.referredBySupplyTa ?? null,
     },
-    solautoPosition: {
+    positionAuthority: {
       index: 8,
+      isWritable: true as boolean,
+      value: input.positionAuthority ?? null,
+    },
+    solautoPosition: {
+      index: 9,
       isWritable: true as boolean,
       value: input.solautoPosition ?? null,
     },
     marginfiGroup: {
-      index: 9,
+      index: 10,
       isWritable: false as boolean,
       value: input.marginfiGroup ?? null,
     },
     marginfiAccount: {
-      index: 10,
+      index: 11,
       isWritable: true as boolean,
       value: input.marginfiAccount ?? null,
     },
     intermediaryTa: {
-      index: 11,
+      index: 12,
       isWritable: true as boolean,
       value: input.intermediaryTa ?? null,
     },
     supplyBank: {
-      index: 12,
+      index: 13,
       isWritable: true as boolean,
       value: input.supplyBank ?? null,
     },
     supplyPriceOracle: {
-      index: 13,
+      index: 14,
       isWritable: false as boolean,
       value: input.supplyPriceOracle ?? null,
     },
     positionSupplyTa: {
-      index: 14,
+      index: 15,
       isWritable: true as boolean,
       value: input.positionSupplyTa ?? null,
     },
     authoritySupplyTa: {
-      index: 15,
+      index: 16,
       isWritable: true as boolean,
       value: input.authoritySupplyTa ?? null,
     },
     vaultSupplyTa: {
-      index: 16,
+      index: 17,
       isWritable: true as boolean,
       value: input.vaultSupplyTa ?? null,
     },
     supplyVaultAuthority: {
-      index: 17,
+      index: 18,
       isWritable: true as boolean,
       value: input.supplyVaultAuthority ?? null,
     },
     debtBank: {
-      index: 18,
+      index: 19,
       isWritable: true as boolean,
       value: input.debtBank ?? null,
     },
     debtPriceOracle: {
-      index: 19,
+      index: 20,
       isWritable: false as boolean,
       value: input.debtPriceOracle ?? null,
     },
     positionDebtTa: {
-      index: 20,
+      index: 21,
       isWritable: true as boolean,
       value: input.positionDebtTa ?? null,
     },
     authorityDebtTa: {
-      index: 21,
+      index: 22,
       isWritable: true as boolean,
       value: input.authorityDebtTa ?? null,
     },
     vaultDebtTa: {
-      index: 22,
+      index: 23,
       isWritable: true as boolean,
       value: input.vaultDebtTa ?? null,
     },
     debtVaultAuthority: {
-      index: 23,
+      index: 24,
       isWritable: true as boolean,
       value: input.debtVaultAuthority ?? null,
     },

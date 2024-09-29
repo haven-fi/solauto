@@ -167,6 +167,7 @@ function getJupSwapRebalanceDetails(client, values, targetLiqUtilizationRateBps,
         : (0, generalUtils_2.safeGetPrice)(client.supplyMint);
     const inputAmount = (0, numberUtils_1.toBaseUnit)(usdToSwap / inputPrice, input.decimals);
     const exactOut = targetLiqUtilizationRateBps === 0;
+    const exactIn = !exactOut && targetLiqUtilizationRateBps !== undefined;
     return {
         inputMint: (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(input.mint),
         outputMint: (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(output.mint),
@@ -177,7 +178,8 @@ function getJupSwapRebalanceDetails(client, values, targetLiqUtilizationRateBps,
                 BigInt(Math.round(Number(client.solautoPositionState.debt.amountUsed.baseUnit) *
                     // Add this small percentage to account for the APR on the debt between now and the transaction
                     0.0001))
-            : BigInt(Math.round(Number(inputAmount) * 1.01)),
+            : inputAmount,
+        exactIn: exactIn,
         exactOut: exactOut,
     };
 }
