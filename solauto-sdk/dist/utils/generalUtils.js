@@ -62,6 +62,7 @@ async function fetchTokenPrices(mints) {
     }
     const json = await resp.json();
     const prices = json.parsed.map((x) => {
+        console.log(x);
         if (x.price.expo > 0) {
             return Number((0, numberUtils_1.toBaseUnit)(Number(x.price.price), x.price.expo));
         }

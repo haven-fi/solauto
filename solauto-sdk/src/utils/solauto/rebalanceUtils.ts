@@ -58,9 +58,9 @@ function getStandardTargetLiqUtilizationRateBps(
   const repayFrom = settings.repayToBps + settings.repayGap;
   const boostFrom = adjustedSettings.boostToBps - settings.boostGap;
 
-  if (state.liqUtilizationRateBps < boostFrom) {
+  if (state.liqUtilizationRateBps <= boostFrom) {
     return adjustedSettings.boostToBps;
-  } else if (state.liqUtilizationRateBps > repayFrom) {
+  } else if (state.liqUtilizationRateBps >= repayFrom) {
     return adjustedSettings.repayToBps;
   } else {
     throw new Error("Invalid rebalance condition");

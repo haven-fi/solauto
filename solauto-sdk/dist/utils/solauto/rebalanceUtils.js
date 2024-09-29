@@ -22,10 +22,10 @@ function getStandardTargetLiqUtilizationRateBps(state, settings) {
     const adjustedSettings = (0, generalUtils_1.getAdjustedSettingsFromAutomation)(settings, (0, generalUtils_2.currentUnixSeconds)());
     const repayFrom = settings.repayToBps + settings.repayGap;
     const boostFrom = adjustedSettings.boostToBps - settings.boostGap;
-    if (state.liqUtilizationRateBps < boostFrom) {
+    if (state.liqUtilizationRateBps <= boostFrom) {
         return adjustedSettings.boostToBps;
     }
-    else if (state.liqUtilizationRateBps > repayFrom) {
+    else if (state.liqUtilizationRateBps >= repayFrom) {
         return adjustedSettings.repayToBps;
     }
     else {
@@ -177,7 +177,7 @@ function getJupSwapRebalanceDetails(client, values, targetLiqUtilizationRateBps,
                 BigInt(Math.round(Number(client.solautoPositionState.debt.amountUsed.baseUnit) *
                     // Add this small percentage to account for the APR on the debt between now and the transaction
                     0.0001))
-            : inputAmount,
+            : BigInt(Math.round(Number(inputAmount) * 1.01)),
         exactOut: exactOut,
     };
 }
