@@ -139,14 +139,14 @@ export function getMaxLiqUtilizationRateBps(
 export function maxRepayFromBps(maxLtvBps: number, liqThresholdBps: number) {
   return Math.min(
     9000,
-    getMaxLiqUtilizationRateBps(maxLtvBps, liqThresholdBps - 1000, 0.005)
+    getMaxLiqUtilizationRateBps(maxLtvBps, liqThresholdBps - 1000, 0.0075)
   );
 }
 
 export function maxRepayToBps(maxLtvBps: number, liqThresholdBps: number) {
   return Math.min(
     maxRepayFromBps(maxLtvBps, liqThresholdBps) - MIN_REPAY_GAP_BPS,
-    getMaxLiqUtilizationRateBps(maxLtvBps, liqThresholdBps, 0.005)
+    getMaxLiqUtilizationRateBps(maxLtvBps, liqThresholdBps, 0.0075)
   );
 }
 

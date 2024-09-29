@@ -580,7 +580,8 @@ export async function buildSolautoRebalanceTransaction(
 > {
   client.solautoPositionState = await client.getFreshPositionState();
   if (
-    client.solautoPositionState?.supply.amountUsed.baseUnit === BigInt(0) ||
+    (client.solautoPositionState?.supply.amountUsed.baseUnit === BigInt(0) &&
+      client.livePositionUpdates.supplyAdjustment === BigInt(0)) ||
     (targetLiqUtilizationRateBps === undefined &&
       !eligibleForRebalance(
         client.solautoPositionState!,
@@ -618,7 +619,12 @@ export async function buildSolautoRebalanceTransaction(
     tokenLedgerIx,
     swapIx,
   } = await getJupSwapTransaction(client.signer, swapDetails, attemptNum);
-  const flashLoan = getFlashLoanDetails(client, values, jupQuote, priceImpactBps);
+  const flashLoan = getFlashLoanDetails(
+    client,
+    values,
+    jupQuote,
+    priceImpactBps
+  );
 
   let tx = transactionBuilder();
 

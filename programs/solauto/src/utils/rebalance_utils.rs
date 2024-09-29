@@ -54,6 +54,8 @@ pub fn validate_rebalance_instructions(
         ixs_sysvar,
         JUPITER_ID,
         vec![
+            "route",
+            "shared_accounts_route",
             "route_with_token_ledger",
             "shared_accounts_route_with_token_ledger",
             "exact_out_route",
