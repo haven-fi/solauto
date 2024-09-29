@@ -342,13 +342,14 @@ export function getJupSwapRebalanceDetails(
     : safeGetPrice(client.supplyMint);
   const inputAmount = toBaseUnit(usdToSwap / inputPrice!, input.decimals);
 
-  const rebalancingToZero = targetLiqUtilizationRateBps === 0;
+  const exactOut = targetLiqUtilizationRateBps === 0;
+
   return {
     inputMint: toWeb3JsPublicKey(input.mint),
     outputMint: toWeb3JsPublicKey(output.mint),
     destinationWallet: client.solautoPosition,
     slippageIncFactor: 0.5 + (attemptNum ?? 0) * 0.2,
-    amount: rebalancingToZero
+    amount: exactOut
       ? client.solautoPositionState!.debt.amountUsed.baseUnit +
         BigInt(
           Math.round(
@@ -357,7 +358,7 @@ export function getJupSwapRebalanceDetails(
               0.0001
           )
         )
-      : inputAmount,
-    exactOut: rebalancingToZero,
+      : BigInt(Math.round(Number(inputAmount) * 1.01)),
+    exactOut: exactOut,
   };
 }

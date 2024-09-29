@@ -166,18 +166,18 @@ function getJupSwapRebalanceDetails(client, values, targetLiqUtilizationRateBps,
         ? (0, generalUtils_2.safeGetPrice)(client.debtMint)
         : (0, generalUtils_2.safeGetPrice)(client.supplyMint);
     const inputAmount = (0, numberUtils_1.toBaseUnit)(usdToSwap / inputPrice, input.decimals);
-    const rebalancingToZero = targetLiqUtilizationRateBps === 0;
+    const exactOut = targetLiqUtilizationRateBps === 0;
     return {
         inputMint: (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(input.mint),
         outputMint: (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(output.mint),
         destinationWallet: client.solautoPosition,
         slippageIncFactor: 0.5 + (attemptNum ?? 0) * 0.2,
-        amount: rebalancingToZero
+        amount: exactOut
             ? client.solautoPositionState.debt.amountUsed.baseUnit +
                 BigInt(Math.round(Number(client.solautoPositionState.debt.amountUsed.baseUnit) *
                     // Add this small percentage to account for the APR on the debt between now and the transaction
                     0.0001))
             : inputAmount,
-        exactOut: rebalancingToZero,
+        exactOut: exactOut,
     };
 }
