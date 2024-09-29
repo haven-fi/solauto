@@ -75,6 +75,7 @@ export async function fetchTokenPrices(mints: PublicKey[]): Promise<number[]> {
 
   const json = await resp.json();
   const prices = json.parsed.map((x: any) => {
+    console.log(x);
     if (x.price.expo > 0) {
       return Number(toBaseUnit(Number(x.price.price), x.price.expo));
     } else if (x.price.expo < 0) {

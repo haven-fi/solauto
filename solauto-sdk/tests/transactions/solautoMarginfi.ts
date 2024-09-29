@@ -156,11 +156,13 @@ describe("Solauto Marginfi tests", async () => {
     //   )
     // );
 
-    await new TransactionsManager(
-      client,
-      undefined,
-      !payForTransactions ? "only-simulate" : "normal",
-      useJitoBundle
-    ).clientSend(transactionItems);
+    // await new TransactionsManager(
+    //   client,
+    //   undefined,
+    //   !payForTransactions ? "only-simulate" : "normal",
+    //   useJitoBundle
+    // ).clientSend(transactionItems);
+
+    console.log(await fetchTokenPrices([new PublicKey("So11111111111111111111111111111111111111112")]));
   });
 });
