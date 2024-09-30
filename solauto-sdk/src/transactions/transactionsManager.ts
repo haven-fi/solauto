@@ -193,7 +193,9 @@ export class TransactionsManager {
     private statusCallback?: (statuses: TransactionManagerStatuses) => void,
     private txType?: TransactionRunType,
     private mustBeAtomic?: boolean,
-    private errorsToThrow?: ErrorsToThrow
+    private errorsToThrow?: ErrorsToThrow,
+    private retries: number = 4,
+    private retryDelay: number = 150
   ) {
     this.lookupTables = new LookupTables(
       this.txHandler.defaultLookupTables(),
@@ -508,8 +510,8 @@ export class TransactionsManager {
               }
             }
           },
-          4,
-          150,
+          this.retries,
+          this.retryDelay,
           this.errorsToThrow
         );
       }

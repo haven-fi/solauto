@@ -325,7 +325,8 @@ async function getTransactionChores(client, tx) {
 }
 async function buildSolautoRebalanceTransaction(client, targetLiqUtilizationRateBps, attemptNum) {
     client.solautoPositionState = await client.getFreshPositionState();
-    if (client.solautoPositionState?.supply.amountUsed.baseUnit === BigInt(0) ||
+    if ((client.solautoPositionState?.supply.amountUsed.baseUnit === BigInt(0) &&
+        client.livePositionUpdates.supplyAdjustment === BigInt(0)) ||
         (targetLiqUtilizationRateBps === undefined &&
             !(0, generalUtils_2.eligibleForRebalance)(client.solautoPositionState, client.solautoPositionSettings(), client.solautoPositionActiveDca(), (0, generalUtils_1.currentUnixSeconds)()))) {
         client.log("Not eligible for a rebalance");

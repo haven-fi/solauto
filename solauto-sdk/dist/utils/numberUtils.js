@@ -101,11 +101,11 @@ function getMaxLiqUtilizationRateBps(maxLtvBps, liqThresholdBps, offsetFromMaxLt
     return toBps((fromBps(maxLtvBps) - offsetFromMaxLtv) / fromBps(liqThresholdBps)) - 1; // -1 to account for any rounding issues
 }
 function maxRepayFromBps(maxLtvBps, liqThresholdBps) {
-    return Math.min(9000, getMaxLiqUtilizationRateBps(maxLtvBps, liqThresholdBps - 1000, 0.005));
+    return Math.min(9000, getMaxLiqUtilizationRateBps(maxLtvBps, liqThresholdBps - 1000, 0.0075));
 }
 function maxRepayToBps(maxLtvBps, liqThresholdBps) {
-    return Math.min(maxRepayFromBps(maxLtvBps, liqThresholdBps) - constants_1.MIN_REPAY_GAP_BPS, getMaxLiqUtilizationRateBps(maxLtvBps, liqThresholdBps, 0.005));
+    return Math.min(maxRepayFromBps(maxLtvBps, liqThresholdBps) - constants_1.MIN_REPAY_GAP_BPS, getMaxLiqUtilizationRateBps(maxLtvBps, liqThresholdBps, 0.0075));
 }
 function maxBoostToBps(maxLtvBps, liqThresholdBps) {
-    return Math.min(maxRepayToBps(maxLtvBps, liqThresholdBps), getMaxLiqUtilizationRateBps(maxLtvBps, liqThresholdBps, 0.015));
+    return Math.min(maxRepayToBps(maxLtvBps, liqThresholdBps), getMaxLiqUtilizationRateBps(maxLtvBps, liqThresholdBps, 0.01));
 }

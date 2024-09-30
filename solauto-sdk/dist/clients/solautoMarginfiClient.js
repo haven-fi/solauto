@@ -415,7 +415,7 @@ class SolautoMarginfiClient extends solautoClient_1.SolautoClient {
         if (state) {
             return state;
         }
-        const freshState = await (0, marginfiUtils_1.getMarginfiAccountPositionState)(this.umi, this.marginfiAccountPk, this.supplyMint, this.debtMint, this.livePositionUpdates);
+        const freshState = await (0, marginfiUtils_1.getMarginfiAccountPositionState)(this.umi, this.marginfiAccountPk, this.selfManaged ? undefined : this.supplyMint, this.selfManaged ? undefined : this.debtMint, this.livePositionUpdates);
         if (freshState) {
             this.log("Fresh state", freshState);
             const supplyPrice = (0, generalUtils_1.safeGetPrice)(freshState?.supply.mint);

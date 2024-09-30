@@ -58,9 +58,11 @@ export declare class TransactionsManager {
     private txType?;
     private mustBeAtomic?;
     private errorsToThrow?;
+    private retries;
+    private retryDelay;
     private statuses;
     private lookupTables;
-    constructor(txHandler: SolautoClient | ReferralStateManager, statusCallback?: ((statuses: TransactionManagerStatuses) => void) | undefined, txType?: TransactionRunType | undefined, mustBeAtomic?: boolean | undefined, errorsToThrow?: ErrorsToThrow | undefined);
+    constructor(txHandler: SolautoClient | ReferralStateManager, statusCallback?: ((statuses: TransactionManagerStatuses) => void) | undefined, txType?: TransactionRunType | undefined, mustBeAtomic?: boolean | undefined, errorsToThrow?: ErrorsToThrow | undefined, retries?: number, retryDelay?: number);
     private assembleTransactionSets;
     updateStatus(name: string, status: TransactionStatus, attemptNum: number, txSig?: string): void;
     debugAccounts(itemSet: TransactionSet, tx: TransactionBuilder): Promise<void>;

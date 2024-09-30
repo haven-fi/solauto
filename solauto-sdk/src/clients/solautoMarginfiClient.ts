@@ -56,7 +56,6 @@ import {
   getMaxLtvAndLiqThreshold,
 } from "../utils/marginfiUtils";
 import { bytesToI80F48, fromBaseUnit, toBps } from "../utils/numberUtils";
-import { PRICES, SOLAUTO_MANAGER } from "../constants";
 import { createFakePositionState } from "../utils";
 
 export interface SolautoMarginfiClientArgs extends SolautoClientArgs {
@@ -627,8 +626,8 @@ export class SolautoMarginfiClient extends SolautoClient {
     const freshState = await getMarginfiAccountPositionState(
       this.umi,
       this.marginfiAccountPk,
-      this.supplyMint,
-      this.debtMint,
+      this.selfManaged ? undefined : this.supplyMint,
+      this.selfManaged ? undefined : this.debtMint,
       this.livePositionUpdates
     );
 

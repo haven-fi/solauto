@@ -119,12 +119,14 @@ var TransactionStatus;
     TransactionStatus["Failed"] = "Failed";
 })(TransactionStatus || (exports.TransactionStatus = TransactionStatus = {}));
 class TransactionsManager {
-    constructor(txHandler, statusCallback, txType, mustBeAtomic, errorsToThrow) {
+    constructor(txHandler, statusCallback, txType, mustBeAtomic, errorsToThrow, retries = 4, retryDelay = 150) {
         this.txHandler = txHandler;
         this.statusCallback = statusCallback;
         this.txType = txType;
         this.mustBeAtomic = mustBeAtomic;
         this.errorsToThrow = errorsToThrow;
+        this.retries = retries;
+        this.retryDelay = retryDelay;
         this.statuses = [];
         this.lookupTables = new LookupTables(this.txHandler.defaultLookupTables(), this.txHandler.umi);
     }
@@ -320,7 +322,7 @@ class TransactionsManager {
                             throw e;
                         }
                     }
-                }, 4, 150, this.errorsToThrow);
+                }, this.retries, this.retryDelay, this.errorsToThrow);
             }
         }
         return this.statuses;
