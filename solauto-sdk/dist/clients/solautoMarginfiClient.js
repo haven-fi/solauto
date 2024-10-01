@@ -53,7 +53,7 @@ class SolautoMarginfiClient extends solautoClient_1.SolautoClient {
         this.supplyPriceOracle = new web3_js_1.PublicKey(this.marginfiSupplyAccounts.priceOracle);
         this.debtPriceOracle = new web3_js_1.PublicKey(this.marginfiDebtAccounts.priceOracle);
         if (!this.solautoPositionState) {
-            const [maxLtv, liqThreshold] = await (0, marginfiUtils_1.getMaxLtvAndLiqThreshold)(this.umi, { mint: this.supplyMint }, { mint: this.debtMint });
+            const [maxLtv, liqThreshold] = (await this.maxLtvAndLiqThreshold());
             this.solautoPositionState = (0, utils_1.createFakePositionState)({ mint: this.supplyMint }, { mint: this.debtMint }, (0, numberUtils_1.toBps)(maxLtv), (0, numberUtils_1.toBps)(liqThreshold));
         }
         if (!this.initialized) {
@@ -336,7 +336,7 @@ class SolautoMarginfiClient extends solautoClient_1.SolautoClient {
                 : undefined,
             rebalanceType,
             targetLiqUtilizationRateBps: targetLiqUtilizationRateBps ?? null,
-            targetInAmountBaseUnit: targetLiqUtilizationRateBps
+            targetInAmountBaseUnit: targetLiqUtilizationRateBps && rebalanceStep === "A"
                 ? swapDetails.amount
                 : null,
             limitGapBps: limitGapBps ?? null,

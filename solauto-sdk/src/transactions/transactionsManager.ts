@@ -320,7 +320,7 @@ export class TransactionsManager {
     ) {
       await retryWithExponentialBackoff(
         async (attemptNum) =>
-          this.sendTransaction(
+          await this.sendTransaction(
             updateLookupTable.updateLutTx,
             updateLutTxName,
             attemptNum,
@@ -472,7 +472,7 @@ export class TransactionsManager {
               if (this.txHandler.localTest) {
                 await this.debugAccounts(itemSet, tx);
               }
-              this.sendTransaction(
+              await this.sendTransaction(
                 tx,
                 itemSet.name(),
                 attemptNum,

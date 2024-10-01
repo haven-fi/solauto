@@ -217,7 +217,7 @@ class TransactionsManager {
         if (updateLookupTable &&
             updateLookupTable.updateLutTx.getInstructions().length > 0 &&
             updateLookupTable?.needsToBeIsolated) {
-            await (0, generalUtils_1.retryWithExponentialBackoff)(async (attemptNum) => this.sendTransaction(updateLookupTable.updateLutTx, updateLutTxName, attemptNum, prioritySetting), 3, 150, this.errorsToThrow);
+            await (0, generalUtils_1.retryWithExponentialBackoff)(async (attemptNum) => await this.sendTransaction(updateLookupTable.updateLutTx, updateLutTxName, attemptNum, prioritySetting), 3, 150, this.errorsToThrow);
         }
         this.lookupTables.defaultLuts = client.defaultLookupTables();
         for (const item of items) {
@@ -317,7 +317,7 @@ class TransactionsManager {
                         if (this.txHandler.localTest) {
                             await this.debugAccounts(itemSet, tx);
                         }
-                        this.sendTransaction(tx, itemSet.name(), attemptNum, prioritySetting);
+                        await this.sendTransaction(tx, itemSet.name(), attemptNum, prioritySetting);
                     }
                 }, this.retries, this.retryDelay, this.errorsToThrow);
             }

@@ -49,7 +49,7 @@ pub fn process_update_position_instruction<'a>(
 pub fn process_close_position_instruction<'a>(accounts: &'a [AccountInfo<'a>]) -> ProgramResult {
     msg!("Instruction: Close position");
     let ctx = ClosePositionAccounts::context(accounts)?;
-    let mut solauto_position =
+    let solauto_position =
         DeserializedAccount::<SolautoPosition>::zerocopy(Some(ctx.accounts.solauto_position))?
             .unwrap();
 
@@ -68,6 +68,12 @@ pub fn process_close_position_instruction<'a>(accounts: &'a [AccountInfo<'a>]) -
         Some(ctx.accounts.position_debt_ta),
     )?;
 
+    validation_utils::validate_token_accounts(
+        &solauto_position,
+        Some(ctx.accounts.signer_supply_ta),
+        Some(ctx.accounts.signer_debt_ta),
+    )?;
+
     if !cfg!(feature = "test") {
         validation_utils::validate_no_active_balances(
             ctx.accounts.protocol_account,
@@ -78,8 +84,6 @@ pub fn process_close_position_instruction<'a>(accounts: &'a [AccountInfo<'a>]) -
     close_position::close_position(
         &ctx,
         &solauto_position,
-        ctx.accounts.position_supply_ta,
-        ctx.accounts.position_debt_ta,
     )
 }
 

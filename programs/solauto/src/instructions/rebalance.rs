@@ -152,16 +152,11 @@ fn rebalance<'a>(
     rebalance_step: RebalanceStep,
     args: RebalanceSettings
 ) -> ProgramResult {
-    if args.target_liq_utilization_rate_bps.is_some() {
-        if args.target_in_amount_base_unit.is_none() {
-            msg!("Target in amount must be provided if target liq utilization rate is provided");
-        }
-        if std_accounts.signer.key != &std_accounts.solauto_position.data.authority {
-            msg!(
-                "Cannot provide a target liquidation utilization rate if the instruction is not signed by the position authority"
-            );
-            return Err(ProgramError::InvalidInstructionData.into());
-        }
+    if (args.target_liq_utilization_rate_bps.is_some() || args.target_in_amount_base_unit.is_some()) && std_accounts.signer.key != &std_accounts.solauto_position.data.authority  {
+        msg!(
+            "Cannot provide a target liquidation utilization rate if the instruction is not signed by the position authority"
+        );
+        return Err(ProgramError::InvalidInstructionData.into());
     }
 
     let fees_bps = get_solauto_fees_bps(

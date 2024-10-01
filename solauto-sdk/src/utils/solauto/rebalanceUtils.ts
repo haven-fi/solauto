@@ -26,9 +26,7 @@ import {
   toBaseUnit,
 } from "../numberUtils";
 import { USD_DECIMALS } from "../../constants/generalAccounts";
-import {
-  DEFAULT_LIMIT_GAP_BPS,
-} from "../../constants/solautoConstants";
+import { DEFAULT_LIMIT_GAP_BPS } from "../../constants/solautoConstants";
 
 function getAdditionalAmountToDcaIn(dca: DCASettings): number {
   if (dca.dcaInBaseUnit === BigInt(0)) {
@@ -125,7 +123,7 @@ function getTargetRateAndDcaAmount(
   dca: DCASettings | undefined,
   currentUnixTime: number,
   targetLiqUtilizationRateBps?: number
-): { targetRateBps: number; amountToDcaIn?: number; } {
+): { targetRateBps: number; amountToDcaIn?: number } {
   if (targetLiqUtilizationRateBps !== undefined) {
     return {
       targetRateBps: targetLiqUtilizationRateBps,
@@ -238,7 +236,7 @@ export function getRebalanceValues(
     debtAdjustmentUsd,
     amountToDcaIn: amountToDcaIn ?? 0,
     amountUsdToDcaIn,
-    dcaTokenType: dca?.tokenType
+    dcaTokenType: dca?.tokenType,
   };
 }
 
@@ -253,10 +251,12 @@ export function getFlashLoanDetails(
   jupQuote: QuoteResponse,
   priceImpactBps: number
 ): FlashLoanDetails | undefined {
-  let supplyUsd = fromBaseUnit(
-    client.solautoPositionState!.supply.amountUsed.baseAmountUsdValue,
-    USD_DECIMALS
-  ) + (values.dcaTokenType === TokenType.Supply ? values.amountUsdToDcaIn : 0);
+  let supplyUsd =
+    fromBaseUnit(
+      client.solautoPositionState!.supply.amountUsed.baseAmountUsdValue,
+      USD_DECIMALS
+    ) +
+    (values.dcaTokenType === TokenType.Supply ? values.amountUsdToDcaIn : 0);
   let debtUsd = fromBaseUnit(
     client.solautoPositionState!.debt.amountUsed.baseAmountUsdValue,
     USD_DECIMALS
@@ -299,7 +299,8 @@ export function getFlashLoanDetails(
   }
 
   const exactAmountBaseUnit =
-    jupQuote && jupQuote.swapMode === "ExactOut"
+    jupQuote &&
+    (jupQuote.swapMode === "ExactOut" || jupQuote.swapMode === "ExactIn")
       ? BigInt(parseInt(jupQuote.inAmount))
       : undefined;
 
@@ -308,9 +309,7 @@ export function getFlashLoanDetails(
         baseUnitAmount: exactAmountBaseUnit
           ? exactAmountBaseUnit +
             BigInt(
-              Math.round(
-                Number(exactAmountBaseUnit) * fromBps(priceImpactBps)
-              )
+              Math.round(Number(exactAmountBaseUnit) * fromBps(priceImpactBps))
             )
           : toBaseUnit(
               debtAdjustmentWithSlippage / flashLoanTokenPrice,
@@ -335,7 +334,8 @@ export function getJupSwapRebalanceDetails(
     : client.solautoPositionState!.debt;
 
   const usdToSwap =
-    Math.abs(values.debtAdjustmentUsd) + (values.dcaTokenType === TokenType.Debt ? values.amountUsdToDcaIn : 0);
+    Math.abs(values.debtAdjustmentUsd) +
+    (values.dcaTokenType === TokenType.Debt ? values.amountUsdToDcaIn : 0);
 
   const inputPrice = values.increasingLeverage
     ? safeGetPrice(client.debtMint)
