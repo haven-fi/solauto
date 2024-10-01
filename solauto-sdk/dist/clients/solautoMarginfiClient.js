@@ -96,6 +96,28 @@ class SolautoMarginfiClient extends solautoClient_1.SolautoClient {
                 : []),
         ];
     }
+    async maxLtvAndLiqThreshold() {
+        const result = super.maxLtvAndLiqThreshold();
+        if (result) {
+            return result;
+        }
+        else {
+            if (this.supplyMint.equals(web3_js_1.PublicKey.default) ||
+                this.debtMint.equals(web3_js_1.PublicKey.default)) {
+                return [0, 0];
+            }
+            else {
+                const [maxLtv, liqThreshold] = await (0, marginfiUtils_1.getMaxLtvAndLiqThreshold)(this.umi, {
+                    mint: this.supplyMint,
+                }, {
+                    mint: this.debtMint,
+                });
+                this.maxLtvBps = maxLtv;
+                this.liqThresholdBps = liqThreshold;
+                return [this.maxLtvBps, this.liqThresholdBps];
+            }
+        }
+    }
     marginfiAccountInitialize() {
         return (0, marginfi_sdk_1.marginfiAccountInitialize)(this.umi, {
             marginfiAccount: this.marginfiAccount,
@@ -314,9 +336,11 @@ class SolautoMarginfiClient extends solautoClient_1.SolautoClient {
                 : undefined,
             rebalanceType,
             targetLiqUtilizationRateBps: targetLiqUtilizationRateBps ?? null,
-            targetInAmountBaseUnit: targetLiqUtilizationRateBps ? swapDetails.amount : null,
+            targetInAmountBaseUnit: targetLiqUtilizationRateBps
+                ? swapDetails.amount
+                : null,
             limitGapBps: limitGapBps ?? null,
-            slippageBps: slippageBps ?? 0
+            slippageBps: slippageBps ?? 0,
         });
     }
     flashBorrow(flashLoanDetails, destinationTokenAccount) {

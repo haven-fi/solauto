@@ -27,6 +27,8 @@ export declare abstract class SolautoClient extends TxHandler {
     solautoPosition: PublicKey;
     solautoPositionData: SolautoPosition | null;
     solautoPositionState: PositionState | undefined;
+    maxLtvBps?: number;
+    liqThresholdBps?: number;
     supplyMint: PublicKey;
     positionSupplyTa: PublicKey;
     signerSupplyTa: PublicKey;
@@ -54,6 +56,7 @@ export declare abstract class SolautoClient extends TxHandler {
     } | undefined>;
     solautoPositionSettings(): SolautoSettingsParameters | undefined;
     solautoPositionActiveDca(): DCASettings | undefined;
+    maxLtvAndLiqThreshold(): Promise<[number, number] | undefined>;
     openPosition(settingParams?: SolautoSettingsParametersInpArgs, dca?: DCASettingsInpArgs): TransactionBuilder;
     updatePositionIx(args: UpdatePositionDataArgs): TransactionBuilder;
     closePositionIx(): TransactionBuilder;

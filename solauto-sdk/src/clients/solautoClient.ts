@@ -78,6 +78,9 @@ export abstract class SolautoClient extends TxHandler {
   public solautoPositionData!: SolautoPosition | null;
   public solautoPositionState!: PositionState | undefined;
 
+  public maxLtvBps?: number;
+  public liqThresholdBps?: number;
+
   public supplyMint!: PublicKey;
   public positionSupplyTa!: PublicKey;
   public signerSupplyTa!: PublicKey;
@@ -356,6 +359,13 @@ export abstract class SolautoClient extends TxHandler {
       this.livePositionUpdates.activeDca ??
       this.solautoPositionData?.position.dca
     );
+  }
+
+  async maxLtvAndLiqThreshold(): Promise<[number, number] | undefined> {
+    if (this.maxLtvBps !== undefined && this.liqThresholdBps !== undefined) {
+      return [0, 0];
+    }
+    return undefined;
   }
 
   openPosition(

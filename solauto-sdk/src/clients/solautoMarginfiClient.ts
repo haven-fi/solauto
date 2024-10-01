@@ -212,6 +212,33 @@ export class SolautoMarginfiClient extends SolautoClient {
     ];
   }
 
+  async maxLtvAndLiqThreshold(): Promise<[number, number] | undefined> {
+    const result = super.maxLtvAndLiqThreshold();
+    if (result) {
+      return result;
+    } else {
+      if (
+        this.supplyMint.equals(PublicKey.default) ||
+        this.debtMint.equals(PublicKey.default)
+      ) {
+        return [0, 0];
+      } else {
+        const [maxLtv, liqThreshold] = await getMaxLtvAndLiqThreshold(
+          this.umi,
+          {
+            mint: this.supplyMint,
+          },
+          {
+            mint: this.debtMint,
+          }
+        );
+        this.maxLtvBps = maxLtv;
+        this.liqThresholdBps = liqThreshold;
+        return [this.maxLtvBps, this.liqThresholdBps];
+      }
+    }
+  }
+
   marginfiAccountInitialize(): TransactionBuilder {
     return marginfiAccountInitialize(this.umi, {
       marginfiAccount: this.marginfiAccount as Signer,
@@ -433,7 +460,7 @@ export class SolautoMarginfiClient extends SolautoClient {
     slippageBps: number,
     flashLoan?: FlashLoanDetails,
     targetLiqUtilizationRateBps?: number,
-    limitGapBps?: number,
+    limitGapBps?: number
   ): TransactionBuilder {
     const inputIsSupply = swapDetails.inputMint.equals(this.supplyMint);
     const outputIsSupply = swapDetails.outputMint.equals(this.supplyMint);
@@ -452,7 +479,9 @@ export class SolautoMarginfiClient extends SolautoClient {
       ixsSysvar: publicKey(SYSVAR_INSTRUCTIONS_PUBKEY),
       solautoFeesSupplyTa:
         rebalanceStep === "B" ? publicKey(this.solautoFeesSupplyTa) : undefined,
-      authorityReferralState: publicKey(this.referralStateManager.referralState),
+      authorityReferralState: publicKey(
+        this.referralStateManager.referralState
+      ),
       referredBySupplyTa: this.referredBySupplyTa
         ? publicKey(this.referredBySupplyTa)
         : undefined,
@@ -469,7 +498,9 @@ export class SolautoMarginfiClient extends SolautoClient {
       supplyBank: publicKey(this.marginfiSupplyAccounts.bank),
       supplyPriceOracle: publicKey(this.supplyPriceOracle),
       positionSupplyTa: publicKey(this.positionSupplyTa),
-      authoritySupplyTa: publicKey(getTokenAccount(this.authority, this.supplyMint)),
+      authoritySupplyTa: publicKey(
+        getTokenAccount(this.authority, this.supplyMint)
+      ),
       vaultSupplyTa: needSupplyAccounts
         ? publicKey(this.marginfiSupplyAccounts.liquidityVault)
         : undefined,
@@ -479,7 +510,9 @@ export class SolautoMarginfiClient extends SolautoClient {
       debtBank: publicKey(this.marginfiDebtAccounts.bank),
       debtPriceOracle: publicKey(this.debtPriceOracle),
       positionDebtTa: publicKey(this.positionDebtTa),
-      authorityDebtTa: publicKey(getTokenAccount(this.authority, this.debtMint)),
+      authorityDebtTa: publicKey(
+        getTokenAccount(this.authority, this.debtMint)
+      ),
       vaultDebtTa: needDebtAccounts
         ? publicKey(this.marginfiDebtAccounts.liquidityVault)
         : undefined,
@@ -488,9 +521,11 @@ export class SolautoMarginfiClient extends SolautoClient {
         : undefined,
       rebalanceType,
       targetLiqUtilizationRateBps: targetLiqUtilizationRateBps ?? null,
-      targetInAmountBaseUnit: targetLiqUtilizationRateBps ? swapDetails.amount : null,
+      targetInAmountBaseUnit: targetLiqUtilizationRateBps
+        ? swapDetails.amount
+        : null,
       limitGapBps: limitGapBps ?? null,
-      slippageBps: slippageBps ?? 0
+      slippageBps: slippageBps ?? 0,
     });
   }
 
@@ -639,8 +674,20 @@ export class SolautoMarginfiClient extends SolautoClient {
       this.log("Debt price: ", debtPrice);
       this.log("Liq threshold bps:", freshState.liqThresholdBps);
       this.log("Liq utilization rate bps:", freshState.liqUtilizationRateBps);
-      this.log("Supply USD:", fromBaseUnit(freshState.supply.amountUsed.baseUnit, freshState.supply.decimals) * supplyPrice);
-      this.log("Debt USD:", fromBaseUnit(freshState.debt.amountUsed.baseUnit, freshState.debt.decimals) * debtPrice);
+      this.log(
+        "Supply USD:",
+        fromBaseUnit(
+          freshState.supply.amountUsed.baseUnit,
+          freshState.supply.decimals
+        ) * supplyPrice
+      );
+      this.log(
+        "Debt USD:",
+        fromBaseUnit(
+          freshState.debt.amountUsed.baseUnit,
+          freshState.debt.decimals
+        ) * debtPrice
+      );
     }
 
     return freshState;
