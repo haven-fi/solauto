@@ -180,6 +180,7 @@ export enum TransactionStatus {
 export type TransactionManagerStatuses = {
   name: string;
   status: TransactionStatus;
+  simulationSuccessful?: boolean;
   txSig?: string;
   attemptNum: number;
 }[];
@@ -243,14 +244,21 @@ export class TransactionsManager {
     return transactionSets;
   }
 
-  updateStatus(
+  private updateStatus(
     name: string,
     status: TransactionStatus,
     attemptNum: number,
-    txSig?: string
+    txSig?: string,
+    simulationSuccessful?: boolean
   ) {
     if (!this.statuses.filter((x) => x.name === name)) {
-      this.statuses.push({ name, status, txSig, attemptNum });
+      this.statuses.push({
+        name,
+        status,
+        txSig,
+        attemptNum,
+        simulationSuccessful,
+      });
     } else {
       const idx = this.statuses.findIndex(
         (x) => x.name === name && x.attemptNum === attemptNum
@@ -258,8 +266,17 @@ export class TransactionsManager {
       if (idx !== -1) {
         this.statuses[idx].status = status;
         this.statuses[idx].txSig = txSig;
+        if (simulationSuccessful) {
+          this.statuses[idx].simulationSuccessful = simulationSuccessful;
+        }
       } else {
-        this.statuses.push({ name, status, txSig, attemptNum });
+        this.statuses.push({
+          name,
+          status,
+          txSig,
+          attemptNum,
+          simulationSuccessful,
+        });
       }
     }
     this.txHandler.log(`${name} is ${status.toString().toLowerCase()}`);
@@ -267,7 +284,7 @@ export class TransactionsManager {
   }
 
   // TODO remove me
-  async debugAccounts(itemSet: TransactionSet, tx: TransactionBuilder) {
+  private async debugAccounts(itemSet: TransactionSet, tx: TransactionBuilder) {
     const lutInputs = await itemSet.lookupTables.getLutInputs([]);
     const lutAccounts = lutInputs.map((x) => x.addresses).flat();
     for (const ix of tx.getInstructions()) {
@@ -287,7 +304,7 @@ export class TransactionsManager {
     }
   }
 
-  async clientSend(
+  public async clientSend(
     transactions: TransactionItem[],
     prioritySetting?: PriorityFeeSetting
   ): Promise<TransactionManagerStatuses> {
@@ -302,36 +319,13 @@ export class TransactionsManager {
       updateLookupTable?.needsToBeIsolated
     ) {
       await retryWithExponentialBackoff(
-        async (attemptNum) => {
-          this.updateStatus(
+        async (attemptNum) =>
+          this.sendTransaction(
+            updateLookupTable.updateLutTx,
             updateLutTxName,
-            TransactionStatus.Processing,
-            attemptNum
-          );
-          try {
-            const txSig = await sendSingleOptimizedTransaction(
-              this.txHandler.umi,
-              this.txHandler.connection,
-              updateLookupTable.updateLutTx,
-              this.txType,
-              attemptNum,
-              prioritySetting
-            );
-            this.updateStatus(
-              updateLutTxName,
-              TransactionStatus.Successful,
-              attemptNum,
-              txSig ? bs58.encode(txSig) : undefined
-            );
-          } catch (e) {
-            this.updateStatus(
-              updateLutTxName,
-              TransactionStatus.Failed,
-              attemptNum
-            );
-            throw e;
-          }
-        },
+            attemptNum,
+            prioritySetting
+          ),
         3,
         150,
         this.errorsToThrow
@@ -386,7 +380,7 @@ export class TransactionsManager {
     return result;
   }
 
-  async send(
+  public async send(
     items: TransactionItem[],
     prioritySetting?: PriorityFeeSetting,
     initialized?: boolean
@@ -475,39 +469,15 @@ export class TransactionsManager {
                 attemptNum
               );
             } else {
-              this.updateStatus(
-                itemSet.name(),
-                TransactionStatus.Processing,
-                attemptNum
-              );
-
               if (this.txHandler.localTest) {
                 await this.debugAccounts(itemSet, tx);
               }
-
-              try {
-                const txSig = await sendSingleOptimizedTransaction(
-                  this.txHandler.umi,
-                  this.txHandler.connection,
-                  tx,
-                  this.txType,
-                  attemptNum,
-                  prioritySetting
-                );
-                this.updateStatus(
-                  itemSet.name(),
-                  TransactionStatus.Successful,
-                  attemptNum,
-                  txSig ? bs58.encode(txSig) : undefined
-                );
-              } catch (e) {
-                this.updateStatus(
-                  itemSet.name(),
-                  TransactionStatus.Failed,
-                  attemptNum
-                );
-                throw e;
-              }
+              this.sendTransaction(
+                tx,
+                itemSet.name(),
+                attemptNum,
+                prioritySetting
+              );
             }
           },
           this.retries,
@@ -518,5 +488,41 @@ export class TransactionsManager {
     }
 
     return this.statuses;
+  }
+
+  private async sendTransaction(
+    tx: TransactionBuilder,
+    txName: string,
+    attemptNum: number,
+    prioritySetting?: PriorityFeeSetting
+  ) {
+    this.updateStatus(txName, TransactionStatus.Processing, attemptNum);
+    try {
+      const txSig = await sendSingleOptimizedTransaction(
+        this.txHandler.umi,
+        this.txHandler.connection,
+        tx,
+        this.txType,
+        attemptNum,
+        prioritySetting,
+        () =>
+          this.updateStatus(
+            txName,
+            TransactionStatus.Processing,
+            attemptNum,
+            undefined,
+            true
+          )
+      );
+      this.updateStatus(
+        txName,
+        TransactionStatus.Successful,
+        attemptNum,
+        txSig ? bs58.encode(txSig) : undefined
+      );
+    } catch (e) {
+      this.updateStatus(txName, TransactionStatus.Failed, attemptNum);
+      throw e;
+    }
   }
 }

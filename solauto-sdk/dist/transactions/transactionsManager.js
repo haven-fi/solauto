@@ -161,18 +161,33 @@ class TransactionsManager {
         }
         return transactionSets;
     }
-    updateStatus(name, status, attemptNum, txSig) {
+    updateStatus(name, status, attemptNum, txSig, simulationSuccessful) {
         if (!this.statuses.filter((x) => x.name === name)) {
-            this.statuses.push({ name, status, txSig, attemptNum });
+            this.statuses.push({
+                name,
+                status,
+                txSig,
+                attemptNum,
+                simulationSuccessful,
+            });
         }
         else {
             const idx = this.statuses.findIndex((x) => x.name === name && x.attemptNum === attemptNum);
             if (idx !== -1) {
                 this.statuses[idx].status = status;
                 this.statuses[idx].txSig = txSig;
+                if (simulationSuccessful) {
+                    this.statuses[idx].simulationSuccessful = simulationSuccessful;
+                }
             }
             else {
-                this.statuses.push({ name, status, txSig, attemptNum });
+                this.statuses.push({
+                    name,
+                    status,
+                    txSig,
+                    attemptNum,
+                    simulationSuccessful,
+                });
             }
         }
         this.txHandler.log(`${name} is ${status.toString().toLowerCase()}`);
@@ -202,17 +217,7 @@ class TransactionsManager {
         if (updateLookupTable &&
             updateLookupTable.updateLutTx.getInstructions().length > 0 &&
             updateLookupTable?.needsToBeIsolated) {
-            await (0, generalUtils_1.retryWithExponentialBackoff)(async (attemptNum) => {
-                this.updateStatus(updateLutTxName, TransactionStatus.Processing, attemptNum);
-                try {
-                    const txSig = await (0, solanaUtils_1.sendSingleOptimizedTransaction)(this.txHandler.umi, this.txHandler.connection, updateLookupTable.updateLutTx, this.txType, attemptNum, prioritySetting);
-                    this.updateStatus(updateLutTxName, TransactionStatus.Successful, attemptNum, txSig ? bs58_1.default.encode(txSig) : undefined);
-                }
-                catch (e) {
-                    this.updateStatus(updateLutTxName, TransactionStatus.Failed, attemptNum);
-                    throw e;
-                }
-            }, 3, 150, this.errorsToThrow);
+            await (0, generalUtils_1.retryWithExponentialBackoff)(async (attemptNum) => this.sendTransaction(updateLookupTable.updateLutTx, updateLutTxName, attemptNum, prioritySetting), 3, 150, this.errorsToThrow);
         }
         this.lookupTables.defaultLuts = client.defaultLookupTables();
         for (const item of items) {
@@ -309,23 +314,26 @@ class TransactionsManager {
                         this.updateStatus(itemSet.name(), TransactionStatus.Skipped, attemptNum);
                     }
                     else {
-                        this.updateStatus(itemSet.name(), TransactionStatus.Processing, attemptNum);
                         if (this.txHandler.localTest) {
                             await this.debugAccounts(itemSet, tx);
                         }
-                        try {
-                            const txSig = await (0, solanaUtils_1.sendSingleOptimizedTransaction)(this.txHandler.umi, this.txHandler.connection, tx, this.txType, attemptNum, prioritySetting);
-                            this.updateStatus(itemSet.name(), TransactionStatus.Successful, attemptNum, txSig ? bs58_1.default.encode(txSig) : undefined);
-                        }
-                        catch (e) {
-                            this.updateStatus(itemSet.name(), TransactionStatus.Failed, attemptNum);
-                            throw e;
-                        }
+                        this.sendTransaction(tx, itemSet.name(), attemptNum, prioritySetting);
                     }
                 }, this.retries, this.retryDelay, this.errorsToThrow);
             }
         }
         return this.statuses;
+    }
+    async sendTransaction(tx, txName, attemptNum, prioritySetting) {
+        this.updateStatus(txName, TransactionStatus.Processing, attemptNum);
+        try {
+            const txSig = await (0, solanaUtils_1.sendSingleOptimizedTransaction)(this.txHandler.umi, this.txHandler.connection, tx, this.txType, attemptNum, prioritySetting, () => this.updateStatus(txName, TransactionStatus.Processing, attemptNum, undefined, true));
+            this.updateStatus(txName, TransactionStatus.Successful, attemptNum, txSig ? bs58_1.default.encode(txSig) : undefined);
+        }
+        catch (e) {
+            this.updateStatus(txName, TransactionStatus.Failed, attemptNum);
+            throw e;
+        }
     }
 }
 exports.TransactionsManager = TransactionsManager;
