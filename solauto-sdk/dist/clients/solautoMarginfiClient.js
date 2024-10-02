@@ -53,7 +53,7 @@ class SolautoMarginfiClient extends solautoClient_1.SolautoClient {
         this.supplyPriceOracle = new web3_js_1.PublicKey(this.marginfiSupplyAccounts.priceOracle);
         this.debtPriceOracle = new web3_js_1.PublicKey(this.marginfiDebtAccounts.priceOracle);
         if (!this.solautoPositionState) {
-            const result = await this.maxLtvAndLiqThreshold();
+            const result = await this.maxLtvAndLiqThresholdBps();
             this.solautoPositionState = (0, utils_1.createFakePositionState)({ mint: this.supplyMint }, { mint: this.debtMint }, result ? result[0] : 0, result ? result[1] : 0);
         }
         if (!this.initialized) {
@@ -96,8 +96,8 @@ class SolautoMarginfiClient extends solautoClient_1.SolautoClient {
                 : []),
         ];
     }
-    async maxLtvAndLiqThreshold() {
-        const result = await super.maxLtvAndLiqThreshold();
+    async maxLtvAndLiqThresholdBps() {
+        const result = await super.maxLtvAndLiqThresholdBps();
         if (result) {
             return result;
         }

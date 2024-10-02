@@ -346,8 +346,8 @@ export function getJupSwapRebalanceDetails(
     output.decimals
   );
 
-  const exactOut = values.repayingCloseToMaxLtv;
-  const exactIn = !exactOut && targetLiqUtilizationRateBps !== undefined;
+  const exactOut = targetLiqUtilizationRateBps === 0 || values.repayingCloseToMaxLtv;
+  const exactIn = !exactOut;
 
   return {
     inputMint: toWeb3JsPublicKey(input.mint),
@@ -359,7 +359,7 @@ export function getJupSwapRebalanceDetails(
         (targetLiqUtilizationRateBps === 0
           ? BigInt(
               Math.round(
-                Number(client.solautoPositionState!.debt.amountUsed.baseUnit) *
+                Number(outputAmount) *
                   // Add this small percentage to account for the APR on the debt between now and the transaction
                   0.0001
               )

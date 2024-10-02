@@ -167,8 +167,8 @@ function getJupSwapRebalanceDetails(client, values, targetLiqUtilizationRateBps,
         (values.dcaTokenType === generated_1.TokenType.Debt ? values.amountUsdToDcaIn : 0);
     const inputAmount = (0, numberUtils_1.toBaseUnit)(usdToSwap / (0, generalUtils_2.safeGetPrice)(input.mint), input.decimals);
     const outputAmount = (0, numberUtils_1.toBaseUnit)(usdToSwap / (0, generalUtils_2.safeGetPrice)(output.mint), output.decimals);
-    const exactOut = values.repayingCloseToMaxLtv;
-    const exactIn = !exactOut && targetLiqUtilizationRateBps !== undefined;
+    const exactOut = targetLiqUtilizationRateBps === 0 || values.repayingCloseToMaxLtv;
+    const exactIn = !exactOut;
     return {
         inputMint: (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(input.mint),
         outputMint: (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(output.mint),
@@ -177,7 +177,7 @@ function getJupSwapRebalanceDetails(client, values, targetLiqUtilizationRateBps,
         amount: exactOut
             ? outputAmount +
                 (targetLiqUtilizationRateBps === 0
-                    ? BigInt(Math.round(Number(client.solautoPositionState.debt.amountUsed.baseUnit) *
+                    ? BigInt(Math.round(Number(outputAmount) *
                         // Add this small percentage to account for the APR on the debt between now and the transaction
                         0.0001))
                     : BigInt(0))

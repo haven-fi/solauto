@@ -30,7 +30,7 @@ export declare class SolautoMarginfiClient extends SolautoClient {
     protocolAccount(): PublicKey;
     defaultLookupTables(): string[];
     lutAccountsToAdd(): PublicKey[];
-    maxLtvAndLiqThreshold(): Promise<[number, number] | undefined>;
+    maxLtvAndLiqThresholdBps(): Promise<[number, number] | undefined>;
     marginfiAccountInitialize(): TransactionBuilder;
     openPosition(settingParams?: SolautoSettingsParametersInpArgs, dca?: DCASettingsInpArgs): TransactionBuilder;
     private marginfiOpenPositionIx;

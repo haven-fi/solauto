@@ -189,7 +189,7 @@ class SolautoClient extends txHandler_1.TxHandler {
         return (this.livePositionUpdates.activeDca ??
             this.solautoPositionData?.position.dca);
     }
-    async maxLtvAndLiqThreshold() {
+    async maxLtvAndLiqThresholdBps() {
         if (this.maxLtvBps !== undefined && this.liqThresholdBps !== undefined) {
             return [this.maxLtvBps, this.liqThresholdBps];
         }
