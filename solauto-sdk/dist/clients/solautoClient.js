@@ -191,7 +191,7 @@ class SolautoClient extends txHandler_1.TxHandler {
     }
     async maxLtvAndLiqThreshold() {
         if (this.maxLtvBps !== undefined && this.liqThresholdBps !== undefined) {
-            return [0, 0];
+            return [this.maxLtvBps, this.liqThresholdBps];
         }
         return undefined;
     }

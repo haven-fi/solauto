@@ -133,12 +133,12 @@ export class SolautoMarginfiClient extends SolautoClient {
     this.debtPriceOracle = new PublicKey(this.marginfiDebtAccounts.priceOracle);
 
     if (!this.solautoPositionState) {
-      const [maxLtv, liqThreshold] = (await this.maxLtvAndLiqThreshold())!;
+      const result = await this.maxLtvAndLiqThreshold()!;
       this.solautoPositionState = createFakePositionState(
         { mint: this.supplyMint },
         { mint: this.debtMint },
-        toBps(maxLtv),
-        toBps(liqThreshold)
+        result ? toBps(result[0]) : 0,
+        result ? toBps(result[1]) : 0
       );
     }
 
@@ -516,9 +516,10 @@ export class SolautoMarginfiClient extends SolautoClient {
         : undefined,
       rebalanceType,
       targetLiqUtilizationRateBps: targetLiqUtilizationRateBps ?? null,
-      targetInAmountBaseUnit: targetLiqUtilizationRateBps && rebalanceStep === "A"
-        ? swapDetails.amount
-        : null,
+      targetInAmountBaseUnit:
+        targetLiqUtilizationRateBps && rebalanceStep === "A"
+          ? swapDetails.amount
+          : null,
       limitGapBps: limitGapBps ?? null,
     });
   }

@@ -53,8 +53,8 @@ class SolautoMarginfiClient extends solautoClient_1.SolautoClient {
         this.supplyPriceOracle = new web3_js_1.PublicKey(this.marginfiSupplyAccounts.priceOracle);
         this.debtPriceOracle = new web3_js_1.PublicKey(this.marginfiDebtAccounts.priceOracle);
         if (!this.solautoPositionState) {
-            const [maxLtv, liqThreshold] = (await this.maxLtvAndLiqThreshold());
-            this.solautoPositionState = (0, utils_1.createFakePositionState)({ mint: this.supplyMint }, { mint: this.debtMint }, (0, numberUtils_1.toBps)(maxLtv), (0, numberUtils_1.toBps)(liqThreshold));
+            const result = await this.maxLtvAndLiqThreshold();
+            this.solautoPositionState = (0, utils_1.createFakePositionState)({ mint: this.supplyMint }, { mint: this.debtMint }, result ? (0, numberUtils_1.toBps)(result[0]) : 0, result ? (0, numberUtils_1.toBps)(result[1]) : 0);
         }
         if (!this.initialized) {
             await this.setIntermediaryMarginfiDetails();
