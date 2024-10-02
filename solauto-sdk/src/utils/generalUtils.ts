@@ -1,5 +1,10 @@
 import { PublicKey } from "@solana/web3.js";
-import { MaybeRpcAccount, publicKey, Umi, PublicKey as UmiPublicKey } from "@metaplex-foundation/umi";
+import {
+  MaybeRpcAccount,
+  publicKey,
+  Umi,
+  PublicKey as UmiPublicKey,
+} from "@metaplex-foundation/umi";
 import { PYTH_PRICE_FEED_IDS } from "../constants/pythConstants";
 import { fromBaseUnit, toBaseUnit } from "./numberUtils";
 import { PRICES } from "../constants/solautoConstants";
@@ -25,7 +30,9 @@ export async function getSolanaAccountCreated(
   umi: Umi,
   pk: PublicKey
 ): Promise<boolean> {
-  const account = await umi.rpc.getAccount(publicKey(pk), { commitment: "confirmed" });
+  const account = await umi.rpc.getAccount(publicKey(pk), {
+    commitment: "confirmed",
+  });
   return rpcAccountCreated(account);
 }
 
@@ -65,24 +72,33 @@ export async function fetchTokenPrices(mints: PublicKey[]): Promise<number[]> {
     await fetch(
       `https://hermes.pyth.network/v2/updates/price/latest?${priceFeedIds.map((x) => `ids%5B%5D=${x}`).join("&")}`
     );
-  let resp = await getReq();
-  let status = resp.status;
-  while (status !== 200) {
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    resp = await getReq();
-    status = resp.status;
-  }
 
-  const json = await resp.json();
-  const prices = json.parsed.map((x: any) => {
-    if (x.price.expo > 0) {
-      return Number(toBaseUnit(Number(x.price.price), x.price.expo));
-    } else if (x.price.expo < 0) {
-      return fromBaseUnit(BigInt(x.price.price), Math.abs(x.price.expo));
-    } else {
-      return Number(x.price.price);
-    }
-  });
+  const prices = await retryWithExponentialBackoff(
+    async () => {
+      let resp = await getReq();
+      let status = resp.status;
+      while (status !== 200) {
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        resp = await getReq();
+        status = resp.status;
+      }
+
+      const json = await resp.json();
+      const prices = json.parsed.map((x: any) => {
+        if (x.price.expo > 0) {
+          return Number(toBaseUnit(Number(x.price.price), x.price.expo));
+        } else if (x.price.expo < 0) {
+          return fromBaseUnit(BigInt(x.price.price), Math.abs(x.price.expo));
+        } else {
+          return Number(x.price.price);
+        }
+      });
+
+      return prices;
+    },
+    5,
+    200
+  );
 
   for (var i = 0; i < mints.length; i++) {
     PRICES[mints[i].toString()] = {
@@ -94,7 +110,9 @@ export async function fetchTokenPrices(mints: PublicKey[]): Promise<number[]> {
   return prices;
 }
 
-export function safeGetPrice(mint: PublicKey | UmiPublicKey | undefined): number | undefined {
+export function safeGetPrice(
+  mint: PublicKey | UmiPublicKey | undefined
+): number | undefined {
   if (mint && mint?.toString() in PRICES) {
     return PRICES[mint!.toString()].price;
   }
