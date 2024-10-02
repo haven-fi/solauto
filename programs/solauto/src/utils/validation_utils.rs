@@ -64,35 +64,25 @@ pub fn generic_instruction_validation(
         accounts.ixs_sysvar
     )?;
 
-    let supply_mint = if !accounts.solauto_position.data.self_managed.val {
-        Some(accounts.solauto_position.data.position.supply_mint)
-    } else {
-        None
-    };
-
     if accounts.authority_referral_state.is_some() {
         validate_referral_accounts(
             &accounts.solauto_position.data.authority,
             accounts.authority_referral_state.as_ref().unwrap(),
             accounts.referred_by_state,
             solauto_utils::safe_unpack_token_account(accounts.referred_by_supply_ta)?.as_ref(),
-            true,
-            supply_mint
+            true
         )?;
     }
 
     if
         accounts.solauto_fees_supply_ta.is_some() &&
-        ((supply_mint.is_some() &&
-            accounts.solauto_fees_supply_ta.unwrap().key !=
-                &get_associated_token_address(&SOLAUTO_FEES_WALLET, supply_mint.as_ref().unwrap())) ||
-            !token_account_owned_by(
-                solauto_utils
-                    ::safe_unpack_token_account(accounts.solauto_fees_supply_ta)?
-                    .as_ref()
-                    .unwrap(),
-                &SOLAUTO_FEES_WALLET
-            ))
+        !token_account_owned_by(
+            solauto_utils
+                ::safe_unpack_token_account(accounts.solauto_fees_supply_ta)?
+                .as_ref()
+                .unwrap(),
+            &SOLAUTO_FEES_WALLET
+        )
     {
         msg!("Provided incorrect Solauto fees supply TA");
         return Err(SolautoError::IncorrectAccounts.into());
@@ -312,8 +302,7 @@ pub fn validate_referral_accounts(
     authority_referral_state: &DeserializedAccount<ReferralState>,
     referred_by_state: Option<&AccountInfo>,
     referred_by_supply_ta: Option<&DeserializedAccount<TokenAccount>>,
-    check_supply_ta: bool,
-    supply_mint: Option<Pubkey>
+    check_supply_ta: bool
 ) -> ProgramResult {
     let referral_state_pda = Pubkey::create_program_address(
         authority_referral_state.data.seeds_with_bump().as_slice(),
@@ -341,12 +330,6 @@ pub fn validate_referral_accounts(
         check_supply_ta &&
         authority_referred_by_state != &Pubkey::default() &&
         (referred_by_supply_ta.is_none() ||
-            (supply_mint.is_some() &&
-                referred_by_supply_ta.unwrap().account_info.key !=
-                    &get_associated_token_address(
-                        authority_referred_by_state,
-                        supply_mint.as_ref().unwrap()
-                    )) ||
             !token_account_owned_by(
                 referred_by_supply_ta.as_ref().unwrap(),
                 authority_referred_by_state
@@ -459,6 +442,26 @@ pub fn validate_token_account<'a>(
         msg!("Incorrect token account {}", source_ta.unwrap().key);
         return Err(SolautoError::IncorrectAccounts.into());
     }
+
+    // if account_has_data(source_ta.unwrap()) {
+    //     let source_ta_data = solauto_utils::safe_unpack_token_account(source_ta)?;
+    //     if
+    //         source_ta_data.is_some() &&
+    //         !token_account_owned_by(
+    //             source_ta_data.as_ref().unwrap(),
+    //             &solauto_position.data.authority
+    //         ) &&
+    //         !token_account_owned_by(source_ta_data.as_ref().unwrap(), solauto_position.account_info.key)
+    //     {
+    //         msg!("Incorrect token account {}", source_ta.unwrap().key);
+    //         return Err(SolautoError::IncorrectAccounts.into());
+    //     }
+
+    //     if !solauto_position.data.self_managed.val && source_ta_data.is_some() && &source_ta_data.as_ref().unwrap().data.mint != mint_key {
+    //         msg!("Incorrect token account {}", source_ta_data.unwrap().account_info.key);
+    //         return Err(SolautoError::IncorrectAccounts.into());
+    //     }
+    // }
 
     Ok(())
 }

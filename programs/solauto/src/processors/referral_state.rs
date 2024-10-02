@@ -86,7 +86,6 @@ pub fn process_update_referral_states<'a>(
         ctx.accounts.referred_by_state,
         None,
         false,
-        None
     )
 }
 
