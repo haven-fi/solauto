@@ -237,7 +237,8 @@ export function getRebalanceValues(
   return {
     increasingLeverage,
     debtAdjustmentUsd,
-    repayingCloseToMaxLtv: state.liqUtilizationRateBps > maxRepayTo && targetRateBps >= maxRepayTo,
+    repayingCloseToMaxLtv:
+      state.liqUtilizationRateBps > maxRepayTo && targetRateBps >= maxRepayTo,
     amountToDcaIn: amountToDcaIn ?? 0,
     amountUsdToDcaIn,
     dcaTokenType: dca?.tokenType,
@@ -266,17 +267,11 @@ export function getFlashLoanDetails(
     USD_DECIMALS
   );
 
-  const debtAdjustmentWithSlippage =
-    Math.abs(values.debtAdjustmentUsd) +
-    Math.abs(values.debtAdjustmentUsd) * fromBps(priceImpactBps);
+  const debtAdjustmentUsd = Math.abs(values.debtAdjustmentUsd);
   supplyUsd =
-    values.debtAdjustmentUsd < 0
-      ? supplyUsd - debtAdjustmentWithSlippage
-      : supplyUsd;
+    values.debtAdjustmentUsd < 0 ? supplyUsd - debtAdjustmentUsd : supplyUsd;
   debtUsd =
-    values.debtAdjustmentUsd > 0
-      ? debtUsd + debtAdjustmentWithSlippage
-      : debtUsd;
+    values.debtAdjustmentUsd > 0 ? debtUsd + debtAdjustmentUsd : debtUsd;
 
   const tempLiqUtilizationRateBps = getLiqUtilzationRateBps(
     supplyUsd,
@@ -312,7 +307,7 @@ export function getFlashLoanDetails(
         baseUnitAmount: exactAmountBaseUnit
           ? exactAmountBaseUnit
           : toBaseUnit(
-              debtAdjustmentWithSlippage / flashLoanTokenPrice,
+              debtAdjustmentUsd / flashLoanTokenPrice,
               flashLoanToken.decimals
             ),
         mint: toWeb3JsPublicKey(flashLoanToken.mint),
@@ -341,12 +336,20 @@ export function getJupSwapRebalanceDetails(
     usdToSwap / safeGetPrice(input.mint)!,
     input.decimals
   );
-  const outputAmount = toBaseUnit(
-    usdToSwap / safeGetPrice(output.mint)!,
-    output.decimals
-  );
+  const outputAmount =
+    targetLiqUtilizationRateBps === 0
+      ? output.amountUsed.baseUnit +
+        BigInt(
+          Math.round(
+            Number(output.amountUsed.baseUnit) *
+              // Add this small percentage to account for the APR on the debt between now and the transaction
+              0.0001
+          )
+        )
+      : toBaseUnit(usdToSwap / safeGetPrice(output.mint)!, output.decimals);
 
-  const exactOut = targetLiqUtilizationRateBps === 0 || values.repayingCloseToMaxLtv;
+  const exactOut =
+    targetLiqUtilizationRateBps === 0 || values.repayingCloseToMaxLtv;
   const exactIn = !exactOut;
 
   return {
@@ -354,18 +357,7 @@ export function getJupSwapRebalanceDetails(
     outputMint: toWeb3JsPublicKey(output.mint),
     destinationWallet: client.solautoPosition,
     slippageIncFactor: 0.5 + (attemptNum ?? 0) * 0.2,
-    amount: exactOut
-      ? outputAmount +
-        (targetLiqUtilizationRateBps === 0
-          ? BigInt(
-              Math.round(
-                Number(outputAmount) *
-                  // Add this small percentage to account for the APR on the debt between now and the transaction
-                  0.0001
-              )
-            )
-          : BigInt(0))
-      : inputAmount,
+    amount: exactOut ? outputAmount : inputAmount,
     exactIn: exactIn,
     exactOut: exactOut,
   };
