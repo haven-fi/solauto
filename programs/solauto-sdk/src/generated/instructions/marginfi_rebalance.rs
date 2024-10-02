@@ -282,7 +282,6 @@ impl MarginfiRebalanceInstructionData {
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct MarginfiRebalanceInstructionArgs {
-    pub slippage_bps: u16,
     pub rebalance_type: SolautoRebalanceType,
     pub target_liq_utilization_rate_bps: Option<u16>,
     pub target_in_amount_base_unit: Option<u64>,
@@ -345,7 +344,6 @@ pub struct MarginfiRebalanceBuilder {
     authority_debt_ta: Option<solana_program::pubkey::Pubkey>,
     vault_debt_ta: Option<solana_program::pubkey::Pubkey>,
     debt_vault_authority: Option<solana_program::pubkey::Pubkey>,
-    slippage_bps: Option<u16>,
     rebalance_type: Option<SolautoRebalanceType>,
     target_liq_utilization_rate_bps: Option<u16>,
     target_in_amount_base_unit: Option<u64>,
@@ -550,11 +548,6 @@ impl MarginfiRebalanceBuilder {
         self
     }
     #[inline(always)]
-    pub fn slippage_bps(&mut self, slippage_bps: u16) -> &mut Self {
-        self.slippage_bps = Some(slippage_bps);
-        self
-    }
-    #[inline(always)]
     pub fn rebalance_type(&mut self, rebalance_type: SolautoRebalanceType) -> &mut Self {
         self.rebalance_type = Some(rebalance_type);
         self
@@ -638,7 +631,6 @@ impl MarginfiRebalanceBuilder {
             debt_vault_authority: self.debt_vault_authority,
         };
         let args = MarginfiRebalanceInstructionArgs {
-            slippage_bps: self.slippage_bps.clone().expect("slippage_bps is not set"),
             rebalance_type: self
                 .rebalance_type
                 .clone()
@@ -1151,7 +1143,6 @@ impl<'a, 'b> MarginfiRebalanceCpiBuilder<'a, 'b> {
             authority_debt_ta: None,
             vault_debt_ta: None,
             debt_vault_authority: None,
-            slippage_bps: None,
             rebalance_type: None,
             target_liq_utilization_rate_bps: None,
             target_in_amount_base_unit: None,
@@ -1372,11 +1363,6 @@ impl<'a, 'b> MarginfiRebalanceCpiBuilder<'a, 'b> {
         self
     }
     #[inline(always)]
-    pub fn slippage_bps(&mut self, slippage_bps: u16) -> &mut Self {
-        self.instruction.slippage_bps = Some(slippage_bps);
-        self
-    }
-    #[inline(always)]
     pub fn rebalance_type(&mut self, rebalance_type: SolautoRebalanceType) -> &mut Self {
         self.instruction.rebalance_type = Some(rebalance_type);
         self
@@ -1444,11 +1430,6 @@ impl<'a, 'b> MarginfiRebalanceCpiBuilder<'a, 'b> {
         signers_seeds: &[&[&[u8]]],
     ) -> solana_program::entrypoint::ProgramResult {
         let args = MarginfiRebalanceInstructionArgs {
-            slippage_bps: self
-                .instruction
-                .slippage_bps
-                .clone()
-                .expect("slippage_bps is not set"),
             rebalance_type: self
                 .instruction
                 .rebalance_type
@@ -1582,7 +1563,6 @@ struct MarginfiRebalanceCpiBuilderInstruction<'a, 'b> {
     authority_debt_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     vault_debt_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     debt_vault_authority: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    slippage_bps: Option<u16>,
     rebalance_type: Option<SolautoRebalanceType>,
     target_liq_utilization_rate_bps: Option<u16>,
     target_in_amount_base_unit: Option<u64>,

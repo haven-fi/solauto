@@ -66,7 +66,7 @@ export async function getJupSwapTransaction(
           : swapDetails.exactIn
             ? "ExactIn"
             : undefined,
-        slippageBps: 30,
+        slippageBps: 50,
         maxAccounts: !swapDetails.exactOut ? 60 : undefined,
       }),
     3

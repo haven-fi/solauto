@@ -10,7 +10,6 @@ import { SolautoRebalanceType, SolautoRebalanceTypeArgs } from '.';
 export type RebalanceData = {
     rebalanceType: SolautoRebalanceType;
     padding1: Array<number>;
-    priceSlippageBps: number;
     targetLiqUtilizationRateBps: number;
     padding2: Array<number>;
     flashLoanAmount: bigint;
@@ -19,7 +18,6 @@ export type RebalanceData = {
 export type RebalanceDataArgs = {
     rebalanceType: SolautoRebalanceTypeArgs;
     padding1: Array<number>;
-    priceSlippageBps: number;
     targetLiqUtilizationRateBps: number;
     padding2: Array<number>;
     flashLoanAmount: number | bigint;

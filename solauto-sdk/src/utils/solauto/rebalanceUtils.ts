@@ -23,6 +23,7 @@ import {
   getLiqUtilzationRateBps,
   getMaxLiqUtilizationRateBps,
   getSolautoFeesBps,
+  maxRepayToBps,
   toBaseUnit,
 } from "../numberUtils";
 import { USD_DECIMALS } from "../../constants/generalAccounts";
@@ -159,6 +160,7 @@ function getTargetRateAndDcaAmount(
 export interface RebalanceValues {
   increasingLeverage: boolean;
   debtAdjustmentUsd: number;
+  repayingCloseToMaxLtv: boolean;
   amountToDcaIn: number;
   amountUsdToDcaIn: number;
   dcaTokenType?: TokenType;
@@ -231,9 +233,11 @@ export function getRebalanceValues(
     debtAdjustmentUsd = maxUsageUsd - maxUsageUsd * limitGap;
   }
 
+  const maxRepayTo = maxRepayToBps(state.maxLtvBps, state.liqThresholdBps);
   return {
     increasingLeverage,
     debtAdjustmentUsd,
+    repayingCloseToMaxLtv: state.liqUtilizationRateBps > maxRepayTo && targetRateBps >= maxRepayTo,
     amountToDcaIn: amountToDcaIn ?? 0,
     amountUsdToDcaIn,
     dcaTokenType: dca?.tokenType,
@@ -299,18 +303,14 @@ export function getFlashLoanDetails(
   }
 
   const exactAmountBaseUnit =
-    jupQuote &&
-    (jupQuote.swapMode === "ExactOut" || jupQuote.swapMode === "ExactIn")
+    jupQuote.swapMode === "ExactOut" || jupQuote.swapMode === "ExactIn"
       ? BigInt(parseInt(jupQuote.inAmount))
       : undefined;
 
   return requiresFlashLoan
     ? {
         baseUnitAmount: exactAmountBaseUnit
-          ? exactAmountBaseUnit +
-            BigInt(
-              Math.round(Number(exactAmountBaseUnit) * fromBps(priceImpactBps))
-            )
+          ? exactAmountBaseUnit
           : toBaseUnit(
               debtAdjustmentWithSlippage / flashLoanTokenPrice,
               flashLoanToken.decimals
@@ -337,12 +337,16 @@ export function getJupSwapRebalanceDetails(
     Math.abs(values.debtAdjustmentUsd) +
     (values.dcaTokenType === TokenType.Debt ? values.amountUsdToDcaIn : 0);
 
-  const inputPrice = values.increasingLeverage
-    ? safeGetPrice(client.debtMint)
-    : safeGetPrice(client.supplyMint);
-  const inputAmount = toBaseUnit(usdToSwap / inputPrice!, input.decimals);
+  const inputAmount = toBaseUnit(
+    usdToSwap / safeGetPrice(input.mint)!,
+    input.decimals
+  );
+  const outputAmount = toBaseUnit(
+    usdToSwap / safeGetPrice(output.mint)!,
+    output.decimals
+  );
 
-  const exactOut = targetLiqUtilizationRateBps === 0;
+  const exactOut = values.repayingCloseToMaxLtv;
   const exactIn = !exactOut && targetLiqUtilizationRateBps !== undefined;
 
   return {
@@ -351,14 +355,16 @@ export function getJupSwapRebalanceDetails(
     destinationWallet: client.solautoPosition,
     slippageIncFactor: 0.5 + (attemptNum ?? 0) * 0.2,
     amount: exactOut
-      ? client.solautoPositionState!.debt.amountUsed.baseUnit +
-        BigInt(
-          Math.round(
-            Number(client.solautoPositionState!.debt.amountUsed.baseUnit) *
-              // Add this small percentage to account for the APR on the debt between now and the transaction
-              0.0001
-          )
-        )
+      ? outputAmount +
+        (targetLiqUtilizationRateBps === 0
+          ? BigInt(
+              Math.round(
+                Number(client.solautoPositionState!.debt.amountUsed.baseUnit) *
+                  // Add this small percentage to account for the APR on the debt between now and the transaction
+                  0.0001
+              )
+            )
+          : BigInt(0))
       : inputAmount,
     exactIn: exactIn,
     exactOut: exactOut,

@@ -1366,10 +1366,6 @@
             }
           },
           {
-            "name": "priceSlippageBps",
-            "type": "u16"
-          },
-          {
             "name": "targetLiqUtilizationRateBps",
             "type": "u16"
           },
@@ -1378,7 +1374,7 @@
             "type": {
               "array": [
                 "u8",
-                4
+                6
               ]
             }
           },
@@ -1477,10 +1473,6 @@
       "type": {
         "kind": "struct",
         "fields": [
-          {
-            "name": "slippageBps",
-            "type": "u16"
-          },
           {
             "name": "rebalanceType",
             "type": {

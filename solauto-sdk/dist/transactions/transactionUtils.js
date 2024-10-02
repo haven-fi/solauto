@@ -185,7 +185,6 @@ function getRebalanceInstructions(tx) {
             try {
                 const serializer = (0, generated_1.getMarginfiRebalanceInstructionDataSerializer)();
                 const discriminator = serializer.serialize({
-                    slippageBps: 0,
                     limitGapBps: 0,
                     targetInAmountBaseUnit: 0,
                     rebalanceType: generated_1.SolautoRebalanceType.None,
@@ -350,11 +349,11 @@ async function buildSolautoRebalanceTransaction(client, targetLiqUtilizationRate
             client.flashBorrow(flashLoan, (0, accountUtils_1.getTokenAccount)((0, umi_web3js_adapters_1.toWeb3JsPublicKey)(client.signer.publicKey), swapDetails.inputMint)),
             ...(addFirstRebalance
                 ? [
-                    client.rebalance("A", swapDetails, rebalanceType, priceImpactBps, flashLoan, targetLiqUtilizationRateBps),
+                    client.rebalance("A", swapDetails, rebalanceType, flashLoan, targetLiqUtilizationRateBps),
                 ]
                 : []),
             swapIx,
-            client.rebalance("B", swapDetails, rebalanceType, priceImpactBps, flashLoan, targetLiqUtilizationRateBps),
+            client.rebalance("B", swapDetails, rebalanceType, flashLoan, targetLiqUtilizationRateBps),
             client.flashRepay(flashLoan),
         ]);
     }
@@ -363,9 +362,9 @@ async function buildSolautoRebalanceTransaction(client, targetLiqUtilizationRate
         tx = tx.add([
             setupInstructions,
             tokenLedgerIx,
-            client.rebalance("A", swapDetails, rebalanceType, priceImpactBps, undefined, targetLiqUtilizationRateBps),
+            client.rebalance("A", swapDetails, rebalanceType, undefined, targetLiqUtilizationRateBps),
             swapIx,
-            client.rebalance("B", swapDetails, rebalanceType, priceImpactBps, undefined, targetLiqUtilizationRateBps),
+            client.rebalance("B", swapDetails, rebalanceType, undefined, targetLiqUtilizationRateBps),
         ]);
     }
     if (client.solautoPositionState.liqUtilizationRateBps >
@@ -388,7 +387,7 @@ async function convertReferralFeesToDestination(umi, referralState, tokenAccount
         inputMint: tokenAccountData.mint,
         outputMint: (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(referralState.destFeesMint),
         exactIn: true,
-        slippageIncFactor: 0.15,
+        slippageIncFactor: 0.25,
     });
     let tx = (0, umi_1.transactionBuilder)()
         .add(setupInstructions)

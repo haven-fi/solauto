@@ -6,6 +6,7 @@ import { JupSwapDetails } from "../jupiterUtils";
 export interface RebalanceValues {
     increasingLeverage: boolean;
     debtAdjustmentUsd: number;
+    repayingCloseToMaxLtv: boolean;
     amountToDcaIn: number;
     amountUsdToDcaIn: number;
     dcaTokenType?: TokenType;

@@ -453,7 +453,6 @@ export class SolautoMarginfiClient extends SolautoClient {
     rebalanceStep: "A" | "B",
     swapDetails: JupSwapDetails,
     rebalanceType: SolautoRebalanceTypeArgs,
-    slippageBps: number,
     flashLoan?: FlashLoanDetails,
     targetLiqUtilizationRateBps?: number,
     limitGapBps?: number
@@ -521,7 +520,6 @@ export class SolautoMarginfiClient extends SolautoClient {
         ? swapDetails.amount
         : null,
       limitGapBps: limitGapBps ?? null,
-      slippageBps: slippageBps ?? 0,
     });
   }
 

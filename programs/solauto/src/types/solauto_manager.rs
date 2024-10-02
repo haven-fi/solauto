@@ -1,3 +1,4 @@
+use math_utils::{from_bps, to_bps};
 use solana_program::{
     account_info::AccountInfo, clock::Clock, entrypoint::ProgramResult, msg,
     program_error::ProgramError, sysvar::Sysvar,
@@ -7,7 +8,6 @@ use std::{
     ops::{Add, Div, Mul, Sub},
 };
 use validation_utils::validate_debt_adjustment;
-use math_utils::{from_bps, to_bps};
 
 use super::{
     instruction::{RebalanceSettings, SolautoAction, SolautoStandardAccounts},
@@ -199,7 +199,7 @@ impl<'a> SolautoManager<'a> {
                     .rebalance
                     .flash_loan_amount,
                 debt_adjustment_usd,
-                0.15
+                0.15,
             )?;
             return Ok(());
         }
@@ -228,14 +228,10 @@ impl<'a> SolautoManager<'a> {
             let amt = if rebalance_args.target_in_amount_base_unit.is_some() {
                 rebalance_args.target_in_amount_base_unit.unwrap()
             } else {
-                (token.amount_can_be_used.base_unit as f64).mul(pct_of_amount_can_be_used)
-                as u64
+                (token.amount_can_be_used.base_unit as f64).mul(pct_of_amount_can_be_used) as u64
             };
             self.borrow(
-                min(
-                    base_unit_amount,
-                    amt,
-                ),
+                min(base_unit_amount, amt),
                 self.accounts.intermediary_ta.unwrap(),
             )
         } else {
@@ -276,7 +272,7 @@ impl<'a> SolautoManager<'a> {
                 &self.std_accounts.solauto_position.data,
                 flash_loan_amount,
                 debt_adjustment_usd,
-                0.15
+                0.15,
             )?;
         }
 

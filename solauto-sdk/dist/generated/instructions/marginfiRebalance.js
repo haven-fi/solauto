@@ -16,7 +16,6 @@ const types_1 = require("../types");
 function getMarginfiRebalanceInstructionDataSerializer() {
     return (0, serializers_1.mapSerializer)((0, serializers_1.struct)([
         ['discriminator', (0, serializers_1.u8)()],
-        ['slippageBps', (0, serializers_1.u16)()],
         ['rebalanceType', (0, types_1.getSolautoRebalanceTypeSerializer)()],
         ['targetLiqUtilizationRateBps', (0, serializers_1.option)((0, serializers_1.u16)())],
         ['targetInAmountBaseUnit', (0, serializers_1.option)((0, serializers_1.u64)())],

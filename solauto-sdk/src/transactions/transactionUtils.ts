@@ -390,7 +390,6 @@ function getRebalanceInstructions(tx: TransactionBuilder): Instruction[] {
       try {
         const serializer = getMarginfiRebalanceInstructionDataSerializer();
         const discriminator = serializer.serialize({
-          slippageBps: 0,
           limitGapBps: 0,
           targetInAmountBaseUnit: 0,
           rebalanceType: SolautoRebalanceType.None,
@@ -651,7 +650,6 @@ export async function buildSolautoRebalanceTransaction(
               "A",
               swapDetails,
               rebalanceType,
-              priceImpactBps,
               flashLoan,
               targetLiqUtilizationRateBps
             ),
@@ -662,7 +660,6 @@ export async function buildSolautoRebalanceTransaction(
         "B",
         swapDetails,
         rebalanceType,
-        priceImpactBps,
         flashLoan,
         targetLiqUtilizationRateBps
       ),
@@ -677,7 +674,6 @@ export async function buildSolautoRebalanceTransaction(
         "A",
         swapDetails,
         rebalanceType,
-        priceImpactBps,
         undefined,
         targetLiqUtilizationRateBps
       ),
@@ -686,7 +682,6 @@ export async function buildSolautoRebalanceTransaction(
         "B",
         swapDetails,
         rebalanceType,
-        priceImpactBps,
         undefined,
         targetLiqUtilizationRateBps
       ),
@@ -727,7 +722,7 @@ export async function convertReferralFeesToDestination(
       inputMint: tokenAccountData.mint,
       outputMint: toWeb3JsPublicKey(referralState.destFeesMint),
       exactIn: true,
-      slippageIncFactor: 0.15,
+      slippageIncFactor: 0.25,
     });
 
   let tx = transactionBuilder()

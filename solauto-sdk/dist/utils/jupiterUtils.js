@@ -31,7 +31,7 @@ async function getJupSwapTransaction(signer, swapDetails, attemptNum) {
             : swapDetails.exactIn
                 ? "ExactIn"
                 : undefined,
-        slippageBps: 30,
+        slippageBps: 50,
         maxAccounts: !swapDetails.exactOut ? 60 : undefined,
     }), 3);
     const priceImpactBps = (Math.round((0, numberUtils_1.toBps)(parseFloat(quoteResponse.priceImpactPct))) + 1);

@@ -14,9 +14,8 @@ function getRebalanceDataSerializer() {
     return (0, serializers_1.struct)([
         ['rebalanceType', (0, _1.getSolautoRebalanceTypeSerializer)()],
         ['padding1', (0, serializers_1.array)((0, serializers_1.u8)(), { size: 7 })],
-        ['priceSlippageBps', (0, serializers_1.u16)()],
         ['targetLiqUtilizationRateBps', (0, serializers_1.u16)()],
-        ['padding2', (0, serializers_1.array)((0, serializers_1.u8)(), { size: 4 })],
+        ['padding2', (0, serializers_1.array)((0, serializers_1.u8)(), { size: 6 })],
         ['flashLoanAmount', (0, serializers_1.u64)()],
         ['padding', (0, serializers_1.bytes)({ size: 32 })],
     ], { description: 'RebalanceData' });

@@ -24,7 +24,6 @@ import {
 export type RebalanceData = {
   rebalanceType: SolautoRebalanceType;
   padding1: Array<number>;
-  priceSlippageBps: number;
   targetLiqUtilizationRateBps: number;
   padding2: Array<number>;
   flashLoanAmount: bigint;
@@ -34,7 +33,6 @@ export type RebalanceData = {
 export type RebalanceDataArgs = {
   rebalanceType: SolautoRebalanceTypeArgs;
   padding1: Array<number>;
-  priceSlippageBps: number;
   targetLiqUtilizationRateBps: number;
   padding2: Array<number>;
   flashLoanAmount: number | bigint;
@@ -49,9 +47,8 @@ export function getRebalanceDataSerializer(): Serializer<
     [
       ['rebalanceType', getSolautoRebalanceTypeSerializer()],
       ['padding1', array(u8(), { size: 7 })],
-      ['priceSlippageBps', u16()],
       ['targetLiqUtilizationRateBps', u16()],
-      ['padding2', array(u8(), { size: 4 })],
+      ['padding2', array(u8(), { size: 6 })],
       ['flashLoanAmount', u64()],
       ['padding', bytes({ size: 32 })],
     ],

@@ -37,14 +37,12 @@ export type MarginfiRebalanceInstructionAccounts = {
 };
 export type MarginfiRebalanceInstructionData = {
     discriminator: number;
-    slippageBps: number;
     rebalanceType: SolautoRebalanceType;
     targetLiqUtilizationRateBps: Option<number>;
     targetInAmountBaseUnit: Option<bigint>;
     limitGapBps: Option<number>;
 };
 export type MarginfiRebalanceInstructionDataArgs = {
-    slippageBps: number;
     rebalanceType: SolautoRebalanceTypeArgs;
     targetLiqUtilizationRateBps: OptionOrNullable<number>;
     targetInAmountBaseUnit: OptionOrNullable<number | bigint>;

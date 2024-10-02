@@ -81,10 +81,7 @@ pub fn process_close_position_instruction<'a>(accounts: &'a [AccountInfo<'a>]) -
         )?;
     }
 
-    close_position::close_position(
-        &ctx,
-        &solauto_position,
-    )
+    close_position::close_position(&ctx, &solauto_position)
 }
 
 pub fn process_cancel_dca<'a>(accounts: &'a [AccountInfo<'a>]) -> ProgramResult {
