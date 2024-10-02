@@ -154,15 +154,16 @@ async function sendSingleOptimizedTransaction(umi, connection, tx, txType, attem
     console.log("Serialized transaction size: ", tx.getTransactionSize(umi));
     const feeEstimate = await getComputeUnitPriceEstimate(umi, tx, prioritySetting);
     console.log("Compute unit price: ", feeEstimate);
+    let computeUnitLimit = undefined;
     if (txType !== "skip-simulation") {
         // TODO: we should only retry simulation if it's not a solauto error
         const simulationResult = await (0, generalUtils_1.retryWithExponentialBackoff)(async () => await simulateTransaction(connection, (0, umi_web3js_adapters_1.toWeb3JsTransaction)(await (await assembleFinalTransaction(umi.identity, tx, feeEstimate, 1400000).setLatestBlockhash(umi)).build(umi))), 3);
-        const computeUnitLimit = Math.round(simulationResult.value.unitsConsumed * 1.1);
+        computeUnitLimit = Math.round(simulationResult.value.unitsConsumed * 1.1);
         console.log("Compute unit limit: ", computeUnitLimit);
     }
     if (txType !== "only-simulate") {
         onAwaitingSign?.();
-        const result = await assembleFinalTransaction(umi.identity, tx, feeEstimate, 800000).sendAndConfirm(umi, {
+        const result = await assembleFinalTransaction(umi.identity, tx, feeEstimate, computeUnitLimit).sendAndConfirm(umi, {
             send: {
                 skipPreflight: true,
                 commitment: "confirmed",

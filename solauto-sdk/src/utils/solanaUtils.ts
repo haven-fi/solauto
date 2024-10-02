@@ -288,6 +288,7 @@ export async function sendSingleOptimizedTransaction(
   );
   console.log("Compute unit price: ", feeEstimate);
 
+  let computeUnitLimit = undefined;
   if (txType !== "skip-simulation") {
     // TODO: we should only retry simulation if it's not a solauto error
     const simulationResult = await retryWithExponentialBackoff(
@@ -308,7 +309,7 @@ export async function sendSingleOptimizedTransaction(
       3
     );
 
-    const computeUnitLimit = Math.round(
+    computeUnitLimit = Math.round(
       simulationResult.value.unitsConsumed! * 1.1
     );
     console.log("Compute unit limit: ", computeUnitLimit);
@@ -320,7 +321,7 @@ export async function sendSingleOptimizedTransaction(
       umi.identity,
       tx,
       feeEstimate,
-      800_000
+      computeUnitLimit
     ).sendAndConfirm(umi, {
       send: {
         skipPreflight: true,
