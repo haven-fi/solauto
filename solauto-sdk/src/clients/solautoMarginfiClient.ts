@@ -133,7 +133,7 @@ export class SolautoMarginfiClient extends SolautoClient {
     this.debtPriceOracle = new PublicKey(this.marginfiDebtAccounts.priceOracle);
 
     if (!this.solautoPositionState) {
-      const result = await this.maxLtvAndLiqThreshold()!;
+      const result = await this.maxLtvAndLiqThresholdBps()!;
       this.solautoPositionState = createFakePositionState(
         { mint: this.supplyMint },
         { mint: this.debtMint },
@@ -208,8 +208,8 @@ export class SolautoMarginfiClient extends SolautoClient {
     ];
   }
 
-  async maxLtvAndLiqThreshold(): Promise<[number, number] | undefined> {
-    const result = await super.maxLtvAndLiqThreshold();
+  async maxLtvAndLiqThresholdBps(): Promise<[number, number] | undefined> {
+    const result = await super.maxLtvAndLiqThresholdBps();
     if (result) {
       return result;
     } else if (

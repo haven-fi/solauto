@@ -361,7 +361,7 @@ export abstract class SolautoClient extends TxHandler {
     );
   }
 
-  async maxLtvAndLiqThreshold(): Promise<[number, number] | undefined> {
+  async maxLtvAndLiqThresholdBps(): Promise<[number, number] | undefined> {
     if (this.maxLtvBps !== undefined && this.liqThresholdBps !== undefined) {
       return [this.maxLtvBps, this.liqThresholdBps];
     }
