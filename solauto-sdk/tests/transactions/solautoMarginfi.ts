@@ -21,10 +21,10 @@ import { USDC_MINT } from "../../src/constants";
 import { buildHeliusApiUrl } from "../../src/utils";
 
 describe("Solauto Marginfi tests", async () => {
-  const signer = setupTest();
-  // const signer = setupTest("solauto-manager");
+  // const signer = setupTest();
+  const signer = setupTest("solauto-manager");
 
-  const payForTransactions = true;
+  const payForTransactions = false;
   const useJitoBundle = false;
   const positionId = 1;
 
@@ -124,7 +124,7 @@ describe("Solauto Marginfi tests", async () => {
     transactionItems.push(
       new TransactionItem(
         async (attemptNum) =>
-          await buildSolautoRebalanceTransaction(client, 7200, attemptNum),
+          await buildSolautoRebalanceTransaction(client, undefined, attemptNum),
         "rebalance"
       )
     );
