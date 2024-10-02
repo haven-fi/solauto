@@ -227,9 +227,9 @@ export class SolautoMarginfiClient extends SolautoClient {
           mint: this.debtMint,
         }
       );
-      this.maxLtvBps = maxLtv;
-      this.liqThresholdBps = liqThreshold;
-      return [maxLtv, liqThreshold];
+      this.maxLtvBps = toBps(maxLtv);
+      this.liqThresholdBps = toBps(liqThreshold);
+      return [this.maxLtvBps, this.liqThresholdBps];
     }
   }
 

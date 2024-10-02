@@ -111,9 +111,9 @@ class SolautoMarginfiClient extends solautoClient_1.SolautoClient {
             }, {
                 mint: this.debtMint,
             });
-            this.maxLtvBps = maxLtv;
-            this.liqThresholdBps = liqThreshold;
-            return [maxLtv, liqThreshold];
+            this.maxLtvBps = (0, numberUtils_1.toBps)(maxLtv);
+            this.liqThresholdBps = (0, numberUtils_1.toBps)(liqThreshold);
+            return [this.maxLtvBps, this.liqThresholdBps];
         }
     }
     marginfiAccountInitialize() {
