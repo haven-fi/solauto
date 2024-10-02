@@ -39,7 +39,6 @@ use super::{
         get_max_repay_from_bps,
         get_max_repay_to_bps,
     },
-    solana_utils::account_has_data,
     solauto_utils,
 };
 

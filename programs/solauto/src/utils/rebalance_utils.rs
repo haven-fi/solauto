@@ -1,6 +1,5 @@
 use jupiter_sdk::JUPITER_ID;
 use marginfi_sdk::MARGINFI_ID;
-use math_utils::{from_base_unit, from_bps};
 use solana_program::{
     instruction::{get_stack_height, TRANSACTION_LEVEL_STACK_HEIGHT},
     msg,
@@ -10,9 +9,10 @@ use solana_program::{
 };
 use std::{
     cmp::max,
-    ops::{Div, Mul},
+    ops::Mul,
 };
 use validation_utils::validate_debt_adjustment;
+use math_utils::from_bps;
 
 use crate::{
     state::solauto_position::{DCASettings, PositionData, SolautoPosition, SolautoRebalanceType},
