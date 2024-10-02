@@ -54,7 +54,7 @@ class SolautoMarginfiClient extends solautoClient_1.SolautoClient {
         this.debtPriceOracle = new web3_js_1.PublicKey(this.marginfiDebtAccounts.priceOracle);
         if (!this.solautoPositionState) {
             const result = await this.maxLtvAndLiqThreshold();
-            this.solautoPositionState = (0, utils_1.createFakePositionState)({ mint: this.supplyMint }, { mint: this.debtMint }, result ? (0, numberUtils_1.toBps)(result[0]) : 0, result ? (0, numberUtils_1.toBps)(result[1]) : 0);
+            this.solautoPositionState = (0, utils_1.createFakePositionState)({ mint: this.supplyMint }, { mint: this.debtMint }, result ? result[0] : 0, result ? result[1] : 0);
         }
         if (!this.initialized) {
             await this.setIntermediaryMarginfiDetails();
@@ -97,25 +97,23 @@ class SolautoMarginfiClient extends solautoClient_1.SolautoClient {
         ];
     }
     async maxLtvAndLiqThreshold() {
-        const result = super.maxLtvAndLiqThreshold();
+        const result = await super.maxLtvAndLiqThreshold();
         if (result) {
             return result;
         }
+        else if (this.supplyMint.equals(web3_js_1.PublicKey.default) ||
+            this.debtMint.equals(web3_js_1.PublicKey.default)) {
+            return [0, 0];
+        }
         else {
-            if (this.supplyMint.equals(web3_js_1.PublicKey.default) ||
-                this.debtMint.equals(web3_js_1.PublicKey.default)) {
-                return [0, 0];
-            }
-            else {
-                const [maxLtv, liqThreshold] = await (0, marginfiUtils_1.getMaxLtvAndLiqThreshold)(this.umi, {
-                    mint: this.supplyMint,
-                }, {
-                    mint: this.debtMint,
-                });
-                this.maxLtvBps = maxLtv;
-                this.liqThresholdBps = liqThreshold;
-                return [this.maxLtvBps, this.liqThresholdBps];
-            }
+            const [maxLtv, liqThreshold] = await (0, marginfiUtils_1.getMaxLtvAndLiqThreshold)(this.umi, {
+                mint: this.supplyMint,
+            }, {
+                mint: this.debtMint,
+            });
+            this.maxLtvBps = maxLtv;
+            this.liqThresholdBps = liqThreshold;
+            return [maxLtv, liqThreshold];
         }
     }
     marginfiAccountInitialize() {

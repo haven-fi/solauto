@@ -137,8 +137,8 @@ export class SolautoMarginfiClient extends SolautoClient {
       this.solautoPositionState = createFakePositionState(
         { mint: this.supplyMint },
         { mint: this.debtMint },
-        result ? toBps(result[0]) : 0,
-        result ? toBps(result[1]) : 0
+        result ? result[0] : 0,
+        result ? result[1] : 0
       );
     }
 
@@ -209,29 +209,27 @@ export class SolautoMarginfiClient extends SolautoClient {
   }
 
   async maxLtvAndLiqThreshold(): Promise<[number, number] | undefined> {
-    const result = super.maxLtvAndLiqThreshold();
+    const result = await super.maxLtvAndLiqThreshold();
     if (result) {
       return result;
+    } else if (
+      this.supplyMint.equals(PublicKey.default) ||
+      this.debtMint.equals(PublicKey.default)
+    ) {
+      return [0, 0];
     } else {
-      if (
-        this.supplyMint.equals(PublicKey.default) ||
-        this.debtMint.equals(PublicKey.default)
-      ) {
-        return [0, 0];
-      } else {
-        const [maxLtv, liqThreshold] = await getMaxLtvAndLiqThreshold(
-          this.umi,
-          {
-            mint: this.supplyMint,
-          },
-          {
-            mint: this.debtMint,
-          }
-        );
-        this.maxLtvBps = maxLtv;
-        this.liqThresholdBps = liqThreshold;
-        return [this.maxLtvBps, this.liqThresholdBps];
-      }
+      const [maxLtv, liqThreshold] = await getMaxLtvAndLiqThreshold(
+        this.umi,
+        {
+          mint: this.supplyMint,
+        },
+        {
+          mint: this.debtMint,
+        }
+      );
+      this.maxLtvBps = maxLtv;
+      this.liqThresholdBps = liqThreshold;
+      return [maxLtv, liqThreshold];
     }
   }
 
