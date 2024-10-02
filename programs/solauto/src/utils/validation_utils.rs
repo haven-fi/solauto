@@ -39,7 +39,7 @@ use super::{
         get_max_repay_from_bps,
         get_max_repay_to_bps,
     },
-    solauto_utils,
+    solauto_utils::{ self, safe_unpack_token_account },
 };
 
 pub fn generic_instruction_validation(
@@ -63,25 +63,30 @@ pub fn generic_instruction_validation(
         accounts.ixs_sysvar
     )?;
 
+    let token_mint = if !accounts.solauto_position.data.self_managed.val {
+        Some(accounts.solauto_position.data.position.supply_mint)
+    } else {
+        None
+    };
+
     if accounts.authority_referral_state.is_some() {
         validate_referral_accounts(
             &accounts.solauto_position.data.authority,
             accounts.authority_referral_state.as_ref().unwrap(),
             accounts.referred_by_state,
-            solauto_utils::safe_unpack_token_account(accounts.referred_by_supply_ta)?.as_ref(),
-            true
+            accounts.referred_by_supply_ta,
+            true,
+            token_mint.as_ref()
         )?;
     }
 
     if
         accounts.solauto_fees_supply_ta.is_some() &&
         !token_account_owned_by(
-            solauto_utils
-                ::safe_unpack_token_account(accounts.solauto_fees_supply_ta)?
-                .as_ref()
-                .unwrap(),
-            &SOLAUTO_FEES_WALLET
-        )
+            accounts.solauto_fees_supply_ta.unwrap(),
+            &SOLAUTO_FEES_WALLET,
+            token_mint.as_ref()
+        )?
     {
         msg!("Provided incorrect Solauto fees supply TA");
         return Err(SolautoError::IncorrectAccounts.into());
@@ -296,12 +301,13 @@ pub fn validate_sysvar_accounts(
     Ok(())
 }
 
-pub fn validate_referral_accounts(
+pub fn validate_referral_accounts<'a>(
     referral_state_authority: &Pubkey,
-    authority_referral_state: &DeserializedAccount<ReferralState>,
-    referred_by_state: Option<&AccountInfo>,
-    referred_by_supply_ta: Option<&DeserializedAccount<TokenAccount>>,
-    check_supply_ta: bool
+    authority_referral_state: &DeserializedAccount<'a, ReferralState>,
+    referred_by_state: Option<&'a AccountInfo<'a>>,
+    referred_by_supply_ta: Option<&'a AccountInfo<'a>>,
+    check_supply_ta: bool,
+    supply_mint: Option<&Pubkey>
 ) -> ProgramResult {
     let referral_state_pda = Pubkey::create_program_address(
         authority_referral_state.data.seeds_with_bump().as_slice(),
@@ -331,8 +337,9 @@ pub fn validate_referral_accounts(
         (referred_by_supply_ta.is_none() ||
             !token_account_owned_by(
                 referred_by_supply_ta.as_ref().unwrap(),
-                authority_referred_by_state
-            ))
+                authority_referred_by_state,
+                supply_mint
+            )?)
     {
         msg!(
             "Provided incorrect referred_by_supply_ta according to the given authority and token mint"
@@ -465,12 +472,22 @@ pub fn validate_token_account<'a>(
     Ok(())
 }
 
-pub fn token_account_owned_by(
-    token_account: &DeserializedAccount<TokenAccount>,
-    expected_owner: &Pubkey
-) -> bool {
-    token_account.account_info.owner == &token_program_id &&
-        &token_account.data.owner == expected_owner
+pub fn token_account_owned_by<'a>(
+    token_account: &'a AccountInfo<'a>,
+    expected_owner: &Pubkey,
+    token_mint: Option<&Pubkey>
+) -> Result<bool, ProgramError> {
+    if token_mint.is_some() {
+        return Ok(
+            token_account.key == &get_associated_token_address(expected_owner, token_mint.unwrap())
+        );
+    } else {
+        let token_account_data = safe_unpack_token_account(Some(token_account))?.unwrap();
+        return Ok(
+            token_account_data.account_info.owner == &token_program_id &&
+                &token_account_data.data.owner == expected_owner
+        );
+    }
 }
 
 pub fn validate_referral_signer(
