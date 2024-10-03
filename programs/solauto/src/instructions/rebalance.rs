@@ -132,10 +132,6 @@ fn needs_refresh(
         return Ok(false);
     }
 
-    if current_timestamp.sub(solauto_position.data.state.last_updated) > 60 * 60 * 24 {
-        return Ok(true);
-    }
-
     if
         args.target_liq_utilization_rate_bps.is_some() &&
         args.target_liq_utilization_rate_bps.unwrap() == 0
