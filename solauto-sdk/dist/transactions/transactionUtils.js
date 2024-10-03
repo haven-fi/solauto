@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.rebalanceChoresBefore = rebalanceChoresBefore;
 exports.getTransactionChores = getTransactionChores;
+exports.requiresRefreshBeforeRebalance = requiresRefreshBeforeRebalance;
 exports.buildSolautoRebalanceTransaction = buildSolautoRebalanceTransaction;
 exports.convertReferralFeesToDestination = convertReferralFeesToDestination;
 const umi_1 = require("@metaplex-foundation/umi");
@@ -322,6 +323,23 @@ async function getTransactionChores(client, tx) {
     choresAfter = choresAfter.add(transactionChoresAfter(client, solautoActions, client.livePositionUpdates.cancellingDca));
     return [choresBefore, choresAfter];
 }
+function requiresRefreshBeforeRebalance(client) {
+    if (client.solautoPositionState.liqUtilizationRateBps >
+        (0, numberUtils_1.getMaxLiqUtilizationRateBps)(client.solautoPositionState.maxLtvBps, client.solautoPositionState.liqThresholdBps, 0.01)) {
+        return true;
+    }
+    else if (client.solautoPositionData && !client.selfManaged) {
+        const oldSupply = client.solautoPositionData.state.supply.amountUsed.baseUnit;
+        const oldDebt = client.solautoPositionData.state.debt.amountUsed.baseUnit;
+        const supplyDiff = (client.solautoPositionState?.supply.amountUsed.baseUnit ?? BigInt(0)) - oldSupply;
+        const debtDiff = (client.solautoPositionState?.debt.amountUsed.baseUnit ?? BigInt(0)) - oldDebt;
+        if (Math.abs(Number(supplyDiff)) / Number(oldSupply) >= 0.01 || Math.abs(Number(debtDiff)) / Number(oldDebt) >= 0.01) {
+            return true;
+        }
+    }
+    // Rebalance ix will already refresh internally if position is self managed, has automation to update, or position state last updated >= 1 day ago
+    return false;
+}
 async function buildSolautoRebalanceTransaction(client, targetLiqUtilizationRateBps, attemptNum) {
     client.solautoPositionState = await client.getFreshPositionState();
     if ((client.solautoPositionState?.supply.amountUsed.baseUnit === BigInt(0) &&
@@ -337,6 +355,9 @@ async function buildSolautoRebalanceTransaction(client, targetLiqUtilizationRate
     const { jupQuote, priceImpactBps, lookupTableAddresses, setupInstructions, tokenLedgerIx, swapIx, } = await (0, jupiterUtils_1.getJupSwapTransaction)(client.signer, swapDetails, attemptNum);
     const flashLoan = (0, rebalanceUtils_1.getFlashLoanDetails)(client, values, jupQuote, priceImpactBps);
     let tx = (0, umi_1.transactionBuilder)();
+    if (requiresRefreshBeforeRebalance(client)) {
+        tx = tx.add(client.refresh());
+    }
     if (flashLoan) {
         client.log("Flash loan details: ", flashLoan);
         const addFirstRebalance = values.amountUsdToDcaIn > 0;
@@ -366,10 +387,6 @@ async function buildSolautoRebalanceTransaction(client, targetLiqUtilizationRate
             swapIx,
             client.rebalance("B", swapDetails, rebalanceType, undefined, targetLiqUtilizationRateBps),
         ]);
-    }
-    if (client.solautoPositionState.liqUtilizationRateBps >
-        (0, numberUtils_1.getMaxLiqUtilizationRateBps)(client.solautoPositionState.maxLtvBps, client.solautoPositionState.liqThresholdBps, 0.01)) {
-        tx = tx.prepend(client.refresh());
     }
     return {
         tx,

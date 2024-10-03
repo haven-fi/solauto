@@ -566,6 +566,33 @@ export async function getTransactionChores(
   return [choresBefore, choresAfter];
 }
 
+export function requiresRefreshBeforeRebalance(client: SolautoClient) {
+  if (
+    client.solautoPositionState!.liqUtilizationRateBps >
+    getMaxLiqUtilizationRateBps(
+      client.solautoPositionState!.maxLtvBps,
+      client.solautoPositionState!.liqThresholdBps,
+      0.01
+    )
+  ) {
+    return true;
+  } else if (client.solautoPositionData && !client.selfManaged) {
+    const oldSupply = client.solautoPositionData.state.supply.amountUsed.baseUnit;
+    const oldDebt = client.solautoPositionData.state.debt.amountUsed.baseUnit;
+
+    const supplyDiff = (client.solautoPositionState?.supply.amountUsed.baseUnit ?? BigInt(0)) - oldSupply;
+    const debtDiff = (client.solautoPositionState?.debt.amountUsed.baseUnit ?? BigInt(0)) - oldDebt;
+
+    if (Math.abs(Number(supplyDiff)) / Number(oldSupply) >= 0.01 || Math.abs(Number(debtDiff)) / Number(oldDebt) >= 0.01) {
+      return true;
+    }
+  }
+
+  // Rebalance ix will already refresh internally if position is self managed, has automation to update, or position state last updated >= 1 day ago
+
+  return false;
+}
+
 export async function buildSolautoRebalanceTransaction(
   client: SolautoClient,
   targetLiqUtilizationRateBps?: number,
@@ -627,6 +654,10 @@ export async function buildSolautoRebalanceTransaction(
 
   let tx = transactionBuilder();
 
+  if (requiresRefreshBeforeRebalance(client)) {
+    tx = tx.add(client.refresh());
+  }
+
   if (flashLoan) {
     client.log("Flash loan details: ", flashLoan);
     const addFirstRebalance = values.amountUsdToDcaIn > 0;
@@ -686,17 +717,6 @@ export async function buildSolautoRebalanceTransaction(
         targetLiqUtilizationRateBps
       ),
     ]);
-  }
-
-  if (
-    client.solautoPositionState!.liqUtilizationRateBps >
-    getMaxLiqUtilizationRateBps(
-      client.solautoPositionState!.maxLtvBps,
-      client.solautoPositionState!.liqThresholdBps,
-      0.01
-    )
-  ) {
-    tx = tx.prepend(client.refresh());
   }
 
   return {

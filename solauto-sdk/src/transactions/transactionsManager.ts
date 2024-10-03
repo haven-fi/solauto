@@ -280,7 +280,7 @@ export class TransactionsManager {
       }
     }
     this.txHandler.log(`${name} is ${status.toString().toLowerCase()}`);
-    this.statusCallback?.(this.statuses);
+    this.statusCallback?.([...this.statuses]);
   }
 
   // TODO remove me

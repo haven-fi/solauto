@@ -334,9 +334,7 @@ class SolautoMarginfiClient extends solautoClient_1.SolautoClient {
                 : undefined,
             rebalanceType,
             targetLiqUtilizationRateBps: targetLiqUtilizationRateBps ?? null,
-            targetInAmountBaseUnit: targetLiqUtilizationRateBps && rebalanceStep === "A"
-                ? swapDetails.amount
-                : null,
+            targetInAmountBaseUnit: rebalanceStep === "A" ? swapDetails.amount : null,
             limitGapBps: limitGapBps ?? null,
         });
     }

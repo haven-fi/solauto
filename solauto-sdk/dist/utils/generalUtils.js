@@ -28,7 +28,9 @@ function currentUnixSeconds() {
     return Math.round(new Date().getTime() / 1000);
 }
 async function getSolanaAccountCreated(umi, pk) {
-    const account = await umi.rpc.getAccount((0, umi_1.publicKey)(pk), { commitment: "confirmed" });
+    const account = await umi.rpc.getAccount((0, umi_1.publicKey)(pk), {
+        commitment: "confirmed",
+    });
     return rpcAccountCreated(account);
 }
 function rpcAccountCreated(account) {
@@ -53,25 +55,28 @@ async function fetchTokenPrices(mints) {
     }
     const priceFeedIds = mints.map((mint) => pythConstants_1.PYTH_PRICE_FEED_IDS[mint.toString()]);
     const getReq = async () => await fetch(`https://hermes.pyth.network/v2/updates/price/latest?${priceFeedIds.map((x) => `ids%5B%5D=${x}`).join("&")}`);
-    let resp = await getReq();
-    let status = resp.status;
-    while (status !== 200) {
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-        resp = await getReq();
-        status = resp.status;
-    }
-    const json = await resp.json();
-    const prices = json.parsed.map((x) => {
-        if (x.price.expo > 0) {
-            return Number((0, numberUtils_1.toBaseUnit)(Number(x.price.price), x.price.expo));
+    const prices = await retryWithExponentialBackoff(async () => {
+        let resp = await getReq();
+        let status = resp.status;
+        while (status !== 200) {
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+            resp = await getReq();
+            status = resp.status;
         }
-        else if (x.price.expo < 0) {
-            return (0, numberUtils_1.fromBaseUnit)(BigInt(x.price.price), Math.abs(x.price.expo));
-        }
-        else {
-            return Number(x.price.price);
-        }
-    });
+        const json = await resp.json();
+        const prices = json.parsed.map((x) => {
+            if (x.price.expo > 0) {
+                return Number((0, numberUtils_1.toBaseUnit)(Number(x.price.price), x.price.expo));
+            }
+            else if (x.price.expo < 0) {
+                return (0, numberUtils_1.fromBaseUnit)(BigInt(x.price.price), Math.abs(x.price.expo));
+            }
+            else {
+                return Number(x.price.price);
+            }
+        });
+        return prices;
+    }, 5, 200);
     for (var i = 0; i < mints.length; i++) {
         solautoConstants_1.PRICES[mints[i].toString()] = {
             price: prices[i],
