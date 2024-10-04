@@ -14,7 +14,7 @@ use solana_program::{
     sysvar::{instructions::ID as ixs_sysvar_id, rent::ID as rent_program_id},
 };
 use spl_associated_token_account::{get_associated_token_address, ID as ata_program_id};
-use spl_token::{state::Account as TokenAccount, ID as token_program_id};
+use spl_token::ID as token_program_id;
 
 use crate::{
     constants::{
@@ -35,7 +35,7 @@ use super::{
     math_utils::{
         from_base_unit, get_max_boost_to_bps, get_max_repay_from_bps, get_max_repay_to_bps,
     },
-    solauto_utils::{self, safe_unpack_token_account},
+    solauto_utils::safe_unpack_token_account,
 };
 
 pub fn generic_instruction_validation(
