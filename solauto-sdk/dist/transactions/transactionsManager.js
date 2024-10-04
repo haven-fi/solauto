@@ -9,6 +9,7 @@ const umi_1 = require("@metaplex-foundation/umi");
 const solanaUtils_1 = require("../utils/solanaUtils");
 const generalUtils_1 = require("../utils/generalUtils");
 const transactionUtils_1 = require("./transactionUtils");
+const generated_1 = require("../generated");
 // import { sendJitoBundledTransactions } from "../utils/jitoUtils";
 class LookupTables {
     constructor(defaultLuts, umi) {
@@ -331,6 +332,23 @@ class TransactionsManager {
             this.updateStatus(txName, TransactionStatus.Successful, attemptNum, txSig ? bs58_1.default.encode(txSig) : undefined);
         }
         catch (e) {
+            try {
+                if (typeof e === "object" && e["InstructionError"]) {
+                    const err = e["InstructionError"];
+                    const errIx = err[0];
+                    const errCode = err[1]["Custom"];
+                    const solautoProgram = this.txHandler.umi.programs.get(generated_1.SOLAUTO_PROGRAM_ID);
+                    const invalidRebalanceError = new generated_1.InvalidRebalanceConditionError(solautoProgram);
+                    if (tx.getInstructions()[Math.max(0, errIx - 2)].programId ===
+                        generated_1.SOLAUTO_PROGRAM_ID &&
+                        solautoProgram.getErrorFromCode(errCode)?.name ===
+                            invalidRebalanceError.name) {
+                        this.updateStatus(txName, TransactionStatus.Skipped, attemptNum);
+                        return;
+                    }
+                }
+            }
+            catch { }
             this.updateStatus(txName, TransactionStatus.Failed, attemptNum);
             throw e;
         }

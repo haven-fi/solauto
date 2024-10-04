@@ -17,6 +17,10 @@ import {
 import { getTransactionChores } from "./transactionUtils";
 import { PriorityFeeSetting, TransactionRunType } from "../types";
 import { ReferralStateManager, TxHandler } from "../clients";
+import {
+  InvalidRebalanceConditionError,
+  SOLAUTO_PROGRAM_ID,
+} from "../generated";
 // import { sendJitoBundledTransactions } from "../utils/jitoUtils";
 
 class LookupTables {
@@ -521,6 +525,30 @@ export class TransactionsManager {
         txSig ? bs58.encode(txSig) : undefined
       );
     } catch (e) {
+      try {
+        if (typeof e === "object" && (e as any)["InstructionError"]) {
+          const err = (e as any)["InstructionError"];
+          const errIx = err[0];
+          const errCode = err[1]["Custom"];
+
+          const solautoProgram =
+            this.txHandler.umi.programs.get(SOLAUTO_PROGRAM_ID);
+          const invalidRebalanceError = new InvalidRebalanceConditionError(
+            solautoProgram
+          );
+
+          if (
+            tx.getInstructions()[Math.max(0, errIx - 2)].programId ===
+              SOLAUTO_PROGRAM_ID &&
+            solautoProgram.getErrorFromCode(errCode)?.name ===
+              invalidRebalanceError.name
+          ) {
+            this.updateStatus(txName, TransactionStatus.Skipped, attemptNum);
+            return;
+          }
+        }
+      } catch {}
+
       this.updateStatus(txName, TransactionStatus.Failed, attemptNum);
       throw e;
     }

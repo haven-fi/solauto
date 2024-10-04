@@ -329,6 +329,9 @@ function requiresRefreshBeforeRebalance(client) {
         return true;
     }
     else if (client.solautoPositionData && !client.selfManaged) {
+        if (client.livePositionUpdates.supplyAdjustment > BigInt(0) || client.livePositionUpdates.debtAdjustment > BigInt(0)) {
+            return false;
+        }
         const oldSupply = client.solautoPositionData.state.supply.amountUsed.baseUnit;
         const oldDebt = client.solautoPositionData.state.debt.amountUsed.baseUnit;
         const supplyDiff = (client.solautoPositionState?.supply.amountUsed.baseUnit ?? BigInt(0)) - oldSupply;
