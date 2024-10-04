@@ -12,44 +12,26 @@ export declare class IncorrectAccountsError extends ProgramError {
     readonly code: number;
     constructor(program: Program, cause?: Error);
 }
-/** FailedAccountDeserialization: Failed to deserialize account data, incorrect account was likely given */
+/** FailedAccountDeserialization: Failed to deserialize account data */
 export declare class FailedAccountDeserializationError extends ProgramError {
     readonly name: string;
     readonly code: number;
     constructor(program: Program, cause?: Error);
 }
-/** InvalidPositionSettings: Invalid position settings given */
+/** InvalidPositionSettings: Invalid position settings provided */
 export declare class InvalidPositionSettingsError extends ProgramError {
     readonly name: string;
     readonly code: number;
     constructor(program: Program, cause?: Error);
 }
-/** InvalidDCASettings: Invalid DCA settings given */
+/** InvalidDCASettings: Invalid DCA configuration provided */
 export declare class InvalidDCASettingsError extends ProgramError {
     readonly name: string;
     readonly code: number;
     constructor(program: Program, cause?: Error);
 }
-/** InvalidAutomationData: Invalid automation data given */
+/** InvalidAutomationData: Invalid automation settings provided */
 export declare class InvalidAutomationDataError extends ProgramError {
-    readonly name: string;
-    readonly code: number;
-    constructor(program: Program, cause?: Error);
-}
-/** StaleProtocolData: Stale protocol data. Refresh instruction must be invoked before taking a protocol action */
-export declare class StaleProtocolDataError extends ProgramError {
-    readonly name: string;
-    readonly code: number;
-    constructor(program: Program, cause?: Error);
-}
-/** UnableToRebalance: Unable to adjust position to the desired utilization rate */
-export declare class UnableToRebalanceError extends ProgramError {
-    readonly name: string;
-    readonly code: number;
-    constructor(program: Program, cause?: Error);
-}
-/** ExceededValidUtilizationRate: Desired action brought the utilization rate to an unsafe amount */
-export declare class ExceededValidUtilizationRateError extends ProgramError {
     readonly name: string;
     readonly code: number;
     constructor(program: Program, cause?: Error);
@@ -66,14 +48,14 @@ export declare class InstructionIsCPIError extends ProgramError {
     readonly code: number;
     constructor(program: Program, cause?: Error);
 }
-/** RebalanceAbuse: Too many rebalance instruction invocations in the same transaction */
-export declare class RebalanceAbuseError extends ProgramError {
+/** IncorrectInstructions: Incorrect set of instructions in the transaction */
+export declare class IncorrectInstructionsError extends ProgramError {
     readonly name: string;
     readonly code: number;
     constructor(program: Program, cause?: Error);
 }
-/** IncorrectInstructions: Incorrect set of instructions in the transaction */
-export declare class IncorrectInstructionsError extends ProgramError {
+/** IncorrectDebtAdjustment: Incorrect swap amount provided. Likely due to high price volatility */
+export declare class IncorrectDebtAdjustmentError extends ProgramError {
     readonly name: string;
     readonly code: number;
     constructor(program: Program, cause?: Error);

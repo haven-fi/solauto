@@ -28,10 +28,11 @@ export declare enum TransactionStatus {
 }
 export type TransactionManagerStatuses = {
     name: string;
+    attemptNum: number;
     status: TransactionStatus;
+    moreInfo?: string;
     simulationSuccessful?: boolean;
     txSig?: string;
-    attemptNum: number;
 }[];
 export declare class TransactionsManager {
     private txHandler;

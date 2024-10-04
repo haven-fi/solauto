@@ -63,6 +63,11 @@ import {
   MARGINFI_PROGRAM_ID,
 } from "../marginfi-sdk";
 import { TxHandler } from "../clients";
+import {
+  createJupiterProgram,
+  getJupiterErrorFromName,
+  JUPITER_PROGRAM_ID,
+} from "../jupiter-sdk";
 
 interface wSolTokenUsage {
   wSolTokenAccount: PublicKey;
@@ -788,10 +793,7 @@ export async function convertReferralFeesToDestination(
   return [tx, lookupTableAddresses];
 }
 
-export function getErrorInfo(
-  tx: TransactionBuilder,
-  error: any
-) {
+export function getErrorInfo(tx: TransactionBuilder, error: any) {
   let canBeIgnored = false;
   let errorName: string | undefined = undefined;
   let errorInfo: string | undefined = undefined;
@@ -817,10 +819,9 @@ export function getErrorInfo(
           errCode,
           createMarginfiProgram()
         );
+      } else if (errIx.programId === JUPITER_PROGRAM_ID) {
+        programError = getJupiterErrorFromName(errCode, createJupiterProgram());
       }
-      // else if {
-      //   // TODO: JUP in else if
-      // }
     }
 
     if (programError) {

@@ -12,6 +12,7 @@ import {
 // import { JitoRpcConnection } from "jito-ts";
 import { SOLAUTO_PROGRAM_ID } from "../generated";
 import { SOLAUTO_MANAGER } from "./generalAccounts";
+import { JUPITER_PROGRAM_ID } from "../jupiter-sdk";
 
 export const BASIS_POINTS = 10000;
 
@@ -29,8 +30,6 @@ export const MIN_BOOST_GAP_BPS = 50;
 export const PRICES: { [key: string]: { price: number; time: number; } } = {};
 
 export const SOLAUTO_LUT = "9D4xwZwDf46n9ft5gQxZzq3rBbdRXsXojKQLZbBdskPY";
-
-export const JUPITER_PROGRAM_ID = "JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4";
 
 export const STANDARD_LUT_ACCOUNTS = [
   PublicKey.default.toString(),

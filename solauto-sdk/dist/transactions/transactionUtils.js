@@ -5,6 +5,7 @@ exports.getTransactionChores = getTransactionChores;
 exports.requiresRefreshBeforeRebalance = requiresRefreshBeforeRebalance;
 exports.buildSolautoRebalanceTransaction = buildSolautoRebalanceTransaction;
 exports.convertReferralFeesToDestination = convertReferralFeesToDestination;
+exports.getErrorInfo = getErrorInfo;
 const umi_1 = require("@metaplex-foundation/umi");
 const umi_web3js_adapters_1 = require("@metaplex-foundation/umi-web3js-adapters");
 const web3_js_1 = require("@solana/web3.js");
@@ -18,6 +19,7 @@ const numberUtils_1 = require("../utils/numberUtils");
 const generalUtils_2 = require("../utils/solauto/generalUtils");
 const accountUtils_1 = require("../utils/accountUtils");
 const marginfi_sdk_1 = require("../marginfi-sdk");
+const jupiter_sdk_1 = require("../jupiter-sdk");
 function getWSolUsage(client, solautoActions, initiatingDcaIn, cancellingDcaIn) {
     const supplyIsWsol = client.supplyMint.equals(spl_token_1.NATIVE_MINT);
     const debtIsWsol = client.debtMint.equals(spl_token_1.NATIVE_MINT);
@@ -329,14 +331,18 @@ function requiresRefreshBeforeRebalance(client) {
         return true;
     }
     else if (client.solautoPositionData && !client.selfManaged) {
-        if (client.livePositionUpdates.supplyAdjustment > BigInt(0) || client.livePositionUpdates.debtAdjustment > BigInt(0)) {
+        if (client.livePositionUpdates.supplyAdjustment > BigInt(0) ||
+            client.livePositionUpdates.debtAdjustment > BigInt(0)) {
             return false;
         }
         const oldSupply = client.solautoPositionData.state.supply.amountUsed.baseUnit;
         const oldDebt = client.solautoPositionData.state.debt.amountUsed.baseUnit;
-        const supplyDiff = (client.solautoPositionState?.supply.amountUsed.baseUnit ?? BigInt(0)) - oldSupply;
-        const debtDiff = (client.solautoPositionState?.debt.amountUsed.baseUnit ?? BigInt(0)) - oldDebt;
-        if (Math.abs(Number(supplyDiff)) / Number(oldSupply) >= 0.01 || Math.abs(Number(debtDiff)) / Number(oldDebt) >= 0.01) {
+        const supplyDiff = (client.solautoPositionState?.supply.amountUsed.baseUnit ?? BigInt(0)) -
+            oldSupply;
+        const debtDiff = (client.solautoPositionState?.debt.amountUsed.baseUnit ?? BigInt(0)) -
+            oldDebt;
+        if (Math.abs(Number(supplyDiff)) / Number(oldSupply) >= 0.01 ||
+            Math.abs(Number(debtDiff)) / Number(oldDebt) >= 0.01) {
             return true;
         }
     }
@@ -420,4 +426,40 @@ async function convertReferralFeesToDestination(umi, referralState, tokenAccount
     }))
         .add(swapIx);
     return [tx, lookupTableAddresses];
+}
+function getErrorInfo(tx, error) {
+    let canBeIgnored = false;
+    let errorName = undefined;
+    let errorInfo = undefined;
+    try {
+        let programError = null;
+        if (typeof error === "object" && error["InstructionError"]) {
+            const err = error["InstructionError"];
+            const errIx = tx.getInstructions()[Math.max(0, err[0] - 2)];
+            const errCode = err[1]["Custom"];
+            if (errIx.programId === generated_1.SOLAUTO_PROGRAM_ID) {
+                programError = (0, generated_1.getSolautoErrorFromCode)(errCode, (0, generated_1.createSolautoProgram)());
+                if (programError?.name ===
+                    new generated_1.InvalidRebalanceConditionError((0, generated_1.createSolautoProgram)()).name) {
+                    canBeIgnored = true;
+                }
+            }
+            else if (errIx.programId === marginfi_sdk_1.MARGINFI_PROGRAM_ID) {
+                programError = (0, marginfi_sdk_1.getMarginfiErrorFromName)(errCode, (0, marginfi_sdk_1.createMarginfiProgram)());
+            }
+            else if (errIx.programId === jupiter_sdk_1.JUPITER_PROGRAM_ID) {
+                programError = (0, jupiter_sdk_1.getJupiterErrorFromName)(errCode, (0, jupiter_sdk_1.createJupiterProgram)());
+            }
+        }
+        if (programError) {
+            errorName = programError?.name;
+            errorName = programError?.message;
+        }
+    }
+    catch { }
+    return {
+        errorName: errorName ?? "Unknown error",
+        errorInfo: errorInfo ?? "Unknown error",
+        canBeIgnored,
+    };
 }

@@ -10,6 +10,5 @@ export declare const PRICES: {
     };
 };
 export declare const SOLAUTO_LUT = "9D4xwZwDf46n9ft5gQxZzq3rBbdRXsXojKQLZbBdskPY";
-export declare const JUPITER_PROGRAM_ID = "JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4";
 export declare const STANDARD_LUT_ACCOUNTS: string[];
 //# sourceMappingURL=solautoConstants.d.ts.map

@@ -10,4 +10,9 @@ export declare function buildSolautoRebalanceTransaction(client: SolautoClient, 
     lookupTableAddresses: string[];
 } | undefined>;
 export declare function convertReferralFeesToDestination(umi: Umi, referralState: ReferralState, tokenAccount: PublicKey): Promise<[TransactionBuilder, string[]] | undefined>;
+export declare function getErrorInfo(tx: TransactionBuilder, error: any): {
+    errorName: string;
+    errorInfo: string;
+    canBeIgnored: boolean;
+};
 //# sourceMappingURL=transactionUtils.d.ts.map

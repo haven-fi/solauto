@@ -3,6 +3,7 @@ const fs = require("fs");
 const k = require("@metaplex-foundation/kinobi");
 
 const idlsDir = path.join(__dirname, "idls");
+const typescriptSdkDir = path.join(__dirname, "solauto-sdk", "src");
 
 function generateSolautoSDK() {
   const kinobi = k.createFromIdls([path.join(idlsDir, "solauto.json")]);
@@ -14,9 +15,7 @@ function generateSolautoSDK() {
   );
 
   kinobi.accept(
-    new k.renderJavaScriptVisitor(
-      path.join(__dirname, "solauto-sdk", "src", "generated")
-    )
+    new k.renderJavaScriptVisitor(path.join(typescriptSdkDir, "generated"))
   );
 }
 
@@ -51,10 +50,43 @@ function generateTypescriptSDKForAnchorIDL(sdkDirName, idlFilename, programId) {
   const kinobi = k.createFromIdls([idlFilePath]);
 
   kinobi.accept(
-    new k.renderJavaScriptVisitor(
-      path.join(__dirname, "solauto-sdk", "src", sdkDirName)
-    )
+    new k.renderJavaScriptVisitor(path.join(typescriptSdkDir, sdkDirName))
   );
+}
+
+async function cleanJupiterTsSDK(exclusions = []) {
+  const jupiterSdkDir = path.join(typescriptSdkDir, "jupiter-sdk");
+  const exclusionPaths = exclusions.map((exclusion) =>
+    path.resolve(jupiterSdkDir, exclusion)
+  );
+
+  try {
+    // Read the contents of the directory
+    const filesAndFolders = fs.readdir(jupiterSdkDir, {
+      withFileTypes: true,
+    });
+
+    for (const entry of filesAndFolders) {
+      const entryPath = path.resolve(jupiterSdkDir, entry.name);
+
+      // Skip if the entry is in the exclusion list
+      if (exclusionPaths.includes(entryPath)) {
+        continue;
+      }
+
+      if (entry.isDirectory()) {
+        // Recursively delete contents of the directory
+        await cleanJupiterTsSDK(entryPath, []);
+        // After deleting the contents, delete the directory itself
+        fs.rmdir(entryPath);
+      } else {
+        // Delete the file
+        fs.unlink(entryPath);
+      }
+    }
+  } catch (err) {
+    console.error(`Error deleting files/folders: ${err.message}`);
+  }
 }
 
 generateSolautoSDK();
@@ -75,3 +107,13 @@ generateRustSDKForAnchorIDL(
   "jupiter.json",
   "JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4"
 );
+generateTypescriptSDKForAnchorIDL(
+  "jupiter-sdk",
+  "jupiter.json",
+  "JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4"
+);
+cleanJupiterTsSDK([
+  "programs",
+  "errors",
+  "index.ts"
+])
