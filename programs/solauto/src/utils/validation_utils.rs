@@ -552,7 +552,6 @@ pub fn validate_debt_adjustment(
     solauto_position: &SolautoPosition,
     provided_base_unit_amount: u64,
     expected_debt_adjustment_usd: f64,
-    pct_threshold_range: f64,
 ) -> ProgramResult {
     let token = if expected_debt_adjustment_usd > 0.0 {
         solauto_position.state.debt
@@ -567,7 +566,7 @@ pub fn validate_debt_adjustment(
     if (amount_usd - expected_debt_adjustment_usd.abs())
         .abs()
         .div(amount_usd)
-        > pct_threshold_range
+        > 0.1
     {
         msg!("Base unit amount provided: {}", provided_base_unit_amount);
         msg!(

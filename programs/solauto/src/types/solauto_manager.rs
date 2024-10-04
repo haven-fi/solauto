@@ -199,7 +199,6 @@ impl<'a> SolautoManager<'a> {
                     .rebalance
                     .flash_loan_amount,
                 debt_adjustment_usd,
-                0.15,
             )?;
             return Ok(());
         }
@@ -272,7 +271,6 @@ impl<'a> SolautoManager<'a> {
                 &self.std_accounts.solauto_position.data,
                 flash_loan_amount,
                 debt_adjustment_usd,
-                0.15,
             )?;
         }
 
