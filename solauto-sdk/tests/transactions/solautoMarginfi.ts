@@ -24,7 +24,7 @@ describe("Solauto Marginfi tests", async () => {
   // const signer = setupTest();
   const signer = setupTest("solauto-manager");
 
-  const payForTransactions = true;
+  const payForTransactions = false;
   const useJitoBundle = false;
   const positionId = 1;
 
