@@ -254,7 +254,6 @@ export function getFlashLoanDetails(
   client: SolautoClient,
   values: RebalanceValues,
   jupQuote: QuoteResponse,
-  priceImpactBps: number
 ): FlashLoanDetails | undefined {
   let supplyUsd =
     fromBaseUnit(
