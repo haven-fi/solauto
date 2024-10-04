@@ -57,14 +57,15 @@ function generateTypescriptSDKForAnchorIDL(sdkDirName, idlFilename, programId) {
 async function cleanJupiterTsSDK(exclusions = []) {
   const jupiterSdkDir = path.join(typescriptSdkDir, "jupiter-sdk");
   const exclusionPaths = exclusions.map((exclusion) =>
-    path.resolve(jupiterSdkDir, exclusion)
+    path.join(jupiterSdkDir, exclusion)
   );
 
   try {
     // Read the contents of the directory
-    const filesAndFolders = fs.readdir(jupiterSdkDir, {
+    const filesAndFolders = await fs.promises.readdir(jupiterSdkDir, {
       withFileTypes: true,
     });
+    console.log(filesAndFolders);
 
     for (const entry of filesAndFolders) {
       const entryPath = path.resolve(jupiterSdkDir, entry.name);
@@ -77,11 +78,11 @@ async function cleanJupiterTsSDK(exclusions = []) {
       if (entry.isDirectory()) {
         // Recursively delete contents of the directory
         await cleanJupiterTsSDK(entryPath, []);
-        // After deleting the contents, delete the directory itself
-        fs.rmdir(entryPath);
+        // After deleting the contents, delete the directory itself using fs.rm
+        await fs.promises.rm(entryPath, { recursive: true, force: true });
       } else {
         // Delete the file
-        fs.unlink(entryPath);
+        await fs.promises.rm(entryPath, { force: true });
       }
     }
   } catch (err) {
@@ -112,8 +113,4 @@ generateTypescriptSDKForAnchorIDL(
   "jupiter.json",
   "JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4"
 );
-cleanJupiterTsSDK([
-  "programs",
-  "errors",
-  "index.ts"
-])
+// cleanJupiterTsSDK(["programs", "errors", "index.ts"]);
