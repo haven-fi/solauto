@@ -2,7 +2,6 @@ use jupiter_sdk::JUPITER_ID;
 use marginfi_sdk::MARGINFI_ID;
 use math_utils::from_bps;
 use solana_program::{
-    entrypoint::ProgramResult,
     instruction::{get_stack_height, TRANSACTION_LEVEL_STACK_HEIGHT},
     msg,
     program_error::ProgramError,
@@ -196,14 +195,14 @@ fn get_additional_amount_to_dca_in(
         0,
         current_unix_timestamp,
     );
-    let debt_to_dca_in = position
+    let amount_to_dca_in = position
         .dca
         .dca_in_base_unit
         .saturating_sub(updated_dca_balance);
 
     position.dca.dca_in_base_unit = updated_dca_balance;
 
-    (Some(debt_to_dca_in), Some(position.dca.token_type))
+    (Some(amount_to_dca_in), Some(position.dca.token_type))
 }
 
 #[inline(always)]
@@ -315,12 +314,12 @@ fn get_target_rate_and_dca_amount(
     let (target_liq_utilization_rate_bps, amount_to_dca_in, dca_token_type) = match dca_instruction
     {
         true => {
+            let target_liq_utilization_rate_bps =
+                get_target_liq_utilization_rate_from_dca(solauto_position, current_unix_timestamp)?;
             let (amount_to_dca_in, dca_token_type) = get_additional_amount_to_dca_in(
                 &mut solauto_position.position,
                 current_unix_timestamp,
             );
-            let target_liq_utilization_rate_bps =
-                get_target_liq_utilization_rate_from_dca(solauto_position, current_unix_timestamp)?;
 
             (
                 target_liq_utilization_rate_bps,

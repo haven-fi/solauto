@@ -542,9 +542,9 @@ export class TransactionsManager {
         attemptNum,
         undefined,
         undefined,
-        errorDetails.errorInfo
+        errorDetails.errorInfo ?? errorDetails.errorName ?? "Unknown error"
       );
-      this.txHandler.log(`${errorDetails.errorName}: ${errorDetails.errorInfo}`);
+      this.txHandler.log(`${errorDetails.errorName ?? "Unknown error"}: ${errorDetails.errorInfo ?? "unknown"}`);
 
       if (!errorDetails.canBeIgnored) {
         throw e;

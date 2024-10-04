@@ -458,8 +458,8 @@ function getErrorInfo(tx, error) {
     }
     catch { }
     return {
-        errorName: errorName ?? "Unknown error",
-        errorInfo: errorInfo ?? "Unknown error",
+        errorName: errorName,
+        errorInfo: errorInfo,
         canBeIgnored,
     };
 }

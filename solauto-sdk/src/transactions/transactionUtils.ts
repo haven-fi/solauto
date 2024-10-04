@@ -824,15 +824,13 @@ export function getErrorInfo(tx: TransactionBuilder, error: any) {
       }
     }
 
-    if (programError) {
-      errorName = programError?.name;
-      errorName = programError?.message;
-    }
+    errorName = programError?.name;
+    errorName = programError?.message;
   } catch {}
 
   return {
-    errorName: errorName ?? "Unknown error",
-    errorInfo: errorInfo ?? "Unknown error",
+    errorName: errorName,
+    errorInfo: errorInfo,
     canBeIgnored,
   };
 }

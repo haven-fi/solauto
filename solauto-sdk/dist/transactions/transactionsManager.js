@@ -339,7 +339,8 @@ class TransactionsManager {
             const errorDetails = (0, transactionUtils_1.getErrorInfo)(tx, e);
             this.updateStatus(txName, errorDetails.canBeIgnored
                 ? TransactionStatus.Skipped
-                : TransactionStatus.Failed, attemptNum, undefined, undefined, errorDetails.errorInfo);
+                : TransactionStatus.Failed, attemptNum, undefined, undefined, errorDetails.errorInfo ?? errorDetails.errorName ?? "Unknown error");
+            this.txHandler.log(`${errorDetails.errorName ?? "Unknown error"}: ${errorDetails.errorInfo ?? "unknown"}`);
             if (!errorDetails.canBeIgnored) {
                 throw e;
             }
