@@ -533,7 +533,7 @@ export class TransactionsManager {
       );
     } catch (e: any) {
       const errorDetails = getErrorInfo(tx, e);
-      
+
       this.updateStatus(
         txName,
         errorDetails.canBeIgnored
@@ -544,6 +544,7 @@ export class TransactionsManager {
         undefined,
         errorDetails.errorInfo
       );
+      this.txHandler.log(`${errorDetails.errorName}: ${errorDetails.errorInfo}`);
 
       if (!errorDetails.canBeIgnored) {
         throw e;
