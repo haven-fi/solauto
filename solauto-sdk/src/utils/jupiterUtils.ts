@@ -5,7 +5,7 @@ import {
 } from "@metaplex-foundation/umi";
 import { PublicKey, TransactionInstruction } from "@solana/web3.js";
 import { getWrappedInstruction } from "./solanaUtils";
-import { toBps } from "./numberUtils";
+import { fromBps, toBps } from "./numberUtils";
 import {
   createJupiterApiClient,
   Instruction,
@@ -72,17 +72,21 @@ export async function getJupSwapTransaction(
     3
   );
 
-  const priceImpactBps = (Math.round(toBps(parseFloat(quoteResponse.priceImpactPct))) + 1);
+  const priceImpactBps =
+    Math.round(toBps(parseFloat(quoteResponse.priceImpactPct))) + 1;
   const finalPriceSlippageBps = Math.round(
-    Math.max(
-      50,
-      quoteResponse.slippageBps,
-      priceImpactBps
-    ) *
+    Math.max(50, quoteResponse.slippageBps, priceImpactBps) *
       (1 + (swapDetails.slippageIncFactor ?? 0))
   );
   quoteResponse.slippageBps = finalPriceSlippageBps;
   console.log(quoteResponse);
+
+  if (swapDetails.exactOut) {
+    quoteResponse.inAmount = (
+      parseInt(quoteResponse.inAmount) +
+      Math.ceil(parseInt(quoteResponse.inAmount) * fromBps(finalPriceSlippageBps))
+    ).toString();
+  }
 
   console.log("Getting jup instructions...");
   const instructions = await jupApi.swapInstructionsPost({
@@ -103,7 +107,8 @@ export async function getJupSwapTransaction(
   }
 
   console.log("Raw price impact bps:", priceImpactBps);
-  const finalPriceImpactBps = priceImpactBps * (1 + (swapDetails.slippageIncFactor ?? 0));
+  const finalPriceImpactBps =
+    priceImpactBps * (1 + (swapDetails.slippageIncFactor ?? 0));
   console.log("Increased price impact bps:", finalPriceImpactBps);
 
   return {

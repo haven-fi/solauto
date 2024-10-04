@@ -34,11 +34,17 @@ async function getJupSwapTransaction(signer, swapDetails, attemptNum) {
         slippageBps: 50,
         maxAccounts: !swapDetails.exactOut ? 60 : undefined,
     }), 3);
-    const priceImpactBps = (Math.round((0, numberUtils_1.toBps)(parseFloat(quoteResponse.priceImpactPct))) + 1);
+    const priceImpactBps = Math.round((0, numberUtils_1.toBps)(parseFloat(quoteResponse.priceImpactPct))) + 1;
     const finalPriceSlippageBps = Math.round(Math.max(50, quoteResponse.slippageBps, priceImpactBps) *
         (1 + (swapDetails.slippageIncFactor ?? 0)));
     quoteResponse.slippageBps = finalPriceSlippageBps;
     console.log(quoteResponse);
+    if (swapDetails.exactOut) {
+        console.log(quoteResponse.inAmount);
+        quoteResponse.inAmount = (parseInt(quoteResponse.inAmount) +
+            Math.ceil(parseInt(quoteResponse.inAmount) * (0, numberUtils_1.fromBps)(finalPriceSlippageBps))).toString();
+        console.log(quoteResponse.inAmount);
+    }
     console.log("Getting jup instructions...");
     const instructions = await jupApi.swapInstructionsPost({
         swapRequest: {

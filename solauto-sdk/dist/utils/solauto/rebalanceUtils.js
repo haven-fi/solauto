@@ -67,8 +67,8 @@ function getTargetRateAndDcaAmount(state, settings, dca, currentUnixTime, target
         throw new Error("If rebalancing a self-managed position, settings and DCA should be provided");
     }
     if (isDcaRebalance(state, settings, dca, currentUnixTime)) {
-        const amountToDcaIn = getAdditionalAmountToDcaIn(dca);
         const targetLiqUtilizationRateBps = targetLiqUtilizationRateBpsFromDCA(state, settings, dca, currentUnixTime);
+        const amountToDcaIn = getAdditionalAmountToDcaIn(dca);
         return {
             targetRateBps: targetLiqUtilizationRateBps,
             amountToDcaIn,

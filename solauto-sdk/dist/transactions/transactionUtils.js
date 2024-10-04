@@ -451,10 +451,8 @@ function getErrorInfo(tx, error) {
                 programError = (0, jupiter_sdk_1.getJupiterErrorFromName)(errCode, (0, jupiter_sdk_1.createJupiterProgram)());
             }
         }
-        if (programError) {
-            errorName = programError?.name;
-            errorName = programError?.message;
-        }
+        errorName = programError?.name;
+        errorName = programError?.message;
     }
     catch { }
     return {
