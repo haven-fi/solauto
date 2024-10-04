@@ -138,13 +138,13 @@ function getTargetRateAndDcaAmount(
   }
 
   if (isDcaRebalance(state, settings, dca, currentUnixTime)) {
-    const amountToDcaIn = getAdditionalAmountToDcaIn(dca!);
     const targetLiqUtilizationRateBps = targetLiqUtilizationRateBpsFromDCA(
       state,
       settings,
       dca!,
       currentUnixTime
     );
+    const amountToDcaIn = getAdditionalAmountToDcaIn(dca!);
 
     return {
       targetRateBps: targetLiqUtilizationRateBps,
