@@ -14,7 +14,7 @@ import {
   ErrorsToThrow,
   retryWithExponentialBackoff,
 } from "../utils/generalUtils";
-import { getTransactionChores } from "./transactionUtils";
+import { getErrorInfo, getTransactionChores } from "./transactionUtils";
 import { PriorityFeeSetting, TransactionRunType } from "../types";
 import { ReferralStateManager, TxHandler } from "../clients";
 import {
@@ -183,10 +183,11 @@ export enum TransactionStatus {
 
 export type TransactionManagerStatuses = {
   name: string;
+  attemptNum: number;
   status: TransactionStatus;
+  moreInfo?: string;
   simulationSuccessful?: boolean;
   txSig?: string;
-  attemptNum: number;
 }[];
 
 export class TransactionsManager {
@@ -253,7 +254,8 @@ export class TransactionsManager {
     status: TransactionStatus,
     attemptNum: number,
     txSig?: string,
-    simulationSuccessful?: boolean
+    simulationSuccessful?: boolean,
+    moreInfo?: string
   ) {
     if (!this.statuses.filter((x) => x.name === name)) {
       this.statuses.push({
@@ -262,6 +264,7 @@ export class TransactionsManager {
         txSig,
         attemptNum,
         simulationSuccessful,
+        moreInfo,
       });
     } else {
       const idx = this.statuses.findIndex(
@@ -273,6 +276,9 @@ export class TransactionsManager {
         if (simulationSuccessful) {
           this.statuses[idx].simulationSuccessful = simulationSuccessful;
         }
+        if (moreInfo) {
+          this.statuses[idx].moreInfo = moreInfo;
+        }
       } else {
         this.statuses.push({
           name,
@@ -280,6 +286,7 @@ export class TransactionsManager {
           txSig,
           attemptNum,
           simulationSuccessful,
+          moreInfo,
         });
       }
     }
@@ -524,33 +531,23 @@ export class TransactionsManager {
         attemptNum,
         txSig ? bs58.encode(txSig) : undefined
       );
-    } catch (e) {
-      try {
-        if (typeof e === "object" && (e as any)["InstructionError"]) {
-          const err = (e as any)["InstructionError"];
-          const errIx = err[0];
-          const errCode = err[1]["Custom"];
+    } catch (e: any) {
+      const errorDetails = getErrorInfo(tx, e);
+      
+      this.updateStatus(
+        txName,
+        errorDetails.canBeIgnored
+          ? TransactionStatus.Skipped
+          : TransactionStatus.Failed,
+        attemptNum,
+        undefined,
+        undefined,
+        errorDetails.errorInfo
+      );
 
-          const solautoProgram =
-            this.txHandler.umi.programs.get(SOLAUTO_PROGRAM_ID);
-          const invalidRebalanceError = new InvalidRebalanceConditionError(
-            solautoProgram
-          );
-
-          if (
-            tx.getInstructions()[Math.max(0, errIx - 2)].programId ===
-              SOLAUTO_PROGRAM_ID &&
-            solautoProgram.getErrorFromCode(errCode)?.name ===
-              invalidRebalanceError.name
-          ) {
-            this.updateStatus(txName, TransactionStatus.Skipped, attemptNum);
-            return;
-          }
-        }
-      } catch {}
-
-      this.updateStatus(txName, TransactionStatus.Failed, attemptNum);
-      throw e;
+      if (!errorDetails.canBeIgnored) {
+        throw e;
+      }
     }
   }
 }

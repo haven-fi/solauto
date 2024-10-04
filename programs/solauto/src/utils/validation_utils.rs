@@ -575,7 +575,7 @@ pub fn validate_debt_adjustment(
             amount_usd.abs(),
             expected_debt_adjustment_usd.abs()
         );
-        return Err(ProgramError::InvalidInstructionData.into());
+        return Err(SolautoError::IncorrectDebtAdjustment.into());
     }
 
     Ok(())

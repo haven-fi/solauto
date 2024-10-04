@@ -1,5 +1,6 @@
 import {
   Instruction,
+  ProgramError,
   TransactionBuilder,
   Umi,
   publicKey,
@@ -12,6 +13,7 @@ import {
   NATIVE_MINT,
 } from "@solana/spl-token";
 import {
+  InvalidRebalanceConditionError,
   LendingPlatform,
   ReferralState,
   SOLAUTO_PROGRAM_ID,
@@ -19,8 +21,10 @@ import {
   SolautoRebalanceType,
   TokenType,
   convertReferralFees,
+  createSolautoProgram,
   getMarginfiProtocolInteractionInstructionDataSerializer,
   getMarginfiRebalanceInstructionDataSerializer,
+  getSolautoErrorFromCode,
   isSolautoAction,
   solautoAction,
 } from "../generated";
@@ -50,12 +54,15 @@ import {
 import { eligibleForRebalance } from "../utils/solauto/generalUtils";
 import { getTokenAccount, getTokenAccountData } from "../utils/accountUtils";
 import {
+  createMarginfiProgram,
   getLendingAccountBorrowInstructionDataSerializer,
   getLendingAccountDepositInstructionDataSerializer,
   getLendingAccountRepayInstructionDataSerializer,
   getLendingAccountWithdrawInstructionDataSerializer,
+  getMarginfiErrorFromName,
   MARGINFI_PROGRAM_ID,
 } from "../marginfi-sdk";
+import { TxHandler } from "../clients";
 
 interface wSolTokenUsage {
   wSolTokenAccount: PublicKey;
@@ -577,17 +584,28 @@ export function requiresRefreshBeforeRebalance(client: SolautoClient) {
   ) {
     return true;
   } else if (client.solautoPositionData && !client.selfManaged) {
-    if (client.livePositionUpdates.supplyAdjustment > BigInt(0) || client.livePositionUpdates.debtAdjustment > BigInt(0)) {
+    if (
+      client.livePositionUpdates.supplyAdjustment > BigInt(0) ||
+      client.livePositionUpdates.debtAdjustment > BigInt(0)
+    ) {
       return false;
     }
 
-    const oldSupply = client.solautoPositionData.state.supply.amountUsed.baseUnit;
+    const oldSupply =
+      client.solautoPositionData.state.supply.amountUsed.baseUnit;
     const oldDebt = client.solautoPositionData.state.debt.amountUsed.baseUnit;
 
-    const supplyDiff = (client.solautoPositionState?.supply.amountUsed.baseUnit ?? BigInt(0)) - oldSupply;
-    const debtDiff = (client.solautoPositionState?.debt.amountUsed.baseUnit ?? BigInt(0)) - oldDebt;
+    const supplyDiff =
+      (client.solautoPositionState?.supply.amountUsed.baseUnit ?? BigInt(0)) -
+      oldSupply;
+    const debtDiff =
+      (client.solautoPositionState?.debt.amountUsed.baseUnit ?? BigInt(0)) -
+      oldDebt;
 
-    if (Math.abs(Number(supplyDiff)) / Number(oldSupply) >= 0.01 || Math.abs(Number(debtDiff)) / Number(oldDebt) >= 0.01) {
+    if (
+      Math.abs(Number(supplyDiff)) / Number(oldSupply) >= 0.01 ||
+      Math.abs(Number(debtDiff)) / Number(oldDebt) >= 0.01
+    ) {
       return true;
     }
   }
@@ -768,4 +786,52 @@ export async function convertReferralFeesToDestination(
     .add(swapIx);
 
   return [tx, lookupTableAddresses];
+}
+
+export function getErrorInfo(
+  tx: TransactionBuilder,
+  error: any
+) {
+  let canBeIgnored = false;
+  let errorName: string | undefined = undefined;
+  let errorInfo: string | undefined = undefined;
+
+  try {
+    let programError: ProgramError | null = null;
+
+    if (typeof error === "object" && (error as any)["InstructionError"]) {
+      const err = (error as any)["InstructionError"];
+      const errIx = tx.getInstructions()[Math.max(0, err[0] - 2)];
+      const errCode = err[1]["Custom"];
+
+      if (errIx.programId === SOLAUTO_PROGRAM_ID) {
+        programError = getSolautoErrorFromCode(errCode, createSolautoProgram());
+        if (
+          programError?.name ===
+          new InvalidRebalanceConditionError(createSolautoProgram()).name
+        ) {
+          canBeIgnored = true;
+        }
+      } else if (errIx.programId === MARGINFI_PROGRAM_ID) {
+        programError = getMarginfiErrorFromName(
+          errCode,
+          createMarginfiProgram()
+        );
+      }
+      // else if {
+      //   // TODO: JUP in else if
+      // }
+    }
+
+    if (programError) {
+      errorName = programError?.name;
+      errorName = programError?.message;
+    }
+  } catch {}
+
+  return {
+    errorName: errorName ?? "Unknown error",
+    errorInfo: errorInfo ?? "Unknown error",
+    canBeIgnored,
+  };
 }

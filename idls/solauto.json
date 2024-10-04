@@ -1637,57 +1637,42 @@
     {
       "code": 1,
       "name": "FailedAccountDeserialization",
-      "msg": "Failed to deserialize account data, incorrect account was likely given"
+      "msg": "Failed to deserialize account data"
     },
     {
       "code": 2,
       "name": "InvalidPositionSettings",
-      "msg": "Invalid position settings given"
+      "msg": "Invalid position settings provided"
     },
     {
       "code": 3,
       "name": "InvalidDCASettings",
-      "msg": "Invalid DCA settings given"
+      "msg": "Invalid DCA configuration provided"
     },
     {
       "code": 4,
       "name": "InvalidAutomationData",
-      "msg": "Invalid automation data given"
+      "msg": "Invalid automation settings provided"
     },
     {
       "code": 5,
-      "name": "StaleProtocolData",
-      "msg": "Stale protocol data. Refresh instruction must be invoked before taking a protocol action"
-    },
-    {
-      "code": 6,
-      "name": "UnableToRebalance",
-      "msg": "Unable to adjust position to the desired utilization rate"
-    },
-    {
-      "code": 7,
-      "name": "ExceededValidUtilizationRate",
-      "msg": "Desired action brought the utilization rate to an unsafe amount"
-    },
-    {
-      "code": 8,
       "name": "InvalidRebalanceCondition",
       "msg": "Invalid position condition to rebalance"
     },
     {
-      "code": 9,
+      "code": 6,
       "name": "InstructionIsCPI",
       "msg": "Unable to invoke instruction through a CPI"
     },
     {
-      "code": 10,
-      "name": "RebalanceAbuse",
-      "msg": "Too many rebalance instruction invocations in the same transaction"
-    },
-    {
-      "code": 11,
+      "code": 7,
       "name": "IncorrectInstructions",
       "msg": "Incorrect set of instructions in the transaction"
+    },
+    {
+      "code": 8,
+      "name": "IncorrectDebtAdjustment",
+      "msg": "Incorrect swap amount provided. Likely due to high price volatility"
     }
   ],
   "metadata": {

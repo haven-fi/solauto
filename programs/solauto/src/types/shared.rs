@@ -153,30 +153,22 @@ impl<'a, T: Pack + IsInitialized> DeserializedAccount<'a, T> {
 pub enum SolautoError {
     #[error("Missing or incorrect accounts provided for the given instruction")]
     IncorrectAccounts,
-    #[error("Failed to deserialize account data, incorrect account was likely given")]
+    #[error("Failed to deserialize account data")]
     FailedAccountDeserialization,
-    #[error("Invalid position settings given")]
+    #[error("Invalid position settings provided")]
     InvalidPositionSettings,
-    #[error("Invalid DCA settings given")]
+    #[error("Invalid DCA configuration provided")]
     InvalidDCASettings,
-    #[error("Invalid automation data given")]
+    #[error("Invalid automation settings provided")]
     InvalidAutomationData,
-    #[error(
-        "Stale protocol data. Refresh instruction must be invoked before taking a protocol action"
-    )]
-    StaleProtocolData,
-    #[error("Unable to adjust position to the desired utilization rate")]
-    UnableToRebalance,
-    #[error("Desired action brought the utilization rate to an unsafe amount")]
-    ExceededValidUtilizationRate,
     #[error("Invalid position condition to rebalance")]
     InvalidRebalanceCondition,
     #[error("Unable to invoke instruction through a CPI")]
     InstructionIsCPI,
-    #[error("Too many rebalance instruction invocations in the same transaction")]
-    RebalanceAbuse,
     #[error("Incorrect set of instructions in the transaction")]
     IncorrectInstructions,
+    #[error("Incorrect swap amount provided. Likely due to high price volatility")]
+    IncorrectDebtAdjustment,
 }
 
 impl From<SolautoError> for ProgramError {
