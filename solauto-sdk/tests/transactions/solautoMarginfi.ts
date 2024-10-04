@@ -40,7 +40,7 @@ describe("Solauto Marginfi tests", async () => {
       {
         signer,
         positionId,
-        authority: new PublicKey("E5BBsR1sUToPc3jXVwhrK5ttSiy6xhWJDMdQLvkgNppe")
+        authority: new PublicKey("AprYCPiVeKMCgjQ2ZufwChMzvQ5kFjJo2ekTLSkXsQDm")
         // marginfiAccount: new PublicKey(
         //   "4nNvUXF5YqHFcH2nGweSiuvy1ct7V5FXfoCLKFYUN36z"
         // ),
