@@ -116,7 +116,7 @@ function getRebalanceValues(state, settings, dca, currentUnixTime, supplyPrice, 
         dcaTokenType: dca?.tokenType,
     };
 }
-function getFlashLoanDetails(client, values, jupQuote, priceImpactBps) {
+function getFlashLoanDetails(client, values, jupQuote) {
     let supplyUsd = (0, numberUtils_1.fromBaseUnit)(client.solautoPositionState.supply.amountUsed.baseAmountUsdValue, generalAccounts_1.USD_DECIMALS) +
         (values.dcaTokenType === generated_1.TokenType.Supply ? values.amountUsdToDcaIn : 0);
     let debtUsd = (0, numberUtils_1.fromBaseUnit)(client.solautoPositionState.debt.amountUsed.baseAmountUsdValue, generalAccounts_1.USD_DECIMALS);

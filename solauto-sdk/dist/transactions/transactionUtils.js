@@ -361,8 +361,8 @@ async function buildSolautoRebalanceTransaction(client, targetLiqUtilizationRate
     const values = (0, rebalanceUtils_1.getRebalanceValues)(client.solautoPositionState, client.solautoPositionSettings(), client.solautoPositionActiveDca(), (0, generalUtils_1.currentUnixSeconds)(), (0, generalUtils_1.safeGetPrice)(client.supplyMint), (0, generalUtils_1.safeGetPrice)(client.debtMint), targetLiqUtilizationRateBps);
     client.log("Rebalance values: ", values);
     const swapDetails = (0, rebalanceUtils_1.getJupSwapRebalanceDetails)(client, values, targetLiqUtilizationRateBps, attemptNum);
-    const { jupQuote, priceImpactBps, lookupTableAddresses, setupInstructions, tokenLedgerIx, swapIx, } = await (0, jupiterUtils_1.getJupSwapTransaction)(client.signer, swapDetails, attemptNum);
-    const flashLoan = (0, rebalanceUtils_1.getFlashLoanDetails)(client, values, jupQuote, priceImpactBps);
+    const { jupQuote, lookupTableAddresses, setupInstructions, tokenLedgerIx, swapIx, } = await (0, jupiterUtils_1.getJupSwapTransaction)(client.signer, swapDetails, attemptNum);
+    const flashLoan = (0, rebalanceUtils_1.getFlashLoanDetails)(client, values, jupQuote);
     let tx = (0, umi_1.transactionBuilder)();
     if (requiresRefreshBeforeRebalance(client)) {
         tx = tx.add(client.refresh());

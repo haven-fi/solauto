@@ -128,7 +128,7 @@ async function simulateTransaction(connection, transaction) {
     });
     if (simulationResult.value.err) {
         simulationResult.value.logs?.forEach((x) => {
-            console.log(x);
+            (0, generalUtils_1.consoleLog)(x);
         });
         throw simulationResult.value.err;
     }
@@ -149,17 +149,17 @@ async function getComputeUnitPriceEstimate(umi, tx, prioritySetting) {
     return feeEstimate;
 }
 async function sendSingleOptimizedTransaction(umi, connection, tx, txType, attemptNum, prioritySetting = types_1.PriorityFeeSetting.Default, onAwaitingSign) {
-    console.log("Sending single optimized transaction...");
-    console.log("Instructions: ", tx.getInstructions().length);
-    console.log("Serialized transaction size: ", tx.getTransactionSize(umi));
+    (0, generalUtils_1.consoleLog)("Sending single optimized transaction...");
+    (0, generalUtils_1.consoleLog)("Instructions: ", tx.getInstructions().length);
+    (0, generalUtils_1.consoleLog)("Serialized transaction size: ", tx.getTransactionSize(umi));
     const feeEstimate = await getComputeUnitPriceEstimate(umi, tx, prioritySetting);
-    console.log("Compute unit price: ", feeEstimate);
+    (0, generalUtils_1.consoleLog)("Compute unit price: ", feeEstimate);
     let computeUnitLimit = undefined;
     if (txType !== "skip-simulation") {
         // TODO: we should only retry simulation if it's not a solauto error
         const simulationResult = await (0, generalUtils_1.retryWithExponentialBackoff)(async () => await simulateTransaction(connection, (0, umi_web3js_adapters_1.toWeb3JsTransaction)(await (await assembleFinalTransaction(umi.identity, tx, feeEstimate, 1400000).setLatestBlockhash(umi)).build(umi))), 3);
         computeUnitLimit = Math.round(simulationResult.value.unitsConsumed * 1.1);
-        console.log("Compute unit limit: ", computeUnitLimit);
+        (0, generalUtils_1.consoleLog)("Compute unit limit: ", computeUnitLimit);
     }
     if (txType !== "only-simulate") {
         onAwaitingSign?.();
@@ -171,8 +171,8 @@ async function sendSingleOptimizedTransaction(umi, connection, tx, txType, attem
             confirm: { commitment: "confirmed" },
         });
         const txSig = bs58_1.default.encode(result.signature);
-        console.log(`Transaction signature: ${txSig}`);
-        console.log(`https://solscan.io/tx/${txSig}`);
+        (0, generalUtils_1.consoleLog)(`Transaction signature: ${txSig}`);
+        (0, generalUtils_1.consoleLog)(`https://solscan.io/tx/${txSig}`);
         if (result.result.value.err !== null) {
             throw new Error(result.result.value.err.toString());
         }

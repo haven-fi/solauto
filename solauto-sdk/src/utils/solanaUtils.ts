@@ -31,7 +31,7 @@ import {
   createTransferInstruction,
 } from "@solana/spl-token";
 import { getTokenAccount } from "./accountUtils";
-import { arraysAreEqual, retryWithExponentialBackoff } from "./generalUtils";
+import { arraysAreEqual, consoleLog, retryWithExponentialBackoff } from "./generalUtils";
 import {
   getLendingAccountEndFlashloanInstructionDataSerializer,
   getLendingAccountStartFlashloanInstructionDataSerializer,
@@ -239,7 +239,7 @@ async function simulateTransaction(
   });
   if (simulationResult.value.err) {
     simulationResult.value.logs?.forEach((x: any) => {
-      console.log(x);
+      consoleLog(x);
     });
     throw simulationResult.value.err;
   }
@@ -277,16 +277,16 @@ export async function sendSingleOptimizedTransaction(
   prioritySetting: PriorityFeeSetting = PriorityFeeSetting.Default,
   onAwaitingSign?: () => void
 ): Promise<Uint8Array | undefined> {
-  console.log("Sending single optimized transaction...");
-  console.log("Instructions: ", tx.getInstructions().length);
-  console.log("Serialized transaction size: ", tx.getTransactionSize(umi));
+  consoleLog("Sending single optimized transaction...");
+  consoleLog("Instructions: ", tx.getInstructions().length);
+  consoleLog("Serialized transaction size: ", tx.getTransactionSize(umi));
 
   const feeEstimate = await getComputeUnitPriceEstimate(
     umi,
     tx,
     prioritySetting
   );
-  console.log("Compute unit price: ", feeEstimate);
+  consoleLog("Compute unit price: ", feeEstimate);
 
   let computeUnitLimit = undefined;
   if (txType !== "skip-simulation") {
@@ -312,7 +312,7 @@ export async function sendSingleOptimizedTransaction(
     computeUnitLimit = Math.round(
       simulationResult.value.unitsConsumed! * 1.1
     );
-    console.log("Compute unit limit: ", computeUnitLimit);
+    consoleLog("Compute unit limit: ", computeUnitLimit);
   }
 
   if (txType !== "only-simulate") {
@@ -330,8 +330,8 @@ export async function sendSingleOptimizedTransaction(
       confirm: { commitment: "confirmed" },
     });
     const txSig = bs58.encode(result.signature);
-    console.log(`Transaction signature: ${txSig}`);
-    console.log(`https://solscan.io/tx/${txSig}`);
+    consoleLog(`Transaction signature: ${txSig}`);
+    consoleLog(`https://solscan.io/tx/${txSig}`);
     if (result.result.value.err !== null) {
       throw new Error(result.result.value.err.toString());
     }

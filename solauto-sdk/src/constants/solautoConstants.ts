@@ -43,3 +43,12 @@ export const STANDARD_LUT_ACCOUNTS = [
   SYSVAR_INSTRUCTIONS_PUBKEY.toString(),
   JUPITER_PROGRAM_ID
 ];
+
+class RuntimeData {
+  public localTest: boolean;
+  constructor() {
+    this.localTest = false;
+  }
+}
+
+export const RUNTIME_DATA = new RuntimeData();

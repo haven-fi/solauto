@@ -31,19 +31,6 @@ import {
 import { getAllMarginfiAccountsByAuthority } from "../marginfiUtils";
 import { RebalanceAction, SolautoPositionDetails } from "../../types/solauto";
 
-export function findMintByTicker(ticker: string): PublicKey {
-  for (const key in TOKEN_INFO) {
-    const account = TOKEN_INFO[key];
-    if (
-      account.ticker.toString().toLowerCase() ===
-      ticker.toString().toLowerCase()
-    ) {
-      return new PublicKey(key);
-    }
-  }
-  throw new Error(`Token mint not found by the ticker: ${ticker}`);
-}
-
 function newPeriodsPassed(
   automation: AutomationSettings,
   currentUnixTimestamp: number

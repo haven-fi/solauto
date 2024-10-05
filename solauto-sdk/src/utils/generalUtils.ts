@@ -7,8 +7,13 @@ import {
 } from "@metaplex-foundation/umi";
 import { PYTH_PRICE_FEED_IDS } from "../constants/pythConstants";
 import { fromBaseUnit, toBaseUnit } from "./numberUtils";
-import { PRICES } from "../constants/solautoConstants";
+import { PRICES, RUNTIME_DATA } from "../constants/solautoConstants";
 
+export function consoleLog(...args: any[]): void {
+  if (RUNTIME_DATA.localTest) {
+    console.log(...args);
+  }
+}
 export function generateRandomU8(): number {
   return Math.floor(Math.random() * 255 + 1);
 }
@@ -143,9 +148,9 @@ export function retryWithExponentialBackoff<T>(
           }
 
           if (attemptNum < retries) {
-            console.log(error);
+            consoleLog(error);
             setTimeout(() => {
-              console.log("Retrying...");
+              consoleLog("Retrying...");
               return attempt(attemptNum);
             }, delay);
             delay *= 2;

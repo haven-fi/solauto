@@ -1,5 +1,6 @@
 import { PublicKey } from "@solana/web3.js";
 import { MaybeRpcAccount, Umi, PublicKey as UmiPublicKey } from "@metaplex-foundation/umi";
+export declare function consoleLog(...args: any[]): void;
 export declare function generateRandomU8(): number;
 export declare function generateRandomU64(): bigint;
 export declare function currentUnixSeconds(): number;

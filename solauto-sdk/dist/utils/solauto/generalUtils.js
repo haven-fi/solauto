@@ -1,7 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.LivePositionUpdates = void 0;
-exports.findMintByTicker = findMintByTicker;
 exports.nextAutomationPeriodTimestamp = nextAutomationPeriodTimestamp;
 exports.eligibleForNextAutomationPeriod = eligibleForNextAutomationPeriod;
 exports.getUpdatedValueFromAutomation = getUpdatedValueFromAutomation;
@@ -24,16 +23,6 @@ const accountUtils_1 = require("../accountUtils");
 const umi_web3js_adapters_1 = require("@metaplex-foundation/umi-web3js-adapters");
 const constants_1 = require("../../constants");
 const marginfiUtils_1 = require("../marginfiUtils");
-function findMintByTicker(ticker) {
-    for (const key in constants_1.TOKEN_INFO) {
-        const account = constants_1.TOKEN_INFO[key];
-        if (account.ticker.toString().toLowerCase() ===
-            ticker.toString().toLowerCase()) {
-            return new web3_js_1.PublicKey(key);
-        }
-    }
-    throw new Error(`Token mint not found by the ticker: ${ticker}`);
-}
 function newPeriodsPassed(automation, currentUnixTimestamp) {
     return Math.min(automation.targetPeriods, automation.periodsPassed +
         Math.floor((currentUnixTimestamp - Number(automation.unixStartDate)) /

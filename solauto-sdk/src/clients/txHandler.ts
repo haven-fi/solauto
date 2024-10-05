@@ -1,6 +1,7 @@
 import { Umi } from "@metaplex-foundation/umi";
 import { Connection } from "@solana/web3.js";
-import { getSolanaRpcConnection } from "../utils";
+import { consoleLog, getSolanaRpcConnection } from "../utils";
+import { RUNTIME_DATA } from "../constants";
 
 export abstract class TxHandler {
   public heliusApiUrl!: string;
@@ -15,12 +16,11 @@ export abstract class TxHandler {
     const [connection, umi] = getSolanaRpcConnection(this.heliusApiUrl);
     this.connection = connection;
     this.umi = umi;
+    RUNTIME_DATA.localTest = Boolean(localTest);
   }
 
   log(...args: any[]): void {
-    if (this.localTest) {
-      console.log(...args);
-    }
+    consoleLog(...args);
   }
 
   abstract defaultLookupTables(): string[];

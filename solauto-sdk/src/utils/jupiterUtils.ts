@@ -12,7 +12,7 @@ import {
   QuoteResponse,
 } from "@jup-ag/api";
 import { getTokenAccount } from "./accountUtils";
-import { retryWithExponentialBackoff } from "./generalUtils";
+import { consoleLog, retryWithExponentialBackoff } from "./generalUtils";
 
 const jupApi = createJupiterApiClient();
 
@@ -54,7 +54,7 @@ export async function getJupSwapTransaction(
   swapDetails: JupSwapDetails,
   attemptNum?: number
 ): Promise<JupSwapTransaction> {
-  console.log("Getting jup quote...");
+  consoleLog("Getting jup quote...");
   const quoteResponse = await retryWithExponentialBackoff(
     async () =>
       await jupApi.quoteGet({
@@ -79,7 +79,7 @@ export async function getJupSwapTransaction(
       (1 + (swapDetails.slippageIncFactor ?? 0))
   );
   quoteResponse.slippageBps = finalPriceSlippageBps;
-  console.log(quoteResponse);
+  consoleLog(quoteResponse);
 
   if (swapDetails.exactOut) {
     quoteResponse.inAmount = (
@@ -88,7 +88,7 @@ export async function getJupSwapTransaction(
     ).toString();
   }
 
-  console.log("Getting jup instructions...");
+  consoleLog("Getting jup instructions...");
   const instructions = await jupApi.swapInstructionsPost({
     swapRequest: {
       userPublicKey: signer.publicKey.toString(),
@@ -106,10 +106,10 @@ export async function getJupSwapTransaction(
     throw new Error("No swap instruction was returned by Jupiter");
   }
 
-  console.log("Raw price impact bps:", priceImpactBps);
+  consoleLog("Raw price impact bps:", priceImpactBps);
   const finalPriceImpactBps =
     priceImpactBps * (1 + (swapDetails.slippageIncFactor ?? 0));
-  console.log("Increased price impact bps:", finalPriceImpactBps);
+  consoleLog("Increased price impact bps:", finalPriceImpactBps);
 
   return {
     jupQuote: quoteResponse,

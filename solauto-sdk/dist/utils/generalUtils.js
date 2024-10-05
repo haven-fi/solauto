@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.consoleLog = consoleLog;
 exports.generateRandomU8 = generateRandomU8;
 exports.generateRandomU64 = generateRandomU64;
 exports.currentUnixSeconds = currentUnixSeconds;
@@ -13,6 +14,11 @@ const umi_1 = require("@metaplex-foundation/umi");
 const pythConstants_1 = require("../constants/pythConstants");
 const numberUtils_1 = require("./numberUtils");
 const solautoConstants_1 = require("../constants/solautoConstants");
+function consoleLog(...args) {
+    if (solautoConstants_1.RUNTIME_DATA.localTest) {
+        console.log(...args);
+    }
+}
 function generateRandomU8() {
     return Math.floor(Math.random() * 255 + 1);
 }
@@ -104,9 +110,9 @@ function retryWithExponentialBackoff(fn, retries = 5, delay = 150, errorsToThrow
                     return;
                 }
                 if (attemptNum < retries) {
-                    console.log(error);
+                    consoleLog(error);
                     setTimeout(() => {
-                        console.log("Retrying...");
+                        consoleLog("Retrying...");
                         return attempt(attemptNum);
                     }, delay);
                     delay *= 2;
