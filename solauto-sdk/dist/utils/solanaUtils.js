@@ -4,6 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.buildHeliusApiUrl = buildHeliusApiUrl;
+exports.buildIronforgeApiUrl = buildIronforgeApiUrl;
 exports.getSolanaRpcConnection = getSolanaRpcConnection;
 exports.getWrappedInstruction = getWrappedInstruction;
 exports.setComputeUnitLimitUmiIx = setComputeUnitLimitUmiIx;
@@ -28,6 +29,9 @@ const marginfi_sdk_1 = require("../marginfi-sdk");
 const types_1 = require("../types");
 function buildHeliusApiUrl(heliusApiKey) {
     return `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`;
+}
+function buildIronforgeApiUrl(ironforgeApiKey) {
+    return `https://rpc.ironforge.network/mainnet?apiKey=${ironforgeApiKey}`;
 }
 function getSolanaRpcConnection(rpcUrl) {
     const connection = new web3_js_1.Connection(rpcUrl, "confirmed");

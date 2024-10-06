@@ -42,6 +42,10 @@ export function buildHeliusApiUrl(heliusApiKey: string) {
   return `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`;
 }
 
+export function buildIronforgeApiUrl(ironforgeApiKey: string) {
+  return `https://rpc.ironforge.network/mainnet?apiKey=${ironforgeApiKey}`;
+}
+
 export function getSolanaRpcConnection(
   rpcUrl: string
 ): [Connection, Umi] {
