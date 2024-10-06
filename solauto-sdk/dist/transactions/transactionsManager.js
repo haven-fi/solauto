@@ -319,9 +319,7 @@ class TransactionsManager {
                         this.updateStatus(itemSet.name(), TransactionStatus.Skipped, attemptNum);
                     }
                     else {
-                        if (this.txHandler.localTest) {
-                            await this.debugAccounts(itemSet, tx);
-                        }
+                        await this.debugAccounts(itemSet, tx);
                         await this.sendTransaction(tx, itemSet.name(), attemptNum, prioritySetting);
                     }
                 }, this.retries, this.retryDelay, this.errorsToThrow);

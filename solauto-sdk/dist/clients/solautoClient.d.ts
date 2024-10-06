@@ -18,7 +18,6 @@ export interface SolautoClientArgs {
     referredByAuthority?: PublicKey;
 }
 export declare abstract class SolautoClient extends TxHandler {
-    localTest?: boolean | undefined;
     lendingPlatform: LendingPlatform;
     authority: PublicKey;
     signer: Signer;
@@ -43,7 +42,7 @@ export declare abstract class SolautoClient extends TxHandler {
     solautoFeesSupplyTa: PublicKey;
     authorityLutAddress?: PublicKey;
     livePositionUpdates: LivePositionUpdates;
-    constructor(heliusApiUrl: string, localTest?: boolean | undefined);
+    constructor(heliusApiUrl: string, localTest?: boolean);
     initialize(args: SolautoClientArgs, lendingPlatform: LendingPlatform): Promise<void>;
     resetLiveTxUpdates(success?: boolean): Promise<void>;
     abstract protocolAccount(): PublicKey;

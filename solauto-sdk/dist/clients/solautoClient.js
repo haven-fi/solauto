@@ -18,7 +18,6 @@ const txHandler_1 = require("./txHandler");
 class SolautoClient extends txHandler_1.TxHandler {
     constructor(heliusApiUrl, localTest) {
         super(heliusApiUrl, localTest);
-        this.localTest = localTest;
         this.livePositionUpdates = new generalUtils_2.LivePositionUpdates();
         this.umi = this.umi.use({
             install(umi) {

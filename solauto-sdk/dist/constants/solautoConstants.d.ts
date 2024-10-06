@@ -11,10 +11,4 @@ export declare const PRICES: {
 };
 export declare const SOLAUTO_LUT = "9D4xwZwDf46n9ft5gQxZzq3rBbdRXsXojKQLZbBdskPY";
 export declare const STANDARD_LUT_ACCOUNTS: string[];
-declare class RuntimeData {
-    localTest: boolean;
-    constructor();
-}
-export declare const RUNTIME_DATA: RuntimeData;
-export {};
 //# sourceMappingURL=solautoConstants.d.ts.map

@@ -15,7 +15,7 @@ const pythConstants_1 = require("../constants/pythConstants");
 const numberUtils_1 = require("./numberUtils");
 const solautoConstants_1 = require("../constants/solautoConstants");
 function consoleLog(...args) {
-    if (solautoConstants_1.RUNTIME_DATA.localTest) {
+    if (globalThis.LOCAL_TEST) {
         console.log(...args);
     }
 }
