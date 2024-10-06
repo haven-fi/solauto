@@ -13,6 +13,7 @@ const generalUtils_1 = require("./generalUtils");
 const numberUtils_1 = require("./numberUtils");
 const marginfiAccounts_1 = require("../constants/marginfiAccounts");
 const generalAccounts_1 = require("../constants/generalAccounts");
+const constants_1 = require("../constants");
 function findMarginfiAccounts(bank) {
     for (const key in marginfiAccounts_1.MARGINFI_ACCOUNTS) {
         const account = marginfiAccounts_1.MARGINFI_ACCOUNTS[key];
@@ -181,6 +182,10 @@ async function getMarginfiAccountPositionState(umi, marginfiAccountPk, supplyMin
     }
     if (!supplyUsage) {
         supplyUsage = await getTokenUsage(umi, supplyBank, true, 0, livePositionUpdates?.supplyAdjustment);
+    }
+    if (constants_1.TOKEN_INFO[supplyBank.mint.toString()].isStableCoin &&
+        (debtBank === null || constants_1.TOKEN_INFO[debtBank.mint.toString()].isStableCoin)) {
+        return undefined;
     }
     if (!debtUsage) {
         debtUsage = await getTokenUsage(umi, debtBank, false, 0, livePositionUpdates?.debtAdjustment);

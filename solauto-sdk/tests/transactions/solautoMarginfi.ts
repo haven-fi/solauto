@@ -18,7 +18,7 @@ import {
 } from "../../src/transactions/transactionsManager";
 import { PublicKey } from "@solana/web3.js";
 import { USDC_MINT } from "../../src/constants";
-import { buildHeliusApiUrl } from "../../src/utils";
+import { buildHeliusApiUrl, getMarginfiAccountPositionState } from "../../src/utils";
 
 describe("Solauto Marginfi tests", async () => {
   // const signer = setupTest();
@@ -159,11 +159,13 @@ describe("Solauto Marginfi tests", async () => {
     //   )
     // );
 
-    await new TransactionsManager(
-      client,
-      undefined,
-      !payForTransactions ? "only-simulate" : "normal",
-      useJitoBundle
-    ).clientSend(transactionItems);
+    // await new TransactionsManager(
+    //   client,
+    //   undefined,
+    //   !payForTransactions ? "only-simulate" : "normal",
+    //   useJitoBundle
+    // ).clientSend(transactionItems);
+
+    console.log(await getMarginfiAccountPositionState(client.umi, new PublicKey("8SZUhT1Jwiz1LKkeSsBwvwZyKH1UrzW3r8yiC6R3LLf7")));
   });
 });

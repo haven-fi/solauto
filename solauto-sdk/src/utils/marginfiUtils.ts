@@ -25,6 +25,7 @@ import { MarginfiAssetAccounts } from "../types/accounts";
 import { PositionState, PositionTokenUsage } from "../generated";
 import { USD_DECIMALS } from "../constants/generalAccounts";
 import { LivePositionUpdates } from "./solauto/generalUtils";
+import { TOKEN_INFO } from "../constants";
 
 export function findMarginfiAccounts(bank: PublicKey): MarginfiAssetAccounts {
   for (const key in MARGINFI_ACCOUNTS) {
@@ -340,6 +341,13 @@ export async function getMarginfiAccountPositionState(
       0,
       livePositionUpdates?.supplyAdjustment
     );
+  }
+
+  if (
+    TOKEN_INFO[supplyBank.mint.toString()].isStableCoin &&
+    (debtBank === null || TOKEN_INFO[debtBank.mint.toString()].isStableCoin)
+  ) {
+    return undefined;
   }
 
   if (!debtUsage) {
