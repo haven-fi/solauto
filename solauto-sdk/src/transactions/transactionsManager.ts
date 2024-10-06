@@ -323,7 +323,7 @@ export class TransactionsManager {
     const client = this.txHandler as SolautoClient;
 
     const updateLookupTable = await client.updateLookupTable();
-    const updateLutTxName = "update lookup table";
+    const updateLutTxName = "create lookup table";
     if (
       updateLookupTable &&
       updateLookupTable.updateLutTx.getInstructions().length > 0 &&
@@ -480,9 +480,7 @@ export class TransactionsManager {
                 attemptNum
               );
             } else {
-              if (this.txHandler.localTest) {
-                await this.debugAccounts(itemSet, tx);
-              }
+              await this.debugAccounts(itemSet, tx);
               await this.sendTransaction(
                 tx,
                 itemSet.name(),

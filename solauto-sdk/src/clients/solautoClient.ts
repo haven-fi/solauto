@@ -104,7 +104,7 @@ export abstract class SolautoClient extends TxHandler {
 
   constructor(
     heliusApiUrl: string,
-    public localTest?: boolean
+    localTest?: boolean
   ) {
     super(heliusApiUrl, localTest);
 

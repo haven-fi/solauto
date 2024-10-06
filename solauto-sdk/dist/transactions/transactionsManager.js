@@ -218,7 +218,7 @@ class TransactionsManager {
         const items = [...transactions];
         const client = this.txHandler;
         const updateLookupTable = await client.updateLookupTable();
-        const updateLutTxName = "update lookup table";
+        const updateLutTxName = "create lookup table";
         if (updateLookupTable &&
             updateLookupTable.updateLutTx.getInstructions().length > 0 &&
             updateLookupTable?.needsToBeIsolated) {

@@ -30,7 +30,10 @@ describe("Solauto Marginfi tests", async () => {
 
   it("open - deposit - borrow - rebalance to 0 - withdraw - close", async () => {
 
-    const client = new SolautoMarginfiClient(buildHeliusApiUrl(process.env.HELIUS_API_KEY!), true);
+    const client = new SolautoMarginfiClient(
+      buildHeliusApiUrl(process.env.HELIUS_API_KEY!),
+      true
+    );
 
     const supply = NATIVE_MINT;
     const supplyDecimals = 9;

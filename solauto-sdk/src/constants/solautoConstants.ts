@@ -14,6 +14,8 @@ import { SOLAUTO_PROGRAM_ID } from "../generated";
 import { SOLAUTO_MANAGER } from "./generalAccounts";
 import { JUPITER_PROGRAM_ID } from "../jupiter-sdk";
 
+(globalThis as any).LOCAL_TEST = false;
+
 export const BASIS_POINTS = 10000;
 
 export const DEFAULT_LIMIT_GAP_BPS = 1000;
@@ -43,12 +45,3 @@ export const STANDARD_LUT_ACCOUNTS = [
   SYSVAR_INSTRUCTIONS_PUBKEY.toString(),
   JUPITER_PROGRAM_ID
 ];
-
-class RuntimeData {
-  public localTest: boolean;
-  constructor() {
-    this.localTest = false;
-  }
-}
-
-export const RUNTIME_DATA = new RuntimeData();

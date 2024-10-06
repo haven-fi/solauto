@@ -7,10 +7,10 @@ import {
 } from "@metaplex-foundation/umi";
 import { PYTH_PRICE_FEED_IDS } from "../constants/pythConstants";
 import { fromBaseUnit, toBaseUnit } from "./numberUtils";
-import { PRICES, RUNTIME_DATA } from "../constants/solautoConstants";
+import { PRICES } from "../constants/solautoConstants";
 
 export function consoleLog(...args: any[]): void {
-  if (RUNTIME_DATA.localTest) {
+  if ((globalThis as any).LOCAL_TEST) {
     console.log(...args);
   }
 }

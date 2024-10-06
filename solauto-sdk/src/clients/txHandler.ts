@@ -1,7 +1,6 @@
 import { Umi } from "@metaplex-foundation/umi";
 import { Connection } from "@solana/web3.js";
 import { consoleLog, getSolanaRpcConnection } from "../utils";
-import { RUNTIME_DATA } from "../constants";
 
 export abstract class TxHandler {
   public heliusApiUrl!: string;
@@ -10,13 +9,16 @@ export abstract class TxHandler {
 
   constructor(
     heliusApiUrl: string,
-    public localTest?: boolean
+    localTest?: boolean
   ) {
     this.heliusApiUrl = heliusApiUrl;
     const [connection, umi] = getSolanaRpcConnection(this.heliusApiUrl);
     this.connection = connection;
     this.umi = umi;
-    RUNTIME_DATA.localTest = Boolean(localTest);
+
+    if (!(globalThis as any).LOCAL_TEST && localTest) {
+      (globalThis as any).LOCAL_TEST = Boolean(localTest);
+    }
   }
 
   log(...args: any[]): void {
