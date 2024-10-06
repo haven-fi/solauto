@@ -24,7 +24,7 @@ describe("Solauto Marginfi tests", async () => {
   // const signer = setupTest();
   const signer = setupTest("solauto-manager");
 
-  const payForTransactions = false;
+  const payForTransactions = true;
   const useJitoBundle = false;
   const positionId = 1;
 
@@ -159,13 +159,11 @@ describe("Solauto Marginfi tests", async () => {
     //   )
     // );
 
-    // await new TransactionsManager(
-    //   client,
-    //   undefined,
-    //   !payForTransactions ? "only-simulate" : "normal",
-    //   useJitoBundle
-    // ).clientSend(transactionItems);
-
-    console.log(await getMarginfiAccountPositionState(client.umi, new PublicKey("8SZUhT1Jwiz1LKkeSsBwvwZyKH1UrzW3r8yiC6R3LLf7")));
+    await new TransactionsManager(
+      client,
+      undefined,
+      !payForTransactions ? "only-simulate" : "normal",
+      useJitoBundle
+    ).clientSend(transactionItems);
   });
 });

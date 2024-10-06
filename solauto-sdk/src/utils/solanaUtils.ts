@@ -254,20 +254,26 @@ export async function getComputeUnitPriceEstimate(
   umi: Umi,
   tx: TransactionBuilder,
   prioritySetting: PriorityFeeSetting
-): Promise<number> {
+): Promise<number | undefined> {
   const web3Transaction = toWeb3JsTransaction(
     (await tx.setLatestBlockhash(umi, { commitment: "finalized" })).build(umi)
   );
   const serializedTransaction = bs58.encode(web3Transaction.serialize());
-  const resp = await umi.rpc.call("getPriorityFeeEstimate", [
-    {
-      transaction: serializedTransaction,
-      options: {
-        priorityLevel: prioritySetting.toString(),
+
+  let feeEstimate: number | undefined;
+  try {
+    const resp = await umi.rpc.call("getPriorityFeeEstimate", [
+      {
+        transaction: serializedTransaction,
+        options: {
+          priorityLevel: prioritySetting.toString(),
+        },
       },
-    },
-  ]);
-  const feeEstimate = Math.round((resp as any).priorityFeeEstimate as number);
+    ]);
+    feeEstimate = Math.round((resp as any).priorityFeeEstimate as number);
+  } catch (e) {
+    console.error(e);
+  }
 
   return feeEstimate;
 }
@@ -285,12 +291,15 @@ export async function sendSingleOptimizedTransaction(
   consoleLog("Instructions: ", tx.getInstructions().length);
   consoleLog("Serialized transaction size: ", tx.getTransactionSize(umi));
 
-  const feeEstimate = await getComputeUnitPriceEstimate(
+  let cuPrice = await getComputeUnitPriceEstimate(
     umi,
     tx,
     prioritySetting
   );
-  consoleLog("Compute unit price: ", feeEstimate);
+  if (!cuPrice) {
+    cuPrice = 1000000;
+  }
+  consoleLog("Compute unit price: ", cuPrice);
 
   let computeUnitLimit = undefined;
   if (txType !== "skip-simulation") {
@@ -304,7 +313,7 @@ export async function sendSingleOptimizedTransaction(
               await assembleFinalTransaction(
                 umi.identity,
                 tx,
-                feeEstimate,
+                cuPrice,
                 1_400_000
               ).setLatestBlockhash(umi)
             ).build(umi)
@@ -324,7 +333,7 @@ export async function sendSingleOptimizedTransaction(
     const result = await assembleFinalTransaction(
       umi.identity,
       tx,
-      feeEstimate,
+      cuPrice,
       computeUnitLimit
     ).sendAndConfirm(umi, {
       send: {
