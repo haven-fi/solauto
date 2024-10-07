@@ -651,8 +651,8 @@ export class SolautoMarginfiClient extends SolautoClient {
     const freshState = await getMarginfiAccountPositionState(
       this.umi,
       this.marginfiAccountPk,
-      undefined,
-      undefined,
+      !this.selfManaged && this.solautoPositionData === null ? this.supplyMint : undefined,
+      !this.selfManaged && this.solautoPositionData === null ? this.debtMint : undefined,
       this.livePositionUpdates
     );
 

@@ -141,33 +141,42 @@ async function simulateTransaction(connection, transaction) {
 async function getComputeUnitPriceEstimate(umi, tx, prioritySetting) {
     const web3Transaction = (0, umi_web3js_adapters_1.toWeb3JsTransaction)((await tx.setLatestBlockhash(umi, { commitment: "finalized" })).build(umi));
     const serializedTransaction = bs58_1.default.encode(web3Transaction.serialize());
-    const resp = await umi.rpc.call("getPriorityFeeEstimate", [
-        {
-            transaction: serializedTransaction,
-            options: {
-                priorityLevel: prioritySetting.toString(),
+    let feeEstimate;
+    try {
+        const resp = await umi.rpc.call("getPriorityFeeEstimate", [
+            {
+                transaction: serializedTransaction,
+                options: {
+                    priorityLevel: prioritySetting.toString(),
+                },
             },
-        },
-    ]);
-    const feeEstimate = Math.round(resp.priorityFeeEstimate);
+        ]);
+        feeEstimate = Math.round(resp.priorityFeeEstimate);
+    }
+    catch (e) {
+        console.error(e);
+    }
     return feeEstimate;
 }
 async function sendSingleOptimizedTransaction(umi, connection, tx, txType, attemptNum, prioritySetting = types_1.PriorityFeeSetting.Default, onAwaitingSign) {
     (0, generalUtils_1.consoleLog)("Sending single optimized transaction...");
     (0, generalUtils_1.consoleLog)("Instructions: ", tx.getInstructions().length);
     (0, generalUtils_1.consoleLog)("Serialized transaction size: ", tx.getTransactionSize(umi));
-    const feeEstimate = await getComputeUnitPriceEstimate(umi, tx, prioritySetting);
-    (0, generalUtils_1.consoleLog)("Compute unit price: ", feeEstimate);
+    let cuPrice = await getComputeUnitPriceEstimate(umi, tx, prioritySetting);
+    if (!cuPrice) {
+        cuPrice = 1000000;
+    }
+    (0, generalUtils_1.consoleLog)("Compute unit price: ", cuPrice);
     let computeUnitLimit = undefined;
     if (txType !== "skip-simulation") {
         // TODO: we should only retry simulation if it's not a solauto error
-        const simulationResult = await (0, generalUtils_1.retryWithExponentialBackoff)(async () => await simulateTransaction(connection, (0, umi_web3js_adapters_1.toWeb3JsTransaction)(await (await assembleFinalTransaction(umi.identity, tx, feeEstimate, 1400000).setLatestBlockhash(umi)).build(umi))), 3);
+        const simulationResult = await (0, generalUtils_1.retryWithExponentialBackoff)(async () => await simulateTransaction(connection, (0, umi_web3js_adapters_1.toWeb3JsTransaction)(await (await assembleFinalTransaction(umi.identity, tx, cuPrice, 1400000).setLatestBlockhash(umi)).build(umi))), 3);
         computeUnitLimit = Math.round(simulationResult.value.unitsConsumed * 1.1);
         (0, generalUtils_1.consoleLog)("Compute unit limit: ", computeUnitLimit);
     }
     if (txType !== "only-simulate") {
         onAwaitingSign?.();
-        const result = await assembleFinalTransaction(umi.identity, tx, feeEstimate, computeUnitLimit).sendAndConfirm(umi, {
+        const result = await assembleFinalTransaction(umi.identity, tx, cuPrice, computeUnitLimit).sendAndConfirm(umi, {
             send: {
                 skipPreflight: true,
                 commitment: "confirmed",
