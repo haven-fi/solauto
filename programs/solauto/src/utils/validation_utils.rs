@@ -556,7 +556,7 @@ pub fn validate_debt_adjustment(
     if (amount_usd - expected_debt_adjustment_usd.abs())
         .abs()
         .div(amount_usd)
-        > 0.05
+        > 0.1
     {
         msg!("Base unit amount provided: {}", provided_base_unit_amount);
         msg!(
