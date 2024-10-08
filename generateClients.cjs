@@ -108,9 +108,9 @@ generateRustSDKForAnchorIDL(
   "jupiter.json",
   "JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4"
 );
-generateTypescriptSDKForAnchorIDL(
-  "jupiter-sdk",
-  "jupiter.json",
-  "JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4"
-);
+// generateTypescriptSDKForAnchorIDL(
+//   "jupiter-sdk",
+//   "jupiter.json",
+//   "JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4"
+// );
 // cleanJupiterTsSDK(["programs", "errors", "index.ts"]);
