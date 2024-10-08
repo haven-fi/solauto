@@ -20,7 +20,7 @@ import {
   toBaseUnit,
   toBps,
 } from "./numberUtils";
-import { MARGINFI_ACCOUNTS } from "../constants/marginfiAccounts";
+import { DEFAULT_MARGINFI_GROUP, MARGINFI_ACCOUNTS } from "../constants/marginfiAccounts";
 import { MarginfiAssetAccounts } from "../types/accounts";
 import { PositionState, PositionTokenUsage } from "../generated";
 import { USD_DECIMALS } from "../constants/generalAccounts";
@@ -330,6 +330,11 @@ export async function getMarginfiAccountPositionState(
   }
 
   if (supplyBank === null) {
+    return undefined;
+  }
+
+  if (!toWeb3JsPublicKey(supplyBank.group).equals(new PublicKey(DEFAULT_MARGINFI_GROUP))) {
+    // Temporarily disabled for now
     return undefined;
   }
 

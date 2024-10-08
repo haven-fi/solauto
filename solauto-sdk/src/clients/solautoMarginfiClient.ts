@@ -111,9 +111,13 @@ export class SolautoMarginfiClient extends SolautoClient {
       publicKey(this.marginfiAccountPk),
       { commitment: "confirmed" }
     );
-    this.marginfiGroup = marginfiAccountData
-      ? toWeb3JsPublicKey(marginfiAccountData.group)
-      : args.marginfiGroup ?? new PublicKey(DEFAULT_MARGINFI_GROUP);
+    this.marginfiGroup = new PublicKey(
+      marginfiAccountData
+        ? marginfiAccountData.group.toString()
+        : args.marginfiGroup ??
+          MARGINFI_ACCOUNTS[this.supplyMint.toString()].marginfiGroup ??
+          DEFAULT_MARGINFI_GROUP
+    );
 
     this.marginfiSupplyAccounts =
       MARGINFI_ACCOUNTS[this.supplyMint.toString()]!;
@@ -452,7 +456,7 @@ export class SolautoMarginfiClient extends SolautoClient {
     swapDetails: JupSwapDetails,
     rebalanceType: SolautoRebalanceTypeArgs,
     flashLoan?: FlashLoanDetails,
-    targetLiqUtilizationRateBps?: number,
+    targetLiqUtilizationRateBps?: number
   ): TransactionBuilder {
     const inputIsSupply = swapDetails.inputMint.equals(this.supplyMint);
     const outputIsSupply = swapDetails.outputMint.equals(this.supplyMint);
@@ -649,8 +653,12 @@ export class SolautoMarginfiClient extends SolautoClient {
     const freshState = await getMarginfiAccountPositionState(
       this.umi,
       this.marginfiAccountPk,
-      !this.selfManaged && this.solautoPositionData === null ? this.supplyMint : undefined,
-      !this.selfManaged && this.solautoPositionData === null ? this.debtMint : undefined,
+      !this.selfManaged && this.solautoPositionData === null
+        ? this.supplyMint
+        : undefined,
+      !this.selfManaged && this.solautoPositionData === null
+        ? this.debtMint
+        : undefined,
       this.livePositionUpdates
     );
 

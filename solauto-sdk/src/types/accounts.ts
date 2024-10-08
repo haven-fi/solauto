@@ -3,4 +3,5 @@ export interface MarginfiAssetAccounts {
   liquidityVault: string;
   vaultAuthority: string;
   priceOracle: string;
+  marginfiGroup?: string;
 }

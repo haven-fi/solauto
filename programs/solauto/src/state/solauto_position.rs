@@ -302,7 +302,6 @@ pub struct PositionState {
 pub struct PositionData {
     pub lending_platform: LendingPlatform,
     _padding1: [u8; 7],
-    /// Marginfi: "marginfi_account", Kamino: "obligation"
     pub protocol_account: Pubkey,
     pub supply_mint: Pubkey,
     pub debt_mint: Pubkey,
