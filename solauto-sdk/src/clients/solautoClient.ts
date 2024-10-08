@@ -599,7 +599,6 @@ export abstract class SolautoClient extends TxHandler {
     rebalanceType: SolautoRebalanceTypeArgs,
     flashLoan?: FlashLoanDetails,
     targetLiqUtilizationRateBps?: number,
-    limitGapBps?: number,
   ): TransactionBuilder;
 
   async getFreshPositionState(): Promise<PositionState | undefined> {

@@ -327,7 +327,6 @@ export async function getAllPositionsByAuthority(
           debtMint: x.debtMint,
         }));
       })(),
-      // TODO support other platforms
     ]);
 
   return solautoCompatiblePositions.flat();

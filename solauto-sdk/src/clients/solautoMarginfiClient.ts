@@ -453,7 +453,6 @@ export class SolautoMarginfiClient extends SolautoClient {
     rebalanceType: SolautoRebalanceTypeArgs,
     flashLoan?: FlashLoanDetails,
     targetLiqUtilizationRateBps?: number,
-    limitGapBps?: number
   ): TransactionBuilder {
     const inputIsSupply = swapDetails.inputMint.equals(this.supplyMint);
     const outputIsSupply = swapDetails.outputMint.equals(this.supplyMint);
@@ -515,7 +514,6 @@ export class SolautoMarginfiClient extends SolautoClient {
       rebalanceType,
       targetLiqUtilizationRateBps: targetLiqUtilizationRateBps ?? null,
       targetInAmountBaseUnit: rebalanceStep === "A" ? swapDetails.amount : null,
-      limitGapBps: limitGapBps ?? null,
     });
   }
 

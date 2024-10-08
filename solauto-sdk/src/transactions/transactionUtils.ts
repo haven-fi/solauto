@@ -163,7 +163,7 @@ async function transactionChoresBefore(
         (client as SolautoMarginfiClient).marginfiAccountInitialize()
       );
     }
-    // TODO: support other platforms
+    // TODO: PF
   }
 
   const wSolUsage = getWSolUsage(
@@ -402,7 +402,6 @@ function getRebalanceInstructions(tx: TransactionBuilder): Instruction[] {
       try {
         const serializer = getMarginfiRebalanceInstructionDataSerializer();
         const discriminator = serializer.serialize({
-          limitGapBps: 0,
           targetInAmountBaseUnit: 0,
           rebalanceType: SolautoRebalanceType.None,
           targetLiqUtilizationRateBps: 0,
@@ -541,7 +540,7 @@ function getSolautoActions(tx: TransactionBuilder): SolautoAction[] {
       } catch {}
     }
 
-    // TODO support other platforms
+    // TODO: PF
   });
 
   return solautoActions;

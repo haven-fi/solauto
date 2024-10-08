@@ -1,11 +1,5 @@
 use solana_program::pubkey::Pubkey;
 
-// KLend2g3cP87fffoy8q1mQqGKjrxjC8boSyAYavgmjD
-pub const KAMINO_PROGRAM: Pubkey = Pubkey::new_from_array([
-    4, 178, 172, 177, 18, 88, 204, 227, 104, 44, 65, 139, 168, 114, 255, 61, 249, 17, 2, 113, 47,
-    21, 175, 18, 182, 190, 105, 179, 67, 91, 0, 8,
-]);
-
 // AprYCPiVeKMCgjQ2ZufwChMzvQ5kFjJo2ekTLSkXsQDm
 pub const SOLAUTO_FEES_WALLET: Pubkey = Pubkey::new_from_array([
     145, 251, 126, 53, 245, 169, 146, 209, 147, 243, 95, 78, 165, 119, 126, 212, 48, 177, 204, 152,

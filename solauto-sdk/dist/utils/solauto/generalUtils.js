@@ -221,7 +221,6 @@ async function getAllPositionsByAuthority(umi, user, positionTypeFilter) {
                 debtMint: x.debtMint,
             }));
         })(),
-        // TODO support other platforms
     ]);
     return solautoCompatiblePositions.flat();
 }

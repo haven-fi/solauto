@@ -7,8 +7,7 @@
  */
 import { Serializer } from '@metaplex-foundation/umi/serializers';
 export declare enum LendingPlatform {
-    Marginfi = 0,
-    Kamino = 1
+    Marginfi = 0
 }
 export type LendingPlatformArgs = LendingPlatform;
 export declare function getLendingPlatformSerializer(): Serializer<LendingPlatformArgs, LendingPlatform>;

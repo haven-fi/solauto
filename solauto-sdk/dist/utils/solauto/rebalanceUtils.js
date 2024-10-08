@@ -9,7 +9,6 @@ const umi_web3js_adapters_1 = require("@metaplex-foundation/umi-web3js-adapters"
 const generalUtils_2 = require("../generalUtils");
 const numberUtils_1 = require("../numberUtils");
 const generalAccounts_1 = require("../../constants/generalAccounts");
-const solautoConstants_1 = require("../../constants/solautoConstants");
 function getAdditionalAmountToDcaIn(dca) {
     if (dca.dcaInBaseUnit === BigInt(0)) {
         return 0;
@@ -80,10 +79,10 @@ function getTargetRateAndDcaAmount(state, settings, dca, currentUnixTime, target
         };
     }
 }
-function getRebalanceValues(state, settings, dca, currentUnixTime, supplyPrice, debtPrice, targetLiqUtilizationRateBps, limitGapBps) {
+function getRebalanceValues(state, settings, dca, currentUnixTime, supplyPrice, debtPrice, targetLiqUtilizationRateBps) {
     const { targetRateBps, amountToDcaIn } = getTargetRateAndDcaAmount(state, settings, dca, currentUnixTime, targetLiqUtilizationRateBps);
     const amountUsdToDcaIn = (0, numberUtils_1.fromBaseUnit)(BigInt(Math.round(amountToDcaIn ?? 0)), state.debt.decimals) *
-        debtPrice;
+        (dca?.tokenType === generated_1.TokenType.Debt ? debtPrice : supplyPrice);
     const increasingLeverage = amountUsdToDcaIn > 0 || state.liqUtilizationRateBps < targetRateBps;
     let adjustmentFeeBps = 0;
     if (increasingLeverage) {
@@ -93,19 +92,6 @@ function getRebalanceValues(state, settings, dca, currentUnixTime, supplyPrice, 
         amountUsdToDcaIn;
     const debtUsd = (0, numberUtils_1.fromBaseUnit)(state.debt.amountUsed.baseAmountUsdValue, generalAccounts_1.USD_DECIMALS);
     let debtAdjustmentUsd = (0, numberUtils_1.getDebtAdjustmentUsd)(state.liqThresholdBps, supplyUsd, debtUsd, targetRateBps, adjustmentFeeBps);
-    const input = increasingLeverage ? state.debt : state.supply;
-    const inputMarketPrice = increasingLeverage ? debtPrice : supplyPrice;
-    const limitGap = limitGapBps
-        ? (0, numberUtils_1.fromBps)(limitGapBps)
-        : (0, numberUtils_1.fromBps)(solautoConstants_1.DEFAULT_LIMIT_GAP_BPS);
-    if (debtAdjustmentUsd > 0 &&
-        (0, numberUtils_1.toBaseUnit)(debtAdjustmentUsd / inputMarketPrice, input.decimals) >
-            input.amountCanBeUsed.baseUnit) {
-        const maxUsageUsd = (0, numberUtils_1.fromBaseUnit)(input.amountCanBeUsed.baseUnit, input.decimals) *
-            inputMarketPrice *
-            limitGap;
-        debtAdjustmentUsd = maxUsageUsd - maxUsageUsd * limitGap;
-    }
     const maxRepayTo = (0, numberUtils_1.maxRepayToBps)(state.maxLtvBps, state.liqThresholdBps);
     return {
         increasingLeverage,

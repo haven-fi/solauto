@@ -19,7 +19,6 @@ function getMarginfiRebalanceInstructionDataSerializer() {
         ['rebalanceType', (0, types_1.getSolautoRebalanceTypeSerializer)()],
         ['targetLiqUtilizationRateBps', (0, serializers_1.option)((0, serializers_1.u16)())],
         ['targetInAmountBaseUnit', (0, serializers_1.option)((0, serializers_1.u64)())],
-        ['limitGapBps', (0, serializers_1.option)((0, serializers_1.u16)())],
     ], { description: 'MarginfiRebalanceInstructionData' }), (value) => ({ ...value, discriminator: 9 }));
 }
 // Instruction.

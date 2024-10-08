@@ -67,7 +67,7 @@ async function transactionChoresBefore(client, accountsGettingCreated, solautoAc
             !(await (0, generalUtils_1.getSolanaAccountCreated)(client.umi, client.marginfiAccountPk))) {
             chores = chores.add(client.marginfiAccountInitialize());
         }
-        // TODO: support other platforms
+        // TODO: PF
     }
     const wSolUsage = getWSolUsage(client, solautoActions, initiatingDcaIn, undefined);
     if (wSolUsage !== undefined) {
@@ -188,7 +188,6 @@ function getRebalanceInstructions(tx) {
             try {
                 const serializer = (0, generated_1.getMarginfiRebalanceInstructionDataSerializer)();
                 const discriminator = serializer.serialize({
-                    limitGapBps: 0,
                     targetInAmountBaseUnit: 0,
                     rebalanceType: generated_1.SolautoRebalanceType.None,
                     targetLiqUtilizationRateBps: 0,
@@ -309,7 +308,7 @@ function getSolautoActions(tx) {
             }
             catch { }
         }
-        // TODO support other platforms
+        // TODO: PF
     });
     return solautoActions;
 }

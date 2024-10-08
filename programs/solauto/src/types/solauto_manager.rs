@@ -5,7 +5,7 @@ use solana_program::{
 };
 use std::{
     cmp::min,
-    ops::{Add, Div, Mul, Sub},
+    ops::{Add, Div, Mul},
 };
 use validation_utils::validate_debt_adjustment;
 
@@ -15,7 +15,6 @@ use super::{
     shared::{RefreshStateProps, SolautoError, TokenBalanceAmount, TokenType},
 };
 use crate::{
-    constants::DEFAULT_LIMIT_GAP_BPS,
     state::solauto_position::{
         AutomationSettings, RebalanceData, SolautoPosition, SolautoRebalanceType,
     },
@@ -216,23 +215,13 @@ impl<'a> SolautoManager<'a> {
             token.decimals,
         );
 
-        let limit_gap = if rebalance_args.limit_gap_bps.is_some() {
-            from_bps(rebalance_args.limit_gap_bps.unwrap())
-        } else {
-            from_bps(DEFAULT_LIMIT_GAP_BPS)
-        };
-        let pct_of_amount_can_be_used = (1.0).sub(limit_gap);
-
         if increasing_leverage {
             let amt = if rebalance_args.target_in_amount_base_unit.is_some() {
                 rebalance_args.target_in_amount_base_unit.unwrap()
             } else {
-                (token.amount_can_be_used.base_unit as f64).mul(pct_of_amount_can_be_used) as u64
+                base_unit_amount
             };
-            self.borrow(
-                min(base_unit_amount, amt),
-                self.accounts.intermediary_ta.unwrap(),
-            )
+            self.borrow(min(amt, amt), self.accounts.intermediary_ta.unwrap())
         } else {
             let amt = if rebalance_args.target_in_amount_base_unit.is_some() {
                 rebalance_args.target_in_amount_base_unit.unwrap()

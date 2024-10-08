@@ -38,7 +38,7 @@ export declare class SolautoMarginfiClient extends SolautoClient {
     protocolInteraction(args: SolautoActionArgs): TransactionBuilder;
     private marginfiProtocolInteractionIx;
     private marginfiSolautoProtocolInteractionIx;
-    rebalance(rebalanceStep: "A" | "B", swapDetails: JupSwapDetails, rebalanceType: SolautoRebalanceTypeArgs, flashLoan?: FlashLoanDetails, targetLiqUtilizationRateBps?: number, limitGapBps?: number): TransactionBuilder;
+    rebalance(rebalanceStep: "A" | "B", swapDetails: JupSwapDetails, rebalanceType: SolautoRebalanceTypeArgs, flashLoan?: FlashLoanDetails, targetLiqUtilizationRateBps?: number): TransactionBuilder;
     flashBorrow(flashLoanDetails: FlashLoanDetails, destinationTokenAccount: PublicKey): TransactionBuilder;
     flashRepay(flashLoanDetails: FlashLoanDetails): TransactionBuilder;
     createIntermediaryMarginfiAccount(): TransactionBuilder;

@@ -40,13 +40,11 @@ export type MarginfiRebalanceInstructionData = {
     rebalanceType: SolautoRebalanceType;
     targetLiqUtilizationRateBps: Option<number>;
     targetInAmountBaseUnit: Option<bigint>;
-    limitGapBps: Option<number>;
 };
 export type MarginfiRebalanceInstructionDataArgs = {
     rebalanceType: SolautoRebalanceTypeArgs;
     targetLiqUtilizationRateBps: OptionOrNullable<number>;
     targetInAmountBaseUnit: OptionOrNullable<number | bigint>;
-    limitGapBps: OptionOrNullable<number>;
 };
 export declare function getMarginfiRebalanceInstructionDataSerializer(): Serializer<MarginfiRebalanceInstructionDataArgs, MarginfiRebalanceInstructionData>;
 export type MarginfiRebalanceInstructionArgs = MarginfiRebalanceInstructionDataArgs;

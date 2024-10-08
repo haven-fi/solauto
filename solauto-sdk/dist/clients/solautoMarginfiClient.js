@@ -289,7 +289,7 @@ class SolautoMarginfiClient extends solautoClient_1.SolautoClient {
             solautoAction: args,
         });
     }
-    rebalance(rebalanceStep, swapDetails, rebalanceType, flashLoan, targetLiqUtilizationRateBps, limitGapBps) {
+    rebalance(rebalanceStep, swapDetails, rebalanceType, flashLoan, targetLiqUtilizationRateBps) {
         const inputIsSupply = swapDetails.inputMint.equals(this.supplyMint);
         const outputIsSupply = swapDetails.outputMint.equals(this.supplyMint);
         const needSupplyAccounts = (inputIsSupply && rebalanceStep === "A") ||
@@ -335,7 +335,6 @@ class SolautoMarginfiClient extends solautoClient_1.SolautoClient {
             rebalanceType,
             targetLiqUtilizationRateBps: targetLiqUtilizationRateBps ?? null,
             targetInAmountBaseUnit: rebalanceStep === "A" ? swapDetails.amount : null,
-            limitGapBps: limitGapBps ?? null,
         });
     }
     flashBorrow(flashLoanDetails, destinationTokenAccount) {

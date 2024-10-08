@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.STANDARD_LUT_ACCOUNTS = exports.SOLAUTO_LUT = exports.PRICES = exports.MIN_BOOST_GAP_BPS = exports.MIN_REPAY_GAP_BPS = exports.MIN_POSITION_STATE_FRESHNESS_SECS = exports.DEFAULT_LIMIT_GAP_BPS = exports.BASIS_POINTS = void 0;
+exports.STANDARD_LUT_ACCOUNTS = exports.SOLAUTO_LUT = exports.PRICES = exports.MIN_BOOST_GAP_BPS = exports.MIN_REPAY_GAP_BPS = exports.MIN_POSITION_STATE_FRESHNESS_SECS = exports.BASIS_POINTS = void 0;
 const web3_js_1 = require("@solana/web3.js");
 const spl_token_1 = require("@solana/spl-token");
 // import { JitoRpcConnection } from "jito-ts";
@@ -9,7 +9,6 @@ const generalAccounts_1 = require("./generalAccounts");
 const jupiter_sdk_1 = require("../jupiter-sdk");
 globalThis.LOCAL_TEST = false;
 exports.BASIS_POINTS = 10000;
-exports.DEFAULT_LIMIT_GAP_BPS = 1000;
 exports.MIN_POSITION_STATE_FRESHNESS_SECS = 5;
 exports.MIN_REPAY_GAP_BPS = 50;
 exports.MIN_BOOST_GAP_BPS = 50;

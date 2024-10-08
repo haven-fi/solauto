@@ -16,7 +16,6 @@ use thiserror::Error;
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, PartialEq, Copy)]
 pub enum LendingPlatform {
     Marginfi,
-    Kamino,
 }
 
 unsafe impl Zeroable for LendingPlatform {}

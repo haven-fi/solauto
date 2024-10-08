@@ -27,7 +27,6 @@ import {
   toBaseUnit,
 } from "../numberUtils";
 import { USD_DECIMALS } from "../../constants/generalAccounts";
-import { DEFAULT_LIMIT_GAP_BPS } from "../../constants/solautoConstants";
 
 function getAdditionalAmountToDcaIn(dca: DCASettings): number {
   if (dca.dcaInBaseUnit === BigInt(0)) {
@@ -173,8 +172,7 @@ export function getRebalanceValues(
   currentUnixTime: number,
   supplyPrice: number,
   debtPrice: number,
-  targetLiqUtilizationRateBps?: number,
-  limitGapBps?: number
+  targetLiqUtilizationRateBps?: number
 ): RebalanceValues {
   const { targetRateBps, amountToDcaIn } = getTargetRateAndDcaAmount(
     state,
@@ -186,7 +184,7 @@ export function getRebalanceValues(
 
   const amountUsdToDcaIn =
     fromBaseUnit(BigInt(Math.round(amountToDcaIn ?? 0)), state.debt.decimals) *
-    debtPrice;
+    (dca?.tokenType === TokenType.Debt ? debtPrice : supplyPrice);
 
   const increasingLeverage =
     amountUsdToDcaIn > 0 || state.liqUtilizationRateBps < targetRateBps;
@@ -214,25 +212,6 @@ export function getRebalanceValues(
     adjustmentFeeBps
   );
 
-  const input = increasingLeverage ? state.debt : state.supply;
-  const inputMarketPrice = increasingLeverage ? debtPrice : supplyPrice;
-
-  const limitGap = limitGapBps
-    ? fromBps(limitGapBps)
-    : fromBps(DEFAULT_LIMIT_GAP_BPS);
-
-  if (
-    debtAdjustmentUsd > 0 &&
-    toBaseUnit(debtAdjustmentUsd / inputMarketPrice, input.decimals) >
-      input.amountCanBeUsed.baseUnit
-  ) {
-    const maxUsageUsd =
-      fromBaseUnit(input.amountCanBeUsed.baseUnit, input.decimals) *
-      inputMarketPrice *
-      limitGap;
-    debtAdjustmentUsd = maxUsageUsd - maxUsageUsd * limitGap;
-  }
-
   const maxRepayTo = maxRepayToBps(state.maxLtvBps, state.liqThresholdBps);
   return {
     increasingLeverage,
@@ -253,7 +232,7 @@ export interface FlashLoanDetails {
 export function getFlashLoanDetails(
   client: SolautoClient,
   values: RebalanceValues,
-  jupQuote: QuoteResponse,
+  jupQuote: QuoteResponse
 ): FlashLoanDetails | undefined {
   let supplyUsd =
     fromBaseUnit(

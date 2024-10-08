@@ -13,7 +13,6 @@ const serializers_1 = require("@metaplex-foundation/umi/serializers");
 var LendingPlatform;
 (function (LendingPlatform) {
     LendingPlatform[LendingPlatform["Marginfi"] = 0] = "Marginfi";
-    LendingPlatform[LendingPlatform["Kamino"] = 1] = "Kamino";
 })(LendingPlatform || (exports.LendingPlatform = LendingPlatform = {}));
 function getLendingPlatformSerializer() {
     return (0, serializers_1.scalarEnum)(LendingPlatform, {

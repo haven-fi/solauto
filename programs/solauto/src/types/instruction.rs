@@ -216,9 +216,6 @@ pub struct RebalanceSettings {
     pub target_liq_utilization_rate_bps: Option<u16>,
     /// Target input amount. Only used/allowed if signed by the position authority.
     pub target_in_amount_base_unit: Option<u64>,
-    /// Gap basis points between what is allowed to be borrowed/withdrawn and what we are trying to borrow/withdraw. Defaults to 1000 (10%).
-    /// Can increase this amount if lending protocol activity is hyper and we are close to limits.
-    pub limit_gap_bps: Option<u16>,
 }
 
 pub struct SolautoStandardAccounts<'a> {

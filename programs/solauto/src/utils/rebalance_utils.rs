@@ -382,7 +382,7 @@ pub fn get_rebalance_values(
         0
     };
 
-    let mut debt_adjustment_usd = math_utils::get_std_debt_adjustment_usd(
+    let debt_adjustment_usd = math_utils::get_std_debt_adjustment_usd(
         from_bps(solauto_position.state.liq_threshold_bps),
         total_supply_usd,
         solauto_position.state.debt.amount_used.usd_value(),
@@ -669,7 +669,6 @@ mod tests {
                 rebalance_type: SolautoRebalanceType::Regular,
                 target_liq_utilization_rate_bps: Some(target_liq_utilization_rate_bps),
                 target_in_amount_base_unit: None,
-                limit_gap_bps: None,
             }),
         )
         .unwrap();

@@ -18,8 +18,8 @@ use spl_token::ID as token_program_id;
 
 use crate::{
     constants::{
-        KAMINO_PROGRAM, MAX_BASIS_POINTS, MIN_BOOST_GAP_BPS, MIN_REPAY_GAP_BPS,
-        SOLAUTO_FEES_WALLET, SOLAUTO_MANAGER,
+        MAX_BASIS_POINTS, MIN_BOOST_GAP_BPS, MIN_REPAY_GAP_BPS, SOLAUTO_FEES_WALLET,
+        SOLAUTO_MANAGER,
     },
     state::{
         referral_state::ReferralState,
@@ -261,12 +261,6 @@ pub fn validate_lending_program_account(
                 return Err(ProgramError::IncorrectProgramId.into());
             }
         }
-        LendingPlatform::Kamino => {
-            if *program.key != KAMINO_PROGRAM {
-                msg!("Incorrect Kamino program account");
-                return Err(ProgramError::IncorrectProgramId.into());
-            }
-        }
     }
     // We don't need to check more than this, as lending protocols have their own account checks and will fail during CPI if there is an issue with the provided accounts
     Ok(())
@@ -385,10 +379,6 @@ pub fn validate_lending_program_accounts_with_position<'a>(
         LendingPlatform::Marginfi => {
             validate_marginfi_bank(protocol_supply_account, &supply_mint)?;
             validate_marginfi_bank(protocol_debt_account, &debt_mint)?;
-        }
-        LendingPlatform::Kamino => {
-            msg!("Not yet supported");
-            return Err(SolautoError::IncorrectAccounts.into());
         }
     }
 

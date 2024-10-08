@@ -285,7 +285,6 @@ pub struct MarginfiRebalanceInstructionArgs {
     pub rebalance_type: SolautoRebalanceType,
     pub target_liq_utilization_rate_bps: Option<u16>,
     pub target_in_amount_base_unit: Option<u64>,
-    pub limit_gap_bps: Option<u16>,
 }
 
 /// Instruction builder for `MarginfiRebalance`.
@@ -347,7 +346,6 @@ pub struct MarginfiRebalanceBuilder {
     rebalance_type: Option<SolautoRebalanceType>,
     target_liq_utilization_rate_bps: Option<u16>,
     target_in_amount_base_unit: Option<u64>,
-    limit_gap_bps: Option<u16>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
 
@@ -567,12 +565,6 @@ impl MarginfiRebalanceBuilder {
         self.target_in_amount_base_unit = Some(target_in_amount_base_unit);
         self
     }
-    /// `[optional argument]`
-    #[inline(always)]
-    pub fn limit_gap_bps(&mut self, limit_gap_bps: u16) -> &mut Self {
-        self.limit_gap_bps = Some(limit_gap_bps);
-        self
-    }
     /// Add an aditional account to the instruction.
     #[inline(always)]
     pub fn add_remaining_account(
@@ -637,7 +629,6 @@ impl MarginfiRebalanceBuilder {
                 .expect("rebalance_type is not set"),
             target_liq_utilization_rate_bps: self.target_liq_utilization_rate_bps.clone(),
             target_in_amount_base_unit: self.target_in_amount_base_unit.clone(),
-            limit_gap_bps: self.limit_gap_bps.clone(),
         };
 
         accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
@@ -1146,7 +1137,6 @@ impl<'a, 'b> MarginfiRebalanceCpiBuilder<'a, 'b> {
             rebalance_type: None,
             target_liq_utilization_rate_bps: None,
             target_in_amount_base_unit: None,
-            limit_gap_bps: None,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
@@ -1382,12 +1372,6 @@ impl<'a, 'b> MarginfiRebalanceCpiBuilder<'a, 'b> {
         self.instruction.target_in_amount_base_unit = Some(target_in_amount_base_unit);
         self
     }
-    /// `[optional argument]`
-    #[inline(always)]
-    pub fn limit_gap_bps(&mut self, limit_gap_bps: u16) -> &mut Self {
-        self.instruction.limit_gap_bps = Some(limit_gap_bps);
-        self
-    }
     /// Add an additional account to the instruction.
     #[inline(always)]
     pub fn add_remaining_account(
@@ -1440,7 +1424,6 @@ impl<'a, 'b> MarginfiRebalanceCpiBuilder<'a, 'b> {
                 .target_liq_utilization_rate_bps
                 .clone(),
             target_in_amount_base_unit: self.instruction.target_in_amount_base_unit.clone(),
-            limit_gap_bps: self.instruction.limit_gap_bps.clone(),
         };
         let instruction = MarginfiRebalanceCpi {
             __program: self.instruction.__program,
@@ -1566,7 +1549,6 @@ struct MarginfiRebalanceCpiBuilderInstruction<'a, 'b> {
     rebalance_type: Option<SolautoRebalanceType>,
     target_liq_utilization_rate_bps: Option<u16>,
     target_in_amount_base_unit: Option<u64>,
-    limit_gap_bps: Option<u16>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(
         &'b solana_program::account_info::AccountInfo<'a>,
