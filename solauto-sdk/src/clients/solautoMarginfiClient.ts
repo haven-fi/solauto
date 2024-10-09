@@ -454,14 +454,13 @@ export class SolautoMarginfiClient extends SolautoClient {
 
   rebalance(
     rebalanceStep: "A" | "B",
-    swapDetails: JupSwapDetails,
     jupQuote: QuoteResponse,
     rebalanceType: SolautoRebalanceTypeArgs,
     flashLoan?: FlashLoanDetails,
     targetLiqUtilizationRateBps?: number
   ): TransactionBuilder {
-    const inputIsSupply = swapDetails.inputMint.equals(this.supplyMint);
-    const outputIsSupply = swapDetails.outputMint.equals(this.supplyMint);
+    const inputIsSupply = (new PublicKey(jupQuote.inputMint)).equals(this.supplyMint);
+    const outputIsSupply = (new PublicKey(jupQuote.outputMint)).equals(this.supplyMint);
     const needSupplyAccounts =
       (inputIsSupply && rebalanceStep === "A") ||
       (outputIsSupply && rebalanceStep === "B") ||
@@ -490,7 +489,7 @@ export class SolautoMarginfiClient extends SolautoClient {
       intermediaryTa: publicKey(
         getTokenAccount(
           toWeb3JsPublicKey(this.signer.publicKey),
-          swapDetails.inputMint
+          new PublicKey(jupQuote.inputMint)
         )
       ),
       supplyBank: publicKey(this.marginfiSupplyAccounts.bank),

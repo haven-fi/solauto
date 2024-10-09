@@ -596,7 +596,6 @@ export abstract class SolautoClient extends TxHandler {
 
   abstract rebalance(
     rebalanceStep: "A" | "B",
-    swapDetails: JupSwapDetails,
     jupQuote: QuoteResponse,
     rebalanceType: SolautoRebalanceTypeArgs,
     flashLoan?: FlashLoanDetails,

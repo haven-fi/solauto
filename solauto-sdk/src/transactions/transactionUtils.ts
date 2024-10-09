@@ -607,8 +607,8 @@ export function requiresRefreshBeforeRebalance(client: SolautoClient) {
       oldDebt;
 
     if (
-      Math.abs(Number(supplyDiff)) / Number(oldSupply) >= 0.01 ||
-      Math.abs(Number(debtDiff)) / Number(oldDebt) >= 0.01
+      Math.abs(Number(supplyDiff)) / Number(oldSupply) >= 0.005 ||
+      Math.abs(Number(debtDiff)) / Number(oldDebt) >= 0.005
     ) {
       return true;
     }
@@ -699,7 +699,6 @@ export async function buildSolautoRebalanceTransaction(
         ? [
             client.rebalance(
               "A",
-              swapDetails,
               jupQuote,
               rebalanceType,
               flashLoan,
@@ -710,7 +709,6 @@ export async function buildSolautoRebalanceTransaction(
       swapIx,
       client.rebalance(
         "B",
-        swapDetails,
         jupQuote,
         rebalanceType,
         flashLoan,
@@ -725,7 +723,6 @@ export async function buildSolautoRebalanceTransaction(
       tokenLedgerIx,
       client.rebalance(
         "A",
-        swapDetails,
         jupQuote,
         rebalanceType,
         undefined,
@@ -734,7 +731,6 @@ export async function buildSolautoRebalanceTransaction(
       swapIx,
       client.rebalance(
         "B",
-        swapDetails,
         jupQuote,
         rebalanceType,
         undefined,
