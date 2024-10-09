@@ -53,6 +53,7 @@ import { currentUnixSeconds } from "../utils/generalUtils";
 import { LivePositionUpdates } from "../utils/solauto/generalUtils";
 import { ReferralStateManager } from "./referralStateManager";
 import { TxHandler } from "./txHandler";
+import { QuoteResponse } from "@jup-ag/api";
 
 export interface SolautoClientArgs {
   authority?: PublicKey;
@@ -596,6 +597,7 @@ export abstract class SolautoClient extends TxHandler {
   abstract rebalance(
     rebalanceStep: "A" | "B",
     swapDetails: JupSwapDetails,
+    jupQuote: QuoteResponse,
     rebalanceType: SolautoRebalanceTypeArgs,
     flashLoan?: FlashLoanDetails,
     targetLiqUtilizationRateBps?: number,

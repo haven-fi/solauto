@@ -57,6 +57,7 @@ import {
 } from "../utils/marginfiUtils";
 import { bytesToI80F48, fromBaseUnit, toBps } from "../utils/numberUtils";
 import { createFakePositionState } from "../utils";
+import { QuoteResponse } from "@jup-ag/api";
 
 export interface SolautoMarginfiClientArgs extends SolautoClientArgs {
   marginfiAccount?: PublicKey | Signer;
@@ -454,6 +455,7 @@ export class SolautoMarginfiClient extends SolautoClient {
   rebalance(
     rebalanceStep: "A" | "B",
     swapDetails: JupSwapDetails,
+    jupQuote: QuoteResponse,
     rebalanceType: SolautoRebalanceTypeArgs,
     flashLoan?: FlashLoanDetails,
     targetLiqUtilizationRateBps?: number
@@ -517,7 +519,7 @@ export class SolautoMarginfiClient extends SolautoClient {
         : undefined,
       rebalanceType,
       targetLiqUtilizationRateBps: targetLiqUtilizationRateBps ?? null,
-      targetInAmountBaseUnit: rebalanceStep === "A" ? swapDetails.amount : null,
+      targetInAmountBaseUnit: rebalanceStep === "A" ? parseInt(jupQuote.inAmount) : null,
     });
   }
 

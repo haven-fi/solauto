@@ -180,6 +180,10 @@ async function getMarginfiAccountPositionState(umi, marginfiAccountPk, supplyMin
     if (supplyBank === null) {
         return undefined;
     }
+    if (!(0, umi_web3js_adapters_1.toWeb3JsPublicKey)(supplyBank.group).equals(new web3_js_1.PublicKey(marginfiAccounts_1.DEFAULT_MARGINFI_GROUP))) {
+        // Temporarily disabled for now
+        return undefined;
+    }
     if (!supplyUsage) {
         supplyUsage = await getTokenUsage(umi, supplyBank, true, 0, livePositionUpdates?.supplyAdjustment);
     }

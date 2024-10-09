@@ -8,6 +8,7 @@ import { FlashLoanDetails } from "../utils/solauto/rebalanceUtils";
 import { LivePositionUpdates } from "../utils/solauto/generalUtils";
 import { ReferralStateManager } from "./referralStateManager";
 import { TxHandler } from "./txHandler";
+import { QuoteResponse } from "@jup-ag/api";
 export interface SolautoClientArgs {
     authority?: PublicKey;
     positionId?: number;
@@ -64,7 +65,7 @@ export declare abstract class SolautoClient extends TxHandler {
     protocolInteraction(args: SolautoActionArgs): TransactionBuilder;
     abstract flashBorrow(flashLoanDetails: FlashLoanDetails, destinationTokenAccount: PublicKey): TransactionBuilder;
     abstract flashRepay(flashLoanDetails: FlashLoanDetails): TransactionBuilder;
-    abstract rebalance(rebalanceStep: "A" | "B", swapDetails: JupSwapDetails, rebalanceType: SolautoRebalanceTypeArgs, flashLoan?: FlashLoanDetails, targetLiqUtilizationRateBps?: number): TransactionBuilder;
+    abstract rebalance(rebalanceStep: "A" | "B", swapDetails: JupSwapDetails, jupQuote: QuoteResponse, rebalanceType: SolautoRebalanceTypeArgs, flashLoan?: FlashLoanDetails, targetLiqUtilizationRateBps?: number): TransactionBuilder;
     getFreshPositionState(): Promise<PositionState | undefined>;
 }
 //# sourceMappingURL=solautoClient.d.ts.map

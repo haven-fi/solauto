@@ -378,11 +378,11 @@ async function buildSolautoRebalanceTransaction(client, targetLiqUtilizationRate
             client.flashBorrow(flashLoan, (0, accountUtils_1.getTokenAccount)((0, umi_web3js_adapters_1.toWeb3JsPublicKey)(client.signer.publicKey), swapDetails.inputMint)),
             ...(addFirstRebalance
                 ? [
-                    client.rebalance("A", swapDetails, rebalanceType, flashLoan, targetLiqUtilizationRateBps),
+                    client.rebalance("A", swapDetails, jupQuote, rebalanceType, flashLoan, targetLiqUtilizationRateBps),
                 ]
                 : []),
             swapIx,
-            client.rebalance("B", swapDetails, rebalanceType, flashLoan, targetLiqUtilizationRateBps),
+            client.rebalance("B", swapDetails, jupQuote, rebalanceType, flashLoan, targetLiqUtilizationRateBps),
             client.flashRepay(flashLoan),
         ]);
     }
@@ -391,9 +391,9 @@ async function buildSolautoRebalanceTransaction(client, targetLiqUtilizationRate
         tx = tx.add([
             setupInstructions,
             tokenLedgerIx,
-            client.rebalance("A", swapDetails, rebalanceType, undefined, targetLiqUtilizationRateBps),
+            client.rebalance("A", swapDetails, jupQuote, rebalanceType, undefined, targetLiqUtilizationRateBps),
             swapIx,
-            client.rebalance("B", swapDetails, rebalanceType, undefined, targetLiqUtilizationRateBps),
+            client.rebalance("B", swapDetails, jupQuote, rebalanceType, undefined, targetLiqUtilizationRateBps),
         ]);
     }
     return {

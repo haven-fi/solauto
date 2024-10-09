@@ -37,9 +37,11 @@ class SolautoMarginfiClient extends solautoClient_1.SolautoClient {
                 ? (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.marginfiAccount.publicKey)
                 : this.marginfiAccount;
         const marginfiAccountData = await (0, marginfi_sdk_1.safeFetchMarginfiAccount)(this.umi, (0, umi_1.publicKey)(this.marginfiAccountPk), { commitment: "confirmed" });
-        this.marginfiGroup = marginfiAccountData
-            ? (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(marginfiAccountData.group)
-            : args.marginfiGroup ?? new web3_js_1.PublicKey(marginfiAccounts_1.DEFAULT_MARGINFI_GROUP);
+        this.marginfiGroup = new web3_js_1.PublicKey(marginfiAccountData
+            ? marginfiAccountData.group.toString()
+            : args.marginfiGroup ??
+                marginfiAccounts_1.MARGINFI_ACCOUNTS[this.supplyMint.toString()].marginfiGroup ??
+                marginfiAccounts_1.DEFAULT_MARGINFI_GROUP);
         this.marginfiSupplyAccounts =
             marginfiAccounts_1.MARGINFI_ACCOUNTS[this.supplyMint.toString()];
         this.marginfiDebtAccounts = marginfiAccounts_1.MARGINFI_ACCOUNTS[this.debtMint.toString()];
@@ -289,7 +291,7 @@ class SolautoMarginfiClient extends solautoClient_1.SolautoClient {
             solautoAction: args,
         });
     }
-    rebalance(rebalanceStep, swapDetails, rebalanceType, flashLoan, targetLiqUtilizationRateBps) {
+    rebalance(rebalanceStep, swapDetails, jupQuote, rebalanceType, flashLoan, targetLiqUtilizationRateBps) {
         const inputIsSupply = swapDetails.inputMint.equals(this.supplyMint);
         const outputIsSupply = swapDetails.outputMint.equals(this.supplyMint);
         const needSupplyAccounts = (inputIsSupply && rebalanceStep === "A") ||
@@ -334,7 +336,7 @@ class SolautoMarginfiClient extends solautoClient_1.SolautoClient {
                 : undefined,
             rebalanceType,
             targetLiqUtilizationRateBps: targetLiqUtilizationRateBps ?? null,
-            targetInAmountBaseUnit: rebalanceStep === "A" ? swapDetails.amount : null,
+            targetInAmountBaseUnit: rebalanceStep === "A" ? parseInt(jupQuote.inAmount) : null,
         });
     }
     flashBorrow(flashLoanDetails, destinationTokenAccount) {
@@ -433,7 +435,11 @@ class SolautoMarginfiClient extends solautoClient_1.SolautoClient {
         if (state) {
             return state;
         }
-        const freshState = await (0, marginfiUtils_1.getMarginfiAccountPositionState)(this.umi, this.marginfiAccountPk, !this.selfManaged && this.solautoPositionData === null ? this.supplyMint : undefined, !this.selfManaged && this.solautoPositionData === null ? this.debtMint : undefined, this.livePositionUpdates);
+        const freshState = await (0, marginfiUtils_1.getMarginfiAccountPositionState)(this.umi, this.marginfiAccountPk, !this.selfManaged && this.solautoPositionData === null
+            ? this.supplyMint
+            : undefined, !this.selfManaged && this.solautoPositionData === null
+            ? this.debtMint
+            : undefined, this.livePositionUpdates);
         if (freshState) {
             this.log("Fresh state", freshState);
             const supplyPrice = (0, generalUtils_1.safeGetPrice)(freshState?.supply.mint);

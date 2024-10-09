@@ -6,6 +6,7 @@ import { DCASettingsInpArgs, PositionState, SolautoActionArgs, SolautoRebalanceT
 import { MarginfiAccount } from "../marginfi-sdk";
 import { JupSwapDetails } from "../utils/jupiterUtils";
 import { FlashLoanDetails } from "../utils/solauto/rebalanceUtils";
+import { QuoteResponse } from "@jup-ag/api";
 export interface SolautoMarginfiClientArgs extends SolautoClientArgs {
     marginfiAccount?: PublicKey | Signer;
     marginfiAccountSeedIdx?: bigint;
@@ -38,7 +39,7 @@ export declare class SolautoMarginfiClient extends SolautoClient {
     protocolInteraction(args: SolautoActionArgs): TransactionBuilder;
     private marginfiProtocolInteractionIx;
     private marginfiSolautoProtocolInteractionIx;
-    rebalance(rebalanceStep: "A" | "B", swapDetails: JupSwapDetails, rebalanceType: SolautoRebalanceTypeArgs, flashLoan?: FlashLoanDetails, targetLiqUtilizationRateBps?: number): TransactionBuilder;
+    rebalance(rebalanceStep: "A" | "B", swapDetails: JupSwapDetails, jupQuote: QuoteResponse, rebalanceType: SolautoRebalanceTypeArgs, flashLoan?: FlashLoanDetails, targetLiqUtilizationRateBps?: number): TransactionBuilder;
     flashBorrow(flashLoanDetails: FlashLoanDetails, destinationTokenAccount: PublicKey): TransactionBuilder;
     flashRepay(flashLoanDetails: FlashLoanDetails): TransactionBuilder;
     createIntermediaryMarginfiAccount(): TransactionBuilder;

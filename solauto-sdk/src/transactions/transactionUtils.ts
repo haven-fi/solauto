@@ -700,6 +700,7 @@ export async function buildSolautoRebalanceTransaction(
             client.rebalance(
               "A",
               swapDetails,
+              jupQuote,
               rebalanceType,
               flashLoan,
               targetLiqUtilizationRateBps
@@ -710,6 +711,7 @@ export async function buildSolautoRebalanceTransaction(
       client.rebalance(
         "B",
         swapDetails,
+        jupQuote,
         rebalanceType,
         flashLoan,
         targetLiqUtilizationRateBps
@@ -724,6 +726,7 @@ export async function buildSolautoRebalanceTransaction(
       client.rebalance(
         "A",
         swapDetails,
+        jupQuote,
         rebalanceType,
         undefined,
         targetLiqUtilizationRateBps
@@ -732,6 +735,7 @@ export async function buildSolautoRebalanceTransaction(
       client.rebalance(
         "B",
         swapDetails,
+        jupQuote,
         rebalanceType,
         undefined,
         targetLiqUtilizationRateBps
