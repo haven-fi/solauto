@@ -60,26 +60,12 @@ class SolautoClient extends txHandler_1.TxHandler {
             signer: args.signer,
             wallet: args.wallet,
         });
-        const authorityReferralStateData = this.referralStateManager.referralStateData;
-        const hasReferredBy = authorityReferralStateData &&
-            authorityReferralStateData.referredByState !==
-                (0, umi_1.publicKey)(web3_js_1.PublicKey.default);
-        const referredByAuthority = !hasReferredBy &&
-            args.referredByAuthority &&
-            !args.referredByAuthority.equals((0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.signer.publicKey))
-            ? args.referredByAuthority
-            : undefined;
-        this.referredByState = hasReferredBy
-            ? (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(authorityReferralStateData.referredByState)
-            : referredByAuthority
-                ? (0, accountUtils_1.getReferralState)(referredByAuthority)
-                : undefined;
-        this.referredByAuthority = referredByAuthority;
-        if (this.referredByState !== undefined) {
-            this.referredBySupplyTa = (0, accountUtils_1.getTokenAccount)(this.referredByState, this.supplyMint);
+        if (args.referredByAuthority) {
+            this.setReferredBy(args.referredByAuthority);
         }
         this.solautoFeesWallet = generalAccounts_1.SOLAUTO_FEES_WALLET;
         this.solautoFeesSupplyTa = (0, accountUtils_1.getTokenAccount)(this.solautoFeesWallet, this.supplyMint);
+        const authorityReferralStateData = this.referralStateManager.referralStateData;
         this.authorityLutAddress =
             authorityReferralStateData?.lookupTable &&
                 !(0, umi_web3js_adapters_1.toWeb3JsPublicKey)(authorityReferralStateData.lookupTable).equals(web3_js_1.PublicKey.default)
@@ -91,6 +77,26 @@ class SolautoClient extends txHandler_1.TxHandler {
             0) > 0
             ? this.solautoPositionData?.position?.dca
             : undefined);
+    }
+    setReferredBy(referredBy) {
+        const authorityReferralStateData = this.referralStateManager.referralStateData;
+        const hasReferredBy = authorityReferralStateData &&
+            authorityReferralStateData.referredByState !==
+                (0, umi_1.publicKey)(web3_js_1.PublicKey.default);
+        const referredByAuthority = !hasReferredBy &&
+            referredBy &&
+            !referredBy.equals((0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.signer.publicKey))
+            ? referredBy
+            : undefined;
+        this.referredByState = hasReferredBy
+            ? (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(authorityReferralStateData.referredByState)
+            : referredByAuthority
+                ? (0, accountUtils_1.getReferralState)(referredByAuthority)
+                : undefined;
+        this.referredByAuthority = referredByAuthority;
+        if (this.referredByState !== undefined) {
+            this.referredBySupplyTa = (0, accountUtils_1.getTokenAccount)(this.referredByState, this.supplyMint);
+        }
     }
     async resetLiveTxUpdates(success) {
         if (success) {
@@ -200,7 +206,7 @@ class SolautoClient extends txHandler_1.TxHandler {
                 type: "dcaInBalance",
                 value: {
                     amount: BigInt(dca.dcaInBaseUnit),
-                    tokenType: dca.tokenType
+                    tokenType: dca.tokenType,
                 },
             });
         }
@@ -241,7 +247,7 @@ class SolautoClient extends txHandler_1.TxHandler {
                     type: "dcaInBalance",
                     value: {
                         amount: BigInt(args.dca.value.dcaInBaseUnit),
-                        tokenType: args.dca.value.tokenType
+                        tokenType: args.dca.value.tokenType,
                     },
                 });
                 addingToPos = true;

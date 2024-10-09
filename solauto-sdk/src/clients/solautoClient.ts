@@ -103,10 +103,7 @@ export abstract class SolautoClient extends TxHandler {
 
   public livePositionUpdates: LivePositionUpdates = new LivePositionUpdates();
 
-  constructor(
-    heliusApiUrl: string,
-    localTest?: boolean
-  ) {
+  constructor(heliusApiUrl: string, localTest?: boolean) {
     super(heliusApiUrl, localTest);
 
     this.umi = this.umi.use({
@@ -175,29 +172,8 @@ export abstract class SolautoClient extends TxHandler {
       wallet: args.wallet,
     });
 
-    const authorityReferralStateData =
-      this.referralStateManager.referralStateData;
-    const hasReferredBy =
-      authorityReferralStateData &&
-      authorityReferralStateData.referredByState !==
-        publicKey(PublicKey.default);
-    const referredByAuthority =
-      !hasReferredBy &&
-      args.referredByAuthority &&
-      !args.referredByAuthority.equals(toWeb3JsPublicKey(this.signer.publicKey))
-        ? args.referredByAuthority
-        : undefined;
-    this.referredByState = hasReferredBy
-      ? toWeb3JsPublicKey(authorityReferralStateData!.referredByState)
-      : referredByAuthority
-        ? getReferralState(referredByAuthority!)
-        : undefined;
-    this.referredByAuthority = referredByAuthority;
-    if (this.referredByState !== undefined) {
-      this.referredBySupplyTa = getTokenAccount(
-        this.referredByState,
-        this.supplyMint
-      );
+    if (args.referredByAuthority) {
+      this.setReferredBy(args.referredByAuthority);
     }
 
     this.solautoFeesWallet = SOLAUTO_FEES_WALLET;
@@ -206,6 +182,8 @@ export abstract class SolautoClient extends TxHandler {
       this.supplyMint
     );
 
+    const authorityReferralStateData =
+      this.referralStateManager.referralStateData;
     this.authorityLutAddress =
       authorityReferralStateData?.lookupTable &&
       !toWeb3JsPublicKey(authorityReferralStateData.lookupTable).equals(
@@ -226,6 +204,33 @@ export abstract class SolautoClient extends TxHandler {
         ? this.solautoPositionData?.position?.dca
         : undefined
     );
+  }
+
+  public setReferredBy(referredBy: PublicKey) {
+    const authorityReferralStateData =
+      this.referralStateManager.referralStateData;
+    const hasReferredBy =
+      authorityReferralStateData &&
+      authorityReferralStateData.referredByState !==
+        publicKey(PublicKey.default);
+    const referredByAuthority =
+      !hasReferredBy &&
+      referredBy &&
+      !referredBy.equals(toWeb3JsPublicKey(this.signer.publicKey))
+        ? referredBy
+        : undefined;
+    this.referredByState = hasReferredBy
+      ? toWeb3JsPublicKey(authorityReferralStateData!.referredByState)
+      : referredByAuthority
+        ? getReferralState(referredByAuthority!)
+        : undefined;
+    this.referredByAuthority = referredByAuthority;
+    if (this.referredByState !== undefined) {
+      this.referredBySupplyTa = getTokenAccount(
+        this.referredByState,
+        this.supplyMint
+      );
+    }
   }
 
   async resetLiveTxUpdates(success?: boolean) {
@@ -378,7 +383,7 @@ export abstract class SolautoClient extends TxHandler {
         type: "dcaInBalance",
         value: {
           amount: BigInt(dca.dcaInBaseUnit),
-          tokenType: dca.tokenType
+          tokenType: dca.tokenType,
         },
       });
     }
@@ -423,7 +428,7 @@ export abstract class SolautoClient extends TxHandler {
           type: "dcaInBalance",
           value: {
             amount: BigInt(args.dca.value.dcaInBaseUnit),
-            tokenType: args.dca.value.tokenType
+            tokenType: args.dca.value.tokenType,
           },
         });
         addingToPos = true;
@@ -599,7 +604,7 @@ export abstract class SolautoClient extends TxHandler {
     jupQuote: QuoteResponse,
     rebalanceType: SolautoRebalanceTypeArgs,
     flashLoan?: FlashLoanDetails,
-    targetLiqUtilizationRateBps?: number,
+    targetLiqUtilizationRateBps?: number
   ): TransactionBuilder;
 
   async getFreshPositionState(): Promise<PositionState | undefined> {

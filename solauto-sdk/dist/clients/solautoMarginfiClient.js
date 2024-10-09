@@ -291,9 +291,9 @@ class SolautoMarginfiClient extends solautoClient_1.SolautoClient {
             solautoAction: args,
         });
     }
-    rebalance(rebalanceStep, swapDetails, jupQuote, rebalanceType, flashLoan, targetLiqUtilizationRateBps) {
-        const inputIsSupply = swapDetails.inputMint.equals(this.supplyMint);
-        const outputIsSupply = swapDetails.outputMint.equals(this.supplyMint);
+    rebalance(rebalanceStep, jupQuote, rebalanceType, flashLoan, targetLiqUtilizationRateBps) {
+        const inputIsSupply = (new web3_js_1.PublicKey(jupQuote.inputMint)).equals(this.supplyMint);
+        const outputIsSupply = (new web3_js_1.PublicKey(jupQuote.outputMint)).equals(this.supplyMint);
         const needSupplyAccounts = (inputIsSupply && rebalanceStep === "A") ||
             (outputIsSupply && rebalanceStep === "B") ||
             (inputIsSupply && flashLoan !== undefined && rebalanceStep == "B");
@@ -313,7 +313,7 @@ class SolautoMarginfiClient extends solautoClient_1.SolautoClient {
             solautoPosition: (0, umi_1.publicKey)(this.solautoPosition),
             marginfiGroup: (0, umi_1.publicKey)(this.marginfiGroup),
             marginfiAccount: (0, umi_1.publicKey)(this.marginfiAccountPk),
-            intermediaryTa: (0, umi_1.publicKey)((0, accountUtils_1.getTokenAccount)((0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.signer.publicKey), swapDetails.inputMint)),
+            intermediaryTa: (0, umi_1.publicKey)((0, accountUtils_1.getTokenAccount)((0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.signer.publicKey), new web3_js_1.PublicKey(jupQuote.inputMint))),
             supplyBank: (0, umi_1.publicKey)(this.marginfiSupplyAccounts.bank),
             supplyPriceOracle: (0, umi_1.publicKey)(this.supplyPriceOracle),
             positionSupplyTa: (0, umi_1.publicKey)(this.positionSupplyTa),

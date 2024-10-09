@@ -3,7 +3,6 @@ import { PublicKey } from "@solana/web3.js";
 import { Signer, TransactionBuilder } from "@metaplex-foundation/umi";
 import { WalletAdapter } from "@metaplex-foundation/umi-signer-wallet-adapters";
 import { DCASettings, DCASettingsInpArgs, LendingPlatform, PositionState, SolautoActionArgs, SolautoPosition, SolautoRebalanceTypeArgs, SolautoSettingsParameters, SolautoSettingsParametersInpArgs, UpdatePositionDataArgs } from "../generated";
-import { JupSwapDetails } from "../utils/jupiterUtils";
 import { FlashLoanDetails } from "../utils/solauto/rebalanceUtils";
 import { LivePositionUpdates } from "../utils/solauto/generalUtils";
 import { ReferralStateManager } from "./referralStateManager";
@@ -45,6 +44,7 @@ export declare abstract class SolautoClient extends TxHandler {
     livePositionUpdates: LivePositionUpdates;
     constructor(heliusApiUrl: string, localTest?: boolean);
     initialize(args: SolautoClientArgs, lendingPlatform: LendingPlatform): Promise<void>;
+    setReferredBy(referredBy: PublicKey): void;
     resetLiveTxUpdates(success?: boolean): Promise<void>;
     abstract protocolAccount(): PublicKey;
     defaultLookupTables(): string[];
@@ -65,7 +65,7 @@ export declare abstract class SolautoClient extends TxHandler {
     protocolInteraction(args: SolautoActionArgs): TransactionBuilder;
     abstract flashBorrow(flashLoanDetails: FlashLoanDetails, destinationTokenAccount: PublicKey): TransactionBuilder;
     abstract flashRepay(flashLoanDetails: FlashLoanDetails): TransactionBuilder;
-    abstract rebalance(rebalanceStep: "A" | "B", swapDetails: JupSwapDetails, jupQuote: QuoteResponse, rebalanceType: SolautoRebalanceTypeArgs, flashLoan?: FlashLoanDetails, targetLiqUtilizationRateBps?: number): TransactionBuilder;
+    abstract rebalance(rebalanceStep: "A" | "B", jupQuote: QuoteResponse, rebalanceType: SolautoRebalanceTypeArgs, flashLoan?: FlashLoanDetails, targetLiqUtilizationRateBps?: number): TransactionBuilder;
     getFreshPositionState(): Promise<PositionState | undefined>;
 }
 //# sourceMappingURL=solautoClient.d.ts.map
