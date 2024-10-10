@@ -5,7 +5,7 @@ import { PublicKey } from "@solana/web3.js";
 
 export const DEFAULT_MARGINFI_GROUP = "4qp6Fx6tnZkY5Wropq9wUYgtFxXKwE6viZxFHg3rdAG8";
 
-const DEFAULT_PUBKEY = PublicKey.default.toString();
+export const DEFAULT_PUBKEY = PublicKey.default.toString();
 export const MARGINFI_ACCOUNTS: { [key: string]: MarginfiAssetAccounts } = {
   [DEFAULT_PUBKEY]: {
     bank: DEFAULT_PUBKEY,

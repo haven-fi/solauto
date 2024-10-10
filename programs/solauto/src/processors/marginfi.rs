@@ -71,15 +71,6 @@ pub fn process_marginfi_open_position_instruction<'a>(
         return Err(ProgramError::InvalidInstructionData.into());
     }
 
-    solauto_utils::init_solauto_fees_supply_ta(
-        ctx.accounts.token_program,
-        ctx.accounts.system_program,
-        ctx.accounts.signer,
-        ctx.accounts.solauto_fees_wallet,
-        ctx.accounts.solauto_fees_supply_ta,
-        ctx.accounts.supply_mint,
-    )?;
-
     if ctx.accounts.referred_by_state.is_some() && ctx.accounts.referred_by_supply_ta.is_some() {
         solana_utils::init_ata_if_needed(
             ctx.accounts.token_program,
@@ -100,7 +91,7 @@ pub fn process_marginfi_open_position_instruction<'a>(
         rent: Some(ctx.accounts.rent),
         ixs_sysvar: None,
         solauto_position,
-        solauto_fees_supply_ta: Some(ctx.accounts.solauto_fees_supply_ta),
+        solauto_fees_supply_ta: None,
         authority_referral_state: DeserializedAccount::<ReferralState>::zerocopy(Some(
             ctx.accounts.signer_referral_state,
         ))?,

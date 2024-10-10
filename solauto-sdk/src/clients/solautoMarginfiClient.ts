@@ -270,7 +270,6 @@ export class SolautoMarginfiClient extends SolautoClient {
       signer: this.signer,
       marginfiProgram: publicKey(MARGINFI_PROGRAM_ID),
       solautoFeesWallet: publicKey(this.solautoFeesWallet),
-      solautoFeesSupplyTa: publicKey(this.solautoFeesSupplyTa),
       signerReferralState: publicKey(this.referralStateManager.referralState),
       referredByState: this.referredByState
         ? publicKey(this.referredByState)

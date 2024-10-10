@@ -1,17 +1,17 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.MARGINFI_ACCOUNTS_LOOKUP_TABLE = exports.MARGINFI_ACCOUNTS = exports.DEFAULT_MARGINFI_GROUP = void 0;
+exports.MARGINFI_ACCOUNTS_LOOKUP_TABLE = exports.MARGINFI_ACCOUNTS = exports.DEFAULT_PUBKEY = exports.DEFAULT_MARGINFI_GROUP = void 0;
 const spl_token_1 = require("@solana/spl-token");
 const tokenConstants_1 = require("./tokenConstants");
 const web3_js_1 = require("@solana/web3.js");
 exports.DEFAULT_MARGINFI_GROUP = "4qp6Fx6tnZkY5Wropq9wUYgtFxXKwE6viZxFHg3rdAG8";
-const DEFAULT_PUBKEY = web3_js_1.PublicKey.default.toString();
+exports.DEFAULT_PUBKEY = web3_js_1.PublicKey.default.toString();
 exports.MARGINFI_ACCOUNTS = {
-    [DEFAULT_PUBKEY]: {
-        bank: DEFAULT_PUBKEY,
-        liquidityVault: DEFAULT_PUBKEY,
-        vaultAuthority: DEFAULT_PUBKEY,
-        priceOracle: DEFAULT_PUBKEY,
+    [exports.DEFAULT_PUBKEY]: {
+        bank: exports.DEFAULT_PUBKEY,
+        liquidityVault: exports.DEFAULT_PUBKEY,
+        vaultAuthority: exports.DEFAULT_PUBKEY,
+        priceOracle: exports.DEFAULT_PUBKEY,
     },
     [spl_token_1.NATIVE_MINT.toString()]: {
         bank: "CCKtUs6Cgwo4aaQUmBPmyoApH2gUDErxNZCAntD6LYGh",

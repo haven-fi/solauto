@@ -11,7 +11,7 @@ use super::{
     solana_utils::{account_has_data, init_account, init_ata_if_needed, spl_token_transfer},
 };
 use crate::{
-    constants::{SOLAUTO_FEES_WALLET, WSOL_MINT},
+    constants::WSOL_MINT,
     state::{
         referral_state::ReferralState,
         solauto_position::{
@@ -179,28 +179,6 @@ pub fn create_or_update_referral_state<'a>(
     }
 
     Ok(referral_state_account)
-}
-
-pub fn init_solauto_fees_supply_ta<'a>(
-    token_program: &'a AccountInfo<'a>,
-    system_program: &'a AccountInfo<'a>,
-    signer: &'a AccountInfo<'a>,
-    solauto_fees_wallet: &'a AccountInfo<'a>,
-    solauto_fees_supply_ta: &'a AccountInfo<'a>,
-    supply_mint: &'a AccountInfo<'a>,
-) -> ProgramResult {
-    if solauto_fees_wallet.key != &SOLAUTO_FEES_WALLET {
-        msg!("Provided the incorrect solauto fees wallet account");
-        return Err(SolautoError::IncorrectAccounts.into());
-    }
-    init_ata_if_needed(
-        token_program,
-        system_program,
-        signer,
-        solauto_fees_wallet,
-        solauto_fees_supply_ta,
-        supply_mint,
-    )
 }
 
 pub fn initiate_dca_in_if_necessary<'a, 'b>(
