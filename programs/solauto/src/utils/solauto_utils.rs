@@ -332,7 +332,7 @@ pub fn get_solauto_fees_bps(
     }
 
     let referrer_fee = if has_been_referred {
-        fee_bps.div(4.0).floor()
+        fee_bps.div(5.0).floor()
     } else {
         0.0
     };

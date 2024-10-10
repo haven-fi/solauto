@@ -89,7 +89,7 @@ function getSolautoFeesBps(isReferred, targetLiqUtilizationRateBps, positionNetW
     }
     let referrer = 0;
     if (isReferred) {
-        referrer = Math.floor(feeBps / 4);
+        referrer = Math.floor(feeBps / 5);
     }
     return {
         solauto: feeBps - referrer,
