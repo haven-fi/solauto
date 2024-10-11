@@ -3,6 +3,5 @@ export interface MarginfiAssetAccounts {
     liquidityVault: string;
     vaultAuthority: string;
     priceOracle: string;
-    marginfiGroup?: string;
 }
 //# sourceMappingURL=accounts.d.ts.map

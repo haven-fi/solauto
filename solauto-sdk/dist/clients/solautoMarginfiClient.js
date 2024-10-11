@@ -39,12 +39,11 @@ class SolautoMarginfiClient extends solautoClient_1.SolautoClient {
         const marginfiAccountData = await (0, marginfi_sdk_1.safeFetchMarginfiAccount)(this.umi, (0, umi_1.publicKey)(this.marginfiAccountPk), { commitment: "confirmed" });
         this.marginfiGroup = new web3_js_1.PublicKey(marginfiAccountData
             ? marginfiAccountData.group.toString()
-            : args.marginfiGroup ??
-                marginfiAccounts_1.MARGINFI_ACCOUNTS[this.supplyMint.toString()].marginfiGroup ??
-                marginfiAccounts_1.DEFAULT_MARGINFI_GROUP);
+            : (args.marginfiGroup ?? marginfiAccounts_1.DEFAULT_MARGINFI_GROUP));
         this.marginfiSupplyAccounts =
-            marginfiAccounts_1.MARGINFI_ACCOUNTS[this.supplyMint.toString()];
-        this.marginfiDebtAccounts = marginfiAccounts_1.MARGINFI_ACCOUNTS[this.debtMint.toString()];
+            marginfiAccounts_1.MARGINFI_ACCOUNTS[this.marginfiGroup.toString()][this.supplyMint.toString()];
+        this.marginfiDebtAccounts =
+            marginfiAccounts_1.MARGINFI_ACCOUNTS[this.marginfiGroup.toString()][this.debtMint.toString()];
         // TODO: Don't dynamically pull from bank until Marginfi sorts out their price oracle issues.
         // const [supplyBank, debtBank] = await safeFetchAllBank(this.umi, [
         //   publicKey(this.marginfiSupplyAccounts.bank),
@@ -108,7 +107,7 @@ class SolautoMarginfiClient extends solautoClient_1.SolautoClient {
             return [0, 0];
         }
         else {
-            const [maxLtv, liqThreshold] = await (0, marginfiUtils_1.getMaxLtvAndLiqThreshold)(this.umi, {
+            const [maxLtv, liqThreshold] = await (0, marginfiUtils_1.getMaxLtvAndLiqThreshold)(this.umi, this.marginfiGroup, {
                 mint: this.supplyMint,
             }, {
                 mint: this.debtMint,
@@ -291,8 +290,8 @@ class SolautoMarginfiClient extends solautoClient_1.SolautoClient {
         });
     }
     rebalance(rebalanceStep, jupQuote, rebalanceType, flashLoan, targetLiqUtilizationRateBps) {
-        const inputIsSupply = (new web3_js_1.PublicKey(jupQuote.inputMint)).equals(this.supplyMint);
-        const outputIsSupply = (new web3_js_1.PublicKey(jupQuote.outputMint)).equals(this.supplyMint);
+        const inputIsSupply = new web3_js_1.PublicKey(jupQuote.inputMint).equals(this.supplyMint);
+        const outputIsSupply = new web3_js_1.PublicKey(jupQuote.outputMint).equals(this.supplyMint);
         const needSupplyAccounts = (inputIsSupply && rebalanceStep === "A") ||
             (outputIsSupply && rebalanceStep === "B") ||
             (inputIsSupply && flashLoan !== undefined && rebalanceStep == "B");
@@ -434,7 +433,7 @@ class SolautoMarginfiClient extends solautoClient_1.SolautoClient {
         if (state) {
             return state;
         }
-        const freshState = await (0, marginfiUtils_1.getMarginfiAccountPositionState)(this.umi, this.marginfiAccountPk, !this.selfManaged && this.solautoPositionData === null
+        const freshState = await (0, marginfiUtils_1.getMarginfiAccountPositionState)(this.umi, this.marginfiAccountPk, this.marginfiGroup, !this.selfManaged && this.solautoPositionData === null
             ? this.supplyMint
             : undefined, !this.selfManaged && this.solautoPositionData === null
             ? this.debtMint

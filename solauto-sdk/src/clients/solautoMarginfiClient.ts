@@ -47,7 +47,6 @@ import {
   safeFetchAllMarginfiAccount,
   safeFetchMarginfiAccount,
 } from "../marginfi-sdk";
-import { JupSwapDetails } from "../utils/jupiterUtils";
 import { FlashLoanDetails } from "../utils/solauto/rebalanceUtils";
 import {
   findMarginfiAccounts,
@@ -115,14 +114,17 @@ export class SolautoMarginfiClient extends SolautoClient {
     this.marginfiGroup = new PublicKey(
       marginfiAccountData
         ? marginfiAccountData.group.toString()
-        : args.marginfiGroup ??
-          MARGINFI_ACCOUNTS[this.supplyMint.toString()].marginfiGroup ??
-          DEFAULT_MARGINFI_GROUP
+        : (args.marginfiGroup ?? DEFAULT_MARGINFI_GROUP)
     );
 
     this.marginfiSupplyAccounts =
-      MARGINFI_ACCOUNTS[this.supplyMint.toString()]!;
-    this.marginfiDebtAccounts = MARGINFI_ACCOUNTS[this.debtMint.toString()]!;
+      MARGINFI_ACCOUNTS[this.marginfiGroup.toString()][
+        this.supplyMint.toString()
+      ]!;
+    this.marginfiDebtAccounts =
+      MARGINFI_ACCOUNTS[this.marginfiGroup.toString()][
+        this.debtMint.toString()
+      ]!;
 
     // TODO: Don't dynamically pull from bank until Marginfi sorts out their price oracle issues.
     // const [supplyBank, debtBank] = await safeFetchAllBank(this.umi, [
@@ -225,6 +227,7 @@ export class SolautoMarginfiClient extends SolautoClient {
     } else {
       const [maxLtv, liqThreshold] = await getMaxLtvAndLiqThreshold(
         this.umi,
+        this.marginfiGroup,
         {
           mint: this.supplyMint,
         },
@@ -458,8 +461,12 @@ export class SolautoMarginfiClient extends SolautoClient {
     flashLoan?: FlashLoanDetails,
     targetLiqUtilizationRateBps?: number
   ): TransactionBuilder {
-    const inputIsSupply = (new PublicKey(jupQuote.inputMint)).equals(this.supplyMint);
-    const outputIsSupply = (new PublicKey(jupQuote.outputMint)).equals(this.supplyMint);
+    const inputIsSupply = new PublicKey(jupQuote.inputMint).equals(
+      this.supplyMint
+    );
+    const outputIsSupply = new PublicKey(jupQuote.outputMint).equals(
+      this.supplyMint
+    );
     const needSupplyAccounts =
       (inputIsSupply && rebalanceStep === "A") ||
       (outputIsSupply && rebalanceStep === "B") ||
@@ -517,7 +524,8 @@ export class SolautoMarginfiClient extends SolautoClient {
         : undefined,
       rebalanceType,
       targetLiqUtilizationRateBps: targetLiqUtilizationRateBps ?? null,
-      targetInAmountBaseUnit: rebalanceStep === "A" ? parseInt(jupQuote.inAmount) : null,
+      targetInAmountBaseUnit:
+        rebalanceStep === "A" ? parseInt(jupQuote.inAmount) : null,
     });
   }
 
@@ -653,6 +661,7 @@ export class SolautoMarginfiClient extends SolautoClient {
     const freshState = await getMarginfiAccountPositionState(
       this.umi,
       this.marginfiAccountPk,
+      this.marginfiGroup,
       !this.selfManaged && this.solautoPositionData === null
         ? this.supplyMint
         : undefined,

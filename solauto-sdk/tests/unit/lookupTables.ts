@@ -1,4 +1,4 @@
-import { describe, it } from 'mocha';
+import { describe, it } from "mocha";
 import { clusterApiUrl, Connection, PublicKey } from "@solana/web3.js";
 import {
   DEFAULT_PUBKEY,
@@ -20,22 +20,24 @@ describe("Assert lookup tables up-to-date", async () => {
     const existingAccounts =
       lookupTable.value?.state.addresses.map((x) => x.toString()) ?? [];
 
-    for (const key in MARGINFI_ACCOUNTS) {
-      if (key === DEFAULT_PUBKEY) {
-        continue;
-      }
+    for (const group in MARGINFI_ACCOUNTS) {
+      for (const key in MARGINFI_ACCOUNTS[group]) {
+        if (key === DEFAULT_PUBKEY) {
+          continue;
+        }
 
-      const tokenAccounts = MARGINFI_ACCOUNTS[key];
-      const addresses = [
-        new PublicKey(key),
-        tokenAccounts.bank,
-        tokenAccounts.liquidityVault,
-        tokenAccounts.vaultAuthority,
-        tokenAccounts.priceOracle,
-      ];
+        const tokenAccounts = MARGINFI_ACCOUNTS[key];
+        const addresses = [
+          new PublicKey(key),
+          tokenAccounts.bank,
+          tokenAccounts.liquidityVault,
+          tokenAccounts.vaultAuthority,
+          tokenAccounts.priceOracle,
+        ];
 
-      if (addresses.find((x) => !existingAccounts.includes(x.toString()))) {
-        throw new Error("Marginfi accounts lookup table missing an account");
+        if (addresses.find((x) => !existingAccounts.includes(x.toString()))) {
+          throw new Error("Marginfi accounts lookup table missing an account");
+        }
       }
     }
   });

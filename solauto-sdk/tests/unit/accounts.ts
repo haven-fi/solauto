@@ -15,6 +15,7 @@ describe("Assert Solauto fee token accounts are created", async () => {
     let [_, umi] = getSolanaRpcConnection(
       buildHeliusApiUrl(process.env.HELIUS_API_KEY!)
     );
+
     const tokenAccounts = await umi.rpc.getAccounts(
       ALL_SUPPORTED_TOKENS.map((x) => publicKey(x))
     );

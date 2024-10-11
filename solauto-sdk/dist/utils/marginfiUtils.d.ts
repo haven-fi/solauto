@@ -5,7 +5,7 @@ import { MarginfiAssetAccounts } from "../types/accounts";
 import { PositionState } from "../generated";
 import { LivePositionUpdates } from "./solauto/generalUtils";
 export declare function findMarginfiAccounts(bank: PublicKey): MarginfiAssetAccounts;
-export declare function getMaxLtvAndLiqThreshold(umi: Umi, supply: {
+export declare function getMaxLtvAndLiqThreshold(umi: Umi, marginfiGroup: PublicKey, supply: {
     mint: PublicKey;
     bank?: Bank | null;
 }, debt: {
@@ -17,6 +17,6 @@ export declare function getAllMarginfiAccountsByAuthority(umi: Umi, authority: P
     supplyMint?: PublicKey;
     debtMint?: PublicKey;
 }[]>;
-export declare function getMarginfiAccountPositionState(umi: Umi, marginfiAccountPk: PublicKey, supplyMint?: PublicKey, debtMint?: PublicKey, livePositionUpdates?: LivePositionUpdates): Promise<PositionState | undefined>;
+export declare function getMarginfiAccountPositionState(umi: Umi, marginfiAccountPk: PublicKey, marginfiGroup?: PublicKey, supplyMint?: PublicKey, debtMint?: PublicKey, livePositionUpdates?: LivePositionUpdates): Promise<PositionState | undefined>;
 export declare function getUpToDateShareValues(umi: Umi, bank: Bank): Promise<[number, number]>;
 //# sourceMappingURL=marginfiUtils.d.ts.map
