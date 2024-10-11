@@ -213,7 +213,7 @@ pub struct RebalanceSettings {
     pub rebalance_type: SolautoRebalanceType,
     /// Target liq utilization rate. Only used/allowed if signed by the position authority.
     pub target_liq_utilization_rate_bps: Option<u16>,
-    /// Target input amount. Only used/allowed if signed by the position authority.
+    /// The amount to use in the token swap. Gets validated by the program.
     pub target_in_amount_base_unit: Option<u64>,
 }
 
