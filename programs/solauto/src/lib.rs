@@ -10,7 +10,7 @@ pub mod utils;
 use solana_security_txt::security_txt;
 security_txt! {
     name: "solauto",
-    project_url: "https://havenfi.app/",
+    project_url: "https://havenfi.xyz/",
     contacts: "contacthavenfi@gmail.com",
     policy: "https://github.com/haven-fi/solauto/blob/master/SECURITY.md",
     preferred_languages: "en",
