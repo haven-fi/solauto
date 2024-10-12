@@ -79,7 +79,7 @@ pub fn claim_referral_fees(
             ctx.accounts.token_program,
             ctx.accounts.system_program,
             ctx.accounts.signer,
-            ctx.accounts.signer,
+            ctx.accounts.referral_authority.unwrap(),
             ctx.accounts.fees_destination_ta.unwrap(),
             ctx.accounts.referral_fees_dest_mint,
         )?;

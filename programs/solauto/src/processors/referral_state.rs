@@ -163,7 +163,7 @@ pub fn process_claim_referral_fees<'a>(accounts: &'a [AccountInfo<'a>]) -> Progr
     validation_utils::validate_referral_signer(
         &referral_state,
         ctx.accounts.signer,
-        ctx.accounts.referral_fees_dest_mint.key == &WSOL_MINT,
+        true,
     )?;
     if ctx.accounts.referral_authority.is_some()
         && ctx.accounts.referral_authority.unwrap().key != &referral_state.data.authority
