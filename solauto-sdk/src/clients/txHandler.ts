@@ -3,16 +3,16 @@ import { Connection } from "@solana/web3.js";
 import { consoleLog, getSolanaRpcConnection } from "../utils";
 
 export abstract class TxHandler {
-  public heliusApiUrl!: string;
+  public rpcUrl!: string;
   public umi!: Umi;
   public connection!: Connection;
 
   constructor(
-    heliusApiUrl: string,
+    rpcUrl: string,
     localTest?: boolean
   ) {
-    this.heliusApiUrl = heliusApiUrl;
-    const [connection, umi] = getSolanaRpcConnection(this.heliusApiUrl);
+    this.rpcUrl = rpcUrl;
+    const [connection, umi] = getSolanaRpcConnection(this.rpcUrl);
     this.connection = connection;
     this.umi = umi;
 
