@@ -9,6 +9,7 @@ import { ReferralStateManager } from "./referralStateManager";
 import { TxHandler } from "./txHandler";
 import { QuoteResponse } from "@jup-ag/api";
 export interface SolautoClientArgs {
+    new?: boolean;
     authority?: PublicKey;
     positionId?: number;
     signer?: Signer;
@@ -42,7 +43,7 @@ export declare abstract class SolautoClient extends TxHandler {
     solautoFeesSupplyTa: PublicKey;
     authorityLutAddress?: PublicKey;
     livePositionUpdates: LivePositionUpdates;
-    constructor(heliusApiUrl: string, localTest?: boolean);
+    constructor(rpcUrl: string, localTest?: boolean);
     initialize(args: SolautoClientArgs, lendingPlatform: LendingPlatform): Promise<void>;
     setReferredBy(referredBy: PublicKey): void;
     resetLiveTxUpdates(success?: boolean): Promise<void>;

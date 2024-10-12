@@ -39,7 +39,6 @@ import {
   getTokenAccount,
 } from "../utils/accountUtils";
 import { SOLAUTO_FEES_WALLET } from "../constants/generalAccounts";
-import { JupSwapDetails } from "../utils/jupiterUtils";
 import {
   getWrappedInstruction,
   splTokenTransferUmiIx,
@@ -56,6 +55,7 @@ import { TxHandler } from "./txHandler";
 import { QuoteResponse } from "@jup-ag/api";
 
 export interface SolautoClientArgs {
+  new?: boolean;
   authority?: PublicKey;
   positionId?: number;
   signer?: Signer;
@@ -133,11 +133,11 @@ export abstract class SolautoClient extends TxHandler {
       this.authority,
       this.positionId
     );
-    this.solautoPositionData = await safeFetchSolautoPosition(
+    this.solautoPositionData = !args.new ? await safeFetchSolautoPosition(
       this.umi,
       publicKey(this.solautoPosition),
       { commitment: "confirmed" }
-    );
+    ) : null;
     this.solautoPositionState = this.solautoPositionData?.state;
 
     this.maxLtvBps = undefined;

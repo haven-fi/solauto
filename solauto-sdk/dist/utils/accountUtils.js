@@ -47,11 +47,11 @@ function getReferralState(authority) {
     const [ReferralState, _] = web3_js_1.PublicKey.findProgramAddressSync([strBuffer, authority.toBuffer()], new web3_js_1.PublicKey(generated_1.SOLAUTO_PROGRAM_ID));
     return ReferralState;
 }
-async function getMarginfiAccountPDA(solautoPositionAccount, marginfiAccountSeedIdx) {
+function getMarginfiAccountPDA(solautoPositionAccount, marginfiAccountSeedIdx) {
     const seeds = [
         solautoPositionAccount.toBuffer(),
         bufferFromU64(marginfiAccountSeedIdx),
     ];
-    const [marginfiAccount, _] = await web3_js_1.PublicKey.findProgramAddress(seeds, new web3_js_1.PublicKey(generated_1.SOLAUTO_PROGRAM_ID));
+    const [marginfiAccount, _] = web3_js_1.PublicKey.findProgramAddressSync(seeds, new web3_js_1.PublicKey(generated_1.SOLAUTO_PROGRAM_ID));
     return marginfiAccount;
 }

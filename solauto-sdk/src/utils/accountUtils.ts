@@ -60,7 +60,7 @@ export function getReferralState(authority: PublicKey) {
   return ReferralState;
 }
 
-export async function getMarginfiAccountPDA(
+export function getMarginfiAccountPDA(
   solautoPositionAccount: PublicKey,
   marginfiAccountSeedIdx: bigint
 ) {
@@ -69,7 +69,7 @@ export async function getMarginfiAccountPDA(
     bufferFromU64(marginfiAccountSeedIdx),
   ];
 
-  const [marginfiAccount, _] = await PublicKey.findProgramAddress(
+  const [marginfiAccount, _] = PublicKey.findProgramAddressSync(
     seeds,
     new PublicKey(SOLAUTO_PROGRAM_ID)
   );

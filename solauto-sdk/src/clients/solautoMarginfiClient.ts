@@ -96,7 +96,7 @@ export class SolautoMarginfiClient extends SolautoClient {
       this.marginfiAccountSeedIdx = generateRandomU64();
       this.marginfiAccount = this.solautoPositionData
         ? toWeb3JsPublicKey(this.solautoPositionData.position.protocolAccount)
-        : await getMarginfiAccountPDA(
+        : getMarginfiAccountPDA(
             this.solautoPosition,
             this.marginfiAccountSeedIdx
           );
@@ -106,11 +106,13 @@ export class SolautoMarginfiClient extends SolautoClient {
         ? toWeb3JsPublicKey(this.marginfiAccount.publicKey)
         : this.marginfiAccount;
 
-    const marginfiAccountData = await safeFetchMarginfiAccount(
-      this.umi,
-      publicKey(this.marginfiAccountPk),
-      { commitment: "confirmed" }
-    );
+    const marginfiAccountData = !args.new
+      ? await safeFetchMarginfiAccount(
+          this.umi,
+          publicKey(this.marginfiAccountPk),
+          { commitment: "confirmed" }
+        )
+      : null;
     this.marginfiGroup = new PublicKey(
       marginfiAccountData
         ? marginfiAccountData.group.toString()
@@ -126,28 +128,17 @@ export class SolautoMarginfiClient extends SolautoClient {
         this.debtMint.toString()
       ]!;
 
-    // TODO: Don't dynamically pull from bank until Marginfi sorts out their price oracle issues.
+    // TODO: Don't dynamically pull oracle from bank until Marginfi sorts out their price oracle issues.
     // const [supplyBank, debtBank] = await safeFetchAllBank(this.umi, [
     //   publicKey(this.marginfiSupplyAccounts.bank),
     //   publicKey(this.marginfiDebtAccounts.bank),
     // ]);
     // this.supplyPriceOracle = toWeb3JsPublicKey(supplyBank.config.oracleKeys[0]);
     // this.debtPriceOracle = toWeb3JsPublicKey(debtBank.config.oracleKeys[0]);
-
     this.supplyPriceOracle = new PublicKey(
       this.marginfiSupplyAccounts.priceOracle
     );
     this.debtPriceOracle = new PublicKey(this.marginfiDebtAccounts.priceOracle);
-
-    if (!this.solautoPositionState) {
-      const result = await this.maxLtvAndLiqThresholdBps()!;
-      this.solautoPositionState = createFakePositionState(
-        { mint: this.supplyMint },
-        { mint: this.debtMint },
-        result ? result[0] : 0,
-        result ? result[1] : 0
-      );
-    }
 
     if (!this.initialized) {
       await this.setIntermediaryMarginfiDetails();

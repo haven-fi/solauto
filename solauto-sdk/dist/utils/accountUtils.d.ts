@@ -7,5 +7,5 @@ export declare function getTokenAccounts(wallet: PublicKey, tokenMints: PublicKe
 export declare function getTokenAccountData(umi: Umi, tokenAccount: PublicKey): Promise<import("@solana/spl-token").RawAccount | undefined>;
 export declare function getSolautoPositionAccount(signer: PublicKey, positionId: number): PublicKey;
 export declare function getReferralState(authority: PublicKey): PublicKey;
-export declare function getMarginfiAccountPDA(solautoPositionAccount: PublicKey, marginfiAccountSeedIdx: bigint): Promise<PublicKey>;
+export declare function getMarginfiAccountPDA(solautoPositionAccount: PublicKey, marginfiAccountSeedIdx: bigint): PublicKey;
 //# sourceMappingURL=accountUtils.d.ts.map

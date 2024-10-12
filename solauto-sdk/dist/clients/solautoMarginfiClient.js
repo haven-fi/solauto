@@ -12,7 +12,6 @@ const generalUtils_1 = require("../utils/generalUtils");
 const marginfi_sdk_1 = require("../marginfi-sdk");
 const marginfiUtils_1 = require("../utils/marginfiUtils");
 const numberUtils_1 = require("../utils/numberUtils");
-const utils_1 = require("../utils");
 class SolautoMarginfiClient extends solautoClient_1.SolautoClient {
     constructor() {
         super(...arguments);
@@ -30,13 +29,15 @@ class SolautoMarginfiClient extends solautoClient_1.SolautoClient {
             this.marginfiAccountSeedIdx = (0, generalUtils_1.generateRandomU64)();
             this.marginfiAccount = this.solautoPositionData
                 ? (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.solautoPositionData.position.protocolAccount)
-                : await (0, accountUtils_1.getMarginfiAccountPDA)(this.solautoPosition, this.marginfiAccountSeedIdx);
+                : (0, accountUtils_1.getMarginfiAccountPDA)(this.solautoPosition, this.marginfiAccountSeedIdx);
         }
         this.marginfiAccountPk =
             "publicKey" in this.marginfiAccount
                 ? (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.marginfiAccount.publicKey)
                 : this.marginfiAccount;
-        const marginfiAccountData = await (0, marginfi_sdk_1.safeFetchMarginfiAccount)(this.umi, (0, umi_1.publicKey)(this.marginfiAccountPk), { commitment: "confirmed" });
+        const marginfiAccountData = !args.new
+            ? await (0, marginfi_sdk_1.safeFetchMarginfiAccount)(this.umi, (0, umi_1.publicKey)(this.marginfiAccountPk), { commitment: "confirmed" })
+            : null;
         this.marginfiGroup = new web3_js_1.PublicKey(marginfiAccountData
             ? marginfiAccountData.group.toString()
             : (args.marginfiGroup ?? marginfiAccounts_1.DEFAULT_MARGINFI_GROUP));
@@ -44,7 +45,7 @@ class SolautoMarginfiClient extends solautoClient_1.SolautoClient {
             marginfiAccounts_1.MARGINFI_ACCOUNTS[this.marginfiGroup.toString()][this.supplyMint.toString()];
         this.marginfiDebtAccounts =
             marginfiAccounts_1.MARGINFI_ACCOUNTS[this.marginfiGroup.toString()][this.debtMint.toString()];
-        // TODO: Don't dynamically pull from bank until Marginfi sorts out their price oracle issues.
+        // TODO: Don't dynamically pull oracle from bank until Marginfi sorts out their price oracle issues.
         // const [supplyBank, debtBank] = await safeFetchAllBank(this.umi, [
         //   publicKey(this.marginfiSupplyAccounts.bank),
         //   publicKey(this.marginfiDebtAccounts.bank),
@@ -53,10 +54,6 @@ class SolautoMarginfiClient extends solautoClient_1.SolautoClient {
         // this.debtPriceOracle = toWeb3JsPublicKey(debtBank.config.oracleKeys[0]);
         this.supplyPriceOracle = new web3_js_1.PublicKey(this.marginfiSupplyAccounts.priceOracle);
         this.debtPriceOracle = new web3_js_1.PublicKey(this.marginfiDebtAccounts.priceOracle);
-        if (!this.solautoPositionState) {
-            const result = await this.maxLtvAndLiqThresholdBps();
-            this.solautoPositionState = (0, utils_1.createFakePositionState)({ mint: this.supplyMint }, { mint: this.debtMint }, result ? result[0] : 0, result ? result[1] : 0);
-        }
         if (!this.initialized) {
             await this.setIntermediaryMarginfiDetails();
         }

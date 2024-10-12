@@ -16,8 +16,8 @@ const generalUtils_2 = require("../utils/solauto/generalUtils");
 const referralStateManager_1 = require("./referralStateManager");
 const txHandler_1 = require("./txHandler");
 class SolautoClient extends txHandler_1.TxHandler {
-    constructor(heliusApiUrl, localTest) {
-        super(heliusApiUrl, localTest);
+    constructor(rpcUrl, localTest) {
+        super(rpcUrl, localTest);
         this.livePositionUpdates = new generalUtils_2.LivePositionUpdates();
         this.umi = this.umi.use({
             install(umi) {
@@ -38,8 +38,10 @@ class SolautoClient extends txHandler_1.TxHandler {
         this.selfManaged = this.positionId === 0;
         this.lendingPlatform = lendingPlatform;
         this.solautoPosition = (0, accountUtils_1.getSolautoPositionAccount)(this.authority, this.positionId);
-        this.solautoPositionData = await (0, generated_1.safeFetchSolautoPosition)(this.umi, (0, umi_1.publicKey)(this.solautoPosition), { commitment: "confirmed" });
+        this.solautoPositionData = !args.new ? await (0, generated_1.safeFetchSolautoPosition)(this.umi, (0, umi_1.publicKey)(this.solautoPosition), { commitment: "confirmed" }) : null;
         this.solautoPositionState = this.solautoPositionData?.state;
+        this.maxLtvBps = undefined;
+        this.liqThresholdBps = undefined;
         this.supplyMint =
             args.supplyMint ??
                 (this.solautoPositionData
@@ -54,7 +56,7 @@ class SolautoClient extends txHandler_1.TxHandler {
                     : web3_js_1.PublicKey.default);
         this.positionDebtTa = (0, accountUtils_1.getTokenAccount)(this.solautoPosition, this.debtMint);
         this.signerDebtTa = (0, accountUtils_1.getTokenAccount)((0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.signer.publicKey), this.debtMint);
-        this.referralStateManager = new referralStateManager_1.ReferralStateManager(this.heliusApiUrl);
+        this.referralStateManager = new referralStateManager_1.ReferralStateManager(this.rpcUrl);
         await this.referralStateManager.initialize({
             referralAuthority: this.authority,
             signer: args.signer,
