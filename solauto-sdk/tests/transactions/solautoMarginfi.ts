@@ -17,7 +17,7 @@ import {
   TransactionsManager,
 } from "../../src/transactions/transactionsManager";
 import { PublicKey } from "@solana/web3.js";
-import { USDC_MINT } from "../../src/constants";
+import { USDC } from "../../src/constants";
 import { buildHeliusApiUrl, getMarginfiAccountPositionState } from "../../src/utils";
 
 describe("Solauto Marginfi tests", async () => {
@@ -48,7 +48,7 @@ describe("Solauto Marginfi tests", async () => {
         //   "4nNvUXF5YqHFcH2nGweSiuvy1ct7V5FXfoCLKFYUN36z"
         // ),
         // supplyMint: NATIVE_MINT,
-        // debtMint: new PublicKey(USDC_MINT),
+        // debtMint: new PublicKey(USDC),
       }
     );
 

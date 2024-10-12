@@ -35,7 +35,7 @@ import {
   fetchTokenPrices,
   safeGetPrice,
 } from "../../src/utils/generalUtils";
-import { USDC_MINT } from "../../src/constants/tokenConstants";
+import { USDC } from "../../src/constants/tokenConstants";
 
 const signer = setupTest(undefined, true);
 
@@ -115,7 +115,7 @@ async function getFakePosition(
     positionId: 1,
     signer,
     supplyMint: new PublicKey(NATIVE_MINT),
-    debtMint: new PublicKey(USDC_MINT),
+    debtMint: new PublicKey(USDC),
   });
 
   const supplyUsd = 1000;
@@ -135,7 +135,7 @@ async function getFakePosition(
             fromBps(fakeLiqUtilizationRateBps)) /
           debtPrice,
         price: 1,
-        mint: new PublicKey(USDC_MINT),
+        mint: new PublicKey(USDC),
       },
       maxLtvBps,
       liqThresholdBps
@@ -284,7 +284,7 @@ describe("Rebalance tests", async () => {
   before(async () => {
     [supplyPrice, debtPrice] = await fetchTokenPrices([
       NATIVE_MINT,
-      new PublicKey(USDC_MINT),
+      new PublicKey(USDC),
     ]);
   });
 
