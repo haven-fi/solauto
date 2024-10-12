@@ -19,10 +19,20 @@ export const PYTH_PRICE_FEED_IDS = {
     "0x0a0408d619e9380abad35060f9192039ed5042fa6f82301d0e48bb52be830996",
   [tokens.BONK]:
     "0x72b021217ca3fe68922a19aaf990109cb9d84e9ad004b4d2025ad6f529314419",
+  [tokens.WIF]:
+    "0x4ca4beeca86f0d164160323817a4e42b10010a724c2217c6ee41b54cd4cc61fc",
   [tokens.JTO]:
     "0xb43660a5f790c69354b0729a5ef9d50d68f1df92107540210b9cccba1f947cc2",
   [tokens.JLP]:
     "0xc811abc82b4bad1f9bd711a2773ccaa935b03ecef974236942cec5e0eb845a3a",
+  [tokens.WBTC]:
+    "0xc9d8b075a5c69303365ae23633d4e085199bf5c520a3b90fed1322a0342ffc33",
+  [tokens.WETH]:
+    "0x9d4294bbcd1174d6f2003ec365831e64cc31d9f6f15a2b85399db8d5000960f6",
+  [tokens.HNT]:
+    "0x649fdd7ec08e8e2a20f425729854e90293dcbe2376abc47197a14da6ff339756",
+  [tokens.PYTH]:
+    "0x0bbf28e9a841a1cc788f6a361b17ca072d0ea3098a1e5df1c3922d06719579ff",
   [tokens.USDC]:
     "0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a",
   [tokens.USDT]:

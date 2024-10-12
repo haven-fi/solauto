@@ -60,6 +60,12 @@ export const MARGINFI_ACCOUNTS: {
       vaultAuthority: "26kcZkdjJc94PdhqiLiEaGiLCYgAVVUfpDaZyK4cqih3",
       priceOracle: "DBE3N8uNjhKPRHfANdwGvCZghWXyLPdqdSbEW2XFwBiX",
     },
+    [tokens.WIF]: {
+      bank: "9dpu8KL5ABYiD3WP2Cnajzg1XaotcJvZspv29Y1Y3tn1",
+      liquidityVault: "4kT3EXc5dDVndUU9mV6EH3Jh3CSEvpcCZjuMkwqrtxUy",
+      vaultAuthority: "9gNrvvZ9RuTyRWooiEEypwcXU6kyXW8yWuhXU8tWUH5L",
+      priceOracle: "6B23K3tkb51vLZA14jcEQVCA1pfHptzEHFA93V5dYwbT",
+    },
     [tokens.JTO]: {
       bank: "EdB7YADw4XUt6wErT8kHGCUok4mnTpWGzPUU9rWDebzb",
       liquidityVault: "3bY1DEkXodGmPMG5f7ABA12228MBG5JdAAKf5cgkB6G1",
@@ -71,6 +77,30 @@ export const MARGINFI_ACCOUNTS: {
       liquidityVault: "9xfyL8gxbV77VvhdgFmacHyLEG4h7d2eDWkSMfhXUPQ",
       vaultAuthority: "F4RSGd4BRXscCqAVG3rFLiPVpo7v6j1drVqnvSM3rBKH",
       priceOracle: "B1wxT1VK3i6DqCeXNdTHT5hBAJkLa3rxuTqBc7E7XRXV",
+    },
+    [tokens.WBTC]: {
+      bank: "BKsfDJCMbYep6gr9pq8PsmJbb5XGLHbAJzUV8vmorz7a",
+      liquidityVault: "CMNdnjfaDQZo3VMoX31wZQBnSGu5FMmb1CnBaU4tApZk",
+      vaultAuthority: "7P2TQHYgVJkXv1VPaREsL5Pi1gnNjVif5aF3pJewZ9kj",
+      priceOracle: "4cSM2e6rvbGQUFiJbqytoVMi5GgghSMr8LwVrT9VPSPo",
+    },
+    [tokens.WETH]: {
+      bank: "BkUyfXjbBBALcfZvw76WAFRvYQ21xxMWWeoPtJrUqG3z",
+      liquidityVault: "AxPJtiTEDksJWvCqNHCziK4uUcabqfmwW41dqtZrPFkp",
+      vaultAuthority: "ELXogWuyXrFyUG1vevffVbEhVxdFrHf2GCJTtRGKBWdM",
+      priceOracle: "42amVS4KgzR9rA28tkVYqVXjq9Qa8dcZQMbH5EYFX6XC",
+    },
+    [tokens.HNT]: {
+      bank: "JBcir4DPRPYVUpks9hkS1jtHMXejfeBo4xJGv3AYYHg6",
+      liquidityVault: "E8Q7u5e9L9Uykx16em75ERT9wfbBPtkNL8gsRjoP8GB9",
+      vaultAuthority: "AjsyrYpgaH275DBSnvNWdGK33hVycSFuXN87FKnX6fVY",
+      priceOracle: "4DdmDswskDxXGpwHrXUfn2CNUm9rt21ac79GHNTN3J33",
+    },
+    [tokens.PYTH]: {
+      bank: "E4td8i8PT2BZkMygzW4MGHCv2KPPs57dvz5W2ZXf9Twu",
+      liquidityVault: "DUrAkkaMAckzes7so9T5frXm9YFFgjAAm3MMwHwTfVJq",
+      vaultAuthority: "9b5KdVnbbfEQ2qhLeFjWvcAx2VWe9XHx7ZgayZyL9a6C",
+      priceOracle: "8vjchtMuJNY4oFQdTi8yCe6mhCaNBFaUbktT482TpLPS",
     },
     [tokens.USDC]: {
       bank: "2s37akK2eyBbp8DZgCm7RtsaEz8eJP3Nxd4urLHQv7yB",
