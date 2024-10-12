@@ -140,6 +140,9 @@ export abstract class SolautoClient extends TxHandler {
     );
     this.solautoPositionState = this.solautoPositionData?.state;
 
+    this.maxLtvBps = undefined;
+    this.liqThresholdBps = undefined;
+
     this.supplyMint =
       args.supplyMint ??
       (this.solautoPositionData
