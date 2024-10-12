@@ -5,6 +5,7 @@ import { MarginfiAssetAccounts } from "../types/accounts";
 import { PositionState } from "../generated";
 import { LivePositionUpdates } from "./solauto/generalUtils";
 export declare function findMarginfiAccounts(bank: PublicKey): MarginfiAssetAccounts;
+export declare function marginfiMaxLtvAndLiqThresholdBps(supplyBank: Bank, debtBank: Bank, supplyPrice: number): [number, number];
 export declare function getMaxLtvAndLiqThreshold(umi: Umi, marginfiGroup: PublicKey, supply: {
     mint: PublicKey;
     bank?: Bank | null;

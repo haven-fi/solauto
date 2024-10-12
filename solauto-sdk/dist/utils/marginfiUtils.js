@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.findMarginfiAccounts = findMarginfiAccounts;
+exports.marginfiMaxLtvAndLiqThresholdBps = marginfiMaxLtvAndLiqThresholdBps;
 exports.getMaxLtvAndLiqThreshold = getMaxLtvAndLiqThreshold;
 exports.getAllMarginfiAccountsByAuthority = getAllMarginfiAccountsByAuthority;
 exports.getMarginfiAccountPositionState = getMarginfiAccountPositionState;
@@ -25,6 +26,21 @@ function findMarginfiAccounts(bank) {
     }
     throw new Error(`Marginfi accounts not found by the bank: ${bank}`);
 }
+function marginfiMaxLtvAndLiqThresholdBps(supplyBank, debtBank, supplyPrice) {
+    let maxLtv = (0, numberUtils_1.bytesToI80F48)(supplyBank.config.assetWeightInit.value) /
+        (0, numberUtils_1.bytesToI80F48)(debtBank.config.liabilityWeightInit.value);
+    const liqThreshold = (0, numberUtils_1.bytesToI80F48)(supplyBank.config.assetWeightMaint.value) /
+        (0, numberUtils_1.bytesToI80F48)(debtBank.config.liabilityWeightMaint.value);
+    const totalDepositedUsdValue = (0, numberUtils_1.fromBaseUnit)(BigInt(Math.round((0, numberUtils_1.bytesToI80F48)(supplyBank.totalAssetShares.value) *
+        (0, numberUtils_1.bytesToI80F48)(supplyBank.assetShareValue.value))), supplyBank.mintDecimals) * supplyPrice;
+    if (supplyBank.config.totalAssetValueInitLimit !== BigInt(0) &&
+        totalDepositedUsdValue > supplyBank.config.totalAssetValueInitLimit) {
+        const discount = Number(supplyBank.config.totalAssetValueInitLimit) /
+            totalDepositedUsdValue;
+        maxLtv = Math.round(maxLtv * Number(discount));
+    }
+    return [maxLtv, liqThreshold];
+}
 async function getMaxLtvAndLiqThreshold(umi, marginfiGroup, supply, debt, supplyPrice) {
     if (!supply.bank && supply.mint.equals(web3_js_1.PublicKey.default)) {
         return [0, 0];
@@ -45,19 +61,7 @@ async function getMaxLtvAndLiqThreshold(umi, marginfiGroup, supply, debt, supply
     if (!debt.bank || debt.bank === null) {
         return [0, 0];
     }
-    let maxLtv = (0, numberUtils_1.bytesToI80F48)(supply.bank.config.assetWeightInit.value) /
-        (0, numberUtils_1.bytesToI80F48)(debt.bank.config.liabilityWeightInit.value);
-    const liqThreshold = (0, numberUtils_1.bytesToI80F48)(supply.bank.config.assetWeightMaint.value) /
-        (0, numberUtils_1.bytesToI80F48)(debt.bank.config.liabilityWeightMaint.value);
-    const totalDepositedUsdValue = (0, numberUtils_1.fromBaseUnit)(BigInt(Math.round((0, numberUtils_1.bytesToI80F48)(supply.bank.totalAssetShares.value) *
-        (0, numberUtils_1.bytesToI80F48)(supply.bank.assetShareValue.value))), supply.bank.mintDecimals) * supplyPrice;
-    if (supply.bank.config.totalAssetValueInitLimit !== BigInt(0) &&
-        totalDepositedUsdValue > supply.bank.config.totalAssetValueInitLimit) {
-        const discount = Number(supply.bank.config.totalAssetValueInitLimit) /
-            totalDepositedUsdValue;
-        maxLtv = Math.round(maxLtv * Number(discount));
-    }
-    return [maxLtv, liqThreshold];
+    return marginfiMaxLtvAndLiqThresholdBps(supply.bank, debt.bank, supplyPrice);
 }
 async function getAllMarginfiAccountsByAuthority(umi, authority, compatibleWithSolauto) {
     const marginfiAccounts = await umi.rpc.getProgramAccounts(marginfi_sdk_1.MARGINFI_PROGRAM_ID, {

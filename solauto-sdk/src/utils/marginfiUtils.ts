@@ -20,7 +20,10 @@ import {
   toBaseUnit,
   toBps,
 } from "./numberUtils";
-import { DEFAULT_MARGINFI_GROUP, MARGINFI_ACCOUNTS } from "../constants/marginfiAccounts";
+import {
+  DEFAULT_MARGINFI_GROUP,
+  MARGINFI_ACCOUNTS,
+} from "../constants/marginfiAccounts";
 import { MarginfiAssetAccounts } from "../types/accounts";
 import { PositionState, PositionTokenUsage } from "../generated";
 import { USD_DECIMALS } from "../constants/generalAccounts";
@@ -39,6 +42,41 @@ export function findMarginfiAccounts(bank: PublicKey): MarginfiAssetAccounts {
     }
   }
   throw new Error(`Marginfi accounts not found by the bank: ${bank}`);
+}
+
+export function marginfiMaxLtvAndLiqThresholdBps(
+  supplyBank: Bank,
+  debtBank: Bank,
+  supplyPrice: number
+): [number, number] {
+  let maxLtv =
+    bytesToI80F48(supplyBank.config.assetWeightInit.value) /
+    bytesToI80F48(debtBank.config.liabilityWeightInit.value);
+  const liqThreshold =
+    bytesToI80F48(supplyBank.config.assetWeightMaint.value) /
+    bytesToI80F48(debtBank.config.liabilityWeightMaint.value);
+
+  const totalDepositedUsdValue =
+    fromBaseUnit(
+      BigInt(
+        Math.round(
+          bytesToI80F48(supplyBank.totalAssetShares.value) *
+            bytesToI80F48(supplyBank.assetShareValue.value)
+        )
+      ),
+      supplyBank.mintDecimals
+    ) * supplyPrice!;
+  if (
+    supplyBank.config.totalAssetValueInitLimit !== BigInt(0) &&
+    totalDepositedUsdValue > supplyBank.config.totalAssetValueInitLimit
+  ) {
+    const discount =
+      Number(supplyBank.config.totalAssetValueInitLimit) /
+      totalDepositedUsdValue;
+    maxLtv = Math.round(maxLtv * Number(discount));
+  }
+
+  return [maxLtv, liqThreshold];
 }
 
 export async function getMaxLtvAndLiqThreshold(
@@ -61,7 +99,9 @@ export async function getMaxLtvAndLiqThreshold(
   if (!supply.bank || supply.bank === null) {
     supply.bank = await safeFetchBank(
       umi,
-      publicKey(MARGINFI_ACCOUNTS[marginfiGroup.toString()][supply.mint.toString()].bank),
+      publicKey(
+        MARGINFI_ACCOUNTS[marginfiGroup.toString()][supply.mint.toString()].bank
+      ),
       { commitment: "confirmed" }
     );
   }
@@ -72,7 +112,9 @@ export async function getMaxLtvAndLiqThreshold(
   ) {
     debt.bank = await safeFetchBank(
       umi,
-      publicKey(MARGINFI_ACCOUNTS[marginfiGroup.toString()][debt.mint.toString()].bank),
+      publicKey(
+        MARGINFI_ACCOUNTS[marginfiGroup.toString()][debt.mint.toString()].bank
+      ),
       { commitment: "confirmed" }
     );
   }
@@ -88,34 +130,7 @@ export async function getMaxLtvAndLiqThreshold(
     return [0, 0];
   }
 
-  let maxLtv =
-    bytesToI80F48(supply.bank!.config.assetWeightInit.value) /
-    bytesToI80F48(debt.bank.config.liabilityWeightInit.value);
-  const liqThreshold =
-    bytesToI80F48(supply.bank!.config.assetWeightMaint.value) /
-    bytesToI80F48(debt.bank.config.liabilityWeightMaint.value);
-
-  const totalDepositedUsdValue =
-    fromBaseUnit(
-      BigInt(
-        Math.round(
-          bytesToI80F48(supply.bank!.totalAssetShares.value) *
-            bytesToI80F48(supply.bank!.assetShareValue.value)
-        )
-      ),
-      supply.bank!.mintDecimals
-    ) * supplyPrice!;
-  if (
-    supply.bank!.config.totalAssetValueInitLimit !== BigInt(0) &&
-    totalDepositedUsdValue > supply.bank!.config.totalAssetValueInitLimit
-  ) {
-    const discount =
-      Number(supply.bank!.config.totalAssetValueInitLimit) /
-      totalDepositedUsdValue;
-    maxLtv = Math.round(maxLtv * Number(discount));
-  }
-
-  return [maxLtv, liqThreshold];
+  return marginfiMaxLtvAndLiqThresholdBps(supply.bank!, debt.bank, supplyPrice);
 }
 
 export async function getAllMarginfiAccountsByAuthority(
@@ -266,7 +281,11 @@ export async function getMarginfiAccountPositionState(
     supplyMint && supplyMint !== PublicKey.default
       ? await safeFetchBank(
           umi,
-          publicKey(MARGINFI_ACCOUNTS[marginfiGroup?.toString() ?? ""][supplyMint.toString()].bank),
+          publicKey(
+            MARGINFI_ACCOUNTS[marginfiGroup?.toString() ?? ""][
+              supplyMint.toString()
+            ].bank
+          ),
           { commitment: "confirmed" }
         )
       : null;
@@ -274,7 +293,11 @@ export async function getMarginfiAccountPositionState(
     debtMint && debtMint !== PublicKey.default
       ? await safeFetchBank(
           umi,
-          publicKey(MARGINFI_ACCOUNTS[marginfiGroup?.toString() ?? ""][debtMint.toString()].bank),
+          publicKey(
+            MARGINFI_ACCOUNTS[marginfiGroup?.toString() ?? ""][
+              debtMint.toString()
+            ].bank
+          ),
           { commitment: "confirmed" }
         )
       : null;
@@ -341,7 +364,11 @@ export async function getMarginfiAccountPositionState(
     return undefined;
   }
 
-  if (!toWeb3JsPublicKey(supplyBank.group).equals(new PublicKey(DEFAULT_MARGINFI_GROUP))) {
+  if (
+    !toWeb3JsPublicKey(supplyBank.group).equals(
+      new PublicKey(DEFAULT_MARGINFI_GROUP)
+    )
+  ) {
     // Temporarily disabled for now
     return undefined;
   }
