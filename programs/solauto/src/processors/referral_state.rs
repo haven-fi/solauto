@@ -160,11 +160,7 @@ pub fn process_claim_referral_fees<'a>(accounts: &'a [AccountInfo<'a>]) -> Progr
     let referral_state =
         DeserializedAccount::<ReferralState>::zerocopy(Some(ctx.accounts.referral_state))?.unwrap();
 
-    validation_utils::validate_referral_signer(
-        &referral_state,
-        ctx.accounts.signer,
-        true,
-    )?;
+    validation_utils::validate_referral_signer(&referral_state, ctx.accounts.signer, true)?;
     if ctx.accounts.referral_authority.is_some()
         && ctx.accounts.referral_authority.unwrap().key != &referral_state.data.authority
     {
