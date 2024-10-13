@@ -11,7 +11,7 @@ use solana_program::{
     account_info::AccountInfo, clock::Clock, entrypoint::ProgramResult, msg,
     program_error::ProgramError, pubkey::Pubkey, sysvar::Sysvar,
 };
-use std::ops::{Div, Mul, Sub};
+use std::{cmp::min, ops::{Div, Mul, Sub}};
 use switchboard_v2::AggregatorAccountData;
 
 use crate::{
@@ -240,15 +240,16 @@ impl<'a> MarginfiClient<'a> {
 
         let total_deposited = I80F48::from_le_bytes(bank.data.total_asset_shares.value)
             .mul(I80F48::from_le_bytes(bank.data.asset_share_value.value));
-        let base_unit_debt_available = total_deposited.sub(
-            I80F48::from_le_bytes(bank.data.total_liability_shares.value)
-                .mul(liability_share_value),
-        );
+        let total_borrows = I80F48::from_le_bytes(bank.data.total_liability_shares.value)
+            .mul(liability_share_value);
+        let base_unit_supply_available = total_deposited.sub(total_borrows);
+
+        let amount_can_be_used = min(bank.data.config.borrow_limit.sub(math_utils::i80f48_to_u64(total_borrows)), math_utils::i80f48_to_u64(base_unit_supply_available));
 
         Ok(RefreshedTokenData {
             decimals: bank.data.mint_decimals,
             amount_used: base_unit_account_debt,
-            amount_can_be_used: math_utils::i80f48_to_u64(base_unit_debt_available),
+            amount_can_be_used,
             market_price,
             borrow_fee_bps: None,
         })
