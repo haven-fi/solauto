@@ -244,7 +244,7 @@ impl<'a> MarginfiClient<'a> {
             .mul(liability_share_value);
         let base_unit_supply_available = total_deposited.sub(total_borrows);
 
-        let amount_can_be_used = min(bank.data.config.borrow_limit.sub(math_utils::i80f48_to_u64(total_borrows)), math_utils::i80f48_to_u64(base_unit_supply_available));
+        let amount_can_be_used = min(bank.data.config.borrow_limit.saturating_sub(math_utils::i80f48_to_u64(total_borrows)), math_utils::i80f48_to_u64(base_unit_supply_available));
 
         Ok(RefreshedTokenData {
             decimals: bank.data.mint_decimals,
