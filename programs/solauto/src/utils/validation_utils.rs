@@ -557,7 +557,7 @@ pub fn validate_debt_adjustment(
     } else if expected_debt_adjustment_usd <= 10.0 {
         0.25
     } else {
-        0.1
+        0.15
     };
 
     // Checking if within specified range due to varying price volatility

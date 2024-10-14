@@ -51,7 +51,10 @@ import {
   getMaxLiqUtilizationRateBps,
   uint8ArrayToBigInt,
 } from "../utils/numberUtils";
-import { eligibleForRebalance } from "../utils/solauto/generalUtils";
+import {
+  eligibleForRebalance,
+  positionStateWithLatestPrices,
+} from "../utils/solauto/generalUtils";
 import { getTokenAccount, getTokenAccountData } from "../utils/accountUtils";
 import {
   createMarginfiProgram,
@@ -68,6 +71,7 @@ import {
   getJupiterErrorFromName,
   JUPITER_PROGRAM_ID,
 } from "../jupiter-sdk";
+import { PRICES } from "../constants";
 
 interface wSolTokenUsage {
   wSolTokenAccount: PublicKey;
@@ -577,7 +581,7 @@ export async function getTransactionChores(
   return [choresBefore, choresAfter];
 }
 
-export function requiresRefreshBeforeRebalance(client: SolautoClient) {
+export async function requiresRefreshBeforeRebalance(client: SolautoClient) {
   if (
     client.solautoPositionState!.liqUtilizationRateBps >
     getMaxLiqUtilizationRateBps(
@@ -595,20 +599,21 @@ export function requiresRefreshBeforeRebalance(client: SolautoClient) {
       return false;
     }
 
-    const oldSupply =
-      client.solautoPositionData.state.supply.amountUsed.baseUnit;
-    const oldDebt = client.solautoPositionData.state.debt.amountUsed.baseUnit;
-
-    const supplyDiff =
-      (client.solautoPositionState?.supply.amountUsed.baseUnit ?? BigInt(0)) -
-      oldSupply;
-    const debtDiff =
-      (client.solautoPositionState?.debt.amountUsed.baseUnit ?? BigInt(0)) -
-      oldDebt;
+    const oldStateWithLatestPrices = await positionStateWithLatestPrices(
+      client.solautoPositionData.state,
+      PRICES[client.supplyMint.toString()].price,
+      PRICES[client.debtMint.toString()].price
+    );
+    const utilizationRateDiff = Math.abs(
+      (client.solautoPositionState?.liqUtilizationRateBps ?? 0) -
+        oldStateWithLatestPrices.liqUtilizationRateBps
+    );
 
     if (
-      Math.abs(Number(supplyDiff)) / Number(oldSupply) >= 0.005 ||
-      Math.abs(Number(debtDiff)) / Number(oldDebt) >= 0.005
+      client.livePositionUpdates.supplyAdjustment === BigInt(0) &&
+      client.livePositionUpdates.debtAdjustment === BigInt(0) &&
+      utilizationRateDiff / oldStateWithLatestPrices.liqUtilizationRateBps >=
+        0.005
     ) {
       return true;
     }
@@ -674,7 +679,7 @@ export async function buildSolautoRebalanceTransaction(
 
   let tx = transactionBuilder();
 
-  if (requiresRefreshBeforeRebalance(client)) {
+  if (await requiresRefreshBeforeRebalance(client)) {
     tx = tx.add(client.refresh());
   }
 
