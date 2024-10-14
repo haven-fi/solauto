@@ -22,9 +22,9 @@ export const USDT = "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB";
 export const ALL_SUPPORTED_TOKENS = [
   NATIVE_MINT.toString(),
   B_SOL,
+  M_SOL,
   JITO_SOL,
   LST,
-  M_SOL,
   INF,
   JUP,
   BONK,
@@ -60,6 +60,11 @@ export const TOKEN_INFO: { [key: string]: TokenInfo } = {
     decimals: 9,
     isLST: true,
   },
+  [M_SOL]: {
+    ticker: "mSOL",
+    decimals: 9,
+    isLST: true,
+  },
   [JITO_SOL]: {
     ticker: "JitoSOL",
     decimals: 9,
@@ -67,11 +72,6 @@ export const TOKEN_INFO: { [key: string]: TokenInfo } = {
   },
   [LST]: {
     ticker: "LST",
-    decimals: 9,
-    isLST: true,
-  },
-  [M_SOL]: {
-    ticker: "mSOL",
     decimals: 9,
     isLST: true,
   },

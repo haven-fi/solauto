@@ -198,7 +198,6 @@ export async function getAllMarginfiAccountsByAuthority(
 }
 
 async function getTokenUsage(
-  umi: Umi,
   bank: Bank | null,
   isAsset: boolean,
   shares: number,
@@ -210,10 +209,8 @@ async function getTokenUsage(
 
   if (bank !== null) {
     [marketPrice] = await fetchTokenPrices([toWeb3JsPublicKey(bank.mint)]);
-    const [assetShareValue, liabilityShareValue] = await getUpToDateShareValues(
-      umi,
-      bank
-    );
+    const [assetShareValue, liabilityShareValue] =
+      await getUpToDateShareValues(bank);
     const shareValue = isAsset ? assetShareValue : liabilityShareValue;
     amountUsed = shares * shareValue + Number(amountUsedAdjustment ?? 0);
 
@@ -333,7 +330,6 @@ export async function getMarginfiAccountPositionState(
         supplyMint = toWeb3JsPublicKey(supplyBank!.mint);
       }
       supplyUsage = await getTokenUsage(
-        umi,
         supplyBank!,
         true,
         bytesToI80F48(supplyBalances[0].assetShares.value),
@@ -351,7 +347,6 @@ export async function getMarginfiAccountPositionState(
         debtMint = toWeb3JsPublicKey(debtBank!.mint);
       }
       debtUsage = await getTokenUsage(
-        umi,
         debtBank!,
         false,
         bytesToI80F48(debtBalances[0].liabilityShares.value),
@@ -375,7 +370,6 @@ export async function getMarginfiAccountPositionState(
 
   if (!supplyUsage) {
     supplyUsage = await getTokenUsage(
-      umi,
       supplyBank,
       true,
       0,
@@ -392,7 +386,6 @@ export async function getMarginfiAccountPositionState(
 
   if (!debtUsage) {
     debtUsage = await getTokenUsage(
-      umi,
       debtBank,
       false,
       0,
@@ -462,10 +455,10 @@ function marginfiInterestRateCurve(
   );
 
   if (utilizationRatio <= optimalUr) {
-    return (utilizationRatio / optimalUr) * plateauIr;
+    return (utilizationRatio * plateauIr) / optimalUr;
   } else {
     return (
-      ((utilizationRatio - optimalUr) / (1 - optimalUr)) * (maxIr - plateauIr) +
+      (((utilizationRatio - optimalUr) / (1 - optimalUr)) * (maxIr - plateauIr)) +
       plateauIr
     );
   }
@@ -493,7 +486,7 @@ function calcInterestRate(
   );
   const rateFee = protocolIrFee + insuranceIrFee;
   const totalFixedFeeApr = protocolFixedFeeApr + insuranceFixedFeeApr;
-  const borrowingRate = baseRate * (1 + rateFee) * totalFixedFeeApr;
+  const borrowingRate = (baseRate * (1 + rateFee)) + totalFixedFeeApr;
 
   return [lendingRate, borrowingRate];
 }
@@ -508,12 +501,7 @@ function calcAccruedInterestPaymentPerPeriod(
   return newValue;
 }
 
-export async function getUpToDateShareValues(
-  umi: Umi,
-  bank: Bank
-): Promise<[number, number]> {
-  let timeDelta = currentUnixSeconds() - Number(bank.lastUpdate);
-
+export function calculateAnnualAPYs(bank: Bank) {
   const totalAssets =
     bytesToI80F48(bank.totalAssetShares.value) *
     bytesToI80F48(bank.assetShareValue.value);
@@ -522,7 +510,14 @@ export async function getUpToDateShareValues(
     bytesToI80F48(bank.liabilityShareValue.value);
 
   const utilizationRatio = totalLiabilities / totalAssets;
-  const [lendingApr, borrowingApr] = calcInterestRate(bank, utilizationRatio);
+  return calcInterestRate(bank, utilizationRatio);
+}
+
+export async function getUpToDateShareValues(
+  bank: Bank
+): Promise<[number, number]> {
+  let timeDelta = currentUnixSeconds() - Number(bank.lastUpdate);
+  const [lendingApr, borrowingApr] = calculateAnnualAPYs(bank);
 
   return [
     calcAccruedInterestPaymentPerPeriod(

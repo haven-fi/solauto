@@ -23,9 +23,9 @@ exports.USDT = "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB";
 exports.ALL_SUPPORTED_TOKENS = [
     spl_token_1.NATIVE_MINT.toString(),
     exports.B_SOL,
+    exports.M_SOL,
     exports.JITO_SOL,
     exports.LST,
-    exports.M_SOL,
     exports.INF,
     exports.JUP,
     exports.BONK,
@@ -53,6 +53,11 @@ exports.TOKEN_INFO = {
         decimals: 9,
         isLST: true,
     },
+    [exports.M_SOL]: {
+        ticker: "mSOL",
+        decimals: 9,
+        isLST: true,
+    },
     [exports.JITO_SOL]: {
         ticker: "JitoSOL",
         decimals: 9,
@@ -60,11 +65,6 @@ exports.TOKEN_INFO = {
     },
     [exports.LST]: {
         ticker: "LST",
-        decimals: 9,
-        isLST: true,
-    },
-    [exports.M_SOL]: {
-        ticker: "mSOL",
         decimals: 9,
         isLST: true,
     },

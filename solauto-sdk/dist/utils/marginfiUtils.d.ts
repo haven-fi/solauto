@@ -19,5 +19,6 @@ export declare function getAllMarginfiAccountsByAuthority(umi: Umi, authority: P
     debtMint?: PublicKey;
 }[]>;
 export declare function getMarginfiAccountPositionState(umi: Umi, marginfiAccountPk: PublicKey, marginfiGroup?: PublicKey, supplyMint?: PublicKey, debtMint?: PublicKey, livePositionUpdates?: LivePositionUpdates): Promise<PositionState | undefined>;
-export declare function getUpToDateShareValues(umi: Umi, bank: Bank): Promise<[number, number]>;
+export declare function calculateAnnualAPYs(bank: Bank): [number, number];
+export declare function getUpToDateShareValues(bank: Bank): Promise<[number, number]>;
 //# sourceMappingURL=marginfiUtils.d.ts.map

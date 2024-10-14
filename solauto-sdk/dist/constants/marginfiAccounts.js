@@ -43,6 +43,12 @@ exports.MARGINFI_ACCOUNTS = {
             vaultAuthority: "8RcZHucpVHkHWRRdMhJZsxBK9mqKSYnMKGqtF84U8YEo",
             priceOracle: "5cN76Xm2Dtx9MnrQqBDeZZRsWruTTcw37UruznAdSvvE",
         },
+        [tokens.M_SOL]: {
+            bank: "22DcjMZrMwC5Bpa5AGBsmjc5V9VuQrXG6N9ZtdUNyYGE",
+            liquidityVault: "B6HqNn83a2bLqo4i5ygjLHJgD11ePtQksUyx4MjD55DV",
+            vaultAuthority: "6YxGd65JbXzgFGWjE44jsyVeCnZp7Bb1wfL9jDia1n8w",
+            priceOracle: "5CKzb9j4ChgLUt8Gfm5CNGLN6khXKiqMbnGAW4cgXgxK",
+        },
         [tokens.JITO_SOL]: {
             bank: "Bohoc1ikHLD7xKJuzTyiTyCwzaL5N7ggJQu75A8mKYM8",
             liquidityVault: "38VGtXd2pDPq9FMh1z6AVjcHCoHgvWyMhdNyamDTeeks",
@@ -54,12 +60,6 @@ exports.MARGINFI_ACCOUNTS = {
             liquidityVault: "DMQUXpb6K5L8osgV4x3NeEPUoJCf2VBgnA8FQusDjSou",
             vaultAuthority: "6PWVauGLhBFHUJspsnBVZHr56ZnbvmhSD2gS7czBHGpE",
             priceOracle: "7aT9A5knp62jVvnEW33xaWopaPHa3Y7ggULyYiUsDhu8",
-        },
-        [tokens.M_SOL]: {
-            bank: "22DcjMZrMwC5Bpa5AGBsmjc5V9VuQrXG6N9ZtdUNyYGE",
-            liquidityVault: "B6HqNn83a2bLqo4i5ygjLHJgD11ePtQksUyx4MjD55DV",
-            vaultAuthority: "6YxGd65JbXzgFGWjE44jsyVeCnZp7Bb1wfL9jDia1n8w",
-            priceOracle: "5CKzb9j4ChgLUt8Gfm5CNGLN6khXKiqMbnGAW4cgXgxK",
         },
         [tokens.INF]: {
             bank: "AwLRW3aPMMftXEjgWhTkYwM9CGBHdtKecvahCJZBwAqY",

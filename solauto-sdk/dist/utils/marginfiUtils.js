@@ -5,6 +5,7 @@ exports.marginfiMaxLtvAndLiqThresholdBps = marginfiMaxLtvAndLiqThresholdBps;
 exports.getMaxLtvAndLiqThreshold = getMaxLtvAndLiqThreshold;
 exports.getAllMarginfiAccountsByAuthority = getAllMarginfiAccountsByAuthority;
 exports.getMarginfiAccountPositionState = getMarginfiAccountPositionState;
+exports.calculateAnnualAPYs = calculateAnnualAPYs;
 exports.getUpToDateShareValues = getUpToDateShareValues;
 const web3_js_1 = require("@solana/web3.js");
 const umi_1 = require("@metaplex-foundation/umi");
@@ -103,13 +104,13 @@ async function getAllMarginfiAccountsByAuthority(umi, authority, compatibleWithS
         }));
     }
 }
-async function getTokenUsage(umi, bank, isAsset, shares, amountUsedAdjustment) {
+async function getTokenUsage(bank, isAsset, shares, amountUsedAdjustment) {
     let amountUsed = 0;
     let amountCanBeUsed = 0;
     let marketPrice = 0;
     if (bank !== null) {
         [marketPrice] = await (0, generalUtils_1.fetchTokenPrices)([(0, umi_web3js_adapters_1.toWeb3JsPublicKey)(bank.mint)]);
-        const [assetShareValue, liabilityShareValue] = await getUpToDateShareValues(umi, bank);
+        const [assetShareValue, liabilityShareValue] = await getUpToDateShareValues(bank);
         const shareValue = isAsset ? assetShareValue : liabilityShareValue;
         amountUsed = shares * shareValue + Number(amountUsedAdjustment ?? 0);
         const totalDeposited = (0, numberUtils_1.bytesToI80F48)(bank.totalAssetShares.value) * assetShareValue;
@@ -172,7 +173,7 @@ async function getMarginfiAccountPositionState(umi, marginfiAccountPk, marginfiG
             if (!supplyMint) {
                 supplyMint = (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(supplyBank.mint);
             }
-            supplyUsage = await getTokenUsage(umi, supplyBank, true, (0, numberUtils_1.bytesToI80F48)(supplyBalances[0].assetShares.value), livePositionUpdates?.supplyAdjustment);
+            supplyUsage = await getTokenUsage(supplyBank, true, (0, numberUtils_1.bytesToI80F48)(supplyBalances[0].assetShares.value), livePositionUpdates?.supplyAdjustment);
         }
         if (debtBalances.length > 0) {
             if (debtBank === null) {
@@ -183,7 +184,7 @@ async function getMarginfiAccountPositionState(umi, marginfiAccountPk, marginfiG
             if (!debtMint) {
                 debtMint = (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(debtBank.mint);
             }
-            debtUsage = await getTokenUsage(umi, debtBank, false, (0, numberUtils_1.bytesToI80F48)(debtBalances[0].liabilityShares.value), livePositionUpdates?.debtAdjustment);
+            debtUsage = await getTokenUsage(debtBank, false, (0, numberUtils_1.bytesToI80F48)(debtBalances[0].liabilityShares.value), livePositionUpdates?.debtAdjustment);
         }
     }
     if (supplyBank === null) {
@@ -194,14 +195,14 @@ async function getMarginfiAccountPositionState(umi, marginfiAccountPk, marginfiG
         return undefined;
     }
     if (!supplyUsage) {
-        supplyUsage = await getTokenUsage(umi, supplyBank, true, 0, livePositionUpdates?.supplyAdjustment);
+        supplyUsage = await getTokenUsage(supplyBank, true, 0, livePositionUpdates?.supplyAdjustment);
     }
     if (constants_1.TOKEN_INFO[supplyBank.mint.toString()].isStableCoin &&
         (debtBank === null || constants_1.TOKEN_INFO[debtBank.mint.toString()].isStableCoin)) {
         return undefined;
     }
     if (!debtUsage) {
-        debtUsage = await getTokenUsage(umi, debtBank, false, 0, livePositionUpdates?.debtAdjustment);
+        debtUsage = await getTokenUsage(debtBank, false, 0, livePositionUpdates?.debtAdjustment);
     }
     const supplyPrice = (0, generalUtils_1.safeGetPrice)(supplyMint);
     let [maxLtv, liqThreshold] = await getMaxLtvAndLiqThreshold(umi, marginfiGroup ?? new web3_js_1.PublicKey(marginfiAccounts_1.DEFAULT_MARGINFI_GROUP), {
@@ -234,10 +235,10 @@ function marginfiInterestRateCurve(bank, utilizationRatio) {
     const plateauIr = (0, numberUtils_1.bytesToI80F48)(bank.config.interestRateConfig.plateauInterestRate.value);
     const maxIr = (0, numberUtils_1.bytesToI80F48)(bank.config.interestRateConfig.maxInterestRate.value);
     if (utilizationRatio <= optimalUr) {
-        return (utilizationRatio / optimalUr) * plateauIr;
+        return (utilizationRatio * plateauIr) / optimalUr;
     }
     else {
-        return (((utilizationRatio - optimalUr) / (1 - optimalUr)) * (maxIr - plateauIr) +
+        return ((((utilizationRatio - optimalUr) / (1 - optimalUr)) * (maxIr - plateauIr)) +
             plateauIr);
     }
 }
@@ -250,7 +251,7 @@ function calcInterestRate(bank, utilizationRatio) {
     const insuranceFixedFeeApr = (0, numberUtils_1.bytesToI80F48)(bank.config.interestRateConfig.insuranceFeeFixedApr.value);
     const rateFee = protocolIrFee + insuranceIrFee;
     const totalFixedFeeApr = protocolFixedFeeApr + insuranceFixedFeeApr;
-    const borrowingRate = baseRate * (1 + rateFee) * totalFixedFeeApr;
+    const borrowingRate = (baseRate * (1 + rateFee)) + totalFixedFeeApr;
     return [lendingRate, borrowingRate];
 }
 function calcAccruedInterestPaymentPerPeriod(apr, timeDelta, shareValue) {
@@ -258,14 +259,17 @@ function calcAccruedInterestPaymentPerPeriod(apr, timeDelta, shareValue) {
     const newValue = shareValue * (1 + irPerPeriod);
     return newValue;
 }
-async function getUpToDateShareValues(umi, bank) {
-    let timeDelta = (0, generalUtils_1.currentUnixSeconds)() - Number(bank.lastUpdate);
+function calculateAnnualAPYs(bank) {
     const totalAssets = (0, numberUtils_1.bytesToI80F48)(bank.totalAssetShares.value) *
         (0, numberUtils_1.bytesToI80F48)(bank.assetShareValue.value);
     const totalLiabilities = (0, numberUtils_1.bytesToI80F48)(bank.totalLiabilityShares.value) *
         (0, numberUtils_1.bytesToI80F48)(bank.liabilityShareValue.value);
     const utilizationRatio = totalLiabilities / totalAssets;
-    const [lendingApr, borrowingApr] = calcInterestRate(bank, utilizationRatio);
+    return calcInterestRate(bank, utilizationRatio);
+}
+async function getUpToDateShareValues(bank) {
+    let timeDelta = (0, generalUtils_1.currentUnixSeconds)() - Number(bank.lastUpdate);
+    const [lendingApr, borrowingApr] = calculateAnnualAPYs(bank);
     return [
         calcAccruedInterestPaymentPerPeriod(lendingApr, timeDelta, (0, numberUtils_1.bytesToI80F48)(bank.assetShareValue.value)),
         calcAccruedInterestPaymentPerPeriod(borrowingApr, timeDelta, (0, numberUtils_1.bytesToI80F48)(bank.liabilityShareValue.value)),

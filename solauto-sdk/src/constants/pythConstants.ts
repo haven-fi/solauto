@@ -7,12 +7,12 @@ export const PYTH_PRICE_FEED_IDS = {
     "0xef0d8b6fda2ceba41da15d4095d1da392a0d2f8ed0c6c7bc0f4cfac8c280b56d",
   [tokens.B_SOL]:
     "0x89875379e70f8fbadc17aef315adf3a8d5d160b811435537e03c97e8aac97d9c",
+  [tokens.M_SOL]:
+    "0xc2289a6a43d2ce91c6f55caec370f4acc38a2ed477f58813334c6d03749ff2a4",
   [tokens.JITO_SOL]:
     "0x67be9f519b95cf24338801051f9a808eff0a578ccb388db73b7f6fe1de019ffb",
   [tokens.LST]:
     "0x12fb674ee496045b1d9cf7d5e65379acb026133c2ad69f3ed996fb9fe68e3a37",
-  [tokens.M_SOL]:
-    "0xc2289a6a43d2ce91c6f55caec370f4acc38a2ed477f58813334c6d03749ff2a4",
   [tokens.INF]:
     "0xf51570985c642c49c2d6e50156390fdba80bb6d5f7fa389d2f012ced4f7d208f",
   [tokens.JUP]:
