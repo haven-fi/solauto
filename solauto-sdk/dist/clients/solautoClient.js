@@ -62,9 +62,7 @@ class SolautoClient extends txHandler_1.TxHandler {
             signer: args.signer,
             wallet: args.wallet,
         });
-        if (args.referredByAuthority) {
-            this.setReferredBy(args.referredByAuthority);
-        }
+        this.setReferredBy(args.referredByAuthority);
         this.solautoFeesWallet = generalAccounts_1.SOLAUTO_FEES_WALLET;
         this.solautoFeesSupplyTa = (0, accountUtils_1.getTokenAccount)(this.solautoFeesWallet, this.supplyMint);
         const authorityReferralStateData = this.referralStateManager.referralStateData;

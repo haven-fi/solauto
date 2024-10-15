@@ -89,7 +89,6 @@ pub enum Instruction {
     #[account(name = "token_program")]
     #[account(name = "ata_program")]
     #[account(name = "rent")]
-    #[account(name = "solauto_fees_wallet")]
     #[account(name = "signer_referral_state")]
     #[account(optional, name = "referred_by_state")]
     #[account(mut, optional, name = "referred_by_supply_ta")]
@@ -228,6 +227,5 @@ pub struct SolautoStandardAccounts<'a> {
     pub solauto_position: DeserializedAccount<'a, SolautoPosition>,
     pub solauto_fees_supply_ta: Option<&'a AccountInfo<'a>>,
     pub authority_referral_state: Option<DeserializedAccount<'a, ReferralState>>,
-    pub referred_by_state: Option<&'a AccountInfo<'a>>,
     pub referred_by_supply_ta: Option<&'a AccountInfo<'a>>,
 }

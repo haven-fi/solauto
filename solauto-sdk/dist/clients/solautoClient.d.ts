@@ -45,7 +45,7 @@ export declare abstract class SolautoClient extends TxHandler {
     livePositionUpdates: LivePositionUpdates;
     constructor(rpcUrl: string, localTest?: boolean);
     initialize(args: SolautoClientArgs, lendingPlatform: LendingPlatform): Promise<void>;
-    setReferredBy(referredBy: PublicKey): void;
+    setReferredBy(referredBy?: PublicKey): void;
     resetLiveTxUpdates(success?: boolean): Promise<void>;
     abstract protocolAccount(): PublicKey;
     defaultLookupTables(): string[];

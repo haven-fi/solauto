@@ -83,7 +83,6 @@ pub fn process_update_referral_states<'a>(
     validation_utils::validate_referral_accounts(
         &ctx.accounts.signer.key,
         &authority_referral_state,
-        ctx.accounts.referred_by_state,
         None,
         false,
         None,

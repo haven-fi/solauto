@@ -135,7 +135,6 @@ class SolautoMarginfiClient extends solautoClient_1.SolautoClient {
         return (0, generated_1.marginfiOpenPosition)(this.umi, {
             signer: this.signer,
             marginfiProgram: (0, umi_1.publicKey)(marginfi_sdk_1.MARGINFI_PROGRAM_ID),
-            solautoFeesWallet: (0, umi_1.publicKey)(this.solautoFeesWallet),
             signerReferralState: (0, umi_1.publicKey)(this.referralStateManager.referralState),
             referredByState: this.referredByState
                 ? (0, umi_1.publicKey)(this.referredByState)

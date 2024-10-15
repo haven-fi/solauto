@@ -1,16 +1,21 @@
 import { describe, it } from "mocha";
 import { none, publicKey, some } from "@metaplex-foundation/umi";
 import { setupTest } from "../shared";
+import { SolautoMarginfiClient } from "../../src/clients/solautoMarginfiClient";
 import {
-  SolautoMarginfiClient,
-} from "../../src/clients/solautoMarginfiClient";
-import {
+  PositionType,
+  safeFetchAllSolautoPosition,
   solautoAction,
   SolautoSettingsParametersInpArgs,
 } from "../../src/generated";
 import { buildSolautoRebalanceTransaction } from "../../src/transactions/transactionUtils";
-import { maxBoostToBps, maxRepayFromBps, maxRepayToBps, toBaseUnit } from "../../src/utils/numberUtils";
-import { NATIVE_MINT } from "@solana/spl-token";
+import {
+  maxBoostToBps,
+  maxRepayFromBps,
+  maxRepayToBps,
+  toBaseUnit,
+} from "../../src/utils/numberUtils";
+import { getAssociatedTokenAddress, NATIVE_MINT } from "@solana/spl-token";
 import { fetchTokenPrices } from "../../src/utils/generalUtils";
 import {
   TransactionItem,
@@ -18,7 +23,13 @@ import {
 } from "../../src/transactions/transactionsManager";
 import { PublicKey } from "@solana/web3.js";
 import { USDC } from "../../src/constants";
-import { buildHeliusApiUrl, getMarginfiAccountPositionState } from "../../src/utils";
+import {
+  buildHeliusApiUrl,
+  getAllPositionsByAuthority,
+  getMarginfiAccountPositionState,
+  getSolautoManagedPositions,
+} from "../../src/utils";
+import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 
 describe("Solauto Marginfi tests", async () => {
   // const signer = setupTest();
@@ -29,7 +40,6 @@ describe("Solauto Marginfi tests", async () => {
   const positionId = 1;
 
   it("open - deposit - borrow - rebalance to 0 - withdraw - close", async () => {
-
     const client = new SolautoMarginfiClient(
       buildHeliusApiUrl(process.env.HELIUS_API_KEY!),
       true
@@ -39,18 +49,16 @@ describe("Solauto Marginfi tests", async () => {
     const supplyDecimals = 9;
     const debtDecimals = 6;
 
-    await client.initialize(
-      {
-        signer,
-        positionId,
-        authority: new PublicKey("AprYCPiVeKMCgjQ2ZufwChMzvQ5kFjJo2ekTLSkXsQDm")
-        // marginfiAccount: new PublicKey(
-        //   "4nNvUXF5YqHFcH2nGweSiuvy1ct7V5FXfoCLKFYUN36z"
-        // ),
-        // supplyMint: NATIVE_MINT,
-        // debtMint: new PublicKey(USDC),
-      }
-    );
+    await client.initialize({
+      signer,
+      positionId,
+      authority: new PublicKey("E5BBsR1sUToPc3jXVwhrK5ttSiy6xhWJDMdQLvkgNppe"),
+      // marginfiAccount: new PublicKey(
+      //   "4nNvUXF5YqHFcH2nGweSiuvy1ct7V5FXfoCLKFYUN36z"
+      // ),
+      // supplyMint: NATIVE_MINT,
+      // debtMint: new PublicKey(USDC),
+    });
 
     const transactionItems: TransactionItem[] = [];
     // const settingParams: SolautoSettingsParametersInpArgs = {
@@ -159,11 +167,28 @@ describe("Solauto Marginfi tests", async () => {
     //   )
     // );
 
-    await new TransactionsManager(
-      client,
-      undefined,
-      !payForTransactions ? "only-simulate" : "normal",
-      useJitoBundle
-    ).clientSend(transactionItems);
+    // await new TransactionsManager(
+    //   client,
+    //   undefined,
+    //   !payForTransactions ? "only-simulate" : "normal",
+    //   useJitoBundle
+    // ).clientSend(transactionItems);
+
+    const positionsPks = await getSolautoManagedPositions(client.umi);
+
+    const positions = await safeFetchAllSolautoPosition(
+      client.umi,
+      positionsPks.map((x) => publicKey(x.publicKey!))
+    );
+
+    for (const pos of positions) {
+      await getMarginfiAccountPositionState(
+        client.umi,
+        toWeb3JsPublicKey(pos.position.protocolAccount),
+        undefined,
+        toWeb3JsPublicKey(pos.state.supply.mint),
+        toWeb3JsPublicKey(pos.state.debt.mint)
+      );
+    }
   });
 });

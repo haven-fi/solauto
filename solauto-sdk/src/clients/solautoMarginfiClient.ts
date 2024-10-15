@@ -55,7 +55,6 @@ import {
   getMaxLtvAndLiqThreshold,
 } from "../utils/marginfiUtils";
 import { bytesToI80F48, fromBaseUnit, toBps } from "../utils/numberUtils";
-import { createFakePositionState } from "../utils";
 import { QuoteResponse } from "@jup-ag/api";
 
 export interface SolautoMarginfiClientArgs extends SolautoClientArgs {
@@ -263,7 +262,6 @@ export class SolautoMarginfiClient extends SolautoClient {
     return marginfiOpenPosition(this.umi, {
       signer: this.signer,
       marginfiProgram: publicKey(MARGINFI_PROGRAM_ID),
-      solautoFeesWallet: publicKey(this.solautoFeesWallet),
       signerReferralState: publicKey(this.referralStateManager.referralState),
       referredByState: this.referredByState
         ? publicKey(this.referredByState)

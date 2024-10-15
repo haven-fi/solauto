@@ -175,9 +175,7 @@ export abstract class SolautoClient extends TxHandler {
       wallet: args.wallet,
     });
 
-    if (args.referredByAuthority) {
-      this.setReferredBy(args.referredByAuthority);
-    }
+    this.setReferredBy(args.referredByAuthority);
 
     this.solautoFeesWallet = SOLAUTO_FEES_WALLET;
     this.solautoFeesSupplyTa = getTokenAccount(
@@ -209,7 +207,7 @@ export abstract class SolautoClient extends TxHandler {
     );
   }
 
-  public setReferredBy(referredBy: PublicKey) {
+  public setReferredBy(referredBy?: PublicKey) {
     const authorityReferralStateData =
       this.referralStateManager.referralStateData;
     const hasReferredBy =

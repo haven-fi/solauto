@@ -71,7 +71,7 @@ pub fn process_marginfi_open_position_instruction<'a>(
         return Err(ProgramError::InvalidInstructionData.into());
     }
 
-    if ctx.accounts.referred_by_state.is_some() && ctx.accounts.referred_by_supply_ta.is_some() {
+    if ctx.accounts.referred_by_supply_ta.is_some() {
         solana_utils::init_ata_if_needed(
             ctx.accounts.token_program,
             ctx.accounts.system_program,
@@ -95,7 +95,6 @@ pub fn process_marginfi_open_position_instruction<'a>(
         authority_referral_state: DeserializedAccount::<ReferralState>::zerocopy(Some(
             ctx.accounts.signer_referral_state,
         ))?,
-        referred_by_state: ctx.accounts.referred_by_state,
         referred_by_supply_ta: ctx.accounts.referred_by_supply_ta,
     });
     validation_utils::generic_instruction_validation(
@@ -169,7 +168,6 @@ pub fn process_marginfi_interaction_instruction<'a>(
         solauto_position,
         solauto_fees_supply_ta: None,
         authority_referral_state: None,
-        referred_by_state: None,
         referred_by_supply_ta: None,
     });
     validation_utils::generic_instruction_validation(
@@ -205,7 +203,6 @@ pub fn process_marginfi_rebalance<'a>(
         authority_referral_state: DeserializedAccount::<ReferralState>::zerocopy(Some(
             ctx.accounts.authority_referral_state,
         ))?,
-        referred_by_state: None,
         referred_by_supply_ta: ctx.accounts.referred_by_supply_ta,
     });
     validation_utils::generic_instruction_validation(

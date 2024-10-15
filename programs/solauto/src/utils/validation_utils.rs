@@ -69,7 +69,6 @@ pub fn generic_instruction_validation(
         validate_referral_accounts(
             &accounts.solauto_position.data.authority,
             accounts.authority_referral_state.as_ref().unwrap(),
-            accounts.referred_by_state,
             accounts.referred_by_supply_ta,
             true,
             token_mint.as_ref(),
@@ -299,7 +298,6 @@ pub fn validate_sysvar_accounts(
 pub fn validate_referral_accounts<'a>(
     referral_state_authority: &Pubkey,
     authority_referral_state: &DeserializedAccount<'a, ReferralState>,
-    referred_by_state: Option<&'a AccountInfo<'a>>,
     referred_by_supply_ta: Option<&'a AccountInfo<'a>>,
     check_supply_ta: bool,
     supply_mint: Option<&Pubkey>,
@@ -316,13 +314,6 @@ pub fn validate_referral_accounts<'a>(
     }
 
     let authority_referred_by_state = &authority_referral_state.data.referred_by_state;
-
-    if referred_by_state.is_some()
-        && referred_by_state.as_ref().unwrap().key != authority_referred_by_state
-    {
-        msg!("Provided incorrect referred_by_state account given the authority referral state");
-        return Err(SolautoError::IncorrectAccounts.into());
-    }
 
     if check_supply_ta
         && authority_referred_by_state != &Pubkey::default()
@@ -552,9 +543,9 @@ pub fn validate_debt_adjustment(
     let amount_usd = from_base_unit::<u64, u8, f64>(provided_base_unit_amount, token.decimals)
         .mul(token.market_price());
 
-    let threshold = if expected_debt_adjustment_usd <= 5.0 {
+    let threshold = if expected_debt_adjustment_usd <= 10.0 {
         0.5
-    } else if expected_debt_adjustment_usd <= 10.0 {
+    } else if expected_debt_adjustment_usd <= 30.0 {
         0.25
     } else {
         0.15

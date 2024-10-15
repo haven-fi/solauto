@@ -270,6 +270,8 @@ export async function getMarginfiAccountPositionState(
     { commitment: "confirmed" }
   );
 
+  console.log("MARGIN ACCOUNT", marginfiAccount);
+  console.log("MARGIN GROUP", marginfiGroup);
   if (!marginfiGroup && marginfiAccount) {
     marginfiGroup = toWeb3JsPublicKey(marginfiAccount.group);
   }

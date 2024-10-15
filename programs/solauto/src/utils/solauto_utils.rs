@@ -112,60 +112,61 @@ pub fn create_or_update_referral_state<'a>(
     referred_by_state: Option<&'a AccountInfo<'a>>,
     lookup_table: Option<Pubkey>,
 ) -> Result<DeserializedAccount<'a, ReferralState>, ProgramError> {
-    let data: Result<DeserializedAccount<ReferralState>, ProgramError> =
-        if account_has_data(referral_state) {
-            let mut referral_state_account =
-                DeserializedAccount::<ReferralState>::zerocopy(Some(referral_state))?.unwrap();
+    let data: Result<DeserializedAccount<ReferralState>, ProgramError> = if account_has_data(
+        referral_state,
+    ) {
+        let mut referral_state_account =
+            DeserializedAccount::<ReferralState>::zerocopy(Some(referral_state))?.unwrap();
 
-            if &referral_state_account.data.referred_by_state == &Pubkey::default()
-                && referred_by_state.is_some()
-            {
+        if referred_by_state.is_some() {
+            if &referral_state_account.data.referred_by_state == &Pubkey::default() {
                 referral_state_account.data.referred_by_state = *referred_by_state.unwrap().key;
-            }
-
-            if referral_fees_dest_mint.is_some()
-                && referral_fees_dest_mint.as_ref().unwrap()
-                    != &referral_state_account.data.dest_fees_mint
-            {
-                referral_state_account.data.dest_fees_mint =
-                    *referral_fees_dest_mint.as_ref().unwrap();
-            }
-
-            if lookup_table.is_some()
-                && referral_state_account.data.lookup_table == Pubkey::default()
-            {
-                referral_state_account.data.lookup_table = lookup_table.unwrap();
-            }
-
-            Ok(referral_state_account)
-        } else {
-            let dest_mint = if referral_fees_dest_mint.is_some() {
-                referral_fees_dest_mint.as_ref().unwrap()
             } else {
-                &WSOL_MINT
-            };
+                msg!("You are not allowed to change the referred-by account after it has already been set");
+                return Err(SolautoError::IncorrectAccounts.into());
+            }
+        }
 
-            let data = Box::new(ReferralState::new(
-                *authority.key,
-                referred_by_state.map_or(Pubkey::default(), |r| *r.key),
-                *dest_mint,
-                lookup_table,
-            ));
+        if referral_fees_dest_mint.is_some()
+            && referral_fees_dest_mint.as_ref().unwrap()
+                != &referral_state_account.data.dest_fees_mint
+        {
+            referral_state_account.data.dest_fees_mint = *referral_fees_dest_mint.as_ref().unwrap();
+        }
 
-            init_account(
-                rent,
-                signer,
-                referral_state,
-                &crate::ID,
-                Some(data.seeds_with_bump()),
-                ReferralState::LEN,
-            )?;
+        if lookup_table.is_some() && referral_state_account.data.lookup_table == Pubkey::default() {
+            referral_state_account.data.lookup_table = lookup_table.unwrap();
+        }
 
-            Ok(DeserializedAccount {
-                account_info: referral_state,
-                data,
-            })
+        Ok(referral_state_account)
+    } else {
+        let dest_mint = if referral_fees_dest_mint.is_some() {
+            referral_fees_dest_mint.as_ref().unwrap()
+        } else {
+            &WSOL_MINT
         };
+
+        let data = Box::new(ReferralState::new(
+            *authority.key,
+            referred_by_state.map_or(Pubkey::default(), |r| *r.key),
+            *dest_mint,
+            lookup_table,
+        ));
+
+        init_account(
+            rent,
+            signer,
+            referral_state,
+            &crate::ID,
+            Some(data.seeds_with_bump()),
+            ReferralState::LEN,
+        )?;
+
+        Ok(DeserializedAccount {
+            account_info: referral_state,
+            data,
+        })
+    };
 
     let referral_state_account = data.unwrap();
 

@@ -47,7 +47,6 @@ export type MarginfiOpenPositionInstructionAccounts = {
   tokenProgram?: PublicKey | Pda;
   ataProgram?: PublicKey | Pda;
   rent?: PublicKey | Pda;
-  solautoFeesWallet: PublicKey | Pda;
   signerReferralState: PublicKey | Pda;
   referredByState?: PublicKey | Pda;
   referredBySupplyTa?: PublicKey | Pda;
@@ -146,73 +145,68 @@ export function marginfiOpenPosition(
       value: input.ataProgram ?? null,
     },
     rent: { index: 5, isWritable: false as boolean, value: input.rent ?? null },
-    solautoFeesWallet: {
-      index: 6,
-      isWritable: false as boolean,
-      value: input.solautoFeesWallet ?? null,
-    },
     signerReferralState: {
-      index: 7,
+      index: 6,
       isWritable: false as boolean,
       value: input.signerReferralState ?? null,
     },
     referredByState: {
-      index: 8,
+      index: 7,
       isWritable: false as boolean,
       value: input.referredByState ?? null,
     },
     referredBySupplyTa: {
-      index: 9,
+      index: 8,
       isWritable: true as boolean,
       value: input.referredBySupplyTa ?? null,
     },
     solautoPosition: {
-      index: 10,
+      index: 9,
       isWritable: true as boolean,
       value: input.solautoPosition ?? null,
     },
     marginfiGroup: {
-      index: 11,
+      index: 10,
       isWritable: false as boolean,
       value: input.marginfiGroup ?? null,
     },
     marginfiAccount: {
-      index: 12,
+      index: 11,
       isWritable: true as boolean,
       value: input.marginfiAccount ?? null,
     },
     supplyMint: {
-      index: 13,
+      index: 12,
       isWritable: false as boolean,
       value: input.supplyMint ?? null,
     },
     supplyBank: {
-      index: 14,
+      index: 13,
       isWritable: false as boolean,
       value: input.supplyBank ?? null,
     },
     positionSupplyTa: {
-      index: 15,
+      index: 14,
       isWritable: true as boolean,
       value: input.positionSupplyTa ?? null,
     },
     debtMint: {
-      index: 16,
+      index: 15,
       isWritable: false as boolean,
       value: input.debtMint ?? null,
     },
     debtBank: {
-      index: 17,
+      index: 16,
       isWritable: false as boolean,
       value: input.debtBank ?? null,
     },
     positionDebtTa: {
-      index: 18,
+      index: 17,
       isWritable: true as boolean,
       value: input.positionDebtTa ?? null,
     },
     signerDebtTa: {
-      index: 19,
+      index: 18,
       isWritable: true as boolean,
       value: input.signerDebtTa ?? null,
     },

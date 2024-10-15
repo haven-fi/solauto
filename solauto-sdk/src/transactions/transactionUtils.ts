@@ -612,8 +612,7 @@ export async function requiresRefreshBeforeRebalance(client: SolautoClient) {
     if (
       client.livePositionUpdates.supplyAdjustment === BigInt(0) &&
       client.livePositionUpdates.debtAdjustment === BigInt(0) &&
-      utilizationRateDiff / oldStateWithLatestPrices.liqUtilizationRateBps >=
-        0.005
+      utilizationRateDiff >= 25
     ) {
       return true;
     }

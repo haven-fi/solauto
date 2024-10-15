@@ -365,6 +365,7 @@ impl<'a> GeneralTestData<'a> {
             .referral_state(self.signer_referral_state)
             .referral_fees_dest_ta(self.signer_referral_dest_ta)
             .referral_fees_dest_mint(self.referral_fees_dest_mint.pubkey())
+            .referral_authority(Some(self.ctx.payer.pubkey()))
             .fees_destination_ta(
                 Some(
                     get_associated_token_address(
@@ -521,8 +522,6 @@ impl<'a> MarginfiTestData<'a> {
         builder
             .signer(self.general.ctx.payer.pubkey())
             .marginfi_program(self.general.lending_protocol)
-            .solauto_fees_wallet(self.general.solauto_fees_wallet)
-            .solauto_fees_supply_ta(self.general.solauto_fees_supply_ta)
             .signer_referral_state(self.general.signer_referral_state)
             .referred_by_state(self.general.referred_by_state)
             .referred_by_supply_ta(self.general.referred_by_supply_ta)

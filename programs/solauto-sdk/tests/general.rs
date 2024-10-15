@@ -18,7 +18,6 @@ mod general {
         accounts::SolautoPosition,
         types::{ AutomationSettingsInp, DCASettingsInp, TokenType },
     };
-    use spl_associated_token_account::get_associated_token_address;
     use spl_token::state::Account as TokenAccount;
 
     use crate::{ assert_instruction_error, test_utils::* };
@@ -122,65 +121,6 @@ mod general {
             .unwrap_err();
 
         assert_instruction_error!(err, InstructionError::MissingRequiredSignature);
-    }
-
-    #[tokio::test]
-    async fn incorrect_solauto_fee_accounts() {
-        let args = GeneralArgs::new();
-        let mut data = MarginfiTestData::new(&args).await;
-        data.test_prefixtures().await
-            .unwrap()
-            .general.create_referral_state_accounts().await
-            .unwrap();
-
-        let err = data.general
-            .execute_instructions(
-                vec![
-                    data
-                        .open_position_ix(Some(data.general.default_setting_params.clone()), None)
-                        .solauto_fees_wallet(Pubkey::default())
-                        .instruction(),
-                ],
-                None
-            ).await
-            .unwrap_err();
-        assert_instruction_error!(err, InstructionError::Custom(0));
-
-        // Incorrect wallet, correct token mint
-        let fake_solauto_fees_supply_ta = get_associated_token_address(
-            &data.general.ctx.payer.pubkey(),
-            &data.general.supply_mint.pubkey()
-        );
-        let err = data.general
-            .execute_instructions(
-                vec![
-                    data
-                        .open_position_ix(Some(data.general.default_setting_params.clone()), None)
-                        .solauto_fees_supply_ta(fake_solauto_fees_supply_ta)
-                        .instruction(),
-                ],
-                None
-            ).await
-            .unwrap_err();
-        assert_instruction_error!(err, InstructionError::Custom(0));
-
-        // Correct wallet, incorrect token mint
-        let fake_solauto_fees_supply_ta = get_associated_token_address(
-            &data.general.solauto_fees_wallet,
-            &data.general.debt_mint.pubkey()
-        );
-        let err = data.general
-            .execute_instructions(
-                vec![
-                    data
-                        .open_position_ix(Some(data.general.default_setting_params.clone()), None)
-                        .solauto_fees_supply_ta(fake_solauto_fees_supply_ta)
-                        .instruction(),
-                ],
-                None
-            ).await
-            .unwrap_err();
-        assert_instruction_error!(err, InstructionError::Custom(0));
     }
 
     #[tokio::test]

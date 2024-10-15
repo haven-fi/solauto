@@ -20,6 +20,7 @@ const generalUtils_2 = require("../utils/solauto/generalUtils");
 const accountUtils_1 = require("../utils/accountUtils");
 const marginfi_sdk_1 = require("../marginfi-sdk");
 const jupiter_sdk_1 = require("../jupiter-sdk");
+const constants_1 = require("../constants");
 function getWSolUsage(client, solautoActions, initiatingDcaIn, cancellingDcaIn) {
     const supplyIsWsol = client.supplyMint.equals(spl_token_1.NATIVE_MINT);
     const debtIsWsol = client.debtMint.equals(spl_token_1.NATIVE_MINT);
@@ -324,7 +325,7 @@ async function getTransactionChores(client, tx) {
     choresAfter = choresAfter.add(transactionChoresAfter(client, solautoActions, client.livePositionUpdates.cancellingDca));
     return [choresBefore, choresAfter];
 }
-function requiresRefreshBeforeRebalance(client) {
+async function requiresRefreshBeforeRebalance(client) {
     if (client.solautoPositionState.liqUtilizationRateBps >
         (0, numberUtils_1.getMaxLiqUtilizationRateBps)(client.solautoPositionState.maxLtvBps, client.solautoPositionState.liqThresholdBps, 0.01)) {
         return true;
@@ -334,14 +335,13 @@ function requiresRefreshBeforeRebalance(client) {
             client.livePositionUpdates.debtAdjustment > BigInt(0)) {
             return false;
         }
-        const oldSupply = client.solautoPositionData.state.supply.amountUsed.baseUnit;
-        const oldDebt = client.solautoPositionData.state.debt.amountUsed.baseUnit;
-        const supplyDiff = (client.solautoPositionState?.supply.amountUsed.baseUnit ?? BigInt(0)) -
-            oldSupply;
-        const debtDiff = (client.solautoPositionState?.debt.amountUsed.baseUnit ?? BigInt(0)) -
-            oldDebt;
-        if (Math.abs(Number(supplyDiff)) / Number(oldSupply) >= 0.005 ||
-            Math.abs(Number(debtDiff)) / Number(oldDebt) >= 0.005) {
+        const oldStateWithLatestPrices = await (0, generalUtils_2.positionStateWithLatestPrices)(client.solautoPositionData.state, constants_1.PRICES[client.supplyMint.toString()].price, constants_1.PRICES[client.debtMint.toString()].price);
+        const utilizationRateDiff = Math.abs((client.solautoPositionState?.liqUtilizationRateBps ?? 0) -
+            oldStateWithLatestPrices.liqUtilizationRateBps);
+        if (client.livePositionUpdates.supplyAdjustment === BigInt(0) &&
+            client.livePositionUpdates.debtAdjustment === BigInt(0) &&
+            utilizationRateDiff / oldStateWithLatestPrices.liqUtilizationRateBps >=
+                0.005) {
             return true;
         }
     }
@@ -363,7 +363,7 @@ async function buildSolautoRebalanceTransaction(client, targetLiqUtilizationRate
     const { jupQuote, lookupTableAddresses, setupInstructions, tokenLedgerIx, swapIx, } = await (0, jupiterUtils_1.getJupSwapTransaction)(client.signer, swapDetails, attemptNum);
     const flashLoan = (0, rebalanceUtils_1.getFlashLoanDetails)(client, values, jupQuote);
     let tx = (0, umi_1.transactionBuilder)();
-    if (requiresRefreshBeforeRebalance(client)) {
+    if (await requiresRefreshBeforeRebalance(client)) {
         tx = tx.add(client.refresh());
     }
     if (flashLoan) {
