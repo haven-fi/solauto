@@ -86,7 +86,7 @@ async function getAllMarginfiAccountsByAuthority(umi, authority, compatibleWithS
     if (compatibleWithSolauto) {
         const positionStates = await Promise.all(marginfiAccounts.map(async (x) => ({
             publicKey: x.publicKey,
-            state: await getMarginfiAccountPositionState(umi, (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(x.publicKey)),
+            state: await getMarginfiAccountPositionState(umi, { pk: (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(x.publicKey) }),
         })));
         return positionStates
             .sort((a, b) => (0, numberUtils_1.fromBaseUnit)(b.state?.netWorth.baseAmountUsdValue ?? BigInt(0), generalAccounts_1.USD_DECIMALS) -
@@ -143,17 +143,30 @@ async function getTokenUsage(bank, isAsset, shares, amountUsedAdjustment) {
         padding: new Uint8Array([]),
     };
 }
-async function getMarginfiAccountPositionState(umi, marginfiAccountPk, marginfiGroup, supplyMint, debtMint, livePositionUpdates) {
-    let marginfiAccount = await (0, marginfi_sdk_1.safeFetchMarginfiAccount)(umi, (0, umi_1.publicKey)(marginfiAccountPk), { commitment: "confirmed" });
+async function getMarginfiAccountPositionState(umi, protocolAccount, marginfiGroup, supply, debt, livePositionUpdates) {
+    let marginfiAccount = protocolAccount.data ??
+        (await (0, marginfi_sdk_1.safeFetchMarginfiAccount)(umi, (0, umi_1.publicKey)(protocolAccount.pk), {
+            commitment: "confirmed",
+        }));
+    if (!supply) {
+        supply = {};
+    }
+    if (!debt) {
+        debt = {};
+    }
     if (!marginfiGroup && marginfiAccount) {
         marginfiGroup = (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(marginfiAccount.group);
     }
-    let supplyBank = supplyMint && supplyMint !== web3_js_1.PublicKey.default
-        ? await (0, marginfi_sdk_1.safeFetchBank)(umi, (0, umi_1.publicKey)(marginfiAccounts_1.MARGINFI_ACCOUNTS[marginfiGroup?.toString() ?? ""][supplyMint.toString()].bank), { commitment: "confirmed" })
-        : null;
-    let debtBank = debtMint && debtMint !== web3_js_1.PublicKey.default
-        ? await (0, marginfi_sdk_1.safeFetchBank)(umi, (0, umi_1.publicKey)(marginfiAccounts_1.MARGINFI_ACCOUNTS[marginfiGroup?.toString() ?? ""][debtMint.toString()].bank), { commitment: "confirmed" })
-        : null;
+    let supplyBank = supply?.banksCache && supply.mint && marginfiGroup
+        ? supply.banksCache[marginfiGroup.toString()][supply?.mint?.toString()]
+        : supply?.mint && supply?.mint !== web3_js_1.PublicKey.default
+            ? await (0, marginfi_sdk_1.safeFetchBank)(umi, (0, umi_1.publicKey)(marginfiAccounts_1.MARGINFI_ACCOUNTS[marginfiGroup?.toString() ?? ""][supply?.mint.toString()].bank), { commitment: "confirmed" })
+            : null;
+    let debtBank = debt?.banksCache && debt.mint && marginfiGroup
+        ? debt.banksCache[marginfiGroup.toString()][debt?.mint?.toString()]
+        : debt?.mint && debt?.mint !== web3_js_1.PublicKey.default
+            ? await (0, marginfi_sdk_1.safeFetchBank)(umi, (0, umi_1.publicKey)(marginfiAccounts_1.MARGINFI_ACCOUNTS[marginfiGroup?.toString() ?? ""][debt?.mint.toString()].bank), { commitment: "confirmed" })
+            : null;
     let supplyUsage = undefined;
     let debtUsage = undefined;
     if (marginfiAccount !== null &&
@@ -170,8 +183,8 @@ async function getMarginfiAccountPositionState(umi, marginfiAccountPk, marginfiG
                     commitment: "confirmed",
                 });
             }
-            if (!supplyMint) {
-                supplyMint = (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(supplyBank.mint);
+            if (!supply.mint) {
+                supply.mint = (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(supplyBank.mint);
             }
             supplyUsage = await getTokenUsage(supplyBank, true, (0, numberUtils_1.bytesToI80F48)(supplyBalances[0].assetShares.value), livePositionUpdates?.supplyAdjustment);
         }
@@ -181,8 +194,8 @@ async function getMarginfiAccountPositionState(umi, marginfiAccountPk, marginfiG
                     commitment: "confirmed",
                 });
             }
-            if (!debtMint) {
-                debtMint = (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(debtBank.mint);
+            if (!debt.mint) {
+                debt.mint = (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(debtBank.mint);
             }
             debtUsage = await getTokenUsage(debtBank, false, (0, numberUtils_1.bytesToI80F48)(debtBalances[0].liabilityShares.value), livePositionUpdates?.debtAdjustment);
         }
@@ -204,7 +217,7 @@ async function getMarginfiAccountPositionState(umi, marginfiAccountPk, marginfiG
     if (!debtUsage) {
         debtUsage = await getTokenUsage(debtBank, false, 0, livePositionUpdates?.debtAdjustment);
     }
-    const supplyPrice = (0, generalUtils_1.safeGetPrice)(supplyMint);
+    const supplyPrice = (0, generalUtils_1.safeGetPrice)(supply.mint);
     let [maxLtv, liqThreshold] = await getMaxLtvAndLiqThreshold(umi, marginfiGroup ?? new web3_js_1.PublicKey(marginfiAccounts_1.DEFAULT_MARGINFI_GROUP), {
         mint: (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(supplyBank.mint),
         bank: supplyBank,
@@ -238,7 +251,7 @@ function marginfiInterestRateCurve(bank, utilizationRatio) {
         return (utilizationRatio * plateauIr) / optimalUr;
     }
     else {
-        return ((((utilizationRatio - optimalUr) / (1 - optimalUr)) * (maxIr - plateauIr)) +
+        return (((utilizationRatio - optimalUr) / (1 - optimalUr)) * (maxIr - plateauIr) +
             plateauIr);
     }
 }
@@ -251,7 +264,7 @@ function calcInterestRate(bank, utilizationRatio) {
     const insuranceFixedFeeApr = (0, numberUtils_1.bytesToI80F48)(bank.config.interestRateConfig.insuranceFeeFixedApr.value);
     const rateFee = protocolIrFee + insuranceIrFee;
     const totalFixedFeeApr = protocolFixedFeeApr + insuranceFixedFeeApr;
-    const borrowingRate = (baseRate * (1 + rateFee)) + totalFixedFeeApr;
+    const borrowingRate = baseRate * (1 + rateFee) + totalFixedFeeApr;
     return [lendingRate, borrowingRate];
 }
 function calcAccruedInterestPaymentPerPeriod(apr, timeDelta, shareValue) {

@@ -340,8 +340,7 @@ async function requiresRefreshBeforeRebalance(client) {
             oldStateWithLatestPrices.liqUtilizationRateBps);
         if (client.livePositionUpdates.supplyAdjustment === BigInt(0) &&
             client.livePositionUpdates.debtAdjustment === BigInt(0) &&
-            utilizationRateDiff / oldStateWithLatestPrices.liqUtilizationRateBps >=
-                0.005) {
+            utilizationRateDiff >= 20) {
             return true;
         }
     }

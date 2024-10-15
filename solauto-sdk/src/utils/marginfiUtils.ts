@@ -5,6 +5,7 @@ import {
   Bank,
   getMarginfiAccountSize,
   MARGINFI_PROGRAM_ID,
+  MarginfiAccount,
   safeFetchBank,
   safeFetchMarginfiAccount,
 } from "../marginfi-sdk";
@@ -168,7 +169,7 @@ export async function getAllMarginfiAccountsByAuthority(
         publicKey: x.publicKey,
         state: await getMarginfiAccountPositionState(
           umi,
-          toWeb3JsPublicKey(x.publicKey)
+          { pk: toWeb3JsPublicKey(x.publicKey) }
         ),
       }))
     );
@@ -256,50 +257,66 @@ async function getTokenUsage(
   };
 }
 
+interface BankSelection {
+  mint?: PublicKey;
+  banksCache?: BanksCache;
+}
+
+type BanksCache = { [group: string]: { [mint: string]: Bank } };
+
 export async function getMarginfiAccountPositionState(
   umi: Umi,
-  marginfiAccountPk: PublicKey,
+  protocolAccount: { pk: PublicKey; data?: MarginfiAccount },
   marginfiGroup?: PublicKey,
-  supplyMint?: PublicKey,
-  debtMint?: PublicKey,
+  supply?: BankSelection,
+  debt?: BankSelection,
   livePositionUpdates?: LivePositionUpdates
 ): Promise<PositionState | undefined> {
-  let marginfiAccount = await safeFetchMarginfiAccount(
-    umi,
-    publicKey(marginfiAccountPk),
-    { commitment: "confirmed" }
-  );
+  let marginfiAccount =
+    protocolAccount.data ??
+    (await safeFetchMarginfiAccount(umi, publicKey(protocolAccount.pk), {
+      commitment: "confirmed",
+    }));
 
-  console.log("MARGIN ACCOUNT", marginfiAccount);
-  console.log("MARGIN GROUP", marginfiGroup);
+  if (!supply) {
+    supply = {};
+  }
+  if (!debt) {
+    debt = {};
+  }
+
   if (!marginfiGroup && marginfiAccount) {
     marginfiGroup = toWeb3JsPublicKey(marginfiAccount.group);
   }
 
   let supplyBank: Bank | null =
-    supplyMint && supplyMint !== PublicKey.default
-      ? await safeFetchBank(
-          umi,
-          publicKey(
-            MARGINFI_ACCOUNTS[marginfiGroup?.toString() ?? ""][
-              supplyMint.toString()
-            ].bank
-          ),
-          { commitment: "confirmed" }
-        )
-      : null;
+    supply?.banksCache && supply.mint && marginfiGroup
+      ? supply.banksCache[marginfiGroup!.toString()][supply?.mint?.toString()]
+      : supply?.mint && supply?.mint !== PublicKey.default
+        ? await safeFetchBank(
+            umi,
+            publicKey(
+              MARGINFI_ACCOUNTS[marginfiGroup?.toString() ?? ""][
+                supply?.mint.toString()
+              ].bank
+            ),
+            { commitment: "confirmed" }
+          )
+        : null;
   let debtBank: Bank | null =
-    debtMint && debtMint !== PublicKey.default
-      ? await safeFetchBank(
-          umi,
-          publicKey(
-            MARGINFI_ACCOUNTS[marginfiGroup?.toString() ?? ""][
-              debtMint.toString()
-            ].bank
-          ),
-          { commitment: "confirmed" }
-        )
-      : null;
+    debt?.banksCache && debt.mint && marginfiGroup
+      ? debt.banksCache[marginfiGroup!.toString()][debt?.mint?.toString()]
+      : debt?.mint && debt?.mint !== PublicKey.default
+        ? await safeFetchBank(
+            umi,
+            publicKey(
+              MARGINFI_ACCOUNTS[marginfiGroup?.toString() ?? ""][
+                debt?.mint.toString()
+              ].bank
+            ),
+            { commitment: "confirmed" }
+          )
+        : null;
 
   let supplyUsage: PositionTokenUsage | undefined = undefined;
   let debtUsage: PositionTokenUsage | undefined = undefined;
@@ -328,8 +345,8 @@ export async function getMarginfiAccountPositionState(
           commitment: "confirmed",
         });
       }
-      if (!supplyMint) {
-        supplyMint = toWeb3JsPublicKey(supplyBank!.mint);
+      if (!supply.mint) {
+        supply.mint = toWeb3JsPublicKey(supplyBank!.mint);
       }
       supplyUsage = await getTokenUsage(
         supplyBank!,
@@ -345,8 +362,8 @@ export async function getMarginfiAccountPositionState(
           commitment: "confirmed",
         });
       }
-      if (!debtMint) {
-        debtMint = toWeb3JsPublicKey(debtBank!.mint);
+      if (!debt.mint) {
+        debt.mint = toWeb3JsPublicKey(debtBank!.mint);
       }
       debtUsage = await getTokenUsage(
         debtBank!,
@@ -395,7 +412,7 @@ export async function getMarginfiAccountPositionState(
     );
   }
 
-  const supplyPrice = safeGetPrice(supplyMint!)!;
+  const supplyPrice = safeGetPrice(supply.mint!)!;
   let [maxLtv, liqThreshold] = await getMaxLtvAndLiqThreshold(
     umi,
     marginfiGroup ?? new PublicKey(DEFAULT_MARGINFI_GROUP),
@@ -460,7 +477,7 @@ function marginfiInterestRateCurve(
     return (utilizationRatio * plateauIr) / optimalUr;
   } else {
     return (
-      (((utilizationRatio - optimalUr) / (1 - optimalUr)) * (maxIr - plateauIr)) +
+      ((utilizationRatio - optimalUr) / (1 - optimalUr)) * (maxIr - plateauIr) +
       plateauIr
     );
   }
@@ -488,7 +505,7 @@ function calcInterestRate(
   );
   const rateFee = protocolIrFee + insuranceIrFee;
   const totalFixedFeeApr = protocolFixedFeeApr + insuranceFixedFeeApr;
-  const borrowingRate = (baseRate * (1 + rateFee)) + totalFixedFeeApr;
+  const borrowingRate = baseRate * (1 + rateFee) + totalFixedFeeApr;
 
   return [lendingRate, borrowingRate];
 }

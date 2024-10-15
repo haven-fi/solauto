@@ -649,13 +649,13 @@ export class SolautoMarginfiClient extends SolautoClient {
 
     const freshState = await getMarginfiAccountPositionState(
       this.umi,
-      this.marginfiAccountPk,
+      { pk: this.marginfiAccountPk },
       this.marginfiGroup,
       !this.selfManaged && this.solautoPositionData === null
-        ? this.supplyMint
+        ? { mint: this.supplyMint }
         : undefined,
       !this.selfManaged && this.solautoPositionData === null
-        ? this.debtMint
+        ? { mint: this.debtMint }
         : undefined,
       this.livePositionUpdates
     );
