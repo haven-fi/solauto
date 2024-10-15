@@ -1327,7 +1327,6 @@ packages:
       - bufferutil
       - encoding
       - fastestsmallesttextencoderdecoder
-      - supports-color
       - typescript
       - utf-8-validate
     dev: true
