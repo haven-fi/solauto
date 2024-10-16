@@ -274,6 +274,13 @@ impl<'a> SolautoManager<'a> {
                 .data
                 .amount;
         if !self.std_accounts.solauto_position.data.self_managed.val {
+            let dca_in_base_unit = self
+                .std_accounts
+                .solauto_position
+                .data
+                .position
+                .dca
+                .dca_in_base_unit;
             if self
                 .std_accounts
                 .solauto_position
@@ -283,21 +290,9 @@ impl<'a> SolautoManager<'a> {
                 .token_type
                 == TokenType::Supply
             {
-                available_supply_balance -= self
-                    .std_accounts
-                    .solauto_position
-                    .data
-                    .position
-                    .dca
-                    .dca_in_base_unit;
+                available_supply_balance -= dca_in_base_unit;
             } else {
-                available_debt_balance -= self
-                    .std_accounts
-                    .solauto_position
-                    .data
-                    .position
-                    .dca
-                    .dca_in_base_unit;
+                available_debt_balance -= dca_in_base_unit;
             }
         }
 
