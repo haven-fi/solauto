@@ -15,12 +15,8 @@ import {
   retryWithExponentialBackoff,
 } from "../utils/generalUtils";
 import { getErrorInfo, getTransactionChores } from "./transactionUtils";
-import { PriorityFeeSetting, TransactionRunType } from "../types";
+import { PriorityFeeSetting, TransactionItemInputs, TransactionRunType } from "../types";
 import { ReferralStateManager, TxHandler } from "../clients";
-import {
-  InvalidRebalanceConditionError,
-  SOLAUTO_PROGRAM_ID,
-} from "../generated";
 // import { sendJitoBundledTransactions } from "../utils/jitoUtils";
 
 class LookupTables {
@@ -58,6 +54,8 @@ class LookupTables {
   }
 }
 
+
+
 export class TransactionItem {
   lookupTableAddresses!: string[];
   tx?: TransactionBuilder;
@@ -65,9 +63,7 @@ export class TransactionItem {
   constructor(
     public fetchTx: (
       attemptNum: number
-    ) => Promise<
-      { tx: TransactionBuilder; lookupTableAddresses?: string[] } | undefined
-    >,
+    ) => Promise<TransactionItemInputs | undefined>,
     public name?: string
   ) {}
 
@@ -542,7 +538,9 @@ export class TransactionsManager {
         undefined,
         errorDetails.errorInfo ?? errorDetails.errorName ?? "Unknown error"
       );
-      this.txHandler.log(`${errorDetails.errorName ?? "Unknown error"}: ${errorDetails.errorInfo ?? "unknown"}`);
+      this.txHandler.log(
+        `${errorDetails.errorName ?? "Unknown error"}: ${errorDetails.errorInfo ?? "unknown"}`
+      );
 
       if (!errorDetails.canBeIgnored) {
         throw e;

@@ -400,30 +400,30 @@ async function buildSolautoRebalanceTransaction(client, targetLiqUtilizationRate
         lookupTableAddresses,
     };
 }
-async function convertReferralFeesToDestination(umi, referralState, tokenAccount) {
-    const tokenAccountData = await (0, accountUtils_1.getTokenAccountData)(umi, tokenAccount);
+async function convertReferralFeesToDestination(referralManager, tokenAccount, destinationMint) {
+    const tokenAccountData = await (0, accountUtils_1.getTokenAccountData)(referralManager.umi, tokenAccount);
     if (!tokenAccountData || tokenAccountData.amount === BigInt(0)) {
         return undefined;
     }
-    const { lookupTableAddresses, setupInstructions, swapIx } = await (0, jupiterUtils_1.getJupSwapTransaction)(umi.identity, {
+    const { lookupTableAddresses, setupInstructions, swapIx } = await (0, jupiterUtils_1.getJupSwapTransaction)(referralManager.umi.identity, {
         amount: tokenAccountData.amount,
-        destinationWallet: (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(referralState.publicKey),
+        destinationWallet: referralManager.referralState,
         inputMint: tokenAccountData.mint,
-        outputMint: (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(referralState.destFeesMint),
+        outputMint: destinationMint,
         exactIn: true,
         slippageIncFactor: 0.25,
     });
     let tx = (0, umi_1.transactionBuilder)()
         .add(setupInstructions)
-        .add((0, generated_1.convertReferralFees)(umi, {
-        signer: umi.identity,
-        intermediaryTa: (0, umi_1.publicKey)((0, accountUtils_1.getTokenAccount)((0, umi_web3js_adapters_1.toWeb3JsPublicKey)(umi.identity.publicKey), tokenAccountData.mint)),
+        .add((0, generated_1.convertReferralFees)(referralManager.umi, {
+        signer: referralManager.umi.identity,
+        intermediaryTa: (0, umi_1.publicKey)((0, accountUtils_1.getTokenAccount)((0, umi_web3js_adapters_1.toWeb3JsPublicKey)(referralManager.umi.identity.publicKey), tokenAccountData.mint)),
         ixsSysvar: (0, umi_1.publicKey)(web3_js_1.SYSVAR_INSTRUCTIONS_PUBKEY),
-        referralState: referralState.publicKey,
+        referralState: (0, umi_1.publicKey)(referralManager.referralState),
         referralFeesTa: (0, umi_1.publicKey)(tokenAccount),
     }))
         .add(swapIx);
-    return [tx, lookupTableAddresses];
+    return { tx, lookupTableAddresses };
 }
 function getErrorInfo(tx, error) {
     let canBeIgnored = false;

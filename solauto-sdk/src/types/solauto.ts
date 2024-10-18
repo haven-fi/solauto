@@ -1,5 +1,6 @@
 import { PublicKey } from "@solana/web3.js";
 import { LendingPlatform, PositionType } from "../generated";
+import { TransactionBuilder } from "@metaplex-foundation/umi";
 
 export interface SolautoPositionDetails {
   publicKey?: PublicKey;
@@ -14,9 +15,14 @@ export interface SolautoPositionDetails {
 
 export enum PriorityFeeSetting {
   Default = "Medium",
-  High = "High"
+  High = "High",
 }
 
 export type RebalanceAction = "boost" | "repay" | "dca";
 
 export type TransactionRunType = "skip-simulation" | "only-simulate" | "normal";
+
+export interface TransactionItemInputs {
+  tx: TransactionBuilder;
+  lookupTableAddresses?: string[];
+}

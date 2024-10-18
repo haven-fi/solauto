@@ -1,20 +1,14 @@
 import { TransactionBuilder } from "@metaplex-foundation/umi";
 import { SolautoClient } from "../clients/solautoClient";
 import { ErrorsToThrow } from "../utils/generalUtils";
-import { PriorityFeeSetting, TransactionRunType } from "../types";
+import { PriorityFeeSetting, TransactionItemInputs, TransactionRunType } from "../types";
 import { ReferralStateManager } from "../clients";
 export declare class TransactionItem {
-    fetchTx: (attemptNum: number) => Promise<{
-        tx: TransactionBuilder;
-        lookupTableAddresses?: string[];
-    } | undefined>;
+    fetchTx: (attemptNum: number) => Promise<TransactionItemInputs | undefined>;
     name?: string | undefined;
     lookupTableAddresses: string[];
     tx?: TransactionBuilder;
-    constructor(fetchTx: (attemptNum: number) => Promise<{
-        tx: TransactionBuilder;
-        lookupTableAddresses?: string[];
-    } | undefined>, name?: string | undefined);
+    constructor(fetchTx: (attemptNum: number) => Promise<TransactionItemInputs | undefined>, name?: string | undefined);
     initialize(): Promise<void>;
     refetch(attemptNum: number): Promise<void>;
     uniqueAccounts(): string[];

@@ -26,6 +26,7 @@ import {
   getMarginfiRebalanceInstructionDataSerializer,
   getSolautoErrorFromCode,
   isSolautoAction,
+  safeFetchReferralState,
   solautoAction,
 } from "../generated";
 import { SolautoClient } from "../clients/solautoClient";
@@ -65,13 +66,14 @@ import {
   getMarginfiErrorFromName,
   MARGINFI_PROGRAM_ID,
 } from "../marginfi-sdk";
-import { TxHandler } from "../clients";
+import { ReferralStateManager, TxHandler } from "../clients";
 import {
   createJupiterProgram,
   getJupiterErrorFromName,
   JUPITER_PROGRAM_ID,
 } from "../jupiter-sdk";
 import { PRICES } from "../constants";
+import { TransactionItemInputs } from "../types";
 
 interface wSolTokenUsage {
   wSolTokenAccount: PublicKey;
@@ -627,13 +629,7 @@ export async function buildSolautoRebalanceTransaction(
   client: SolautoClient,
   targetLiqUtilizationRateBps?: number,
   attemptNum?: number
-): Promise<
-  | {
-      tx: TransactionBuilder;
-      lookupTableAddresses: string[];
-    }
-  | undefined
-> {
+): Promise<TransactionItemInputs | undefined> {
   client.solautoPositionState = await client.getFreshPositionState();
   if (
     (client.solautoPositionState?.supply.amountUsed.baseUnit === BigInt(0) &&
@@ -750,21 +746,24 @@ export async function buildSolautoRebalanceTransaction(
 }
 
 export async function convertReferralFeesToDestination(
-  umi: Umi,
-  referralState: ReferralState,
-  tokenAccount: PublicKey
-): Promise<[TransactionBuilder, string[]] | undefined> {
-  const tokenAccountData = await getTokenAccountData(umi, tokenAccount);
+  referralManager: ReferralStateManager,
+  tokenAccount: PublicKey,
+  destinationMint: PublicKey
+): Promise<TransactionItemInputs | undefined> {
+  const tokenAccountData = await getTokenAccountData(
+    referralManager.umi,
+    tokenAccount
+  );
   if (!tokenAccountData || tokenAccountData.amount === BigInt(0)) {
     return undefined;
   }
 
   const { lookupTableAddresses, setupInstructions, swapIx } =
-    await getJupSwapTransaction(umi.identity, {
+    await getJupSwapTransaction(referralManager.umi.identity, {
       amount: tokenAccountData.amount,
-      destinationWallet: toWeb3JsPublicKey(referralState.publicKey),
+      destinationWallet: referralManager.referralState,
       inputMint: tokenAccountData.mint,
-      outputMint: toWeb3JsPublicKey(referralState.destFeesMint),
+      outputMint: destinationMint,
       exactIn: true,
       slippageIncFactor: 0.25,
     });
@@ -772,22 +771,22 @@ export async function convertReferralFeesToDestination(
   let tx = transactionBuilder()
     .add(setupInstructions)
     .add(
-      convertReferralFees(umi, {
-        signer: umi.identity,
+      convertReferralFees(referralManager.umi, {
+        signer: referralManager.umi.identity,
         intermediaryTa: publicKey(
           getTokenAccount(
-            toWeb3JsPublicKey(umi.identity.publicKey),
+            toWeb3JsPublicKey(referralManager.umi.identity.publicKey),
             tokenAccountData.mint
           )
         ),
         ixsSysvar: publicKey(SYSVAR_INSTRUCTIONS_PUBKEY),
-        referralState: referralState.publicKey,
+        referralState: publicKey(referralManager.referralState),
         referralFeesTa: publicKey(tokenAccount),
       })
     )
     .add(swapIx);
 
-  return [tx, lookupTableAddresses];
+  return { tx, lookupTableAddresses };
 }
 
 export function getErrorInfo(tx: TransactionBuilder, error: any) {
