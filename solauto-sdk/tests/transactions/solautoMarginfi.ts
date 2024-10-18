@@ -22,12 +22,13 @@ import {
 import { PublicKey } from "@solana/web3.js";
 import { USDC } from "../../src/constants";
 import { buildHeliusApiUrl } from "../../src/utils";
+import { PriorityFeeSetting } from "../../src/types";
 
 describe("Solauto Marginfi tests", async () => {
-  // const signer = setupTest();
-  const signer = setupTest("solauto-manager");
+  const signer = setupTest();
+  // const signer = setupTest("solauto-manager");
 
-  const payForTransactions = false;
+  const payForTransactions = true;
   const useJitoBundle = false;
   const positionId = 1;
 
@@ -127,7 +128,7 @@ describe("Solauto Marginfi tests", async () => {
     transactionItems.push(
       new TransactionItem(
         async (attemptNum) =>
-          await buildSolautoRebalanceTransaction(client, undefined, attemptNum),
+          await buildSolautoRebalanceTransaction(client, 7000, attemptNum),
         "rebalance"
       )
     );
@@ -163,7 +164,7 @@ describe("Solauto Marginfi tests", async () => {
       client,
       undefined,
       !payForTransactions ? "only-simulate" : "normal",
-      useJitoBundle
-    ).clientSend(transactionItems);
+      useJitoBundle,
+    ).clientSend(transactionItems, PriorityFeeSetting.Default);
   });
 });

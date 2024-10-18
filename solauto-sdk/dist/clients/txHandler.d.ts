@@ -5,6 +5,7 @@ export declare abstract class TxHandler {
     umi: Umi;
     connection: Connection;
     referredBy?: PublicKey;
+    referredByState?: PublicKey;
     constructor(rpcUrl: string, localTest?: boolean);
     log(...args: any[]): void;
     abstract defaultLookupTables(): string[];

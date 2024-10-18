@@ -8,6 +8,7 @@ export abstract class TxHandler {
   public connection!: Connection;
 
   public referredBy?: PublicKey;
+  public referredByState?: PublicKey;
 
   constructor(
     rpcUrl: string,

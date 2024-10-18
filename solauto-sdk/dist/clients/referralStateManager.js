@@ -43,20 +43,25 @@ class ReferralStateManager extends txHandler_1.TxHandler {
         const hasReferredBy = authorityReferralStateData &&
             authorityReferralStateData.referredByState !==
                 (0, umi_1.publicKey)(web3_js_1.PublicKey.default);
-        const referredByAuthority = !hasReferredBy &&
+        const finalReferredBy = !hasReferredBy &&
             referredBy &&
             !referredBy.equals((0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.signer.publicKey))
             ? referredBy
             : undefined;
-        this.referredBy = referredByAuthority;
+        this.referredBy = finalReferredBy;
+        this.referredByState = finalReferredBy
+            ? (0, utils_1.getReferralState)(finalReferredBy)
+            : authorityReferralStateData
+                ? (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(authorityReferralStateData.referredByState)
+                : undefined;
     }
     updateReferralStatesIx(destFeesMint, lookupTable) {
         return (0, generated_1.updateReferralStates)(this.umi, {
             signer: this.signer,
             signerReferralState: (0, umi_1.publicKey)(this.referralState),
             referralFeesDestMint: destFeesMint ? (0, umi_1.publicKey)(destFeesMint) : null,
-            referredByState: this.referredBy
-                ? (0, umi_1.publicKey)((0, utils_1.getReferralState)(this.referredBy))
+            referredByState: this.referredByState
+                ? (0, umi_1.publicKey)(this.referredByState)
                 : undefined,
             referredByAuthority: this.referredBy
                 ? (0, umi_1.publicKey)(this.referredBy)

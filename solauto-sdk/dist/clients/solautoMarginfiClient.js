@@ -136,8 +136,8 @@ class SolautoMarginfiClient extends solautoClient_1.SolautoClient {
             signer: this.signer,
             marginfiProgram: (0, umi_1.publicKey)(marginfi_sdk_1.MARGINFI_PROGRAM_ID),
             signerReferralState: (0, umi_1.publicKey)(this.referralStateManager.referralState),
-            referredByState: this.referralStateManager.referredBy
-                ? (0, umi_1.publicKey)((0, accountUtils_1.getReferralState)(this.referralStateManager.referredBy))
+            referredByState: this.referralStateManager.referredByState
+                ? (0, umi_1.publicKey)(this.referralStateManager.referredByState)
                 : undefined,
             referredBySupplyTa: this.referredBySupplyTa
                 ? (0, umi_1.publicKey)(this.referredBySupplyTa)

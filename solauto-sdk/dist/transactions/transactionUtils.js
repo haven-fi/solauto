@@ -148,7 +148,7 @@ async function rebalanceChoresBefore(client, tx, accountsGettingCreated) {
     let chores = (0, umi_1.transactionBuilder)();
     if (checkReferralSupplyTa && !(0, generalUtils_1.rpcAccountCreated)(referredBySupplyTa)) {
         client.log("Creating referred-by TA for ", client.supplyMint.toString());
-        chores = chores.add((0, solanaUtils_1.createAssociatedTokenAccountUmiIx)(client.signer, (0, accountUtils_1.getReferralState)(client.referralStateManager.referredBy), client.supplyMint));
+        chores = chores.add((0, solanaUtils_1.createAssociatedTokenAccountUmiIx)(client.signer, client.referralStateManager.referredByState, client.supplyMint));
     }
     if (checkSolautoFeesTa && !(0, generalUtils_1.rpcAccountCreated)(solautoFeesSupplyTa)) {
         client.log("Creating Solauto fees TA for ", client.supplyMint.toString());

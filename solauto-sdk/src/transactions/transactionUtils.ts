@@ -314,7 +314,7 @@ export async function rebalanceChoresBefore(
     chores = chores.add(
       createAssociatedTokenAccountUmiIx(
         client.signer,
-        getReferralState(client.referralStateManager.referredBy!),
+        client.referralStateManager.referredByState!,
         client.supplyMint
       )
     );

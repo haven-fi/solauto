@@ -88,13 +88,19 @@ export class ReferralStateManager extends TxHandler {
       authorityReferralStateData &&
       authorityReferralStateData.referredByState !==
         publicKey(PublicKey.default);
-    const referredByAuthority =
+    const finalReferredBy =
       !hasReferredBy &&
       referredBy &&
       !referredBy.equals(toWeb3JsPublicKey(this.signer.publicKey))
         ? referredBy
         : undefined;
-    this.referredBy = referredByAuthority;
+
+    this.referredBy = finalReferredBy;
+    this.referredByState = finalReferredBy
+      ? getReferralState(finalReferredBy)
+      : authorityReferralStateData
+        ? toWeb3JsPublicKey(authorityReferralStateData.referredByState)
+        : undefined;
   }
 
   updateReferralStatesIx(
@@ -105,8 +111,8 @@ export class ReferralStateManager extends TxHandler {
       signer: this.signer,
       signerReferralState: publicKey(this.referralState),
       referralFeesDestMint: destFeesMint ? publicKey(destFeesMint) : null,
-      referredByState: this.referredBy
-        ? publicKey(getReferralState(this.referredBy))
+      referredByState: this.referredByState
+        ? publicKey(this.referredByState)
         : undefined,
       referredByAuthority: this.referredBy
         ? publicKey(this.referredBy)
