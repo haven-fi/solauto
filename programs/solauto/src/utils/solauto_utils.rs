@@ -118,13 +118,8 @@ pub fn create_or_update_referral_state<'a>(
         let mut referral_state_account =
             DeserializedAccount::<ReferralState>::zerocopy(Some(referral_state))?.unwrap();
 
-        if referred_by_state.is_some() {
-            if &referral_state_account.data.referred_by_state == &Pubkey::default() {
-                referral_state_account.data.referred_by_state = *referred_by_state.unwrap().key;
-            } else {
-                msg!("You are not allowed to change the referred-by account after it has already been set");
-                return Err(SolautoError::IncorrectAccounts.into());
-            }
+        if referred_by_state.is_some() && &referral_state_account.data.referred_by_state == &Pubkey::default() {
+            referral_state_account.data.referred_by_state = *referred_by_state.unwrap().key;
         }
 
         if referral_fees_dest_mint.is_some()
