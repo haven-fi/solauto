@@ -611,17 +611,20 @@ export async function requiresRefreshBeforeRebalance(client: SolautoClient) {
         oldStateWithLatestPrices.liqUtilizationRateBps
     );
 
+    client.log("Liq utilization rate diff:", utilizationRateDiff);
     if (
       client.livePositionUpdates.supplyAdjustment === BigInt(0) &&
       client.livePositionUpdates.debtAdjustment === BigInt(0) &&
-      utilizationRateDiff >= 20
+      utilizationRateDiff >= 10
     ) {
+      client.log("Choosing to refresh before rebalance");
       return true;
     }
   }
 
   // Rebalance ix will already refresh internally if position is self managed, has automation to update, or position state last updated >= 1 day ago
 
+  client.log("Not refreshing before rebalance");
   return false;
 }
 

@@ -338,13 +338,16 @@ async function requiresRefreshBeforeRebalance(client) {
         const oldStateWithLatestPrices = await (0, generalUtils_2.positionStateWithLatestPrices)(client.solautoPositionData.state, constants_1.PRICES[client.supplyMint.toString()].price, constants_1.PRICES[client.debtMint.toString()].price);
         const utilizationRateDiff = Math.abs((client.solautoPositionState?.liqUtilizationRateBps ?? 0) -
             oldStateWithLatestPrices.liqUtilizationRateBps);
+        client.log("Liq utilization rate diff:", utilizationRateDiff);
         if (client.livePositionUpdates.supplyAdjustment === BigInt(0) &&
             client.livePositionUpdates.debtAdjustment === BigInt(0) &&
-            utilizationRateDiff >= 20) {
+            utilizationRateDiff >= 10) {
+            client.log("Choosing to refresh before rebalance");
             return true;
         }
     }
     // Rebalance ix will already refresh internally if position is self managed, has automation to update, or position state last updated >= 1 day ago
+    client.log("Not refreshing before rebalance");
     return false;
 }
 async function buildSolautoRebalanceTransaction(client, targetLiqUtilizationRateBps, attemptNum) {

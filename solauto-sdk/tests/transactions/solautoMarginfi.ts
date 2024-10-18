@@ -25,10 +25,10 @@ import { buildHeliusApiUrl } from "../../src/utils";
 import { PriorityFeeSetting } from "../../src/types";
 
 describe("Solauto Marginfi tests", async () => {
-  const signer = setupTest();
-  // const signer = setupTest("solauto-manager");
+  // const signer = setupTest();
+  const signer = setupTest("solauto-manager");
 
-  const payForTransactions = true;
+  const payForTransactions = false;
   const useJitoBundle = false;
   const positionId = 1;
 
@@ -128,7 +128,7 @@ describe("Solauto Marginfi tests", async () => {
     transactionItems.push(
       new TransactionItem(
         async (attemptNum) =>
-          await buildSolautoRebalanceTransaction(client, 7000, attemptNum),
+          await buildSolautoRebalanceTransaction(client, undefined, attemptNum),
         "rebalance"
       )
     );
