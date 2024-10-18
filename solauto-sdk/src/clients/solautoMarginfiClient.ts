@@ -32,7 +32,7 @@ import {
   marginfiRebalance,
   marginfiRefreshData,
 } from "../generated";
-import { getMarginfiAccountPDA, getTokenAccount } from "../utils/accountUtils";
+import { getMarginfiAccountPDA, getReferralState, getTokenAccount } from "../utils/accountUtils";
 import { generateRandomU64, safeGetPrice } from "../utils/generalUtils";
 import {
   MARGINFI_PROGRAM_ID,
@@ -263,8 +263,8 @@ export class SolautoMarginfiClient extends SolautoClient {
       signer: this.signer,
       marginfiProgram: publicKey(MARGINFI_PROGRAM_ID),
       signerReferralState: publicKey(this.referralStateManager.referralState),
-      referredByState: this.referralStateManager.referredByState
-        ? publicKey(this.referralStateManager.referredByState)
+      referredByState: this.referralStateManager.referredBy
+        ? publicKey(getReferralState(this.referralStateManager.referredBy))
         : undefined,
       referredBySupplyTa: this.referredBySupplyTa
         ? publicKey(this.referredBySupplyTa)

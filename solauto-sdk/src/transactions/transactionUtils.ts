@@ -57,7 +57,7 @@ import {
   eligibleForRebalance,
   positionStateWithLatestPrices,
 } from "../utils/solauto/generalUtils";
-import { getTokenAccount, getTokenAccountData } from "../utils/accountUtils";
+import { getReferralState, getTokenAccount, getTokenAccountData } from "../utils/accountUtils";
 import {
   createMarginfiProgram,
   getLendingAccountBorrowInstructionDataSerializer,
@@ -140,7 +140,7 @@ async function transactionChoresBefore(
 
   if (
     client.referralStateManager.referralStateData === null ||
-    (client.referralStateManager.referredByState !== undefined &&
+    (client.referralStateManager.referredBy !== undefined &&
       client.referralStateManager.referralStateData?.referredByState ===
         publicKey(PublicKey.default)) ||
     (client.authorityLutAddress !== undefined &&
@@ -150,7 +150,6 @@ async function transactionChoresBefore(
     chores = chores.add(
       client.referralStateManager.updateReferralStatesIx(
         undefined,
-        client.referralStateManager.referredBy,
         client.authorityLutAddress
       )
     );
@@ -315,7 +314,7 @@ export async function rebalanceChoresBefore(
     chores = chores.add(
       createAssociatedTokenAccountUmiIx(
         client.signer,
-        client.referralStateManager.referredByState!,
+        getReferralState(client.referralStateManager.referredBy!),
         client.supplyMint
       )
     );

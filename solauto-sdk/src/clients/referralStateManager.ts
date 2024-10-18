@@ -21,6 +21,7 @@ import {
 } from "../generated";
 import { getReferralState, getTokenAccount } from "../utils";
 import { TxHandler } from "./txHandler";
+import { SOLAUTO_LUT } from "../constants";
 
 interface ReferralStateManagerArgs {
   signer?: Signer;
@@ -36,8 +37,6 @@ export class ReferralStateManager extends TxHandler {
   public referralAuthority!: PublicKey;
   public referralState!: PublicKey;
   public referralStateData!: ReferralState | null;
-
-  public referredByState?: PublicKey;
 
   constructor(
     heliusApiUrl: string,
@@ -79,8 +78,8 @@ export class ReferralStateManager extends TxHandler {
       !toWeb3JsPublicKey(this.referralStateData!.lookupTable).equals(
         PublicKey.default
       )
-      ? [this.referralStateData?.lookupTable.toString()]
-      : [];
+      ? [SOLAUTO_LUT, this.referralStateData?.lookupTable.toString()]
+      : [SOLAUTO_LUT];
   }
 
   public setReferredBy(referredBy?: PublicKey) {
@@ -95,29 +94,23 @@ export class ReferralStateManager extends TxHandler {
       !referredBy.equals(toWeb3JsPublicKey(this.signer.publicKey))
         ? referredBy
         : undefined;
-    this.referredByState = hasReferredBy
-      ? toWeb3JsPublicKey(authorityReferralStateData!.referredByState)
-      : referredByAuthority
-        ? getReferralState(referredByAuthority!)
-        : undefined;
     this.referredBy = referredByAuthority;
   }
 
   updateReferralStatesIx(
     destFeesMint?: PublicKey,
-    referredBy?: PublicKey,
     lookupTable?: PublicKey
   ): TransactionBuilder {
     return updateReferralStates(this.umi, {
       signer: this.signer,
       signerReferralState: publicKey(this.referralState),
       referralFeesDestMint: destFeesMint ? publicKey(destFeesMint) : null,
-      referredByState: referredBy
-        ? publicKey(getReferralState(referredBy))
-        : this.referredByState
-          ? publicKey(this.referredByState)
-          : undefined,
-      referredByAuthority: referredBy ? publicKey(referredBy) : undefined,
+      referredByState: this.referredBy
+        ? publicKey(getReferralState(this.referredBy))
+        : undefined,
+      referredByAuthority: this.referredBy
+        ? publicKey(this.referredBy)
+        : undefined,
       addressLookupTable: lookupTable ? publicKey(lookupTable) : null,
     });
   }

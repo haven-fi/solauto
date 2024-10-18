@@ -59,7 +59,7 @@ function assertAccurateRebalance(
   let adjustmentFeeBps = 0;
   if (increasingLeverage) {
     adjustmentFeeBps = getSolautoFeesBps(
-      client.referredByState !== undefined,
+      client.referredBy !== undefined,
       targetLiqUtilizationRateBps,
       fromBaseUnit(
         client.solautoPositionState?.netWorth.baseAmountUsdValue ?? BigInt(0),

@@ -174,9 +174,9 @@ export abstract class SolautoClient extends TxHandler {
       signer: args.signer,
       wallet: args.wallet,
     });
-    if (this.referralStateManager.referredByState !== undefined) {
+    if (this.referralStateManager.referredBy !== undefined) {
       this.referredBySupplyTa = getTokenAccount(
-        this.referralStateManager.referredByState,
+        getReferralState(this.referralStateManager.referredBy),
         this.supplyMint
       );
     }
@@ -213,9 +213,9 @@ export abstract class SolautoClient extends TxHandler {
 
   public setReferredBy(referredBy?: PublicKey) {
     this.referralStateManager.setReferredBy(referredBy);
-    if (this.referralStateManager.referredByState !== undefined) {
+    if (this.referralStateManager.referredBy !== undefined) {
       this.referredBySupplyTa = getTokenAccount(
-        this.referralStateManager.referredByState,
+        getReferralState(this.referralStateManager.referredBy),
         this.supplyMint
       );
     }
