@@ -65,8 +65,8 @@ class SolautoClient extends txHandler_1.TxHandler {
             signer: args.signer,
             wallet: args.wallet,
         });
-        if (this.referralStateManager.referredByState !== undefined) {
-            this.referredBySupplyTa = (0, accountUtils_1.getTokenAccount)(this.referralStateManager.referredByState, this.supplyMint);
+        if (this.referralStateManager.referredBy !== undefined) {
+            this.referredBySupplyTa = (0, accountUtils_1.getTokenAccount)((0, accountUtils_1.getReferralState)(this.referralStateManager.referredBy), this.supplyMint);
         }
         this.solautoFeesWallet = generalAccounts_1.SOLAUTO_FEES_WALLET;
         this.solautoFeesSupplyTa = (0, accountUtils_1.getTokenAccount)(this.solautoFeesWallet, this.supplyMint);
@@ -85,8 +85,8 @@ class SolautoClient extends txHandler_1.TxHandler {
     }
     setReferredBy(referredBy) {
         this.referralStateManager.setReferredBy(referredBy);
-        if (this.referralStateManager.referredByState !== undefined) {
-            this.referredBySupplyTa = (0, accountUtils_1.getTokenAccount)(this.referralStateManager.referredByState, this.supplyMint);
+        if (this.referralStateManager.referredBy !== undefined) {
+            this.referredBySupplyTa = (0, accountUtils_1.getTokenAccount)((0, accountUtils_1.getReferralState)(this.referralStateManager.referredBy), this.supplyMint);
         }
     }
     async resetLiveTxUpdates(success) {

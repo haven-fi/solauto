@@ -9,6 +9,7 @@ const umi_signer_wallet_adapters_1 = require("@metaplex-foundation/umi-signer-wa
 const generated_1 = require("../generated");
 const utils_1 = require("../utils");
 const txHandler_1 = require("./txHandler");
+const constants_1 = require("../constants");
 class ReferralStateManager extends txHandler_1.TxHandler {
     constructor(heliusApiUrl, localTest) {
         super(heliusApiUrl, localTest);
@@ -34,8 +35,8 @@ class ReferralStateManager extends txHandler_1.TxHandler {
     defaultLookupTables() {
         return this.referralStateData?.lookupTable &&
             !(0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.referralStateData.lookupTable).equals(web3_js_1.PublicKey.default)
-            ? [this.referralStateData?.lookupTable.toString()]
-            : [];
+            ? [constants_1.SOLAUTO_LUT, this.referralStateData?.lookupTable.toString()]
+            : [constants_1.SOLAUTO_LUT];
     }
     setReferredBy(referredBy) {
         const authorityReferralStateData = this.referralStateData;
@@ -47,24 +48,19 @@ class ReferralStateManager extends txHandler_1.TxHandler {
             !referredBy.equals((0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.signer.publicKey))
             ? referredBy
             : undefined;
-        this.referredByState = hasReferredBy
-            ? (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(authorityReferralStateData.referredByState)
-            : referredByAuthority
-                ? (0, utils_1.getReferralState)(referredByAuthority)
-                : undefined;
         this.referredBy = referredByAuthority;
     }
-    updateReferralStatesIx(destFeesMint, referredBy, lookupTable) {
+    updateReferralStatesIx(destFeesMint, lookupTable) {
         return (0, generated_1.updateReferralStates)(this.umi, {
             signer: this.signer,
             signerReferralState: (0, umi_1.publicKey)(this.referralState),
             referralFeesDestMint: destFeesMint ? (0, umi_1.publicKey)(destFeesMint) : null,
-            referredByState: referredBy
-                ? (0, umi_1.publicKey)((0, utils_1.getReferralState)(referredBy))
-                : this.referredByState
-                    ? (0, umi_1.publicKey)(this.referredByState)
-                    : undefined,
-            referredByAuthority: referredBy ? (0, umi_1.publicKey)(referredBy) : undefined,
+            referredByState: this.referredBy
+                ? (0, umi_1.publicKey)((0, utils_1.getReferralState)(this.referredBy))
+                : undefined,
+            referredByAuthority: this.referredBy
+                ? (0, umi_1.publicKey)(this.referredBy)
+                : undefined,
             addressLookupTable: lookupTable ? (0, umi_1.publicKey)(lookupTable) : null,
         });
     }

@@ -135,14 +135,14 @@ pub fn process_convert_referral_fees<'a>(accounts: &'a [AccountInfo<'a>]) -> Pro
         current_ix_idx,
     );
 
-    validate_jup_instruction(
-        ctx.accounts.ixs_sysvar,
-        (current_ix_idx + 1) as usize,
-        &[&get_associated_token_address(
-            ctx.accounts.referral_state.key,
-            &referral_state.data.dest_fees_mint,
-        )],
-    )?;
+    // validate_jup_instruction(
+    //     ctx.accounts.ixs_sysvar,
+    //     (current_ix_idx + 1) as usize,
+    //     &[&get_associated_token_address(
+    //         ctx.accounts.referral_state.key,
+    //         &referral_state.data.dest_fees_mint,
+    //     )],
+    // )?;
 
     if !jup_swap.matches(1) {
         msg!("Missing Jup swap as next transaction");

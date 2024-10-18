@@ -16,12 +16,11 @@ export declare class ReferralStateManager extends TxHandler {
     referralAuthority: PublicKey;
     referralState: PublicKey;
     referralStateData: ReferralState | null;
-    referredByState?: PublicKey;
     constructor(heliusApiUrl: string, localTest?: boolean | undefined);
     initialize(args: ReferralStateManagerArgs): Promise<void>;
     defaultLookupTables(): string[];
     setReferredBy(referredBy?: PublicKey): void;
-    updateReferralStatesIx(destFeesMint?: PublicKey, referredBy?: PublicKey, lookupTable?: PublicKey): TransactionBuilder;
+    updateReferralStatesIx(destFeesMint?: PublicKey, lookupTable?: PublicKey): TransactionBuilder;
     claimReferralFeesIx(destFeesMint?: PublicKey): TransactionBuilder;
     resetLiveTxUpdates(success?: boolean): Promise<void>;
 }
