@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ReferralStateManager = void 0;
+const web3_js_1 = require("@solana/web3.js");
 const spl_token_1 = require("@solana/spl-token");
 const umi_1 = require("@metaplex-foundation/umi");
 const umi_web3js_adapters_1 = require("@metaplex-foundation/umi-web3js-adapters");
@@ -28,9 +29,30 @@ class ReferralStateManager extends txHandler_1.TxHandler {
         this.signer = this.umi.identity;
         this.referralState = (0, utils_1.getReferralState)(args.referralAuthority ?? (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.signer.publicKey));
         this.referralStateData = await (0, generated_1.safeFetchReferralState)(this.umi, (0, umi_1.publicKey)(this.referralState), { commitment: "confirmed" });
+        this.setReferredBy(args.referredByAuthority);
     }
     defaultLookupTables() {
-        return this.referralStateData?.lookupTable ? [this.referralStateData?.lookupTable.toString()] : [];
+        return this.referralStateData?.lookupTable &&
+            !(0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.referralStateData.lookupTable).equals(web3_js_1.PublicKey.default)
+            ? [this.referralStateData?.lookupTable.toString()]
+            : [];
+    }
+    setReferredBy(referredBy) {
+        const authorityReferralStateData = this.referralStateData;
+        const hasReferredBy = authorityReferralStateData &&
+            authorityReferralStateData.referredByState !==
+                (0, umi_1.publicKey)(web3_js_1.PublicKey.default);
+        const referredByAuthority = !hasReferredBy &&
+            referredBy &&
+            !referredBy.equals((0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.signer.publicKey))
+            ? referredBy
+            : undefined;
+        this.referredByState = hasReferredBy
+            ? (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(authorityReferralStateData.referredByState)
+            : referredByAuthority
+                ? (0, utils_1.getReferralState)(referredByAuthority)
+                : undefined;
+        this.referredBy = referredByAuthority;
     }
     updateReferralStatesIx(destFeesMint, referredBy, lookupTable) {
         return (0, generated_1.updateReferralStates)(this.umi, {
@@ -39,13 +61,11 @@ class ReferralStateManager extends txHandler_1.TxHandler {
             referralFeesDestMint: destFeesMint ? (0, umi_1.publicKey)(destFeesMint) : null,
             referredByState: referredBy
                 ? (0, umi_1.publicKey)((0, utils_1.getReferralState)(referredBy))
-                : undefined,
-            referredByAuthority: referredBy
-                ? (0, umi_1.publicKey)(referredBy)
-                : undefined,
-            addressLookupTable: lookupTable
-                ? (0, umi_1.publicKey)(lookupTable)
-                : null,
+                : this.referredByState
+                    ? (0, umi_1.publicKey)(this.referredByState)
+                    : undefined,
+            referredByAuthority: referredBy ? (0, umi_1.publicKey)(referredBy) : undefined,
+            addressLookupTable: lookupTable ? (0, umi_1.publicKey)(lookupTable) : null,
         });
     }
     claimReferralFeesIx(destFeesMint) {

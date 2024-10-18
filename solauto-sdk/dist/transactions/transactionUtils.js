@@ -52,13 +52,13 @@ function getWSolUsage(client, solautoActions, initiatingDcaIn, cancellingDcaIn) 
 async function transactionChoresBefore(client, accountsGettingCreated, solautoActions, initiatingDcaIn) {
     let chores = (0, umi_1.transactionBuilder)();
     if (client.referralStateManager.referralStateData === null ||
-        (client.referredByState !== undefined &&
+        (client.referralStateManager.referredByState !== undefined &&
             client.referralStateManager.referralStateData?.referredByState ===
                 (0, umi_1.publicKey)(web3_js_1.PublicKey.default)) ||
         (client.authorityLutAddress !== undefined &&
             client.referralStateManager.referralStateData.lookupTable ==
                 (0, umi_1.publicKey)(web3_js_1.PublicKey.default))) {
-        chores = chores.add(client.referralStateManager.updateReferralStatesIx(undefined, client.referredByAuthority, client.authorityLutAddress));
+        chores = chores.add(client.referralStateManager.updateReferralStatesIx(undefined, client.referralStateManager.referredBy, client.authorityLutAddress));
     }
     if (client.selfManaged) {
         if (client.solautoPositionData === null) {
@@ -148,7 +148,7 @@ async function rebalanceChoresBefore(client, tx, accountsGettingCreated) {
     let chores = (0, umi_1.transactionBuilder)();
     if (checkReferralSupplyTa && !(0, generalUtils_1.rpcAccountCreated)(referredBySupplyTa)) {
         client.log("Creating referred-by TA for ", client.supplyMint.toString());
-        chores = chores.add((0, solanaUtils_1.createAssociatedTokenAccountUmiIx)(client.signer, client.referredByState, client.supplyMint));
+        chores = chores.add((0, solanaUtils_1.createAssociatedTokenAccountUmiIx)(client.signer, client.referralStateManager.referredByState, client.supplyMint));
     }
     if (checkSolautoFeesTa && !(0, generalUtils_1.rpcAccountCreated)(solautoFeesSupplyTa)) {
         client.log("Creating Solauto fees TA for ", client.supplyMint.toString());

@@ -91,9 +91,6 @@ export abstract class SolautoClient extends TxHandler {
   public signerDebtTa!: PublicKey;
 
   public referralStateManager!: ReferralStateManager;
-
-  public referredByState?: PublicKey;
-  public referredByAuthority?: PublicKey;
   public referredBySupplyTa?: PublicKey;
 
   public solautoFeesWallet!: PublicKey;
@@ -133,11 +130,13 @@ export abstract class SolautoClient extends TxHandler {
       this.authority,
       this.positionId
     );
-    this.solautoPositionData = !args.new ? await safeFetchSolautoPosition(
-      this.umi,
-      publicKey(this.solautoPosition),
-      { commitment: "confirmed" }
-    ) : null;
+    this.solautoPositionData = !args.new
+      ? await safeFetchSolautoPosition(
+          this.umi,
+          publicKey(this.solautoPosition),
+          { commitment: "confirmed" }
+        )
+      : null;
     this.solautoPositionState = this.solautoPositionData?.state;
 
     this.maxLtvBps = undefined;
@@ -171,11 +170,16 @@ export abstract class SolautoClient extends TxHandler {
     this.referralStateManager = new ReferralStateManager(this.rpcUrl);
     await this.referralStateManager.initialize({
       referralAuthority: this.authority,
+      referredByAuthority: args.referredByAuthority,
       signer: args.signer,
       wallet: args.wallet,
     });
-
-    this.setReferredBy(args.referredByAuthority);
+    if (this.referralStateManager.referredByState !== undefined) {
+      this.referredBySupplyTa = getTokenAccount(
+        this.referralStateManager.referredByState,
+        this.supplyMint
+      );
+    }
 
     this.solautoFeesWallet = SOLAUTO_FEES_WALLET;
     this.solautoFeesSupplyTa = getTokenAccount(
@@ -208,27 +212,10 @@ export abstract class SolautoClient extends TxHandler {
   }
 
   public setReferredBy(referredBy?: PublicKey) {
-    const authorityReferralStateData =
-      this.referralStateManager.referralStateData;
-    const hasReferredBy =
-      authorityReferralStateData &&
-      authorityReferralStateData.referredByState !==
-        publicKey(PublicKey.default);
-    const referredByAuthority =
-      !hasReferredBy &&
-      referredBy &&
-      !referredBy.equals(toWeb3JsPublicKey(this.signer.publicKey))
-        ? referredBy
-        : undefined;
-    this.referredByState = hasReferredBy
-      ? toWeb3JsPublicKey(authorityReferralStateData!.referredByState)
-      : referredByAuthority
-        ? getReferralState(referredByAuthority!)
-        : undefined;
-    this.referredByAuthority = referredByAuthority;
-    if (this.referredByState !== undefined) {
+    this.referralStateManager.setReferredBy(referredBy);
+    if (this.referralStateManager.referredByState !== undefined) {
       this.referredBySupplyTa = getTokenAccount(
-        this.referredByState,
+        this.referralStateManager.referredByState,
         this.supplyMint
       );
     }

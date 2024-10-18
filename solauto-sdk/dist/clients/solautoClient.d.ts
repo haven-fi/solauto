@@ -36,8 +36,6 @@ export declare abstract class SolautoClient extends TxHandler {
     positionDebtTa: PublicKey;
     signerDebtTa: PublicKey;
     referralStateManager: ReferralStateManager;
-    referredByState?: PublicKey;
-    referredByAuthority?: PublicKey;
     referredBySupplyTa?: PublicKey;
     solautoFeesWallet: PublicKey;
     solautoFeesSupplyTa: PublicKey;

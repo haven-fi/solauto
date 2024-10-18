@@ -1,11 +1,13 @@
 import { Umi } from "@metaplex-foundation/umi";
-import { Connection } from "@solana/web3.js";
+import { Connection, PublicKey } from "@solana/web3.js";
 import { consoleLog, getSolanaRpcConnection } from "../utils";
 
 export abstract class TxHandler {
   public rpcUrl!: string;
   public umi!: Umi;
   public connection!: Connection;
+
+  public referredBy?: PublicKey;
 
   constructor(
     rpcUrl: string,
@@ -28,4 +30,6 @@ export abstract class TxHandler {
   abstract defaultLookupTables(): string[];
 
   abstract resetLiveTxUpdates(success?: boolean): Promise<void>;
+
+  abstract setReferredBy(referredBy?: PublicKey): void;
 }

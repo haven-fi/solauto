@@ -11,6 +11,7 @@ import { PublicKey, SYSVAR_INSTRUCTIONS_PUBKEY } from "@solana/web3.js";
 import {
   ACCOUNT_SIZE as TOKEN_ACCOUNT_SIZE,
   NATIVE_MINT,
+  RawAccount,
 } from "@solana/spl-token";
 import {
   InvalidRebalanceConditionError,
@@ -139,7 +140,7 @@ async function transactionChoresBefore(
 
   if (
     client.referralStateManager.referralStateData === null ||
-    (client.referredByState !== undefined &&
+    (client.referralStateManager.referredByState !== undefined &&
       client.referralStateManager.referralStateData?.referredByState ===
         publicKey(PublicKey.default)) ||
     (client.authorityLutAddress !== undefined &&
@@ -149,7 +150,7 @@ async function transactionChoresBefore(
     chores = chores.add(
       client.referralStateManager.updateReferralStatesIx(
         undefined,
-        client.referredByAuthority,
+        client.referralStateManager.referredBy,
         client.authorityLutAddress
       )
     );
@@ -314,7 +315,7 @@ export async function rebalanceChoresBefore(
     chores = chores.add(
       createAssociatedTokenAccountUmiIx(
         client.signer,
-        client.referredByState!,
+        client.referralStateManager.referredByState!,
         client.supplyMint
       )
     );

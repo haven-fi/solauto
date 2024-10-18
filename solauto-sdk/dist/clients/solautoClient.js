@@ -38,7 +38,9 @@ class SolautoClient extends txHandler_1.TxHandler {
         this.selfManaged = this.positionId === 0;
         this.lendingPlatform = lendingPlatform;
         this.solautoPosition = (0, accountUtils_1.getSolautoPositionAccount)(this.authority, this.positionId);
-        this.solautoPositionData = !args.new ? await (0, generated_1.safeFetchSolautoPosition)(this.umi, (0, umi_1.publicKey)(this.solautoPosition), { commitment: "confirmed" }) : null;
+        this.solautoPositionData = !args.new
+            ? await (0, generated_1.safeFetchSolautoPosition)(this.umi, (0, umi_1.publicKey)(this.solautoPosition), { commitment: "confirmed" })
+            : null;
         this.solautoPositionState = this.solautoPositionData?.state;
         this.maxLtvBps = undefined;
         this.liqThresholdBps = undefined;
@@ -59,10 +61,13 @@ class SolautoClient extends txHandler_1.TxHandler {
         this.referralStateManager = new referralStateManager_1.ReferralStateManager(this.rpcUrl);
         await this.referralStateManager.initialize({
             referralAuthority: this.authority,
+            referredByAuthority: args.referredByAuthority,
             signer: args.signer,
             wallet: args.wallet,
         });
-        this.setReferredBy(args.referredByAuthority);
+        if (this.referralStateManager.referredByState !== undefined) {
+            this.referredBySupplyTa = (0, accountUtils_1.getTokenAccount)(this.referralStateManager.referredByState, this.supplyMint);
+        }
         this.solautoFeesWallet = generalAccounts_1.SOLAUTO_FEES_WALLET;
         this.solautoFeesSupplyTa = (0, accountUtils_1.getTokenAccount)(this.solautoFeesWallet, this.supplyMint);
         const authorityReferralStateData = this.referralStateManager.referralStateData;
@@ -79,23 +84,9 @@ class SolautoClient extends txHandler_1.TxHandler {
             : undefined);
     }
     setReferredBy(referredBy) {
-        const authorityReferralStateData = this.referralStateManager.referralStateData;
-        const hasReferredBy = authorityReferralStateData &&
-            authorityReferralStateData.referredByState !==
-                (0, umi_1.publicKey)(web3_js_1.PublicKey.default);
-        const referredByAuthority = !hasReferredBy &&
-            referredBy &&
-            !referredBy.equals((0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.signer.publicKey))
-            ? referredBy
-            : undefined;
-        this.referredByState = hasReferredBy
-            ? (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(authorityReferralStateData.referredByState)
-            : referredByAuthority
-                ? (0, accountUtils_1.getReferralState)(referredByAuthority)
-                : undefined;
-        this.referredByAuthority = referredByAuthority;
-        if (this.referredByState !== undefined) {
-            this.referredBySupplyTa = (0, accountUtils_1.getTokenAccount)(this.referredByState, this.supplyMint);
+        this.referralStateManager.setReferredBy(referredBy);
+        if (this.referralStateManager.referredByState !== undefined) {
+            this.referredBySupplyTa = (0, accountUtils_1.getTokenAccount)(this.referralStateManager.referredByState, this.supplyMint);
         }
     }
     async resetLiveTxUpdates(success) {
