@@ -67,7 +67,7 @@ pub fn process_update_referral_states<'a>(
     )?;
     ix_utils::update_data(&mut authority_referral_state)?;
 
-    if ctx.accounts.referred_by_state.is_some() {
+    if ctx.accounts.referred_by_state.is_some() && ctx.accounts.referred_by_authority.is_some() {
         let mut referred_by_state = solauto_utils::create_or_update_referral_state(
             ctx.accounts.rent,
             ctx.accounts.signer,
