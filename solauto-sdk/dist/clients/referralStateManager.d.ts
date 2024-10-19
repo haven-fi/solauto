@@ -3,20 +3,22 @@ import { Signer, TransactionBuilder, Umi } from "@metaplex-foundation/umi";
 import { WalletAdapter } from "@metaplex-foundation/umi-signer-wallet-adapters";
 import { ReferralState } from "../generated";
 import { TxHandler } from "./txHandler";
-interface ReferralStateManagerArgs {
+export interface ReferralStateManagerArgs {
     signer?: Signer;
     wallet?: WalletAdapter;
-    referralAuthority?: PublicKey;
+    authority?: PublicKey;
     referredByAuthority?: PublicKey;
 }
 export declare class ReferralStateManager extends TxHandler {
     localTest?: boolean | undefined;
     umi: Umi;
     signer: Signer;
-    referralAuthority: PublicKey;
+    authority: PublicKey;
     referralState: PublicKey;
     referralStateData: ReferralState | null;
-    constructor(heliusApiUrl: string, localTest?: boolean | undefined);
+    referredBy?: PublicKey;
+    referredByState?: PublicKey;
+    constructor(rpcUrl: string, localTest?: boolean | undefined);
     initialize(args: ReferralStateManagerArgs): Promise<void>;
     defaultLookupTables(): string[];
     setReferredBy(referredBy?: PublicKey): void;
@@ -24,5 +26,4 @@ export declare class ReferralStateManager extends TxHandler {
     claimReferralFeesIx(destFeesMint?: PublicKey): TransactionBuilder;
     resetLiveTxUpdates(success?: boolean): Promise<void>;
 }
-export {};
 //# sourceMappingURL=referralStateManager.d.ts.map

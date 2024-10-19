@@ -7,9 +7,6 @@ export abstract class TxHandler {
   public umi!: Umi;
   public connection!: Connection;
 
-  public referredBy?: PublicKey;
-  public referredByState?: PublicKey;
-
   constructor(
     rpcUrl: string,
     localTest?: boolean
@@ -31,6 +28,4 @@ export abstract class TxHandler {
   abstract defaultLookupTables(): string[];
 
   abstract resetLiveTxUpdates(success?: boolean): Promise<void>;
-
-  abstract setReferredBy(referredBy?: PublicKey): void;
 }

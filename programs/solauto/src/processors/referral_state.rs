@@ -24,8 +24,7 @@ use crate::{
         shared::{DeserializedAccount, SolautoError},
     },
     utils::{
-        ix_utils::{self, validate_jup_instruction},
-        solauto_utils, validation_utils,
+        solauto_utils, validation_utils, ix_utils
     },
 };
 
@@ -135,7 +134,8 @@ pub fn process_convert_referral_fees<'a>(accounts: &'a [AccountInfo<'a>]) -> Pro
         current_ix_idx,
     );
 
-    // validate_jup_instruction(
+    // Continues to break due to the fact that Jupiter keeps changing their program
+    // ix_utils::validate_jup_instruction(
     //     ctx.accounts.ixs_sysvar,
     //     (current_ix_idx + 1) as usize,
     //     &[&get_associated_token_address(

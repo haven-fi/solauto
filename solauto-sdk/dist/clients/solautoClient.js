@@ -5,7 +5,6 @@ require("rpc-websockets/dist/lib/client");
 const web3_js_1 = require("@solana/web3.js");
 const umi_1 = require("@metaplex-foundation/umi");
 const umi_web3js_adapters_1 = require("@metaplex-foundation/umi-web3js-adapters");
-const umi_signer_wallet_adapters_1 = require("@metaplex-foundation/umi-signer-wallet-adapters");
 const generated_1 = require("../generated");
 const accountUtils_1 = require("../utils/accountUtils");
 const generalAccounts_1 = require("../constants/generalAccounts");
@@ -14,29 +13,15 @@ const solautoConstants_1 = require("../constants/solautoConstants");
 const generalUtils_1 = require("../utils/generalUtils");
 const generalUtils_2 = require("../utils/solauto/generalUtils");
 const referralStateManager_1 = require("./referralStateManager");
-const txHandler_1 = require("./txHandler");
-class SolautoClient extends txHandler_1.TxHandler {
-    constructor(rpcUrl, localTest) {
-        super(rpcUrl, localTest);
+class SolautoClient extends referralStateManager_1.ReferralStateManager {
+    constructor() {
+        super(...arguments);
         this.livePositionUpdates = new generalUtils_2.LivePositionUpdates();
-        this.umi = this.umi.use({
-            install(umi) {
-                umi.programs.add((0, generated_1.createSolautoProgram)(), false);
-            },
-        });
     }
-    async initialize(args, lendingPlatform) {
-        if (!args.signer && !args.wallet) {
-            throw new Error("Signer or wallet must be provided");
-        }
-        this.umi = this.umi.use(args.signer
-            ? (0, umi_1.signerIdentity)(args.signer)
-            : (0, umi_signer_wallet_adapters_1.walletAdapterIdentity)(args.wallet, true));
-        this.signer = this.umi.identity;
-        this.authority = args.authority ?? (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.signer.publicKey);
+    async initialize(args) {
+        await super.initialize(args);
         this.positionId = args.positionId ?? 0;
         this.selfManaged = this.positionId === 0;
-        this.lendingPlatform = lendingPlatform;
         this.solautoPosition = (0, accountUtils_1.getSolautoPositionAccount)(this.authority, this.positionId);
         this.solautoPositionData = !args.new
             ? await (0, generated_1.safeFetchSolautoPosition)(this.umi, (0, umi_1.publicKey)(this.solautoPosition), { commitment: "confirmed" })
@@ -58,24 +43,12 @@ class SolautoClient extends txHandler_1.TxHandler {
                     : web3_js_1.PublicKey.default);
         this.positionDebtTa = (0, accountUtils_1.getTokenAccount)(this.solautoPosition, this.debtMint);
         this.signerDebtTa = (0, accountUtils_1.getTokenAccount)((0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.signer.publicKey), this.debtMint);
-        this.referralStateManager = new referralStateManager_1.ReferralStateManager(this.rpcUrl);
-        await this.referralStateManager.initialize({
-            referralAuthority: this.authority,
-            referredByAuthority: args.referredByAuthority,
-            signer: args.signer,
-            wallet: args.wallet,
-        });
-        console.log(this.referralStateManager.referredBy?.toString());
-        if (this.referralStateManager.referredByState !== undefined) {
-            this.referredBySupplyTa = (0, accountUtils_1.getTokenAccount)(this.referralStateManager.referredByState, this.supplyMint);
-        }
         this.solautoFeesWallet = generalAccounts_1.SOLAUTO_FEES_WALLET;
         this.solautoFeesSupplyTa = (0, accountUtils_1.getTokenAccount)(this.solautoFeesWallet, this.supplyMint);
-        const authorityReferralStateData = this.referralStateManager.referralStateData;
         this.authorityLutAddress =
-            authorityReferralStateData?.lookupTable &&
-                !(0, umi_web3js_adapters_1.toWeb3JsPublicKey)(authorityReferralStateData.lookupTable).equals(web3_js_1.PublicKey.default)
-                ? (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(authorityReferralStateData.lookupTable)
+            this.referralStateData?.lookupTable &&
+                !(0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.referralStateData.lookupTable).equals(web3_js_1.PublicKey.default)
+                ? (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.referralStateData.lookupTable)
                 : undefined;
         this.log("Position state: ", this.solautoPositionState);
         this.log("Position settings: ", this.solautoPositionData?.position?.settingParams);
@@ -84,11 +57,11 @@ class SolautoClient extends txHandler_1.TxHandler {
             ? this.solautoPositionData?.position?.dca
             : undefined);
     }
-    setReferredBy(referredBy) {
-        this.referralStateManager.setReferredBy(referredBy);
-        if (this.referralStateManager.referredByState !== undefined) {
-            this.referredBySupplyTa = (0, accountUtils_1.getTokenAccount)(this.referralStateManager.referredByState, this.supplyMint);
+    referredBySupplyTa() {
+        if (this.referredByState !== undefined) {
+            return (0, accountUtils_1.getTokenAccount)(this.referredByState, this.supplyMint);
         }
+        return undefined;
     }
     async resetLiveTxUpdates(success) {
         if (success) {
@@ -129,8 +102,8 @@ class SolautoClient extends txHandler_1.TxHandler {
             this.solautoPosition,
             this.positionSupplyTa,
             this.positionDebtTa,
-            this.referralStateManager.referralState,
-            ...(this.referredBySupplyTa ? [this.referredBySupplyTa] : []),
+            this.referralState,
+            ...(this.referredBySupplyTa() ? [this.referredBySupplyTa()] : []),
         ];
     }
     async fetchExistingAuthorityLutAccounts() {
@@ -172,7 +145,7 @@ class SolautoClient extends txHandler_1.TxHandler {
         }
         const addingReferredBy = accountsToAdd.length === 1 &&
             accountsToAdd[0].toString().toLowerCase() ===
-                this.referredBySupplyTa?.toString().toLowerCase();
+                this.referredBySupplyTa()?.toString().toLowerCase();
         if (tx.getInstructions().length > 0) {
             this.log("Updating authority lookup table...");
         }

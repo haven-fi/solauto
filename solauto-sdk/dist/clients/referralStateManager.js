@@ -11,8 +11,8 @@ const utils_1 = require("../utils");
 const txHandler_1 = require("./txHandler");
 const constants_1 = require("../constants");
 class ReferralStateManager extends txHandler_1.TxHandler {
-    constructor(heliusApiUrl, localTest) {
-        super(heliusApiUrl, localTest);
+    constructor(rpcUrl, localTest) {
+        super(rpcUrl, localTest);
         this.localTest = localTest;
         this.umi = this.umi.use({
             install(umi) {
@@ -28,7 +28,8 @@ class ReferralStateManager extends txHandler_1.TxHandler {
             ? (0, umi_1.signerIdentity)(args.signer)
             : (0, umi_signer_wallet_adapters_1.walletAdapterIdentity)(args.wallet, true));
         this.signer = this.umi.identity;
-        this.referralState = (0, utils_1.getReferralState)(args.referralAuthority ?? (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.signer.publicKey));
+        this.authority = args.authority ?? (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.signer.publicKey);
+        this.referralState = (0, utils_1.getReferralState)(args.authority ?? (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.signer.publicKey));
         this.referralStateData = await (0, generated_1.safeFetchReferralState)(this.umi, (0, umi_1.publicKey)(this.referralState), { commitment: "confirmed" });
         this.setReferredBy(args.referredByAuthority);
     }
@@ -39,10 +40,8 @@ class ReferralStateManager extends txHandler_1.TxHandler {
             : [constants_1.SOLAUTO_LUT];
     }
     setReferredBy(referredBy) {
-        const authorityReferralStateData = this.referralStateData;
-        const hasReferredBy = authorityReferralStateData &&
-            authorityReferralStateData.referredByState !==
-                (0, umi_1.publicKey)(web3_js_1.PublicKey.default);
+        const hasReferredBy = this.referralStateData &&
+            this.referralStateData.referredByState !== (0, umi_1.publicKey)(web3_js_1.PublicKey.default);
         const finalReferredBy = !hasReferredBy &&
             referredBy &&
             !referredBy.equals((0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.signer.publicKey))
@@ -51,8 +50,8 @@ class ReferralStateManager extends txHandler_1.TxHandler {
         this.referredBy = finalReferredBy;
         this.referredByState = finalReferredBy
             ? (0, utils_1.getReferralState)(finalReferredBy)
-            : authorityReferralStateData
-                ? (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(authorityReferralStateData.referredByState)
+            : this.referralStateData
+                ? (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.referralStateData.referredByState)
                 : undefined;
     }
     updateReferralStatesIx(destFeesMint, lookupTable) {
@@ -78,7 +77,7 @@ class ReferralStateManager extends txHandler_1.TxHandler {
         return (0, generated_1.claimReferralFees)(this.umi, {
             signer: this.signer,
             signerWsolTa: (0, umi_1.publicKey)((0, utils_1.getTokenAccount)((0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.signer.publicKey), spl_token_1.NATIVE_MINT)),
-            referralAuthority: (0, umi_1.publicKey)(this.referralAuthority),
+            referralAuthority: (0, umi_1.publicKey)(this.authority),
             referralState: (0, umi_1.publicKey)(this.referralState),
             referralFeesDestTa: (0, umi_1.publicKey)(referralDestTa),
             referralFeesDestMint: (0, umi_1.publicKey)(referralFeesDestMint),

@@ -8,13 +8,8 @@ import {
   PublicKey as UmiPublicKey,
   isSome,
   transactionBuilder,
-  signerIdentity,
 } from "@metaplex-foundation/umi";
 import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
-import {
-  WalletAdapter,
-  walletAdapterIdentity,
-} from "@metaplex-foundation/umi-signer-wallet-adapters";
 import {
   DCASettings,
   DCASettingsInpArgs,
@@ -29,12 +24,10 @@ import {
   UpdatePositionDataArgs,
   cancelDCA,
   closePosition,
-  createSolautoProgram,
   safeFetchSolautoPosition,
   updatePosition,
 } from "../generated";
 import {
-  getReferralState,
   getSolautoPositionAccount,
   getTokenAccount,
 } from "../utils/accountUtils";
@@ -50,25 +43,21 @@ import {
 } from "../constants/solautoConstants";
 import { currentUnixSeconds } from "../utils/generalUtils";
 import { LivePositionUpdates } from "../utils/solauto/generalUtils";
-import { ReferralStateManager } from "./referralStateManager";
-import { TxHandler } from "./txHandler";
+import {
+  ReferralStateManager,
+  ReferralStateManagerArgs,
+} from "./referralStateManager";
 import { QuoteResponse } from "@jup-ag/api";
 
-export interface SolautoClientArgs {
+export interface SolautoClientArgs extends ReferralStateManagerArgs {
   new?: boolean;
-  authority?: PublicKey;
   positionId?: number;
-  signer?: Signer;
-  wallet?: WalletAdapter;
-
   supplyMint?: PublicKey;
   debtMint?: PublicKey;
-
-  referredByAuthority?: PublicKey;
 }
 
-export abstract class SolautoClient extends TxHandler {
-  public lendingPlatform!: LendingPlatform;
+export abstract class SolautoClient extends ReferralStateManager {
+  public lendingPlatform?: LendingPlatform;
 
   public authority!: PublicKey;
   public signer!: Signer;
@@ -90,9 +79,6 @@ export abstract class SolautoClient extends TxHandler {
   public positionDebtTa!: PublicKey;
   public signerDebtTa!: PublicKey;
 
-  public referralStateManager!: ReferralStateManager;
-  public referredBySupplyTa?: PublicKey;
-
   public solautoFeesWallet!: PublicKey;
   public solautoFeesSupplyTa!: PublicKey;
 
@@ -100,32 +86,11 @@ export abstract class SolautoClient extends TxHandler {
 
   public livePositionUpdates: LivePositionUpdates = new LivePositionUpdates();
 
-  constructor(rpcUrl: string, localTest?: boolean) {
-    super(rpcUrl, localTest);
-
-    this.umi = this.umi.use({
-      install(umi) {
-        umi.programs.add(createSolautoProgram(), false);
-      },
-    });
-  }
-
-  async initialize(args: SolautoClientArgs, lendingPlatform: LendingPlatform) {
-    if (!args.signer && !args.wallet) {
-      throw new Error("Signer or wallet must be provided");
-    }
-    this.umi = this.umi.use(
-      args.signer
-        ? signerIdentity(args.signer)
-        : walletAdapterIdentity(args.wallet!, true)
-    );
-
-    this.signer = this.umi.identity;
-    this.authority = args.authority ?? toWeb3JsPublicKey(this.signer.publicKey);
+  async initialize(args: SolautoClientArgs) {
+    await super.initialize(args);
 
     this.positionId = args.positionId ?? 0;
     this.selfManaged = this.positionId === 0;
-    this.lendingPlatform = lendingPlatform;
     this.solautoPosition = getSolautoPositionAccount(
       this.authority,
       this.positionId
@@ -167,35 +132,18 @@ export abstract class SolautoClient extends TxHandler {
       this.debtMint
     );
 
-    this.referralStateManager = new ReferralStateManager(this.rpcUrl);
-    await this.referralStateManager.initialize({
-      referralAuthority: this.authority,
-      referredByAuthority: args.referredByAuthority,
-      signer: args.signer,
-      wallet: args.wallet,
-    });
-    console.log(this.referralStateManager.referredBy?.toString());
-    if (this.referralStateManager.referredByState !== undefined) {
-      this.referredBySupplyTa = getTokenAccount(
-        this.referralStateManager.referredByState,
-        this.supplyMint
-      );
-    }
-
     this.solautoFeesWallet = SOLAUTO_FEES_WALLET;
     this.solautoFeesSupplyTa = getTokenAccount(
       this.solautoFeesWallet,
       this.supplyMint
     );
 
-    const authorityReferralStateData =
-      this.referralStateManager.referralStateData;
     this.authorityLutAddress =
-      authorityReferralStateData?.lookupTable &&
-      !toWeb3JsPublicKey(authorityReferralStateData.lookupTable).equals(
+      this.referralStateData?.lookupTable &&
+      !toWeb3JsPublicKey(this.referralStateData.lookupTable).equals(
         PublicKey.default
       )
-        ? toWeb3JsPublicKey(authorityReferralStateData.lookupTable)
+        ? toWeb3JsPublicKey(this.referralStateData.lookupTable)
         : undefined;
 
     this.log("Position state: ", this.solautoPositionState);
@@ -212,14 +160,11 @@ export abstract class SolautoClient extends TxHandler {
     );
   }
 
-  public setReferredBy(referredBy?: PublicKey) {
-    this.referralStateManager.setReferredBy(referredBy);
-    if (this.referralStateManager.referredByState !== undefined) {
-      this.referredBySupplyTa = getTokenAccount(
-        this.referralStateManager.referredByState!,
-        this.supplyMint
-      );
+  referredBySupplyTa(): PublicKey | undefined {
+    if (this.referredByState !== undefined) {
+      return getTokenAccount(this.referredByState, this.supplyMint);
     }
+    return undefined;
   }
 
   async resetLiveTxUpdates(success?: boolean) {
@@ -268,8 +213,8 @@ export abstract class SolautoClient extends TxHandler {
       this.solautoPosition,
       this.positionSupplyTa,
       this.positionDebtTa,
-      this.referralStateManager.referralState,
-      ...(this.referredBySupplyTa ? [this.referredBySupplyTa] : []),
+      this.referralState,
+      ...(this.referredBySupplyTa() ? [this.referredBySupplyTa()!] : []),
     ];
   }
 
@@ -333,7 +278,7 @@ export abstract class SolautoClient extends TxHandler {
     const addingReferredBy =
       accountsToAdd.length === 1 &&
       accountsToAdd[0].toString().toLowerCase() ===
-        this.referredBySupplyTa?.toString().toLowerCase();
+        this.referredBySupplyTa()?.toString().toLowerCase();
 
     if (tx.getInstructions().length > 0) {
       this.log("Updating authority lookup table...");

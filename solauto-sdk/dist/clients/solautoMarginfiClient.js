@@ -19,7 +19,8 @@ class SolautoMarginfiClient extends solautoClient_1.SolautoClient {
         this.marginfiAccountSeedIdx = BigInt(0);
     }
     async initialize(args) {
-        await super.initialize(args, generated_1.LendingPlatform.Marginfi);
+        await super.initialize(args);
+        this.lendingPlatform = generated_1.LendingPlatform.Marginfi;
         if (this.selfManaged) {
             this.marginfiAccount =
                 args.marginfiAccount ??
@@ -135,12 +136,12 @@ class SolautoMarginfiClient extends solautoClient_1.SolautoClient {
         return (0, generated_1.marginfiOpenPosition)(this.umi, {
             signer: this.signer,
             marginfiProgram: (0, umi_1.publicKey)(marginfi_sdk_1.MARGINFI_PROGRAM_ID),
-            signerReferralState: (0, umi_1.publicKey)(this.referralStateManager.referralState),
-            referredByState: this.referralStateManager.referredByState
-                ? (0, umi_1.publicKey)(this.referralStateManager.referredByState)
+            signerReferralState: (0, umi_1.publicKey)(this.referralState),
+            referredByState: this.referredByState
+                ? (0, umi_1.publicKey)(this.referredByState)
                 : undefined,
-            referredBySupplyTa: this.referredBySupplyTa
-                ? (0, umi_1.publicKey)(this.referredBySupplyTa)
+            referredBySupplyTa: this.referredBySupplyTa()
+                ? (0, umi_1.publicKey)(this.referredBySupplyTa())
                 : undefined,
             solautoPosition: (0, umi_1.publicKey)(this.solautoPosition),
             marginfiGroup: (0, umi_1.publicKey)(this.marginfiGroup),
@@ -299,9 +300,9 @@ class SolautoMarginfiClient extends solautoClient_1.SolautoClient {
             marginfiProgram: (0, umi_1.publicKey)(marginfi_sdk_1.MARGINFI_PROGRAM_ID),
             ixsSysvar: (0, umi_1.publicKey)(web3_js_1.SYSVAR_INSTRUCTIONS_PUBKEY),
             solautoFeesSupplyTa: rebalanceStep === "B" ? (0, umi_1.publicKey)(this.solautoFeesSupplyTa) : undefined,
-            authorityReferralState: (0, umi_1.publicKey)(this.referralStateManager.referralState),
-            referredBySupplyTa: this.referredBySupplyTa
-                ? (0, umi_1.publicKey)(this.referredBySupplyTa)
+            authorityReferralState: (0, umi_1.publicKey)(this.referralState),
+            referredBySupplyTa: this.referredBySupplyTa()
+                ? (0, umi_1.publicKey)(this.referredBySupplyTa())
                 : undefined,
             positionAuthority: (0, umi_1.publicKey)(this.authority),
             solautoPosition: (0, umi_1.publicKey)(this.solautoPosition),

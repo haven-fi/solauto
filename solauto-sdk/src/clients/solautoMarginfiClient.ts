@@ -85,7 +85,9 @@ export class SolautoMarginfiClient extends SolautoClient {
   public intermediaryMarginfiAccount?: MarginfiAccount;
 
   async initialize(args: SolautoMarginfiClientArgs) {
-    await super.initialize(args, LendingPlatform.Marginfi);
+    await super.initialize(args);
+
+    this.lendingPlatform = LendingPlatform.Marginfi;
 
     if (this.selfManaged) {
       this.marginfiAccount =
@@ -262,12 +264,12 @@ export class SolautoMarginfiClient extends SolautoClient {
     return marginfiOpenPosition(this.umi, {
       signer: this.signer,
       marginfiProgram: publicKey(MARGINFI_PROGRAM_ID),
-      signerReferralState: publicKey(this.referralStateManager.referralState),
-      referredByState: this.referralStateManager.referredByState
-        ? publicKey(this.referralStateManager.referredByState)
+      signerReferralState: publicKey(this.referralState),
+      referredByState: this.referredByState
+        ? publicKey(this.referredByState)
         : undefined,
-      referredBySupplyTa: this.referredBySupplyTa
-        ? publicKey(this.referredBySupplyTa)
+      referredBySupplyTa: this.referredBySupplyTa()
+        ? publicKey(this.referredBySupplyTa()!)
         : undefined,
       solautoPosition: publicKey(this.solautoPosition),
       marginfiGroup: publicKey(this.marginfiGroup),
@@ -472,10 +474,10 @@ export class SolautoMarginfiClient extends SolautoClient {
       solautoFeesSupplyTa:
         rebalanceStep === "B" ? publicKey(this.solautoFeesSupplyTa) : undefined,
       authorityReferralState: publicKey(
-        this.referralStateManager.referralState
+        this.referralState
       ),
-      referredBySupplyTa: this.referredBySupplyTa
-        ? publicKey(this.referredBySupplyTa)
+      referredBySupplyTa: this.referredBySupplyTa()
+        ? publicKey(this.referredBySupplyTa()!)
         : undefined,
       positionAuthority: publicKey(this.authority),
       solautoPosition: publicKey(this.solautoPosition),

@@ -57,7 +57,11 @@ import {
   eligibleForRebalance,
   positionStateWithLatestPrices,
 } from "../utils/solauto/generalUtils";
-import { getReferralState, getTokenAccount, getTokenAccountData } from "../utils/accountUtils";
+import {
+  getReferralState,
+  getTokenAccount,
+  getTokenAccountData,
+} from "../utils/accountUtils";
 import {
   createMarginfiProgram,
   getLendingAccountBorrowInstructionDataSerializer,
@@ -139,19 +143,15 @@ async function transactionChoresBefore(
   let chores = transactionBuilder();
 
   if (
-    client.referralStateManager.referralStateData === null ||
-    (client.referralStateManager.referredBy !== undefined &&
-      client.referralStateManager.referralStateData?.referredByState ===
+    client.referralStateData === null ||
+    (client.referredBy !== undefined &&
+      client.referralStateData?.referredByState ===
         publicKey(PublicKey.default)) ||
     (client.authorityLutAddress !== undefined &&
-      client.referralStateManager.referralStateData!.lookupTable ==
-        publicKey(PublicKey.default))
+      client.referralStateData!.lookupTable == publicKey(PublicKey.default))
   ) {
     chores = chores.add(
-      client.referralStateManager.updateReferralStatesIx(
-        undefined,
-        client.authorityLutAddress
-      )
+      client.updateReferralStatesIx(undefined, client.authorityLutAddress)
     );
   }
 
@@ -275,7 +275,7 @@ export async function rebalanceChoresBefore(
       .some((t) => t.keys.some((k) => toWeb3JsPublicKey(k.pubkey).equals(key)));
 
   const checkReferralSupplyTa =
-    client.referredBySupplyTa && usesAccount(client.referredBySupplyTa);
+    client.referredBySupplyTa() && usesAccount(client.referredBySupplyTa()!);
   const checkSolautoFeesTa = usesAccount(client.solautoFeesSupplyTa);
   const checkIntermediaryMfiAccount =
     client.lendingPlatform === LendingPlatform.Marginfi &&
@@ -286,7 +286,9 @@ export async function rebalanceChoresBefore(
   const checkSignerDebtTa = usesAccount(client.signerDebtTa);
 
   const accountsNeeded = [
-    ...[checkReferralSupplyTa ? client.referredBySupplyTa : PublicKey.default],
+    ...[
+      checkReferralSupplyTa ? client.referredBySupplyTa() : PublicKey.default,
+    ],
     ...[checkSolautoFeesTa ? client.solautoFeesSupplyTa : PublicKey.default],
     ...[
       checkIntermediaryMfiAccount
@@ -314,7 +316,7 @@ export async function rebalanceChoresBefore(
     chores = chores.add(
       createAssociatedTokenAccountUmiIx(
         client.signer,
-        client.referralStateManager.referredByState!,
+        client.referredByState!,
         client.supplyMint
       )
     );

@@ -23,10 +23,10 @@ import { getReferralState, getTokenAccount } from "../utils";
 import { TxHandler } from "./txHandler";
 import { SOLAUTO_LUT } from "../constants";
 
-interface ReferralStateManagerArgs {
+export interface ReferralStateManagerArgs {
   signer?: Signer;
   wallet?: WalletAdapter;
-  referralAuthority?: PublicKey;
+  authority?: PublicKey;
   referredByAuthority?: PublicKey;
 }
 
@@ -34,15 +34,18 @@ export class ReferralStateManager extends TxHandler {
   public umi!: Umi;
   public signer!: Signer;
 
-  public referralAuthority!: PublicKey;
+  public authority!: PublicKey;
   public referralState!: PublicKey;
   public referralStateData!: ReferralState | null;
 
+  public referredBy?: PublicKey;
+  public referredByState?: PublicKey;
+
   constructor(
-    heliusApiUrl: string,
+    rpcUrl: string,
     public localTest?: boolean
   ) {
-    super(heliusApiUrl, localTest);
+    super(rpcUrl, localTest);
     this.umi = this.umi.use({
       install(umi) {
         umi.programs.add(createSolautoProgram(), false);
@@ -59,10 +62,11 @@ export class ReferralStateManager extends TxHandler {
         ? signerIdentity(args.signer)
         : walletAdapterIdentity(args.wallet!, true)
     );
-
     this.signer = this.umi.identity;
+    this.authority = args.authority ?? toWeb3JsPublicKey(this.signer.publicKey);
+
     this.referralState = getReferralState(
-      args.referralAuthority ?? toWeb3JsPublicKey(this.signer.publicKey)
+      args.authority ?? toWeb3JsPublicKey(this.signer.publicKey)
     );
     this.referralStateData = await safeFetchReferralState(
       this.umi,
@@ -82,12 +86,10 @@ export class ReferralStateManager extends TxHandler {
       : [SOLAUTO_LUT];
   }
 
-  public setReferredBy(referredBy?: PublicKey) {
-    const authorityReferralStateData = this.referralStateData;
+  setReferredBy(referredBy?: PublicKey) {
     const hasReferredBy =
-      authorityReferralStateData &&
-      authorityReferralStateData.referredByState !==
-        publicKey(PublicKey.default);
+      this.referralStateData &&
+      this.referralStateData.referredByState !== publicKey(PublicKey.default);
     const finalReferredBy =
       !hasReferredBy &&
       referredBy &&
@@ -98,8 +100,8 @@ export class ReferralStateManager extends TxHandler {
     this.referredBy = finalReferredBy;
     this.referredByState = finalReferredBy
       ? getReferralState(finalReferredBy)
-      : authorityReferralStateData
-        ? toWeb3JsPublicKey(authorityReferralStateData.referredByState)
+      : this.referralStateData
+        ? toWeb3JsPublicKey(this.referralStateData.referredByState)
         : undefined;
   }
 
@@ -143,7 +145,7 @@ export class ReferralStateManager extends TxHandler {
       signerWsolTa: publicKey(
         getTokenAccount(toWeb3JsPublicKey(this.signer.publicKey), NATIVE_MINT)
       ),
-      referralAuthority: publicKey(this.referralAuthority),
+      referralAuthority: publicKey(this.authority),
       referralState: publicKey(this.referralState),
       referralFeesDestTa: publicKey(referralDestTa),
       referralFeesDestMint: publicKey(referralFeesDestMint),

@@ -1,25 +1,19 @@
 import "rpc-websockets/dist/lib/client";
 import { PublicKey } from "@solana/web3.js";
 import { Signer, TransactionBuilder } from "@metaplex-foundation/umi";
-import { WalletAdapter } from "@metaplex-foundation/umi-signer-wallet-adapters";
 import { DCASettings, DCASettingsInpArgs, LendingPlatform, PositionState, SolautoActionArgs, SolautoPosition, SolautoRebalanceTypeArgs, SolautoSettingsParameters, SolautoSettingsParametersInpArgs, UpdatePositionDataArgs } from "../generated";
 import { FlashLoanDetails } from "../utils/solauto/rebalanceUtils";
 import { LivePositionUpdates } from "../utils/solauto/generalUtils";
-import { ReferralStateManager } from "./referralStateManager";
-import { TxHandler } from "./txHandler";
+import { ReferralStateManager, ReferralStateManagerArgs } from "./referralStateManager";
 import { QuoteResponse } from "@jup-ag/api";
-export interface SolautoClientArgs {
+export interface SolautoClientArgs extends ReferralStateManagerArgs {
     new?: boolean;
-    authority?: PublicKey;
     positionId?: number;
-    signer?: Signer;
-    wallet?: WalletAdapter;
     supplyMint?: PublicKey;
     debtMint?: PublicKey;
-    referredByAuthority?: PublicKey;
 }
-export declare abstract class SolautoClient extends TxHandler {
-    lendingPlatform: LendingPlatform;
+export declare abstract class SolautoClient extends ReferralStateManager {
+    lendingPlatform?: LendingPlatform;
     authority: PublicKey;
     signer: Signer;
     positionId: number;
@@ -35,15 +29,12 @@ export declare abstract class SolautoClient extends TxHandler {
     debtMint: PublicKey;
     positionDebtTa: PublicKey;
     signerDebtTa: PublicKey;
-    referralStateManager: ReferralStateManager;
-    referredBySupplyTa?: PublicKey;
     solautoFeesWallet: PublicKey;
     solautoFeesSupplyTa: PublicKey;
     authorityLutAddress?: PublicKey;
     livePositionUpdates: LivePositionUpdates;
-    constructor(rpcUrl: string, localTest?: boolean);
-    initialize(args: SolautoClientArgs, lendingPlatform: LendingPlatform): Promise<void>;
-    setReferredBy(referredBy?: PublicKey): void;
+    initialize(args: SolautoClientArgs): Promise<void>;
+    referredBySupplyTa(): PublicKey | undefined;
     resetLiveTxUpdates(success?: boolean): Promise<void>;
     abstract protocolAccount(): PublicKey;
     defaultLookupTables(): string[];
