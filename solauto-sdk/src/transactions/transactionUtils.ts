@@ -278,8 +278,6 @@ export async function rebalanceChoresBefore(
     client.referredBySupplyTa() && usesAccount(client.referredBySupplyTa()!);
   const checkReferralDebtTa =
     client.referredByDebtTa() && usesAccount(client.referredByDebtTa()!);
-  const checkSolautoFeesSupplyTa = usesAccount(client.solautoFeesSupplyTa);
-  const checkSolautoFeesDebtTa = usesAccount(client.solautoFeesDebtTa);
   const checkIntermediaryMfiAccount =
     client.lendingPlatform === LendingPlatform.Marginfi &&
     usesAccount(
