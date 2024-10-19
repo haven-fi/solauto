@@ -432,26 +432,6 @@ pub fn validate_token_account<'a>(
         return Err(SolautoError::IncorrectAccounts.into());
     }
 
-    // if account_has_data(source_ta.unwrap()) {
-    //     let source_ta_data = solauto_utils::safe_unpack_token_account(source_ta)?;
-    //     if
-    //         source_ta_data.is_some() &&
-    //         !token_account_owned_by(
-    //             source_ta_data.as_ref().unwrap(),
-    //             &solauto_position.data.authority
-    //         ) &&
-    //         !token_account_owned_by(source_ta_data.as_ref().unwrap(), solauto_position.account_info.key)
-    //     {
-    //         msg!("Incorrect token account {}", source_ta.unwrap().key);
-    //         return Err(SolautoError::IncorrectAccounts.into());
-    //     }
-
-    //     if !solauto_position.data.self_managed.val && source_ta_data.is_some() && &source_ta_data.as_ref().unwrap().data.mint != mint_key {
-    //         msg!("Incorrect token account {}", source_ta_data.unwrap().account_info.key);
-    //         return Err(SolautoError::IncorrectAccounts.into());
-    //     }
-    // }
-
     Ok(())
 }
 
