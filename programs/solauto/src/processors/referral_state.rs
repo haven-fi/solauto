@@ -82,7 +82,6 @@ pub fn process_update_referral_states<'a>(
         &authority_referral_state,
         None,
         false,
-        None,
     )
 }
 

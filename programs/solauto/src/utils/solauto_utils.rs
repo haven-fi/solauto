@@ -20,7 +20,9 @@ use crate::{
     },
     types::{
         instruction::UpdatePositionData,
-        shared::{DeserializedAccount, LendingPlatform, PositionType, SolautoError},
+        shared::{
+            DeserializedAccount, LendingPlatform, PositionType, RebalanceDirection, SolautoError,
+        },
     },
 };
 
@@ -281,44 +283,61 @@ pub fn cancel_dca_in<'a, 'b>(
     Ok(())
 }
 
-pub struct SolautoFeesBps {
+pub struct FeePayout {
     pub solauto: u16,
     pub referrer: u16,
     pub total: u16,
 }
-pub fn get_solauto_fees_bps(
+pub struct SolautoFeesBps {
     has_been_referred: bool,
     target_liq_utilization_rate_bps: Option<u16>,
     position_net_worth_usd: f64,
-) -> SolautoFeesBps {
-    let min_size: f64 = 10000.0; // Minimum position size
-    let max_size: f64 = 500000.0; // Maximum position size
-    let max_fee_bps: f64 = 200.0; // Fee in basis points for min_size (2%)
-    let min_fee_bps: f64 = 50.0; // Fee in basis points for max_size (0.5%)
-    let k = 1.5;
-
-    let fee_bps: f64;
-    if target_liq_utilization_rate_bps.is_some() {
-        fee_bps = 25.0;
-    } else if position_net_worth_usd <= min_size {
-        fee_bps = max_fee_bps;
-    } else if position_net_worth_usd >= max_size {
-        fee_bps = min_fee_bps;
-    } else {
-        let t = (position_net_worth_usd.ln() - min_size.ln()) / (max_size.ln() - min_size.ln());
-        fee_bps = (min_fee_bps + (max_fee_bps - min_fee_bps) * (1.0 - t.powf(k))).round();
+}
+impl SolautoFeesBps {
+    pub fn from(
+        has_been_referred: bool,
+        target_liq_utilization_rate_bps: Option<u16>,
+        position_net_worth_usd: f64,
+    ) -> Self {
+        Self {
+            has_been_referred,
+            target_liq_utilization_rate_bps,
+            position_net_worth_usd,
+        }
     }
+    pub fn fetch_fees(&self, rebalance_direction: RebalanceDirection) -> FeePayout {
+        let min_size: f64 = 10000.0; // Minimum position size
+        let max_size: f64 = 500000.0; // Maximum position size
+        let max_fee_bps: f64 = 200.0; // Fee in basis points for min_size (2%)
+        let min_fee_bps: f64 = 50.0; // Fee in basis points for max_size (0.5%)
+        let k = 1.5;
 
-    let referrer_fee = if has_been_referred {
-        fee_bps.div(5.0).floor()
-    } else {
-        0.0
-    };
+        let fee_bps: f64;
+        if self.target_liq_utilization_rate_bps.is_some()
+            || rebalance_direction == RebalanceDirection::Repay
+        {
+            fee_bps = 25.0;
+        } else if self.position_net_worth_usd <= min_size {
+            fee_bps = max_fee_bps;
+        } else if self.position_net_worth_usd >= max_size {
+            fee_bps = min_fee_bps;
+        } else {
+            let t = (self.position_net_worth_usd.ln() - min_size.ln())
+                / (max_size.ln() - min_size.ln());
+            fee_bps = (min_fee_bps + (max_fee_bps - min_fee_bps) * (1.0 - t.powf(k))).round();
+        }
 
-    SolautoFeesBps {
-        solauto: (fee_bps - referrer_fee) as u16,
-        referrer: referrer_fee as u16,
-        total: fee_bps as u16,
+        let referrer_fee = if self.has_been_referred {
+            fee_bps.div(5.0).floor()
+        } else {
+            0.0
+        };
+
+        FeePayout {
+            solauto: (fee_bps - referrer_fee) as u16,
+            referrer: referrer_fee as u16,
+            total: fee_bps as u16,
+        }
     }
 }
 

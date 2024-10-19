@@ -3,6 +3,7 @@ use solana_program::{
     account_info::AccountInfo, clock::Clock, entrypoint::ProgramResult, msg,
     program_error::ProgramError, sysvar::Sysvar,
 };
+use spl_associated_token_account::get_associated_token_address;
 use std::{
     cmp::min,
     ops::{Add, Div, Mul},
@@ -15,6 +16,7 @@ use super::{
     shared::{RebalanceDirection, RefreshStateProps, SolautoError, TokenBalanceAmount, TokenType},
 };
 use crate::{
+    constants::SOLAUTO_FEES_WALLET,
     state::solauto_position::{
         AutomationSettings, RebalanceData, SolautoPosition, SolautoRebalanceType,
     },
@@ -25,17 +27,20 @@ pub struct SolautoManagerAccounts<'a> {
     pub supply: LendingProtocolTokenAccounts<'a>,
     pub debt: LendingProtocolTokenAccounts<'a>,
     pub intermediary_ta: Option<&'a AccountInfo<'a>>,
+    pub solauto_fees: Option<solauto_utils::SolautoFeesBps>,
 }
 impl<'a> SolautoManagerAccounts<'a> {
     pub fn from(
         supply: LendingProtocolTokenAccounts<'a>,
         debt: LendingProtocolTokenAccounts<'a>,
         intermediary_ta: Option<&'a AccountInfo<'a>>,
+        solauto_fees: Option<solauto_utils::SolautoFeesBps>,
     ) -> Result<Self, ProgramError> {
         Ok(Self {
             supply,
             debt,
             intermediary_ta,
+            solauto_fees,
         })
     }
 }
@@ -216,14 +221,14 @@ impl<'a> SolautoManager<'a> {
         );
 
         if increasing_leverage {
-            let amt = if rebalance_args.target_in_amount_base_unit.is_some() {
+            let final_amount = if rebalance_args.target_in_amount_base_unit.is_some() {
                 rebalance_args.target_in_amount_base_unit.unwrap()
             } else {
                 base_unit_amount
             };
-            self.borrow(min(amt, amt), self.accounts.intermediary_ta.unwrap())
+            self.borrow(final_amount, self.accounts.intermediary_ta.unwrap())
         } else {
-            let amt = if rebalance_args.target_in_amount_base_unit.is_some() {
+            let final_amount = if rebalance_args.target_in_amount_base_unit.is_some() {
                 rebalance_args.target_in_amount_base_unit.unwrap()
             } else {
                 min(
@@ -238,7 +243,7 @@ impl<'a> SolautoManager<'a> {
                 )
             };
             self.withdraw(
-                TokenBalanceAmount::Some(amt),
+                TokenBalanceAmount::Some(final_amount),
                 self.accounts.intermediary_ta.unwrap(),
             )
         }
@@ -316,14 +321,18 @@ impl<'a> SolautoManager<'a> {
             )
         };
 
+        let amount_after_fees = self.payout_fees(available_balance)?;
+
         if boosting {
-            let amount_after_fees = self.payout_fees(available_balance)?;
             if self.std_accounts.solauto_position.data.self_managed.val {
                 transfer_to_authority_ta(&self.accounts.supply, amount_after_fees)?;
             }
             self.deposit(amount_after_fees)?;
         } else if available_balance > 0 {
-            let amount = if rebalance_args.target_liq_utilization_rate_bps.is_some()
+            if self.std_accounts.solauto_position.data.self_managed.val {
+                transfer_to_authority_ta(&self.accounts.debt, amount_after_fees)?;
+            }
+            let final_amount = if rebalance_args.target_liq_utilization_rate_bps.is_some()
                 && rebalance_args.target_liq_utilization_rate_bps.unwrap() == 0
             {
                 TokenBalanceAmount::All
@@ -336,13 +345,10 @@ impl<'a> SolautoManager<'a> {
                         .debt
                         .amount_used
                         .base_unit,
-                    available_balance,
+                    amount_after_fees,
                 ))
             };
-            if self.std_accounts.solauto_position.data.self_managed.val {
-                transfer_to_authority_ta(&self.accounts.debt, available_balance)?;
-            }
-            self.repay(amount)?;
+            self.repay(final_amount)?;
         } else {
             msg!("Missing required position liquidity to rebalance position");
             return Err(SolautoError::IncorrectInstructions.into());
@@ -388,31 +394,68 @@ impl<'a> SolautoManager<'a> {
             return Err(SolautoError::IncorrectAccounts.into());
         }
 
-        let position_supply_ta = self.accounts.supply.position_ta.as_ref().unwrap();
+        let rebalance_direction = self
+            .std_accounts
+            .solauto_position
+            .data
+            .rebalance
+            .rebalance_direction;
+        let token_mint = if rebalance_direction == RebalanceDirection::Boost {
+            self.std_accounts.solauto_position.data.position.supply_mint
+        } else {
+            self.std_accounts.solauto_position.data.position.debt_mint
+        };
 
-        let solauto_fees = (total_available_balance as f64)
-            .mul(from_bps(self.solauto_fees_bps.as_ref().unwrap().solauto))
-            as u64;
+        let position_ta = if rebalance_direction == RebalanceDirection::Boost {
+            self.accounts.supply.position_ta.unwrap()
+        } else {
+            self.accounts.debt.position_ta.unwrap()
+        };
+        let fee_payout = self
+            .solauto_fees_bps
+            .as_ref()
+            .unwrap()
+            .fetch_fees(rebalance_direction);
 
+        let solauto_fees = (total_available_balance as f64).mul(from_bps(fee_payout.total)) as u64;
+        if self.std_accounts.solauto_fees_ta.unwrap().key
+            != &get_associated_token_address(&SOLAUTO_FEES_WALLET, &token_mint)
+        {
+            msg!("Incorrect Solauto fees token account");
+            return Err(SolautoError::IncorrectAccounts.into());
+        }
         solana_utils::spl_token_transfer(
             self.std_accounts.token_program,
-            position_supply_ta,
+            position_ta,
             self.std_accounts.solauto_position.account_info,
-            self.std_accounts.solauto_fees_supply_ta.unwrap(),
+            self.std_accounts.solauto_fees_ta.unwrap(),
             solauto_fees,
             Some(&self.std_accounts.solauto_position.data.seeds_with_bump()),
         )?;
 
-        let referrer_fees = (total_available_balance as f64)
-            .mul(from_bps(self.solauto_fees_bps.as_ref().unwrap().referrer))
-            as u64;
-
+        let referrer_fees =
+            (total_available_balance as f64).mul(from_bps(fee_payout.referrer)) as u64;
         if referrer_fees > 0 {
+            if self.std_accounts.referred_by_ta.unwrap().key
+                != &get_associated_token_address(
+                    &self
+                        .std_accounts
+                        .authority_referral_state
+                        .as_ref()
+                        .unwrap()
+                        .data
+                        .referred_by_state,
+                    &token_mint,
+                )
+            {
+                msg!("Incorrect referral fee token account");
+                return Err(SolautoError::IncorrectAccounts.into());
+            }
             solana_utils::spl_token_transfer(
                 self.std_accounts.token_program,
-                position_supply_ta,
+                position_ta,
                 self.std_accounts.solauto_position.account_info,
-                self.std_accounts.referred_by_supply_ta.unwrap(),
+                self.std_accounts.referred_by_ta.unwrap(),
                 referrer_fees,
                 Some(&self.std_accounts.solauto_position.data.seeds_with_bump()),
             )?;

@@ -299,10 +299,16 @@ class SolautoMarginfiClient extends solautoClient_1.SolautoClient {
             signer: this.signer,
             marginfiProgram: (0, umi_1.publicKey)(marginfi_sdk_1.MARGINFI_PROGRAM_ID),
             ixsSysvar: (0, umi_1.publicKey)(web3_js_1.SYSVAR_INSTRUCTIONS_PUBKEY),
-            solautoFeesSupplyTa: rebalanceStep === "B" ? (0, umi_1.publicKey)(this.solautoFeesSupplyTa) : undefined,
+            solautoFeesTa: rebalanceStep === "B"
+                ? (0, umi_1.publicKey)(rebalanceValues.rebalanceDirection === generated_1.RebalanceDirection.Boost
+                    ? this.solautoFeesSupplyTa
+                    : this.solautoFeesDebtTa)
+                : undefined,
             authorityReferralState: (0, umi_1.publicKey)(this.referralState),
-            referredBySupplyTa: this.referredBySupplyTa()
-                ? (0, umi_1.publicKey)(this.referredBySupplyTa())
+            referredByTa: this.referredByState
+                ? (0, umi_1.publicKey)(rebalanceValues.rebalanceDirection === generated_1.RebalanceDirection.Boost
+                    ? this.referredBySupplyTa()
+                    : this.referredByDebtTa())
                 : undefined,
             positionAuthority: rebalanceValues.rebalanceAction === "dca"
                 ? (0, umi_1.publicKey)(this.authority)

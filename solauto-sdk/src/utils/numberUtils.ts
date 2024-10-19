@@ -1,4 +1,5 @@
 import { BASIS_POINTS, MIN_REPAY_GAP_BPS } from "../constants";
+import { RebalanceDirection } from "../generated";
 
 export function getLiqUtilzationRateBps(
   supplyUsd: number,
@@ -89,7 +90,8 @@ export function getDebtAdjustmentUsd(
 export function getSolautoFeesBps(
   isReferred: boolean,
   targetLiqUtilizationRateBps: number | undefined,
-  positionNetWorthUsd: number
+  positionNetWorthUsd: number,
+  rebalanceDirection: RebalanceDirection
 ): {
   solauto: number;
   referrer: number;
@@ -103,7 +105,7 @@ export function getSolautoFeesBps(
 
   let feeBps: number = 0;
 
-  if (targetLiqUtilizationRateBps !== undefined) {
+  if (targetLiqUtilizationRateBps !== undefined || rebalanceDirection === RebalanceDirection.Repay) {
     feeBps = 25;
   } else if (positionNetWorthUsd <= minSize) {
     feeBps = maxFeeBps;

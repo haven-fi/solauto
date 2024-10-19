@@ -79,8 +79,8 @@ export abstract class SolautoClient extends ReferralStateManager {
   public positionDebtTa!: PublicKey;
   public signerDebtTa!: PublicKey;
 
-  public solautoFeesWallet!: PublicKey;
   public solautoFeesSupplyTa!: PublicKey;
+  public solautoFeesDebtTa!: PublicKey;
 
   public authorityLutAddress?: PublicKey;
 
@@ -132,10 +132,13 @@ export abstract class SolautoClient extends ReferralStateManager {
       this.debtMint
     );
 
-    this.solautoFeesWallet = SOLAUTO_FEES_WALLET;
     this.solautoFeesSupplyTa = getTokenAccount(
-      this.solautoFeesWallet,
+      SOLAUTO_FEES_WALLET,
       this.supplyMint
+    );
+    this.solautoFeesDebtTa = getTokenAccount(
+      SOLAUTO_FEES_WALLET,
+      this.debtMint
     );
 
     this.authorityLutAddress =
@@ -163,6 +166,13 @@ export abstract class SolautoClient extends ReferralStateManager {
   referredBySupplyTa(): PublicKey | undefined {
     if (this.referredByState !== undefined) {
       return getTokenAccount(this.referredByState, this.supplyMint);
+    }
+    return undefined;
+  }
+  
+  referredByDebtTa(): PublicKey | undefined {
+    if (this.referredByState !== undefined) {
+      return getTokenAccount(this.referredByState, this.debtMint);
     }
     return undefined;
   }

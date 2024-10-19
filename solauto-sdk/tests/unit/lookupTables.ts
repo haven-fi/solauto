@@ -22,17 +22,17 @@ describe("Assert lookup tables up-to-date", async () => {
 
     for (const group in MARGINFI_ACCOUNTS) {
       for (const key in MARGINFI_ACCOUNTS[group]) {
-        if (key === DEFAULT_PUBKEY) {
+        if (key === PublicKey.default.toString()) {
           continue;
         }
 
-        const tokenAccounts = MARGINFI_ACCOUNTS[key];
+        const accounts = MARGINFI_ACCOUNTS[group][key];
         const addresses = [
           new PublicKey(key),
-          tokenAccounts.bank,
-          tokenAccounts.liquidityVault,
-          tokenAccounts.vaultAuthority,
-          tokenAccounts.priceOracle,
+          accounts.bank,
+          accounts.liquidityVault,
+          accounts.vaultAuthority,
+          accounts.priceOracle,
         ];
 
         if (addresses.find((x) => !existingAccounts.includes(x.toString()))) {

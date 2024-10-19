@@ -91,11 +91,11 @@ pub fn process_marginfi_open_position_instruction<'a>(
         rent: Some(ctx.accounts.rent),
         ixs_sysvar: None,
         solauto_position,
-        solauto_fees_supply_ta: None,
+        solauto_fees_ta: None,
         authority_referral_state: DeserializedAccount::<ReferralState>::zerocopy(Some(
             ctx.accounts.signer_referral_state,
         ))?,
-        referred_by_supply_ta: ctx.accounts.referred_by_supply_ta,
+        referred_by_ta: ctx.accounts.referred_by_supply_ta,
     });
     validation_utils::generic_instruction_validation(
         &std_accounts,
@@ -166,9 +166,9 @@ pub fn process_marginfi_interaction_instruction<'a>(
         rent: Some(ctx.accounts.rent),
         ixs_sysvar: None,
         solauto_position,
-        solauto_fees_supply_ta: None,
+        solauto_fees_ta: None,
         authority_referral_state: None,
-        referred_by_supply_ta: None,
+        referred_by_ta: None,
     });
     validation_utils::generic_instruction_validation(
         &std_accounts,
@@ -199,11 +199,11 @@ pub fn process_marginfi_rebalance<'a>(
         rent: None,
         ixs_sysvar: Some(ctx.accounts.ixs_sysvar),
         solauto_position,
-        solauto_fees_supply_ta: ctx.accounts.solauto_fees_supply_ta,
+        solauto_fees_ta: ctx.accounts.solauto_fees_ta,
         authority_referral_state: DeserializedAccount::<ReferralState>::zerocopy(Some(
             ctx.accounts.authority_referral_state,
         ))?,
-        referred_by_supply_ta: ctx.accounts.referred_by_supply_ta,
+        referred_by_ta: ctx.accounts.referred_by_ta,
     });
     validation_utils::generic_instruction_validation(
         &std_accounts,

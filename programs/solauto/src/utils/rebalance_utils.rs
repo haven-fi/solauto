@@ -350,12 +350,14 @@ pub fn get_rebalance_values(
     let (target_liq_utilization_rate_bps, amount_to_dca_in, dca_token_type) =
         get_target_rate_and_dca_amount(solauto_position, args, current_unix_timestamp)?;
 
-    solauto_position.rebalance.rebalance_direction =
-        if target_liq_utilization_rate_bps > solauto_position.state.liq_utilization_rate_bps {
-            RebalanceDirection::Boost
-        } else {
-            RebalanceDirection::Repay
-        };
+    solauto_position.rebalance.rebalance_direction = if amount_to_dca_in.is_some()
+        || solauto_position.state.liq_utilization_rate_bps <= target_liq_utilization_rate_bps
+    {
+        RebalanceDirection::Boost
+    } else {
+        RebalanceDirection::Repay
+    };
+    let fees_bps = solauto_fees_bps.fetch_fees(solauto_position.rebalance.rebalance_direction);
 
     let amount_to_dca_in_usd = if amount_to_dca_in.is_some() {
         let (decimals, market_price) = if dca_token_type.unwrap() == TokenType::Supply {
@@ -379,20 +381,12 @@ pub fn get_rebalance_values(
     let total_supply_usd =
         solauto_position.state.supply.amount_used.usd_value() + amount_to_dca_in_usd;
 
-    let adjustment_fee_bps = if amount_to_dca_in.is_some()
-        || solauto_position.state.liq_utilization_rate_bps <= target_liq_utilization_rate_bps
-    {
-        solauto_fees_bps.total
-    } else {
-        0
-    };
-
     let debt_adjustment_usd = math_utils::get_std_debt_adjustment_usd(
         from_bps(solauto_position.state.liq_threshold_bps),
         total_supply_usd,
         solauto_position.state.debt.amount_used.usd_value(),
         target_liq_utilization_rate_bps,
-        adjustment_fee_bps,
+        fees_bps.total,
     );
 
     if args.target_in_amount_base_unit.is_some() {
@@ -517,7 +511,7 @@ mod tests {
             rebalance_args = Some(RebalanceSettings::default());
         }
 
-        let solauto_fees = solauto_utils::get_solauto_fees_bps(
+        let solauto_fees = solauto_utils::SolautoFeesBps::from(
             false,
             rebalance_args
                 .clone()
@@ -559,16 +553,19 @@ mod tests {
                 current_liq_utilization_rate_bps,
             );
         }
-        let adjustment_fee_bps = if boosting {
-            solauto_utils::get_solauto_fees_bps(
-                false,
-                rebalance_args.map_or(None, |args| args.target_liq_utilization_rate_bps),
-                solauto_position.state.net_worth.usd_value(),
-            )
-            .total
+        let rebalance_direction = if boosting {
+            RebalanceDirection::Boost
         } else {
-            0
+            RebalanceDirection::Repay
         };
+
+        let adjustment_fee_bps = solauto_utils::SolautoFeesBps::from(
+            false,
+            rebalance_args.map_or(None, |args| args.target_liq_utilization_rate_bps),
+            solauto_position.state.net_worth.usd_value(),
+        )
+        .fetch_fees(rebalance_direction)
+        .total;
 
         let amount_to_dca_in_usd = if amount_to_dca_in.is_some() {
             if dca_settings.as_ref().unwrap().token_type == TokenType::Supply {

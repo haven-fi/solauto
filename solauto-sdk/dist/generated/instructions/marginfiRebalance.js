@@ -52,20 +52,20 @@ function marginfiRebalance(context, input) {
             isWritable: false,
             value: input.ixsSysvar ?? null,
         },
-        solautoFeesSupplyTa: {
+        solautoFeesTa: {
             index: 5,
             isWritable: true,
-            value: input.solautoFeesSupplyTa ?? null,
+            value: input.solautoFeesTa ?? null,
         },
         authorityReferralState: {
             index: 6,
             isWritable: false,
             value: input.authorityReferralState ?? null,
         },
-        referredBySupplyTa: {
+        referredByTa: {
             index: 7,
             isWritable: true,
-            value: input.referredBySupplyTa ?? null,
+            value: input.referredByTa ?? null,
         },
         positionAuthority: {
             index: 8,

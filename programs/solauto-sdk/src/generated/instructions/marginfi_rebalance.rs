@@ -21,11 +21,11 @@ pub struct MarginfiRebalance {
 
     pub ixs_sysvar: solana_program::pubkey::Pubkey,
 
-    pub solauto_fees_supply_ta: Option<solana_program::pubkey::Pubkey>,
+    pub solauto_fees_ta: Option<solana_program::pubkey::Pubkey>,
 
     pub authority_referral_state: solana_program::pubkey::Pubkey,
 
-    pub referred_by_supply_ta: Option<solana_program::pubkey::Pubkey>,
+    pub referred_by_ta: Option<solana_program::pubkey::Pubkey>,
 
     pub position_authority: Option<solana_program::pubkey::Pubkey>,
 
@@ -96,9 +96,9 @@ impl MarginfiRebalance {
             self.ixs_sysvar,
             false,
         ));
-        if let Some(solauto_fees_supply_ta) = self.solauto_fees_supply_ta {
+        if let Some(solauto_fees_ta) = self.solauto_fees_ta {
             accounts.push(solana_program::instruction::AccountMeta::new(
-                solauto_fees_supply_ta,
+                solauto_fees_ta,
                 false,
             ));
         } else {
@@ -111,9 +111,9 @@ impl MarginfiRebalance {
             self.authority_referral_state,
             false,
         ));
-        if let Some(referred_by_supply_ta) = self.referred_by_supply_ta {
+        if let Some(referred_by_ta) = self.referred_by_ta {
             accounts.push(solana_program::instruction::AccountMeta::new(
-                referred_by_supply_ta,
+                referred_by_ta,
                 false,
             ));
         } else {
@@ -303,9 +303,9 @@ pub struct MarginfiRebalanceInstructionArgs {
 ///   2. `[optional]` system_program (default to `11111111111111111111111111111111`)
 ///   3. `[optional]` token_program (default to `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA`)
 ///   4. `[]` ixs_sysvar
-///   5. `[writable, optional]` solauto_fees_supply_ta
+///   5. `[writable, optional]` solauto_fees_ta
 ///   6. `[]` authority_referral_state
-///   7. `[writable, optional]` referred_by_supply_ta
+///   7. `[writable, optional]` referred_by_ta
 ///   8. `[writable, optional]` position_authority
 ///   9. `[writable]` solauto_position
 ///   10. `[]` marginfi_group
@@ -330,9 +330,9 @@ pub struct MarginfiRebalanceBuilder {
     system_program: Option<solana_program::pubkey::Pubkey>,
     token_program: Option<solana_program::pubkey::Pubkey>,
     ixs_sysvar: Option<solana_program::pubkey::Pubkey>,
-    solauto_fees_supply_ta: Option<solana_program::pubkey::Pubkey>,
+    solauto_fees_ta: Option<solana_program::pubkey::Pubkey>,
     authority_referral_state: Option<solana_program::pubkey::Pubkey>,
-    referred_by_supply_ta: Option<solana_program::pubkey::Pubkey>,
+    referred_by_ta: Option<solana_program::pubkey::Pubkey>,
     position_authority: Option<solana_program::pubkey::Pubkey>,
     solauto_position: Option<solana_program::pubkey::Pubkey>,
     marginfi_group: Option<solana_program::pubkey::Pubkey>,
@@ -392,11 +392,11 @@ impl MarginfiRebalanceBuilder {
     }
     /// `[optional account]`
     #[inline(always)]
-    pub fn solauto_fees_supply_ta(
+    pub fn solauto_fees_ta(
         &mut self,
-        solauto_fees_supply_ta: Option<solana_program::pubkey::Pubkey>,
+        solauto_fees_ta: Option<solana_program::pubkey::Pubkey>,
     ) -> &mut Self {
-        self.solauto_fees_supply_ta = solauto_fees_supply_ta;
+        self.solauto_fees_ta = solauto_fees_ta;
         self
     }
     #[inline(always)]
@@ -409,11 +409,11 @@ impl MarginfiRebalanceBuilder {
     }
     /// `[optional account]`
     #[inline(always)]
-    pub fn referred_by_supply_ta(
+    pub fn referred_by_ta(
         &mut self,
-        referred_by_supply_ta: Option<solana_program::pubkey::Pubkey>,
+        referred_by_ta: Option<solana_program::pubkey::Pubkey>,
     ) -> &mut Self {
-        self.referred_by_supply_ta = referred_by_supply_ta;
+        self.referred_by_ta = referred_by_ta;
         self
     }
     /// `[optional account]`
@@ -603,11 +603,11 @@ impl MarginfiRebalanceBuilder {
                 "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
             )),
             ixs_sysvar: self.ixs_sysvar.expect("ixs_sysvar is not set"),
-            solauto_fees_supply_ta: self.solauto_fees_supply_ta,
+            solauto_fees_ta: self.solauto_fees_ta,
             authority_referral_state: self
                 .authority_referral_state
                 .expect("authority_referral_state is not set"),
-            referred_by_supply_ta: self.referred_by_supply_ta,
+            referred_by_ta: self.referred_by_ta,
             position_authority: self.position_authority,
             solauto_position: self.solauto_position.expect("solauto_position is not set"),
             marginfi_group: self.marginfi_group.expect("marginfi_group is not set"),
@@ -653,11 +653,11 @@ pub struct MarginfiRebalanceCpiAccounts<'a, 'b> {
 
     pub ixs_sysvar: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub solauto_fees_supply_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    pub solauto_fees_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
     pub authority_referral_state: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub referred_by_supply_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    pub referred_by_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
     pub position_authority: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
@@ -709,11 +709,11 @@ pub struct MarginfiRebalanceCpi<'a, 'b> {
 
     pub ixs_sysvar: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub solauto_fees_supply_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    pub solauto_fees_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
     pub authority_referral_state: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub referred_by_supply_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    pub referred_by_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
     pub position_authority: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
@@ -765,9 +765,9 @@ impl<'a, 'b> MarginfiRebalanceCpi<'a, 'b> {
             system_program: accounts.system_program,
             token_program: accounts.token_program,
             ixs_sysvar: accounts.ixs_sysvar,
-            solauto_fees_supply_ta: accounts.solauto_fees_supply_ta,
+            solauto_fees_ta: accounts.solauto_fees_ta,
             authority_referral_state: accounts.authority_referral_state,
-            referred_by_supply_ta: accounts.referred_by_supply_ta,
+            referred_by_ta: accounts.referred_by_ta,
             position_authority: accounts.position_authority,
             solauto_position: accounts.solauto_position,
             marginfi_group: accounts.marginfi_group,
@@ -842,9 +842,9 @@ impl<'a, 'b> MarginfiRebalanceCpi<'a, 'b> {
             *self.ixs_sysvar.key,
             false,
         ));
-        if let Some(solauto_fees_supply_ta) = self.solauto_fees_supply_ta {
+        if let Some(solauto_fees_ta) = self.solauto_fees_ta {
             accounts.push(solana_program::instruction::AccountMeta::new(
-                *solauto_fees_supply_ta.key,
+                *solauto_fees_ta.key,
                 false,
             ));
         } else {
@@ -857,9 +857,9 @@ impl<'a, 'b> MarginfiRebalanceCpi<'a, 'b> {
             *self.authority_referral_state.key,
             false,
         ));
-        if let Some(referred_by_supply_ta) = self.referred_by_supply_ta {
+        if let Some(referred_by_ta) = self.referred_by_ta {
             accounts.push(solana_program::instruction::AccountMeta::new(
-                *referred_by_supply_ta.key,
+                *referred_by_ta.key,
                 false,
             ));
         } else {
@@ -1031,12 +1031,12 @@ impl<'a, 'b> MarginfiRebalanceCpi<'a, 'b> {
         account_infos.push(self.system_program.clone());
         account_infos.push(self.token_program.clone());
         account_infos.push(self.ixs_sysvar.clone());
-        if let Some(solauto_fees_supply_ta) = self.solauto_fees_supply_ta {
-            account_infos.push(solauto_fees_supply_ta.clone());
+        if let Some(solauto_fees_ta) = self.solauto_fees_ta {
+            account_infos.push(solauto_fees_ta.clone());
         }
         account_infos.push(self.authority_referral_state.clone());
-        if let Some(referred_by_supply_ta) = self.referred_by_supply_ta {
-            account_infos.push(referred_by_supply_ta.clone());
+        if let Some(referred_by_ta) = self.referred_by_ta {
+            account_infos.push(referred_by_ta.clone());
         }
         if let Some(position_authority) = self.position_authority {
             account_infos.push(position_authority.clone());
@@ -1096,9 +1096,9 @@ impl<'a, 'b> MarginfiRebalanceCpi<'a, 'b> {
 ///   2. `[]` system_program
 ///   3. `[]` token_program
 ///   4. `[]` ixs_sysvar
-///   5. `[writable, optional]` solauto_fees_supply_ta
+///   5. `[writable, optional]` solauto_fees_ta
 ///   6. `[]` authority_referral_state
-///   7. `[writable, optional]` referred_by_supply_ta
+///   7. `[writable, optional]` referred_by_ta
 ///   8. `[writable, optional]` position_authority
 ///   9. `[writable]` solauto_position
 ///   10. `[]` marginfi_group
@@ -1129,9 +1129,9 @@ impl<'a, 'b> MarginfiRebalanceCpiBuilder<'a, 'b> {
             system_program: None,
             token_program: None,
             ixs_sysvar: None,
-            solauto_fees_supply_ta: None,
+            solauto_fees_ta: None,
             authority_referral_state: None,
-            referred_by_supply_ta: None,
+            referred_by_ta: None,
             position_authority: None,
             solauto_position: None,
             marginfi_group: None,
@@ -1198,11 +1198,11 @@ impl<'a, 'b> MarginfiRebalanceCpiBuilder<'a, 'b> {
     }
     /// `[optional account]`
     #[inline(always)]
-    pub fn solauto_fees_supply_ta(
+    pub fn solauto_fees_ta(
         &mut self,
-        solauto_fees_supply_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+        solauto_fees_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     ) -> &mut Self {
-        self.instruction.solauto_fees_supply_ta = solauto_fees_supply_ta;
+        self.instruction.solauto_fees_ta = solauto_fees_ta;
         self
     }
     #[inline(always)]
@@ -1215,11 +1215,11 @@ impl<'a, 'b> MarginfiRebalanceCpiBuilder<'a, 'b> {
     }
     /// `[optional account]`
     #[inline(always)]
-    pub fn referred_by_supply_ta(
+    pub fn referred_by_ta(
         &mut self,
-        referred_by_supply_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+        referred_by_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     ) -> &mut Self {
-        self.instruction.referred_by_supply_ta = referred_by_supply_ta;
+        self.instruction.referred_by_ta = referred_by_ta;
         self
     }
     /// `[optional account]`
@@ -1463,14 +1463,14 @@ impl<'a, 'b> MarginfiRebalanceCpiBuilder<'a, 'b> {
 
             ixs_sysvar: self.instruction.ixs_sysvar.expect("ixs_sysvar is not set"),
 
-            solauto_fees_supply_ta: self.instruction.solauto_fees_supply_ta,
+            solauto_fees_ta: self.instruction.solauto_fees_ta,
 
             authority_referral_state: self
                 .instruction
                 .authority_referral_state
                 .expect("authority_referral_state is not set"),
 
-            referred_by_supply_ta: self.instruction.referred_by_supply_ta,
+            referred_by_ta: self.instruction.referred_by_ta,
 
             position_authority: self.instruction.position_authority,
 
@@ -1539,9 +1539,9 @@ struct MarginfiRebalanceCpiBuilderInstruction<'a, 'b> {
     system_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     token_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     ixs_sysvar: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    solauto_fees_supply_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    solauto_fees_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     authority_referral_state: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    referred_by_supply_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    referred_by_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     position_authority: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     solauto_position: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     marginfi_group: Option<&'b solana_program::account_info::AccountInfo<'a>>,

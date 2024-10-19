@@ -28,7 +28,7 @@ describe("Solauto Marginfi tests", async () => {
   // const signer = setupTest();
   const signer = setupTest("solauto-manager");
 
-  const payForTransactions = false;
+  const payForTransactions = true;
   const useJitoBundle = false;
   const positionId = 1;
 
@@ -165,6 +165,6 @@ describe("Solauto Marginfi tests", async () => {
       undefined,
       !payForTransactions ? "only-simulate" : "normal",
       useJitoBundle,
-    ).clientSend(transactionItems, PriorityFeeSetting.Default);
+    ).clientSend(transactionItems, PriorityFeeSetting.High);
   });
 });

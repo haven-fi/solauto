@@ -29,12 +29,13 @@ export declare abstract class SolautoClient extends ReferralStateManager {
     debtMint: PublicKey;
     positionDebtTa: PublicKey;
     signerDebtTa: PublicKey;
-    solautoFeesWallet: PublicKey;
     solautoFeesSupplyTa: PublicKey;
+    solautoFeesDebtTa: PublicKey;
     authorityLutAddress?: PublicKey;
     livePositionUpdates: LivePositionUpdates;
     initialize(args: SolautoClientArgs): Promise<void>;
     referredBySupplyTa(): PublicKey | undefined;
+    referredByDebtTa(): PublicKey | undefined;
     resetLiveTxUpdates(success?: boolean): Promise<void>;
     abstract protocolAccount(): PublicKey;
     defaultLookupTables(): string[];

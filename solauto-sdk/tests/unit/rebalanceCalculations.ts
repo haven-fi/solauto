@@ -11,6 +11,7 @@ import {
   DCASettings,
   LendingPlatform,
   PositionType,
+  RebalanceDirection,
   SolautoRebalanceType,
   SolautoSettingsParameters,
   TokenType,
@@ -36,6 +37,7 @@ import {
   safeGetPrice,
 } from "../../src/utils/generalUtils";
 import { USDC } from "../../src/constants/tokenConstants";
+import { buildHeliusApiUrl } from "../../src/utils";
 
 const signer = setupTest(undefined, true);
 
@@ -45,7 +47,7 @@ function assertAccurateRebalance(
   targetLiqUtilizationRateBps?: number,
   expectedUsdToDcaIn?: number
 ) {
-  const { increasingLeverage, debtAdjustmentUsd, amountUsdToDcaIn } =
+  const { rebalanceDirection, debtAdjustmentUsd, amountUsdToDcaIn } =
     getRebalanceValues(
       client.solautoPositionState!,
       client.solautoPositionSettings(),
@@ -57,16 +59,15 @@ function assertAccurateRebalance(
     );
 
   let adjustmentFeeBps = 0;
-  if (increasingLeverage) {
-    adjustmentFeeBps = getSolautoFeesBps(
-      client.referredBy !== undefined,
-      targetLiqUtilizationRateBps,
-      fromBaseUnit(
-        client.solautoPositionState?.netWorth.baseAmountUsdValue ?? BigInt(0),
-        USD_DECIMALS
-      )
-    ).total;
-  }
+  adjustmentFeeBps = getSolautoFeesBps(
+    client.referredBy !== undefined,
+    targetLiqUtilizationRateBps,
+    fromBaseUnit(
+      client.solautoPositionState?.netWorth.baseAmountUsdValue ?? BigInt(0),
+      USD_DECIMALS
+    ),
+    rebalanceDirection
+  ).total;
 
   assert(
     Math.round(amountUsdToDcaIn) === Math.round(expectedUsdToDcaIn ?? 0),
@@ -108,7 +109,7 @@ async function getFakePosition(
   dca?: DCASettings
 ): Promise<SolautoClient> {
   const client = new SolautoMarginfiClient(
-    process.env.HELIUS_API_KEY ?? "",
+    buildHeliusApiUrl(process.env.HELIUS_API_KEY!),
     true
   );
   await client.initialize({
@@ -174,7 +175,7 @@ async function getFakePosition(
     state: client.solautoPositionState!,
     rebalance: {
       rebalanceType: SolautoRebalanceType.Regular,
-      targetLiqUtilizationRateBps: 0,
+      rebalanceDirection: RebalanceDirection.Boost,
       flashLoanAmount: BigInt(0),
       padding1: [],
       padding2: [],

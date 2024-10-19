@@ -144,9 +144,9 @@ pub enum Instruction {
     #[account(name = "system_program")]
     #[account(name = "token_program")]
     #[account(name = "ixs_sysvar")]
-    #[account(mut, optional, name = "solauto_fees_supply_ta")]
+    #[account(mut, optional, name = "solauto_fees_ta")]
     #[account(name = "authority_referral_state")]
-    #[account(mut, optional, name = "referred_by_supply_ta")]
+    #[account(mut, optional, name = "referred_by_ta")]
     #[account(mut, optional, name = "position_authority")]
     #[account(mut, name = "solauto_position")]
     #[account(name = "marginfi_group")]
@@ -225,7 +225,7 @@ pub struct SolautoStandardAccounts<'a> {
     pub rent: Option<&'a AccountInfo<'a>>,
     pub ixs_sysvar: Option<&'a AccountInfo<'a>>,
     pub solauto_position: DeserializedAccount<'a, SolautoPosition>,
-    pub solauto_fees_supply_ta: Option<&'a AccountInfo<'a>>,
+    pub solauto_fees_ta: Option<&'a AccountInfo<'a>>,
     pub authority_referral_state: Option<DeserializedAccount<'a, ReferralState>>,
-    pub referred_by_supply_ta: Option<&'a AccountInfo<'a>>,
+    pub referred_by_ta: Option<&'a AccountInfo<'a>>,
 }

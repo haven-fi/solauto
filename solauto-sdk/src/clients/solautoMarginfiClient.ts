@@ -24,6 +24,7 @@ import {
   LendingPlatform,
   PositionState,
   PositionType,
+  RebalanceDirection,
   SolautoActionArgs,
   SolautoRebalanceTypeArgs,
   SolautoSettingsParametersInpArgs,
@@ -63,6 +64,7 @@ import {
 } from "../utils/marginfiUtils";
 import { bytesToI80F48, fromBaseUnit, toBps } from "../utils/numberUtils";
 import { QuoteResponse } from "@jup-ag/api";
+import { SOLAUTO_FEES_WALLET } from "../constants";
 
 export interface SolautoMarginfiClientArgs extends SolautoClientArgs {
   marginfiAccount?: PublicKey | Signer;
@@ -479,11 +481,21 @@ export class SolautoMarginfiClient extends SolautoClient {
       signer: this.signer,
       marginfiProgram: publicKey(MARGINFI_PROGRAM_ID),
       ixsSysvar: publicKey(SYSVAR_INSTRUCTIONS_PUBKEY),
-      solautoFeesSupplyTa:
-        rebalanceStep === "B" ? publicKey(this.solautoFeesSupplyTa) : undefined,
+      solautoFeesTa:
+        rebalanceStep === "B"
+          ? publicKey(
+              rebalanceValues.rebalanceDirection === RebalanceDirection.Boost
+                ? this.solautoFeesSupplyTa
+                : this.solautoFeesDebtTa
+            )
+          : undefined,
       authorityReferralState: publicKey(this.referralState),
-      referredBySupplyTa: this.referredBySupplyTa()
-        ? publicKey(this.referredBySupplyTa()!)
+      referredByTa: this.referredByState
+        ? publicKey(
+            rebalanceValues.rebalanceDirection === RebalanceDirection.Boost
+              ? this.referredBySupplyTa()!
+              : this.referredByDebtTa()!
+          )
         : undefined,
       positionAuthority:
         rebalanceValues.rebalanceAction === "dca"

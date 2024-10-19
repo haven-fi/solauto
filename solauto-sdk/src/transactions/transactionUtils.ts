@@ -77,7 +77,7 @@ import {
   getJupiterErrorFromName,
   JUPITER_PROGRAM_ID,
 } from "../jupiter-sdk";
-import { PRICES } from "../constants";
+import { PRICES, SOLAUTO_FEES_WALLET } from "../constants";
 import { TransactionItemInputs } from "../types";
 
 interface wSolTokenUsage {
@@ -276,7 +276,10 @@ export async function rebalanceChoresBefore(
 
   const checkReferralSupplyTa =
     client.referredBySupplyTa() && usesAccount(client.referredBySupplyTa()!);
-  const checkSolautoFeesTa = usesAccount(client.solautoFeesSupplyTa);
+  const checkReferralDebtTa =
+    client.referredByDebtTa() && usesAccount(client.referredByDebtTa()!);
+  const checkSolautoFeesSupplyTa = usesAccount(client.solautoFeesSupplyTa);
+  const checkSolautoFeesDebtTa = usesAccount(client.solautoFeesDebtTa);
   const checkIntermediaryMfiAccount =
     client.lendingPlatform === LendingPlatform.Marginfi &&
     usesAccount(
@@ -289,7 +292,7 @@ export async function rebalanceChoresBefore(
     ...[
       checkReferralSupplyTa ? client.referredBySupplyTa() : PublicKey.default,
     ],
-    ...[checkSolautoFeesTa ? client.solautoFeesSupplyTa : PublicKey.default],
+    ...[checkReferralDebtTa ? client.referredByDebtTa() : PublicKey.default],
     ...[
       checkIntermediaryMfiAccount
         ? (client as SolautoMarginfiClient).intermediaryMarginfiAccountPk
@@ -301,7 +304,7 @@ export async function rebalanceChoresBefore(
 
   const [
     referredBySupplyTa,
-    solautoFeesSupplyTa,
+    referredByDebtTa,
     intermediaryMarginfiAccount,
     signerSupplyTa,
     signerDebtTa,
@@ -312,7 +315,7 @@ export async function rebalanceChoresBefore(
   let chores = transactionBuilder();
 
   if (checkReferralSupplyTa && !rpcAccountCreated(referredBySupplyTa)) {
-    client.log("Creating referred-by TA for ", client.supplyMint.toString());
+    client.log("Creating referred-by supply TA");
     chores = chores.add(
       createAssociatedTokenAccountUmiIx(
         client.signer,
@@ -322,13 +325,13 @@ export async function rebalanceChoresBefore(
     );
   }
 
-  if (checkSolautoFeesTa && !rpcAccountCreated(solautoFeesSupplyTa)) {
-    client.log("Creating Solauto fees TA for ", client.supplyMint.toString());
+  if (checkReferralDebtTa && !rpcAccountCreated(referredByDebtTa)) {
+    client.log("Creating referred-by debt TA");
     chores = chores.add(
       createAssociatedTokenAccountUmiIx(
         client.signer,
-        client.solautoFeesWallet,
-        client.supplyMint
+        client.referredByState!,
+        client.debtMint
       )
     );
   }

@@ -83,24 +83,21 @@ function getRebalanceValues(state, settings, dca, currentUnixTime, supplyPrice, 
     const { targetRateBps, amountToDcaIn } = getTargetRateAndDcaAmount(state, settings, dca, currentUnixTime, targetLiqUtilizationRateBps);
     const amountUsdToDcaIn = (0, numberUtils_1.fromBaseUnit)(BigInt(Math.round(amountToDcaIn ?? 0)), state.debt.decimals) *
         (dca?.tokenType === generated_1.TokenType.Debt ? debtPrice : supplyPrice);
-    const increasingLeverage = amountUsdToDcaIn > 0 || state.liqUtilizationRateBps < targetRateBps;
-    let adjustmentFeeBps = 0;
-    if (increasingLeverage) {
-        adjustmentFeeBps = (0, numberUtils_1.getSolautoFeesBps)(false, targetLiqUtilizationRateBps, (0, numberUtils_1.fromBaseUnit)(state.netWorth.baseAmountUsdValue, generalAccounts_1.USD_DECIMALS)).total;
-    }
+    const rebalanceDirection = amountUsdToDcaIn > 0 || state.liqUtilizationRateBps < targetRateBps ? generated_1.RebalanceDirection.Boost : generated_1.RebalanceDirection.Repay;
+    const adjustmentFeeBps = (0, numberUtils_1.getSolautoFeesBps)(false, targetLiqUtilizationRateBps, (0, numberUtils_1.fromBaseUnit)(state.netWorth.baseAmountUsdValue, generalAccounts_1.USD_DECIMALS), rebalanceDirection).total;
     const supplyUsd = (0, numberUtils_1.fromBaseUnit)(state.supply.amountUsed.baseAmountUsdValue, generalAccounts_1.USD_DECIMALS) +
         amountUsdToDcaIn;
     const debtUsd = (0, numberUtils_1.fromBaseUnit)(state.debt.amountUsed.baseAmountUsdValue, generalAccounts_1.USD_DECIMALS);
     let debtAdjustmentUsd = (0, numberUtils_1.getDebtAdjustmentUsd)(state.liqThresholdBps, supplyUsd, debtUsd, targetRateBps, adjustmentFeeBps);
     const maxRepayTo = (0, numberUtils_1.maxRepayToBps)(state.maxLtvBps, state.liqThresholdBps);
     return {
-        increasingLeverage,
         debtAdjustmentUsd,
         repayingCloseToMaxLtv: state.liqUtilizationRateBps > maxRepayTo && targetRateBps >= maxRepayTo,
         amountToDcaIn: amountToDcaIn ?? 0,
         amountUsdToDcaIn,
         dcaTokenType: dca?.tokenType,
-        rebalanceAction: (amountToDcaIn ?? 0) > 0 ? "dca" : increasingLeverage ? "boost" : "repay",
+        rebalanceAction: (amountToDcaIn ?? 0) > 0 ? "dca" : rebalanceDirection === generated_1.RebalanceDirection.Boost ? "boost" : "repay",
+        rebalanceDirection,
     };
 }
 function getFlashLoanDetails(client, values, jupQuote) {
@@ -118,7 +115,7 @@ function getFlashLoanDetails(client, values, jupQuote) {
             (0, numberUtils_1.getMaxLiqUtilizationRateBps)(client.solautoPositionState.maxLtvBps, client.solautoPositionState.liqThresholdBps, 0.01);
     let flashLoanToken = undefined;
     let flashLoanTokenPrice = 0;
-    if (values.increasingLeverage) {
+    if (values.rebalanceDirection === generated_1.RebalanceDirection.Boost) {
         flashLoanToken = client.solautoPositionState.debt;
         flashLoanTokenPrice = (0, generalUtils_2.safeGetPrice)(client.debtMint);
     }
@@ -139,10 +136,10 @@ function getFlashLoanDetails(client, values, jupQuote) {
         : undefined;
 }
 function getJupSwapRebalanceDetails(client, values, targetLiqUtilizationRateBps, attemptNum) {
-    const input = values.increasingLeverage
+    const input = values.rebalanceDirection === generated_1.RebalanceDirection.Boost
         ? client.solautoPositionState.debt
         : client.solautoPositionState.supply;
-    const output = values.increasingLeverage
+    const output = values.rebalanceDirection === generated_1.RebalanceDirection.Boost
         ? client.solautoPositionState.supply
         : client.solautoPositionState.debt;
     const usdToSwap = Math.abs(values.debtAdjustmentUsd) +

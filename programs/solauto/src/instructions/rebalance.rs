@@ -2,7 +2,8 @@ use std::ops::Sub;
 
 use marginfi_sdk::generated::accounts::Bank;
 use solana_program::{
-    clock::Clock, entrypoint::ProgramResult, msg, program_error::ProgramError, sysvar::Sysvar,
+    clock::Clock, entrypoint::ProgramResult, msg, program_error::ProgramError, pubkey::Pubkey,
+    sysvar::Sysvar,
 };
 
 use crate::{
@@ -17,7 +18,7 @@ use crate::{
         shared::{DeserializedAccount, RebalanceStep},
         solauto_manager::{SolautoManager, SolautoManagerAccounts},
     },
-    utils::{ix_utils, solauto_utils::get_solauto_fees_bps},
+    utils::{ix_utils, solauto_utils},
 };
 
 use super::refresh;
@@ -56,7 +57,7 @@ pub fn marginfi_rebalance<'a>(
         ctx.accounts.debt_vault_authority,
     )?);
     let solauto_manager_accounts =
-        SolautoManagerAccounts::from(supply_tas, debt_tas, ctx.accounts.intermediary_ta)?;
+        SolautoManagerAccounts::from(supply_tas, debt_tas, ctx.accounts.intermediary_ta, None)?;
 
     if rebalance_step == RebalanceStep::Initial
         || std_accounts.solauto_position.data.rebalance.rebalance_type
@@ -162,8 +163,14 @@ fn rebalance<'a>(
         return Err(ProgramError::InvalidInstructionData.into());
     }
 
-    let fees_bps = get_solauto_fees_bps(
-        std_accounts.referred_by_supply_ta.is_some(),
+    let fees_bps = solauto_utils::SolautoFeesBps::from(
+        std_accounts
+            .authority_referral_state
+            .as_ref()
+            .unwrap()
+            .data
+            .referred_by_state
+            != Pubkey::default(),
         args.target_liq_utilization_rate_bps,
         std_accounts
             .solauto_position

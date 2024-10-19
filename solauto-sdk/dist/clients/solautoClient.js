@@ -43,8 +43,8 @@ class SolautoClient extends referralStateManager_1.ReferralStateManager {
                     : web3_js_1.PublicKey.default);
         this.positionDebtTa = (0, accountUtils_1.getTokenAccount)(this.solautoPosition, this.debtMint);
         this.signerDebtTa = (0, accountUtils_1.getTokenAccount)((0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.signer.publicKey), this.debtMint);
-        this.solautoFeesWallet = generalAccounts_1.SOLAUTO_FEES_WALLET;
-        this.solautoFeesSupplyTa = (0, accountUtils_1.getTokenAccount)(this.solautoFeesWallet, this.supplyMint);
+        this.solautoFeesSupplyTa = (0, accountUtils_1.getTokenAccount)(generalAccounts_1.SOLAUTO_FEES_WALLET, this.supplyMint);
+        this.solautoFeesDebtTa = (0, accountUtils_1.getTokenAccount)(generalAccounts_1.SOLAUTO_FEES_WALLET, this.debtMint);
         this.authorityLutAddress =
             this.referralStateData?.lookupTable &&
                 !(0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.referralStateData.lookupTable).equals(web3_js_1.PublicKey.default)
@@ -60,6 +60,12 @@ class SolautoClient extends referralStateManager_1.ReferralStateManager {
     referredBySupplyTa() {
         if (this.referredByState !== undefined) {
             return (0, accountUtils_1.getTokenAccount)(this.referredByState, this.supplyMint);
+        }
+        return undefined;
+    }
+    referredByDebtTa() {
+        if (this.referredByState !== undefined) {
+            return (0, accountUtils_1.getTokenAccount)(this.referredByState, this.debtMint);
         }
         return undefined;
     }

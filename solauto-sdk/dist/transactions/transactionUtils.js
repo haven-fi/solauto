@@ -127,7 +127,9 @@ async function rebalanceChoresBefore(client, tx, accountsGettingCreated) {
         .getInstructions()
         .some((t) => t.keys.some((k) => (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(k.pubkey).equals(key)));
     const checkReferralSupplyTa = client.referredBySupplyTa() && usesAccount(client.referredBySupplyTa());
-    const checkSolautoFeesTa = usesAccount(client.solautoFeesSupplyTa);
+    const checkReferralDebtTa = client.referredByDebtTa() && usesAccount(client.referredByDebtTa());
+    const checkSolautoFeesSupplyTa = usesAccount(client.solautoFeesSupplyTa);
+    const checkSolautoFeesDebtTa = usesAccount(client.solautoFeesDebtTa);
     const checkIntermediaryMfiAccount = client.lendingPlatform === generated_1.LendingPlatform.Marginfi &&
         usesAccount(client.intermediaryMarginfiAccountPk);
     const checkSignerSupplyTa = usesAccount(client.signerSupplyTa);
@@ -136,7 +138,7 @@ async function rebalanceChoresBefore(client, tx, accountsGettingCreated) {
         ...[
             checkReferralSupplyTa ? client.referredBySupplyTa() : web3_js_1.PublicKey.default,
         ],
-        ...[checkSolautoFeesTa ? client.solautoFeesSupplyTa : web3_js_1.PublicKey.default],
+        ...[checkReferralDebtTa ? client.referredByDebtTa() : web3_js_1.PublicKey.default],
         ...[
             checkIntermediaryMfiAccount
                 ? client.intermediaryMarginfiAccountPk
@@ -145,15 +147,15 @@ async function rebalanceChoresBefore(client, tx, accountsGettingCreated) {
         ...[checkSignerSupplyTa ? client.signerSupplyTa : web3_js_1.PublicKey.default],
         ...[checkSignerDebtTa ? client.signerDebtTa : web3_js_1.PublicKey.default],
     ];
-    const [referredBySupplyTa, solautoFeesSupplyTa, intermediaryMarginfiAccount, signerSupplyTa, signerDebtTa,] = await client.umi.rpc.getAccounts(accountsNeeded.map((x) => (0, umi_1.publicKey)(x ?? web3_js_1.PublicKey.default)));
+    const [referredBySupplyTa, referredByDebtTa, intermediaryMarginfiAccount, signerSupplyTa, signerDebtTa,] = await client.umi.rpc.getAccounts(accountsNeeded.map((x) => (0, umi_1.publicKey)(x ?? web3_js_1.PublicKey.default)));
     let chores = (0, umi_1.transactionBuilder)();
     if (checkReferralSupplyTa && !(0, generalUtils_1.rpcAccountCreated)(referredBySupplyTa)) {
-        client.log("Creating referred-by TA for ", client.supplyMint.toString());
+        client.log("Creating referred-by supply TA");
         chores = chores.add((0, solanaUtils_1.createAssociatedTokenAccountUmiIx)(client.signer, client.referredByState, client.supplyMint));
     }
-    if (checkSolautoFeesTa && !(0, generalUtils_1.rpcAccountCreated)(solautoFeesSupplyTa)) {
-        client.log("Creating Solauto fees TA for ", client.supplyMint.toString());
-        chores = chores.add((0, solanaUtils_1.createAssociatedTokenAccountUmiIx)(client.signer, client.solautoFeesWallet, client.supplyMint));
+    if (checkReferralDebtTa && !(0, generalUtils_1.rpcAccountCreated)(referredByDebtTa)) {
+        client.log("Creating referred-by debt TA");
+        chores = chores.add((0, solanaUtils_1.createAssociatedTokenAccountUmiIx)(client.signer, client.referredByState, client.debtMint));
     }
     if (checkIntermediaryMfiAccount &&
         !(0, generalUtils_1.rpcAccountCreated)(intermediaryMarginfiAccount)) {
