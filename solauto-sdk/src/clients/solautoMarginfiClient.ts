@@ -32,7 +32,11 @@ import {
   marginfiRebalance,
   marginfiRefreshData,
 } from "../generated";
-import { getMarginfiAccountPDA, getReferralState, getTokenAccount } from "../utils/accountUtils";
+import {
+  getMarginfiAccountPDA,
+  getReferralState,
+  getTokenAccount,
+} from "../utils/accountUtils";
 import { generateRandomU64, safeGetPrice } from "../utils/generalUtils";
 import {
   MARGINFI_PROGRAM_ID,
@@ -47,7 +51,10 @@ import {
   safeFetchAllMarginfiAccount,
   safeFetchMarginfiAccount,
 } from "../marginfi-sdk";
-import { FlashLoanDetails } from "../utils/solauto/rebalanceUtils";
+import {
+  FlashLoanDetails,
+  RebalanceValues,
+} from "../utils/solauto/rebalanceUtils";
 import {
   findMarginfiAccounts,
   getAllMarginfiAccountsByAuthority,
@@ -449,6 +456,7 @@ export class SolautoMarginfiClient extends SolautoClient {
     rebalanceStep: "A" | "B",
     jupQuote: QuoteResponse,
     rebalanceType: SolautoRebalanceTypeArgs,
+    rebalanceValues: RebalanceValues,
     flashLoan?: FlashLoanDetails,
     targetLiqUtilizationRateBps?: number
   ): TransactionBuilder {
@@ -473,13 +481,14 @@ export class SolautoMarginfiClient extends SolautoClient {
       ixsSysvar: publicKey(SYSVAR_INSTRUCTIONS_PUBKEY),
       solautoFeesSupplyTa:
         rebalanceStep === "B" ? publicKey(this.solautoFeesSupplyTa) : undefined,
-      authorityReferralState: publicKey(
-        this.referralState
-      ),
+      authorityReferralState: publicKey(this.referralState),
       referredBySupplyTa: this.referredBySupplyTa()
         ? publicKey(this.referredBySupplyTa()!)
         : undefined,
-      positionAuthority: publicKey(this.authority),
+      positionAuthority:
+        rebalanceValues.rebalanceAction === "dca"
+          ? publicKey(this.authority)
+          : undefined,
       solautoPosition: publicKey(this.solautoPosition),
       marginfiGroup: publicKey(this.marginfiGroup),
       marginfiAccount: publicKey(this.marginfiAccountPk),
@@ -492,9 +501,9 @@ export class SolautoMarginfiClient extends SolautoClient {
       supplyBank: publicKey(this.marginfiSupplyAccounts.bank),
       supplyPriceOracle: publicKey(this.supplyPriceOracle),
       positionSupplyTa: publicKey(this.positionSupplyTa),
-      authoritySupplyTa: publicKey(
-        getTokenAccount(this.authority, this.supplyMint)
-      ),
+      authoritySupplyTa: this.selfManaged
+        ? publicKey(getTokenAccount(this.authority, this.supplyMint))
+        : undefined,
       vaultSupplyTa: needSupplyAccounts
         ? publicKey(this.marginfiSupplyAccounts.liquidityVault)
         : undefined,
@@ -504,9 +513,9 @@ export class SolautoMarginfiClient extends SolautoClient {
       debtBank: publicKey(this.marginfiDebtAccounts.bank),
       debtPriceOracle: publicKey(this.debtPriceOracle),
       positionDebtTa: publicKey(this.positionDebtTa),
-      authorityDebtTa: publicKey(
-        getTokenAccount(this.authority, this.debtMint)
-      ),
+      authorityDebtTa: this.selfManaged
+        ? publicKey(getTokenAccount(this.authority, this.debtMint))
+        : undefined,
       vaultDebtTa: needDebtAccounts
         ? publicKey(this.marginfiDebtAccounts.liquidityVault)
         : undefined,

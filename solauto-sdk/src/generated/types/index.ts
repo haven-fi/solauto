@@ -17,6 +17,7 @@ export * from './positionState';
 export * from './positionTokenUsage';
 export * from './positionType';
 export * from './rebalanceData';
+export * from './rebalanceDirection';
 export * from './solautoAction';
 export * from './solautoRebalanceType';
 export * from './solautoSettingsParameters';

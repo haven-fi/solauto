@@ -147,7 +147,7 @@ pub enum Instruction {
     #[account(mut, optional, name = "solauto_fees_supply_ta")]
     #[account(name = "authority_referral_state")]
     #[account(mut, optional, name = "referred_by_supply_ta")]
-    #[account(mut, name = "position_authority")]
+    #[account(mut, optional, name = "position_authority")]
     #[account(mut, name = "solauto_position")]
     #[account(name = "marginfi_group")]
     #[account(mut, name = "marginfi_account")]

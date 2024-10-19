@@ -211,7 +211,12 @@ pub fn process_marginfi_rebalance<'a>(
         false,
         false,
     )?;
-    if &std_accounts.solauto_position.data.authority != ctx.accounts.position_authority.key {
+
+    // TODO: For DCAing-out
+    if ctx.accounts.position_authority.is_some()
+        && &std_accounts.solauto_position.data.authority
+            != ctx.accounts.position_authority.unwrap().key
+    {
         msg!("Incorrect position authority provided");
         return Err(SolautoError::IncorrectAccounts.into());
     }

@@ -12,7 +12,7 @@ use validation_utils::validate_debt_adjustment;
 use super::{
     instruction::{RebalanceSettings, SolautoAction, SolautoStandardAccounts},
     lending_protocol::{LendingProtocolClient, LendingProtocolTokenAccounts},
-    shared::{RefreshStateProps, SolautoError, TokenBalanceAmount, TokenType},
+    shared::{RebalanceDirection, RefreshStateProps, SolautoError, TokenBalanceAmount, TokenType},
 };
 use crate::{
     state::solauto_position::{
@@ -263,16 +263,25 @@ impl<'a> SolautoManager<'a> {
             )?;
         }
 
-        let mut available_supply_balance =
+        let boosting = self
+            .std_accounts
+            .solauto_position
+            .data
+            .rebalance
+            .rebalance_direction
+            == RebalanceDirection::Boost;
+        let mut available_balance = if boosting {
             solauto_utils::safe_unpack_token_account(self.accounts.supply.position_ta)?
                 .unwrap()
                 .data
-                .amount;
-        let mut available_debt_balance =
+                .amount
+        } else {
             solauto_utils::safe_unpack_token_account(self.accounts.debt.position_ta)?
                 .unwrap()
                 .data
-                .amount;
+                .amount
+        };
+
         if !self.std_accounts.solauto_position.data.self_managed.val {
             let dca_in_base_unit = self
                 .std_accounts
@@ -281,18 +290,17 @@ impl<'a> SolautoManager<'a> {
                 .position
                 .dca
                 .dca_in_base_unit;
-            if self
+            let dca_token_type = self
                 .std_accounts
                 .solauto_position
                 .data
                 .position
                 .dca
-                .token_type
-                == TokenType::Supply
-            {
-                available_supply_balance -= dca_in_base_unit;
-            } else {
-                available_debt_balance -= dca_in_base_unit;
+                .token_type;
+            if boosting && dca_token_type == TokenType::Supply {
+                available_balance -= dca_in_base_unit;
+            } else if !boosting && dca_token_type == TokenType::Debt {
+                available_balance -= dca_in_base_unit;
             }
         }
 
@@ -308,21 +316,15 @@ impl<'a> SolautoManager<'a> {
             )
         };
 
-        let boosting = available_supply_balance > 0;
         if boosting {
-            let amount_after_fees = self.payout_fees(available_supply_balance)?;
+            let amount_after_fees = self.payout_fees(available_balance)?;
             if self.std_accounts.solauto_position.data.self_managed.val {
                 transfer_to_authority_ta(&self.accounts.supply, amount_after_fees)?;
             }
             self.deposit(amount_after_fees)?;
-        } else if available_debt_balance > 0 {
-            let amount = if self
-                .std_accounts
-                .solauto_position
-                .data
-                .rebalance
-                .target_liq_utilization_rate_bps
-                == 0
+        } else if available_balance > 0 {
+            let amount = if rebalance_args.target_liq_utilization_rate_bps.is_some()
+                && rebalance_args.target_liq_utilization_rate_bps.unwrap() == 0
             {
                 TokenBalanceAmount::All
             } else {
@@ -334,11 +336,11 @@ impl<'a> SolautoManager<'a> {
                         .debt
                         .amount_used
                         .base_unit,
-                    available_debt_balance,
+                    available_balance,
                 ))
             };
             if self.std_accounts.solauto_position.data.self_managed.val {
-                transfer_to_authority_ta(&self.accounts.debt, available_debt_balance)?;
+                transfer_to_authority_ta(&self.accounts.debt, available_balance)?;
             }
             self.repay(amount)?;
         } else {

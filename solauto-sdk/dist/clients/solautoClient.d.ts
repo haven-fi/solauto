@@ -2,7 +2,7 @@ import "rpc-websockets/dist/lib/client";
 import { PublicKey } from "@solana/web3.js";
 import { Signer, TransactionBuilder } from "@metaplex-foundation/umi";
 import { DCASettings, DCASettingsInpArgs, LendingPlatform, PositionState, SolautoActionArgs, SolautoPosition, SolautoRebalanceTypeArgs, SolautoSettingsParameters, SolautoSettingsParametersInpArgs, UpdatePositionDataArgs } from "../generated";
-import { FlashLoanDetails } from "../utils/solauto/rebalanceUtils";
+import { FlashLoanDetails, RebalanceValues } from "../utils/solauto/rebalanceUtils";
 import { LivePositionUpdates } from "../utils/solauto/generalUtils";
 import { ReferralStateManager, ReferralStateManagerArgs } from "./referralStateManager";
 import { QuoteResponse } from "@jup-ag/api";
@@ -55,7 +55,7 @@ export declare abstract class SolautoClient extends ReferralStateManager {
     protocolInteraction(args: SolautoActionArgs): TransactionBuilder;
     abstract flashBorrow(flashLoanDetails: FlashLoanDetails, destinationTokenAccount: PublicKey): TransactionBuilder;
     abstract flashRepay(flashLoanDetails: FlashLoanDetails): TransactionBuilder;
-    abstract rebalance(rebalanceStep: "A" | "B", jupQuote: QuoteResponse, rebalanceType: SolautoRebalanceTypeArgs, flashLoan?: FlashLoanDetails, targetLiqUtilizationRateBps?: number): TransactionBuilder;
+    abstract rebalance(rebalanceStep: "A" | "B", jupQuote: QuoteResponse, rebalanceType: SolautoRebalanceTypeArgs, rebalanceValues: RebalanceValues, flashLoan?: FlashLoanDetails, targetLiqUtilizationRateBps?: number): TransactionBuilder;
     getFreshPositionState(): Promise<PositionState | undefined>;
 }
 //# sourceMappingURL=solautoClient.d.ts.map

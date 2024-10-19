@@ -10,7 +10,7 @@ use std::{
 
 use crate::{
     constants::USD_DECIMALS,
-    types::shared::{PodBool, PositionType, TokenType},
+    types::shared::{PodBool, PositionType, RebalanceDirection, TokenType},
     utils::math_utils::{
         from_base_unit, from_bps, get_liq_utilization_rate_bps, net_worth_base_amount, to_base_unit,
     },
@@ -335,8 +335,8 @@ unsafe impl Pod for SolautoRebalanceType {}
 pub struct RebalanceData {
     pub rebalance_type: SolautoRebalanceType,
     _padding1: [u8; 7],
-    pub target_liq_utilization_rate_bps: u16,
-    _padding2: [u8; 6],
+    pub rebalance_direction: RebalanceDirection,
+    _padding2: [u8; 7],
     pub flash_loan_amount: u64,
     _padding: [u8; 32],
 }

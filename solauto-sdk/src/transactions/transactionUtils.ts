@@ -706,6 +706,7 @@ export async function buildSolautoRebalanceTransaction(
               "A",
               jupQuote,
               rebalanceType,
+              values,
               flashLoan,
               targetLiqUtilizationRateBps
             ),
@@ -716,6 +717,7 @@ export async function buildSolautoRebalanceTransaction(
         "B",
         jupQuote,
         rebalanceType,
+        values,
         flashLoan,
         targetLiqUtilizationRateBps
       ),
@@ -730,6 +732,7 @@ export async function buildSolautoRebalanceTransaction(
         "A",
         jupQuote,
         rebalanceType,
+        values,
         undefined,
         targetLiqUtilizationRateBps
       ),
@@ -738,6 +741,7 @@ export async function buildSolautoRebalanceTransaction(
         "B",
         jupQuote,
         rebalanceType,
+        values,
         undefined,
         targetLiqUtilizationRateBps
       ),

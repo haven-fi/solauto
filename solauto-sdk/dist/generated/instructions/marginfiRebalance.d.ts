@@ -17,7 +17,7 @@ export type MarginfiRebalanceInstructionAccounts = {
     solautoFeesSupplyTa?: PublicKey | Pda;
     authorityReferralState: PublicKey | Pda;
     referredBySupplyTa?: PublicKey | Pda;
-    positionAuthority: PublicKey | Pda;
+    positionAuthority?: PublicKey | Pda;
     solautoPosition: PublicKey | Pda;
     marginfiGroup: PublicKey | Pda;
     marginfiAccount: PublicKey | Pda;

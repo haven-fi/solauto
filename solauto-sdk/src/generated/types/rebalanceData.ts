@@ -11,20 +11,22 @@ import {
   array,
   bytes,
   struct,
-  u16,
   u64,
   u8,
 } from '@metaplex-foundation/umi/serializers';
 import {
+  RebalanceDirection,
+  RebalanceDirectionArgs,
   SolautoRebalanceType,
   SolautoRebalanceTypeArgs,
+  getRebalanceDirectionSerializer,
   getSolautoRebalanceTypeSerializer,
 } from '.';
 
 export type RebalanceData = {
   rebalanceType: SolautoRebalanceType;
   padding1: Array<number>;
-  targetLiqUtilizationRateBps: number;
+  rebalanceDirection: RebalanceDirection;
   padding2: Array<number>;
   flashLoanAmount: bigint;
   padding: Uint8Array;
@@ -33,7 +35,7 @@ export type RebalanceData = {
 export type RebalanceDataArgs = {
   rebalanceType: SolautoRebalanceTypeArgs;
   padding1: Array<number>;
-  targetLiqUtilizationRateBps: number;
+  rebalanceDirection: RebalanceDirectionArgs;
   padding2: Array<number>;
   flashLoanAmount: number | bigint;
   padding: Uint8Array;
@@ -47,8 +49,8 @@ export function getRebalanceDataSerializer(): Serializer<
     [
       ['rebalanceType', getSolautoRebalanceTypeSerializer()],
       ['padding1', array(u8(), { size: 7 })],
-      ['targetLiqUtilizationRateBps', u16()],
-      ['padding2', array(u8(), { size: 6 })],
+      ['rebalanceDirection', getRebalanceDirectionSerializer()],
+      ['padding2', array(u8(), { size: 7 })],
       ['flashLoanAmount', u64()],
       ['padding', bytes({ size: 32 })],
     ],

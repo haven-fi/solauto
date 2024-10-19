@@ -27,6 +27,7 @@ import {
   toBaseUnit,
 } from "../numberUtils";
 import { USD_DECIMALS } from "../../constants/generalAccounts";
+import { RebalanceAction } from "../../types";
 
 function getAdditionalAmountToDcaIn(dca: DCASettings): number {
   if (dca.dcaInBaseUnit === BigInt(0)) {
@@ -163,6 +164,7 @@ export interface RebalanceValues {
   amountToDcaIn: number;
   amountUsdToDcaIn: number;
   dcaTokenType?: TokenType;
+  rebalanceAction: RebalanceAction;
 }
 
 export function getRebalanceValues(
@@ -221,6 +223,8 @@ export function getRebalanceValues(
     amountToDcaIn: amountToDcaIn ?? 0,
     amountUsdToDcaIn,
     dcaTokenType: dca?.tokenType,
+    rebalanceAction:
+      (amountToDcaIn ?? 0) > 0 ? "dca" : increasingLeverage ? "boost" : "repay",
   };
 }
 

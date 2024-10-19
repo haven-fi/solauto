@@ -43,8 +43,9 @@ impl PodBool {
 }
 
 #[repr(u8)]
-#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, PartialEq, Copy)]
+#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, Default, PartialEq, Copy)]
 pub enum PositionType {
+    #[default]
     Leverage,
     SafeLoan,
 }
@@ -52,27 +53,16 @@ pub enum PositionType {
 unsafe impl Zeroable for PositionType {}
 unsafe impl Pod for PositionType {}
 
-impl Default for PositionType {
-    fn default() -> Self {
-        PositionType::Leverage
-    }
-}
-
 #[repr(u8)]
-#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, PartialEq, Copy)]
+#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, Default, PartialEq, Copy)]
 pub enum TokenType {
+    #[default]
     Supply,
     Debt,
 }
 
 unsafe impl Zeroable for TokenType {}
 unsafe impl Pod for TokenType {}
-
-impl Default for TokenType {
-    fn default() -> Self {
-        TokenType::Supply
-    }
-}
 
 impl fmt::Display for TokenType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -82,6 +72,17 @@ impl fmt::Display for TokenType {
         }
     }
 }
+
+#[repr(u8)]
+#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, Default, PartialEq, Copy)]
+pub enum RebalanceDirection {
+    #[default]
+    Boost,
+    Repay,
+}
+
+unsafe impl Zeroable for RebalanceDirection {}
+unsafe impl Pod for RebalanceDirection {}
 
 #[derive(Debug)]
 pub struct RefreshedTokenData {

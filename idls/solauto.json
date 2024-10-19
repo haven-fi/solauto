@@ -676,7 +676,8 @@
         {
           "name": "positionAuthority",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "isOptional": true
         },
         {
           "name": "solautoPosition",
@@ -1356,15 +1357,17 @@
             }
           },
           {
-            "name": "targetLiqUtilizationRateBps",
-            "type": "u16"
+            "name": "rebalanceDirection",
+            "type": {
+              "defined": "RebalanceDirection"
+            }
           },
           {
             "name": "padding2",
             "type": {
               "array": [
                 "u8",
-                6
+                7
               ]
             }
           },
@@ -1587,6 +1590,20 @@
           },
           {
             "name": "Debt"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RebalanceDirection",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Boost"
+          },
+          {
+            "name": "Repay"
           }
         ]
       }

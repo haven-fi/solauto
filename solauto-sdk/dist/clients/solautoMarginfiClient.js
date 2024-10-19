@@ -286,7 +286,7 @@ class SolautoMarginfiClient extends solautoClient_1.SolautoClient {
             solautoAction: args,
         });
     }
-    rebalance(rebalanceStep, jupQuote, rebalanceType, flashLoan, targetLiqUtilizationRateBps) {
+    rebalance(rebalanceStep, jupQuote, rebalanceType, rebalanceValues, flashLoan, targetLiqUtilizationRateBps) {
         const inputIsSupply = new web3_js_1.PublicKey(jupQuote.inputMint).equals(this.supplyMint);
         const outputIsSupply = new web3_js_1.PublicKey(jupQuote.outputMint).equals(this.supplyMint);
         const needSupplyAccounts = (inputIsSupply && rebalanceStep === "A") ||
@@ -304,7 +304,9 @@ class SolautoMarginfiClient extends solautoClient_1.SolautoClient {
             referredBySupplyTa: this.referredBySupplyTa()
                 ? (0, umi_1.publicKey)(this.referredBySupplyTa())
                 : undefined,
-            positionAuthority: (0, umi_1.publicKey)(this.authority),
+            positionAuthority: rebalanceValues.rebalanceAction === "dca"
+                ? (0, umi_1.publicKey)(this.authority)
+                : undefined,
             solautoPosition: (0, umi_1.publicKey)(this.solautoPosition),
             marginfiGroup: (0, umi_1.publicKey)(this.marginfiGroup),
             marginfiAccount: (0, umi_1.publicKey)(this.marginfiAccountPk),
@@ -312,7 +314,9 @@ class SolautoMarginfiClient extends solautoClient_1.SolautoClient {
             supplyBank: (0, umi_1.publicKey)(this.marginfiSupplyAccounts.bank),
             supplyPriceOracle: (0, umi_1.publicKey)(this.supplyPriceOracle),
             positionSupplyTa: (0, umi_1.publicKey)(this.positionSupplyTa),
-            authoritySupplyTa: (0, umi_1.publicKey)((0, accountUtils_1.getTokenAccount)(this.authority, this.supplyMint)),
+            authoritySupplyTa: this.selfManaged
+                ? (0, umi_1.publicKey)((0, accountUtils_1.getTokenAccount)(this.authority, this.supplyMint))
+                : undefined,
             vaultSupplyTa: needSupplyAccounts
                 ? (0, umi_1.publicKey)(this.marginfiSupplyAccounts.liquidityVault)
                 : undefined,
@@ -322,7 +326,9 @@ class SolautoMarginfiClient extends solautoClient_1.SolautoClient {
             debtBank: (0, umi_1.publicKey)(this.marginfiDebtAccounts.bank),
             debtPriceOracle: (0, umi_1.publicKey)(this.debtPriceOracle),
             positionDebtTa: (0, umi_1.publicKey)(this.positionDebtTa),
-            authorityDebtTa: (0, umi_1.publicKey)((0, accountUtils_1.getTokenAccount)(this.authority, this.debtMint)),
+            authorityDebtTa: this.selfManaged
+                ? (0, umi_1.publicKey)((0, accountUtils_1.getTokenAccount)(this.authority, this.debtMint))
+                : undefined,
             vaultDebtTa: needDebtAccounts
                 ? (0, umi_1.publicKey)(this.marginfiDebtAccounts.liquidityVault)
                 : undefined,

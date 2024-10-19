@@ -4,7 +4,7 @@ import { SolautoClient, SolautoClientArgs } from "./solautoClient";
 import { MarginfiAssetAccounts } from "../types/accounts";
 import { DCASettingsInpArgs, PositionState, SolautoActionArgs, SolautoRebalanceTypeArgs, SolautoSettingsParametersInpArgs } from "../generated";
 import { MarginfiAccount } from "../marginfi-sdk";
-import { FlashLoanDetails } from "../utils/solauto/rebalanceUtils";
+import { FlashLoanDetails, RebalanceValues } from "../utils/solauto/rebalanceUtils";
 import { QuoteResponse } from "@jup-ag/api";
 export interface SolautoMarginfiClientArgs extends SolautoClientArgs {
     marginfiAccount?: PublicKey | Signer;
@@ -38,7 +38,7 @@ export declare class SolautoMarginfiClient extends SolautoClient {
     protocolInteraction(args: SolautoActionArgs): TransactionBuilder;
     private marginfiProtocolInteractionIx;
     private marginfiSolautoProtocolInteractionIx;
-    rebalance(rebalanceStep: "A" | "B", jupQuote: QuoteResponse, rebalanceType: SolautoRebalanceTypeArgs, flashLoan?: FlashLoanDetails, targetLiqUtilizationRateBps?: number): TransactionBuilder;
+    rebalance(rebalanceStep: "A" | "B", jupQuote: QuoteResponse, rebalanceType: SolautoRebalanceTypeArgs, rebalanceValues: RebalanceValues, flashLoan?: FlashLoanDetails, targetLiqUtilizationRateBps?: number): TransactionBuilder;
     flashBorrow(flashLoanDetails: FlashLoanDetails, destinationTokenAccount: PublicKey): TransactionBuilder;
     flashRepay(flashLoanDetails: FlashLoanDetails): TransactionBuilder;
     createIntermediaryMarginfiAccount(): TransactionBuilder;

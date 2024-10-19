@@ -17,7 +17,7 @@ use crate::{
         instruction::{
             RebalanceSettings, SolautoStandardAccounts, SOLAUTO_REBALANCE_IX_DISCRIMINATORS,
         },
-        shared::{RebalanceStep, SolautoError, TokenType},
+        shared::{RebalanceDirection, RebalanceStep, SolautoError, TokenType},
     },
 };
 
@@ -350,7 +350,12 @@ pub fn get_rebalance_values(
     let (target_liq_utilization_rate_bps, amount_to_dca_in, dca_token_type) =
         get_target_rate_and_dca_amount(solauto_position, args, current_unix_timestamp)?;
 
-    solauto_position.rebalance.target_liq_utilization_rate_bps = target_liq_utilization_rate_bps;
+    solauto_position.rebalance.rebalance_direction =
+        if target_liq_utilization_rate_bps > solauto_position.state.liq_utilization_rate_bps {
+            RebalanceDirection::Boost
+        } else {
+            RebalanceDirection::Repay
+        };
 
     let amount_to_dca_in_usd = if amount_to_dca_in.is_some() {
         let (decimals, market_price) = if dca_token_type.unwrap() == TokenType::Supply {

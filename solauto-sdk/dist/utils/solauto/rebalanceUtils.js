@@ -100,6 +100,7 @@ function getRebalanceValues(state, settings, dca, currentUnixTime, supplyPrice, 
         amountToDcaIn: amountToDcaIn ?? 0,
         amountUsdToDcaIn,
         dcaTokenType: dca?.tokenType,
+        rebalanceAction: (amountToDcaIn ?? 0) > 0 ? "dca" : increasingLeverage ? "boost" : "repay",
     };
 }
 function getFlashLoanDetails(client, values, jupQuote) {

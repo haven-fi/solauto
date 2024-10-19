@@ -23,9 +23,7 @@ use crate::{
         },
         shared::{DeserializedAccount, SolautoError},
     },
-    utils::{
-        solauto_utils, validation_utils, ix_utils
-    },
+    utils::{ix_utils, solauto_utils, validation_utils},
 };
 
 pub fn process_update_referral_states<'a>(

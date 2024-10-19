@@ -27,7 +27,7 @@ pub struct MarginfiRebalance {
 
     pub referred_by_supply_ta: Option<solana_program::pubkey::Pubkey>,
 
-    pub position_authority: solana_program::pubkey::Pubkey,
+    pub position_authority: Option<solana_program::pubkey::Pubkey>,
 
     pub solauto_position: solana_program::pubkey::Pubkey,
 
@@ -122,10 +122,17 @@ impl MarginfiRebalance {
                 false,
             ));
         }
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            self.position_authority,
-            false,
-        ));
+        if let Some(position_authority) = self.position_authority {
+            accounts.push(solana_program::instruction::AccountMeta::new(
+                position_authority,
+                false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::SOLAUTO_ID,
+                false,
+            ));
+        }
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.solauto_position,
             false,
@@ -299,7 +306,7 @@ pub struct MarginfiRebalanceInstructionArgs {
 ///   5. `[writable, optional]` solauto_fees_supply_ta
 ///   6. `[]` authority_referral_state
 ///   7. `[writable, optional]` referred_by_supply_ta
-///   8. `[writable]` position_authority
+///   8. `[writable, optional]` position_authority
 ///   9. `[writable]` solauto_position
 ///   10. `[]` marginfi_group
 ///   11. `[writable]` marginfi_account
@@ -409,12 +416,13 @@ impl MarginfiRebalanceBuilder {
         self.referred_by_supply_ta = referred_by_supply_ta;
         self
     }
+    /// `[optional account]`
     #[inline(always)]
     pub fn position_authority(
         &mut self,
-        position_authority: solana_program::pubkey::Pubkey,
+        position_authority: Option<solana_program::pubkey::Pubkey>,
     ) -> &mut Self {
-        self.position_authority = Some(position_authority);
+        self.position_authority = position_authority;
         self
     }
     #[inline(always)]
@@ -600,9 +608,7 @@ impl MarginfiRebalanceBuilder {
                 .authority_referral_state
                 .expect("authority_referral_state is not set"),
             referred_by_supply_ta: self.referred_by_supply_ta,
-            position_authority: self
-                .position_authority
-                .expect("position_authority is not set"),
+            position_authority: self.position_authority,
             solauto_position: self.solauto_position.expect("solauto_position is not set"),
             marginfi_group: self.marginfi_group.expect("marginfi_group is not set"),
             marginfi_account: self.marginfi_account.expect("marginfi_account is not set"),
@@ -653,7 +659,7 @@ pub struct MarginfiRebalanceCpiAccounts<'a, 'b> {
 
     pub referred_by_supply_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
-    pub position_authority: &'b solana_program::account_info::AccountInfo<'a>,
+    pub position_authority: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
     pub solauto_position: &'b solana_program::account_info::AccountInfo<'a>,
 
@@ -709,7 +715,7 @@ pub struct MarginfiRebalanceCpi<'a, 'b> {
 
     pub referred_by_supply_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
-    pub position_authority: &'b solana_program::account_info::AccountInfo<'a>,
+    pub position_authority: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
     pub solauto_position: &'b solana_program::account_info::AccountInfo<'a>,
 
@@ -862,10 +868,17 @@ impl<'a, 'b> MarginfiRebalanceCpi<'a, 'b> {
                 false,
             ));
         }
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.position_authority.key,
-            false,
-        ));
+        if let Some(position_authority) = self.position_authority {
+            accounts.push(solana_program::instruction::AccountMeta::new(
+                *position_authority.key,
+                false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::SOLAUTO_ID,
+                false,
+            ));
+        }
         accounts.push(solana_program::instruction::AccountMeta::new(
             *self.solauto_position.key,
             false,
@@ -1025,7 +1038,9 @@ impl<'a, 'b> MarginfiRebalanceCpi<'a, 'b> {
         if let Some(referred_by_supply_ta) = self.referred_by_supply_ta {
             account_infos.push(referred_by_supply_ta.clone());
         }
-        account_infos.push(self.position_authority.clone());
+        if let Some(position_authority) = self.position_authority {
+            account_infos.push(position_authority.clone());
+        }
         account_infos.push(self.solauto_position.clone());
         account_infos.push(self.marginfi_group.clone());
         account_infos.push(self.marginfi_account.clone());
@@ -1084,7 +1099,7 @@ impl<'a, 'b> MarginfiRebalanceCpi<'a, 'b> {
 ///   5. `[writable, optional]` solauto_fees_supply_ta
 ///   6. `[]` authority_referral_state
 ///   7. `[writable, optional]` referred_by_supply_ta
-///   8. `[writable]` position_authority
+///   8. `[writable, optional]` position_authority
 ///   9. `[writable]` solauto_position
 ///   10. `[]` marginfi_group
 ///   11. `[writable]` marginfi_account
@@ -1207,12 +1222,13 @@ impl<'a, 'b> MarginfiRebalanceCpiBuilder<'a, 'b> {
         self.instruction.referred_by_supply_ta = referred_by_supply_ta;
         self
     }
+    /// `[optional account]`
     #[inline(always)]
     pub fn position_authority(
         &mut self,
-        position_authority: &'b solana_program::account_info::AccountInfo<'a>,
+        position_authority: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     ) -> &mut Self {
-        self.instruction.position_authority = Some(position_authority);
+        self.instruction.position_authority = position_authority;
         self
     }
     #[inline(always)]
@@ -1456,10 +1472,7 @@ impl<'a, 'b> MarginfiRebalanceCpiBuilder<'a, 'b> {
 
             referred_by_supply_ta: self.instruction.referred_by_supply_ta,
 
-            position_authority: self
-                .instruction
-                .position_authority
-                .expect("position_authority is not set"),
+            position_authority: self.instruction.position_authority,
 
             solauto_position: self
                 .instruction

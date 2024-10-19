@@ -36,7 +36,7 @@ import {
   getWrappedInstruction,
   splTokenTransferUmiIx,
 } from "../utils/solanaUtils";
-import { FlashLoanDetails } from "../utils/solauto/rebalanceUtils";
+import { FlashLoanDetails, RebalanceValues } from "../utils/solauto/rebalanceUtils";
 import {
   MIN_POSITION_STATE_FRESHNESS_SECS,
   SOLAUTO_LUT,
@@ -537,6 +537,7 @@ export abstract class SolautoClient extends ReferralStateManager {
     rebalanceStep: "A" | "B",
     jupQuote: QuoteResponse,
     rebalanceType: SolautoRebalanceTypeArgs,
+    rebalanceValues: RebalanceValues,
     flashLoan?: FlashLoanDetails,
     targetLiqUtilizationRateBps?: number
   ): TransactionBuilder;
