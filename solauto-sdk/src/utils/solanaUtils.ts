@@ -339,6 +339,7 @@ export async function sendSingleOptimizedTransaction(
       send: {
         skipPreflight: true,
         commitment: "confirmed",
+        maxRetries: 0
       },
       confirm: { commitment: "confirmed" },
     });

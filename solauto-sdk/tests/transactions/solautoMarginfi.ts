@@ -165,6 +165,6 @@ describe("Solauto Marginfi tests", async () => {
       undefined,
       !payForTransactions ? "only-simulate" : "normal",
       useJitoBundle,
-    ).clientSend(transactionItems, PriorityFeeSetting.High);
+    ).clientSend(transactionItems, PriorityFeeSetting.Default);
   });
 });
