@@ -72,11 +72,11 @@ class ReferralStateManager extends txHandler_1.TxHandler {
             addressLookupTable: lookupTable ? (0, umi_1.publicKey)(lookupTable) : null,
         });
     }
-    claimReferralFeesIx(destFeesMint) {
-        const referralFeesDestMint = destFeesMint ?? (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.referralStateData.destFeesMint);
+    claimReferralFeesIx() {
+        const referralFeesDestMint = (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.referralStateData.destFeesMint);
         const referralDestTa = (0, utils_1.getTokenAccount)(this.referralState, referralFeesDestMint);
         const feesDestinationTa = referralFeesDestMint !== spl_token_1.NATIVE_MINT
-            ? (0, umi_1.publicKey)((0, utils_1.getTokenAccount)((0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.signer.publicKey), referralFeesDestMint))
+            ? (0, umi_1.publicKey)((0, utils_1.getTokenAccount)(this.authority, referralFeesDestMint))
             : undefined;
         return (0, generated_1.claimReferralFees)(this.umi, {
             signer: this.signer,

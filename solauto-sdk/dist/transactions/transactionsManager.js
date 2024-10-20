@@ -21,7 +21,7 @@ class LookupTables {
         const currentCacheAddresses = this.cache.map((x) => x.publicKey.toString());
         const missingAddresses = addresses.filter((x) => !currentCacheAddresses.includes(x));
         if (missingAddresses) {
-            const additionalInputs = await (0, solanaUtils_1.getAdressLookupInputs)(this.umi, missingAddresses);
+            const additionalInputs = await (0, solanaUtils_1.getAddressLookupInputs)(this.umi, missingAddresses);
             this.cache.push(...additionalInputs);
         }
         return this.cache;

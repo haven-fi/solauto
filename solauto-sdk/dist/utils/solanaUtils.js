@@ -13,7 +13,7 @@ exports.createAssociatedTokenAccountUmiIx = createAssociatedTokenAccountUmiIx;
 exports.systemTransferUmiIx = systemTransferUmiIx;
 exports.closeTokenAccountUmiIx = closeTokenAccountUmiIx;
 exports.splTokenTransferUmiIx = splTokenTransferUmiIx;
-exports.getAdressLookupInputs = getAdressLookupInputs;
+exports.getAddressLookupInputs = getAddressLookupInputs;
 exports.assembleFinalTransaction = assembleFinalTransaction;
 exports.getComputeUnitPriceEstimate = getComputeUnitPriceEstimate;
 exports.sendSingleOptimizedTransaction = sendSingleOptimizedTransaction;
@@ -71,7 +71,7 @@ function closeTokenAccountUmiIx(signer, tokenAccount, authority) {
 function splTokenTransferUmiIx(signer, fromTa, toTa, authority, amount) {
     return getWrappedInstruction(signer, (0, spl_token_1.createTransferInstruction)(fromTa, toTa, authority, amount));
 }
-async function getAdressLookupInputs(umi, lookupTableAddresses) {
+async function getAddressLookupInputs(umi, lookupTableAddresses) {
     const addressLookupTableAccountInfos = await umi.rpc.getAccounts(lookupTableAddresses.map((key) => (0, umi_1.publicKey)(key)));
     return addressLookupTableAccountInfos.reduce((acc, accountInfo, index) => {
         const addressLookupTableAddress = lookupTableAddresses[index];
