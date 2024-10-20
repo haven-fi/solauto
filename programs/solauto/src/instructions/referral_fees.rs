@@ -56,6 +56,14 @@ pub fn claim_referral_fees(
                 account_rent,
                 Some(referral_state_seeds),
             )?;
+
+            solana_utils::close_token_account(
+                ctx.accounts.token_program,
+                ctx.accounts.signer_wsol_ta.unwrap(),
+                ctx.accounts.signer,
+                ctx.accounts.signer,
+                None,
+            )?;
         }
 
         solana_utils::close_token_account(
