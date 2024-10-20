@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.LivePositionUpdates = void 0;
+exports.createDynamicSolautoProgram = createDynamicSolautoProgram;
 exports.nextAutomationPeriodTimestamp = nextAutomationPeriodTimestamp;
 exports.eligibleForNextAutomationPeriod = eligibleForNextAutomationPeriod;
 exports.getUpdatedValueFromAutomation = getUpdatedValueFromAutomation;
@@ -23,6 +24,21 @@ const accountUtils_1 = require("../accountUtils");
 const umi_web3js_adapters_1 = require("@metaplex-foundation/umi-web3js-adapters");
 const constants_1 = require("../../constants");
 const marginfiUtils_1 = require("../marginfiUtils");
+function createDynamicSolautoProgram(programId) {
+    return {
+        name: 'solauto',
+        publicKey: (0, umi_1.publicKey)(programId),
+        getErrorFromCode(code, cause) {
+            return (0, generated_1.getSolautoErrorFromCode)(code, this, cause);
+        },
+        getErrorFromName(name, cause) {
+            return (0, generated_1.getSolautoErrorFromName)(name, this, cause);
+        },
+        isOnCluster() {
+            return true;
+        },
+    };
+}
 function newPeriodsPassed(automation, currentUnixTimestamp) {
     return Math.min(automation.targetPeriods, automation.periodsPassed +
         Math.floor((currentUnixTimestamp - Number(automation.unixStartDate)) /

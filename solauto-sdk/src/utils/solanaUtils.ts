@@ -37,6 +37,8 @@ import {
   getLendingAccountStartFlashloanInstructionDataSerializer,
 } from "../marginfi-sdk";
 import { PriorityFeeSetting, TransactionRunType } from "../types";
+import { createDynamicSolautoProgram } from "./solauto";
+import { SOLAUTO_PROD_PROGRAM } from "../constants";
 
 export function buildHeliusApiUrl(heliusApiKey: string) {
   return `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`;
@@ -47,10 +49,15 @@ export function buildIronforgeApiUrl(ironforgeApiKey: string) {
 }
 
 export function getSolanaRpcConnection(
-  rpcUrl: string
+  rpcUrl: string,
+  programId: PublicKey = SOLAUTO_PROD_PROGRAM,
 ): [Connection, Umi] {
   const connection = new Connection(rpcUrl, "confirmed");
-  const umi = createUmi(connection);
+  const umi = createUmi(connection).use({
+    install(umi) {
+      umi.programs.add(createDynamicSolautoProgram(programId), false);
+    },
+  });
   return [connection, umi];
 }
 

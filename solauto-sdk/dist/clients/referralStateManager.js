@@ -11,15 +11,6 @@ const utils_1 = require("../utils");
 const txHandler_1 = require("./txHandler");
 const constants_1 = require("../constants");
 class ReferralStateManager extends txHandler_1.TxHandler {
-    constructor(rpcUrl, localTest) {
-        super(rpcUrl, localTest);
-        this.localTest = localTest;
-        this.umi = this.umi.use({
-            install(umi) {
-                umi.programs.add((0, generated_1.createSolautoProgram)(), false);
-            },
-        });
-    }
     async initialize(args) {
         if (!args.signer && !args.wallet) {
             throw new Error("Signer or wallet must be provided");

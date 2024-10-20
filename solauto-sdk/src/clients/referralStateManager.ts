@@ -14,7 +14,6 @@ import {
 } from "@metaplex-foundation/umi-signer-wallet-adapters";
 import {
   claimReferralFees,
-  createSolautoProgram,
   ReferralState,
   safeFetchReferralState,
   updateReferralStates,
@@ -41,18 +40,6 @@ export class ReferralStateManager extends TxHandler {
 
   public referredBy?: PublicKey;
   public referredByState?: PublicKey;
-
-  constructor(
-    rpcUrl: string,
-    public localTest?: boolean
-  ) {
-    super(rpcUrl, localTest);
-    this.umi = this.umi.use({
-      install(umi) {
-        umi.programs.add(createSolautoProgram(), false);
-      },
-    });
-  }
 
   async initialize(args: ReferralStateManagerArgs) {
     if (!args.signer && !args.wallet) {

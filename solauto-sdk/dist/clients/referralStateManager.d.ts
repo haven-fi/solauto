@@ -11,7 +11,6 @@ export interface ReferralStateManagerArgs {
     referredByAuthority?: PublicKey;
 }
 export declare class ReferralStateManager extends TxHandler {
-    localTest?: boolean | undefined;
     umi: Umi;
     signer: Signer;
     referralState: PublicKey;
@@ -19,7 +18,6 @@ export declare class ReferralStateManager extends TxHandler {
     authority: PublicKey;
     referredBy?: PublicKey;
     referredByState?: PublicKey;
-    constructor(rpcUrl: string, localTest?: boolean | undefined);
     initialize(args: ReferralStateManagerArgs): Promise<void>;
     defaultLookupTables(): string[];
     setReferredBy(referredBy?: PublicKey): void;

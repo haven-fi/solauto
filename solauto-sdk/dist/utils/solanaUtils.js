@@ -27,15 +27,21 @@ const accountUtils_1 = require("./accountUtils");
 const generalUtils_1 = require("./generalUtils");
 const marginfi_sdk_1 = require("../marginfi-sdk");
 const types_1 = require("../types");
+const solauto_1 = require("./solauto");
+const constants_1 = require("../constants");
 function buildHeliusApiUrl(heliusApiKey) {
     return `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`;
 }
 function buildIronforgeApiUrl(ironforgeApiKey) {
     return `https://rpc.ironforge.network/mainnet?apiKey=${ironforgeApiKey}`;
 }
-function getSolanaRpcConnection(rpcUrl) {
+function getSolanaRpcConnection(rpcUrl, programId = constants_1.SOLAUTO_PROD_PROGRAM) {
     const connection = new web3_js_1.Connection(rpcUrl, "confirmed");
-    const umi = (0, umi_bundle_defaults_1.createUmi)(connection);
+    const umi = (0, umi_bundle_defaults_1.createUmi)(connection).use({
+        install(umi) {
+            umi.programs.add((0, solauto_1.createDynamicSolautoProgram)(programId), false);
+        },
+    });
     return [connection, umi];
 }
 function getWrappedInstruction(signer, ix) {

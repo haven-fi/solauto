@@ -1,3 +1,6 @@
+import { PublicKey } from "@solana/web3.js";
+export declare const SOLAUTO_PROD_PROGRAM: PublicKey;
+export declare const SOLAUTO_TEST_PROGRAM: PublicKey;
 export declare const BASIS_POINTS = 10000;
 export declare const MIN_POSITION_STATE_FRESHNESS_SECS = 5;
 export declare const MIN_REPAY_GAP_BPS = 50;

@@ -1,5 +1,5 @@
 import { PublicKey } from "@solana/web3.js";
-import { isOption, isSome, publicKey, Umi } from "@metaplex-foundation/umi";
+import { isOption, isSome, Program, publicKey, Umi } from "@metaplex-foundation/umi";
 import {
   AutomationSettings,
   DCASettings,
@@ -12,6 +12,8 @@ import {
   SolautoSettingsParametersInpArgs,
   TokenType,
   getReferralStateSize,
+  getSolautoErrorFromCode,
+  getSolautoErrorFromName,
   getSolautoPositionAccountDataSerializer,
   getSolautoPositionSize,
 } from "../../generated";
@@ -30,6 +32,22 @@ import {
 } from "../../constants";
 import { getAllMarginfiAccountsByAuthority } from "../marginfiUtils";
 import { RebalanceAction, SolautoPositionDetails } from "../../types/solauto";
+
+export function createDynamicSolautoProgram(programId: PublicKey): Program {
+  return {
+    name: 'solauto',
+    publicKey: publicKey(programId),
+    getErrorFromCode(code: number, cause?: Error) {
+      return getSolautoErrorFromCode(code, this, cause);
+    },
+    getErrorFromName(name: string, cause?: Error) {
+      return getSolautoErrorFromName(name, this, cause);
+    },
+    isOnCluster() {
+      return true;
+    },
+  };
+}
 
 function newPeriodsPassed(
   automation: AutomationSettings,

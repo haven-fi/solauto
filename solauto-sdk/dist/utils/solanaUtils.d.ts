@@ -3,7 +3,7 @@ import { Connection, PublicKey, TransactionInstruction } from "@solana/web3.js";
 import { PriorityFeeSetting, TransactionRunType } from "../types";
 export declare function buildHeliusApiUrl(heliusApiKey: string): string;
 export declare function buildIronforgeApiUrl(ironforgeApiKey: string): string;
-export declare function getSolanaRpcConnection(rpcUrl: string): [Connection, Umi];
+export declare function getSolanaRpcConnection(rpcUrl: string, programId?: PublicKey): [Connection, Umi];
 export declare function getWrappedInstruction(signer: Signer, ix: TransactionInstruction): WrappedInstruction;
 export declare function setComputeUnitLimitUmiIx(signer: Signer, maxComputeUnits: number): WrappedInstruction;
 export declare function setComputeUnitPriceUmiIx(signer: Signer, lamports: number): WrappedInstruction;
