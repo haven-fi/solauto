@@ -103,6 +103,14 @@ export function getSolautoFeesBps(
   const minFeeBps = 50; // Fee in basis points for maxSize (0.5%)
   const k = 1.5;
 
+  if (targetLiqUtilizationRateBps !== undefined && targetLiqUtilizationRateBps === 0) {
+    return {
+      solauto: 0,
+      referrer: 0,
+      total: 0
+    }
+  }
+
   let feeBps: number = 0;
 
   if (targetLiqUtilizationRateBps !== undefined || rebalanceDirection === RebalanceDirection.Repay) {

@@ -73,6 +73,13 @@ function getSolautoFeesBps(isReferred, targetLiqUtilizationRateBps, positionNetW
     const maxFeeBps = 200; // Fee in basis points for minSize (2%)
     const minFeeBps = 50; // Fee in basis points for maxSize (0.5%)
     const k = 1.5;
+    if (targetLiqUtilizationRateBps !== undefined && targetLiqUtilizationRateBps === 0) {
+        return {
+            solauto: 0,
+            referrer: 0,
+            total: 0
+        };
+    }
     let feeBps = 0;
     if (targetLiqUtilizationRateBps !== undefined || rebalanceDirection === generated_1.RebalanceDirection.Repay) {
         feeBps = 25;
