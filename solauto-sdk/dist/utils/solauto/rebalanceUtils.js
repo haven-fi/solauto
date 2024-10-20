@@ -149,7 +149,7 @@ function getJupSwapRebalanceDetails(client, values, targetLiqUtilizationRateBps,
         ? output.amountUsed.baseUnit +
             BigInt(Math.round(Number(output.amountUsed.baseUnit) *
                 // Add this small percentage to account for the APR on the debt between now and the transaction
-                0.0001))
+                0.00001))
         : (0, numberUtils_1.toBaseUnit)(usdToSwap / (0, generalUtils_2.safeGetPrice)(output.mint), output.decimals);
     const exactOut = targetLiqUtilizationRateBps === 0 || values.repayingCloseToMaxLtv;
     const exactIn = !exactOut;
