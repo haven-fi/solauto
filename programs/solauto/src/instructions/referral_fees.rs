@@ -10,7 +10,7 @@ use crate::{
         instruction::accounts::{ClaimReferralFeesAccounts, Context, ConvertReferralFeesAccounts},
         shared::DeserializedAccount,
     },
-    utils::solana_utils::{self, init_ata_if_needed},
+    utils::solana_utils,
 };
 
 pub fn convert_referral_fees(
@@ -39,7 +39,7 @@ pub fn claim_referral_fees(
 
     if ctx.accounts.referral_fees_dest_mint.key == &WSOL_MINT {
         if ctx.accounts.signer.key != &referral_state.data.authority {
-            init_ata_if_needed(
+            solana_utils::init_ata_if_needed(
                 ctx.accounts.token_program,
                 ctx.accounts.system_program,
                 ctx.accounts.signer,
@@ -65,6 +65,15 @@ pub fn claim_referral_fees(
                 ctx.accounts.signer,
                 ctx.accounts.signer,
                 None,
+            )?;
+
+            solana_utils::init_ata_if_needed(
+                ctx.accounts.token_program,
+                ctx.accounts.system_program,
+                ctx.accounts.signer,
+                ctx.accounts.signer,
+                ctx.accounts.signer_wsol_ta.unwrap(),
+                ctx.accounts.referral_fees_dest_mint,
             )?;
         }
 
