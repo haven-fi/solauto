@@ -18,7 +18,7 @@ use spl_token::ID as token_program_id;
 
 use crate::{
     constants::{
-        MAX_BASIS_POINTS, MIN_BOOST_GAP_BPS, MIN_REPAY_GAP_BPS, SOLAUTO_FEES_WALLET,
+        MAX_BASIS_POINTS, MIN_BOOST_GAP_BPS, MIN_REPAY_GAP_BPS,
         SOLAUTO_MANAGER,
     },
     state::{

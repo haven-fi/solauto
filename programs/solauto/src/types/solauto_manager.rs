@@ -417,6 +417,10 @@ impl<'a> SolautoManager<'a> {
             .unwrap()
             .fetch_fees(rebalance_direction);
 
+        if fee_payout.total == 0 {
+            return Ok(total_available_balance);
+        }
+
         let solauto_fees = (total_available_balance as f64).mul(from_bps(fee_payout.total)) as u64;
         if self.std_accounts.solauto_fees_ta.unwrap().key
             != &get_associated_token_address(&SOLAUTO_FEES_WALLET, &token_mint)
