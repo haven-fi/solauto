@@ -180,6 +180,7 @@ async function sendSingleOptimizedTransaction(umi, connection, tx, txType, attem
             send: {
                 skipPreflight: true,
                 commitment: "confirmed",
+                maxRetries: 0
             },
             confirm: { commitment: "confirmed" },
         });

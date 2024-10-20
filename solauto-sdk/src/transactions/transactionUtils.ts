@@ -58,7 +58,6 @@ import {
   positionStateWithLatestPrices,
 } from "../utils/solauto/generalUtils";
 import {
-  getReferralState,
   getTokenAccount,
   getTokenAccountData,
 } from "../utils/accountUtils";

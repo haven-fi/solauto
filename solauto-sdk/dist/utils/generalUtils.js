@@ -64,10 +64,8 @@ async function fetchTokenPrices(mints) {
     const prices = await retryWithExponentialBackoff(async () => {
         let resp = await getReq();
         let status = resp.status;
-        while (status !== 200) {
-            await new Promise((resolve) => setTimeout(resolve, 1000));
-            resp = await getReq();
-            status = resp.status;
+        if (status !== 200) {
+            throw new Error(JSON.stringify(resp));
         }
         const json = await resp.json();
         const prices = json.parsed.map((x) => {

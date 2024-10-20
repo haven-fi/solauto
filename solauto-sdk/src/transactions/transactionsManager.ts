@@ -7,7 +7,7 @@ import {
 } from "@metaplex-foundation/umi";
 import { SolautoClient } from "../clients/solautoClient";
 import {
-  getAdressLookupInputs,
+  getAddressLookupInputs,
   sendSingleOptimizedTransaction,
 } from "../utils/solanaUtils";
 import {
@@ -37,7 +37,7 @@ class LookupTables {
       (x) => !currentCacheAddresses.includes(x)
     );
     if (missingAddresses) {
-      const additionalInputs = await getAdressLookupInputs(
+      const additionalInputs = await getAddressLookupInputs(
         this.umi,
         missingAddresses
       );

@@ -82,10 +82,8 @@ export async function fetchTokenPrices(mints: PublicKey[]): Promise<number[]> {
     async () => {
       let resp = await getReq();
       let status = resp.status;
-      while (status !== 200) {
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-        resp = await getReq();
-        status = resp.status;
+      if (status !== 200) {
+        throw new Error(JSON.stringify(resp));
       }
 
       const json = await resp.json();

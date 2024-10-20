@@ -27,6 +27,7 @@ export interface ReferralStateManagerArgs {
   signer?: Signer;
   wallet?: WalletAdapter;
   authority?: PublicKey;
+  referralState?: PublicKey;
   referredByAuthority?: PublicKey;
 }
 
@@ -34,9 +35,9 @@ export class ReferralStateManager extends TxHandler {
   public umi!: Umi;
   public signer!: Signer;
 
-  public authority!: PublicKey;
   public referralState!: PublicKey;
   public referralStateData!: ReferralState | null;
+  public authority!: PublicKey;
 
   public referredBy?: PublicKey;
   public referredByState?: PublicKey;
@@ -63,16 +64,20 @@ export class ReferralStateManager extends TxHandler {
         : walletAdapterIdentity(args.wallet!, true)
     );
     this.signer = this.umi.identity;
-    this.authority = args.authority ?? toWeb3JsPublicKey(this.signer.publicKey);
 
-    this.referralState = getReferralState(
-      args.authority ?? toWeb3JsPublicKey(this.signer.publicKey)
-    );
+    this.referralState = args.referralState
+      ? args.referralState
+      : getReferralState(
+          args.authority ?? toWeb3JsPublicKey(this.signer.publicKey)
+        );
     this.referralStateData = await safeFetchReferralState(
       this.umi,
       publicKey(this.referralState),
       { commitment: "confirmed" }
     );
+    this.authority = this.referralStateData
+      ? toWeb3JsPublicKey(this.referralStateData.authority)
+      : toWeb3JsPublicKey(this.signer.publicKey);
 
     this.setReferredBy(args.referredByAuthority);
   }
@@ -123,9 +128,10 @@ export class ReferralStateManager extends TxHandler {
     });
   }
 
-  claimReferralFeesIx(destFeesMint?: PublicKey): TransactionBuilder {
-    const referralFeesDestMint =
-      destFeesMint ?? toWeb3JsPublicKey(this.referralStateData!.destFeesMint);
+  claimReferralFeesIx(): TransactionBuilder {
+    const referralFeesDestMint = toWeb3JsPublicKey(
+      this.referralStateData!.destFeesMint
+    );
     const referralDestTa = getTokenAccount(
       this.referralState,
       referralFeesDestMint
@@ -134,7 +140,7 @@ export class ReferralStateManager extends TxHandler {
       referralFeesDestMint !== NATIVE_MINT
         ? publicKey(
             getTokenAccount(
-              toWeb3JsPublicKey(this.signer.publicKey),
+              this.authority,
               referralFeesDestMint
             )
           )

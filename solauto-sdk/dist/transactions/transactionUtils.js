@@ -128,8 +128,6 @@ async function rebalanceChoresBefore(client, tx, accountsGettingCreated) {
         .some((t) => t.keys.some((k) => (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(k.pubkey).equals(key)));
     const checkReferralSupplyTa = client.referredBySupplyTa() && usesAccount(client.referredBySupplyTa());
     const checkReferralDebtTa = client.referredByDebtTa() && usesAccount(client.referredByDebtTa());
-    const checkSolautoFeesSupplyTa = usesAccount(client.solautoFeesSupplyTa);
-    const checkSolautoFeesDebtTa = usesAccount(client.solautoFeesDebtTa);
     const checkIntermediaryMfiAccount = client.lendingPlatform === generated_1.LendingPlatform.Marginfi &&
         usesAccount(client.intermediaryMarginfiAccountPk);
     const checkSignerSupplyTa = usesAccount(client.signerSupplyTa);

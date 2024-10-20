@@ -28,9 +28,13 @@ class ReferralStateManager extends txHandler_1.TxHandler {
             ? (0, umi_1.signerIdentity)(args.signer)
             : (0, umi_signer_wallet_adapters_1.walletAdapterIdentity)(args.wallet, true));
         this.signer = this.umi.identity;
-        this.authority = args.authority ?? (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.signer.publicKey);
-        this.referralState = (0, utils_1.getReferralState)(args.authority ?? (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.signer.publicKey));
+        this.referralState = args.referralState
+            ? args.referralState
+            : (0, utils_1.getReferralState)(args.authority ?? (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.signer.publicKey));
         this.referralStateData = await (0, generated_1.safeFetchReferralState)(this.umi, (0, umi_1.publicKey)(this.referralState), { commitment: "confirmed" });
+        this.authority = this.referralStateData
+            ? (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.referralStateData.authority)
+            : (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.signer.publicKey);
         this.setReferredBy(args.referredByAuthority);
     }
     defaultLookupTables() {

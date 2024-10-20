@@ -182,9 +182,25 @@ pub fn process_claim_referral_fees<'a>(accounts: &'a [AccountInfo<'a>]) -> Progr
         return Err(SolautoError::IncorrectAccounts.into());
     }
 
+    if ctx.accounts.referral_fees_dest_mint.key != &referral_state.data.dest_fees_mint {
+        msg!("Provided incorrect referral_fees_dest_mint account");
+        return Err(SolautoError::IncorrectAccounts.into());
+    }
+
     if referral_state.data.dest_fees_mint != WSOL_MINT && ctx.accounts.fees_destination_ta.is_none()
     {
         msg!("Missing fees destination token account when the token mint is not wSOL");
+        return Err(SolautoError::IncorrectAccounts.into());
+    }
+
+    if ctx.accounts.fees_destination_ta.is_some()
+        && ctx.accounts.fees_destination_ta.unwrap().key
+            != &get_associated_token_address(
+                &referral_state.data.authority,
+                &referral_state.data.dest_fees_mint,
+            )
+    {
+        msg!("Provided incorrect fees_destination_ta for the given referral state and destination token mint");
         return Err(SolautoError::IncorrectAccounts.into());
     }
 

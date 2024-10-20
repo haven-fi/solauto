@@ -7,15 +7,16 @@ export interface ReferralStateManagerArgs {
     signer?: Signer;
     wallet?: WalletAdapter;
     authority?: PublicKey;
+    referralState?: PublicKey;
     referredByAuthority?: PublicKey;
 }
 export declare class ReferralStateManager extends TxHandler {
     localTest?: boolean | undefined;
     umi: Umi;
     signer: Signer;
-    authority: PublicKey;
     referralState: PublicKey;
     referralStateData: ReferralState | null;
+    authority: PublicKey;
     referredBy?: PublicKey;
     referredByState?: PublicKey;
     constructor(rpcUrl: string, localTest?: boolean | undefined);

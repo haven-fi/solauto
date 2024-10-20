@@ -144,7 +144,7 @@ export function splTokenTransferUmiIx(
   );
 }
 
-export async function getAdressLookupInputs(
+export async function getAddressLookupInputs(
   umi: Umi,
   lookupTableAddresses: string[]
 ): Promise<AddressLookupTableInput[]> {
