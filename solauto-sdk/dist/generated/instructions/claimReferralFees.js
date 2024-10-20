@@ -43,29 +43,34 @@ function claimReferralFees(context, input) {
             isWritable: false,
             value: input.tokenProgram ?? null,
         },
-        rent: { index: 4, isWritable: false, value: input.rent ?? null },
+        ataProgram: {
+            index: 4,
+            isWritable: false,
+            value: input.ataProgram ?? null,
+        },
+        rent: { index: 5, isWritable: false, value: input.rent ?? null },
         referralState: {
-            index: 5,
+            index: 6,
             isWritable: false,
             value: input.referralState ?? null,
         },
         referralFeesDestTa: {
-            index: 6,
+            index: 7,
             isWritable: true,
             value: input.referralFeesDestTa ?? null,
         },
         referralFeesDestMint: {
-            index: 7,
+            index: 8,
             isWritable: false,
             value: input.referralFeesDestMint ?? null,
         },
         referralAuthority: {
-            index: 8,
+            index: 9,
             isWritable: true,
             value: input.referralAuthority ?? null,
         },
         feesDestinationTa: {
-            index: 9,
+            index: 10,
             isWritable: true,
             value: input.feesDestinationTa ?? null,
         },
@@ -78,6 +83,10 @@ function claimReferralFees(context, input) {
     if (!resolvedAccounts.tokenProgram.value) {
         resolvedAccounts.tokenProgram.value = context.programs.getPublicKey('splToken', 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
         resolvedAccounts.tokenProgram.isWritable = false;
+    }
+    if (!resolvedAccounts.ataProgram.value) {
+        resolvedAccounts.ataProgram.value = context.programs.getPublicKey('splAssociatedToken', 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL');
+        resolvedAccounts.ataProgram.isWritable = false;
     }
     if (!resolvedAccounts.rent.value) {
         resolvedAccounts.rent.value = (0, umi_1.publicKey)('SysvarRent111111111111111111111111111111111');

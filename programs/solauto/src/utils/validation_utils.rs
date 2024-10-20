@@ -17,10 +17,7 @@ use spl_associated_token_account::{get_associated_token_address, ID as ata_progr
 use spl_token::ID as token_program_id;
 
 use crate::{
-    constants::{
-        MAX_BASIS_POINTS, MIN_BOOST_GAP_BPS, MIN_REPAY_GAP_BPS,
-        SOLAUTO_MANAGER,
-    },
+    constants::{MAX_BASIS_POINTS, MIN_BOOST_GAP_BPS, MIN_REPAY_GAP_BPS, SOLAUTO_MANAGER},
     state::{
         referral_state::ReferralState,
         solauto_position::{AutomationSettings, PositionData, SolautoPosition},

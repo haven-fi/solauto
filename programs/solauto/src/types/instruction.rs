@@ -40,6 +40,7 @@ pub enum Instruction {
     #[account(mut, optional, name = "signer_wsol_ta")]
     #[account(name = "system_program")]
     #[account(name = "token_program")]
+    #[account(name = "ata_program")]
     #[account(name = "rent")]
     #[account(name = "referral_state")]
     #[account(mut, name = "referral_fees_dest_ta")]

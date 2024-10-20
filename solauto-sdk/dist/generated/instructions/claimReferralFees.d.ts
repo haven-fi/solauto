@@ -12,6 +12,7 @@ export type ClaimReferralFeesInstructionAccounts = {
     signerWsolTa?: PublicKey | Pda;
     systemProgram?: PublicKey | Pda;
     tokenProgram?: PublicKey | Pda;
+    ataProgram?: PublicKey | Pda;
     rent?: PublicKey | Pda;
     referralState: PublicKey | Pda;
     referralFeesDestTa: PublicKey | Pda;

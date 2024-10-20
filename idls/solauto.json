@@ -131,6 +131,11 @@
           "isSigner": false
         },
         {
+          "name": "ataProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
           "name": "rent",
           "isMut": false,
           "isSigner": false

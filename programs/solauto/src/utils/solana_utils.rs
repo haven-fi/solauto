@@ -25,8 +25,8 @@ pub fn invoke_instruction(
     account_infos: &[AccountInfo],
     seeds: Option<&Vec<&[u8]>>,
 ) -> ProgramResult {
-    if seeds.is_some() {
-        invoke_signed(instruction, account_infos, &[seeds.unwrap().as_slice()])
+    if let Some(seeds) = seeds {
+        invoke_signed(instruction, account_infos, &[seeds.as_slice()])
     } else {
         invoke(instruction, account_infos)
     }

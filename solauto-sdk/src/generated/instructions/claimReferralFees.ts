@@ -33,6 +33,7 @@ export type ClaimReferralFeesInstructionAccounts = {
   signerWsolTa?: PublicKey | Pda;
   systemProgram?: PublicKey | Pda;
   tokenProgram?: PublicKey | Pda;
+  ataProgram?: PublicKey | Pda;
   rent?: PublicKey | Pda;
   referralState: PublicKey | Pda;
   referralFeesDestTa: PublicKey | Pda;
@@ -98,29 +99,34 @@ export function claimReferralFees(
       isWritable: false as boolean,
       value: input.tokenProgram ?? null,
     },
-    rent: { index: 4, isWritable: false as boolean, value: input.rent ?? null },
+    ataProgram: {
+      index: 4,
+      isWritable: false as boolean,
+      value: input.ataProgram ?? null,
+    },
+    rent: { index: 5, isWritable: false as boolean, value: input.rent ?? null },
     referralState: {
-      index: 5,
+      index: 6,
       isWritable: false as boolean,
       value: input.referralState ?? null,
     },
     referralFeesDestTa: {
-      index: 6,
+      index: 7,
       isWritable: true as boolean,
       value: input.referralFeesDestTa ?? null,
     },
     referralFeesDestMint: {
-      index: 7,
+      index: 8,
       isWritable: false as boolean,
       value: input.referralFeesDestMint ?? null,
     },
     referralAuthority: {
-      index: 8,
+      index: 9,
       isWritable: true as boolean,
       value: input.referralAuthority ?? null,
     },
     feesDestinationTa: {
-      index: 9,
+      index: 10,
       isWritable: true as boolean,
       value: input.feesDestinationTa ?? null,
     },
@@ -140,6 +146,13 @@ export function claimReferralFees(
       'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'
     );
     resolvedAccounts.tokenProgram.isWritable = false;
+  }
+  if (!resolvedAccounts.ataProgram.value) {
+    resolvedAccounts.ataProgram.value = context.programs.getPublicKey(
+      'splAssociatedToken',
+      'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'
+    );
+    resolvedAccounts.ataProgram.isWritable = false;
   }
   if (!resolvedAccounts.rent.value) {
     resolvedAccounts.rent.value = publicKey(
