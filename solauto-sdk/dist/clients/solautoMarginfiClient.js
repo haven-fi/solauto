@@ -30,7 +30,7 @@ class SolautoMarginfiClient extends solautoClient_1.SolautoClient {
             this.marginfiAccountSeedIdx = (0, generalUtils_1.generateRandomU64)();
             this.marginfiAccount = this.solautoPositionData
                 ? (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.solautoPositionData.position.protocolAccount)
-                : (0, accountUtils_1.getMarginfiAccountPDA)(this.solautoPosition, this.marginfiAccountSeedIdx);
+                : (0, accountUtils_1.getMarginfiAccountPDA)(this.solautoPosition, this.marginfiAccountSeedIdx, this.programId);
         }
         this.marginfiAccountPk =
             "publicKey" in this.marginfiAccount

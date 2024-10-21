@@ -10,7 +10,6 @@ exports.getReferralState = getReferralState;
 exports.getMarginfiAccountPDA = getMarginfiAccountPDA;
 const web3_js_1 = require("@solana/web3.js");
 const spl_token_1 = require("@solana/spl-token");
-const generated_1 = require("../generated");
 const umi_1 = require("@metaplex-foundation/umi");
 function bufferFromU8(num) {
     const buffer = Buffer.alloc(1);
@@ -37,21 +36,21 @@ async function getTokenAccountData(umi, tokenAccount) {
         return undefined;
     }
 }
-function getSolautoPositionAccount(signer, positionId) {
-    const [positionAccount, _] = web3_js_1.PublicKey.findProgramAddressSync([bufferFromU8(positionId), signer.toBuffer()], new web3_js_1.PublicKey(generated_1.SOLAUTO_PROGRAM_ID));
+function getSolautoPositionAccount(signer, positionId, programId) {
+    const [positionAccount, _] = web3_js_1.PublicKey.findProgramAddressSync([bufferFromU8(positionId), signer.toBuffer()], programId);
     return positionAccount;
 }
-function getReferralState(authority) {
+function getReferralState(authority, programId) {
     const str = "referral_state";
     const strBuffer = Buffer.from(str, "utf-8");
-    const [ReferralState, _] = web3_js_1.PublicKey.findProgramAddressSync([strBuffer, authority.toBuffer()], new web3_js_1.PublicKey(generated_1.SOLAUTO_PROGRAM_ID));
+    const [ReferralState, _] = web3_js_1.PublicKey.findProgramAddressSync([strBuffer, authority.toBuffer()], programId);
     return ReferralState;
 }
-function getMarginfiAccountPDA(solautoPositionAccount, marginfiAccountSeedIdx) {
+function getMarginfiAccountPDA(solautoPositionAccount, marginfiAccountSeedIdx, programId) {
     const seeds = [
         solautoPositionAccount.toBuffer(),
         bufferFromU64(marginfiAccountSeedIdx),
     ];
-    const [marginfiAccount, _] = web3_js_1.PublicKey.findProgramAddressSync(seeds, new web3_js_1.PublicKey(generated_1.SOLAUTO_PROGRAM_ID));
+    const [marginfiAccount, _] = web3_js_1.PublicKey.findProgramAddressSync(seeds, programId);
     return marginfiAccount;
 }

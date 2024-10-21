@@ -1,6 +1,5 @@
 import { PublicKey } from "@solana/web3.js";
 import { AccountLayout as SplTokenAccountLayout, getAssociatedTokenAddressSync } from "@solana/spl-token";
-import { SOLAUTO_PROGRAM_ID } from "../generated";
 import { publicKey, Umi } from "@metaplex-foundation/umi";
 
 export function bufferFromU8(num: number): Buffer {
@@ -38,23 +37,24 @@ export async function getTokenAccountData(umi: Umi, tokenAccount: PublicKey) {
 
 export function getSolautoPositionAccount(
   signer: PublicKey,
-  positionId: number
+  positionId: number,
+  programId: PublicKey
 ) {
   const [positionAccount, _] = PublicKey.findProgramAddressSync(
     [bufferFromU8(positionId), signer.toBuffer()],
-    new PublicKey(SOLAUTO_PROGRAM_ID)
+    programId
   );
 
   return positionAccount;
 }
 
-export function getReferralState(authority: PublicKey) {
+export function getReferralState(authority: PublicKey, programId: PublicKey) {
   const str = "referral_state";
   const strBuffer = Buffer.from(str, "utf-8");
 
   const [ReferralState, _] = PublicKey.findProgramAddressSync(
     [strBuffer, authority.toBuffer()],
-    new PublicKey(SOLAUTO_PROGRAM_ID)
+    programId
   );
 
   return ReferralState;
@@ -62,7 +62,8 @@ export function getReferralState(authority: PublicKey) {
 
 export function getMarginfiAccountPDA(
   solautoPositionAccount: PublicKey,
-  marginfiAccountSeedIdx: bigint
+  marginfiAccountSeedIdx: bigint,
+  programId: PublicKey
 ) {
   const seeds = [
     solautoPositionAccount.toBuffer(),
@@ -71,7 +72,7 @@ export function getMarginfiAccountPDA(
 
   const [marginfiAccount, _] = PublicKey.findProgramAddressSync(
     seeds,
-    new PublicKey(SOLAUTO_PROGRAM_ID)
+    programId
   );
 
   return marginfiAccount;

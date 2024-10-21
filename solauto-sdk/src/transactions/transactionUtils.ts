@@ -11,13 +11,10 @@ import { PublicKey, SYSVAR_INSTRUCTIONS_PUBKEY } from "@solana/web3.js";
 import {
   ACCOUNT_SIZE as TOKEN_ACCOUNT_SIZE,
   NATIVE_MINT,
-  RawAccount,
 } from "@solana/spl-token";
 import {
   InvalidRebalanceConditionError,
   LendingPlatform,
-  ReferralState,
-  SOLAUTO_PROGRAM_ID,
   SolautoAction,
   SolautoRebalanceType,
   TokenType,
@@ -27,7 +24,6 @@ import {
   getMarginfiRebalanceInstructionDataSerializer,
   getSolautoErrorFromCode,
   isSolautoAction,
-  safeFetchReferralState,
   solautoAction,
 } from "../generated";
 import { SolautoClient } from "../clients/solautoClient";
@@ -76,7 +72,7 @@ import {
   getJupiterErrorFromName,
   JUPITER_PROGRAM_ID,
 } from "../jupiter-sdk";
-import { PRICES, SOLAUTO_FEES_WALLET } from "../constants";
+import { PRICES } from "../constants";
 import { TransactionItemInputs } from "../types";
 
 interface wSolTokenUsage {
@@ -263,7 +259,7 @@ export async function rebalanceChoresBefore(
   tx: TransactionBuilder,
   accountsGettingCreated: string[]
 ): Promise<TransactionBuilder> {
-  const rebalanceInstructions = getRebalanceInstructions(tx);
+  const rebalanceInstructions = getRebalanceInstructions(client.umi, tx);
   if (rebalanceInstructions.length === 0) {
     return transactionBuilder();
   }
@@ -404,9 +400,9 @@ function transactionChoresAfter(
   return chores;
 }
 
-function getRebalanceInstructions(tx: TransactionBuilder): Instruction[] {
+function getRebalanceInstructions(umi: Umi, tx: TransactionBuilder): Instruction[] {
   return tx.getInstructions().filter((x) => {
-    if (x.programId === SOLAUTO_PROGRAM_ID) {
+    if (x.programId.toString() === umi.programs.get("solauto").publicKey.toString()) {
       try {
         const serializer = getMarginfiRebalanceInstructionDataSerializer();
         const discriminator = serializer.serialize({
@@ -424,11 +420,11 @@ function getRebalanceInstructions(tx: TransactionBuilder): Instruction[] {
   });
 }
 
-function getSolautoActions(tx: TransactionBuilder): SolautoAction[] {
+function getSolautoActions(umi: Umi, tx: TransactionBuilder): SolautoAction[] {
   let solautoActions: SolautoAction[] = [];
 
   tx.getInstructions().forEach((x) => {
-    if (x.programId === SOLAUTO_PROGRAM_ID) {
+    if (x.programId.toString() === umi.programs.get("solauto").publicKey.toString()) {
       try {
         const serializer =
           getMarginfiProtocolInteractionInstructionDataSerializer();
@@ -562,7 +558,7 @@ export async function getTransactionChores(
   let choresAfter = transactionBuilder();
   const accountsGettingCreated: string[] = [];
 
-  const solautoActions = getSolautoActions(tx);
+  const solautoActions = getSolautoActions(client.umi, tx);
 
   choresBefore = choresBefore.add([
     await transactionChoresBefore(
@@ -798,7 +794,7 @@ export async function convertReferralFeesToDestination(
   return { tx, lookupTableAddresses };
 }
 
-export function getErrorInfo(tx: TransactionBuilder, error: any) {
+export function getErrorInfo(umi: Umi, tx: TransactionBuilder, error: any) {
   let canBeIgnored = false;
   let errorName: string | undefined = undefined;
   let errorInfo: string | undefined = undefined;
@@ -811,7 +807,7 @@ export function getErrorInfo(tx: TransactionBuilder, error: any) {
       const errIx = tx.getInstructions()[Math.max(0, err[0] - 2)];
       const errCode = err[1]["Custom"];
 
-      if (errIx.programId === SOLAUTO_PROGRAM_ID) {
+      if (errIx.programId.toString() === umi.programs.get("solauto").publicKey.toString()) {
         programError = getSolautoErrorFromCode(errCode, createSolautoProgram());
         if (
           programError?.name ===

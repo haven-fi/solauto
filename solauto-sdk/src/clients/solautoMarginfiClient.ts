@@ -64,7 +64,6 @@ import {
 } from "../utils/marginfiUtils";
 import { bytesToI80F48, fromBaseUnit, toBps } from "../utils/numberUtils";
 import { QuoteResponse } from "@jup-ag/api";
-import { SOLAUTO_FEES_WALLET } from "../constants";
 
 export interface SolautoMarginfiClientArgs extends SolautoClientArgs {
   marginfiAccount?: PublicKey | Signer;
@@ -108,7 +107,8 @@ export class SolautoMarginfiClient extends SolautoClient {
         ? toWeb3JsPublicKey(this.solautoPositionData.position.protocolAccount)
         : getMarginfiAccountPDA(
             this.solautoPosition,
-            this.marginfiAccountSeedIdx
+            this.marginfiAccountSeedIdx,
+            this.programId
           );
     }
     this.marginfiAccountPk =

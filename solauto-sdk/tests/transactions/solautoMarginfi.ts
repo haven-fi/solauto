@@ -20,22 +20,23 @@ import {
   TransactionsManager,
 } from "../../src/transactions/transactionsManager";
 import { PublicKey } from "@solana/web3.js";
-import { USDC } from "../../src/constants";
+import { SOLAUTO_TEST_PROGRAM, USDC } from "../../src/constants";
 import { buildHeliusApiUrl } from "../../src/utils";
 import { PriorityFeeSetting } from "../../src/types";
 
 describe("Solauto Marginfi tests", async () => {
-  // const signer = setupTest();
-  const signer = setupTest("solauto-manager");
+  const signer = setupTest();
+  // const signer = setupTest("solauto-manager");
 
-  const payForTransactions = true;
+  const payForTransactions = false;
   const useJitoBundle = false;
   const positionId = 1;
 
   it("open - deposit - borrow - rebalance to 0 - withdraw - close", async () => {
     const client = new SolautoMarginfiClient(
       buildHeliusApiUrl(process.env.HELIUS_API_KEY!),
-      true
+      true,
+      SOLAUTO_TEST_PROGRAM
     );
 
     const supply = NATIVE_MINT;
@@ -128,7 +129,7 @@ describe("Solauto Marginfi tests", async () => {
     transactionItems.push(
       new TransactionItem(
         async (attemptNum) =>
-          await buildSolautoRebalanceTransaction(client, undefined, attemptNum),
+          await buildSolautoRebalanceTransaction(client, 7000, attemptNum),
         "rebalance"
       )
     );

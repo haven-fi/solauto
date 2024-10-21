@@ -55,7 +55,8 @@ export class ReferralStateManager extends TxHandler {
     this.referralState = args.referralState
       ? args.referralState
       : getReferralState(
-          args.authority ?? toWeb3JsPublicKey(this.signer.publicKey)
+          args.authority ?? toWeb3JsPublicKey(this.signer.publicKey),
+          this.programId
         );
     this.referralStateData = await safeFetchReferralState(
       this.umi,
@@ -91,7 +92,7 @@ export class ReferralStateManager extends TxHandler {
 
     this.referredBy = finalReferredBy;
     this.referredByState = finalReferredBy
-      ? getReferralState(finalReferredBy)
+      ? getReferralState(finalReferredBy, this.programId)
       : this.referralStateData
         ? toWeb3JsPublicKey(this.referralStateData.referredByState)
         : undefined;

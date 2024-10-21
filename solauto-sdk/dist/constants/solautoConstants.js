@@ -4,7 +4,6 @@ exports.STANDARD_LUT_ACCOUNTS = exports.SOLAUTO_LUT = exports.PRICES = exports.M
 const web3_js_1 = require("@solana/web3.js");
 const spl_token_1 = require("@solana/spl-token");
 // import { JitoRpcConnection } from "jito-ts";
-const generated_1 = require("../generated");
 const generalAccounts_1 = require("./generalAccounts");
 const jupiter_sdk_1 = require("../jupiter-sdk");
 exports.SOLAUTO_PROD_PROGRAM = new web3_js_1.PublicKey("AutoyKBRaHSBHy9RsmXCZMy6nNFAg5FYijrvZyQcNLV");
@@ -17,17 +16,18 @@ exports.MIN_BOOST_GAP_BPS = 50;
 exports.PRICES = {};
 exports.SOLAUTO_LUT = "9D4xwZwDf46n9ft5gQxZzq3rBbdRXsXojKQLZbBdskPY";
 exports.STANDARD_LUT_ACCOUNTS = [
-    web3_js_1.PublicKey.default.toString(),
-    generated_1.SOLAUTO_PROGRAM_ID,
-    generalAccounts_1.SOLAUTO_MANAGER.toString(),
-    web3_js_1.SystemProgram.programId.toString(),
-    spl_token_1.TOKEN_PROGRAM_ID.toString(),
-    spl_token_1.ASSOCIATED_TOKEN_PROGRAM_ID.toString(),
-    web3_js_1.SYSVAR_CLOCK_PUBKEY.toString(),
-    web3_js_1.SYSVAR_RENT_PUBKEY.toString(),
-    web3_js_1.SYSVAR_INSTRUCTIONS_PUBKEY.toString(),
-    jupiter_sdk_1.JUPITER_PROGRAM_ID
-];
+    web3_js_1.PublicKey.default,
+    exports.SOLAUTO_PROD_PROGRAM,
+    exports.SOLAUTO_TEST_PROGRAM,
+    generalAccounts_1.SOLAUTO_MANAGER,
+    web3_js_1.SystemProgram.programId,
+    spl_token_1.TOKEN_PROGRAM_ID,
+    spl_token_1.ASSOCIATED_TOKEN_PROGRAM_ID,
+    web3_js_1.SYSVAR_CLOCK_PUBKEY,
+    web3_js_1.SYSVAR_RENT_PUBKEY,
+    web3_js_1.SYSVAR_INSTRUCTIONS_PUBKEY,
+    jupiter_sdk_1.JUPITER_PROGRAM_ID,
+].map((x) => x.toString());
 // export const JITO_BLOCK_ENGINE = "ny.mainnet.block-engine.jito.wtf";
 // export const JITO_CONNECTION = new JitoRpcConnection(
 //   `https://${JITO_BLOCK_ENGINE}`,

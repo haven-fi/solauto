@@ -7,7 +7,6 @@ import {
   LendingPlatform,
   PositionState,
   PositionType,
-  SOLAUTO_PROGRAM_ID,
   SolautoSettingsParameters,
   SolautoSettingsParametersInpArgs,
   TokenType,
@@ -194,7 +193,7 @@ export async function getSolautoManagedPositions(
   // supply mint: pubkey
   // debt mint: pubkey
 
-  const accounts = await umi.rpc.getProgramAccounts(SOLAUTO_PROGRAM_ID, {
+  const accounts = await umi.rpc.getProgramAccounts(umi.programs.get("solauto").publicKey, {
     commitment: "confirmed",
     dataSlice: {
       offset: 0,
@@ -252,7 +251,7 @@ export async function getSolautoManagedPositions(
 }
 
 export async function getAllReferralStates(umi: Umi): Promise<PublicKey[]> {
-  const accounts = await umi.rpc.getProgramAccounts(SOLAUTO_PROGRAM_ID, {
+  const accounts = await umi.rpc.getProgramAccounts(umi.programs.get("solauto").publicKey, {
     commitment: "confirmed",
     dataSlice: {
       offset: 0,
@@ -277,8 +276,9 @@ export async function getReferralsByUser(
   // authority: Pubkey,
   // referred_by_state: Pubkey,
 
-  const userReferralState = getReferralState(user);
-  const accounts = await umi.rpc.getProgramAccounts(SOLAUTO_PROGRAM_ID, {
+  const programId = umi.programs.get("solauto").publicKey;
+  const userReferralState = getReferralState(user, toWeb3JsPublicKey(programId));
+  const accounts = await umi.rpc.getProgramAccounts(programId, {
     commitment: "confirmed",
     dataSlice: {
       offset: 0,

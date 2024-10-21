@@ -2,8 +2,9 @@ import { Umi } from "@metaplex-foundation/umi";
 import { Connection, PublicKey } from "@solana/web3.js";
 export declare abstract class TxHandler {
     rpcUrl: string;
-    umi: Umi;
+    programId: PublicKey;
     connection: Connection;
+    umi: Umi;
     constructor(rpcUrl: string, localTest?: boolean, programId?: PublicKey);
     log(...args: any[]): void;
     abstract defaultLookupTables(): string[];

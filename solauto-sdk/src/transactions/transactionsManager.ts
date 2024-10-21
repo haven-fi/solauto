@@ -526,7 +526,7 @@ export class TransactionsManager {
         txSig ? bs58.encode(txSig) : undefined
       );
     } catch (e: any) {
-      const errorDetails = getErrorInfo(tx, e);
+      const errorDetails = getErrorInfo(this.txHandler.umi, tx, e);
 
       this.updateStatus(
         txName,

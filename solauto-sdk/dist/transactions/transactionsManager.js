@@ -334,7 +334,7 @@ class TransactionsManager {
             this.updateStatus(txName, TransactionStatus.Successful, attemptNum, txSig ? bs58_1.default.encode(txSig) : undefined);
         }
         catch (e) {
-            const errorDetails = (0, transactionUtils_1.getErrorInfo)(tx, e);
+            const errorDetails = (0, transactionUtils_1.getErrorInfo)(this.txHandler.umi, tx, e);
             this.updateStatus(txName, errorDetails.canBeIgnored
                 ? TransactionStatus.Skipped
                 : TransactionStatus.Failed, attemptNum, undefined, undefined, errorDetails.errorInfo ?? errorDetails.errorName ?? "Unknown error");

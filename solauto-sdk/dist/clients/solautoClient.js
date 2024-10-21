@@ -22,7 +22,7 @@ class SolautoClient extends referralStateManager_1.ReferralStateManager {
         await super.initialize(args);
         this.positionId = args.positionId ?? 0;
         this.selfManaged = this.positionId === 0;
-        this.solautoPosition = (0, accountUtils_1.getSolautoPositionAccount)(this.authority, this.positionId);
+        this.solautoPosition = (0, accountUtils_1.getSolautoPositionAccount)(this.authority, this.positionId, this.programId);
         this.solautoPositionData = !args.new
             ? await (0, generated_1.safeFetchSolautoPosition)(this.umi, (0, umi_1.publicKey)(this.solautoPosition), { commitment: "confirmed" })
             : null;

@@ -2,29 +2,22 @@ import { Umi } from "@metaplex-foundation/umi";
 import { Connection, PublicKey } from "@solana/web3.js";
 import {
   consoleLog,
-  createDynamicSolautoProgram,
   getSolanaRpcConnection,
 } from "../utils";
 import { SOLAUTO_PROD_PROGRAM } from "../constants";
 
 export abstract class TxHandler {
-  public rpcUrl!: string;
-  public umi!: Umi;
   public connection!: Connection;
+  public umi!: Umi;
 
   constructor(
-    rpcUrl: string,
+    public rpcUrl: string,
     localTest?: boolean,
-    programId: PublicKey = SOLAUTO_PROD_PROGRAM
+    public programId: PublicKey = SOLAUTO_PROD_PROGRAM
   ) {
-    this.rpcUrl = rpcUrl;
-    const [connection, umi] = getSolanaRpcConnection(this.rpcUrl);
+    const [connection, umi] = getSolanaRpcConnection(this.rpcUrl, this.programId);
     this.connection = connection;
-    this.umi = umi.use({
-      install(umi) {
-        umi.programs.add(createDynamicSolautoProgram(programId), false);
-      },
-    });
+    this.umi = umi;
 
     if (!(globalThis as any).LOCAL_TEST && localTest) {
       (globalThis as any).LOCAL_TEST = Boolean(localTest);

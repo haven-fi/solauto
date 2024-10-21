@@ -93,7 +93,8 @@ export abstract class SolautoClient extends ReferralStateManager {
     this.selfManaged = this.positionId === 0;
     this.solautoPosition = getSolautoPositionAccount(
       this.authority,
-      this.positionId
+      this.positionId,
+      this.programId
     );
     this.solautoPositionData = !args.new
       ? await safeFetchSolautoPosition(

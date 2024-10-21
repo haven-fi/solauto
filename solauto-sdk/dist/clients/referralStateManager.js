@@ -21,7 +21,7 @@ class ReferralStateManager extends txHandler_1.TxHandler {
         this.signer = this.umi.identity;
         this.referralState = args.referralState
             ? args.referralState
-            : (0, utils_1.getReferralState)(args.authority ?? (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.signer.publicKey));
+            : (0, utils_1.getReferralState)(args.authority ?? (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.signer.publicKey), this.programId);
         this.referralStateData = await (0, generated_1.safeFetchReferralState)(this.umi, (0, umi_1.publicKey)(this.referralState), { commitment: "confirmed" });
         this.authority = this.referralStateData
             ? (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.referralStateData.authority)
@@ -44,7 +44,7 @@ class ReferralStateManager extends txHandler_1.TxHandler {
             : undefined;
         this.referredBy = finalReferredBy;
         this.referredByState = finalReferredBy
-            ? (0, utils_1.getReferralState)(finalReferredBy)
+            ? (0, utils_1.getReferralState)(finalReferredBy, this.programId)
             : this.referralStateData
                 ? (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.referralStateData.referredByState)
                 : undefined;

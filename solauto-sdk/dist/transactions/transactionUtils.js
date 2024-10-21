@@ -119,7 +119,7 @@ async function transactionChoresBefore(client, accountsGettingCreated, solautoAc
     return chores;
 }
 async function rebalanceChoresBefore(client, tx, accountsGettingCreated) {
-    const rebalanceInstructions = getRebalanceInstructions(tx);
+    const rebalanceInstructions = getRebalanceInstructions(client.umi, tx);
     if (rebalanceInstructions.length === 0) {
         return (0, umi_1.transactionBuilder)();
     }
@@ -184,9 +184,9 @@ function transactionChoresAfter(client, solautoActions, cancellingDcaIn) {
     }
     return chores;
 }
-function getRebalanceInstructions(tx) {
+function getRebalanceInstructions(umi, tx) {
     return tx.getInstructions().filter((x) => {
-        if (x.programId === generated_1.SOLAUTO_PROGRAM_ID) {
+        if (x.programId.toString() === umi.programs.get("solauto").publicKey.toString()) {
             try {
                 const serializer = (0, generated_1.getMarginfiRebalanceInstructionDataSerializer)();
                 const discriminator = serializer.serialize({
@@ -204,10 +204,10 @@ function getRebalanceInstructions(tx) {
         }
     });
 }
-function getSolautoActions(tx) {
+function getSolautoActions(umi, tx) {
     let solautoActions = [];
     tx.getInstructions().forEach((x) => {
-        if (x.programId === generated_1.SOLAUTO_PROGRAM_ID) {
+        if (x.programId.toString() === umi.programs.get("solauto").publicKey.toString()) {
             try {
                 const serializer = (0, generated_1.getMarginfiProtocolInteractionInstructionDataSerializer)();
                 const discriminator = serializer.serialize({
@@ -318,7 +318,7 @@ async function getTransactionChores(client, tx) {
     let choresBefore = (0, umi_1.transactionBuilder)();
     let choresAfter = (0, umi_1.transactionBuilder)();
     const accountsGettingCreated = [];
-    const solautoActions = getSolautoActions(tx);
+    const solautoActions = getSolautoActions(client.umi, tx);
     choresBefore = choresBefore.add([
         await transactionChoresBefore(client, accountsGettingCreated, solautoActions, client.livePositionUpdates.dcaInBalance),
         await rebalanceChoresBefore(client, tx, accountsGettingCreated),
@@ -429,7 +429,7 @@ async function convertReferralFeesToDestination(referralManager, tokenAccount, d
         .add(swapIx);
     return { tx, lookupTableAddresses };
 }
-function getErrorInfo(tx, error) {
+function getErrorInfo(umi, tx, error) {
     let canBeIgnored = false;
     let errorName = undefined;
     let errorInfo = undefined;
@@ -439,7 +439,7 @@ function getErrorInfo(tx, error) {
             const err = error["InstructionError"];
             const errIx = tx.getInstructions()[Math.max(0, err[0] - 2)];
             const errCode = err[1]["Custom"];
-            if (errIx.programId === generated_1.SOLAUTO_PROGRAM_ID) {
+            if (errIx.programId.toString() === umi.programs.get("solauto").publicKey.toString()) {
                 programError = (0, generated_1.getSolautoErrorFromCode)(errCode, (0, generated_1.createSolautoProgram)());
                 if (programError?.name ===
                     new generated_1.InvalidRebalanceConditionError((0, generated_1.createSolautoProgram)()).name) {

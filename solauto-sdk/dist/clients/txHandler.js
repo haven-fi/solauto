@@ -6,13 +6,10 @@ const constants_1 = require("../constants");
 class TxHandler {
     constructor(rpcUrl, localTest, programId = constants_1.SOLAUTO_PROD_PROGRAM) {
         this.rpcUrl = rpcUrl;
-        const [connection, umi] = (0, utils_1.getSolanaRpcConnection)(this.rpcUrl);
+        this.programId = programId;
+        const [connection, umi] = (0, utils_1.getSolanaRpcConnection)(this.rpcUrl, this.programId);
         this.connection = connection;
-        this.umi = umi.use({
-            install(umi) {
-                umi.programs.add((0, utils_1.createDynamicSolautoProgram)(programId), false);
-            },
-        });
+        this.umi = umi;
         if (!globalThis.LOCAL_TEST && localTest) {
             globalThis.LOCAL_TEST = Boolean(localTest);
         }
