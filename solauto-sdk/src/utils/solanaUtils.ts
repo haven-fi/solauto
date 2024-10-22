@@ -330,7 +330,7 @@ export async function sendSingleOptimizedTransaction(
     );
 
     computeUnitLimit = Math.round(
-      simulationResult.value.unitsConsumed! * 1.1
+      simulationResult.value.unitsConsumed! * 1.05
     );
     consoleLog("Compute unit limit: ", computeUnitLimit);
   }
