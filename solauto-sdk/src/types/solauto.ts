@@ -14,6 +14,7 @@ export interface SolautoPositionDetails {
 }
 
 export enum PriorityFeeSetting {
+  Low = "Low",
   Default = "Medium",
   High = "High",
 }

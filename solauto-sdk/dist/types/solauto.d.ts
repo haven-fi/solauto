@@ -12,6 +12,7 @@ export interface SolautoPositionDetails {
     debtMint?: PublicKey;
 }
 export declare enum PriorityFeeSetting {
+    Low = "Low",
     Default = "Medium",
     High = "High"
 }
