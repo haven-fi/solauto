@@ -36,7 +36,6 @@ describe("Solauto Marginfi tests", async () => {
     const client = new SolautoMarginfiClient(
       buildHeliusApiUrl(process.env.HELIUS_API_KEY!),
       true,
-      SOLAUTO_TEST_PROGRAM
     );
 
     const supply = NATIVE_MINT;
