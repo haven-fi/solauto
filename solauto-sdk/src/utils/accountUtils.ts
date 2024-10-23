@@ -36,12 +36,12 @@ export async function getTokenAccountData(umi: Umi, tokenAccount: PublicKey) {
 }
 
 export function getSolautoPositionAccount(
-  signer: PublicKey,
+  authority: PublicKey,
   positionId: number,
   programId: PublicKey
 ) {
   const [positionAccount, _] = PublicKey.findProgramAddressSync(
-    [bufferFromU8(positionId), signer.toBuffer()],
+    [bufferFromU8(positionId), authority.toBuffer()],
     programId
   );
 

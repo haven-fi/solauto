@@ -25,8 +25,8 @@ import { buildHeliusApiUrl } from "../../src/utils";
 import { PriorityFeeSetting } from "../../src/types";
 
 describe("Solauto Marginfi tests", async () => {
-  const signer = setupTest();
-  // const signer = setupTest("solauto-manager");
+  // const signer = setupTest();
+  const signer = setupTest("solauto-manager");
 
   const payForTransactions = false;
   const useJitoBundle = false;
@@ -45,7 +45,7 @@ describe("Solauto Marginfi tests", async () => {
     await client.initialize({
       signer,
       positionId,
-      authority: new PublicKey("AprYCPiVeKMCgjQ2ZufwChMzvQ5kFjJo2ekTLSkXsQDm"),
+      authority: new PublicKey("He4ka5Q3N1UvZikZvykdi47xyk5PoVP2tcQL5sVp31Sz"),
       // marginfiAccount: new PublicKey(
       //   "4nNvUXF5YqHFcH2nGweSiuvy1ct7V5FXfoCLKFYUN36z"
       // ),
@@ -128,7 +128,7 @@ describe("Solauto Marginfi tests", async () => {
     transactionItems.push(
       new TransactionItem(
         async (attemptNum) =>
-          await buildSolautoRebalanceTransaction(client, 7000, attemptNum),
+          await buildSolautoRebalanceTransaction(client, undefined, attemptNum),
         "rebalance"
       )
     );
