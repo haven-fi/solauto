@@ -119,7 +119,7 @@ var TransactionStatus;
     TransactionStatus["Failed"] = "Failed";
 })(TransactionStatus || (exports.TransactionStatus = TransactionStatus = {}));
 class TransactionsManager {
-    constructor(txHandler, statusCallback, txType, mustBeAtomic, errorsToThrow, retries = 4, retryDelay = 150) {
+    constructor(txHandler, statusCallback, txType, mustBeAtomic, errorsToThrow, retries = 4, retryDelay = 150, confirmTimeout = 10000) {
         this.txHandler = txHandler;
         this.statusCallback = statusCallback;
         this.txType = txType;
@@ -127,6 +127,7 @@ class TransactionsManager {
         this.errorsToThrow = errorsToThrow;
         this.retries = retries;
         this.retryDelay = retryDelay;
+        this.confirmTimeout = confirmTimeout;
         this.statuses = [];
         this.lookupTables = new LookupTables(this.txHandler.defaultLookupTables(), this.txHandler.umi);
     }
@@ -330,15 +331,16 @@ class TransactionsManager {
     async sendTransaction(tx, txName, attemptNum, prioritySetting) {
         this.updateStatus(txName, TransactionStatus.Processing, attemptNum);
         try {
-            const txSig = await (0, solanaUtils_1.sendSingleOptimizedTransaction)(this.txHandler.umi, this.txHandler.connection, tx, this.txType, attemptNum, prioritySetting, () => this.updateStatus(txName, TransactionStatus.Processing, attemptNum, undefined, true));
+            const txSig = await (0, solanaUtils_1.sendSingleOptimizedTransaction)(this.txHandler.umi, this.txHandler.connection, tx, this.txType, this.confirmTimeout, prioritySetting, () => this.updateStatus(txName, TransactionStatus.Processing, attemptNum, undefined, true));
             this.updateStatus(txName, TransactionStatus.Successful, attemptNum, txSig ? bs58_1.default.encode(txSig) : undefined);
         }
         catch (e) {
             const errorDetails = (0, transactionUtils_1.getErrorInfo)(this.txHandler.umi, tx, e);
+            const errorString = `${errorDetails.errorName ?? "Unknown error"}: ${errorDetails.errorInfo ?? "unknown"}`;
             this.updateStatus(txName, errorDetails.canBeIgnored
                 ? TransactionStatus.Skipped
-                : TransactionStatus.Failed, attemptNum, undefined, undefined, errorDetails.errorInfo ?? errorDetails.errorName ?? "Unknown error");
-            this.txHandler.log(`${errorDetails.errorName ?? "Unknown error"}: ${errorDetails.errorInfo ?? "unknown"}`);
+                : TransactionStatus.Failed, attemptNum, undefined, undefined, errorString);
+            this.txHandler.log(errorString);
             if (!errorDetails.canBeIgnored) {
                 throw e;
             }

@@ -493,19 +493,11 @@ pub fn validate_debt_adjustment(
     let amount_usd = from_base_unit::<u64, u8, f64>(provided_base_unit_amount, token.decimals)
         .mul(token.market_price());
 
-    let threshold = if expected_debt_adjustment_usd <= 10.0 {
-        0.5
-    } else if expected_debt_adjustment_usd <= 30.0 {
-        0.25
-    } else {
-        0.15
-    };
-
     // Checking if within specified range due to varying price volatility
     if (amount_usd - expected_debt_adjustment_usd.abs())
         .abs()
         .div(amount_usd)
-        > threshold
+        > 0.75
     {
         msg!("Base unit amount provided: {}", provided_base_unit_amount);
         msg!(

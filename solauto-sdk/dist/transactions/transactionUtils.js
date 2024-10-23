@@ -438,23 +438,34 @@ function getErrorInfo(umi, tx, error) {
         if (typeof error === "object" && error["InstructionError"]) {
             const err = error["InstructionError"];
             const errIx = tx.getInstructions()[Math.max(0, err[0] - 2)];
-            const errCode = err[1]["Custom"];
+            const errCode = typeof err[1] === "object" ? err[1]["Custom"] : undefined;
+            const errName = errCode === undefined ? err[1] : undefined;
+            let programName = "";
             if (errIx.programId.toString() === umi.programs.get("solauto").publicKey.toString()) {
                 programError = (0, generated_1.getSolautoErrorFromCode)(errCode, (0, generated_1.createSolautoProgram)());
+                programName = "Haven";
                 if (programError?.name ===
                     new generated_1.InvalidRebalanceConditionError((0, generated_1.createSolautoProgram)()).name) {
                     canBeIgnored = true;
                 }
             }
             else if (errIx.programId === marginfi_sdk_1.MARGINFI_PROGRAM_ID) {
+                programName = "Marginfi";
                 programError = (0, marginfi_sdk_1.getMarginfiErrorFromName)(errCode, (0, marginfi_sdk_1.createMarginfiProgram)());
             }
             else if (errIx.programId === jupiter_sdk_1.JUPITER_PROGRAM_ID) {
+                programName = "Jupiter";
                 programError = (0, jupiter_sdk_1.getJupiterErrorFromName)(errCode, (0, jupiter_sdk_1.createJupiterProgram)());
             }
+            if (errName && errCode === undefined) {
+                errorName = `${programName ?? "Program"} error`;
+                errorInfo = errName;
+            }
         }
-        errorName = programError?.name;
-        errorName = programError?.message;
+        if (programError) {
+            errorName = programError?.name;
+            errorInfo = programError?.message;
+        }
     }
     catch { }
     return {

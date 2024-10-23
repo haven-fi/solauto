@@ -15,7 +15,11 @@ import {
   retryWithExponentialBackoff,
 } from "../utils/generalUtils";
 import { getErrorInfo, getTransactionChores } from "./transactionUtils";
-import { PriorityFeeSetting, TransactionItemInputs, TransactionRunType } from "../types";
+import {
+  PriorityFeeSetting,
+  TransactionItemInputs,
+  TransactionRunType,
+} from "../types";
 import { ReferralStateManager, TxHandler } from "../clients";
 // import { sendJitoBundledTransactions } from "../utils/jitoUtils";
 
@@ -53,8 +57,6 @@ class LookupTables {
     );
   }
 }
-
-
 
 export class TransactionItem {
   lookupTableAddresses!: string[];
@@ -197,7 +199,8 @@ export class TransactionsManager {
     private mustBeAtomic?: boolean,
     private errorsToThrow?: ErrorsToThrow,
     private retries: number = 4,
-    private retryDelay: number = 150
+    private retryDelay: number = 150,
+    private confirmTimeout: number = 10000
   ) {
     this.lookupTables = new LookupTables(
       this.txHandler.defaultLookupTables(),
@@ -508,7 +511,7 @@ export class TransactionsManager {
         this.txHandler.connection,
         tx,
         this.txType,
-        attemptNum,
+        this.confirmTimeout,
         prioritySetting,
         () =>
           this.updateStatus(
@@ -528,6 +531,7 @@ export class TransactionsManager {
     } catch (e: any) {
       const errorDetails = getErrorInfo(this.txHandler.umi, tx, e);
 
+      const errorString = `${errorDetails.errorName ?? "Unknown error"}: ${errorDetails.errorInfo ?? "unknown"}`;
       this.updateStatus(
         txName,
         errorDetails.canBeIgnored
@@ -536,11 +540,9 @@ export class TransactionsManager {
         attemptNum,
         undefined,
         undefined,
-        errorDetails.errorInfo ?? errorDetails.errorName ?? "Unknown error"
+        errorString
       );
-      this.txHandler.log(
-        `${errorDetails.errorName ?? "Unknown error"}: ${errorDetails.errorInfo ?? "unknown"}`
-      );
+      this.txHandler.log(errorString);
 
       if (!errorDetails.canBeIgnored) {
         throw e;

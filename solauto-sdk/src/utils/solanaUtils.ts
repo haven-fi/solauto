@@ -16,12 +16,15 @@ import {
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
 import {
   AddressLookupTableAccount,
+  Blockhash,
+  BlockhashWithExpiryBlockHeight,
   ComputeBudgetProgram,
   Connection,
   PublicKey,
   RpcResponseAndContext,
   SimulatedTransactionResponse,
   SystemProgram,
+  Transaction,
   TransactionInstruction,
   VersionedTransaction,
 } from "@solana/web3.js";
@@ -31,7 +34,11 @@ import {
   createTransferInstruction,
 } from "@solana/spl-token";
 import { getTokenAccount } from "./accountUtils";
-import { arraysAreEqual, consoleLog, retryWithExponentialBackoff } from "./generalUtils";
+import {
+  arraysAreEqual,
+  consoleLog,
+  retryWithExponentialBackoff,
+} from "./generalUtils";
 import {
   getLendingAccountEndFlashloanInstructionDataSerializer,
   getLendingAccountStartFlashloanInstructionDataSerializer,
@@ -50,7 +57,7 @@ export function buildIronforgeApiUrl(ironforgeApiKey: string) {
 
 export function getSolanaRpcConnection(
   rpcUrl: string,
-  programId: PublicKey = SOLAUTO_PROD_PROGRAM,
+  programId: PublicKey = SOLAUTO_PROD_PROGRAM
 ): [Connection, Umi] {
   const connection = new Connection(rpcUrl, "confirmed");
   const umi = createUmi(connection).use({
@@ -285,12 +292,79 @@ export async function getComputeUnitPriceEstimate(
   return feeEstimate;
 }
 
+async function spamSendTransactionUntilConfirmed(
+  connection: Connection,
+  transaction: Transaction | VersionedTransaction,
+  blockhash: BlockhashWithExpiryBlockHeight,
+  confirmTimeout: number = 10000,
+  spamInterval: number = 1000
+): Promise<string> {
+  let spamAttempts = 0;
+  let confirmed = false;
+  let transactionSignature: string | null = null;
+
+  return new Promise<string>((resolve, reject) => {
+    const spamSend = async () => {
+      if (confirmed) {
+        return;
+      }
+
+      try {
+        const txSignature = await connection.sendRawTransaction(
+          Buffer.from(transaction.serialize()),
+          { skipPreflight: true, maxRetries: 0 }
+        );
+        transactionSignature = txSignature;
+        consoleLog(`Transaction sent`);
+      } catch (error) {
+        consoleLog("Error sending transaction:", error);
+      }
+
+      spamAttempts++;
+      if (!confirmed) {
+        setTimeout(spamSend, spamInterval);
+      }
+    };
+
+    const confirmTransaction = async () => {
+      if (transactionSignature) {
+        try {
+          const { value } = await connection.confirmTransaction({
+            ...blockhash,
+            signature: transactionSignature,
+          });
+          if (value.err) {
+            reject(value.err);
+          }
+          confirmed = true;
+          resolve(transactionSignature);
+        } catch (error) {
+          consoleLog("Error during confirmation:", error);
+        }
+      }
+
+      if (!confirmed) {
+        setTimeout(confirmTransaction, 1000);
+      }
+    };
+
+    spamSend();
+    confirmTransaction();
+
+    setTimeout(() => {
+      if (!confirmed) {
+        reject(new Error("Failed to confirm transaction within timeout"));
+      }
+    }, confirmTimeout);
+  });
+}
+
 export async function sendSingleOptimizedTransaction(
   umi: Umi,
   connection: Connection,
   tx: TransactionBuilder,
   txType?: TransactionRunType,
-  attemptNum?: number,
+  confirmTimeout: number = 10000,
   prioritySetting: PriorityFeeSetting = PriorityFeeSetting.Default,
   onAwaitingSign?: () => void
 ): Promise<Uint8Array | undefined> {
@@ -298,11 +372,7 @@ export async function sendSingleOptimizedTransaction(
   consoleLog("Instructions: ", tx.getInstructions().length);
   consoleLog("Serialized transaction size: ", tx.getTransactionSize(umi));
 
-  let cuPrice = await getComputeUnitPriceEstimate(
-    umi,
-    tx,
-    prioritySetting
-  );
+  let cuPrice = await getComputeUnitPriceEstimate(umi, tx, prioritySetting);
   if (!cuPrice) {
     cuPrice = 1000000;
   }
@@ -328,35 +398,46 @@ export async function sendSingleOptimizedTransaction(
         ),
       3
     );
-
-    computeUnitLimit = Math.round(
-      simulationResult.value.unitsConsumed! * 1.05
-    );
+    simulationResult.value.err;
+    computeUnitLimit = Math.round(simulationResult.value.unitsConsumed! * 1.05);
     consoleLog("Compute unit limit: ", computeUnitLimit);
   }
 
   if (txType !== "only-simulate") {
     onAwaitingSign?.();
-    const result = await assembleFinalTransaction(
+    // const result = await assembleFinalTransaction(
+    //   umi.identity,
+    //   tx,
+    //   cuPrice,
+    //   computeUnitLimit
+    // ).sendAndConfirm(umi, {
+    //   send: {
+    //     skipPreflight: true,
+    //     commitment: "confirmed",
+    //     maxRetries: 0
+    //   },
+    //   confirm: { commitment: "confirmed" },
+    // });
+
+    const blockhash = await connection.getLatestBlockhash("confirmed");
+    const signedTx = await assembleFinalTransaction(
       umi.identity,
       tx,
       cuPrice,
       computeUnitLimit
-    ).sendAndConfirm(umi, {
-      send: {
-        skipPreflight: true,
-        commitment: "confirmed",
-        maxRetries: 0
-      },
-      confirm: { commitment: "confirmed" },
-    });
-    const txSig = bs58.encode(result.signature);
+    )
+      .setBlockhash(blockhash)
+      .buildAndSign(umi);
+
+    const txSig = await spamSendTransactionUntilConfirmed(
+      connection,
+      toWeb3JsTransaction(signedTx),
+      blockhash,
+      confirmTimeout
+    );
     consoleLog(`Transaction signature: ${txSig}`);
     consoleLog(`https://solscan.io/tx/${txSig}`);
-    if (result.result.value.err !== null) {
-      throw new Error(result.result.value.err.toString());
-    }
-    return result.signature;
+    return bs58.decode(txSig);
   }
 
   return undefined;

@@ -670,18 +670,17 @@ export class SolautoMarginfiClient extends SolautoClient {
       return state;
     }
 
-    const useDesignatedMint = !this.selfManaged && this.solautoPositionData === null || !toWeb3JsPublicKey(this.signer.publicKey).equals(this.authority);
+    const useDesignatedMint =
+      !this.selfManaged &&
+      (this.solautoPositionData === null ||
+        !toWeb3JsPublicKey(this.signer.publicKey).equals(this.authority));
 
     const freshState = await getMarginfiAccountPositionState(
       this.umi,
       { pk: this.marginfiAccountPk },
       this.marginfiGroup,
-      useDesignatedMint
-        ? { mint: this.supplyMint }
-        : undefined,
-      useDesignatedMint
-        ? { mint: this.debtMint }
-        : undefined,
+      useDesignatedMint ? { mint: this.supplyMint } : undefined,
+      useDesignatedMint ? { mint: this.debtMint } : undefined,
       this.livePositionUpdates
     );
 

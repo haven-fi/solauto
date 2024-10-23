@@ -36,8 +36,8 @@ async function getTokenAccountData(umi, tokenAccount) {
         return undefined;
     }
 }
-function getSolautoPositionAccount(signer, positionId, programId) {
-    const [positionAccount, _] = web3_js_1.PublicKey.findProgramAddressSync([bufferFromU8(positionId), signer.toBuffer()], programId);
+function getSolautoPositionAccount(authority, positionId, programId) {
+    const [positionAccount, _] = web3_js_1.PublicKey.findProgramAddressSync([bufferFromU8(positionId), authority.toBuffer()], programId);
     return positionAccount;
 }
 function getReferralState(authority, programId) {

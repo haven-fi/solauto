@@ -6,7 +6,7 @@ export function getLiqUtilzationRateBps(
   debtUsd: number,
   liqThresholdBps: number
 ): number {
-  if (supplyUsd === 0) {
+  if (supplyUsd === 0 || debtUsd === 0) {
     return 0;
   }
 

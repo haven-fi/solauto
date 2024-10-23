@@ -16,7 +16,7 @@ exports.maxBoostToBps = maxBoostToBps;
 const constants_1 = require("../constants");
 const generated_1 = require("../generated");
 function getLiqUtilzationRateBps(supplyUsd, debtUsd, liqThresholdBps) {
-    if (supplyUsd === 0) {
+    if (supplyUsd === 0 || debtUsd === 0) {
         return 0;
     }
     return toBps(debtUsd / (supplyUsd * fromBps(liqThresholdBps)));
