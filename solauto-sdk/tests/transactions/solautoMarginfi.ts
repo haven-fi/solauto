@@ -125,13 +125,13 @@ describe("Solauto Marginfi tests", async () => {
     //   }, "deposit")
     // );
 
-    // transactionItems.push(
-    //   new TransactionItem(
-    //     async (attemptNum) =>
-    //       await buildSolautoRebalanceTransaction(client, 0, attemptNum),
-    //     "rebalance"
-    //   )
-    // );
+    transactionItems.push(
+      new TransactionItem(
+        async (attemptNum) =>
+          await buildSolautoRebalanceTransaction(client, undefined, attemptNum),
+        "rebalance"
+      )
+    );
 
     // transactionItems.push(
     //   new TransactionItem(
