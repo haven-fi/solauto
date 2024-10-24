@@ -418,7 +418,6 @@ export async function sendSingleOptimizedTransaction(
     //   },
     //   confirm: { commitment: "confirmed" },
     // });
-
     const blockhash = await connection.getLatestBlockhash("confirmed");
     const signedTx = await assembleFinalTransaction(
       umi.identity,
@@ -428,13 +427,13 @@ export async function sendSingleOptimizedTransaction(
     )
       .setBlockhash(blockhash)
       .buildAndSign(umi);
-
     const txSig = await spamSendTransactionUntilConfirmed(
       connection,
       toWeb3JsTransaction(signedTx),
       blockhash,
       confirmTimeout
     );
+
     consoleLog(`Transaction signature: ${txSig}`);
     consoleLog(`https://solscan.io/tx/${txSig}`);
     return bs58.decode(txSig);

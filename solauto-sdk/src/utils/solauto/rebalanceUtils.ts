@@ -19,6 +19,7 @@ import { JupSwapDetails } from "../jupiterUtils";
 import { currentUnixSeconds, safeGetPrice } from "../generalUtils";
 import {
   fromBaseUnit,
+  fromBps,
   getDebtAdjustmentUsd,
   getLiqUtilzationRateBps,
   getMaxLiqUtilizationRateBps,
@@ -164,7 +165,8 @@ export interface RebalanceValues {
   amountUsdToDcaIn: number;
   dcaTokenType?: TokenType;
   rebalanceAction: RebalanceAction;
-  rebalanceDirection: RebalanceDirection
+  rebalanceDirection: RebalanceDirection;
+  feesUsd: number;
 }
 
 export function getRebalanceValues(
@@ -222,6 +224,7 @@ export function getRebalanceValues(
     rebalanceAction:
       (amountToDcaIn ?? 0) > 0 ? "dca" : rebalanceDirection === RebalanceDirection.Boost ? "boost" : "repay",
     rebalanceDirection,
+    feesUsd: debtAdjustmentUsd * fromBps(adjustmentFeeBps)
   };
 }
 

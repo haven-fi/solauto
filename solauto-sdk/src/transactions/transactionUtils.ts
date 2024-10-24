@@ -46,6 +46,7 @@ import {
 } from "../utils/generalUtils";
 import { SolautoMarginfiClient } from "../clients/solautoMarginfiClient";
 import {
+  fromBaseUnit,
   getMaxLiqUtilizationRateBps,
   uint8ArrayToBigInt,
 } from "../utils/numberUtils";
@@ -53,10 +54,7 @@ import {
   eligibleForRebalance,
   positionStateWithLatestPrices,
 } from "../utils/solauto/generalUtils";
-import {
-  getTokenAccount,
-  getTokenAccountData,
-} from "../utils/accountUtils";
+import { getTokenAccount, getTokenAccountData } from "../utils/accountUtils";
 import {
   createMarginfiProgram,
   getLendingAccountBorrowInstructionDataSerializer,
@@ -72,7 +70,7 @@ import {
   getJupiterErrorFromName,
   JUPITER_PROGRAM_ID,
 } from "../jupiter-sdk";
-import { PRICES } from "../constants";
+import { MIN_USD_SUPPORTED_POSITION, PRICES, USD_DECIMALS } from "../constants";
 import { TransactionItemInputs } from "../types";
 
 interface wSolTokenUsage {
@@ -400,9 +398,15 @@ function transactionChoresAfter(
   return chores;
 }
 
-function getRebalanceInstructions(umi: Umi, tx: TransactionBuilder): Instruction[] {
+function getRebalanceInstructions(
+  umi: Umi,
+  tx: TransactionBuilder
+): Instruction[] {
   return tx.getInstructions().filter((x) => {
-    if (x.programId.toString() === umi.programs.get("solauto").publicKey.toString()) {
+    if (
+      x.programId.toString() ===
+      umi.programs.get("solauto").publicKey.toString()
+    ) {
       try {
         const serializer = getMarginfiRebalanceInstructionDataSerializer();
         const discriminator = serializer.serialize({
@@ -424,7 +428,10 @@ function getSolautoActions(umi: Umi, tx: TransactionBuilder): SolautoAction[] {
   let solautoActions: SolautoAction[] = [];
 
   tx.getInstructions().forEach((x) => {
-    if (x.programId.toString() === umi.programs.get("solauto").publicKey.toString()) {
+    if (
+      x.programId.toString() ===
+      umi.programs.get("solauto").publicKey.toString()
+    ) {
       try {
         const serializer =
           getMarginfiProtocolInteractionInstructionDataSerializer();
@@ -658,6 +665,17 @@ export async function buildSolautoRebalanceTransaction(
   );
   client.log("Rebalance values: ", values);
 
+  if (
+    targetLiqUtilizationRateBps === undefined &&
+    fromBaseUnit(
+      client.solautoPositionState?.netWorth.baseAmountUsdValue ?? BigInt(0),
+      USD_DECIMALS
+    ) < MIN_USD_SUPPORTED_POSITION &&
+    values.feesUsd < 0.5
+  ) {
+    return undefined;
+  }
+
   const swapDetails = getJupSwapRebalanceDetails(
     client,
     values,
@@ -806,11 +824,14 @@ export function getErrorInfo(umi: Umi, tx: TransactionBuilder, error: any) {
       const err = (error as any)["InstructionError"];
       const errIx = tx.getInstructions()[Math.max(0, err[0] - 2)];
       const errCode = typeof err[1] === "object" ? err[1]["Custom"] : undefined;
-      const errName = errCode === undefined ? err[1] as string : undefined;
+      const errName = errCode === undefined ? (err[1] as string) : undefined;
       let programName = "";
 
-      if (errIx.programId.toString() === umi.programs.get("solauto").publicKey.toString()) {
-        programError =  getSolautoErrorFromCode(errCode, createSolautoProgram());
+      if (
+        errIx.programId.toString() ===
+        umi.programs.get("solauto").publicKey.toString()
+      ) {
+        programError = getSolautoErrorFromCode(errCode, createSolautoProgram());
         programName = "Haven";
         if (
           programError?.name ===
