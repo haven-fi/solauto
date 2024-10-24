@@ -15,6 +15,7 @@ import {
 import {
   InvalidRebalanceConditionError,
   LendingPlatform,
+  RebalanceDirection,
   SolautoAction,
   SolautoRebalanceType,
   TokenType,
@@ -665,14 +666,8 @@ export async function buildSolautoRebalanceTransaction(
   );
   client.log("Rebalance values: ", values);
 
-  if (
-    targetLiqUtilizationRateBps === undefined &&
-    fromBaseUnit(
-      client.solautoPositionState?.netWorth.baseAmountUsdValue ?? BigInt(0),
-      USD_DECIMALS
-    ) < MIN_USD_SUPPORTED_POSITION &&
-    values.feesUsd < 0.5
-  ) {
+  // Don't perform automated solauto manager boost if the fees are less than the transaction cost
+  if (targetLiqUtilizationRateBps === undefined && values.rebalanceDirection === RebalanceDirection.Boost && values.feesUsd < 1) {
     return undefined;
   }
 

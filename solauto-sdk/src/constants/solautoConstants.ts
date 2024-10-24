@@ -27,7 +27,7 @@ export const BASIS_POINTS = 10000;
 export const MIN_POSITION_STATE_FRESHNESS_SECS = 5;
 export const MIN_REPAY_GAP_BPS = 50;
 export const MIN_BOOST_GAP_BPS = 50;
-export const MIN_USD_SUPPORTED_POSITION = 500;
+export const MIN_USD_SUPPORTED_POSITION = 1000;
 
 export const PRICES: { [key: string]: { price: number; time: number } } = {};
 

@@ -296,7 +296,7 @@ async function spamSendTransactionUntilConfirmed(
   connection: Connection,
   transaction: Transaction | VersionedTransaction,
   blockhash: BlockhashWithExpiryBlockHeight,
-  confirmTimeout: number = 10000,
+  confirmTimeout: number = 13000,
   spamInterval: number = 1000
 ): Promise<string> {
   let spamAttempts = 0;
@@ -353,6 +353,7 @@ async function spamSendTransactionUntilConfirmed(
 
     setTimeout(() => {
       if (!confirmed) {
+        confirmed = true;
         reject(new Error("Failed to confirm transaction within timeout"));
       }
     }, confirmTimeout);
@@ -364,7 +365,7 @@ export async function sendSingleOptimizedTransaction(
   connection: Connection,
   tx: TransactionBuilder,
   txType?: TransactionRunType,
-  confirmTimeout: number = 10000,
+  confirmTimeout: number = 13000,
   prioritySetting: PriorityFeeSetting = PriorityFeeSetting.Default,
   onAwaitingSign?: () => void
 ): Promise<Uint8Array | undefined> {
