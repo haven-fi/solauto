@@ -9,11 +9,13 @@ const umi_1 = require("@metaplex-foundation/umi");
 const solanaUtils_1 = require("../utils/solanaUtils");
 const generalUtils_1 = require("../utils/generalUtils");
 const transactionUtils_1 = require("./transactionUtils");
+const types_1 = require("../types");
+const web3_js_1 = require("@solana/web3.js");
 // import { sendJitoBundledTransactions } from "../utils/jitoUtils";
 class TransactionTooLargeError extends Error {
     constructor(message) {
         super(message);
-        this.name = 'TransactionTooLargeError';
+        this.name = "TransactionTooLargeError";
         Object.setPrototypeOf(this, TransactionTooLargeError.prototype);
     }
 }
@@ -127,11 +129,11 @@ var TransactionStatus;
     TransactionStatus["Failed"] = "Failed";
 })(TransactionStatus || (exports.TransactionStatus = TransactionStatus = {}));
 class TransactionsManager {
-    constructor(txHandler, statusCallback, txType, mustBeAtomic, errorsToThrow, retries = 4, retryDelay = 150) {
+    constructor(txHandler, statusCallback, txType, priorityFeeSetting = types_1.PriorityFeeSetting.Min, errorsToThrow, retries = 4, retryDelay = 150) {
         this.txHandler = txHandler;
         this.statusCallback = statusCallback;
         this.txType = txType;
-        this.mustBeAtomic = mustBeAtomic;
+        this.priorityFeeSetting = priorityFeeSetting;
         this.errorsToThrow = errorsToThrow;
         this.retries = retries;
         this.retryDelay = retryDelay;
@@ -222,7 +224,14 @@ class TransactionsManager {
             }
         }
     }
-    async clientSend(transactions, prioritySetting) {
+    getUpdatedPriorityFeeSetting(prevError) {
+        if (prevError instanceof web3_js_1.TransactionExpiredBlockheightExceededError) {
+            const currIdx = types_1.priorityFeeSettingValues.indexOf(this.priorityFeeSetting);
+            return types_1.priorityFeeSettingValues[Math.min(types_1.priorityFeeSettingValues.length - 1, currIdx + 1)];
+        }
+        return this.priorityFeeSetting;
+    }
+    async clientSend(transactions) {
         const items = [...transactions];
         const client = this.txHandler;
         const updateLookupTable = await client.updateLookupTable();
@@ -230,7 +239,7 @@ class TransactionsManager {
         if (updateLookupTable &&
             updateLookupTable.updateLutTx.getInstructions().length > 0 &&
             updateLookupTable?.needsToBeIsolated) {
-            await (0, generalUtils_1.retryWithExponentialBackoff)(async (attemptNum) => await this.sendTransaction(updateLookupTable.updateLutTx, updateLutTxName, attemptNum, prioritySetting), 3, 150, this.errorsToThrow);
+            await (0, generalUtils_1.retryWithExponentialBackoff)(async (attemptNum, prevError) => await this.sendTransaction(updateLookupTable.updateLutTx, updateLutTxName, attemptNum, this.getUpdatedPriorityFeeSetting(prevError)), 3, 150, this.errorsToThrow);
         }
         this.lookupTables.defaultLuts = client.defaultLookupTables();
         for (const item of items) {
@@ -254,7 +263,7 @@ class TransactionsManager {
             items.push(chore);
             this.txHandler.log("Chores after: ", choresAfter.getInstructions().length);
         }
-        const result = await this.send(items, prioritySetting, true).catch((e) => {
+        const result = await this.send(items, true).catch((e) => {
             client.resetLiveTxUpdates(false);
             throw e;
         });
@@ -263,7 +272,7 @@ class TransactionsManager {
         }
         return result;
     }
-    async send(items, prioritySetting, initialized) {
+    async send(items, initialized) {
         this.statuses = [];
         this.lookupTables.reset();
         if (!initialized) {
@@ -276,69 +285,56 @@ class TransactionsManager {
         for (const itemSet of itemSets) {
             this.updateStatus(itemSet.name(), TransactionStatus.Queued, 0);
         }
-        if (this.mustBeAtomic && itemSets.length > 1) {
-            throw new Error(`${itemSets.length} transactions required but jito bundles are not currently supported`);
-            // itemSets.forEach((set) => {
-            //   this.updateStatus(set.name(), TransactionStatus.Processing);
-            // });
-            // await sendJitoBundledTransactions(
-            //   this.client,
-            //   await Promise.all(itemSets.map((x) => x.getSingleTransaction())),
-            //   this.simulateOnly
-            // );
-            // TODO: check if successful or not
-            // itemSets.forEach((set) => {
-            //   this.updateStatus(set.name(), TransactionStatus.Successful);
-            // });
+        if (this.txType === "only-simulate" && itemSets.length > 1) {
+            this.txHandler.log("Only simulate and more than 1 transaction. Skipping...");
+            return [];
         }
-        else if (this.txType !== "only-simulate" || itemSets.length === 1) {
-            for (let i = 0; i < itemSets.length; i++) {
-                const getFreshItemSet = async (itemSet, attemptNum) => {
-                    await itemSet.refetchAll(attemptNum);
-                    const newItemSets = await this.assembleTransactionSets([
-                        ...itemSet.items,
-                        ...itemSets
-                            .slice(i + 1)
-                            .map((x) => x.items)
-                            .flat(),
-                    ]);
-                    if (newItemSets.length > 1) {
-                        this.statuses.splice(statusesStartIdx + i, itemSets.length - i, ...newItemSets.map((x) => ({
-                            name: x.name(),
-                            status: TransactionStatus.Queued,
-                            attemptNum: 0,
-                        })));
-                        this.txHandler.log(this.statuses);
-                        itemSets.splice(i + 1, itemSets.length - i - 1, ...newItemSets.slice(1));
-                    }
-                    return newItemSets.length > 0 ? newItemSets[0] : undefined;
-                };
-                let itemSet = itemSets[i];
-                await (0, generalUtils_1.retryWithExponentialBackoff)(async (attemptNum) => {
-                    itemSet =
-                        i > 0 || attemptNum > 0
-                            ? await getFreshItemSet(itemSet, attemptNum)
-                            : itemSet;
-                    if (!itemSet) {
-                        return;
-                    }
-                    const tx = await itemSet.getSingleTransaction();
-                    if (tx.getInstructions().length === 0) {
-                        this.updateStatus(itemSet.name(), TransactionStatus.Skipped, attemptNum);
-                    }
-                    else {
-                        await this.debugAccounts(itemSet, tx);
-                        await this.sendTransaction(tx, itemSet.name(), attemptNum, prioritySetting);
-                    }
-                }, this.retries, this.retryDelay, this.errorsToThrow);
-            }
+        for (let i = 0; i < itemSets.length; i++) {
+            const getFreshItemSet = async (itemSet, attemptNum) => {
+                await itemSet.refetchAll(attemptNum);
+                const newItemSets = await this.assembleTransactionSets([
+                    ...itemSet.items,
+                    ...itemSets
+                        .slice(i + 1)
+                        .map((x) => x.items)
+                        .flat(),
+                ]);
+                if (newItemSets.length > 1) {
+                    this.statuses.splice(statusesStartIdx + i, itemSets.length - i, ...newItemSets.map((x) => ({
+                        name: x.name(),
+                        status: TransactionStatus.Queued,
+                        attemptNum: 0,
+                    })));
+                    this.txHandler.log(this.statuses);
+                    itemSets.splice(i + 1, itemSets.length - i - 1, ...newItemSets.slice(1));
+                }
+                return newItemSets.length > 0 ? newItemSets[0] : undefined;
+            };
+            let itemSet = itemSets[i];
+            await (0, generalUtils_1.retryWithExponentialBackoff)(async (attemptNum, prevError) => {
+                itemSet =
+                    i > 0 || attemptNum > 0
+                        ? await getFreshItemSet(itemSet, attemptNum)
+                        : itemSet;
+                if (!itemSet) {
+                    return;
+                }
+                const tx = await itemSet.getSingleTransaction();
+                if (tx.getInstructions().length === 0) {
+                    this.updateStatus(itemSet.name(), TransactionStatus.Skipped, attemptNum);
+                }
+                else {
+                    await this.debugAccounts(itemSet, tx);
+                    await this.sendTransaction(tx, itemSet.name(), attemptNum, this.getUpdatedPriorityFeeSetting(prevError));
+                }
+            }, this.retries, this.retryDelay, this.errorsToThrow);
         }
         return this.statuses;
     }
-    async sendTransaction(tx, txName, attemptNum, prioritySetting) {
+    async sendTransaction(tx, txName, attemptNum, priorityFeeSetting) {
         this.updateStatus(txName, TransactionStatus.Processing, attemptNum);
         try {
-            const txSig = await (0, solanaUtils_1.sendSingleOptimizedTransaction)(this.txHandler.umi, this.txHandler.connection, tx, this.txType, prioritySetting, () => this.updateStatus(txName, TransactionStatus.Processing, attemptNum, undefined, true));
+            const txSig = await (0, solanaUtils_1.sendSingleOptimizedTransaction)(this.txHandler.umi, this.txHandler.connection, tx, this.txType, priorityFeeSetting, () => this.updateStatus(txName, TransactionStatus.Processing, attemptNum, undefined, true));
             this.updateStatus(txName, TransactionStatus.Successful, attemptNum, txSig ? bs58_1.default.encode(txSig) : undefined);
         }
         catch (e) {

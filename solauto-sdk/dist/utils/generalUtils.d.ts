@@ -10,5 +10,5 @@ export declare function arraysAreEqual(arrayA: number[], arrayB: number[]): bool
 export declare function fetchTokenPrices(mints: PublicKey[]): Promise<number[]>;
 export declare function safeGetPrice(mint: PublicKey | UmiPublicKey | undefined): number | undefined;
 export type ErrorsToThrow = Array<new (...args: any[]) => Error>;
-export declare function retryWithExponentialBackoff<T>(fn: (attemptNum: number) => Promise<T>, retries?: number, delay?: number, errorsToThrow?: ErrorsToThrow): Promise<T>;
+export declare function retryWithExponentialBackoff<T>(fn: (attemptNum: number, prevErr?: Error) => Promise<T>, retries?: number, delay?: number, errorsToThrow?: ErrorsToThrow): Promise<T>;
 //# sourceMappingURL=generalUtils.d.ts.map

@@ -18,6 +18,7 @@ export declare enum PriorityFeeSetting {
     Default = "Medium",
     High = "High"
 }
+export declare const priorityFeeSettingValues: PriorityFeeSetting[];
 export type RebalanceAction = "boost" | "repay" | "dca";
 export type TransactionRunType = "skip-simulation" | "only-simulate" | "normal";
 export interface TransactionItemInputs {

@@ -17,16 +17,18 @@ import {
 import { getErrorInfo, getTransactionChores } from "./transactionUtils";
 import {
   PriorityFeeSetting,
+  priorityFeeSettingValues,
   TransactionItemInputs,
   TransactionRunType,
 } from "../types";
 import { ReferralStateManager, TxHandler } from "../clients";
+import { TransactionExpiredBlockheightExceededError } from "@solana/web3.js";
 // import { sendJitoBundledTransactions } from "../utils/jitoUtils";
 
 export class TransactionTooLargeError extends Error {
   constructor(message: string) {
     super(message);
-    this.name = 'TransactionTooLargeError';
+    this.name = "TransactionTooLargeError";
     Object.setPrototypeOf(this, TransactionTooLargeError.prototype);
   }
 }
@@ -204,10 +206,10 @@ export class TransactionsManager {
     private txHandler: SolautoClient | ReferralStateManager,
     private statusCallback?: (statuses: TransactionManagerStatuses) => void,
     private txType?: TransactionRunType,
-    private mustBeAtomic?: boolean,
+    private priorityFeeSetting: PriorityFeeSetting = PriorityFeeSetting.Min,
     private errorsToThrow?: ErrorsToThrow,
     private retries: number = 4,
-    private retryDelay: number = 150,
+    private retryDelay: number = 150
   ) {
     this.lookupTables = new LookupTables(
       this.txHandler.defaultLookupTables(),
@@ -321,9 +323,18 @@ export class TransactionsManager {
     }
   }
 
+  private getUpdatedPriorityFeeSetting(prevError?: Error) {
+    if (prevError instanceof TransactionExpiredBlockheightExceededError) {
+      const currIdx = priorityFeeSettingValues.indexOf(this.priorityFeeSetting);
+      return priorityFeeSettingValues[
+        Math.min(priorityFeeSettingValues.length - 1, currIdx + 1)
+      ];
+    }
+    return this.priorityFeeSetting;
+  }
+
   public async clientSend(
-    transactions: TransactionItem[],
-    prioritySetting?: PriorityFeeSetting
+    transactions: TransactionItem[]
   ): Promise<TransactionManagerStatuses> {
     const items = [...transactions];
     const client = this.txHandler as SolautoClient;
@@ -336,12 +347,12 @@ export class TransactionsManager {
       updateLookupTable?.needsToBeIsolated
     ) {
       await retryWithExponentialBackoff(
-        async (attemptNum) =>
+        async (attemptNum, prevError) =>
           await this.sendTransaction(
             updateLookupTable.updateLutTx,
             updateLutTxName,
             attemptNum,
-            prioritySetting
+            this.getUpdatedPriorityFeeSetting(prevError)
           ),
         3,
         150,
@@ -385,7 +396,7 @@ export class TransactionsManager {
       );
     }
 
-    const result = await this.send(items, prioritySetting, true).catch((e) => {
+    const result = await this.send(items, true).catch((e) => {
       client.resetLiveTxUpdates(false);
       throw e;
     });
@@ -399,7 +410,6 @@ export class TransactionsManager {
 
   public async send(
     items: TransactionItem[],
-    prioritySetting?: PriorityFeeSetting,
     initialized?: boolean
   ): Promise<TransactionManagerStatuses> {
     this.statuses = [];
@@ -417,89 +427,78 @@ export class TransactionsManager {
       this.updateStatus(itemSet.name(), TransactionStatus.Queued, 0);
     }
 
-    if (this.mustBeAtomic && itemSets.length > 1) {
-      throw new Error(
-        `${itemSets.length} transactions required but jito bundles are not currently supported`
+    if (this.txType === "only-simulate" && itemSets.length > 1) {
+      this.txHandler.log(
+        "Only simulate and more than 1 transaction. Skipping..."
       );
-      // itemSets.forEach((set) => {
-      //   this.updateStatus(set.name(), TransactionStatus.Processing);
-      // });
-      // await sendJitoBundledTransactions(
-      //   this.client,
-      //   await Promise.all(itemSets.map((x) => x.getSingleTransaction())),
-      //   this.simulateOnly
-      // );
-      // TODO: check if successful or not
-      // itemSets.forEach((set) => {
-      //   this.updateStatus(set.name(), TransactionStatus.Successful);
-      // });
-    } else if (this.txType !== "only-simulate" || itemSets.length === 1) {
-      for (let i = 0; i < itemSets.length; i++) {
-        const getFreshItemSet = async (
-          itemSet: TransactionSet,
-          attemptNum: number
-        ) => {
-          await itemSet.refetchAll(attemptNum);
-          const newItemSets = await this.assembleTransactionSets([
-            ...itemSet.items,
-            ...itemSets
-              .slice(i + 1)
-              .map((x) => x.items)
-              .flat(),
-          ]);
-          if (newItemSets.length > 1) {
-            this.statuses.splice(
-              statusesStartIdx + i,
-              itemSets.length - i,
-              ...newItemSets.map((x) => ({
-                name: x.name(),
-                status: TransactionStatus.Queued,
-                attemptNum: 0,
-              }))
+      return [];
+    }
+
+    for (let i = 0; i < itemSets.length; i++) {
+      const getFreshItemSet = async (
+        itemSet: TransactionSet,
+        attemptNum: number
+      ) => {
+        await itemSet.refetchAll(attemptNum);
+        const newItemSets = await this.assembleTransactionSets([
+          ...itemSet.items,
+          ...itemSets
+            .slice(i + 1)
+            .map((x) => x.items)
+            .flat(),
+        ]);
+        if (newItemSets.length > 1) {
+          this.statuses.splice(
+            statusesStartIdx + i,
+            itemSets.length - i,
+            ...newItemSets.map((x) => ({
+              name: x.name(),
+              status: TransactionStatus.Queued,
+              attemptNum: 0,
+            }))
+          );
+          this.txHandler.log(this.statuses);
+          itemSets.splice(
+            i + 1,
+            itemSets.length - i - 1,
+            ...newItemSets.slice(1)
+          );
+        }
+        return newItemSets.length > 0 ? newItemSets[0] : undefined;
+      };
+
+      let itemSet: TransactionSet | undefined = itemSets[i];
+      await retryWithExponentialBackoff(
+        async (attemptNum, prevError) => {
+          itemSet =
+            i > 0 || attemptNum > 0
+              ? await getFreshItemSet(itemSet!, attemptNum)
+              : itemSet;
+          if (!itemSet) {
+            return;
+          }
+          const tx = await itemSet.getSingleTransaction();
+
+          if (tx.getInstructions().length === 0) {
+            this.updateStatus(
+              itemSet.name(),
+              TransactionStatus.Skipped,
+              attemptNum
             );
-            this.txHandler.log(this.statuses);
-            itemSets.splice(
-              i + 1,
-              itemSets.length - i - 1,
-              ...newItemSets.slice(1)
+          } else {
+            await this.debugAccounts(itemSet, tx);
+            await this.sendTransaction(
+              tx,
+              itemSet.name(),
+              attemptNum,
+              this.getUpdatedPriorityFeeSetting(prevError)
             );
           }
-          return newItemSets.length > 0 ? newItemSets[0] : undefined;
-        };
-
-        let itemSet: TransactionSet | undefined = itemSets[i];
-        await retryWithExponentialBackoff(
-          async (attemptNum) => {
-            itemSet =
-              i > 0 || attemptNum > 0
-                ? await getFreshItemSet(itemSet!, attemptNum)
-                : itemSet;
-            if (!itemSet) {
-              return;
-            }
-            const tx = await itemSet.getSingleTransaction();
-
-            if (tx.getInstructions().length === 0) {
-              this.updateStatus(
-                itemSet.name(),
-                TransactionStatus.Skipped,
-                attemptNum
-              );
-            } else {
-              await this.debugAccounts(itemSet, tx);
-              await this.sendTransaction(
-                tx,
-                itemSet.name(),
-                attemptNum,
-                prioritySetting
-              );
-            }
-          },
-          this.retries,
-          this.retryDelay,
-          this.errorsToThrow
-        );
-      }
+        },
+        this.retries,
+        this.retryDelay,
+        this.errorsToThrow
+      );
     }
 
     return this.statuses;
@@ -509,7 +508,7 @@ export class TransactionsManager {
     tx: TransactionBuilder,
     txName: string,
     attemptNum: number,
-    prioritySetting?: PriorityFeeSetting
+    priorityFeeSetting?: PriorityFeeSetting
   ) {
     this.updateStatus(txName, TransactionStatus.Processing, attemptNum);
     try {
@@ -518,7 +517,7 @@ export class TransactionsManager {
         this.txHandler.connection,
         tx,
         this.txType,
-        prioritySetting,
+        priorityFeeSetting,
         () =>
           this.updateStatus(
             txName,

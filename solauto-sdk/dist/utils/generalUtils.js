@@ -97,8 +97,8 @@ function safeGetPrice(mint) {
 }
 function retryWithExponentialBackoff(fn, retries = 5, delay = 150, errorsToThrow) {
     return new Promise((resolve, reject) => {
-        const attempt = (attemptNum) => {
-            fn(attemptNum)
+        const attempt = (attemptNum, prevErr) => {
+            fn(attemptNum, prevErr)
                 .then(resolve)
                 .catch((error) => {
                 attemptNum++;
@@ -111,7 +111,7 @@ function retryWithExponentialBackoff(fn, retries = 5, delay = 150, errorsToThrow
                     consoleLog(error);
                     setTimeout(() => {
                         consoleLog("Retrying...");
-                        return attempt(attemptNum);
+                        return attempt(attemptNum, error);
                     }, delay);
                     delay *= 2;
                 }

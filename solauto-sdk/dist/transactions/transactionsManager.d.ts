@@ -35,18 +35,19 @@ export declare class TransactionsManager {
     private txHandler;
     private statusCallback?;
     private txType?;
-    private mustBeAtomic?;
+    private priorityFeeSetting;
     private errorsToThrow?;
     private retries;
     private retryDelay;
     private statuses;
     private lookupTables;
-    constructor(txHandler: SolautoClient | ReferralStateManager, statusCallback?: ((statuses: TransactionManagerStatuses) => void) | undefined, txType?: TransactionRunType | undefined, mustBeAtomic?: boolean | undefined, errorsToThrow?: ErrorsToThrow | undefined, retries?: number, retryDelay?: number);
+    constructor(txHandler: SolautoClient | ReferralStateManager, statusCallback?: ((statuses: TransactionManagerStatuses) => void) | undefined, txType?: TransactionRunType | undefined, priorityFeeSetting?: PriorityFeeSetting, errorsToThrow?: ErrorsToThrow | undefined, retries?: number, retryDelay?: number);
     private assembleTransactionSets;
     private updateStatus;
     private debugAccounts;
-    clientSend(transactions: TransactionItem[], prioritySetting?: PriorityFeeSetting): Promise<TransactionManagerStatuses>;
-    send(items: TransactionItem[], prioritySetting?: PriorityFeeSetting, initialized?: boolean): Promise<TransactionManagerStatuses>;
+    private getUpdatedPriorityFeeSetting;
+    clientSend(transactions: TransactionItem[]): Promise<TransactionManagerStatuses>;
+    send(items: TransactionItem[], initialized?: boolean): Promise<TransactionManagerStatuses>;
     private sendTransaction;
 }
 //# sourceMappingURL=transactionsManager.d.ts.map

@@ -21,6 +21,8 @@ export enum PriorityFeeSetting {
   High = "High",
 }
 
+export const priorityFeeSettingValues = Object.values(PriorityFeeSetting) as PriorityFeeSetting[];
+
 export type RebalanceAction = "boost" | "repay" | "dca";
 
 export type TransactionRunType = "skip-simulation" | "only-simulate" | "normal";

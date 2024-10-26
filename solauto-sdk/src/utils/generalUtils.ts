@@ -125,14 +125,14 @@ export function safeGetPrice(
 export type ErrorsToThrow = Array<new (...args: any[]) => Error>;
 
 export function retryWithExponentialBackoff<T>(
-  fn: (attemptNum: number) => Promise<T>,
+  fn: (attemptNum: number, prevErr?: Error) => Promise<T>,
   retries: number = 5,
   delay: number = 150,
   errorsToThrow?: ErrorsToThrow
 ): Promise<T> {
   return new Promise((resolve, reject) => {
-    const attempt = (attemptNum: number) => {
-      fn(attemptNum)
+    const attempt = (attemptNum: number, prevErr?: Error) => {
+      fn(attemptNum, prevErr)
         .then(resolve)
         .catch((error: Error) => {
           attemptNum++;
@@ -149,7 +149,7 @@ export function retryWithExponentialBackoff<T>(
             consoleLog(error);
             setTimeout(() => {
               consoleLog("Retrying...");
-              return attempt(attemptNum);
+              return attempt(attemptNum, error);
             }, delay);
             delay *= 2;
           } else {
