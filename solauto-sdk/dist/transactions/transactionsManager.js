@@ -3,13 +3,21 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.TransactionsManager = exports.TransactionStatus = exports.TransactionItem = void 0;
+exports.TransactionsManager = exports.TransactionStatus = exports.TransactionItem = exports.TransactionTooLargeError = void 0;
 const bs58_1 = __importDefault(require("bs58"));
 const umi_1 = require("@metaplex-foundation/umi");
 const solanaUtils_1 = require("../utils/solanaUtils");
 const generalUtils_1 = require("../utils/generalUtils");
 const transactionUtils_1 = require("./transactionUtils");
 // import { sendJitoBundledTransactions } from "../utils/jitoUtils";
+class TransactionTooLargeError extends Error {
+    constructor(message) {
+        super(message);
+        this.name = 'TransactionTooLargeError';
+        Object.setPrototypeOf(this, TransactionTooLargeError.prototype);
+    }
+}
+exports.TransactionTooLargeError = TransactionTooLargeError;
 class LookupTables {
     constructor(defaultLuts, umi) {
         this.defaultLuts = defaultLuts;
@@ -119,7 +127,7 @@ var TransactionStatus;
     TransactionStatus["Failed"] = "Failed";
 })(TransactionStatus || (exports.TransactionStatus = TransactionStatus = {}));
 class TransactionsManager {
-    constructor(txHandler, statusCallback, txType, mustBeAtomic, errorsToThrow, retries = 4, retryDelay = 150, confirmTimeout = 10000) {
+    constructor(txHandler, statusCallback, txType, mustBeAtomic, errorsToThrow, retries = 4, retryDelay = 150) {
         this.txHandler = txHandler;
         this.statusCallback = statusCallback;
         this.txType = txType;
@@ -127,7 +135,6 @@ class TransactionsManager {
         this.errorsToThrow = errorsToThrow;
         this.retries = retries;
         this.retryDelay = retryDelay;
-        this.confirmTimeout = confirmTimeout;
         this.statuses = [];
         this.lookupTables = new LookupTables(this.txHandler.defaultLookupTables(), this.txHandler.umi);
     }
@@ -142,7 +149,7 @@ class TransactionsManager {
             }
             const transaction = item.tx.setAddressLookupTables(await this.lookupTables.getLutInputs(item.lookupTableAddresses));
             if (!transaction.fitsInOneTransaction(this.txHandler.umi)) {
-                throw new Error(`Transaction exceeds max transaction size (${transaction.getTransactionSize(this.txHandler.umi)})`);
+                throw new TransactionTooLargeError(`Exceeds max transaction size (${transaction.getTransactionSize(this.txHandler.umi)})`);
             }
             else {
                 let newSet = new TransactionSet(this.txHandler, this.lookupTables, [
@@ -331,7 +338,7 @@ class TransactionsManager {
     async sendTransaction(tx, txName, attemptNum, prioritySetting) {
         this.updateStatus(txName, TransactionStatus.Processing, attemptNum);
         try {
-            const txSig = await (0, solanaUtils_1.sendSingleOptimizedTransaction)(this.txHandler.umi, this.txHandler.connection, tx, this.txType, this.confirmTimeout, prioritySetting, () => this.updateStatus(txName, TransactionStatus.Processing, attemptNum, undefined, true));
+            const txSig = await (0, solanaUtils_1.sendSingleOptimizedTransaction)(this.txHandler.umi, this.txHandler.connection, tx, this.txType, prioritySetting, () => this.updateStatus(txName, TransactionStatus.Processing, attemptNum, undefined, true));
             this.updateStatus(txName, TransactionStatus.Successful, attemptNum, txSig ? bs58_1.default.encode(txSig) : undefined);
         }
         catch (e) {

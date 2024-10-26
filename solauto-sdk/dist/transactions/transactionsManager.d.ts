@@ -3,6 +3,9 @@ import { SolautoClient } from "../clients/solautoClient";
 import { ErrorsToThrow } from "../utils/generalUtils";
 import { PriorityFeeSetting, TransactionItemInputs, TransactionRunType } from "../types";
 import { ReferralStateManager } from "../clients";
+export declare class TransactionTooLargeError extends Error {
+    constructor(message: string);
+}
 export declare class TransactionItem {
     fetchTx: (attemptNum: number) => Promise<TransactionItemInputs | undefined>;
     name?: string | undefined;
@@ -36,10 +39,9 @@ export declare class TransactionsManager {
     private errorsToThrow?;
     private retries;
     private retryDelay;
-    private confirmTimeout;
     private statuses;
     private lookupTables;
-    constructor(txHandler: SolautoClient | ReferralStateManager, statusCallback?: ((statuses: TransactionManagerStatuses) => void) | undefined, txType?: TransactionRunType | undefined, mustBeAtomic?: boolean | undefined, errorsToThrow?: ErrorsToThrow | undefined, retries?: number, retryDelay?: number, confirmTimeout?: number);
+    constructor(txHandler: SolautoClient | ReferralStateManager, statusCallback?: ((statuses: TransactionManagerStatuses) => void) | undefined, txType?: TransactionRunType | undefined, mustBeAtomic?: boolean | undefined, errorsToThrow?: ErrorsToThrow | undefined, retries?: number, retryDelay?: number);
     private assembleTransactionSets;
     private updateStatus;
     private debugAccounts;

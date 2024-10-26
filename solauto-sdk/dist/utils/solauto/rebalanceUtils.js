@@ -98,6 +98,7 @@ function getRebalanceValues(state, settings, dca, currentUnixTime, supplyPrice, 
         dcaTokenType: dca?.tokenType,
         rebalanceAction: (amountToDcaIn ?? 0) > 0 ? "dca" : rebalanceDirection === generated_1.RebalanceDirection.Boost ? "boost" : "repay",
         rebalanceDirection,
+        feesUsd: debtAdjustmentUsd * (0, numberUtils_1.fromBps)(adjustmentFeeBps)
     };
 }
 function getFlashLoanDetails(client, values, jupQuote) {

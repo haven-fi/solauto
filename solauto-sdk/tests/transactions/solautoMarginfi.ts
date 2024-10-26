@@ -20,7 +20,7 @@ import {
   TransactionsManager,
 } from "../../src/transactions/transactionsManager";
 import { PublicKey } from "@solana/web3.js";
-import { SOLAUTO_TEST_PROGRAM, USDC } from "../../src/constants";
+import { USDC } from "../../src/constants";
 import { buildHeliusApiUrl } from "../../src/utils";
 import { PriorityFeeSetting } from "../../src/types";
 
@@ -35,7 +35,7 @@ describe("Solauto Marginfi tests", async () => {
   it("open - deposit - borrow - rebalance to 0 - withdraw - close", async () => {
     const client = new SolautoMarginfiClient(
       buildHeliusApiUrl(process.env.HELIUS_API_KEY!),
-      true,
+      true
     );
 
     const supply = NATIVE_MINT;
@@ -45,7 +45,7 @@ describe("Solauto Marginfi tests", async () => {
     await client.initialize({
       signer,
       positionId,
-      authority: new PublicKey("AprYCPiVeKMCgjQ2ZufwChMzvQ5kFjJo2ekTLSkXsQDm"),
+      authority: new PublicKey("rC5dMP5dmSsfQ66rynzfFzuc122Eex9h1RJHVDkeH6D"),
       // marginfiAccount: new PublicKey(
       //   "4nNvUXF5YqHFcH2nGweSiuvy1ct7V5FXfoCLKFYUN36z"
       // ),
@@ -55,36 +55,34 @@ describe("Solauto Marginfi tests", async () => {
 
     const transactionItems: TransactionItem[] = [];
     // const settingParams: SolautoSettingsParametersInpArgs = {
-    //   boostToBps: 4000,
-    //   boostGap: 500,
-    //   repayToBps: 7456,
-    //   repayGap: 500,
+    //   boostToBps: 6950,
+    //   boostGap: 100,
+    //   repayToBps: 7000,
+    //   repayGap: 100,
     //   automation: none(),
     //   targetBoostToBps: none(),
     // };
 
     // if (client.solautoPositionData === null) {
-    // transactionItems.push(
-    //   new TransactionItem(async () => {
-    //     return {
-    //       tx: client.openPosition(settingParams),
-    //     };
-    //   }, "open position")
-    // );
+    //   transactionItems.push(
+    //     new TransactionItem(async () => {
+    //       return {
+    //         tx: client.openPosition(settingParams),
+    //       };
+    //     }, "open position")
+    //   );
 
-    // const initialSupplyUsd = 150;
-    // transactionItems.push(
-    //   new TransactionItem(async () => {
-    //     const [supplyPrice] = await fetchTokenPrices([supply]);
-    //     return {
-    //       tx: client.protocolInteraction(
-    //         solautoAction("Deposit", [
-    //           toBaseUnit(initialSupplyUsd / supplyPrice, supplyDecimals),
-    //         ])
-    //       ),
-    //     };
-    //   }, "deposit")
-    // );
+    //   // const initialSupplyUsd = 150;
+    //   transactionItems.push(
+    //     new TransactionItem(async () => {
+    //       // const [supplyPrice] = await fetchTokenPrices([supply]);
+    //       return {
+    //         tx: client.protocolInteraction(
+    //           solautoAction("Deposit", [toBaseUnit(9, supplyDecimals)])
+    //         ),
+    //       };
+    //     }, "deposit")
+    //   );
     // }
 
     // const maxLtvBps = client.solautoPositionState!.maxLtvBps;
@@ -109,20 +107,6 @@ describe("Solauto Marginfi tests", async () => {
     //     }),
     //     "update position"
     //   )
-    // );
-
-    // const initialSupplyUsd = 50;
-    // transactionItems.push(
-    //   new TransactionItem(async () => {
-    //     const [supplyPrice] = await fetchTokenPrices([supply]);
-    //     return {
-    //       tx: client.protocolInteraction(
-    //         solautoAction("Deposit", [
-    //           toBaseUnit(initialSupplyUsd / supplyPrice, supplyDecimals),
-    //         ])
-    //       ),
-    //     };
-    //   }, "deposit")
     // );
 
     transactionItems.push(
@@ -157,7 +141,7 @@ describe("Solauto Marginfi tests", async () => {
       client,
       undefined,
       !payForTransactions ? "only-simulate" : "normal",
-      useJitoBundle,
-    ).clientSend(transactionItems, PriorityFeeSetting.Default);
+      useJitoBundle
+    ).clientSend(transactionItems, PriorityFeeSetting.Min);
   });
 });

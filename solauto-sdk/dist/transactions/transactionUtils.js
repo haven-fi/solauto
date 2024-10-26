@@ -186,7 +186,8 @@ function transactionChoresAfter(client, solautoActions, cancellingDcaIn) {
 }
 function getRebalanceInstructions(umi, tx) {
     return tx.getInstructions().filter((x) => {
-        if (x.programId.toString() === umi.programs.get("solauto").publicKey.toString()) {
+        if (x.programId.toString() ===
+            umi.programs.get("solauto").publicKey.toString()) {
             try {
                 const serializer = (0, generated_1.getMarginfiRebalanceInstructionDataSerializer)();
                 const discriminator = serializer.serialize({
@@ -207,7 +208,8 @@ function getRebalanceInstructions(umi, tx) {
 function getSolautoActions(umi, tx) {
     let solautoActions = [];
     tx.getInstructions().forEach((x) => {
-        if (x.programId.toString() === umi.programs.get("solauto").publicKey.toString()) {
+        if (x.programId.toString() ===
+            umi.programs.get("solauto").publicKey.toString()) {
             try {
                 const serializer = (0, generated_1.getMarginfiProtocolInteractionInstructionDataSerializer)();
                 const discriminator = serializer.serialize({
@@ -441,7 +443,8 @@ function getErrorInfo(umi, tx, error) {
             const errCode = typeof err[1] === "object" ? err[1]["Custom"] : undefined;
             const errName = errCode === undefined ? err[1] : undefined;
             let programName = "";
-            if (errIx.programId.toString() === umi.programs.get("solauto").publicKey.toString()) {
+            if (errIx.programId.toString() ===
+                umi.programs.get("solauto").publicKey.toString()) {
                 programError = (0, generated_1.getSolautoErrorFromCode)(errCode, (0, generated_1.createSolautoProgram)());
                 programName = "Haven";
                 if (programError?.name ===

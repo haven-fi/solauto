@@ -92,7 +92,9 @@ async function getAddressLookupInputs(umi, lookupTableAddresses) {
 }
 function assembleFinalTransaction(signer, tx, computeUnitPrice, computeUnitLimit) {
     tx = tx
-        .prepend(setComputeUnitPriceUmiIx(signer, computeUnitPrice))
+        .prepend(computeUnitPrice !== undefined
+        ? setComputeUnitPriceUmiIx(signer, computeUnitPrice)
+        : (0, umi_1.transactionBuilder)())
         .prepend(computeUnitLimit
         ? setComputeUnitLimitUmiIx(signer, computeUnitLimit)
         : (0, umi_1.transactionBuilder)());
@@ -164,73 +166,56 @@ async function getComputeUnitPriceEstimate(umi, tx, prioritySetting) {
     }
     return feeEstimate;
 }
-async function spamSendTransactionUntilConfirmed(connection, transaction, blockhash, confirmTimeout = 10000, spamInterval = 1000) {
-    let spamAttempts = 0;
-    let confirmed = false;
+async function spamSendTransactionUntilConfirmed(connection, transaction, blockhash, spamInterval = 1000) {
     let transactionSignature = null;
-    return new Promise((resolve, reject) => {
-        const spamSend = async () => {
-            if (confirmed) {
-                return;
-            }
-            try {
-                const txSignature = await connection.sendRawTransaction(Buffer.from(transaction.serialize()), { skipPreflight: true, maxRetries: 0 });
-                transactionSignature = txSignature;
-                (0, generalUtils_1.consoleLog)(`Transaction sent`);
-            }
-            catch (error) {
-                (0, generalUtils_1.consoleLog)("Error sending transaction:", error);
-            }
-            spamAttempts++;
-            if (!confirmed) {
-                setTimeout(spamSend, spamInterval);
-            }
-        };
-        const confirmTransaction = async () => {
-            if (transactionSignature) {
-                try {
-                    const { value } = await connection.confirmTransaction({
-                        ...blockhash,
-                        signature: transactionSignature,
-                    });
-                    if (value.err) {
-                        reject(value.err);
-                    }
-                    confirmed = true;
-                    resolve(transactionSignature);
-                }
-                catch (error) {
-                    (0, generalUtils_1.consoleLog)("Error during confirmation:", error);
-                }
-            }
-            if (!confirmed) {
-                setTimeout(confirmTransaction, 1000);
-            }
-        };
-        spamSend();
-        confirmTransaction();
-        setTimeout(() => {
-            if (!confirmed) {
-                reject(new Error("Failed to confirm transaction within timeout"));
-            }
-        }, confirmTimeout);
+    const sendTx = async () => {
+        try {
+            const txSignature = await connection.sendRawTransaction(Buffer.from(transaction.serialize()), { skipPreflight: true, maxRetries: 0 });
+            transactionSignature = txSignature;
+            (0, generalUtils_1.consoleLog)(`Transaction sent`);
+        }
+        catch (error) {
+            (0, generalUtils_1.consoleLog)("Error sending transaction:", error);
+        }
+    };
+    await sendTx();
+    const sendIntervalId = setInterval(async () => {
+        await sendTx();
+    }, spamInterval);
+    if (!transactionSignature) {
+        throw new Error("Failed to send");
+    }
+    const resp = await connection
+        .confirmTransaction({
+        ...blockhash,
+        signature: transactionSignature,
+    })
+        .finally(() => {
+        clearInterval(sendIntervalId);
     });
+    if (resp.value.err) {
+        throw resp.value.err;
+    }
+    return transactionSignature;
 }
-async function sendSingleOptimizedTransaction(umi, connection, tx, txType, confirmTimeout = 10000, prioritySetting = types_1.PriorityFeeSetting.Default, onAwaitingSign) {
+async function sendSingleOptimizedTransaction(umi, connection, tx, txType, prioritySetting = types_1.PriorityFeeSetting.Min, onAwaitingSign) {
     (0, generalUtils_1.consoleLog)("Sending single optimized transaction...");
     (0, generalUtils_1.consoleLog)("Instructions: ", tx.getInstructions().length);
     (0, generalUtils_1.consoleLog)("Serialized transaction size: ", tx.getTransactionSize(umi));
-    let cuPrice = await getComputeUnitPriceEstimate(umi, tx, prioritySetting);
-    if (!cuPrice) {
-        cuPrice = 1000000;
+    let cuPrice;
+    if (prioritySetting !== types_1.PriorityFeeSetting.None) {
+        cuPrice = await getComputeUnitPriceEstimate(umi, tx, prioritySetting);
+        if (!cuPrice) {
+            cuPrice = 1000000;
+        }
+        (0, generalUtils_1.consoleLog)("Compute unit price: ", cuPrice);
     }
-    (0, generalUtils_1.consoleLog)("Compute unit price: ", cuPrice);
     let computeUnitLimit = undefined;
     if (txType !== "skip-simulation") {
         // TODO: we should only retry simulation if it's not a solauto error
         const simulationResult = await (0, generalUtils_1.retryWithExponentialBackoff)(async () => await simulateTransaction(connection, (0, umi_web3js_adapters_1.toWeb3JsTransaction)(await (await assembleFinalTransaction(umi.identity, tx, cuPrice, 1400000).setLatestBlockhash(umi)).build(umi))), 3);
         simulationResult.value.err;
-        computeUnitLimit = Math.round(simulationResult.value.unitsConsumed * 1.05);
+        computeUnitLimit = Math.round(simulationResult.value.unitsConsumed * 1.1);
         (0, generalUtils_1.consoleLog)("Compute unit limit: ", computeUnitLimit);
     }
     if (txType !== "only-simulate") {
@@ -248,11 +233,12 @@ async function sendSingleOptimizedTransaction(umi, connection, tx, txType, confi
         //   },
         //   confirm: { commitment: "confirmed" },
         // });
+        // const txSig = bs58.encode(result.signature);
         const blockhash = await connection.getLatestBlockhash("confirmed");
         const signedTx = await assembleFinalTransaction(umi.identity, tx, cuPrice, computeUnitLimit)
             .setBlockhash(blockhash)
             .buildAndSign(umi);
-        const txSig = await spamSendTransactionUntilConfirmed(connection, (0, umi_web3js_adapters_1.toWeb3JsTransaction)(signedTx), blockhash, confirmTimeout);
+        const txSig = await spamSendTransactionUntilConfirmed(connection, (0, umi_web3js_adapters_1.toWeb3JsTransaction)(signedTx), blockhash);
         (0, generalUtils_1.consoleLog)(`Transaction signature: ${txSig}`);
         (0, generalUtils_1.consoleLog)(`https://solscan.io/tx/${txSig}`);
         return bs58_1.default.decode(txSig);

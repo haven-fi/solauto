@@ -184,11 +184,15 @@ export async function getAddressLookupInputs(
 export function assembleFinalTransaction(
   signer: Signer,
   tx: TransactionBuilder,
-  computeUnitPrice: number,
+  computeUnitPrice?: number,
   computeUnitLimit?: number
 ) {
   tx = tx
-    .prepend(setComputeUnitPriceUmiIx(signer, computeUnitPrice))
+    .prepend(
+      computeUnitPrice !== undefined
+        ? setComputeUnitPriceUmiIx(signer, computeUnitPrice)
+        : transactionBuilder()
+    )
     .prepend(
       computeUnitLimit
         ? setComputeUnitLimitUmiIx(signer, computeUnitLimit)
@@ -296,68 +300,47 @@ async function spamSendTransactionUntilConfirmed(
   connection: Connection,
   transaction: Transaction | VersionedTransaction,
   blockhash: BlockhashWithExpiryBlockHeight,
-  confirmTimeout: number = 13000,
   spamInterval: number = 1000
 ): Promise<string> {
-  let spamAttempts = 0;
-  let confirmed = false;
   let transactionSignature: string | null = null;
 
-  return new Promise<string>((resolve, reject) => {
-    const spamSend = async () => {
-      if (confirmed) {
-        return;
-      }
+  const sendTx = async () => {
+    try {
+      const txSignature = await connection.sendRawTransaction(
+        Buffer.from(transaction.serialize()),
+        { skipPreflight: true, maxRetries: 0 }
+      );
+      transactionSignature = txSignature;
+      consoleLog(`Transaction sent`);
+    } catch (error) {
+      consoleLog("Error sending transaction:", error);
+    }
+  };
 
-      try {
-        const txSignature = await connection.sendRawTransaction(
-          Buffer.from(transaction.serialize()),
-          { skipPreflight: true, maxRetries: 0 }
-        );
-        transactionSignature = txSignature;
-        consoleLog(`Transaction sent`);
-      } catch (error) {
-        consoleLog("Error sending transaction:", error);
-      }
+  await sendTx();
 
-      spamAttempts++;
-      if (!confirmed) {
-        setTimeout(spamSend, spamInterval);
-      }
-    };
+  const sendIntervalId = setInterval(async () => {
+    await sendTx();
+  }, spamInterval);
 
-    const confirmTransaction = async () => {
-      if (transactionSignature) {
-        try {
-          const { value } = await connection.confirmTransaction({
-            ...blockhash,
-            signature: transactionSignature,
-          });
-          if (value.err) {
-            reject(value.err);
-          }
-          confirmed = true;
-          resolve(transactionSignature);
-        } catch (error) {
-          consoleLog("Error during confirmation:", error);
-        }
-      }
+  if (!transactionSignature) {
+    throw new Error("Failed to send");
+  }
 
-      if (!confirmed) {
-        setTimeout(confirmTransaction, 1000);
-      }
-    };
+  const resp = await connection
+    .confirmTransaction({
+      ...blockhash,
+      signature: transactionSignature,
+    })
+    .finally(() => {
+      clearInterval(sendIntervalId);
+    });
 
-    spamSend();
-    confirmTransaction();
+  if (resp.value.err) {
+    throw resp.value.err;
+  }
 
-    setTimeout(() => {
-      if (!confirmed) {
-        confirmed = true;
-        reject(new Error("Failed to confirm transaction within timeout"));
-      }
-    }, confirmTimeout);
-  });
+  return transactionSignature;
 }
 
 export async function sendSingleOptimizedTransaction(
@@ -365,19 +348,21 @@ export async function sendSingleOptimizedTransaction(
   connection: Connection,
   tx: TransactionBuilder,
   txType?: TransactionRunType,
-  confirmTimeout: number = 13000,
-  prioritySetting: PriorityFeeSetting = PriorityFeeSetting.Default,
+  prioritySetting: PriorityFeeSetting = PriorityFeeSetting.Min,
   onAwaitingSign?: () => void
 ): Promise<Uint8Array | undefined> {
   consoleLog("Sending single optimized transaction...");
   consoleLog("Instructions: ", tx.getInstructions().length);
   consoleLog("Serialized transaction size: ", tx.getTransactionSize(umi));
 
-  let cuPrice = await getComputeUnitPriceEstimate(umi, tx, prioritySetting);
-  if (!cuPrice) {
-    cuPrice = 1000000;
+  let cuPrice: number | undefined;
+  if (prioritySetting !== PriorityFeeSetting.None) {
+    cuPrice = await getComputeUnitPriceEstimate(umi, tx, prioritySetting);
+    if (!cuPrice) {
+      cuPrice = 1000000;
+    }
+    consoleLog("Compute unit price: ", cuPrice);
   }
-  consoleLog("Compute unit price: ", cuPrice);
 
   let computeUnitLimit = undefined;
   if (txType !== "skip-simulation") {
@@ -400,7 +385,7 @@ export async function sendSingleOptimizedTransaction(
       3
     );
     simulationResult.value.err;
-    computeUnitLimit = Math.round(simulationResult.value.unitsConsumed! * 1.05);
+    computeUnitLimit = Math.round(simulationResult.value.unitsConsumed! * 1.1);
     consoleLog("Compute unit limit: ", computeUnitLimit);
   }
 
@@ -419,6 +404,8 @@ export async function sendSingleOptimizedTransaction(
     //   },
     //   confirm: { commitment: "confirmed" },
     // });
+    // const txSig = bs58.encode(result.signature);
+
     const blockhash = await connection.getLatestBlockhash("confirmed");
     const signedTx = await assembleFinalTransaction(
       umi.identity,
@@ -431,8 +418,7 @@ export async function sendSingleOptimizedTransaction(
     const txSig = await spamSendTransactionUntilConfirmed(
       connection,
       toWeb3JsTransaction(signedTx),
-      blockhash,
-      confirmTimeout
+      blockhash
     );
 
     consoleLog(`Transaction signature: ${txSig}`);

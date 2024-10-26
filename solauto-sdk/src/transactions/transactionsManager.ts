@@ -23,6 +23,14 @@ import {
 import { ReferralStateManager, TxHandler } from "../clients";
 // import { sendJitoBundledTransactions } from "../utils/jitoUtils";
 
+export class TransactionTooLargeError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'TransactionTooLargeError';
+    Object.setPrototypeOf(this, TransactionTooLargeError.prototype);
+  }
+}
+
 class LookupTables {
   cache: AddressLookupTableInput[] = [];
 
@@ -200,7 +208,6 @@ export class TransactionsManager {
     private errorsToThrow?: ErrorsToThrow,
     private retries: number = 4,
     private retryDelay: number = 150,
-    private confirmTimeout: number = 10000
   ) {
     this.lookupTables = new LookupTables(
       this.txHandler.defaultLookupTables(),
@@ -226,8 +233,8 @@ export class TransactionsManager {
         await this.lookupTables.getLutInputs(item.lookupTableAddresses)
       );
       if (!transaction.fitsInOneTransaction(this.txHandler.umi)) {
-        throw new Error(
-          `Transaction exceeds max transaction size (${transaction.getTransactionSize(this.txHandler.umi)})`
+        throw new TransactionTooLargeError(
+          `Exceeds max transaction size (${transaction.getTransactionSize(this.txHandler.umi)})`
         );
       } else {
         let newSet = new TransactionSet(this.txHandler, this.lookupTables, [
@@ -511,7 +518,6 @@ export class TransactionsManager {
         this.txHandler.connection,
         tx,
         this.txType,
-        this.confirmTimeout,
         prioritySetting,
         () =>
           this.updateStatus(

@@ -12,6 +12,7 @@ export interface RebalanceValues {
     dcaTokenType?: TokenType;
     rebalanceAction: RebalanceAction;
     rebalanceDirection: RebalanceDirection;
+    feesUsd: number;
 }
 export declare function getRebalanceValues(state: PositionState, settings: SolautoSettingsParameters | undefined, dca: DCASettings | undefined, currentUnixTime: number, supplyPrice: number, debtPrice: number, targetLiqUtilizationRateBps?: number): RebalanceValues;
 export interface FlashLoanDetails {

@@ -666,11 +666,6 @@ export async function buildSolautoRebalanceTransaction(
   );
   client.log("Rebalance values: ", values);
 
-  // Don't perform automated solauto manager boost if the fees are less than the transaction cost
-  if (targetLiqUtilizationRateBps === undefined && values.rebalanceDirection === RebalanceDirection.Boost && values.feesUsd < 1) {
-    return undefined;
-  }
-
   const swapDetails = getJupSwapRebalanceDetails(
     client,
     values,
