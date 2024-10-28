@@ -15,6 +15,7 @@ use solana_sdk::{
 };
 use solauto::{
     constants::SOLAUTO_FEES_WALLET,
+    instructions::protocol_interaction,
     state::referral_state::ReferralState,
 };
 use solauto_sdk::{
@@ -24,10 +25,17 @@ use solauto_sdk::{
             ClaimReferralFeesBuilder,
             ClosePositionBuilder,
             MarginfiOpenPositionBuilder,
+            MarginfiProtocolInteractionBuilder,
             UpdatePositionBuilder,
             UpdateReferralStatesBuilder,
         },
-        types::{ DCASettingsInp, PositionType, SolautoSettingsParametersInp, UpdatePositionData },
+        types::{
+            DCASettingsInp,
+            PositionType,
+            SolautoAction,
+            SolautoSettingsParametersInp,
+            UpdatePositionData,
+        },
     },
     SOLAUTO_ID,
 };
@@ -540,6 +548,25 @@ impl<'a> MarginfiTestData<'a> {
         if self.marginfi_account_seed_idx.is_some() {
             builder.marginfi_account_seed_idx(self.marginfi_account_seed_idx.unwrap());
         }
+        builder
+    }
+
+    pub fn protocol_interaction_ix(
+        &self,
+        action: SolautoAction
+    ) -> MarginfiProtocolInteractionBuilder {
+        let mut builder = MarginfiProtocolInteractionBuilder::new();
+
+        builder
+            .signer(self.general.ctx.payer.pubkey())
+            .marginfi_program(self.general.lending_protocol)
+            .solauto_position(self.general.solauto_position)
+            .marginfi_group(self.marginfi_group)
+            .marginfi_account(self.marginfi_account)
+            .supply_bank(Pubkey::default())
+            .debt_bank(Pubkey::default())
+            .solauto_action(action);
+
         builder
     }
 }
