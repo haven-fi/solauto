@@ -46,8 +46,11 @@ export declare class TransactionsManager {
     private updateStatus;
     private debugAccounts;
     private getUpdatedPriorityFeeSetting;
+    private updateStatusForSets;
     clientSend(transactions: TransactionItem[]): Promise<TransactionManagerStatuses>;
     send(items: TransactionItem[], initialized?: boolean): Promise<TransactionManagerStatuses>;
+    private processTransactionSet;
+    private refreshItemSet;
     private sendTransaction;
 }
 //# sourceMappingURL=transactionsManager.d.ts.map

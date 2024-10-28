@@ -14,9 +14,10 @@ import {
   toBaseUnit,
 } from "../../src/utils/numberUtils";
 import { NATIVE_MINT } from "@solana/spl-token";
-import { fetchTokenPrices } from "../../src/utils/generalUtils";
+import { consoleLog, fetchTokenPrices } from "../../src/utils/generalUtils";
 import {
   TransactionItem,
+  TransactionManagerStatuses,
   TransactionsManager,
 } from "../../src/transactions/transactionsManager";
 import { PublicKey } from "@solana/web3.js";
@@ -29,8 +30,7 @@ describe("Solauto Marginfi tests", async () => {
   // const signer = setupTest("solauto-manager");
 
   const payForTransactions = false;
-  const useJitoBundle = false;
-  const positionId = 1;
+  const positionId = 2;
 
   it("open - deposit - borrow - rebalance to 0 - withdraw - close", async () => {
     const client = new SolautoMarginfiClient(
@@ -49,8 +49,8 @@ describe("Solauto Marginfi tests", async () => {
       // marginfiAccount: new PublicKey(
       //   "4nNvUXF5YqHFcH2nGweSiuvy1ct7V5FXfoCLKFYUN36z"
       // ),
-      // supplyMint: NATIVE_MINT,
-      // debtMint: new PublicKey(USDC),
+      supplyMint: NATIVE_MINT,
+      debtMint: new PublicKey(USDC),
     });
 
     const transactionItems: TransactionItem[] = [];
@@ -78,7 +78,7 @@ describe("Solauto Marginfi tests", async () => {
     //       // const [supplyPrice] = await fetchTokenPrices([supply]);
     //       return {
     //         tx: client.protocolInteraction(
-    //           solautoAction("Deposit", [toBaseUnit(9, supplyDecimals)])
+    //           solautoAction("Deposit", [toBaseUnit(0.5, supplyDecimals)])
     //         ),
     //       };
     //     }, "deposit")
@@ -119,6 +119,14 @@ describe("Solauto Marginfi tests", async () => {
 
     // transactionItems.push(
     //   new TransactionItem(
+    //     async (attemptNum) =>
+    //       await buildSolautoRebalanceTransaction(client, 0, attemptNum),
+    //     "rebalance"
+    //   )
+    // );
+
+    // transactionItems.push(
+    //   new TransactionItem(
     //     async () => ({
     //       tx: client.protocolInteraction(
     //         solautoAction("Withdraw", [{ __kind: "All" }])
@@ -137,11 +145,15 @@ describe("Solauto Marginfi tests", async () => {
     //   )
     // );
 
-    await new TransactionsManager(
+    const statuses = await new TransactionsManager(
       client,
-      undefined,
+      (statuses: TransactionManagerStatuses) => {
+        console.log(statuses);
+      },
       !payForTransactions ? "only-simulate" : "normal",
-      useJitoBundle
-    ).clientSend(transactionItems, PriorityFeeSetting.Min);
+      PriorityFeeSetting.Low
+    ).clientSend(transactionItems);
+
+    // console.log(statuses);
   });
 });
