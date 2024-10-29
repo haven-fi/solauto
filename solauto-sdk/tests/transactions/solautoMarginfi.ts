@@ -30,7 +30,7 @@ describe("Solauto Marginfi tests", async () => {
   // const signer = setupTest("solauto-manager");
 
   const payForTransactions = false;
-  const positionId = 2;
+  const positionId = 1;
 
   it("open - deposit - borrow - rebalance to 0 - withdraw - close", async () => {
     const client = new SolautoMarginfiClient(
@@ -73,16 +73,16 @@ describe("Solauto Marginfi tests", async () => {
     //   );
 
     //   // const initialSupplyUsd = 150;
-    //   transactionItems.push(
-    //     new TransactionItem(async () => {
-    //       // const [supplyPrice] = await fetchTokenPrices([supply]);
-    //       return {
-    //         tx: client.protocolInteraction(
-    //           solautoAction("Deposit", [toBaseUnit(0.5, supplyDecimals)])
-    //         ),
-    //       };
-    //     }, "deposit")
-    //   );
+      // transactionItems.push(
+      //   new TransactionItem(async () => {
+      //     // const [supplyPrice] = await fetchTokenPrices([supply]);
+      //     return {
+      //       tx: client.protocolInteraction(
+      //         solautoAction("Deposit", [toBaseUnit(0.5, supplyDecimals)])
+      //       ),
+      //     };
+      //   }, "deposit")
+      // );
     // }
 
     // const maxLtvBps = client.solautoPositionState!.maxLtvBps;
