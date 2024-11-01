@@ -48,20 +48,20 @@ function closePosition(context, input) {
             isWritable: true,
             value: input.solautoPosition ?? null,
         },
-        signerSupplyTa: {
+        protocolAccount: {
             index: 5,
             isWritable: true,
-            value: input.signerSupplyTa ?? null,
+            value: input.protocolAccount ?? null,
         },
         positionSupplyTa: {
             index: 6,
             isWritable: true,
             value: input.positionSupplyTa ?? null,
         },
-        positionSupplyCollateralTa: {
+        signerSupplyTa: {
             index: 7,
             isWritable: true,
-            value: input.positionSupplyCollateralTa ?? null,
+            value: input.signerSupplyTa ?? null,
         },
         positionDebtTa: {
             index: 8,

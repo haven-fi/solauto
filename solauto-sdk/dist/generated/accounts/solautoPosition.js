@@ -23,14 +23,13 @@ function getSolautoPositionAccountDataSerializer() {
         ['bump', (0, serializers_1.array)((0, serializers_1.u8)(), { size: 1 })],
         ['positionId', (0, serializers_1.array)((0, serializers_1.u8)(), { size: 1 })],
         ['selfManaged', (0, types_1.getPodBoolSerializer)()],
-        ['padding1', (0, serializers_1.array)((0, serializers_1.u8)(), { size: 5 })],
+        ['positionType', (0, types_1.getPositionTypeSerializer)()],
+        ['padding1', (0, serializers_1.array)((0, serializers_1.u8)(), { size: 4 })],
         ['authority', (0, serializers_1.publicKey)()],
         ['position', (0, types_1.getPositionDataSerializer)()],
         ['state', (0, types_1.getPositionStateSerializer)()],
         ['rebalance', (0, types_1.getRebalanceDataSerializer)()],
-        ['feeType', (0, types_1.getFeeTypeSerializer)()],
-        ['padding2', (0, serializers_1.array)((0, serializers_1.u8)(), { size: 7 })],
-        ['padding', (0, serializers_1.array)((0, serializers_1.u32)(), { size: 30 })],
+        ['padding', (0, serializers_1.array)((0, serializers_1.u32)(), { size: 32 })],
     ], { description: 'SolautoPositionAccountData' });
 }
 function deserializeSolautoPosition(rawAccount) {
@@ -65,14 +64,13 @@ function getSolautoPositionGpaBuilder(context) {
         bump: [0, (0, serializers_1.array)((0, serializers_1.u8)(), { size: 1 })],
         positionId: [1, (0, serializers_1.array)((0, serializers_1.u8)(), { size: 1 })],
         selfManaged: [2, (0, types_1.getPodBoolSerializer)()],
-        padding1: [3, (0, serializers_1.array)((0, serializers_1.u8)(), { size: 5 })],
+        positionType: [3, (0, types_1.getPositionTypeSerializer)()],
+        padding1: [4, (0, serializers_1.array)((0, serializers_1.u8)(), { size: 4 })],
         authority: [8, (0, serializers_1.publicKey)()],
         position: [40, (0, types_1.getPositionDataSerializer)()],
         state: [360, (0, types_1.getPositionStateSerializer)()],
         rebalance: [648, (0, types_1.getRebalanceDataSerializer)()],
-        feeType: [704, (0, types_1.getFeeTypeSerializer)()],
-        padding2: [705, (0, serializers_1.array)((0, serializers_1.u8)(), { size: 7 })],
-        padding: [712, (0, serializers_1.array)((0, serializers_1.u32)(), { size: 30 })],
+        padding: [704, (0, serializers_1.array)((0, serializers_1.u32)(), { size: 32 })],
     })
         .deserializeUsing((account) => deserializeSolautoPosition(account));
 }

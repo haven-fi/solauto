@@ -7,7 +7,7 @@
  */
 import { Context, Option, OptionOrNullable, Pda, PublicKey, Signer, TransactionBuilder } from '@metaplex-foundation/umi';
 import { Serializer } from '@metaplex-foundation/umi/serializers';
-import { UpdatePositionData, UpdatePositionDataArgs } from '../types';
+import { PositionType, PositionTypeArgs, UpdatePositionData, UpdatePositionDataArgs } from '../types';
 export type MarginfiOpenPositionInstructionAccounts = {
     signer: Signer;
     marginfiProgram: PublicKey | Pda;
@@ -15,9 +15,6 @@ export type MarginfiOpenPositionInstructionAccounts = {
     tokenProgram?: PublicKey | Pda;
     ataProgram?: PublicKey | Pda;
     rent?: PublicKey | Pda;
-    solautoManager: PublicKey | Pda;
-    solautoFeesWallet: PublicKey | Pda;
-    solautoFeesSupplyTa: PublicKey | Pda;
     signerReferralState: PublicKey | Pda;
     referredByState?: PublicKey | Pda;
     referredBySupplyTa?: PublicKey | Pda;
@@ -34,10 +31,12 @@ export type MarginfiOpenPositionInstructionAccounts = {
 };
 export type MarginfiOpenPositionInstructionData = {
     discriminator: number;
+    positionType: PositionType;
     positionData: UpdatePositionData;
     marginfiAccountSeedIdx: Option<bigint>;
 };
 export type MarginfiOpenPositionInstructionDataArgs = {
+    positionType: PositionTypeArgs;
     positionData: UpdatePositionDataArgs;
     marginfiAccountSeedIdx: OptionOrNullable<number | bigint>;
 };

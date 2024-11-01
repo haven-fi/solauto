@@ -3,8 +3,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.buildHeliusApiUrl = buildHeliusApiUrl;
+exports.buildIronforgeApiUrl = buildIronforgeApiUrl;
 exports.getSolanaRpcConnection = getSolanaRpcConnection;
-exports.currentUnixSecondsSolana = currentUnixSecondsSolana;
 exports.getWrappedInstruction = getWrappedInstruction;
 exports.setComputeUnitLimitUmiIx = setComputeUnitLimitUmiIx;
 exports.setComputeUnitPriceUmiIx = setComputeUnitPriceUmiIx;
@@ -12,7 +13,7 @@ exports.createAssociatedTokenAccountUmiIx = createAssociatedTokenAccountUmiIx;
 exports.systemTransferUmiIx = systemTransferUmiIx;
 exports.closeTokenAccountUmiIx = closeTokenAccountUmiIx;
 exports.splTokenTransferUmiIx = splTokenTransferUmiIx;
-exports.getAdressLookupInputs = getAdressLookupInputs;
+exports.getAddressLookupInputs = getAddressLookupInputs;
 exports.assembleFinalTransaction = assembleFinalTransaction;
 exports.getComputeUnitPriceEstimate = getComputeUnitPriceEstimate;
 exports.sendSingleOptimizedTransaction = sendSingleOptimizedTransaction;
@@ -26,19 +27,22 @@ const accountUtils_1 = require("./accountUtils");
 const generalUtils_1 = require("./generalUtils");
 const marginfi_sdk_1 = require("../marginfi-sdk");
 const types_1 = require("../types");
-function getSolanaRpcConnection(heliusApiKey) {
-    const connection = new web3_js_1.Connection(`https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`, "finalized");
-    const umi = (0, umi_bundle_defaults_1.createUmi)(connection);
-    return [connection, umi];
+const solauto_1 = require("./solauto");
+const constants_1 = require("../constants");
+function buildHeliusApiUrl(heliusApiKey) {
+    return `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`;
 }
-async function currentUnixSecondsSolana(umi) {
-    return await (0, generalUtils_1.retryWithExponentialBackoff)(async () => {
-        const blockTime = await umi.rpc.getBlockTime(await umi.rpc.getSlot());
-        if (blockTime === null) {
-            throw new Error("Unable to retrieve block time");
-        }
-        return Number(blockTime);
+function buildIronforgeApiUrl(ironforgeApiKey) {
+    return `https://rpc.ironforge.network/mainnet?apiKey=${ironforgeApiKey}`;
+}
+function getSolanaRpcConnection(rpcUrl, programId = constants_1.SOLAUTO_PROD_PROGRAM) {
+    const connection = new web3_js_1.Connection(rpcUrl, "confirmed");
+    const umi = (0, umi_bundle_defaults_1.createUmi)(connection).use({
+        install(umi) {
+            umi.programs.add((0, solauto_1.createDynamicSolautoProgram)(programId), false);
+        },
     });
+    return [connection, umi];
 }
 function getWrappedInstruction(signer, ix) {
     return {
@@ -73,7 +77,7 @@ function closeTokenAccountUmiIx(signer, tokenAccount, authority) {
 function splTokenTransferUmiIx(signer, fromTa, toTa, authority, amount) {
     return getWrappedInstruction(signer, (0, spl_token_1.createTransferInstruction)(fromTa, toTa, authority, amount));
 }
-async function getAdressLookupInputs(umi, lookupTableAddresses) {
+async function getAddressLookupInputs(umi, lookupTableAddresses) {
     const addressLookupTableAccountInfos = await umi.rpc.getAccounts(lookupTableAddresses.map((key) => (0, umi_1.publicKey)(key)));
     return addressLookupTableAccountInfos.reduce((acc, accountInfo, index) => {
         const addressLookupTableAddress = lookupTableAddresses[index];
@@ -88,7 +92,9 @@ async function getAdressLookupInputs(umi, lookupTableAddresses) {
 }
 function assembleFinalTransaction(signer, tx, computeUnitPrice, computeUnitLimit) {
     tx = tx
-        .prepend(setComputeUnitPriceUmiIx(signer, computeUnitPrice))
+        .prepend(computeUnitPrice !== undefined
+        ? setComputeUnitPriceUmiIx(signer, computeUnitPrice)
+        : (0, umi_1.transactionBuilder)())
         .prepend(computeUnitLimit
         ? setComputeUnitLimitUmiIx(signer, computeUnitLimit)
         : (0, umi_1.transactionBuilder)());
@@ -130,11 +136,11 @@ function assembleFinalTransaction(signer, tx, computeUnitPrice, computeUnitLimit
 async function simulateTransaction(connection, transaction) {
     const simulationResult = await connection.simulateTransaction(transaction, {
         sigVerify: false,
-        commitment: "processed"
+        commitment: "processed",
     });
     if (simulationResult.value.err) {
         simulationResult.value.logs?.forEach((x) => {
-            console.log(x);
+            (0, generalUtils_1.consoleLog)(x);
         });
         throw simulationResult.value.err;
     }
@@ -143,39 +149,99 @@ async function simulateTransaction(connection, transaction) {
 async function getComputeUnitPriceEstimate(umi, tx, prioritySetting) {
     const web3Transaction = (0, umi_web3js_adapters_1.toWeb3JsTransaction)((await tx.setLatestBlockhash(umi, { commitment: "finalized" })).build(umi));
     const serializedTransaction = bs58_1.default.encode(web3Transaction.serialize());
-    const resp = await umi.rpc.call("getPriorityFeeEstimate", [
-        {
-            transaction: serializedTransaction,
-            options: {
-                priorityLevel: prioritySetting.toString(),
+    let feeEstimate;
+    try {
+        const resp = await umi.rpc.call("getPriorityFeeEstimate", [
+            {
+                transaction: serializedTransaction,
+                options: {
+                    priorityLevel: prioritySetting.toString(),
+                },
             },
-        },
-    ]);
-    const feeEstimate = Math.round(resp.priorityFeeEstimate);
+        ]);
+        feeEstimate = Math.round(resp.priorityFeeEstimate);
+    }
+    catch (e) {
+        console.error(e);
+    }
     return feeEstimate;
 }
-async function sendSingleOptimizedTransaction(umi, connection, tx, simulateOnly, attemptNum, prioritySetting = types_1.PriorityFeeSetting.Default) {
-    console.log("Sending single optimized transaction...");
-    console.log("Instructions: ", tx.getInstructions().length);
-    console.log("Serialized transaction size: ", tx.getTransactionSize(umi));
-    const feeEstimate = await getComputeUnitPriceEstimate(umi, tx, prioritySetting);
-    console.log("Compute unit price: ", feeEstimate);
-    const simulationResult = await (0, generalUtils_1.retryWithExponentialBackoff)(async () => await simulateTransaction(connection, (0, umi_web3js_adapters_1.toWeb3JsTransaction)(await (await assembleFinalTransaction(umi.identity, tx, feeEstimate, 1400000).setLatestBlockhash(umi)).build(umi))));
-    const computeUnitLimit = Math.round(simulationResult.value.unitsConsumed * 1.1);
-    console.log("Compute unit limit: ", computeUnitLimit);
-    if (!simulateOnly) {
-        const result = await assembleFinalTransaction(umi.identity, tx, feeEstimate, 800000).sendAndConfirm(umi, {
-            send: {
-                skipPreflight: true,
-                commitment: "finalized",
-            },
-            confirm: { commitment: "finalized" },
-        });
-        console.log(`https://solscan.io/tx/${bs58_1.default.encode(result.signature)}`);
-        if (result.result.value.err !== null) {
-            throw new Error(result.result.value.err.toString());
+async function spamSendTransactionUntilConfirmed(connection, transaction, blockhash, spamInterval = 1000) {
+    let transactionSignature = null;
+    const sendTx = async () => {
+        try {
+            const txSignature = await connection.sendRawTransaction(Buffer.from(transaction.serialize()), { skipPreflight: true, maxRetries: 0 });
+            transactionSignature = txSignature;
+            (0, generalUtils_1.consoleLog)(`Transaction sent`);
         }
-        return result.signature;
+        catch (error) {
+            (0, generalUtils_1.consoleLog)("Error sending transaction:", error);
+        }
+    };
+    await sendTx();
+    const sendIntervalId = setInterval(async () => {
+        await sendTx();
+    }, spamInterval);
+    if (!transactionSignature) {
+        throw new Error("Failed to send");
+    }
+    const resp = await connection
+        .confirmTransaction({
+        ...blockhash,
+        signature: transactionSignature,
+    })
+        .finally(() => {
+        clearInterval(sendIntervalId);
+    });
+    if (resp.value.err) {
+        throw resp.value.err;
+    }
+    return transactionSignature;
+}
+async function sendSingleOptimizedTransaction(umi, connection, tx, txType, prioritySetting = types_1.PriorityFeeSetting.Min, onAwaitingSign) {
+    (0, generalUtils_1.consoleLog)("Sending single optimized transaction...");
+    (0, generalUtils_1.consoleLog)("Instructions: ", tx.getInstructions().length);
+    (0, generalUtils_1.consoleLog)("Serialized transaction size: ", tx.getTransactionSize(umi));
+    let cuPrice;
+    if (prioritySetting !== types_1.PriorityFeeSetting.None) {
+        cuPrice = await getComputeUnitPriceEstimate(umi, tx, prioritySetting);
+        if (!cuPrice) {
+            cuPrice = 1000000;
+        }
+        (0, generalUtils_1.consoleLog)("Compute unit price: ", cuPrice);
+    }
+    let computeUnitLimit = undefined;
+    if (txType !== "skip-simulation") {
+        // TODO: we should only retry simulation if it's not a solauto error
+        const simulationResult = await (0, generalUtils_1.retryWithExponentialBackoff)(async () => await simulateTransaction(connection, (0, umi_web3js_adapters_1.toWeb3JsTransaction)(await (await assembleFinalTransaction(umi.identity, tx, cuPrice, 1400000).setLatestBlockhash(umi)).build(umi))), 3);
+        simulationResult.value.err;
+        computeUnitLimit = Math.round(simulationResult.value.unitsConsumed * 1.1);
+        (0, generalUtils_1.consoleLog)("Compute unit limit: ", computeUnitLimit);
+    }
+    if (txType !== "only-simulate") {
+        onAwaitingSign?.();
+        // const result = await assembleFinalTransaction(
+        //   umi.identity,
+        //   tx,
+        //   cuPrice,
+        //   computeUnitLimit
+        // ).sendAndConfirm(umi, {
+        //   send: {
+        //     skipPreflight: true,
+        //     commitment: "confirmed",
+        //     maxRetries: 0
+        //   },
+        //   confirm: { commitment: "confirmed" },
+        // });
+        // const txSig = bs58.encode(result.signature);
+        const blockhash = await connection.getLatestBlockhash("confirmed");
+        const signedTx = await assembleFinalTransaction(umi.identity, tx, cuPrice, computeUnitLimit)
+            .setBlockhash(blockhash)
+            .buildAndSign(umi);
+        const txSig = await spamSendTransactionUntilConfirmed(connection, (0, umi_web3js_adapters_1.toWeb3JsTransaction)(signedTx), blockhash);
+        (0, generalUtils_1.consoleLog)(`Transaction signature: ${txSig}`);
+        (0, generalUtils_1.consoleLog)(`https://solscan.io/tx/${txSig}`);
+        return bs58_1.default.decode(txSig);
     }
     return undefined;
 }

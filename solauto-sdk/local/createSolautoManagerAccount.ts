@@ -5,6 +5,7 @@ import {
   transactionBuilder,
 } from "@metaplex-foundation/umi";
 import {
+  buildHeliusApiUrl,
   getSolanaRpcConnection,
   sendSingleOptimizedTransaction,
 } from "../src/utils/solanaUtils";
@@ -14,7 +15,7 @@ import { getSecretKey } from "./shared";
 import { updateSolautoLut } from "./updateSolautoLUT";
 
 async function create() {
-  let [connection, umi] = getSolanaRpcConnection(process.env.HELIUS_API_KEY!);
+  let [connection, umi] = getSolanaRpcConnection(buildHeliusApiUrl(process.env.HELIUS_API_KEY!));
 
   const secretKey = getSecretKey("solauto-manager");
   const signerKeypair = umi.eddsa.createKeypairFromSecretKey(secretKey);

@@ -1,6 +1,6 @@
 use marginfi_sdk::generated::accounts::MarginfiAccount;
 use solana_program::{
-    account_info::AccountInfo, clock::Clock, entrypoint::ProgramResult, msg, sysvar::Sysvar,
+    account_info::AccountInfo, clock::Clock, entrypoint::ProgramResult, sysvar::Sysvar,
 };
 
 use crate::{
@@ -33,11 +33,6 @@ pub fn marginfi_refresh_accounts<'a, 'b>(
         debt_bank,
         debt_price_oracle,
     )?;
-    msg!(
-        "Supply price: {}, debt price: {}",
-        updated_state.supply.market_price,
-        updated_state.debt.market_price
-    );
 
     SolautoManager::refresh_position(&mut solauto_position.data, updated_state, Clock::get()?)?;
     ix_utils::update_data(solauto_position)

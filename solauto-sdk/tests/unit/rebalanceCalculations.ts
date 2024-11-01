@@ -9,10 +9,12 @@ import { publicKey } from "@metaplex-foundation/umi";
 import { SolautoClient } from "../../src/clients/solautoClient";
 import {
   DCASettings,
-  FeeType,
   LendingPlatform,
+  PositionType,
+  RebalanceDirection,
   SolautoRebalanceType,
   SolautoSettingsParameters,
+  TokenType,
 } from "../../src/generated";
 import {
   fromBaseUnit,
@@ -31,10 +33,11 @@ import {
 } from "../../src/utils/solauto/generalUtils";
 import {
   currentUnixSeconds,
-  getTokenPrices,
+  fetchTokenPrices,
+  safeGetPrice,
 } from "../../src/utils/generalUtils";
-import { USDC_MINT } from "../../src/constants/tokenConstants";
-import { PRICES } from "../../src/constants";
+import { USDC } from "../../src/constants/tokenConstants";
+import { buildHeliusApiUrl } from "../../src/utils";
 
 const signer = setupTest(undefined, true);
 
@@ -44,29 +47,27 @@ function assertAccurateRebalance(
   targetLiqUtilizationRateBps?: number,
   expectedUsdToDcaIn?: number
 ) {
-  const { increasingLeverage, debtAdjustmentUsd, amountUsdToDcaIn } =
+  const { rebalanceDirection, debtAdjustmentUsd, amountUsdToDcaIn } =
     getRebalanceValues(
       client.solautoPositionState!,
       client.solautoPositionSettings(),
       client.solautoPositionActiveDca(),
-      client.solautoPositionData!.feeType,
       currentUnixSeconds(),
-      PRICES[client.supplyMint.toString()].price,
-      PRICES[client.debtMint.toString()].price,
+      safeGetPrice(client.supplyMint)!,
+      safeGetPrice(client.debtMint)!,
       targetLiqUtilizationRateBps
     );
 
   let adjustmentFeeBps = 0;
-  if (increasingLeverage) {
-    adjustmentFeeBps = getSolautoFeesBps(
-      client.referredByState !== undefined,
-      client.solautoPositionData!.feeType,
-      fromBaseUnit(
-        client.solautoPositionState?.netWorth.baseAmountUsdValue ?? BigInt(0),
-        USD_DECIMALS
-      )
-    ).total;
-  }
+  adjustmentFeeBps = getSolautoFeesBps(
+    client.referredBy !== undefined,
+    targetLiqUtilizationRateBps,
+    fromBaseUnit(
+      client.solautoPositionState?.netWorth.baseAmountUsdValue ?? BigInt(0),
+      USD_DECIMALS
+    ),
+    rebalanceDirection
+  ).total;
 
   assert(
     Math.round(amountUsdToDcaIn) === Math.round(expectedUsdToDcaIn ?? 0),
@@ -108,14 +109,14 @@ async function getFakePosition(
   dca?: DCASettings
 ): Promise<SolautoClient> {
   const client = new SolautoMarginfiClient(
-    process.env.HELIUS_API_KEY ?? "",
+    buildHeliusApiUrl(process.env.HELIUS_API_KEY!),
     true
   );
   await client.initialize({
     positionId: 1,
     signer,
     supplyMint: new PublicKey(NATIVE_MINT),
-    debtMint: new PublicKey(USDC_MINT),
+    debtMint: new PublicKey(USDC),
   });
 
   const supplyUsd = 1000;
@@ -125,7 +126,7 @@ async function getFakePosition(
     createFakePositionState(
       {
         amountUsed: supplyUsd / supplyPrice,
-        price: PRICES[NATIVE_MINT.toString()].price,
+        price: safeGetPrice(NATIVE_MINT)!,
         mint: NATIVE_MINT,
       },
       {
@@ -135,7 +136,7 @@ async function getFakePosition(
             fromBps(fakeLiqUtilizationRateBps)) /
           debtPrice,
         price: 1,
-        mint: new PublicKey(USDC_MINT),
+        mint: new PublicKey(USDC),
       },
       maxLtvBps,
       liqThresholdBps
@@ -159,8 +160,9 @@ async function getFakePosition(
           padding1: [],
           padding: new Uint8Array([]),
         },
-        debtToAddBaseUnit: BigInt(0),
-        padding: new Uint8Array([]),
+        dcaInBaseUnit: BigInt(0),
+        tokenType: TokenType.Debt,
+        padding: [],
       },
       lendingPlatform: LendingPlatform.Marginfi,
       supplyMint: publicKey(client.supplyMint),
@@ -173,16 +175,14 @@ async function getFakePosition(
     state: client.solautoPositionState!,
     rebalance: {
       rebalanceType: SolautoRebalanceType.Regular,
-      targetLiqUtilizationRateBps: 0,
+      rebalanceDirection: RebalanceDirection.Boost,
       flashLoanAmount: BigInt(0),
-      priceSlippageBps: 0,
       padding1: [],
       padding2: [],
       padding: new Uint8Array([]),
     },
-    feeType: FeeType.Default,
+    positionType: PositionType.Leverage,
     padding1: [],
-    padding2: [],
     padding: [],
     publicKey: publicKey(PublicKey.default),
     header: {
@@ -246,18 +246,18 @@ async function dcaRebalanceFromFakePosition(
     currentUnixSeconds()
   );
   const expectedLiqUtilizationRateBps =
-    dca.debtToAddBaseUnit > BigInt(0)
+    dca.dcaInBaseUnit > BigInt(0)
       ? Math.max(fakeLiqUtilizationRateBps, adjustedSettings.boostToBps)
       : adjustedSettings.boostToBps;
 
   const expectedDcaInAmount =
-    dca.debtToAddBaseUnit > 0 &&
+    dca.dcaInBaseUnit > BigInt(0) &&
     eligibleForNextAutomationPeriod(dca.automation, currentUnixSeconds())
-      ? dca.debtToAddBaseUnit -
+      ? dca.dcaInBaseUnit -
         BigInt(
           Math.round(
             getUpdatedValueFromAutomation(
-              Number(dca.debtToAddBaseUnit),
+              Number(dca.dcaInBaseUnit),
               0,
               dca.automation,
               currentUnixSeconds()
@@ -283,9 +283,9 @@ describe("Rebalance tests", async () => {
   let supplyPrice: number, debtPrice: number;
 
   before(async () => {
-    [supplyPrice, debtPrice] = await getTokenPrices([
+    [supplyPrice, debtPrice] = await fetchTokenPrices([
       NATIVE_MINT,
-      new PublicKey(USDC_MINT),
+      new PublicKey(USDC),
     ]);
   });
 
@@ -390,8 +390,9 @@ describe("Rebalance tests", async () => {
         padding1: [],
         padding: new Uint8Array([]),
       },
-      debtToAddBaseUnit: BigInt(0),
-      padding: new Uint8Array([]),
+      dcaInBaseUnit: BigInt(0),
+      tokenType: TokenType.Debt,
+      padding: [],
     };
     await dcaRebalanceFromFakePosition(
       supplyPrice,
@@ -442,8 +443,9 @@ describe("Rebalance tests", async () => {
         padding1: [],
         padding: new Uint8Array([]),
       },
-      debtToAddBaseUnit: toBaseUnit(debtPrice * 300, 6),
-      padding: new Uint8Array([]),
+      dcaInBaseUnit: toBaseUnit(debtPrice * 300, 6),
+      tokenType: TokenType.Debt,
+      padding: [],
     };
     await dcaRebalanceFromFakePosition(
       supplyPrice,

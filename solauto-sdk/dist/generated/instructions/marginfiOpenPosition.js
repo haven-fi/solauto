@@ -16,6 +16,7 @@ const types_1 = require("../types");
 function getMarginfiOpenPositionInstructionDataSerializer() {
     return (0, serializers_1.mapSerializer)((0, serializers_1.struct)([
         ['discriminator', (0, serializers_1.u8)()],
+        ['positionType', (0, types_1.getPositionTypeSerializer)()],
         ['positionData', (0, types_1.getUpdatePositionDataSerializer)()],
         ['marginfiAccountSeedIdx', (0, serializers_1.option)((0, serializers_1.u64)())],
     ], { description: 'MarginfiOpenPositionInstructionData' }), (value) => ({ ...value, discriminator: 6 }));
@@ -52,83 +53,68 @@ function marginfiOpenPosition(context, input) {
             value: input.ataProgram ?? null,
         },
         rent: { index: 5, isWritable: false, value: input.rent ?? null },
-        solautoManager: {
-            index: 6,
-            isWritable: true,
-            value: input.solautoManager ?? null,
-        },
-        solautoFeesWallet: {
-            index: 7,
-            isWritable: false,
-            value: input.solautoFeesWallet ?? null,
-        },
-        solautoFeesSupplyTa: {
-            index: 8,
-            isWritable: true,
-            value: input.solautoFeesSupplyTa ?? null,
-        },
         signerReferralState: {
-            index: 9,
+            index: 6,
             isWritable: false,
             value: input.signerReferralState ?? null,
         },
         referredByState: {
-            index: 10,
+            index: 7,
             isWritable: false,
             value: input.referredByState ?? null,
         },
         referredBySupplyTa: {
-            index: 11,
+            index: 8,
             isWritable: true,
             value: input.referredBySupplyTa ?? null,
         },
         solautoPosition: {
-            index: 12,
+            index: 9,
             isWritable: true,
             value: input.solautoPosition ?? null,
         },
         marginfiGroup: {
-            index: 13,
+            index: 10,
             isWritable: false,
             value: input.marginfiGroup ?? null,
         },
         marginfiAccount: {
-            index: 14,
+            index: 11,
             isWritable: true,
             value: input.marginfiAccount ?? null,
         },
         supplyMint: {
-            index: 15,
+            index: 12,
             isWritable: false,
             value: input.supplyMint ?? null,
         },
         supplyBank: {
-            index: 16,
+            index: 13,
             isWritable: false,
             value: input.supplyBank ?? null,
         },
         positionSupplyTa: {
-            index: 17,
+            index: 14,
             isWritable: true,
             value: input.positionSupplyTa ?? null,
         },
         debtMint: {
-            index: 18,
+            index: 15,
             isWritable: false,
             value: input.debtMint ?? null,
         },
         debtBank: {
-            index: 19,
+            index: 16,
             isWritable: false,
             value: input.debtBank ?? null,
         },
         positionDebtTa: {
-            index: 20,
+            index: 17,
             isWritable: true,
             value: input.positionDebtTa ?? null,
         },
         signerDebtTa: {
-            index: 21,
+            index: 18,
             isWritable: true,
             value: input.signerDebtTa ?? null,
         },

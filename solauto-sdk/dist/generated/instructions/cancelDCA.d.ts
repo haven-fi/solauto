@@ -13,9 +13,9 @@ export type CancelDCAInstructionAccounts = {
     tokenProgram?: PublicKey | Pda;
     ataProgram?: PublicKey | Pda;
     solautoPosition: PublicKey | Pda;
-    debtMint?: PublicKey | Pda;
-    positionDebtTa?: PublicKey | Pda;
-    signerDebtTa?: PublicKey | Pda;
+    dcaMint?: PublicKey | Pda;
+    positionDcaTa?: PublicKey | Pda;
+    signerDcaTa?: PublicKey | Pda;
 };
 export type CancelDCAInstructionData = {
     discriminator: number;

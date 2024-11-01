@@ -23,6 +23,8 @@ import {
   DCASettingsInpArgs,
   LendingPlatform,
   PositionState,
+  PositionType,
+  RebalanceDirection,
   SolautoActionArgs,
   SolautoRebalanceTypeArgs,
   SolautoSettingsParametersInpArgs,
@@ -31,10 +33,13 @@ import {
   marginfiRebalance,
   marginfiRefreshData,
 } from "../generated";
-import { getMarginfiAccountPDA, getTokenAccount } from "../utils/accountUtils";
-import { generateRandomU64 } from "../utils/generalUtils";
 import {
-  Bank,
+  getMarginfiAccountPDA,
+  getReferralState,
+  getTokenAccount,
+} from "../utils/accountUtils";
+import { generateRandomU64, safeGetPrice } from "../utils/generalUtils";
+import {
   MARGINFI_PROGRAM_ID,
   MarginfiAccount,
   lendingAccountBorrow,
@@ -44,22 +49,21 @@ import {
   lendingAccountStartFlashloan,
   lendingAccountWithdraw,
   marginfiAccountInitialize,
-  safeFetchAllBank,
   safeFetchAllMarginfiAccount,
-  safeFetchBank,
   safeFetchMarginfiAccount,
 } from "../marginfi-sdk";
-import { JupSwapDetails } from "../utils/jupiterUtils";
-import { FlashLoanDetails } from "../utils/solauto/rebalanceUtils";
+import {
+  FlashLoanDetails,
+  RebalanceValues,
+} from "../utils/solauto/rebalanceUtils";
 import {
   findMarginfiAccounts,
   getAllMarginfiAccountsByAuthority,
   getMarginfiAccountPositionState,
   getMaxLtvAndLiqThreshold,
 } from "../utils/marginfiUtils";
-import { bytesToI80F48, toBps } from "../utils/numberUtils";
-import { SOLAUTO_MANAGER } from "../constants";
-import { createFakePositionState } from "../utils";
+import { bytesToI80F48, fromBaseUnit, toBps } from "../utils/numberUtils";
+import { QuoteResponse } from "@jup-ag/api";
 
 export interface SolautoMarginfiClientArgs extends SolautoClientArgs {
   marginfiAccount?: PublicKey | Signer;
@@ -89,7 +93,9 @@ export class SolautoMarginfiClient extends SolautoClient {
   public intermediaryMarginfiAccount?: MarginfiAccount;
 
   async initialize(args: SolautoMarginfiClientArgs) {
-    await super.initialize(args, LendingPlatform.Marginfi);
+    await super.initialize(args);
+
+    this.lendingPlatform = LendingPlatform.Marginfi;
 
     if (this.selfManaged) {
       this.marginfiAccount =
@@ -99,9 +105,10 @@ export class SolautoMarginfiClient extends SolautoClient {
       this.marginfiAccountSeedIdx = generateRandomU64();
       this.marginfiAccount = this.solautoPositionData
         ? toWeb3JsPublicKey(this.solautoPositionData.position.protocolAccount)
-        : await getMarginfiAccountPDA(
+        : getMarginfiAccountPDA(
             this.solautoPosition,
-            this.marginfiAccountSeedIdx
+            this.marginfiAccountSeedIdx,
+            this.programId
           );
     }
     this.marginfiAccountPk =
@@ -109,44 +116,39 @@ export class SolautoMarginfiClient extends SolautoClient {
         ? toWeb3JsPublicKey(this.marginfiAccount.publicKey)
         : this.marginfiAccount;
 
-    const marginfiAccountData = await safeFetchMarginfiAccount(
-      this.umi,
-      publicKey(this.marginfiAccountPk)
+    const marginfiAccountData = !args.new
+      ? await safeFetchMarginfiAccount(
+          this.umi,
+          publicKey(this.marginfiAccountPk),
+          { commitment: "confirmed" }
+        )
+      : null;
+    this.marginfiGroup = new PublicKey(
+      marginfiAccountData
+        ? marginfiAccountData.group.toString()
+        : (args.marginfiGroup ?? DEFAULT_MARGINFI_GROUP)
     );
-    this.marginfiGroup = marginfiAccountData
-      ? toWeb3JsPublicKey(marginfiAccountData.group)
-      : args.marginfiGroup ?? new PublicKey(DEFAULT_MARGINFI_GROUP);
 
     this.marginfiSupplyAccounts =
-      MARGINFI_ACCOUNTS[this.supplyMint.toString()]!;
-    this.marginfiDebtAccounts = MARGINFI_ACCOUNTS[this.debtMint.toString()]!;
+      MARGINFI_ACCOUNTS[this.marginfiGroup.toString()][
+        this.supplyMint.toString()
+      ]!;
+    this.marginfiDebtAccounts =
+      MARGINFI_ACCOUNTS[this.marginfiGroup.toString()][
+        this.debtMint.toString()
+      ]!;
 
-    // TODO: Don't dynamically pull from bank until Marginfi sorts out their price oracle issues.
+    // TODO: Don't dynamically pull oracle from bank until Marginfi sorts out their price oracle issues.
     // const [supplyBank, debtBank] = await safeFetchAllBank(this.umi, [
     //   publicKey(this.marginfiSupplyAccounts.bank),
     //   publicKey(this.marginfiDebtAccounts.bank),
     // ]);
     // this.supplyPriceOracle = toWeb3JsPublicKey(supplyBank.config.oracleKeys[0]);
     // this.debtPriceOracle = toWeb3JsPublicKey(debtBank.config.oracleKeys[0]);
-
     this.supplyPriceOracle = new PublicKey(
       this.marginfiSupplyAccounts.priceOracle
     );
     this.debtPriceOracle = new PublicKey(this.marginfiDebtAccounts.priceOracle);
-
-    if (!this.solautoPositionState) {
-      const [maxLtv, liqThreshold] = await getMaxLtvAndLiqThreshold(
-        this.umi,
-        { mint: this.supplyMint },
-        { mint: this.debtMint }
-      );
-      this.solautoPositionState = createFakePositionState(
-        { mint: this.supplyMint },
-        { mint: this.debtMint },
-        toBps(maxLtv),
-        toBps(liqThreshold)
-      );
-    }
 
     if (!this.initialized) {
       await this.setIntermediaryMarginfiDetails();
@@ -196,6 +198,10 @@ export class SolautoMarginfiClient extends SolautoClient {
       emptyMarginfiAccounts.length > 0 ? emptyMarginfiAccounts[0] : undefined;
   }
 
+  protocolAccount(): PublicKey {
+    return this.marginfiAccountPk;
+  }
+
   defaultLookupTables(): string[] {
     return [MARGINFI_ACCOUNTS_LOOKUP_TABLE, ...super.defaultLookupTables()];
   }
@@ -208,6 +214,32 @@ export class SolautoMarginfiClient extends SolautoClient {
         ? [this.intermediaryMarginfiAccountPk]
         : []),
     ];
+  }
+
+  async maxLtvAndLiqThresholdBps(): Promise<[number, number] | undefined> {
+    const result = await super.maxLtvAndLiqThresholdBps();
+    if (result) {
+      return result;
+    } else if (
+      this.supplyMint.equals(PublicKey.default) ||
+      this.debtMint.equals(PublicKey.default)
+    ) {
+      return [0, 0];
+    } else {
+      const [maxLtv, liqThreshold] = await getMaxLtvAndLiqThreshold(
+        this.umi,
+        this.marginfiGroup,
+        {
+          mint: this.supplyMint,
+        },
+        {
+          mint: this.debtMint,
+        }
+      );
+      this.maxLtvBps = toBps(maxLtv);
+      this.liqThresholdBps = toBps(liqThreshold);
+      return [this.maxLtvBps, this.liqThresholdBps];
+    }
   }
 
   marginfiAccountInitialize(): TransactionBuilder {
@@ -230,7 +262,8 @@ export class SolautoMarginfiClient extends SolautoClient {
 
   private marginfiOpenPositionIx(
     settingParams?: SolautoSettingsParametersInpArgs,
-    dca?: DCASettingsInpArgs
+    dca?: DCASettingsInpArgs,
+    positionType?: PositionType
   ): TransactionBuilder {
     let signerDebtTa: UmiPublicKey | undefined = undefined;
     if (dca) {
@@ -240,15 +273,12 @@ export class SolautoMarginfiClient extends SolautoClient {
     return marginfiOpenPosition(this.umi, {
       signer: this.signer,
       marginfiProgram: publicKey(MARGINFI_PROGRAM_ID),
-      solautoManager: publicKey(SOLAUTO_MANAGER),
-      solautoFeesWallet: publicKey(this.solautoFeesWallet),
-      solautoFeesSupplyTa: publicKey(this.solautoFeesSupplyTa),
-      signerReferralState: publicKey(this.authorityReferralState),
+      signerReferralState: publicKey(this.referralState),
       referredByState: this.referredByState
         ? publicKey(this.referredByState)
         : undefined,
-      referredBySupplyTa: this.referredBySupplyTa
-        ? publicKey(this.referredBySupplyTa)
+      referredBySupplyTa: this.referredBySupplyTa()
+        ? publicKey(this.referredBySupplyTa()!)
         : undefined,
       solautoPosition: publicKey(this.solautoPosition),
       marginfiGroup: publicKey(this.marginfiGroup),
@@ -263,6 +293,7 @@ export class SolautoMarginfiClient extends SolautoClient {
       debtBank: publicKey(this.marginfiDebtAccounts.bank),
       positionDebtTa: publicKey(this.positionDebtTa),
       signerDebtTa: signerDebtTa,
+      positionType: positionType ?? PositionType.Leverage,
       positionData: {
         positionId: this.positionId!,
         settingParams: settingParams ?? null,
@@ -425,14 +456,18 @@ export class SolautoMarginfiClient extends SolautoClient {
 
   rebalance(
     rebalanceStep: "A" | "B",
-    swapDetails: JupSwapDetails,
+    jupQuote: QuoteResponse,
     rebalanceType: SolautoRebalanceTypeArgs,
+    rebalanceValues: RebalanceValues,
     flashLoan?: FlashLoanDetails,
-    targetLiqUtilizationRateBps?: number,
-    limitGapBps?: number
+    targetLiqUtilizationRateBps?: number
   ): TransactionBuilder {
-    const inputIsSupply = swapDetails.inputMint.equals(this.supplyMint);
-    const outputIsSupply = swapDetails.outputMint.equals(this.supplyMint);
+    const inputIsSupply = new PublicKey(jupQuote.inputMint).equals(
+      this.supplyMint
+    );
+    const outputIsSupply = new PublicKey(jupQuote.outputMint).equals(
+      this.supplyMint
+    );
     const needSupplyAccounts =
       (inputIsSupply && rebalanceStep === "A") ||
       (outputIsSupply && rebalanceStep === "B") ||
@@ -446,26 +481,40 @@ export class SolautoMarginfiClient extends SolautoClient {
       signer: this.signer,
       marginfiProgram: publicKey(MARGINFI_PROGRAM_ID),
       ixsSysvar: publicKey(SYSVAR_INSTRUCTIONS_PUBKEY),
-      solautoFeesSupplyTa:
-        rebalanceStep === "B" ? publicKey(this.solautoFeesSupplyTa) : undefined,
-      authorityReferralState: publicKey(this.authorityReferralState),
-      referredBySupplyTa: this.referredBySupplyTa
-        ? publicKey(this.referredBySupplyTa)
+      solautoFeesTa:
+        rebalanceStep === "B"
+          ? publicKey(
+              rebalanceValues.rebalanceDirection === RebalanceDirection.Boost
+                ? this.solautoFeesSupplyTa
+                : this.solautoFeesDebtTa
+            )
+          : undefined,
+      authorityReferralState: publicKey(this.referralState),
+      referredByTa: this.referredByState
+        ? publicKey(
+            rebalanceValues.rebalanceDirection === RebalanceDirection.Boost
+              ? this.referredBySupplyTa()!
+              : this.referredByDebtTa()!
+          )
         : undefined,
+      positionAuthority:
+        rebalanceValues.rebalanceAction === "dca"
+          ? publicKey(this.authority)
+          : undefined,
       solautoPosition: publicKey(this.solautoPosition),
       marginfiGroup: publicKey(this.marginfiGroup),
       marginfiAccount: publicKey(this.marginfiAccountPk),
       intermediaryTa: publicKey(
         getTokenAccount(
           toWeb3JsPublicKey(this.signer.publicKey),
-          swapDetails.inputMint
+          new PublicKey(jupQuote.inputMint)
         )
       ),
       supplyBank: publicKey(this.marginfiSupplyAccounts.bank),
       supplyPriceOracle: publicKey(this.supplyPriceOracle),
       positionSupplyTa: publicKey(this.positionSupplyTa),
-      signerSupplyTa: this.selfManaged
-        ? publicKey(this.signerSupplyTa)
+      authoritySupplyTa: this.selfManaged
+        ? publicKey(getTokenAccount(this.authority, this.supplyMint))
         : undefined,
       vaultSupplyTa: needSupplyAccounts
         ? publicKey(this.marginfiSupplyAccounts.liquidityVault)
@@ -476,7 +525,9 @@ export class SolautoMarginfiClient extends SolautoClient {
       debtBank: publicKey(this.marginfiDebtAccounts.bank),
       debtPriceOracle: publicKey(this.debtPriceOracle),
       positionDebtTa: publicKey(this.positionDebtTa),
-      signerDebtTa: this.selfManaged ? publicKey(this.signerDebtTa) : undefined,
+      authorityDebtTa: this.selfManaged
+        ? publicKey(getTokenAccount(this.authority, this.debtMint))
+        : undefined,
       vaultDebtTa: needDebtAccounts
         ? publicKey(this.marginfiDebtAccounts.liquidityVault)
         : undefined,
@@ -485,7 +536,8 @@ export class SolautoMarginfiClient extends SolautoClient {
         : undefined,
       rebalanceType,
       targetLiqUtilizationRateBps: targetLiqUtilizationRateBps ?? null,
-      limitGapBps: limitGapBps ?? null,
+      targetInAmountBaseUnit:
+        rebalanceStep === "A" ? parseInt(jupQuote.inAmount) : null,
     });
   }
 
@@ -618,14 +670,43 @@ export class SolautoMarginfiClient extends SolautoClient {
       return state;
     }
 
+    const useDesignatedMint =
+      !this.selfManaged &&
+      (this.solautoPositionData === null ||
+        !toWeb3JsPublicKey(this.signer.publicKey).equals(this.authority));
+
     const freshState = await getMarginfiAccountPositionState(
       this.umi,
-      this.marginfiAccountPk,
-      this.supplyMint,
-      this.debtMint,
+      { pk: this.marginfiAccountPk },
+      this.marginfiGroup,
+      useDesignatedMint ? { mint: this.supplyMint } : undefined,
+      useDesignatedMint ? { mint: this.debtMint } : undefined,
       this.livePositionUpdates
     );
-    this.log(freshState);
+
+    if (freshState) {
+      this.log("Fresh state", freshState);
+      const supplyPrice = safeGetPrice(freshState?.supply.mint)!;
+      const debtPrice = safeGetPrice(freshState?.debt.mint)!;
+      this.log("Supply price: ", supplyPrice);
+      this.log("Debt price: ", debtPrice);
+      this.log("Liq threshold bps:", freshState.liqThresholdBps);
+      this.log("Liq utilization rate bps:", freshState.liqUtilizationRateBps);
+      this.log(
+        "Supply USD:",
+        fromBaseUnit(
+          freshState.supply.amountUsed.baseUnit,
+          freshState.supply.decimals
+        ) * supplyPrice
+      );
+      this.log(
+        "Debt USD:",
+        fromBaseUnit(
+          freshState.debt.amountUsed.baseUnit,
+          freshState.debt.decimals
+        ) * debtPrice
+      );
+    }
 
     return freshState;
   }

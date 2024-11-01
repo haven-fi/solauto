@@ -16,9 +16,8 @@ mod general {
     };
     use solauto_sdk::generated::{
         accounts::SolautoPosition,
-        types::{ AutomationSettingsInp, DCASettingsInp },
+        types::{ AutomationSettingsInp, DCASettingsInp, TokenType },
     };
-    use spl_associated_token_account::get_associated_token_address;
     use spl_token::state::Account as TokenAccount;
 
     use crate::{ assert_instruction_error, test_utils::* };
@@ -125,65 +124,6 @@ mod general {
     }
 
     #[tokio::test]
-    async fn incorrect_solauto_fee_accounts() {
-        let args = GeneralArgs::new();
-        let mut data = MarginfiTestData::new(&args).await;
-        data.test_prefixtures().await
-            .unwrap()
-            .general.create_referral_state_accounts().await
-            .unwrap();
-
-        let err = data.general
-            .execute_instructions(
-                vec![
-                    data
-                        .open_position_ix(Some(data.general.default_setting_params.clone()), None)
-                        .solauto_fees_wallet(Pubkey::default())
-                        .instruction(),
-                ],
-                None
-            ).await
-            .unwrap_err();
-        assert_instruction_error!(err, InstructionError::Custom(0));
-
-        // Incorrect wallet, correct token mint
-        let fake_solauto_fees_supply_ta = get_associated_token_address(
-            &data.general.ctx.payer.pubkey(),
-            &data.general.supply_mint.pubkey()
-        );
-        let err = data.general
-            .execute_instructions(
-                vec![
-                    data
-                        .open_position_ix(Some(data.general.default_setting_params.clone()), None)
-                        .solauto_fees_supply_ta(fake_solauto_fees_supply_ta)
-                        .instruction(),
-                ],
-                None
-            ).await
-            .unwrap_err();
-        assert_instruction_error!(err, InstructionError::Custom(0));
-
-        // Correct wallet, incorrect token mint
-        let fake_solauto_fees_supply_ta = get_associated_token_address(
-            &data.general.solauto_fees_wallet,
-            &data.general.debt_mint.pubkey()
-        );
-        let err = data.general
-            .execute_instructions(
-                vec![
-                    data
-                        .open_position_ix(Some(data.general.default_setting_params.clone()), None)
-                        .solauto_fees_supply_ta(fake_solauto_fees_supply_ta)
-                        .instruction(),
-                ],
-                None
-            ).await
-            .unwrap_err();
-        assert_instruction_error!(err, InstructionError::Custom(0));
-    }
-
-    #[tokio::test]
     async fn cancel_dca() {
         let args = GeneralArgs::new();
         let mut data = MarginfiTestData::new(&args).await;
@@ -208,7 +148,8 @@ mod general {
                 periods_passed: 0,
                 target_periods: 5,
             },
-            debt_to_add_base_unit: dca_amount,
+            dca_in_base_unit: dca_amount,
+            token_type: TokenType::Debt
         };
         data.open_position(
             Some(data.general.default_setting_params.clone()),
@@ -223,7 +164,7 @@ mod general {
             data.general.solauto_position
         ).await;
         assert!(solauto_position.position.dca.automation.target_periods == 0);
-        assert!(solauto_position.position.dca.debt_to_add_base_unit == 0);
+        assert!(solauto_position.position.dca.dca_in_base_unit == 0);
 
         let signer_debt_ta = data.general.unpack_account_data::<TokenAccount>(
             data.general.signer_debt_ta
@@ -258,7 +199,8 @@ mod general {
                 periods_passed: 0,
                 target_periods: 5,
             },
-            debt_to_add_base_unit: dca_amount,
+            dca_in_base_unit: dca_amount,
+            token_type: TokenType::Debt
         };
         data.open_position(
             Some(data.general.default_setting_params.clone()),

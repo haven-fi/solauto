@@ -13,6 +13,7 @@ const _1 = require(".");
 function getDCASettingsInpSerializer() {
     return (0, serializers_1.struct)([
         ['automation', (0, _1.getAutomationSettingsInpSerializer)()],
-        ['debtToAddBaseUnit', (0, serializers_1.u64)()],
+        ['dcaInBaseUnit', (0, serializers_1.u64)()],
+        ['tokenType', (0, _1.getTokenTypeSerializer)()],
     ], { description: 'DCASettingsInp' });
 }

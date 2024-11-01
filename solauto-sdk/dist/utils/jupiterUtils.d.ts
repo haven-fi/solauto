@@ -6,12 +6,13 @@ export interface JupSwapDetails {
     outputMint: PublicKey;
     destinationWallet: PublicKey;
     amount: bigint;
-    slippageBpsIncFactor?: number;
+    slippageIncFactor?: number;
     exactOut?: boolean;
     exactIn?: boolean;
 }
 export interface JupSwapTransaction {
     jupQuote: QuoteResponse;
+    priceImpactBps: number;
     lookupTableAddresses: string[];
     setupInstructions: TransactionBuilder;
     tokenLedgerIx: TransactionBuilder;

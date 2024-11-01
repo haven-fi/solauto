@@ -28,20 +28,20 @@ import {
   u8,
 } from '@metaplex-foundation/umi/serializers';
 import {
-  FeeType,
-  FeeTypeArgs,
   PodBool,
   PodBoolArgs,
   PositionData,
   PositionDataArgs,
   PositionState,
   PositionStateArgs,
+  PositionType,
+  PositionTypeArgs,
   RebalanceData,
   RebalanceDataArgs,
-  getFeeTypeSerializer,
   getPodBoolSerializer,
   getPositionDataSerializer,
   getPositionStateSerializer,
+  getPositionTypeSerializer,
   getRebalanceDataSerializer,
 } from '../types';
 
@@ -51,13 +51,12 @@ export type SolautoPositionAccountData = {
   bump: Array<number>;
   positionId: Array<number>;
   selfManaged: PodBool;
+  positionType: PositionType;
   padding1: Array<number>;
   authority: PublicKey;
   position: PositionData;
   state: PositionState;
   rebalance: RebalanceData;
-  feeType: FeeType;
-  padding2: Array<number>;
   padding: Array<number>;
 };
 
@@ -65,13 +64,12 @@ export type SolautoPositionAccountDataArgs = {
   bump: Array<number>;
   positionId: Array<number>;
   selfManaged: PodBoolArgs;
+  positionType: PositionTypeArgs;
   padding1: Array<number>;
   authority: PublicKey;
   position: PositionDataArgs;
   state: PositionStateArgs;
   rebalance: RebalanceDataArgs;
-  feeType: FeeTypeArgs;
-  padding2: Array<number>;
   padding: Array<number>;
 };
 
@@ -84,14 +82,13 @@ export function getSolautoPositionAccountDataSerializer(): Serializer<
       ['bump', array(u8(), { size: 1 })],
       ['positionId', array(u8(), { size: 1 })],
       ['selfManaged', getPodBoolSerializer()],
-      ['padding1', array(u8(), { size: 5 })],
+      ['positionType', getPositionTypeSerializer()],
+      ['padding1', array(u8(), { size: 4 })],
       ['authority', publicKeySerializer()],
       ['position', getPositionDataSerializer()],
       ['state', getPositionStateSerializer()],
       ['rebalance', getRebalanceDataSerializer()],
-      ['feeType', getFeeTypeSerializer()],
-      ['padding2', array(u8(), { size: 7 })],
-      ['padding', array(u32(), { size: 30 })],
+      ['padding', array(u32(), { size: 32 })],
     ],
     { description: 'SolautoPositionAccountData' }
   ) as Serializer<SolautoPositionAccountDataArgs, SolautoPositionAccountData>;
@@ -174,26 +171,24 @@ export function getSolautoPositionGpaBuilder(
       bump: Array<number>;
       positionId: Array<number>;
       selfManaged: PodBoolArgs;
+      positionType: PositionTypeArgs;
       padding1: Array<number>;
       authority: PublicKey;
       position: PositionDataArgs;
       state: PositionStateArgs;
       rebalance: RebalanceDataArgs;
-      feeType: FeeTypeArgs;
-      padding2: Array<number>;
       padding: Array<number>;
     }>({
       bump: [0, array(u8(), { size: 1 })],
       positionId: [1, array(u8(), { size: 1 })],
       selfManaged: [2, getPodBoolSerializer()],
-      padding1: [3, array(u8(), { size: 5 })],
+      positionType: [3, getPositionTypeSerializer()],
+      padding1: [4, array(u8(), { size: 4 })],
       authority: [8, publicKeySerializer()],
       position: [40, getPositionDataSerializer()],
       state: [360, getPositionStateSerializer()],
       rebalance: [648, getRebalanceDataSerializer()],
-      feeType: [704, getFeeTypeSerializer()],
-      padding2: [705, array(u8(), { size: 7 })],
-      padding: [712, array(u32(), { size: 30 })],
+      padding: [704, array(u32(), { size: 32 })],
     })
     .deserializeUsing<SolautoPosition>((account) =>
       deserializeSolautoPosition(account)

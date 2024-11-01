@@ -19,11 +19,11 @@ pub struct UpdatePosition {
 
     pub solauto_position: solana_program::pubkey::Pubkey,
 
-    pub debt_mint: Option<solana_program::pubkey::Pubkey>,
+    pub dca_mint: Option<solana_program::pubkey::Pubkey>,
 
-    pub position_debt_ta: Option<solana_program::pubkey::Pubkey>,
+    pub position_dca_ta: Option<solana_program::pubkey::Pubkey>,
 
-    pub signer_debt_ta: Option<solana_program::pubkey::Pubkey>,
+    pub signer_dca_ta: Option<solana_program::pubkey::Pubkey>,
 }
 
 impl UpdatePosition {
@@ -56,9 +56,9 @@ impl UpdatePosition {
             self.solauto_position,
             false,
         ));
-        if let Some(debt_mint) = self.debt_mint {
+        if let Some(dca_mint) = self.dca_mint {
             accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                debt_mint, false,
+                dca_mint, false,
             ));
         } else {
             accounts.push(solana_program::instruction::AccountMeta::new_readonly(
@@ -66,9 +66,9 @@ impl UpdatePosition {
                 false,
             ));
         }
-        if let Some(position_debt_ta) = self.position_debt_ta {
+        if let Some(position_dca_ta) = self.position_dca_ta {
             accounts.push(solana_program::instruction::AccountMeta::new(
-                position_debt_ta,
+                position_dca_ta,
                 false,
             ));
         } else {
@@ -77,9 +77,9 @@ impl UpdatePosition {
                 false,
             ));
         }
-        if let Some(signer_debt_ta) = self.signer_debt_ta {
+        if let Some(signer_dca_ta) = self.signer_dca_ta {
             accounts.push(solana_program::instruction::AccountMeta::new(
-                signer_debt_ta,
+                signer_dca_ta,
                 false,
             ));
         } else {
@@ -126,18 +126,18 @@ pub struct UpdatePositionInstructionArgs {
 ///   1. `[optional]` system_program (default to `11111111111111111111111111111111`)
 ///   2. `[optional]` token_program (default to `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA`)
 ///   3. `[writable]` solauto_position
-///   4. `[optional]` debt_mint
-///   5. `[writable, optional]` position_debt_ta
-///   6. `[writable, optional]` signer_debt_ta
+///   4. `[optional]` dca_mint
+///   5. `[writable, optional]` position_dca_ta
+///   6. `[writable, optional]` signer_dca_ta
 #[derive(Default)]
 pub struct UpdatePositionBuilder {
     signer: Option<solana_program::pubkey::Pubkey>,
     system_program: Option<solana_program::pubkey::Pubkey>,
     token_program: Option<solana_program::pubkey::Pubkey>,
     solauto_position: Option<solana_program::pubkey::Pubkey>,
-    debt_mint: Option<solana_program::pubkey::Pubkey>,
-    position_debt_ta: Option<solana_program::pubkey::Pubkey>,
-    signer_debt_ta: Option<solana_program::pubkey::Pubkey>,
+    dca_mint: Option<solana_program::pubkey::Pubkey>,
+    position_dca_ta: Option<solana_program::pubkey::Pubkey>,
+    signer_dca_ta: Option<solana_program::pubkey::Pubkey>,
     update_position_data: Option<UpdatePositionData>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
@@ -173,26 +173,26 @@ impl UpdatePositionBuilder {
     }
     /// `[optional account]`
     #[inline(always)]
-    pub fn debt_mint(&mut self, debt_mint: Option<solana_program::pubkey::Pubkey>) -> &mut Self {
-        self.debt_mint = debt_mint;
+    pub fn dca_mint(&mut self, dca_mint: Option<solana_program::pubkey::Pubkey>) -> &mut Self {
+        self.dca_mint = dca_mint;
         self
     }
     /// `[optional account]`
     #[inline(always)]
-    pub fn position_debt_ta(
+    pub fn position_dca_ta(
         &mut self,
-        position_debt_ta: Option<solana_program::pubkey::Pubkey>,
+        position_dca_ta: Option<solana_program::pubkey::Pubkey>,
     ) -> &mut Self {
-        self.position_debt_ta = position_debt_ta;
+        self.position_dca_ta = position_dca_ta;
         self
     }
     /// `[optional account]`
     #[inline(always)]
-    pub fn signer_debt_ta(
+    pub fn signer_dca_ta(
         &mut self,
-        signer_debt_ta: Option<solana_program::pubkey::Pubkey>,
+        signer_dca_ta: Option<solana_program::pubkey::Pubkey>,
     ) -> &mut Self {
-        self.signer_debt_ta = signer_debt_ta;
+        self.signer_dca_ta = signer_dca_ta;
         self
     }
     #[inline(always)]
@@ -229,9 +229,9 @@ impl UpdatePositionBuilder {
                 "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
             )),
             solauto_position: self.solauto_position.expect("solauto_position is not set"),
-            debt_mint: self.debt_mint,
-            position_debt_ta: self.position_debt_ta,
-            signer_debt_ta: self.signer_debt_ta,
+            dca_mint: self.dca_mint,
+            position_dca_ta: self.position_dca_ta,
+            signer_dca_ta: self.signer_dca_ta,
         };
         let args = UpdatePositionInstructionArgs {
             update_position_data: self
@@ -254,11 +254,11 @@ pub struct UpdatePositionCpiAccounts<'a, 'b> {
 
     pub solauto_position: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub debt_mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    pub dca_mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
-    pub position_debt_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    pub position_dca_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
-    pub signer_debt_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    pub signer_dca_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 }
 
 /// `update_position` CPI instruction.
@@ -274,11 +274,11 @@ pub struct UpdatePositionCpi<'a, 'b> {
 
     pub solauto_position: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub debt_mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    pub dca_mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
-    pub position_debt_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    pub position_dca_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
-    pub signer_debt_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    pub signer_dca_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The arguments for the instruction.
     pub __args: UpdatePositionInstructionArgs,
 }
@@ -295,9 +295,9 @@ impl<'a, 'b> UpdatePositionCpi<'a, 'b> {
             system_program: accounts.system_program,
             token_program: accounts.token_program,
             solauto_position: accounts.solauto_position,
-            debt_mint: accounts.debt_mint,
-            position_debt_ta: accounts.position_debt_ta,
-            signer_debt_ta: accounts.signer_debt_ta,
+            dca_mint: accounts.dca_mint,
+            position_dca_ta: accounts.position_dca_ta,
+            signer_dca_ta: accounts.signer_dca_ta,
             __args: args,
         }
     }
@@ -351,9 +351,9 @@ impl<'a, 'b> UpdatePositionCpi<'a, 'b> {
             *self.solauto_position.key,
             false,
         ));
-        if let Some(debt_mint) = self.debt_mint {
+        if let Some(dca_mint) = self.dca_mint {
             accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                *debt_mint.key,
+                *dca_mint.key,
                 false,
             ));
         } else {
@@ -362,9 +362,9 @@ impl<'a, 'b> UpdatePositionCpi<'a, 'b> {
                 false,
             ));
         }
-        if let Some(position_debt_ta) = self.position_debt_ta {
+        if let Some(position_dca_ta) = self.position_dca_ta {
             accounts.push(solana_program::instruction::AccountMeta::new(
-                *position_debt_ta.key,
+                *position_dca_ta.key,
                 false,
             ));
         } else {
@@ -373,9 +373,9 @@ impl<'a, 'b> UpdatePositionCpi<'a, 'b> {
                 false,
             ));
         }
-        if let Some(signer_debt_ta) = self.signer_debt_ta {
+        if let Some(signer_dca_ta) = self.signer_dca_ta {
             accounts.push(solana_program::instruction::AccountMeta::new(
-                *signer_debt_ta.key,
+                *signer_dca_ta.key,
                 false,
             ));
         } else {
@@ -406,14 +406,14 @@ impl<'a, 'b> UpdatePositionCpi<'a, 'b> {
         account_infos.push(self.system_program.clone());
         account_infos.push(self.token_program.clone());
         account_infos.push(self.solauto_position.clone());
-        if let Some(debt_mint) = self.debt_mint {
-            account_infos.push(debt_mint.clone());
+        if let Some(dca_mint) = self.dca_mint {
+            account_infos.push(dca_mint.clone());
         }
-        if let Some(position_debt_ta) = self.position_debt_ta {
-            account_infos.push(position_debt_ta.clone());
+        if let Some(position_dca_ta) = self.position_dca_ta {
+            account_infos.push(position_dca_ta.clone());
         }
-        if let Some(signer_debt_ta) = self.signer_debt_ta {
-            account_infos.push(signer_debt_ta.clone());
+        if let Some(signer_dca_ta) = self.signer_dca_ta {
+            account_infos.push(signer_dca_ta.clone());
         }
         remaining_accounts
             .iter()
@@ -435,9 +435,9 @@ impl<'a, 'b> UpdatePositionCpi<'a, 'b> {
 ///   1. `[]` system_program
 ///   2. `[]` token_program
 ///   3. `[writable]` solauto_position
-///   4. `[optional]` debt_mint
-///   5. `[writable, optional]` position_debt_ta
-///   6. `[writable, optional]` signer_debt_ta
+///   4. `[optional]` dca_mint
+///   5. `[writable, optional]` position_dca_ta
+///   6. `[writable, optional]` signer_dca_ta
 pub struct UpdatePositionCpiBuilder<'a, 'b> {
     instruction: Box<UpdatePositionCpiBuilderInstruction<'a, 'b>>,
 }
@@ -450,9 +450,9 @@ impl<'a, 'b> UpdatePositionCpiBuilder<'a, 'b> {
             system_program: None,
             token_program: None,
             solauto_position: None,
-            debt_mint: None,
-            position_debt_ta: None,
-            signer_debt_ta: None,
+            dca_mint: None,
+            position_dca_ta: None,
+            signer_dca_ta: None,
             update_position_data: None,
             __remaining_accounts: Vec::new(),
         });
@@ -492,29 +492,29 @@ impl<'a, 'b> UpdatePositionCpiBuilder<'a, 'b> {
     }
     /// `[optional account]`
     #[inline(always)]
-    pub fn debt_mint(
+    pub fn dca_mint(
         &mut self,
-        debt_mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+        dca_mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     ) -> &mut Self {
-        self.instruction.debt_mint = debt_mint;
+        self.instruction.dca_mint = dca_mint;
         self
     }
     /// `[optional account]`
     #[inline(always)]
-    pub fn position_debt_ta(
+    pub fn position_dca_ta(
         &mut self,
-        position_debt_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+        position_dca_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     ) -> &mut Self {
-        self.instruction.position_debt_ta = position_debt_ta;
+        self.instruction.position_dca_ta = position_dca_ta;
         self
     }
     /// `[optional account]`
     #[inline(always)]
-    pub fn signer_debt_ta(
+    pub fn signer_dca_ta(
         &mut self,
-        signer_debt_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+        signer_dca_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     ) -> &mut Self {
-        self.instruction.signer_debt_ta = signer_debt_ta;
+        self.instruction.signer_dca_ta = signer_dca_ta;
         self
     }
     #[inline(always)]
@@ -590,11 +590,11 @@ impl<'a, 'b> UpdatePositionCpiBuilder<'a, 'b> {
                 .solauto_position
                 .expect("solauto_position is not set"),
 
-            debt_mint: self.instruction.debt_mint,
+            dca_mint: self.instruction.dca_mint,
 
-            position_debt_ta: self.instruction.position_debt_ta,
+            position_dca_ta: self.instruction.position_dca_ta,
 
-            signer_debt_ta: self.instruction.signer_debt_ta,
+            signer_dca_ta: self.instruction.signer_dca_ta,
             __args: args,
         };
         instruction.invoke_signed_with_remaining_accounts(
@@ -610,9 +610,9 @@ struct UpdatePositionCpiBuilderInstruction<'a, 'b> {
     system_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     token_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     solauto_position: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    debt_mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    position_debt_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    signer_debt_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    dca_mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    position_dca_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    signer_dca_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     update_position_data: Option<UpdatePositionData>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(

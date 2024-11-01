@@ -1,6 +1,6 @@
 import { PublicKey } from "@solana/web3.js";
-import { getAssociatedTokenAddressSync } from "@solana/spl-token";
-import { SOLAUTO_PROGRAM_ID } from "../generated";
+import { AccountLayout as SplTokenAccountLayout, getAssociatedTokenAddressSync } from "@solana/spl-token";
+import { publicKey, Umi } from "@metaplex-foundation/umi";
 
 export function bufferFromU8(num: number): Buffer {
   const buffer = Buffer.alloc(1);
@@ -26,42 +26,53 @@ export function getTokenAccounts(wallet: PublicKey, tokenMints: PublicKey[]): Pu
   return tokenMints.map(x => getTokenAccount(wallet, x));
 }
 
-export async function getSolautoPositionAccount(
-  signer: PublicKey,
-  positionId: number
+export async function getTokenAccountData(umi: Umi, tokenAccount: PublicKey) {
+  const resp = await umi.rpc.getAccount(publicKey(tokenAccount), { commitment: "confirmed" });
+  if (resp.exists) {
+    return SplTokenAccountLayout.decode(resp.data);
+  } else {
+    return undefined;
+  }
+}
+
+export function getSolautoPositionAccount(
+  authority: PublicKey,
+  positionId: number,
+  programId: PublicKey
 ) {
-  const [positionAccount, _] = await PublicKey.findProgramAddress(
-    [bufferFromU8(positionId), signer.toBuffer()],
-    new PublicKey(SOLAUTO_PROGRAM_ID)
+  const [positionAccount, _] = PublicKey.findProgramAddressSync(
+    [bufferFromU8(positionId), authority.toBuffer()],
+    programId
   );
 
   return positionAccount;
 }
 
-export async function getReferralState(authority: PublicKey) {
+export function getReferralState(authority: PublicKey, programId: PublicKey) {
   const str = "referral_state";
   const strBuffer = Buffer.from(str, "utf-8");
 
-  const [ReferralState, _] = await PublicKey.findProgramAddress(
+  const [ReferralState, _] = PublicKey.findProgramAddressSync(
     [strBuffer, authority.toBuffer()],
-    new PublicKey(SOLAUTO_PROGRAM_ID)
+    programId
   );
 
   return ReferralState;
 }
 
-export async function getMarginfiAccountPDA(
+export function getMarginfiAccountPDA(
   solautoPositionAccount: PublicKey,
-  marginfiAccountSeedIdx: bigint
+  marginfiAccountSeedIdx: bigint,
+  programId: PublicKey
 ) {
   const seeds = [
     solautoPositionAccount.toBuffer(),
     bufferFromU64(marginfiAccountSeedIdx),
   ];
 
-  const [marginfiAccount, _] = await PublicKey.findProgramAddress(
+  const [marginfiAccount, _] = PublicKey.findProgramAddressSync(
     seeds,
-    new PublicKey(SOLAUTO_PROGRAM_ID)
+    programId
   );
 
   return marginfiAccount;

@@ -5,6 +5,7 @@
 //! [https://github.com/metaplex-foundation/kinobi]
 //!
 
+use crate::generated::types::RebalanceDirection;
 use crate::generated::types::SolautoRebalanceType;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
@@ -14,9 +15,8 @@ use borsh::BorshSerialize;
 pub struct RebalanceData {
     pub rebalance_type: SolautoRebalanceType,
     pub padding1: [u8; 7],
-    pub price_slippage_bps: u16,
-    pub target_liq_utilization_rate_bps: u16,
-    pub padding2: [u8; 4],
+    pub rebalance_direction: RebalanceDirection,
+    pub padding2: [u8; 7],
     pub flash_loan_amount: u64,
     pub padding: [u8; 32],
 }

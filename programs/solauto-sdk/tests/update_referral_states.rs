@@ -2,10 +2,8 @@ pub mod test_utils;
 
 #[cfg(test)]
 mod update_referral_states {
-
     use solana_program_test::tokio;
     use solana_sdk::{
-        instruction::InstructionError,
         pubkey::Pubkey,
         signature::Keypair,
         signer::Signer,
@@ -14,7 +12,7 @@ mod update_referral_states {
     use solauto::constants::WSOL_MINT;
     use solauto_sdk::generated::accounts::ReferralState;
 
-    use crate::{ assert_instruction_error, test_utils::* };
+    use crate::test_utils::*;
 
     #[tokio::test]
     async fn update_referral_states() {
@@ -29,14 +27,16 @@ mod update_referral_states {
             ).await
             .unwrap();
 
-        let signer_referral_state_data =
-            data.general.deserialize_account_data::<ReferralState>(
-                data.general.signer_referral_state.clone()
-            ).await;
-        
+        let signer_referral_state_data = data.general.deserialize_account_data::<ReferralState>(
+            data.general.signer_referral_state.clone()
+        ).await;
+
         assert!(signer_referral_state_data.authority == data.general.ctx.payer.pubkey());
         assert!(signer_referral_state_data.referred_by_state == Pubkey::default());
-        assert!(signer_referral_state_data.dest_fees_mint == data.general.referral_fees_dest_mint.pubkey());
+        assert!(
+            signer_referral_state_data.dest_fees_mint ==
+                data.general.referral_fees_dest_mint.pubkey()
+        );
 
         // Check if able to set the referred_by_state even after signer referral state has been created
         let referred_by_authority = Keypair::new().pubkey();
@@ -49,7 +49,7 @@ mod update_referral_states {
                         .update_referral_states_ix()
                         .referred_by_authority(Some(referred_by_authority))
                         .referred_by_state(Some(referred_by_state))
-                        .instruction(),
+                        .instruction()
                 ],
                 None
             ).await
@@ -62,35 +62,31 @@ mod update_referral_states {
         assert!(referred_by_state_data.referred_by_state == Pubkey::default());
         assert!(referred_by_state_data.dest_fees_mint == WSOL_MINT);
 
-        let signer_referral_state_data =
-            data.general.deserialize_account_data::<ReferralState>(
-                data.general.signer_referral_state.clone()
-            ).await;
-        assert!(
-            signer_referral_state_data.referred_by_state == referred_by_state
-        );
-
+        let signer_referral_state_data = data.general.deserialize_account_data::<ReferralState>(
+            data.general.signer_referral_state.clone()
+        ).await;
+        assert!(signer_referral_state_data.referred_by_state == referred_by_state);
 
         // Ensure referred_by_state cannot be overwritten after it has been set
         let referred_by_authority2 = Keypair::new().pubkey();
         let referred_by_state2 = GeneralTestData::get_referral_state(&referred_by_authority2);
 
-        let err = data.general
+        data.general
             .execute_instructions(
                 vec![
                     data.general
                         .update_referral_states_ix()
                         .referred_by_authority(Some(referred_by_authority2))
                         .referred_by_state(Some(referred_by_state2))
-                        .instruction(),
+                        .instruction()
                 ],
                 None
-            ).await
-            .unwrap_err();
+            ).await.unwrap();
 
-
-
-        assert_instruction_error!(err, InstructionError::Custom(0));
+        let signer_referral_state_data = data.general.deserialize_account_data::<ReferralState>(
+            data.general.signer_referral_state.clone()
+        ).await;
+        assert!(signer_referral_state_data.referred_by_state == referred_by_state);
     }
 
     #[tokio::test]

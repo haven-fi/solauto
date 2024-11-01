@@ -1,26 +1,19 @@
 import "rpc-websockets/dist/lib/client";
-import { Connection, PublicKey } from "@solana/web3.js";
-import { Signer, TransactionBuilder, Umi } from "@metaplex-foundation/umi";
-import { WalletAdapter } from "@metaplex-foundation/umi-signer-wallet-adapters";
-import { DCASettings, DCASettingsInpArgs, LendingPlatform, PositionState, ReferralState, SolautoActionArgs, SolautoPosition, SolautoRebalanceTypeArgs, SolautoSettingsParameters, SolautoSettingsParametersInpArgs, UpdatePositionDataArgs } from "../generated";
-import { JupSwapDetails } from "../utils/jupiterUtils";
-import { FlashLoanDetails } from "../utils/solauto/rebalanceUtils";
+import { PublicKey } from "@solana/web3.js";
+import { Signer, TransactionBuilder } from "@metaplex-foundation/umi";
+import { DCASettings, DCASettingsInpArgs, LendingPlatform, PositionState, SolautoActionArgs, SolautoPosition, SolautoRebalanceTypeArgs, SolautoSettingsParameters, SolautoSettingsParametersInpArgs, UpdatePositionDataArgs } from "../generated";
+import { FlashLoanDetails, RebalanceValues } from "../utils/solauto/rebalanceUtils";
 import { LivePositionUpdates } from "../utils/solauto/generalUtils";
-export interface SolautoClientArgs {
-    authority?: PublicKey;
-    positionId: number;
-    signer?: Signer;
-    wallet?: WalletAdapter;
+import { ReferralStateManager, ReferralStateManagerArgs } from "./referralStateManager";
+import { QuoteResponse } from "@jup-ag/api";
+export interface SolautoClientArgs extends ReferralStateManagerArgs {
+    new?: boolean;
+    positionId?: number;
     supplyMint?: PublicKey;
     debtMint?: PublicKey;
-    referralFeesDestMint?: PublicKey;
-    referredByAuthority?: PublicKey;
 }
-export declare abstract class SolautoClient {
-    localTest?: boolean | undefined;
-    umi: Umi;
-    connection: Connection;
-    lendingPlatform: LendingPlatform;
+export declare abstract class SolautoClient extends ReferralStateManager {
+    lendingPlatform?: LendingPlatform;
     authority: PublicKey;
     signer: Signer;
     positionId: number;
@@ -28,28 +21,23 @@ export declare abstract class SolautoClient {
     solautoPosition: PublicKey;
     solautoPositionData: SolautoPosition | null;
     solautoPositionState: PositionState | undefined;
+    maxLtvBps?: number;
+    liqThresholdBps?: number;
     supplyMint: PublicKey;
     positionSupplyTa: PublicKey;
     signerSupplyTa: PublicKey;
     debtMint: PublicKey;
     positionDebtTa: PublicKey;
     signerDebtTa: PublicKey;
-    authorityReferralState: PublicKey;
-    authorityReferralStateData: ReferralState | null;
-    authorityReferralFeesDestMint: PublicKey;
-    authorityReferralDestTa: PublicKey;
-    referredByState?: PublicKey;
-    referredByAuthority?: PublicKey;
-    referredBySupplyTa?: PublicKey;
-    solautoFeesWallet: PublicKey;
     solautoFeesSupplyTa: PublicKey;
+    solautoFeesDebtTa: PublicKey;
     authorityLutAddress?: PublicKey;
-    upToDateLutAccounts: PublicKey[];
     livePositionUpdates: LivePositionUpdates;
-    constructor(heliusApiKey: string, localTest?: boolean | undefined);
-    initialize(args: SolautoClientArgs, lendingPlatform: LendingPlatform): Promise<void>;
-    log(...args: any[]): void;
-    resetLivePositionUpdates(): Promise<void>;
+    initialize(args: SolautoClientArgs): Promise<void>;
+    referredBySupplyTa(): PublicKey | undefined;
+    referredByDebtTa(): PublicKey | undefined;
+    resetLiveTxUpdates(success?: boolean): Promise<void>;
+    abstract protocolAccount(): PublicKey;
     defaultLookupTables(): string[];
     lutAccountsToAdd(): PublicKey[];
     fetchExistingAuthorityLutAccounts(): Promise<PublicKey[]>;
@@ -59,8 +47,7 @@ export declare abstract class SolautoClient {
     } | undefined>;
     solautoPositionSettings(): SolautoSettingsParameters | undefined;
     solautoPositionActiveDca(): DCASettings | undefined;
-    updateReferralStatesIx(): TransactionBuilder;
-    claimReferralFeesIx(): TransactionBuilder;
+    maxLtvAndLiqThresholdBps(): Promise<[number, number] | undefined>;
     openPosition(settingParams?: SolautoSettingsParametersInpArgs, dca?: DCASettingsInpArgs): TransactionBuilder;
     updatePositionIx(args: UpdatePositionDataArgs): TransactionBuilder;
     closePositionIx(): TransactionBuilder;
@@ -69,7 +56,7 @@ export declare abstract class SolautoClient {
     protocolInteraction(args: SolautoActionArgs): TransactionBuilder;
     abstract flashBorrow(flashLoanDetails: FlashLoanDetails, destinationTokenAccount: PublicKey): TransactionBuilder;
     abstract flashRepay(flashLoanDetails: FlashLoanDetails): TransactionBuilder;
-    abstract rebalance(rebalanceStep: "A" | "B", swapDetails: JupSwapDetails, rebalanceType: SolautoRebalanceTypeArgs, flashLoan?: FlashLoanDetails, targetLiqUtilizationRateBps?: number, limitGapBps?: number): TransactionBuilder;
+    abstract rebalance(rebalanceStep: "A" | "B", jupQuote: QuoteResponse, rebalanceType: SolautoRebalanceTypeArgs, rebalanceValues: RebalanceValues, flashLoan?: FlashLoanDetails, targetLiqUtilizationRateBps?: number): TransactionBuilder;
     getFreshPositionState(): Promise<PositionState | undefined>;
 }
 //# sourceMappingURL=solautoClient.d.ts.map

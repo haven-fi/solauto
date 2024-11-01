@@ -6,6 +6,7 @@
 //!
 
 use crate::generated::types::AutomationSettings;
+use crate::generated::types::TokenType;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 
@@ -13,6 +14,7 @@ use borsh::BorshSerialize;
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct DCASettings {
     pub automation: AutomationSettings,
-    pub debt_to_add_base_unit: u64,
-    pub padding: [u8; 32],
+    pub dca_in_base_unit: u64,
+    pub token_type: TokenType,
+    pub padding: [u8; 31],
 }

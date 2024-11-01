@@ -1,67 +1,56 @@
-import { AddressLookupTableInput, TransactionBuilder } from "@metaplex-foundation/umi";
+import { TransactionBuilder } from "@metaplex-foundation/umi";
 import { SolautoClient } from "../clients/solautoClient";
 import { ErrorsToThrow } from "../utils/generalUtils";
-import { PriorityFeeSetting } from "../types";
-declare class LookupTables {
-    private client;
-    defaultLuts: string[];
-    cache: AddressLookupTableInput[];
-    constructor(client: SolautoClient);
-    getLutInputs(additionalAddresses: string[]): Promise<AddressLookupTableInput[]>;
+import { PriorityFeeSetting, TransactionItemInputs, TransactionRunType } from "../types";
+import { ReferralStateManager } from "../clients";
+export declare class TransactionTooLargeError extends Error {
+    constructor(message: string);
 }
 export declare class TransactionItem {
-    fetchTx: (attemptNum: number) => Promise<{
-        tx: TransactionBuilder;
-        lookupTableAddresses?: string[];
-    } | undefined>;
+    fetchTx: (attemptNum: number) => Promise<TransactionItemInputs | undefined>;
     name?: string | undefined;
     lookupTableAddresses: string[];
     tx?: TransactionBuilder;
-    constructor(fetchTx: (attemptNum: number) => Promise<{
-        tx: TransactionBuilder;
-        lookupTableAddresses?: string[];
-    } | undefined>, name?: string | undefined);
+    constructor(fetchTx: (attemptNum: number) => Promise<TransactionItemInputs | undefined>, name?: string | undefined);
     initialize(): Promise<void>;
     refetch(attemptNum: number): Promise<void>;
     uniqueAccounts(): string[];
-}
-declare class TransactionSet {
-    private client;
-    lookupTables: LookupTables;
-    items: TransactionItem[];
-    constructor(client: SolautoClient, lookupTables: LookupTables, items?: TransactionItem[]);
-    fitsWith(item: TransactionItem): Promise<boolean>;
-    add(...items: TransactionItem[]): void;
-    refetchAll(attemptNum: number): Promise<void>;
-    getSingleTransaction(): Promise<TransactionBuilder>;
-    lutAddresses(): string[];
-    name(): string;
 }
 export declare enum TransactionStatus {
     Skipped = "Skipped",
     Processing = "Processing",
     Queued = "Queued",
-    Successful = "Successful"
+    Successful = "Successful",
+    Failed = "Failed"
 }
 export type TransactionManagerStatuses = {
     name: string;
+    attemptNum: number;
     status: TransactionStatus;
+    moreInfo?: string;
+    simulationSuccessful?: boolean;
     txSig?: string;
 }[];
 export declare class TransactionsManager {
-    private client;
-    private items;
+    private txHandler;
     private statusCallback?;
-    private simulateOnly?;
-    private mustBeAtomic?;
+    private txType?;
+    private priorityFeeSetting;
     private errorsToThrow?;
+    private retries;
+    private retryDelay;
     private statuses;
     private lookupTables;
-    constructor(client: SolautoClient, items: TransactionItem[], statusCallback?: ((statuses: TransactionManagerStatuses) => void) | undefined, simulateOnly?: boolean | undefined, mustBeAtomic?: boolean | undefined, errorsToThrow?: ErrorsToThrow | undefined);
+    constructor(txHandler: SolautoClient | ReferralStateManager, statusCallback?: ((statuses: TransactionManagerStatuses) => void) | undefined, txType?: TransactionRunType | undefined, priorityFeeSetting?: PriorityFeeSetting, errorsToThrow?: ErrorsToThrow | undefined, retries?: number, retryDelay?: number);
     private assembleTransactionSets;
-    updateStatus(name: string, status: TransactionStatus, txSig?: string): void;
-    debugAccounts(itemSet: TransactionSet, tx: TransactionBuilder): Promise<void>;
-    send(prioritySetting?: PriorityFeeSetting): Promise<void>;
+    private updateStatus;
+    private debugAccounts;
+    private getUpdatedPriorityFeeSetting;
+    private updateStatusForSets;
+    clientSend(transactions: TransactionItem[]): Promise<TransactionManagerStatuses>;
+    send(items: TransactionItem[], initialized?: boolean): Promise<TransactionManagerStatuses>;
+    private processTransactionSet;
+    private refreshItemSet;
+    private sendTransaction;
 }
-export {};
 //# sourceMappingURL=transactionsManager.d.ts.map

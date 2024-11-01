@@ -10,18 +10,20 @@ import { updateLookupTable } from "./shared";
 const LOOKUP_TABLE_ADDRESS = new PublicKey(MARGINFI_ACCOUNTS_LOOKUP_TABLE);
 
 async function addBanks() {
-  for (const key in MARGINFI_ACCOUNTS) {
-    const accounts = MARGINFI_ACCOUNTS[key];
-    await updateLookupTable(
-      [
-        key,
-        accounts.bank,
-        accounts.liquidityVault,
-        accounts.vaultAuthority,
-        accounts.priceOracle,
-      ],
-      LOOKUP_TABLE_ADDRESS
-    );
+  for (const group in MARGINFI_ACCOUNTS) {
+    for (const key in MARGINFI_ACCOUNTS[group]) {
+      const accounts = MARGINFI_ACCOUNTS[group][key];
+      await updateLookupTable(
+        [
+          key,
+          accounts.bank,
+          accounts.liquidityVault,
+          accounts.vaultAuthority,
+          accounts.priceOracle,
+        ],
+        LOOKUP_TABLE_ADDRESS
+      );
+    }
   }
 }
 

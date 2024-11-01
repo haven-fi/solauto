@@ -7,7 +7,7 @@
  * @see https://github.com/metaplex-foundation/kinobi
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.IncorrectInstructionsError = exports.RebalanceAbuseError = exports.InstructionIsCPIError = exports.InvalidRebalanceConditionError = exports.ExceededValidUtilizationRateError = exports.UnableToRebalanceError = exports.StaleProtocolDataError = exports.InvalidAutomationDataError = exports.InvalidDCASettingsError = exports.InvalidPositionSettingsError = exports.FailedAccountDeserializationError = exports.IncorrectAccountsError = void 0;
+exports.IncorrectDebtAdjustmentError = exports.IncorrectInstructionsError = exports.InstructionIsCPIError = exports.InvalidRebalanceConditionError = exports.InvalidAutomationDataError = exports.InvalidDCASettingsError = exports.InvalidPositionSettingsError = exports.FailedAccountDeserializationError = exports.IncorrectAccountsError = void 0;
 exports.getSolautoErrorFromCode = getSolautoErrorFromCode;
 exports.getSolautoErrorFromName = getSolautoErrorFromName;
 const umi_1 = require("@metaplex-foundation/umi");
@@ -24,10 +24,10 @@ class IncorrectAccountsError extends umi_1.ProgramError {
 exports.IncorrectAccountsError = IncorrectAccountsError;
 codeToErrorMap.set(0x0, IncorrectAccountsError);
 nameToErrorMap.set('IncorrectAccounts', IncorrectAccountsError);
-/** FailedAccountDeserialization: Failed to deserialize account data, incorrect account was likely given */
+/** FailedAccountDeserialization: Failed to deserialize account data */
 class FailedAccountDeserializationError extends umi_1.ProgramError {
     constructor(program, cause) {
-        super('Failed to deserialize account data, incorrect account was likely given', program, cause);
+        super('Failed to deserialize account data', program, cause);
         this.name = 'FailedAccountDeserialization';
         this.code = 0x1; // 1
     }
@@ -35,10 +35,10 @@ class FailedAccountDeserializationError extends umi_1.ProgramError {
 exports.FailedAccountDeserializationError = FailedAccountDeserializationError;
 codeToErrorMap.set(0x1, FailedAccountDeserializationError);
 nameToErrorMap.set('FailedAccountDeserialization', FailedAccountDeserializationError);
-/** InvalidPositionSettings: Invalid position settings given */
+/** InvalidPositionSettings: Invalid position settings provided */
 class InvalidPositionSettingsError extends umi_1.ProgramError {
     constructor(program, cause) {
-        super('Invalid position settings given', program, cause);
+        super('Invalid position settings provided', program, cause);
         this.name = 'InvalidPositionSettings';
         this.code = 0x2; // 2
     }
@@ -46,10 +46,10 @@ class InvalidPositionSettingsError extends umi_1.ProgramError {
 exports.InvalidPositionSettingsError = InvalidPositionSettingsError;
 codeToErrorMap.set(0x2, InvalidPositionSettingsError);
 nameToErrorMap.set('InvalidPositionSettings', InvalidPositionSettingsError);
-/** InvalidDCASettings: Invalid DCA settings given */
+/** InvalidDCASettings: Invalid DCA configuration provided */
 class InvalidDCASettingsError extends umi_1.ProgramError {
     constructor(program, cause) {
-        super('Invalid DCA settings given', program, cause);
+        super('Invalid DCA configuration provided', program, cause);
         this.name = 'InvalidDCASettings';
         this.code = 0x3; // 3
     }
@@ -57,10 +57,10 @@ class InvalidDCASettingsError extends umi_1.ProgramError {
 exports.InvalidDCASettingsError = InvalidDCASettingsError;
 codeToErrorMap.set(0x3, InvalidDCASettingsError);
 nameToErrorMap.set('InvalidDCASettings', InvalidDCASettingsError);
-/** InvalidAutomationData: Invalid automation data given */
+/** InvalidAutomationData: Invalid automation settings provided */
 class InvalidAutomationDataError extends umi_1.ProgramError {
     constructor(program, cause) {
-        super('Invalid automation data given', program, cause);
+        super('Invalid automation settings provided', program, cause);
         this.name = 'InvalidAutomationData';
         this.code = 0x4; // 4
     }
@@ -68,83 +68,50 @@ class InvalidAutomationDataError extends umi_1.ProgramError {
 exports.InvalidAutomationDataError = InvalidAutomationDataError;
 codeToErrorMap.set(0x4, InvalidAutomationDataError);
 nameToErrorMap.set('InvalidAutomationData', InvalidAutomationDataError);
-/** StaleProtocolData: Stale protocol data. Refresh instruction must be invoked before taking a protocol action */
-class StaleProtocolDataError extends umi_1.ProgramError {
-    constructor(program, cause) {
-        super('Stale protocol data. Refresh instruction must be invoked before taking a protocol action', program, cause);
-        this.name = 'StaleProtocolData';
-        this.code = 0x5; // 5
-    }
-}
-exports.StaleProtocolDataError = StaleProtocolDataError;
-codeToErrorMap.set(0x5, StaleProtocolDataError);
-nameToErrorMap.set('StaleProtocolData', StaleProtocolDataError);
-/** UnableToRebalance: Unable to adjust position to the desired utilization rate */
-class UnableToRebalanceError extends umi_1.ProgramError {
-    constructor(program, cause) {
-        super('Unable to adjust position to the desired utilization rate', program, cause);
-        this.name = 'UnableToRebalance';
-        this.code = 0x6; // 6
-    }
-}
-exports.UnableToRebalanceError = UnableToRebalanceError;
-codeToErrorMap.set(0x6, UnableToRebalanceError);
-nameToErrorMap.set('UnableToRebalance', UnableToRebalanceError);
-/** ExceededValidUtilizationRate: Desired action brought the utilization rate to an unsafe amount */
-class ExceededValidUtilizationRateError extends umi_1.ProgramError {
-    constructor(program, cause) {
-        super('Desired action brought the utilization rate to an unsafe amount', program, cause);
-        this.name = 'ExceededValidUtilizationRate';
-        this.code = 0x7; // 7
-    }
-}
-exports.ExceededValidUtilizationRateError = ExceededValidUtilizationRateError;
-codeToErrorMap.set(0x7, ExceededValidUtilizationRateError);
-nameToErrorMap.set('ExceededValidUtilizationRate', ExceededValidUtilizationRateError);
 /** InvalidRebalanceCondition: Invalid position condition to rebalance */
 class InvalidRebalanceConditionError extends umi_1.ProgramError {
     constructor(program, cause) {
         super('Invalid position condition to rebalance', program, cause);
         this.name = 'InvalidRebalanceCondition';
-        this.code = 0x8; // 8
+        this.code = 0x5; // 5
     }
 }
 exports.InvalidRebalanceConditionError = InvalidRebalanceConditionError;
-codeToErrorMap.set(0x8, InvalidRebalanceConditionError);
+codeToErrorMap.set(0x5, InvalidRebalanceConditionError);
 nameToErrorMap.set('InvalidRebalanceCondition', InvalidRebalanceConditionError);
 /** InstructionIsCPI: Unable to invoke instruction through a CPI */
 class InstructionIsCPIError extends umi_1.ProgramError {
     constructor(program, cause) {
         super('Unable to invoke instruction through a CPI', program, cause);
         this.name = 'InstructionIsCPI';
-        this.code = 0x9; // 9
+        this.code = 0x6; // 6
     }
 }
 exports.InstructionIsCPIError = InstructionIsCPIError;
-codeToErrorMap.set(0x9, InstructionIsCPIError);
+codeToErrorMap.set(0x6, InstructionIsCPIError);
 nameToErrorMap.set('InstructionIsCPI', InstructionIsCPIError);
-/** RebalanceAbuse: Too many rebalance instruction invocations in the same transaction */
-class RebalanceAbuseError extends umi_1.ProgramError {
-    constructor(program, cause) {
-        super('Too many rebalance instruction invocations in the same transaction', program, cause);
-        this.name = 'RebalanceAbuse';
-        this.code = 0xa; // 10
-    }
-}
-exports.RebalanceAbuseError = RebalanceAbuseError;
-codeToErrorMap.set(0xa, RebalanceAbuseError);
-nameToErrorMap.set('RebalanceAbuse', RebalanceAbuseError);
 /** IncorrectInstructions: Incorrect set of instructions in the transaction */
 class IncorrectInstructionsError extends umi_1.ProgramError {
     constructor(program, cause) {
         super('Incorrect set of instructions in the transaction', program, cause);
         this.name = 'IncorrectInstructions';
-        this.code = 0xb; // 11
+        this.code = 0x7; // 7
     }
 }
 exports.IncorrectInstructionsError = IncorrectInstructionsError;
-codeToErrorMap.set(0xb, IncorrectInstructionsError);
+codeToErrorMap.set(0x7, IncorrectInstructionsError);
 nameToErrorMap.set('IncorrectInstructions', IncorrectInstructionsError);
+/** IncorrectDebtAdjustment: Incorrect swap amount provided. Likely due to high price volatility */
+class IncorrectDebtAdjustmentError extends umi_1.ProgramError {
+    constructor(program, cause) {
+        super('Incorrect swap amount provided. Likely due to high price volatility', program, cause);
+        this.name = 'IncorrectDebtAdjustment';
+        this.code = 0x8; // 8
+    }
+}
+exports.IncorrectDebtAdjustmentError = IncorrectDebtAdjustmentError;
+codeToErrorMap.set(0x8, IncorrectDebtAdjustmentError);
+nameToErrorMap.set('IncorrectDebtAdjustment', IncorrectDebtAdjustmentError);
 /**
  * Attempts to resolve a custom program error from the provided error code.
  * @category Errors

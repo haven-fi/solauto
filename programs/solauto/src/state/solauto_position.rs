@@ -10,7 +10,7 @@ use std::{
 
 use crate::{
     constants::USD_DECIMALS,
-    types::shared::{FeeType, PodBool, TokenType},
+    types::shared::{PodBool, PositionType, RebalanceDirection, TokenType},
     utils::math_utils::{
         from_base_unit, from_bps, get_liq_utilization_rate_bps, net_worth_base_amount, to_base_unit,
     },
@@ -170,6 +170,7 @@ impl PositionTokenUsage {
         self.update_usd_values();
     }
     pub fn update_market_price(&mut self, market_price: f64) {
+        msg!("New {} price: {}", self.mint, market_price);
         self.base_amount_market_price_usd =
             to_base_unit::<f64, u8, u64>(market_price, USD_DECIMALS);
         self.update_usd_values();
@@ -179,7 +180,8 @@ impl PositionTokenUsage {
 #[derive(BorshDeserialize, Clone, Debug, Copy, Default)]
 pub struct DCASettingsInp {
     pub automation: AutomationSettingsInp,
-    pub debt_to_add_base_unit: u64,
+    pub dca_in_base_unit: u64,
+    pub token_type: TokenType,
 }
 
 #[repr(C, align(8))]
@@ -188,22 +190,24 @@ pub struct DCASettingsInp {
 )]
 pub struct DCASettings {
     pub automation: AutomationSettings,
-    // Gradually add more debt to the position during the DCA period. If this is 0, then a DCA-out is assumed.
-    pub debt_to_add_base_unit: u64,
-    _padding: [u8; 32],
+    // Gradually add more to the position during the DCA period. If this is 0, then a DCA-out is assumed.
+    pub dca_in_base_unit: u64,
+    pub token_type: TokenType,
+    _padding: [u8; 31],
 }
 
 impl DCASettings {
     pub fn from(args: DCASettingsInp) -> Self {
         Self {
             automation: AutomationSettings::from(args.automation),
-            debt_to_add_base_unit: args.debt_to_add_base_unit,
-            _padding: [0; 32],
+            dca_in_base_unit: args.dca_in_base_unit,
+            token_type: args.token_type,
+            _padding: [0; 31],
         }
     }
     #[inline(always)]
     pub fn dca_in(&self) -> bool {
-        self.debt_to_add_base_unit > 0
+        self.dca_in_base_unit > 0
     }
     #[inline(always)]
     pub fn is_active(&self) -> bool {
@@ -298,7 +302,6 @@ pub struct PositionState {
 pub struct PositionData {
     pub lending_platform: LendingPlatform,
     _padding1: [u8; 7],
-    /// Marginfi: "marginfi_account", Kamino: "obligation"
     pub protocol_account: Pubkey,
     pub supply_mint: Pubkey,
     pub debt_mint: Pubkey,
@@ -332,9 +335,8 @@ unsafe impl Pod for SolautoRebalanceType {}
 pub struct RebalanceData {
     pub rebalance_type: SolautoRebalanceType,
     _padding1: [u8; 7],
-    pub price_slippage_bps: u16,
-    pub target_liq_utilization_rate_bps: u16,
-    _padding2: [u8; 4],
+    pub rebalance_direction: RebalanceDirection,
+    _padding2: [u8; 7],
     pub flash_loan_amount: u64,
     _padding: [u8; 32],
 }
@@ -352,14 +354,13 @@ pub struct SolautoPosition {
     bump: [u8; 1],
     position_id: [u8; 1],
     pub self_managed: PodBool,
-    _padding1: [u8; 5],
+    pub position_type: PositionType,
+    _padding1: [u8; 4],
     pub authority: Pubkey,
     pub position: PositionData,
     pub state: PositionState,
     pub rebalance: RebalanceData,
-    pub fee_type: FeeType,
-    _padding2: [u8; 7],
-    _padding: [u32; 30],
+    _padding: [u32; 32],
 }
 
 impl SolautoPosition {
@@ -367,6 +368,7 @@ impl SolautoPosition {
     pub fn new(
         position_id: u8,
         authority: Pubkey,
+        position_type: PositionType,
         position: PositionData,
         state: PositionState,
     ) -> Self {
@@ -376,14 +378,13 @@ impl SolautoPosition {
             bump: [bump],
             position_id: [position_id],
             self_managed: PodBool::new(position_id == 0),
-            _padding1: [0; 5],
+            position_type: position_type,
+            _padding1: [0; 4],
             authority,
             position,
             state,
             rebalance: RebalanceData::default(),
-            fee_type: FeeType::Small,
-            _padding2: [0; 7],
-            _padding: [0; 30],
+            _padding: [0; 32],
         }
     }
     #[inline(always)]
@@ -452,6 +453,7 @@ mod tests {
         let solauto_position = SolautoPosition::new(
             1,
             Pubkey::default(),
+            PositionType::default(),
             PositionData::default(),
             PositionState::default(),
         );

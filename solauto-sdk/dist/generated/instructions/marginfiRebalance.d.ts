@@ -14,9 +14,10 @@ export type MarginfiRebalanceInstructionAccounts = {
     systemProgram?: PublicKey | Pda;
     tokenProgram?: PublicKey | Pda;
     ixsSysvar: PublicKey | Pda;
-    solautoFeesSupplyTa?: PublicKey | Pda;
+    solautoFeesTa?: PublicKey | Pda;
     authorityReferralState: PublicKey | Pda;
-    referredBySupplyTa?: PublicKey | Pda;
+    referredByTa?: PublicKey | Pda;
+    positionAuthority?: PublicKey | Pda;
     solautoPosition: PublicKey | Pda;
     marginfiGroup: PublicKey | Pda;
     marginfiAccount: PublicKey | Pda;
@@ -24,13 +25,13 @@ export type MarginfiRebalanceInstructionAccounts = {
     supplyBank: PublicKey | Pda;
     supplyPriceOracle?: PublicKey | Pda;
     positionSupplyTa: PublicKey | Pda;
-    signerSupplyTa?: PublicKey | Pda;
+    authoritySupplyTa?: PublicKey | Pda;
     vaultSupplyTa?: PublicKey | Pda;
     supplyVaultAuthority?: PublicKey | Pda;
     debtBank: PublicKey | Pda;
     debtPriceOracle?: PublicKey | Pda;
     positionDebtTa: PublicKey | Pda;
-    signerDebtTa?: PublicKey | Pda;
+    authorityDebtTa?: PublicKey | Pda;
     vaultDebtTa?: PublicKey | Pda;
     debtVaultAuthority?: PublicKey | Pda;
 };
@@ -38,12 +39,12 @@ export type MarginfiRebalanceInstructionData = {
     discriminator: number;
     rebalanceType: SolautoRebalanceType;
     targetLiqUtilizationRateBps: Option<number>;
-    limitGapBps: Option<number>;
+    targetInAmountBaseUnit: Option<bigint>;
 };
 export type MarginfiRebalanceInstructionDataArgs = {
     rebalanceType: SolautoRebalanceTypeArgs;
     targetLiqUtilizationRateBps: OptionOrNullable<number>;
-    limitGapBps: OptionOrNullable<number>;
+    targetInAmountBaseUnit: OptionOrNullable<number | bigint>;
 };
 export declare function getMarginfiRebalanceInstructionDataSerializer(): Serializer<MarginfiRebalanceInstructionDataArgs, MarginfiRebalanceInstructionData>;
 export type MarginfiRebalanceInstructionArgs = MarginfiRebalanceInstructionDataArgs;

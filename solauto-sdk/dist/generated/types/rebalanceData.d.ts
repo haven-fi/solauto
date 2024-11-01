@@ -6,12 +6,11 @@
  * @see https://github.com/metaplex-foundation/kinobi
  */
 import { Serializer } from '@metaplex-foundation/umi/serializers';
-import { SolautoRebalanceType, SolautoRebalanceTypeArgs } from '.';
+import { RebalanceDirection, RebalanceDirectionArgs, SolautoRebalanceType, SolautoRebalanceTypeArgs } from '.';
 export type RebalanceData = {
     rebalanceType: SolautoRebalanceType;
     padding1: Array<number>;
-    priceSlippageBps: number;
-    targetLiqUtilizationRateBps: number;
+    rebalanceDirection: RebalanceDirection;
     padding2: Array<number>;
     flashLoanAmount: bigint;
     padding: Uint8Array;
@@ -19,8 +18,7 @@ export type RebalanceData = {
 export type RebalanceDataArgs = {
     rebalanceType: SolautoRebalanceTypeArgs;
     padding1: Array<number>;
-    priceSlippageBps: number;
-    targetLiqUtilizationRateBps: number;
+    rebalanceDirection: RebalanceDirectionArgs;
     padding2: Array<number>;
     flashLoanAmount: number | bigint;
     padding: Uint8Array;

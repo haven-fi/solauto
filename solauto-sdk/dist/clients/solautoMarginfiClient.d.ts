@@ -4,8 +4,8 @@ import { SolautoClient, SolautoClientArgs } from "./solautoClient";
 import { MarginfiAssetAccounts } from "../types/accounts";
 import { DCASettingsInpArgs, PositionState, SolautoActionArgs, SolautoRebalanceTypeArgs, SolautoSettingsParametersInpArgs } from "../generated";
 import { MarginfiAccount } from "../marginfi-sdk";
-import { JupSwapDetails } from "../utils/jupiterUtils";
-import { FlashLoanDetails } from "../utils/solauto/rebalanceUtils";
+import { FlashLoanDetails, RebalanceValues } from "../utils/solauto/rebalanceUtils";
+import { QuoteResponse } from "@jup-ag/api";
 export interface SolautoMarginfiClientArgs extends SolautoClientArgs {
     marginfiAccount?: PublicKey | Signer;
     marginfiAccountSeedIdx?: bigint;
@@ -27,8 +27,10 @@ export declare class SolautoMarginfiClient extends SolautoClient {
     intermediaryMarginfiAccount?: MarginfiAccount;
     initialize(args: SolautoMarginfiClientArgs): Promise<void>;
     setIntermediaryMarginfiDetails(): Promise<void>;
+    protocolAccount(): PublicKey;
     defaultLookupTables(): string[];
     lutAccountsToAdd(): PublicKey[];
+    maxLtvAndLiqThresholdBps(): Promise<[number, number] | undefined>;
     marginfiAccountInitialize(): TransactionBuilder;
     openPosition(settingParams?: SolautoSettingsParametersInpArgs, dca?: DCASettingsInpArgs): TransactionBuilder;
     private marginfiOpenPositionIx;
@@ -36,7 +38,7 @@ export declare class SolautoMarginfiClient extends SolautoClient {
     protocolInteraction(args: SolautoActionArgs): TransactionBuilder;
     private marginfiProtocolInteractionIx;
     private marginfiSolautoProtocolInteractionIx;
-    rebalance(rebalanceStep: "A" | "B", swapDetails: JupSwapDetails, rebalanceType: SolautoRebalanceTypeArgs, flashLoan?: FlashLoanDetails, targetLiqUtilizationRateBps?: number, limitGapBps?: number): TransactionBuilder;
+    rebalance(rebalanceStep: "A" | "B", jupQuote: QuoteResponse, rebalanceType: SolautoRebalanceTypeArgs, rebalanceValues: RebalanceValues, flashLoan?: FlashLoanDetails, targetLiqUtilizationRateBps?: number): TransactionBuilder;
     flashBorrow(flashLoanDetails: FlashLoanDetails, destinationTokenAccount: PublicKey): TransactionBuilder;
     flashRepay(flashLoanDetails: FlashLoanDetails): TransactionBuilder;
     createIntermediaryMarginfiAccount(): TransactionBuilder;

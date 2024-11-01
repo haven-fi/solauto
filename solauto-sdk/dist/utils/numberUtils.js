@@ -16,7 +16,7 @@ exports.maxBoostToBps = maxBoostToBps;
 const constants_1 = require("../constants");
 const generated_1 = require("../generated");
 function getLiqUtilzationRateBps(supplyUsd, debtUsd, liqThresholdBps) {
-    if (supplyUsd === 0) {
+    if (supplyUsd === 0 || debtUsd === 0) {
         return 0;
     }
     return toBps(debtUsd / (supplyUsd * fromBps(liqThresholdBps)));
@@ -67,14 +67,24 @@ function getDebtAdjustmentUsd(liqThresholdBps, supplyUsd, debtUsd, targetLiqUtil
         (1 - targetLiqUtilizationRate * (1 - adjustmentFee) * liqThreshold);
     return debtAdjustmentUsd;
 }
-function getSolautoFeesBps(isReferred, feeType, positionNetWorthUsd) {
+function getSolautoFeesBps(isReferred, targetLiqUtilizationRateBps, positionNetWorthUsd, rebalanceDirection) {
     const minSize = 10000; // Minimum position size
-    const maxSize = 1000000; // Maximum position size
-    const maxFeeBps = 500; // Fee in basis points for minSize (5%)
-    const minFeeBps = 100; // Fee in basis points for maxSize (1%)
+    const maxSize = 500000; // Maximum position size
+    const maxFeeBps = 200; // Fee in basis points for minSize (2%)
+    const minFeeBps = 50; // Fee in basis points for maxSize (0.5%)
+    const k = 1.5;
+    if (targetLiqUtilizationRateBps !== undefined &&
+        targetLiqUtilizationRateBps === 0) {
+        return {
+            solauto: 0,
+            referrer: 0,
+            total: 0,
+        };
+    }
     let feeBps = 0;
-    if (feeType === generated_1.FeeType.Small) {
-        feeBps = 100;
+    if (targetLiqUtilizationRateBps !== undefined ||
+        rebalanceDirection === generated_1.RebalanceDirection.Repay) {
+        feeBps = 25;
     }
     else if (positionNetWorthUsd <= minSize) {
         feeBps = maxFeeBps;
@@ -85,11 +95,11 @@ function getSolautoFeesBps(isReferred, feeType, positionNetWorthUsd) {
     else {
         const t = (Math.log(positionNetWorthUsd) - Math.log(minSize)) /
             (Math.log(maxSize) - Math.log(minSize));
-        feeBps = Math.round(minFeeBps + (maxFeeBps - minFeeBps) * (1 - t));
+        feeBps = Math.round(minFeeBps + (maxFeeBps - minFeeBps) * (1 - Math.pow(t, k)));
     }
     let referrer = 0;
     if (isReferred) {
-        referrer = Math.floor(feeBps / 4);
+        referrer = Math.floor(feeBps / 5);
     }
     return {
         solauto: feeBps - referrer,
@@ -98,14 +108,15 @@ function getSolautoFeesBps(isReferred, feeType, positionNetWorthUsd) {
     };
 }
 function getMaxLiqUtilizationRateBps(maxLtvBps, liqThresholdBps, offsetFromMaxLtv) {
-    return toBps((fromBps(maxLtvBps) - offsetFromMaxLtv) / fromBps(liqThresholdBps)) - 1; // -1 to account for any rounding issues
+    return (toBps((fromBps(maxLtvBps) - offsetFromMaxLtv) / fromBps(liqThresholdBps)) -
+        1); // -1 to account for any rounding issues
 }
 function maxRepayFromBps(maxLtvBps, liqThresholdBps) {
-    return Math.min(9000, getMaxLiqUtilizationRateBps(maxLtvBps, liqThresholdBps - 1000, 0.005));
+    return Math.min(9000, getMaxLiqUtilizationRateBps(maxLtvBps, liqThresholdBps - 1000, 0.01));
 }
 function maxRepayToBps(maxLtvBps, liqThresholdBps) {
-    return Math.min(maxRepayFromBps(maxLtvBps, liqThresholdBps) - constants_1.MIN_REPAY_GAP_BPS, getMaxLiqUtilizationRateBps(maxLtvBps, liqThresholdBps, 0.005));
+    return Math.min(maxRepayFromBps(maxLtvBps, liqThresholdBps) - constants_1.MIN_REPAY_GAP_BPS, getMaxLiqUtilizationRateBps(maxLtvBps, liqThresholdBps, 0.01));
 }
 function maxBoostToBps(maxLtvBps, liqThresholdBps) {
-    return Math.min(maxRepayToBps(maxLtvBps, liqThresholdBps), getMaxLiqUtilizationRateBps(maxLtvBps, liqThresholdBps, 0.015));
+    return Math.min(maxRepayToBps(maxLtvBps, liqThresholdBps), getMaxLiqUtilizationRateBps(maxLtvBps, liqThresholdBps, 0.01));
 }

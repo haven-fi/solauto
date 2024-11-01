@@ -4,12 +4,13 @@ exports.bufferFromU8 = bufferFromU8;
 exports.bufferFromU64 = bufferFromU64;
 exports.getTokenAccount = getTokenAccount;
 exports.getTokenAccounts = getTokenAccounts;
+exports.getTokenAccountData = getTokenAccountData;
 exports.getSolautoPositionAccount = getSolautoPositionAccount;
 exports.getReferralState = getReferralState;
 exports.getMarginfiAccountPDA = getMarginfiAccountPDA;
 const web3_js_1 = require("@solana/web3.js");
 const spl_token_1 = require("@solana/spl-token");
-const generated_1 = require("../generated");
+const umi_1 = require("@metaplex-foundation/umi");
 function bufferFromU8(num) {
     const buffer = Buffer.alloc(1);
     buffer.writeUInt8(num);
@@ -26,21 +27,30 @@ function getTokenAccount(wallet, tokenMint) {
 function getTokenAccounts(wallet, tokenMints) {
     return tokenMints.map(x => getTokenAccount(wallet, x));
 }
-async function getSolautoPositionAccount(signer, positionId) {
-    const [positionAccount, _] = await web3_js_1.PublicKey.findProgramAddress([bufferFromU8(positionId), signer.toBuffer()], new web3_js_1.PublicKey(generated_1.SOLAUTO_PROGRAM_ID));
+async function getTokenAccountData(umi, tokenAccount) {
+    const resp = await umi.rpc.getAccount((0, umi_1.publicKey)(tokenAccount), { commitment: "confirmed" });
+    if (resp.exists) {
+        return spl_token_1.AccountLayout.decode(resp.data);
+    }
+    else {
+        return undefined;
+    }
+}
+function getSolautoPositionAccount(authority, positionId, programId) {
+    const [positionAccount, _] = web3_js_1.PublicKey.findProgramAddressSync([bufferFromU8(positionId), authority.toBuffer()], programId);
     return positionAccount;
 }
-async function getReferralState(authority) {
+function getReferralState(authority, programId) {
     const str = "referral_state";
     const strBuffer = Buffer.from(str, "utf-8");
-    const [ReferralState, _] = await web3_js_1.PublicKey.findProgramAddress([strBuffer, authority.toBuffer()], new web3_js_1.PublicKey(generated_1.SOLAUTO_PROGRAM_ID));
+    const [ReferralState, _] = web3_js_1.PublicKey.findProgramAddressSync([strBuffer, authority.toBuffer()], programId);
     return ReferralState;
 }
-async function getMarginfiAccountPDA(solautoPositionAccount, marginfiAccountSeedIdx) {
+function getMarginfiAccountPDA(solautoPositionAccount, marginfiAccountSeedIdx, programId) {
     const seeds = [
         solautoPositionAccount.toBuffer(),
         bufferFromU64(marginfiAccountSeedIdx),
     ];
-    const [marginfiAccount, _] = await web3_js_1.PublicKey.findProgramAddress(seeds, new web3_js_1.PublicKey(generated_1.SOLAUTO_PROGRAM_ID));
+    const [marginfiAccount, _] = web3_js_1.PublicKey.findProgramAddressSync(seeds, programId);
     return marginfiAccount;
 }

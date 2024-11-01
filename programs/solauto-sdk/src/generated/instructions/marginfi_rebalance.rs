@@ -21,11 +21,13 @@ pub struct MarginfiRebalance {
 
     pub ixs_sysvar: solana_program::pubkey::Pubkey,
 
-    pub solauto_fees_supply_ta: Option<solana_program::pubkey::Pubkey>,
+    pub solauto_fees_ta: Option<solana_program::pubkey::Pubkey>,
 
     pub authority_referral_state: solana_program::pubkey::Pubkey,
 
-    pub referred_by_supply_ta: Option<solana_program::pubkey::Pubkey>,
+    pub referred_by_ta: Option<solana_program::pubkey::Pubkey>,
+
+    pub position_authority: Option<solana_program::pubkey::Pubkey>,
 
     pub solauto_position: solana_program::pubkey::Pubkey,
 
@@ -41,7 +43,7 @@ pub struct MarginfiRebalance {
 
     pub position_supply_ta: solana_program::pubkey::Pubkey,
 
-    pub signer_supply_ta: Option<solana_program::pubkey::Pubkey>,
+    pub authority_supply_ta: Option<solana_program::pubkey::Pubkey>,
 
     pub vault_supply_ta: Option<solana_program::pubkey::Pubkey>,
 
@@ -53,7 +55,7 @@ pub struct MarginfiRebalance {
 
     pub position_debt_ta: solana_program::pubkey::Pubkey,
 
-    pub signer_debt_ta: Option<solana_program::pubkey::Pubkey>,
+    pub authority_debt_ta: Option<solana_program::pubkey::Pubkey>,
 
     pub vault_debt_ta: Option<solana_program::pubkey::Pubkey>,
 
@@ -73,7 +75,7 @@ impl MarginfiRebalance {
         args: MarginfiRebalanceInstructionArgs,
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
-        let mut accounts = Vec::with_capacity(24 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(25 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.signer,
             true,
@@ -94,9 +96,9 @@ impl MarginfiRebalance {
             self.ixs_sysvar,
             false,
         ));
-        if let Some(solauto_fees_supply_ta) = self.solauto_fees_supply_ta {
+        if let Some(solauto_fees_ta) = self.solauto_fees_ta {
             accounts.push(solana_program::instruction::AccountMeta::new(
-                solauto_fees_supply_ta,
+                solauto_fees_ta,
                 false,
             ));
         } else {
@@ -109,9 +111,20 @@ impl MarginfiRebalance {
             self.authority_referral_state,
             false,
         ));
-        if let Some(referred_by_supply_ta) = self.referred_by_supply_ta {
+        if let Some(referred_by_ta) = self.referred_by_ta {
             accounts.push(solana_program::instruction::AccountMeta::new(
-                referred_by_supply_ta,
+                referred_by_ta,
+                false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::SOLAUTO_ID,
+                false,
+            ));
+        }
+        if let Some(position_authority) = self.position_authority {
+            accounts.push(solana_program::instruction::AccountMeta::new(
+                position_authority,
                 false,
             ));
         } else {
@@ -162,9 +175,9 @@ impl MarginfiRebalance {
             self.position_supply_ta,
             false,
         ));
-        if let Some(signer_supply_ta) = self.signer_supply_ta {
+        if let Some(authority_supply_ta) = self.authority_supply_ta {
             accounts.push(solana_program::instruction::AccountMeta::new(
-                signer_supply_ta,
+                authority_supply_ta,
                 false,
             ));
         } else {
@@ -214,9 +227,9 @@ impl MarginfiRebalance {
             self.position_debt_ta,
             false,
         ));
-        if let Some(signer_debt_ta) = self.signer_debt_ta {
+        if let Some(authority_debt_ta) = self.authority_debt_ta {
             accounts.push(solana_program::instruction::AccountMeta::new(
-                signer_debt_ta,
+                authority_debt_ta,
                 false,
             ));
         } else {
@@ -278,7 +291,7 @@ impl MarginfiRebalanceInstructionData {
 pub struct MarginfiRebalanceInstructionArgs {
     pub rebalance_type: SolautoRebalanceType,
     pub target_liq_utilization_rate_bps: Option<u16>,
-    pub limit_gap_bps: Option<u16>,
+    pub target_in_amount_base_unit: Option<u64>,
 }
 
 /// Instruction builder for `MarginfiRebalance`.
@@ -290,25 +303,26 @@ pub struct MarginfiRebalanceInstructionArgs {
 ///   2. `[optional]` system_program (default to `11111111111111111111111111111111`)
 ///   3. `[optional]` token_program (default to `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA`)
 ///   4. `[]` ixs_sysvar
-///   5. `[writable, optional]` solauto_fees_supply_ta
+///   5. `[writable, optional]` solauto_fees_ta
 ///   6. `[]` authority_referral_state
-///   7. `[writable, optional]` referred_by_supply_ta
-///   8. `[writable]` solauto_position
-///   9. `[]` marginfi_group
-///   10. `[writable]` marginfi_account
-///   11. `[writable, optional]` intermediary_ta
-///   12. `[writable]` supply_bank
-///   13. `[optional]` supply_price_oracle
-///   14. `[writable]` position_supply_ta
-///   15. `[writable, optional]` signer_supply_ta
-///   16. `[writable, optional]` vault_supply_ta
-///   17. `[writable, optional]` supply_vault_authority
-///   18. `[writable]` debt_bank
-///   19. `[optional]` debt_price_oracle
-///   20. `[writable]` position_debt_ta
-///   21. `[writable, optional]` signer_debt_ta
-///   22. `[writable, optional]` vault_debt_ta
-///   23. `[writable, optional]` debt_vault_authority
+///   7. `[writable, optional]` referred_by_ta
+///   8. `[writable, optional]` position_authority
+///   9. `[writable]` solauto_position
+///   10. `[]` marginfi_group
+///   11. `[writable]` marginfi_account
+///   12. `[writable, optional]` intermediary_ta
+///   13. `[writable]` supply_bank
+///   14. `[optional]` supply_price_oracle
+///   15. `[writable]` position_supply_ta
+///   16. `[writable, optional]` authority_supply_ta
+///   17. `[writable, optional]` vault_supply_ta
+///   18. `[writable, optional]` supply_vault_authority
+///   19. `[writable]` debt_bank
+///   20. `[optional]` debt_price_oracle
+///   21. `[writable]` position_debt_ta
+///   22. `[writable, optional]` authority_debt_ta
+///   23. `[writable, optional]` vault_debt_ta
+///   24. `[writable, optional]` debt_vault_authority
 #[derive(Default)]
 pub struct MarginfiRebalanceBuilder {
     signer: Option<solana_program::pubkey::Pubkey>,
@@ -316,9 +330,10 @@ pub struct MarginfiRebalanceBuilder {
     system_program: Option<solana_program::pubkey::Pubkey>,
     token_program: Option<solana_program::pubkey::Pubkey>,
     ixs_sysvar: Option<solana_program::pubkey::Pubkey>,
-    solauto_fees_supply_ta: Option<solana_program::pubkey::Pubkey>,
+    solauto_fees_ta: Option<solana_program::pubkey::Pubkey>,
     authority_referral_state: Option<solana_program::pubkey::Pubkey>,
-    referred_by_supply_ta: Option<solana_program::pubkey::Pubkey>,
+    referred_by_ta: Option<solana_program::pubkey::Pubkey>,
+    position_authority: Option<solana_program::pubkey::Pubkey>,
     solauto_position: Option<solana_program::pubkey::Pubkey>,
     marginfi_group: Option<solana_program::pubkey::Pubkey>,
     marginfi_account: Option<solana_program::pubkey::Pubkey>,
@@ -326,18 +341,18 @@ pub struct MarginfiRebalanceBuilder {
     supply_bank: Option<solana_program::pubkey::Pubkey>,
     supply_price_oracle: Option<solana_program::pubkey::Pubkey>,
     position_supply_ta: Option<solana_program::pubkey::Pubkey>,
-    signer_supply_ta: Option<solana_program::pubkey::Pubkey>,
+    authority_supply_ta: Option<solana_program::pubkey::Pubkey>,
     vault_supply_ta: Option<solana_program::pubkey::Pubkey>,
     supply_vault_authority: Option<solana_program::pubkey::Pubkey>,
     debt_bank: Option<solana_program::pubkey::Pubkey>,
     debt_price_oracle: Option<solana_program::pubkey::Pubkey>,
     position_debt_ta: Option<solana_program::pubkey::Pubkey>,
-    signer_debt_ta: Option<solana_program::pubkey::Pubkey>,
+    authority_debt_ta: Option<solana_program::pubkey::Pubkey>,
     vault_debt_ta: Option<solana_program::pubkey::Pubkey>,
     debt_vault_authority: Option<solana_program::pubkey::Pubkey>,
     rebalance_type: Option<SolautoRebalanceType>,
     target_liq_utilization_rate_bps: Option<u16>,
-    limit_gap_bps: Option<u16>,
+    target_in_amount_base_unit: Option<u64>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
 
@@ -377,11 +392,11 @@ impl MarginfiRebalanceBuilder {
     }
     /// `[optional account]`
     #[inline(always)]
-    pub fn solauto_fees_supply_ta(
+    pub fn solauto_fees_ta(
         &mut self,
-        solauto_fees_supply_ta: Option<solana_program::pubkey::Pubkey>,
+        solauto_fees_ta: Option<solana_program::pubkey::Pubkey>,
     ) -> &mut Self {
-        self.solauto_fees_supply_ta = solauto_fees_supply_ta;
+        self.solauto_fees_ta = solauto_fees_ta;
         self
     }
     #[inline(always)]
@@ -394,11 +409,20 @@ impl MarginfiRebalanceBuilder {
     }
     /// `[optional account]`
     #[inline(always)]
-    pub fn referred_by_supply_ta(
+    pub fn referred_by_ta(
         &mut self,
-        referred_by_supply_ta: Option<solana_program::pubkey::Pubkey>,
+        referred_by_ta: Option<solana_program::pubkey::Pubkey>,
     ) -> &mut Self {
-        self.referred_by_supply_ta = referred_by_supply_ta;
+        self.referred_by_ta = referred_by_ta;
+        self
+    }
+    /// `[optional account]`
+    #[inline(always)]
+    pub fn position_authority(
+        &mut self,
+        position_authority: Option<solana_program::pubkey::Pubkey>,
+    ) -> &mut Self {
+        self.position_authority = position_authority;
         self
     }
     #[inline(always)]
@@ -455,11 +479,11 @@ impl MarginfiRebalanceBuilder {
     }
     /// `[optional account]`
     #[inline(always)]
-    pub fn signer_supply_ta(
+    pub fn authority_supply_ta(
         &mut self,
-        signer_supply_ta: Option<solana_program::pubkey::Pubkey>,
+        authority_supply_ta: Option<solana_program::pubkey::Pubkey>,
     ) -> &mut Self {
-        self.signer_supply_ta = signer_supply_ta;
+        self.authority_supply_ta = authority_supply_ta;
         self
     }
     /// `[optional account]`
@@ -504,11 +528,11 @@ impl MarginfiRebalanceBuilder {
     }
     /// `[optional account]`
     #[inline(always)]
-    pub fn signer_debt_ta(
+    pub fn authority_debt_ta(
         &mut self,
-        signer_debt_ta: Option<solana_program::pubkey::Pubkey>,
+        authority_debt_ta: Option<solana_program::pubkey::Pubkey>,
     ) -> &mut Self {
-        self.signer_debt_ta = signer_debt_ta;
+        self.authority_debt_ta = authority_debt_ta;
         self
     }
     /// `[optional account]`
@@ -545,8 +569,8 @@ impl MarginfiRebalanceBuilder {
     }
     /// `[optional argument]`
     #[inline(always)]
-    pub fn limit_gap_bps(&mut self, limit_gap_bps: u16) -> &mut Self {
-        self.limit_gap_bps = Some(limit_gap_bps);
+    pub fn target_in_amount_base_unit(&mut self, target_in_amount_base_unit: u64) -> &mut Self {
+        self.target_in_amount_base_unit = Some(target_in_amount_base_unit);
         self
     }
     /// Add an aditional account to the instruction.
@@ -579,11 +603,12 @@ impl MarginfiRebalanceBuilder {
                 "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
             )),
             ixs_sysvar: self.ixs_sysvar.expect("ixs_sysvar is not set"),
-            solauto_fees_supply_ta: self.solauto_fees_supply_ta,
+            solauto_fees_ta: self.solauto_fees_ta,
             authority_referral_state: self
                 .authority_referral_state
                 .expect("authority_referral_state is not set"),
-            referred_by_supply_ta: self.referred_by_supply_ta,
+            referred_by_ta: self.referred_by_ta,
+            position_authority: self.position_authority,
             solauto_position: self.solauto_position.expect("solauto_position is not set"),
             marginfi_group: self.marginfi_group.expect("marginfi_group is not set"),
             marginfi_account: self.marginfi_account.expect("marginfi_account is not set"),
@@ -593,13 +618,13 @@ impl MarginfiRebalanceBuilder {
             position_supply_ta: self
                 .position_supply_ta
                 .expect("position_supply_ta is not set"),
-            signer_supply_ta: self.signer_supply_ta,
+            authority_supply_ta: self.authority_supply_ta,
             vault_supply_ta: self.vault_supply_ta,
             supply_vault_authority: self.supply_vault_authority,
             debt_bank: self.debt_bank.expect("debt_bank is not set"),
             debt_price_oracle: self.debt_price_oracle,
             position_debt_ta: self.position_debt_ta.expect("position_debt_ta is not set"),
-            signer_debt_ta: self.signer_debt_ta,
+            authority_debt_ta: self.authority_debt_ta,
             vault_debt_ta: self.vault_debt_ta,
             debt_vault_authority: self.debt_vault_authority,
         };
@@ -609,7 +634,7 @@ impl MarginfiRebalanceBuilder {
                 .clone()
                 .expect("rebalance_type is not set"),
             target_liq_utilization_rate_bps: self.target_liq_utilization_rate_bps.clone(),
-            limit_gap_bps: self.limit_gap_bps.clone(),
+            target_in_amount_base_unit: self.target_in_amount_base_unit.clone(),
         };
 
         accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
@@ -628,11 +653,13 @@ pub struct MarginfiRebalanceCpiAccounts<'a, 'b> {
 
     pub ixs_sysvar: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub solauto_fees_supply_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    pub solauto_fees_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
     pub authority_referral_state: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub referred_by_supply_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    pub referred_by_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+
+    pub position_authority: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
     pub solauto_position: &'b solana_program::account_info::AccountInfo<'a>,
 
@@ -648,7 +675,7 @@ pub struct MarginfiRebalanceCpiAccounts<'a, 'b> {
 
     pub position_supply_ta: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub signer_supply_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    pub authority_supply_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
     pub vault_supply_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
@@ -660,7 +687,7 @@ pub struct MarginfiRebalanceCpiAccounts<'a, 'b> {
 
     pub position_debt_ta: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub signer_debt_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    pub authority_debt_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
     pub vault_debt_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
@@ -682,11 +709,13 @@ pub struct MarginfiRebalanceCpi<'a, 'b> {
 
     pub ixs_sysvar: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub solauto_fees_supply_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    pub solauto_fees_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
     pub authority_referral_state: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub referred_by_supply_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    pub referred_by_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+
+    pub position_authority: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
     pub solauto_position: &'b solana_program::account_info::AccountInfo<'a>,
 
@@ -702,7 +731,7 @@ pub struct MarginfiRebalanceCpi<'a, 'b> {
 
     pub position_supply_ta: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub signer_supply_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    pub authority_supply_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
     pub vault_supply_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
@@ -714,7 +743,7 @@ pub struct MarginfiRebalanceCpi<'a, 'b> {
 
     pub position_debt_ta: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub signer_debt_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    pub authority_debt_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
     pub vault_debt_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
@@ -736,9 +765,10 @@ impl<'a, 'b> MarginfiRebalanceCpi<'a, 'b> {
             system_program: accounts.system_program,
             token_program: accounts.token_program,
             ixs_sysvar: accounts.ixs_sysvar,
-            solauto_fees_supply_ta: accounts.solauto_fees_supply_ta,
+            solauto_fees_ta: accounts.solauto_fees_ta,
             authority_referral_state: accounts.authority_referral_state,
-            referred_by_supply_ta: accounts.referred_by_supply_ta,
+            referred_by_ta: accounts.referred_by_ta,
+            position_authority: accounts.position_authority,
             solauto_position: accounts.solauto_position,
             marginfi_group: accounts.marginfi_group,
             marginfi_account: accounts.marginfi_account,
@@ -746,13 +776,13 @@ impl<'a, 'b> MarginfiRebalanceCpi<'a, 'b> {
             supply_bank: accounts.supply_bank,
             supply_price_oracle: accounts.supply_price_oracle,
             position_supply_ta: accounts.position_supply_ta,
-            signer_supply_ta: accounts.signer_supply_ta,
+            authority_supply_ta: accounts.authority_supply_ta,
             vault_supply_ta: accounts.vault_supply_ta,
             supply_vault_authority: accounts.supply_vault_authority,
             debt_bank: accounts.debt_bank,
             debt_price_oracle: accounts.debt_price_oracle,
             position_debt_ta: accounts.position_debt_ta,
-            signer_debt_ta: accounts.signer_debt_ta,
+            authority_debt_ta: accounts.authority_debt_ta,
             vault_debt_ta: accounts.vault_debt_ta,
             debt_vault_authority: accounts.debt_vault_authority,
             __args: args,
@@ -791,7 +821,7 @@ impl<'a, 'b> MarginfiRebalanceCpi<'a, 'b> {
             bool,
         )],
     ) -> solana_program::entrypoint::ProgramResult {
-        let mut accounts = Vec::with_capacity(24 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(25 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             *self.signer.key,
             true,
@@ -812,9 +842,9 @@ impl<'a, 'b> MarginfiRebalanceCpi<'a, 'b> {
             *self.ixs_sysvar.key,
             false,
         ));
-        if let Some(solauto_fees_supply_ta) = self.solauto_fees_supply_ta {
+        if let Some(solauto_fees_ta) = self.solauto_fees_ta {
             accounts.push(solana_program::instruction::AccountMeta::new(
-                *solauto_fees_supply_ta.key,
+                *solauto_fees_ta.key,
                 false,
             ));
         } else {
@@ -827,9 +857,20 @@ impl<'a, 'b> MarginfiRebalanceCpi<'a, 'b> {
             *self.authority_referral_state.key,
             false,
         ));
-        if let Some(referred_by_supply_ta) = self.referred_by_supply_ta {
+        if let Some(referred_by_ta) = self.referred_by_ta {
             accounts.push(solana_program::instruction::AccountMeta::new(
-                *referred_by_supply_ta.key,
+                *referred_by_ta.key,
+                false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::SOLAUTO_ID,
+                false,
+            ));
+        }
+        if let Some(position_authority) = self.position_authority {
+            accounts.push(solana_program::instruction::AccountMeta::new(
+                *position_authority.key,
                 false,
             ));
         } else {
@@ -880,9 +921,9 @@ impl<'a, 'b> MarginfiRebalanceCpi<'a, 'b> {
             *self.position_supply_ta.key,
             false,
         ));
-        if let Some(signer_supply_ta) = self.signer_supply_ta {
+        if let Some(authority_supply_ta) = self.authority_supply_ta {
             accounts.push(solana_program::instruction::AccountMeta::new(
-                *signer_supply_ta.key,
+                *authority_supply_ta.key,
                 false,
             ));
         } else {
@@ -932,9 +973,9 @@ impl<'a, 'b> MarginfiRebalanceCpi<'a, 'b> {
             *self.position_debt_ta.key,
             false,
         ));
-        if let Some(signer_debt_ta) = self.signer_debt_ta {
+        if let Some(authority_debt_ta) = self.authority_debt_ta {
             accounts.push(solana_program::instruction::AccountMeta::new(
-                *signer_debt_ta.key,
+                *authority_debt_ta.key,
                 false,
             ));
         } else {
@@ -983,19 +1024,22 @@ impl<'a, 'b> MarginfiRebalanceCpi<'a, 'b> {
             accounts,
             data,
         };
-        let mut account_infos = Vec::with_capacity(24 + 1 + remaining_accounts.len());
+        let mut account_infos = Vec::with_capacity(25 + 1 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
         account_infos.push(self.signer.clone());
         account_infos.push(self.marginfi_program.clone());
         account_infos.push(self.system_program.clone());
         account_infos.push(self.token_program.clone());
         account_infos.push(self.ixs_sysvar.clone());
-        if let Some(solauto_fees_supply_ta) = self.solauto_fees_supply_ta {
-            account_infos.push(solauto_fees_supply_ta.clone());
+        if let Some(solauto_fees_ta) = self.solauto_fees_ta {
+            account_infos.push(solauto_fees_ta.clone());
         }
         account_infos.push(self.authority_referral_state.clone());
-        if let Some(referred_by_supply_ta) = self.referred_by_supply_ta {
-            account_infos.push(referred_by_supply_ta.clone());
+        if let Some(referred_by_ta) = self.referred_by_ta {
+            account_infos.push(referred_by_ta.clone());
+        }
+        if let Some(position_authority) = self.position_authority {
+            account_infos.push(position_authority.clone());
         }
         account_infos.push(self.solauto_position.clone());
         account_infos.push(self.marginfi_group.clone());
@@ -1008,8 +1052,8 @@ impl<'a, 'b> MarginfiRebalanceCpi<'a, 'b> {
             account_infos.push(supply_price_oracle.clone());
         }
         account_infos.push(self.position_supply_ta.clone());
-        if let Some(signer_supply_ta) = self.signer_supply_ta {
-            account_infos.push(signer_supply_ta.clone());
+        if let Some(authority_supply_ta) = self.authority_supply_ta {
+            account_infos.push(authority_supply_ta.clone());
         }
         if let Some(vault_supply_ta) = self.vault_supply_ta {
             account_infos.push(vault_supply_ta.clone());
@@ -1022,8 +1066,8 @@ impl<'a, 'b> MarginfiRebalanceCpi<'a, 'b> {
             account_infos.push(debt_price_oracle.clone());
         }
         account_infos.push(self.position_debt_ta.clone());
-        if let Some(signer_debt_ta) = self.signer_debt_ta {
-            account_infos.push(signer_debt_ta.clone());
+        if let Some(authority_debt_ta) = self.authority_debt_ta {
+            account_infos.push(authority_debt_ta.clone());
         }
         if let Some(vault_debt_ta) = self.vault_debt_ta {
             account_infos.push(vault_debt_ta.clone());
@@ -1052,25 +1096,26 @@ impl<'a, 'b> MarginfiRebalanceCpi<'a, 'b> {
 ///   2. `[]` system_program
 ///   3. `[]` token_program
 ///   4. `[]` ixs_sysvar
-///   5. `[writable, optional]` solauto_fees_supply_ta
+///   5. `[writable, optional]` solauto_fees_ta
 ///   6. `[]` authority_referral_state
-///   7. `[writable, optional]` referred_by_supply_ta
-///   8. `[writable]` solauto_position
-///   9. `[]` marginfi_group
-///   10. `[writable]` marginfi_account
-///   11. `[writable, optional]` intermediary_ta
-///   12. `[writable]` supply_bank
-///   13. `[optional]` supply_price_oracle
-///   14. `[writable]` position_supply_ta
-///   15. `[writable, optional]` signer_supply_ta
-///   16. `[writable, optional]` vault_supply_ta
-///   17. `[writable, optional]` supply_vault_authority
-///   18. `[writable]` debt_bank
-///   19. `[optional]` debt_price_oracle
-///   20. `[writable]` position_debt_ta
-///   21. `[writable, optional]` signer_debt_ta
-///   22. `[writable, optional]` vault_debt_ta
-///   23. `[writable, optional]` debt_vault_authority
+///   7. `[writable, optional]` referred_by_ta
+///   8. `[writable, optional]` position_authority
+///   9. `[writable]` solauto_position
+///   10. `[]` marginfi_group
+///   11. `[writable]` marginfi_account
+///   12. `[writable, optional]` intermediary_ta
+///   13. `[writable]` supply_bank
+///   14. `[optional]` supply_price_oracle
+///   15. `[writable]` position_supply_ta
+///   16. `[writable, optional]` authority_supply_ta
+///   17. `[writable, optional]` vault_supply_ta
+///   18. `[writable, optional]` supply_vault_authority
+///   19. `[writable]` debt_bank
+///   20. `[optional]` debt_price_oracle
+///   21. `[writable]` position_debt_ta
+///   22. `[writable, optional]` authority_debt_ta
+///   23. `[writable, optional]` vault_debt_ta
+///   24. `[writable, optional]` debt_vault_authority
 pub struct MarginfiRebalanceCpiBuilder<'a, 'b> {
     instruction: Box<MarginfiRebalanceCpiBuilderInstruction<'a, 'b>>,
 }
@@ -1084,9 +1129,10 @@ impl<'a, 'b> MarginfiRebalanceCpiBuilder<'a, 'b> {
             system_program: None,
             token_program: None,
             ixs_sysvar: None,
-            solauto_fees_supply_ta: None,
+            solauto_fees_ta: None,
             authority_referral_state: None,
-            referred_by_supply_ta: None,
+            referred_by_ta: None,
+            position_authority: None,
             solauto_position: None,
             marginfi_group: None,
             marginfi_account: None,
@@ -1094,18 +1140,18 @@ impl<'a, 'b> MarginfiRebalanceCpiBuilder<'a, 'b> {
             supply_bank: None,
             supply_price_oracle: None,
             position_supply_ta: None,
-            signer_supply_ta: None,
+            authority_supply_ta: None,
             vault_supply_ta: None,
             supply_vault_authority: None,
             debt_bank: None,
             debt_price_oracle: None,
             position_debt_ta: None,
-            signer_debt_ta: None,
+            authority_debt_ta: None,
             vault_debt_ta: None,
             debt_vault_authority: None,
             rebalance_type: None,
             target_liq_utilization_rate_bps: None,
-            limit_gap_bps: None,
+            target_in_amount_base_unit: None,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
@@ -1152,11 +1198,11 @@ impl<'a, 'b> MarginfiRebalanceCpiBuilder<'a, 'b> {
     }
     /// `[optional account]`
     #[inline(always)]
-    pub fn solauto_fees_supply_ta(
+    pub fn solauto_fees_ta(
         &mut self,
-        solauto_fees_supply_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+        solauto_fees_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     ) -> &mut Self {
-        self.instruction.solauto_fees_supply_ta = solauto_fees_supply_ta;
+        self.instruction.solauto_fees_ta = solauto_fees_ta;
         self
     }
     #[inline(always)]
@@ -1169,11 +1215,20 @@ impl<'a, 'b> MarginfiRebalanceCpiBuilder<'a, 'b> {
     }
     /// `[optional account]`
     #[inline(always)]
-    pub fn referred_by_supply_ta(
+    pub fn referred_by_ta(
         &mut self,
-        referred_by_supply_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+        referred_by_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     ) -> &mut Self {
-        self.instruction.referred_by_supply_ta = referred_by_supply_ta;
+        self.instruction.referred_by_ta = referred_by_ta;
+        self
+    }
+    /// `[optional account]`
+    #[inline(always)]
+    pub fn position_authority(
+        &mut self,
+        position_authority: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    ) -> &mut Self {
+        self.instruction.position_authority = position_authority;
         self
     }
     #[inline(always)]
@@ -1236,11 +1291,11 @@ impl<'a, 'b> MarginfiRebalanceCpiBuilder<'a, 'b> {
     }
     /// `[optional account]`
     #[inline(always)]
-    pub fn signer_supply_ta(
+    pub fn authority_supply_ta(
         &mut self,
-        signer_supply_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+        authority_supply_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     ) -> &mut Self {
-        self.instruction.signer_supply_ta = signer_supply_ta;
+        self.instruction.authority_supply_ta = authority_supply_ta;
         self
     }
     /// `[optional account]`
@@ -1288,11 +1343,11 @@ impl<'a, 'b> MarginfiRebalanceCpiBuilder<'a, 'b> {
     }
     /// `[optional account]`
     #[inline(always)]
-    pub fn signer_debt_ta(
+    pub fn authority_debt_ta(
         &mut self,
-        signer_debt_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+        authority_debt_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     ) -> &mut Self {
-        self.instruction.signer_debt_ta = signer_debt_ta;
+        self.instruction.authority_debt_ta = authority_debt_ta;
         self
     }
     /// `[optional account]`
@@ -1329,8 +1384,8 @@ impl<'a, 'b> MarginfiRebalanceCpiBuilder<'a, 'b> {
     }
     /// `[optional argument]`
     #[inline(always)]
-    pub fn limit_gap_bps(&mut self, limit_gap_bps: u16) -> &mut Self {
-        self.instruction.limit_gap_bps = Some(limit_gap_bps);
+    pub fn target_in_amount_base_unit(&mut self, target_in_amount_base_unit: u64) -> &mut Self {
+        self.instruction.target_in_amount_base_unit = Some(target_in_amount_base_unit);
         self
     }
     /// Add an additional account to the instruction.
@@ -1384,7 +1439,7 @@ impl<'a, 'b> MarginfiRebalanceCpiBuilder<'a, 'b> {
                 .instruction
                 .target_liq_utilization_rate_bps
                 .clone(),
-            limit_gap_bps: self.instruction.limit_gap_bps.clone(),
+            target_in_amount_base_unit: self.instruction.target_in_amount_base_unit.clone(),
         };
         let instruction = MarginfiRebalanceCpi {
             __program: self.instruction.__program,
@@ -1408,14 +1463,16 @@ impl<'a, 'b> MarginfiRebalanceCpiBuilder<'a, 'b> {
 
             ixs_sysvar: self.instruction.ixs_sysvar.expect("ixs_sysvar is not set"),
 
-            solauto_fees_supply_ta: self.instruction.solauto_fees_supply_ta,
+            solauto_fees_ta: self.instruction.solauto_fees_ta,
 
             authority_referral_state: self
                 .instruction
                 .authority_referral_state
                 .expect("authority_referral_state is not set"),
 
-            referred_by_supply_ta: self.instruction.referred_by_supply_ta,
+            referred_by_ta: self.instruction.referred_by_ta,
+
+            position_authority: self.instruction.position_authority,
 
             solauto_position: self
                 .instruction
@@ -1446,7 +1503,7 @@ impl<'a, 'b> MarginfiRebalanceCpiBuilder<'a, 'b> {
                 .position_supply_ta
                 .expect("position_supply_ta is not set"),
 
-            signer_supply_ta: self.instruction.signer_supply_ta,
+            authority_supply_ta: self.instruction.authority_supply_ta,
 
             vault_supply_ta: self.instruction.vault_supply_ta,
 
@@ -1461,7 +1518,7 @@ impl<'a, 'b> MarginfiRebalanceCpiBuilder<'a, 'b> {
                 .position_debt_ta
                 .expect("position_debt_ta is not set"),
 
-            signer_debt_ta: self.instruction.signer_debt_ta,
+            authority_debt_ta: self.instruction.authority_debt_ta,
 
             vault_debt_ta: self.instruction.vault_debt_ta,
 
@@ -1482,9 +1539,10 @@ struct MarginfiRebalanceCpiBuilderInstruction<'a, 'b> {
     system_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     token_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     ixs_sysvar: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    solauto_fees_supply_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    solauto_fees_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     authority_referral_state: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    referred_by_supply_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    referred_by_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    position_authority: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     solauto_position: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     marginfi_group: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     marginfi_account: Option<&'b solana_program::account_info::AccountInfo<'a>>,
@@ -1492,18 +1550,18 @@ struct MarginfiRebalanceCpiBuilderInstruction<'a, 'b> {
     supply_bank: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     supply_price_oracle: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     position_supply_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    signer_supply_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    authority_supply_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     vault_supply_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     supply_vault_authority: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     debt_bank: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     debt_price_oracle: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     position_debt_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    signer_debt_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    authority_debt_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     vault_debt_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     debt_vault_authority: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     rebalance_type: Option<SolautoRebalanceType>,
     target_liq_utilization_rate_bps: Option<u16>,
-    limit_gap_bps: Option<u16>,
+    target_in_amount_base_unit: Option<u64>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(
         &'b solana_program::account_info::AccountInfo<'a>,

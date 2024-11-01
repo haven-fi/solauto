@@ -88,7 +88,7 @@ mod claim_referral_fees {
                 vec![
                     data.general
                         .claim_referral_fees_ix()
-                        .referral_fees_dest_ta(fake_dest_ta)
+                        .fees_destination_ta(Some(fake_dest_ta))
                         .instruction()
                 ],
                 None

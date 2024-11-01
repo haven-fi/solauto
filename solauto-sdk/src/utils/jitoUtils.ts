@@ -48,7 +48,7 @@
 //     const nextLeader = await searcher.getNextScheduledLeader();
 //     const numSlots = nextLeader.nextLeaderSlot - nextLeader.currentSlot;
 //     isLeaderSlot = numSlots <= distanceFromJitoSlot && numSlots > 1;
-//     console.log(`Next jito leader slot in ${numSlots} slots`);
+//     consoleLog(`Next jito leader slot in ${numSlots} slots`);
 //     await new Promise((r) => setTimeout(r, 500));
 //   }
 // }
@@ -76,7 +76,7 @@
 //   simulationResult.value.transactionResults.forEach((tx) => {
 //     if (tx.err) {
 //       tx.logs?.forEach((x) => {
-//         console.log(x);
+//         consoleLog(x);
 //       });
 //       throw tx.err;
 //     }
@@ -112,10 +112,10 @@
 //   await waitUntilJitoNextLeader();
 //   let searcher = getSearcherClient();
 
-//   console.log("Sending bundle...");
+//   consoleLog("Sending bundle...");
 //   try {
 //     const resp = await searcher.sendBundle(bundle);
-//     console.log("Send bundle response:", resp);
+//     consoleLog("Send bundle response:", resp);
 //   } catch (e) {
 //     console.error("Error sending bundle:", e);
 //   }
@@ -126,12 +126,12 @@
 //         if (res.accepted || res.processed || res.finalized) {
 //           resolve(res);
 //         } else {
-//           console.log(res);
+//           consoleLog(res);
 //           return reject("Bundle not accepted");
 //         }
 //       },
 //       (err) => {
-//         console.log("Error: ", err);
+//         consoleLog("Error: ", err);
 //         return reject(err);
 //       }
 //     );

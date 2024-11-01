@@ -13,7 +13,11 @@ use solana_sdk::{
     system_instruction,
     transaction::Transaction,
 };
-use solauto::{ constants::{SOLAUTO_FEES_WALLET, SOLAUTO_MANAGER}, state::referral_state::ReferralState };
+use solauto::{
+    constants::SOLAUTO_FEES_WALLET,
+    instructions::protocol_interaction,
+    state::referral_state::ReferralState,
+};
 use solauto_sdk::{
     generated::{
         instructions::{
@@ -21,10 +25,17 @@ use solauto_sdk::{
             ClaimReferralFeesBuilder,
             ClosePositionBuilder,
             MarginfiOpenPositionBuilder,
+            MarginfiProtocolInteractionBuilder,
             UpdatePositionBuilder,
             UpdateReferralStatesBuilder,
         },
-        types::{ DCASettingsInp, SolautoSettingsParametersInp, UpdatePositionData },
+        types::{
+            DCASettingsInp,
+            PositionType,
+            SolautoAction,
+            SolautoSettingsParametersInp,
+            UpdatePositionData,
+        },
     },
     SOLAUTO_ID,
 };
@@ -46,7 +57,7 @@ macro_rules! assert_instruction_error {
     };
 }
 
-pub const USDC_MINT: &str = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
+pub const USDC: &str = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
 pub const MARGINFI_PROGRAM: &str = "MFv2hWf31Z9kbCa1snEPYctwafyhdvnV7FZnsebVacA";
 
 pub struct GeneralArgs {
@@ -167,10 +178,7 @@ impl<'a> GeneralTestData<'a> {
             &args.supply_mint.pubkey()
         );
 
-        let signer_debt_ta = get_associated_token_address(
-            &signer_pubkey,
-            &args.debt_mint.pubkey()
-        );
+        let signer_debt_ta = get_associated_token_address(&signer_pubkey, &args.debt_mint.pubkey());
         let position_debt_ta = get_associated_token_address(
             &solauto_position,
             &args.debt_mint.pubkey()
@@ -365,6 +373,7 @@ impl<'a> GeneralTestData<'a> {
             .referral_state(self.signer_referral_state)
             .referral_fees_dest_ta(self.signer_referral_dest_ta)
             .referral_fees_dest_mint(self.referral_fees_dest_mint.pubkey())
+            .referral_authority(Some(self.ctx.payer.pubkey()))
             .fees_destination_ta(
                 Some(
                     get_associated_token_address(
@@ -402,9 +411,9 @@ impl<'a> GeneralTestData<'a> {
         builder
             .signer(self.ctx.payer.pubkey())
             .solauto_position(self.solauto_position)
-            .debt_mint(Some(self.debt_mint.pubkey()))
-            .position_debt_ta(Some(self.position_debt_ta))
-            .signer_debt_ta(Some(self.signer_debt_ta))
+            .dca_mint(Some(self.debt_mint.pubkey()))
+            .position_dca_ta(Some(self.position_debt_ta))
+            .signer_dca_ta(Some(self.signer_debt_ta))
             .update_position_data(position_data);
         builder
     }
@@ -425,7 +434,8 @@ impl<'a> GeneralTestData<'a> {
             .position_supply_ta(self.position_supply_ta)
             .signer_supply_ta(self.signer_supply_ta)
             .position_debt_ta(self.position_debt_ta)
-            .signer_debt_ta(self.signer_debt_ta);
+            .signer_debt_ta(self.signer_debt_ta)
+            .protocol_account(self.solauto_position);
         builder
     }
 
@@ -434,9 +444,9 @@ impl<'a> GeneralTestData<'a> {
         builder
             .signer(self.ctx.payer.pubkey())
             .solauto_position(self.solauto_position)
-            .debt_mint(Some(self.debt_mint.pubkey()))
-            .position_debt_ta(Some(self.position_debt_ta))
-            .signer_debt_ta(Some(self.signer_debt_ta));
+            .dca_mint(Some(self.debt_mint.pubkey()))
+            .position_dca_ta(Some(self.position_debt_ta))
+            .signer_dca_ta(Some(self.signer_debt_ta));
         builder
     }
 }
@@ -520,9 +530,6 @@ impl<'a> MarginfiTestData<'a> {
         builder
             .signer(self.general.ctx.payer.pubkey())
             .marginfi_program(self.general.lending_protocol)
-            .solauto_manager(SOLAUTO_MANAGER)
-            .solauto_fees_wallet(self.general.solauto_fees_wallet)
-            .solauto_fees_supply_ta(self.general.solauto_fees_supply_ta)
             .signer_referral_state(self.general.signer_referral_state)
             .referred_by_state(self.general.referred_by_state)
             .referred_by_supply_ta(self.general.referred_by_supply_ta)
@@ -536,10 +543,30 @@ impl<'a> MarginfiTestData<'a> {
             .debt_bank(Pubkey::default())
             .signer_debt_ta(Some(self.general.signer_debt_ta))
             .position_debt_ta(self.general.position_debt_ta)
+            .position_type(PositionType::Leverage)
             .position_data(position_data);
         if self.marginfi_account_seed_idx.is_some() {
             builder.marginfi_account_seed_idx(self.marginfi_account_seed_idx.unwrap());
         }
+        builder
+    }
+
+    pub fn protocol_interaction_ix(
+        &self,
+        action: SolautoAction
+    ) -> MarginfiProtocolInteractionBuilder {
+        let mut builder = MarginfiProtocolInteractionBuilder::new();
+
+        builder
+            .signer(self.general.ctx.payer.pubkey())
+            .marginfi_program(self.general.lending_protocol)
+            .solauto_position(self.general.solauto_position)
+            .marginfi_group(self.marginfi_group)
+            .marginfi_account(self.marginfi_account)
+            .supply_bank(Pubkey::default())
+            .debt_bank(Pubkey::default())
+            .solauto_action(action);
+
         builder
     }
 }

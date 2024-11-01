@@ -10,17 +10,22 @@ import { Serializer, struct, u64 } from '@metaplex-foundation/umi/serializers';
 import {
   AutomationSettingsInp,
   AutomationSettingsInpArgs,
+  TokenType,
+  TokenTypeArgs,
   getAutomationSettingsInpSerializer,
+  getTokenTypeSerializer,
 } from '.';
 
 export type DCASettingsInp = {
   automation: AutomationSettingsInp;
-  debtToAddBaseUnit: bigint;
+  dcaInBaseUnit: bigint;
+  tokenType: TokenType;
 };
 
 export type DCASettingsInpArgs = {
   automation: AutomationSettingsInpArgs;
-  debtToAddBaseUnit: number | bigint;
+  dcaInBaseUnit: number | bigint;
+  tokenType: TokenTypeArgs;
 };
 
 export function getDCASettingsInpSerializer(): Serializer<
@@ -30,7 +35,8 @@ export function getDCASettingsInpSerializer(): Serializer<
   return struct<DCASettingsInp>(
     [
       ['automation', getAutomationSettingsInpSerializer()],
-      ['debtToAddBaseUnit', u64()],
+      ['dcaInBaseUnit', u64()],
+      ['tokenType', getTokenTypeSerializer()],
     ],
     { description: 'DCASettingsInp' }
   ) as Serializer<DCASettingsInpArgs, DCASettingsInp>;

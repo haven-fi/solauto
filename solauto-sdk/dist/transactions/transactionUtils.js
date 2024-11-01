@@ -2,8 +2,10 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.rebalanceChoresBefore = rebalanceChoresBefore;
 exports.getTransactionChores = getTransactionChores;
+exports.requiresRefreshBeforeRebalance = requiresRefreshBeforeRebalance;
 exports.buildSolautoRebalanceTransaction = buildSolautoRebalanceTransaction;
 exports.convertReferralFeesToDestination = convertReferralFeesToDestination;
+exports.getErrorInfo = getErrorInfo;
 const umi_1 = require("@metaplex-foundation/umi");
 const umi_web3js_adapters_1 = require("@metaplex-foundation/umi-web3js-adapters");
 const web3_js_1 = require("@solana/web3.js");
@@ -17,6 +19,7 @@ const numberUtils_1 = require("../utils/numberUtils");
 const generalUtils_2 = require("../utils/solauto/generalUtils");
 const accountUtils_1 = require("../utils/accountUtils");
 const marginfi_sdk_1 = require("../marginfi-sdk");
+const jupiter_sdk_1 = require("../jupiter-sdk");
 const constants_1 = require("../constants");
 function getWSolUsage(client, solautoActions, initiatingDcaIn, cancellingDcaIn) {
     const supplyIsWsol = client.supplyMint.equals(spl_token_1.NATIVE_MINT);
@@ -25,17 +28,18 @@ function getWSolUsage(client, solautoActions, initiatingDcaIn, cancellingDcaIn) 
         return undefined;
     }
     const usingSupplyTaAction = solautoActions?.find((args) => (0, generated_1.isSolautoAction)("Deposit", args) || (0, generated_1.isSolautoAction)("Withdraw", args));
-    const usingDebtTaAction = solautoActions?.find((args) => (0, generated_1.isSolautoAction)("Borrow", args) ||
-        (0, generated_1.isSolautoAction)("Repay", args) ||
-        initiatingDcaIn ||
-        cancellingDcaIn);
-    if (supplyIsWsol && usingSupplyTaAction) {
+    const usingDebtTaAction = solautoActions?.find((args) => (0, generated_1.isSolautoAction)("Borrow", args) || (0, generated_1.isSolautoAction)("Repay", args));
+    const dcaSupply = (initiatingDcaIn && initiatingDcaIn.tokenType === generated_1.TokenType.Supply) ||
+        (cancellingDcaIn !== undefined && cancellingDcaIn === generated_1.TokenType.Supply);
+    const dcaDebt = (initiatingDcaIn && initiatingDcaIn.tokenType === generated_1.TokenType.Debt) ||
+        (cancellingDcaIn !== undefined && cancellingDcaIn === generated_1.TokenType.Debt);
+    if (supplyIsWsol && (usingSupplyTaAction || dcaSupply)) {
         return {
             wSolTokenAccount: client.signerSupplyTa,
             solautoAction: usingSupplyTaAction,
         };
     }
-    else if (debtIsWsol && usingDebtTaAction) {
+    else if (debtIsWsol && (usingDebtTaAction || dcaDebt)) {
         return {
             wSolTokenAccount: client.signerDebtTa,
             solautoAction: usingDebtTaAction,
@@ -47,14 +51,13 @@ function getWSolUsage(client, solautoActions, initiatingDcaIn, cancellingDcaIn) 
 }
 async function transactionChoresBefore(client, accountsGettingCreated, solautoActions, initiatingDcaIn) {
     let chores = (0, umi_1.transactionBuilder)();
-    if (client.authorityReferralStateData === null ||
-        (client.referredByState !== undefined &&
-            client.authorityReferralStateData.referredByState ===
+    if (client.referralStateData === null ||
+        (client.referredBy !== undefined &&
+            client.referralStateData?.referredByState ===
                 (0, umi_1.publicKey)(web3_js_1.PublicKey.default)) ||
         (client.authorityLutAddress !== undefined &&
-            client.authorityReferralStateData.lookupTable ==
-                (0, umi_1.publicKey)(web3_js_1.PublicKey.default))) {
-        chores = chores.add(client.updateReferralStatesIx());
+            client.referralStateData.lookupTable == (0, umi_1.publicKey)(web3_js_1.PublicKey.default))) {
+        chores = chores.add(client.updateReferralStatesIx(undefined, client.authorityLutAddress));
     }
     if (client.selfManaged) {
         if (client.solautoPositionData === null) {
@@ -64,7 +67,7 @@ async function transactionChoresBefore(client, accountsGettingCreated, solautoAc
             !(await (0, generalUtils_1.getSolanaAccountCreated)(client.umi, client.marginfiAccountPk))) {
             chores = chores.add(client.marginfiAccountInitialize());
         }
-        // TODO: support other platforms
+        // TODO: PF
     }
     const wSolUsage = getWSolUsage(client, solautoActions, initiatingDcaIn, undefined);
     if (wSolUsage !== undefined) {
@@ -73,16 +76,17 @@ async function transactionChoresBefore(client, accountsGettingCreated, solautoAc
             chores = chores.add((0, solanaUtils_1.closeTokenAccountUmiIx)(client.signer, wSolUsage.wSolTokenAccount, (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(client.signer.publicKey)));
         }
         let amountToTransfer = BigInt(0);
-        if ((0, generated_1.isSolautoAction)("Deposit", wSolUsage.solautoAction)) {
+        if (wSolUsage.solautoAction &&
+            (0, generated_1.isSolautoAction)("Deposit", wSolUsage.solautoAction)) {
             amountToTransfer = BigInt(wSolUsage.solautoAction.fields[0]);
         }
-        else if ((0, generated_1.isSolautoAction)("Repay", wSolUsage.solautoAction) &&
+        else if (wSolUsage.solautoAction &&
+            (0, generated_1.isSolautoAction)("Repay", wSolUsage.solautoAction) &&
             wSolUsage.solautoAction.fields[0].__kind === "Some") {
             amountToTransfer = BigInt(wSolUsage.solautoAction.fields[0].fields[0]);
         }
-        else if (initiatingDcaIn &&
-            client.debtMint.toString() === spl_token_1.NATIVE_MINT.toString()) {
-            amountToTransfer = initiatingDcaIn;
+        else if (initiatingDcaIn) {
+            amountToTransfer = initiatingDcaIn.amount;
         }
         if (amountToTransfer > 0) {
             const amount = amountToTransfer +
@@ -115,20 +119,24 @@ async function transactionChoresBefore(client, accountsGettingCreated, solautoAc
     return chores;
 }
 async function rebalanceChoresBefore(client, tx, accountsGettingCreated) {
-    const rebalanceInstructions = getRebalanceInstructions(tx);
+    const rebalanceInstructions = getRebalanceInstructions(client.umi, tx);
     if (rebalanceInstructions.length === 0) {
         return (0, umi_1.transactionBuilder)();
     }
-    const usesAccount = (key) => rebalanceInstructions.some((t) => t.keys.some((k) => (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(k.pubkey).equals(key)));
-    const checkReferralSupplyTa = client.referredBySupplyTa && usesAccount(client.referredBySupplyTa);
-    const checkSolautoFeesTa = usesAccount(client.solautoFeesSupplyTa);
+    const usesAccount = (key) => tx
+        .getInstructions()
+        .some((t) => t.keys.some((k) => (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(k.pubkey).equals(key)));
+    const checkReferralSupplyTa = client.referredBySupplyTa() && usesAccount(client.referredBySupplyTa());
+    const checkReferralDebtTa = client.referredByDebtTa() && usesAccount(client.referredByDebtTa());
     const checkIntermediaryMfiAccount = client.lendingPlatform === generated_1.LendingPlatform.Marginfi &&
         usesAccount(client.intermediaryMarginfiAccountPk);
     const checkSignerSupplyTa = usesAccount(client.signerSupplyTa);
     const checkSignerDebtTa = usesAccount(client.signerDebtTa);
     const accountsNeeded = [
-        ...[checkReferralSupplyTa ? client.referredBySupplyTa : web3_js_1.PublicKey.default],
-        ...[checkSolautoFeesTa ? client.solautoFeesSupplyTa : web3_js_1.PublicKey.default],
+        ...[
+            checkReferralSupplyTa ? client.referredBySupplyTa() : web3_js_1.PublicKey.default,
+        ],
+        ...[checkReferralDebtTa ? client.referredByDebtTa() : web3_js_1.PublicKey.default],
         ...[
             checkIntermediaryMfiAccount
                 ? client.intermediaryMarginfiAccountPk
@@ -137,18 +145,19 @@ async function rebalanceChoresBefore(client, tx, accountsGettingCreated) {
         ...[checkSignerSupplyTa ? client.signerSupplyTa : web3_js_1.PublicKey.default],
         ...[checkSignerDebtTa ? client.signerDebtTa : web3_js_1.PublicKey.default],
     ];
-    const [referredBySupplyTa, solautoFeesSupplyTa, intermediaryMarginfiAccount, signerSupplyTa, signerDebtTa,] = await client.umi.rpc.getAccounts(accountsNeeded.map((x) => (0, umi_1.publicKey)(x ?? web3_js_1.PublicKey.default)));
+    const [referredBySupplyTa, referredByDebtTa, intermediaryMarginfiAccount, signerSupplyTa, signerDebtTa,] = await client.umi.rpc.getAccounts(accountsNeeded.map((x) => (0, umi_1.publicKey)(x ?? web3_js_1.PublicKey.default)));
     let chores = (0, umi_1.transactionBuilder)();
     if (checkReferralSupplyTa && !(0, generalUtils_1.rpcAccountCreated)(referredBySupplyTa)) {
-        client.log("Creating referred-by TA for ", client.supplyMint.toString());
+        client.log("Creating referred-by supply TA");
         chores = chores.add((0, solanaUtils_1.createAssociatedTokenAccountUmiIx)(client.signer, client.referredByState, client.supplyMint));
     }
-    if (checkSolautoFeesTa && !(0, generalUtils_1.rpcAccountCreated)(solautoFeesSupplyTa)) {
-        client.log("Creating Solauto fees TA for ", client.supplyMint.toString());
-        chores = chores.add((0, solanaUtils_1.createAssociatedTokenAccountUmiIx)(client.signer, client.solautoFeesWallet, client.supplyMint));
+    if (checkReferralDebtTa && !(0, generalUtils_1.rpcAccountCreated)(referredByDebtTa)) {
+        client.log("Creating referred-by debt TA");
+        chores = chores.add((0, solanaUtils_1.createAssociatedTokenAccountUmiIx)(client.signer, client.referredByState, client.debtMint));
     }
     if (checkIntermediaryMfiAccount &&
         !(0, generalUtils_1.rpcAccountCreated)(intermediaryMarginfiAccount)) {
+        client.log("Creating intermediary marginfi account");
         chores = chores.add(client.createIntermediaryMarginfiAccount());
     }
     if (checkSignerSupplyTa &&
@@ -175,13 +184,14 @@ function transactionChoresAfter(client, solautoActions, cancellingDcaIn) {
     }
     return chores;
 }
-function getRebalanceInstructions(tx) {
+function getRebalanceInstructions(umi, tx) {
     return tx.getInstructions().filter((x) => {
-        if (x.programId === generated_1.SOLAUTO_PROGRAM_ID) {
+        if (x.programId.toString() ===
+            umi.programs.get("solauto").publicKey.toString()) {
             try {
                 const serializer = (0, generated_1.getMarginfiRebalanceInstructionDataSerializer)();
                 const discriminator = serializer.serialize({
-                    limitGapBps: 0,
+                    targetInAmountBaseUnit: 0,
                     rebalanceType: generated_1.SolautoRebalanceType.None,
                     targetLiqUtilizationRateBps: 0,
                 })[0];
@@ -195,10 +205,11 @@ function getRebalanceInstructions(tx) {
         }
     });
 }
-function getSolautoActions(tx) {
+function getSolautoActions(umi, tx) {
     let solautoActions = [];
     tx.getInstructions().forEach((x) => {
-        if (x.programId === generated_1.SOLAUTO_PROGRAM_ID) {
+        if (x.programId.toString() ===
+            umi.programs.get("solauto").publicKey.toString()) {
             try {
                 const serializer = (0, generated_1.getMarginfiProtocolInteractionInstructionDataSerializer)();
                 const discriminator = serializer.serialize({
@@ -301,7 +312,7 @@ function getSolautoActions(tx) {
             }
             catch { }
         }
-        // TODO support other platforms
+        // TODO: PF
     });
     return solautoActions;
 }
@@ -309,32 +320,57 @@ async function getTransactionChores(client, tx) {
     let choresBefore = (0, umi_1.transactionBuilder)();
     let choresAfter = (0, umi_1.transactionBuilder)();
     const accountsGettingCreated = [];
-    const solautoActions = getSolautoActions(tx);
+    const solautoActions = getSolautoActions(client.umi, tx);
     choresBefore = choresBefore.add([
-        await transactionChoresBefore(client, accountsGettingCreated, solautoActions, client.livePositionUpdates.debtTaBalanceAdjustment > 0
-            ? client.livePositionUpdates.debtTaBalanceAdjustment
-            : undefined),
+        await transactionChoresBefore(client, accountsGettingCreated, solautoActions, client.livePositionUpdates.dcaInBalance),
         await rebalanceChoresBefore(client, tx, accountsGettingCreated),
     ]);
-    choresAfter = choresAfter.add(transactionChoresAfter(client, solautoActions, client.livePositionUpdates.debtTaBalanceAdjustment < 0));
+    choresAfter = choresAfter.add(transactionChoresAfter(client, solautoActions, client.livePositionUpdates.cancellingDca));
     return [choresBefore, choresAfter];
+}
+async function requiresRefreshBeforeRebalance(client) {
+    if (client.solautoPositionState.liqUtilizationRateBps >
+        (0, numberUtils_1.getMaxLiqUtilizationRateBps)(client.solautoPositionState.maxLtvBps, client.solautoPositionState.liqThresholdBps, 0.01)) {
+        return true;
+    }
+    else if (client.solautoPositionData && !client.selfManaged) {
+        if (client.livePositionUpdates.supplyAdjustment > BigInt(0) ||
+            client.livePositionUpdates.debtAdjustment > BigInt(0)) {
+            return false;
+        }
+        const oldStateWithLatestPrices = await (0, generalUtils_2.positionStateWithLatestPrices)(client.solautoPositionData.state, constants_1.PRICES[client.supplyMint.toString()].price, constants_1.PRICES[client.debtMint.toString()].price);
+        const utilizationRateDiff = Math.abs((client.solautoPositionState?.liqUtilizationRateBps ?? 0) -
+            oldStateWithLatestPrices.liqUtilizationRateBps);
+        client.log("Liq utilization rate diff:", utilizationRateDiff);
+        if (client.livePositionUpdates.supplyAdjustment === BigInt(0) &&
+            client.livePositionUpdates.debtAdjustment === BigInt(0) &&
+            utilizationRateDiff >= 10) {
+            client.log("Choosing to refresh before rebalance");
+            return true;
+        }
+    }
+    // Rebalance ix will already refresh internally if position is self managed, has automation to update, or position state last updated >= 1 day ago
+    client.log("Not refreshing before rebalance");
+    return false;
 }
 async function buildSolautoRebalanceTransaction(client, targetLiqUtilizationRateBps, attemptNum) {
     client.solautoPositionState = await client.getFreshPositionState();
-    if (client.solautoPositionState?.supply.amountUsed.baseUnit === BigInt(0) ||
+    if ((client.solautoPositionState?.supply.amountUsed.baseUnit === BigInt(0) &&
+        client.livePositionUpdates.supplyAdjustment === BigInt(0)) ||
         (targetLiqUtilizationRateBps === undefined &&
-            !(0, generalUtils_2.eligibleForRebalance)(client.solautoPositionState, client.livePositionUpdates.settings ??
-                client.solautoPositionData?.position.settingParams, client.livePositionUpdates.activeDca ??
-                client.solautoPositionData?.position.dca, (0, generalUtils_1.currentUnixSeconds)()))) {
+            !(0, generalUtils_2.eligibleForRebalance)(client.solautoPositionState, client.solautoPositionSettings(), client.solautoPositionActiveDca(), (0, generalUtils_1.currentUnixSeconds)()))) {
         client.log("Not eligible for a rebalance");
         return undefined;
     }
-    const values = (0, rebalanceUtils_1.getRebalanceValues)(client.solautoPositionState, client.solautoPositionSettings(), client.solautoPositionActiveDca(), client.solautoPositionData.feeType, (0, generalUtils_1.currentUnixSeconds)(), constants_1.PRICES[client.supplyMint.toString()].price, constants_1.PRICES[client.debtMint.toString()].price, targetLiqUtilizationRateBps);
+    const values = (0, rebalanceUtils_1.getRebalanceValues)(client.solautoPositionState, client.solautoPositionSettings(), client.solautoPositionActiveDca(), (0, generalUtils_1.currentUnixSeconds)(), (0, generalUtils_1.safeGetPrice)(client.supplyMint), (0, generalUtils_1.safeGetPrice)(client.debtMint), targetLiqUtilizationRateBps);
     client.log("Rebalance values: ", values);
     const swapDetails = (0, rebalanceUtils_1.getJupSwapRebalanceDetails)(client, values, targetLiqUtilizationRateBps, attemptNum);
     const { jupQuote, lookupTableAddresses, setupInstructions, tokenLedgerIx, swapIx, } = await (0, jupiterUtils_1.getJupSwapTransaction)(client.signer, swapDetails, attemptNum);
     const flashLoan = (0, rebalanceUtils_1.getFlashLoanDetails)(client, values, jupQuote);
     let tx = (0, umi_1.transactionBuilder)();
+    if (await requiresRefreshBeforeRebalance(client)) {
+        tx = tx.add(client.refresh());
+    }
     if (flashLoan) {
         client.log("Flash loan details: ", flashLoan);
         const addFirstRebalance = values.amountUsdToDcaIn > 0;
@@ -347,11 +383,11 @@ async function buildSolautoRebalanceTransaction(client, targetLiqUtilizationRate
             client.flashBorrow(flashLoan, (0, accountUtils_1.getTokenAccount)((0, umi_web3js_adapters_1.toWeb3JsPublicKey)(client.signer.publicKey), swapDetails.inputMint)),
             ...(addFirstRebalance
                 ? [
-                    client.rebalance("A", swapDetails, rebalanceType, flashLoan, targetLiqUtilizationRateBps),
+                    client.rebalance("A", jupQuote, rebalanceType, values, flashLoan, targetLiqUtilizationRateBps),
                 ]
                 : []),
             swapIx,
-            client.rebalance("B", swapDetails, rebalanceType, flashLoan, targetLiqUtilizationRateBps),
+            client.rebalance("B", jupQuote, rebalanceType, values, flashLoan, targetLiqUtilizationRateBps),
             client.flashRepay(flashLoan),
         ]);
     }
@@ -360,38 +396,84 @@ async function buildSolautoRebalanceTransaction(client, targetLiqUtilizationRate
         tx = tx.add([
             setupInstructions,
             tokenLedgerIx,
-            client.rebalance("A", swapDetails, rebalanceType, undefined, targetLiqUtilizationRateBps),
+            client.rebalance("A", jupQuote, rebalanceType, values, undefined, targetLiqUtilizationRateBps),
             swapIx,
-            client.rebalance("B", swapDetails, rebalanceType, undefined, targetLiqUtilizationRateBps),
+            client.rebalance("B", jupQuote, rebalanceType, values, undefined, targetLiqUtilizationRateBps),
         ]);
-    }
-    if (client.solautoPositionState.liqUtilizationRateBps >
-        (0, numberUtils_1.getMaxLiqUtilizationRateBps)(client.solautoPositionState.maxLtvBps, client.solautoPositionState.liqThresholdBps, 0.01)) {
-        tx = tx.prepend(client.refresh());
     }
     return {
         tx,
         lookupTableAddresses,
     };
 }
-async function convertReferralFeesToDestination(umi, referralState, tokenAccount) {
-    const { lookupTableAddresses, setupInstructions, swapIx } = await (0, jupiterUtils_1.getJupSwapTransaction)(umi.identity, {
-        amount: tokenAccount.amount,
-        destinationWallet: (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(referralState.publicKey),
-        inputMint: tokenAccount.mint,
-        outputMint: (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(referralState.destFeesMint),
+async function convertReferralFeesToDestination(referralManager, tokenAccount, destinationMint) {
+    const tokenAccountData = await (0, accountUtils_1.getTokenAccountData)(referralManager.umi, tokenAccount);
+    if (!tokenAccountData || tokenAccountData.amount === BigInt(0)) {
+        return undefined;
+    }
+    const { lookupTableAddresses, setupInstructions, swapIx } = await (0, jupiterUtils_1.getJupSwapTransaction)(referralManager.umi.identity, {
+        amount: tokenAccountData.amount,
+        destinationWallet: referralManager.referralState,
+        inputMint: tokenAccountData.mint,
+        outputMint: destinationMint,
         exactIn: true,
-        slippageBpsIncFactor: 0.15,
+        slippageIncFactor: 0.25,
     });
     let tx = (0, umi_1.transactionBuilder)()
         .add(setupInstructions)
-        .add((0, generated_1.convertReferralFees)(umi, {
-        signer: umi.identity,
-        intermediaryTa: (0, umi_1.publicKey)((0, accountUtils_1.getTokenAccount)((0, umi_web3js_adapters_1.toWeb3JsPublicKey)(umi.identity.publicKey), tokenAccount.mint)),
+        .add((0, generated_1.convertReferralFees)(referralManager.umi, {
+        signer: referralManager.umi.identity,
+        intermediaryTa: (0, umi_1.publicKey)((0, accountUtils_1.getTokenAccount)((0, umi_web3js_adapters_1.toWeb3JsPublicKey)(referralManager.umi.identity.publicKey), tokenAccountData.mint)),
         ixsSysvar: (0, umi_1.publicKey)(web3_js_1.SYSVAR_INSTRUCTIONS_PUBKEY),
-        referralState: referralState.publicKey,
-        referralFeesTa: (0, umi_1.publicKey)(tokenAccount.address),
+        referralState: (0, umi_1.publicKey)(referralManager.referralState),
+        referralFeesTa: (0, umi_1.publicKey)(tokenAccount),
     }))
         .add(swapIx);
-    return [tx, lookupTableAddresses];
+    return { tx, lookupTableAddresses };
+}
+function getErrorInfo(umi, tx, error) {
+    let canBeIgnored = false;
+    let errorName = undefined;
+    let errorInfo = undefined;
+    try {
+        let programError = null;
+        if (typeof error === "object" && error["InstructionError"]) {
+            const err = error["InstructionError"];
+            const errIx = tx.getInstructions()[Math.max(0, err[0] - 2)];
+            const errCode = typeof err[1] === "object" ? err[1]["Custom"] : undefined;
+            const errName = errCode === undefined ? err[1] : undefined;
+            let programName = "";
+            if (errIx.programId.toString() ===
+                umi.programs.get("solauto").publicKey.toString()) {
+                programError = (0, generated_1.getSolautoErrorFromCode)(errCode, (0, generated_1.createSolautoProgram)());
+                programName = "Haven";
+                if (programError?.name ===
+                    new generated_1.InvalidRebalanceConditionError((0, generated_1.createSolautoProgram)()).name) {
+                    canBeIgnored = true;
+                }
+            }
+            else if (errIx.programId === marginfi_sdk_1.MARGINFI_PROGRAM_ID) {
+                programName = "Marginfi";
+                programError = (0, marginfi_sdk_1.getMarginfiErrorFromName)(errCode, (0, marginfi_sdk_1.createMarginfiProgram)());
+            }
+            else if (errIx.programId === jupiter_sdk_1.JUPITER_PROGRAM_ID) {
+                programName = "Jupiter";
+                programError = (0, jupiter_sdk_1.getJupiterErrorFromName)(errCode, (0, jupiter_sdk_1.createJupiterProgram)());
+            }
+            if (errName && errCode === undefined) {
+                errorName = `${programName ?? "Program"} error`;
+                errorInfo = errName;
+            }
+        }
+        if (programError) {
+            errorName = programError?.name;
+            errorInfo = programError?.message;
+        }
+    }
+    catch { }
+    return {
+        errorName: errorName,
+        errorInfo: errorInfo,
+        canBeIgnored,
+    };
 }

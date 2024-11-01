@@ -11,7 +11,10 @@ use solana_program::{
     account_info::AccountInfo, clock::Clock, entrypoint::ProgramResult, msg,
     program_error::ProgramError, pubkey::Pubkey, sysvar::Sysvar,
 };
-use std::ops::{Div, Mul, Sub};
+use std::{
+    cmp::min,
+    ops::{Div, Mul, Sub},
+};
 use switchboard_v2::AggregatorAccountData;
 
 use crate::{
@@ -240,15 +243,22 @@ impl<'a> MarginfiClient<'a> {
 
         let total_deposited = I80F48::from_le_bytes(bank.data.total_asset_shares.value)
             .mul(I80F48::from_le_bytes(bank.data.asset_share_value.value));
-        let base_unit_debt_available = total_deposited.sub(
-            I80F48::from_le_bytes(bank.data.total_liability_shares.value)
-                .mul(liability_share_value),
+        let total_borrows = I80F48::from_le_bytes(bank.data.total_liability_shares.value)
+            .mul(liability_share_value);
+        let base_unit_supply_available = total_deposited.sub(total_borrows);
+
+        let amount_can_be_used = min(
+            bank.data
+                .config
+                .borrow_limit
+                .saturating_sub(math_utils::i80f48_to_u64(total_borrows)),
+            math_utils::i80f48_to_u64(base_unit_supply_available),
         );
 
         Ok(RefreshedTokenData {
             decimals: bank.data.mint_decimals,
             amount_used: base_unit_account_debt,
-            amount_can_be_used: math_utils::i80f48_to_u64(base_unit_debt_available),
+            amount_can_be_used,
             market_price,
             borrow_fee_bps: None,
         })
@@ -395,18 +405,16 @@ impl<'a> MarginfiClient<'a> {
 }
 
 impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
-    fn validate(&self, std_accounts: &Box<SolautoStandardAccounts>) -> ProgramResult {
+    fn validate(&self, std_accounts: &Box<SolautoStandardAccounts<'a>>) -> ProgramResult {
         validate_token_accounts(
-            std_accounts.signer,
             &std_accounts.solauto_position,
-            self.supply.token_accounts.position_ta.as_ref(),
-            self.debt.token_accounts.position_ta.as_ref(),
+            self.supply.token_accounts.position_ta,
+            self.debt.token_accounts.position_ta,
         )?;
         validate_token_accounts(
-            std_accounts.signer,
             &std_accounts.solauto_position,
-            self.supply.token_accounts.signer_ta.as_ref(),
-            self.debt.token_accounts.signer_ta.as_ref(),
+            self.supply.token_accounts.authority_ta,
+            self.debt.token_accounts.authority_ta,
         )?;
         Ok(())
     }
@@ -419,22 +427,12 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
         let authority = get_owner(&std_accounts.solauto_position, self.signer);
 
         let signer_token_account = if !std_accounts.solauto_position.data.self_managed.val {
-            self.supply
-                .token_accounts
-                .position_ta
-                .as_ref()
-                .unwrap()
-                .account_info
+            self.supply.token_accounts.position_ta.as_ref().unwrap()
         } else {
-            self.supply
-                .token_accounts
-                .signer_ta
-                .as_ref()
-                .unwrap()
-                .account_info
+            self.supply.token_accounts.authority_ta.as_ref().unwrap()
         };
 
-        let cpi = Box::new(LendingAccountDepositCpi::new(
+        let cpi = LendingAccountDepositCpi::new(
             self.program,
             LendingAccountDepositCpiAccounts {
                 marginfi_group: self.marginfi_group,
@@ -448,7 +446,7 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
             LendingAccountDepositInstructionArgs {
                 amount: base_unit_amount,
             },
-        ));
+        );
 
         if !std_accounts.solauto_position.data.self_managed.val {
             cpi.invoke_signed(&[std_accounts
@@ -475,7 +473,7 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
             0
         };
 
-        let cpi = Box::new(LendingAccountWithdrawCpi::new(
+        let cpi = LendingAccountWithdrawCpi::new(
             self.program,
             LendingAccountWithdrawCpiAccounts {
                 marginfi_group: self.marginfi_group,
@@ -491,17 +489,16 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
                 amount: base_unit_amount,
                 withdraw_all: Some(amount == TokenBalanceAmount::All),
             },
-        ));
-
-        let active_balances = Box::new(
-            self.marginfi_account
-                .data
-                .lending_account
-                .balances
-                .iter()
-                .filter(|balance| balance.active == 1)
-                .collect::<Vec<_>>(),
         );
+
+        let active_balances = self
+            .marginfi_account
+            .data
+            .lending_account
+            .balances
+            .iter()
+            .filter(|balance| balance.active == 1)
+            .collect::<Vec<_>>();
 
         let mut remaining_accounts = Vec::new();
 
@@ -549,7 +546,7 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
     ) -> ProgramResult {
         let authority = get_owner(&std_accounts.solauto_position, self.signer);
 
-        let cpi = Box::new(LendingAccountBorrowCpi::new(
+        let cpi = LendingAccountBorrowCpi::new(
             self.program,
             LendingAccountBorrowCpiAccounts {
                 marginfi_group: self.marginfi_group,
@@ -564,7 +561,7 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
             LendingAccountBorrowInstructionArgs {
                 amount: base_unit_amount,
             },
-        ));
+        );
 
         let mut remaining_accounts = Vec::with_capacity(4);
         remaining_accounts.push((self.supply.bank.account_info, false, false));
@@ -600,22 +597,12 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
         };
 
         let signer_token_account = if !std_accounts.solauto_position.data.self_managed.val {
-            self.debt
-                .token_accounts
-                .position_ta
-                .as_ref()
-                .unwrap()
-                .account_info
+            self.debt.token_accounts.position_ta.as_ref().unwrap()
         } else {
-            self.debt
-                .token_accounts
-                .signer_ta
-                .as_ref()
-                .unwrap()
-                .account_info
+            self.debt.token_accounts.authority_ta.as_ref().unwrap()
         };
 
-        let cpi = Box::new(LendingAccountRepayCpi::new(
+        let cpi = LendingAccountRepayCpi::new(
             self.program,
             LendingAccountRepayCpiAccounts {
                 marginfi_group: self.marginfi_group,
@@ -630,7 +617,7 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
                 amount: base_unit_amount,
                 repay_all: Some(amount == TokenBalanceAmount::All),
             },
-        ));
+        );
 
         if !std_accounts.solauto_position.data.self_managed.val {
             cpi.invoke_signed(&[std_accounts

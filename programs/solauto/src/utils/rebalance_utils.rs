@@ -9,6 +9,7 @@ use solana_program::{
     sysvar::instructions::load_current_index_checked,
 };
 use std::{cmp::max, ops::Mul};
+use validation_utils::validate_debt_adjustment;
 
 use crate::{
     state::solauto_position::{DCASettings, PositionData, SolautoPosition, SolautoRebalanceType},
@@ -16,7 +17,7 @@ use crate::{
         instruction::{
             RebalanceSettings, SolautoStandardAccounts, SOLAUTO_REBALANCE_IX_DISCRIMINATORS,
         },
-        shared::{RebalanceStep, SolautoError},
+        shared::{RebalanceDirection, RebalanceStep, SolautoError, TokenType},
     },
 };
 
@@ -36,6 +37,7 @@ pub fn validate_rebalance_instructions(
 
     let current_ix_idx = load_current_index_checked(ixs_sysvar)?;
     if get_stack_height() > TRANSACTION_LEVEL_STACK_HEIGHT {
+        msg!("Instruction is CPI");
         return Err(SolautoError::InstructionIsCPI.into());
     }
 
@@ -49,6 +51,8 @@ pub fn validate_rebalance_instructions(
         ixs_sysvar,
         JUPITER_ID,
         vec![
+            "route",
+            "shared_accounts_route",
             "route_with_token_ledger",
             "shared_accounts_route_with_token_ledger",
             "exact_out_route",
@@ -129,6 +133,7 @@ pub fn validate_rebalance_instructions(
             marginfi_flash_borrow: Some(((current_ix_idx as i16) + ix_2_before) as usize),
         })
     } else {
+        msg!("Incorrect rebalance instructions");
         Err(SolautoError::IncorrectInstructions.into())
     }
 }
@@ -142,17 +147,12 @@ pub fn get_rebalance_step(
     if !has_rebalance_data {
         let ix_indices = validate_rebalance_instructions(std_accounts, args.rebalance_type)?;
 
-        let (swap_source_ta, price_slippage_bps) = ix_utils::validate_jup_instruction(
-            std_accounts.ixs_sysvar.unwrap(),
-            ix_indices.jup_swap,
-            position_tas.as_slice(),
-        )?;
-
-        std_accounts
-            .solauto_position
-            .data
-            .rebalance
-            .price_slippage_bps = price_slippage_bps;
+        // Deserializing jup swap ix to pull slippage bps causes OOM issues, will return to this in the future if there is a solution.
+        // let (swap_source_ta, price_slippage_bps) = ix_utils::validate_jup_instruction(
+        //     std_accounts.ixs_sysvar.unwrap(),
+        //     ix_indices.jup_swap,
+        //     position_tas.as_slice(),
+        // )?;
 
         if ix_indices.marginfi_flash_borrow.is_some() {
             std_accounts
@@ -162,7 +162,7 @@ pub fn get_rebalance_step(
                 .flash_loan_amount = ix_utils::get_marginfi_flash_loan_amount(
                 std_accounts.ixs_sysvar.unwrap(),
                 ix_indices.marginfi_flash_borrow.unwrap(),
-                &[&swap_source_ta],
+                None, // &[&swap_source_ta],
             )?;
         }
     }
@@ -185,24 +185,24 @@ pub fn get_rebalance_step(
 fn get_additional_amount_to_dca_in(
     position: &mut PositionData,
     current_unix_timestamp: u64,
-) -> Option<u64> {
+) -> (Option<u64>, Option<TokenType>) {
     if !position.dca.dca_in() {
-        return None;
+        return (None, None);
     }
 
-    let updated_debt_dca_balance = position.dca.automation.updated_amount_from_automation(
-        position.dca.debt_to_add_base_unit,
+    let updated_dca_balance = position.dca.automation.updated_amount_from_automation(
+        position.dca.dca_in_base_unit,
         0,
         current_unix_timestamp,
     );
-    let debt_to_dca_in = position
+    let amount_to_dca_in = position
         .dca
-        .debt_to_add_base_unit
-        .saturating_sub(updated_debt_dca_balance);
+        .dca_in_base_unit
+        .saturating_sub(updated_dca_balance);
 
-    position.dca.debt_to_add_base_unit = updated_debt_dca_balance;
+    position.dca.dca_in_base_unit = updated_dca_balance;
 
-    Some(debt_to_dca_in)
+    (Some(amount_to_dca_in), Some(position.dca.token_type))
 }
 
 #[inline(always)]
@@ -250,6 +250,10 @@ fn get_std_target_liq_utilization_rate(
         {
             Ok(setting_params.boost_to_bps)
         } else {
+            msg!(
+                "Invalid rebalance condition. Current utilizatiion rate is: {}",
+                solauto_position.state.liq_utilization_rate_bps
+            );
             return Err(SolautoError::InvalidRebalanceCondition.into());
         };
 
@@ -296,31 +300,45 @@ fn get_target_rate_and_dca_amount(
     solauto_position: &mut SolautoPosition,
     rebalance_args: &RebalanceSettings,
     current_unix_timestamp: u64,
-) -> Result<(u16, Option<u64>), ProgramError> {
+) -> Result<(u16, Option<u64>, Option<TokenType>), ProgramError> {
     if rebalance_args.target_liq_utilization_rate_bps.is_some() {
         return Ok((
             rebalance_args.target_liq_utilization_rate_bps.unwrap(),
+            None,
             None,
         ));
     }
 
     let dca_instruction = is_dca_instruction(solauto_position, current_unix_timestamp)?;
 
-    let (target_liq_utilization_rate_bps, amount_to_dca_in) = match dca_instruction {
+    let (target_liq_utilization_rate_bps, amount_to_dca_in, dca_token_type) = match dca_instruction
+    {
         true => {
-            let amount_to_dca_in = get_additional_amount_to_dca_in(
+            let target_liq_utilization_rate_bps =
+                get_target_liq_utilization_rate_from_dca(solauto_position, current_unix_timestamp)?;
+            let (amount_to_dca_in, dca_token_type) = get_additional_amount_to_dca_in(
                 &mut solauto_position.position,
                 current_unix_timestamp,
             );
-            let target_liq_utilization_rate_bps =
-                get_target_liq_utilization_rate_from_dca(solauto_position, current_unix_timestamp)?;
 
-            (target_liq_utilization_rate_bps, amount_to_dca_in)
+            (
+                target_liq_utilization_rate_bps,
+                amount_to_dca_in,
+                dca_token_type,
+            )
         }
-        false => (get_std_target_liq_utilization_rate(solauto_position)?, None),
+        false => (
+            get_std_target_liq_utilization_rate(solauto_position)?,
+            None,
+            None,
+        ),
     };
 
-    Ok((target_liq_utilization_rate_bps, amount_to_dca_in))
+    Ok((
+        target_liq_utilization_rate_bps,
+        amount_to_dca_in,
+        dca_token_type,
+    ))
 }
 
 pub fn get_rebalance_values(
@@ -329,43 +347,55 @@ pub fn get_rebalance_values(
     solauto_fees_bps: &solauto_utils::SolautoFeesBps,
     current_unix_timestamp: u64,
 ) -> Result<(f64, Option<u64>), ProgramError> {
-    let (target_liq_utilization_rate_bps, amount_to_dca_in) =
+    let (target_liq_utilization_rate_bps, amount_to_dca_in, dca_token_type) =
         get_target_rate_and_dca_amount(solauto_position, args, current_unix_timestamp)?;
 
-    solauto_position.rebalance.target_liq_utilization_rate_bps = target_liq_utilization_rate_bps;
+    solauto_position.rebalance.rebalance_direction = if amount_to_dca_in.is_some()
+        || solauto_position.state.liq_utilization_rate_bps <= target_liq_utilization_rate_bps
+    {
+        RebalanceDirection::Boost
+    } else {
+        RebalanceDirection::Repay
+    };
+    let fees_bps = solauto_fees_bps.fetch_fees(solauto_position.rebalance.rebalance_direction);
 
-    let amount_usd_to_dca_in = if amount_to_dca_in.is_some() {
-        math_utils::from_base_unit::<u64, u8, f64>(
-            amount_to_dca_in.unwrap(),
-            solauto_position.state.debt.decimals,
-        )
-        .mul(solauto_position.state.debt.market_price())
+    let amount_to_dca_in_usd = if amount_to_dca_in.is_some() {
+        let (decimals, market_price) = if dca_token_type.unwrap() == TokenType::Supply {
+            (
+                solauto_position.state.supply.decimals,
+                solauto_position.state.supply.market_price(),
+            )
+        } else {
+            (
+                solauto_position.state.debt.decimals,
+                solauto_position.state.debt.market_price(),
+            )
+        };
+
+        math_utils::from_base_unit::<u64, u8, f64>(amount_to_dca_in.unwrap(), decimals)
+            .mul(market_price)
     } else {
         0.0
     };
 
     let total_supply_usd =
-        solauto_position.state.supply.amount_used.usd_value() + amount_usd_to_dca_in;
+        solauto_position.state.supply.amount_used.usd_value() + amount_to_dca_in_usd;
 
-    let adjustment_fee_bps = if amount_to_dca_in.is_some()
-        || solauto_position.state.liq_utilization_rate_bps <= target_liq_utilization_rate_bps
-    {
-        solauto_fees_bps.total
-    } else {
-        0
-    };
-
-    let mut debt_adjustment_usd = math_utils::get_std_debt_adjustment_usd(
+    let debt_adjustment_usd = math_utils::get_std_debt_adjustment_usd(
         from_bps(solauto_position.state.liq_threshold_bps),
         total_supply_usd,
         solauto_position.state.debt.amount_used.usd_value(),
         target_liq_utilization_rate_bps,
-        adjustment_fee_bps,
+        fees_bps.total,
     );
 
-    let price_slippage_bps = solauto_position.rebalance.price_slippage_bps;
-    debt_adjustment_usd += debt_adjustment_usd.mul(from_bps(price_slippage_bps))
-        + amount_usd_to_dca_in.mul(from_bps(price_slippage_bps));
+    if args.target_in_amount_base_unit.is_some() {
+        validate_debt_adjustment(
+            solauto_position,
+            args.target_in_amount_base_unit.unwrap(),
+            debt_adjustment_usd,
+        )?;
+    }
 
     Ok((debt_adjustment_usd, amount_to_dca_in))
 }
@@ -381,7 +411,7 @@ mod tests {
             AutomationSettingsInp, DCASettings, DCASettingsInp, PositionState, PositionTokenUsage,
             RebalanceData, SolautoSettingsParameters,
         },
-        types::shared::{FeeType, TokenType},
+        types::shared::{PositionType, TokenType},
         utils::math_utils,
     };
 
@@ -419,8 +449,13 @@ mod tests {
             DCASettings::default()
         };
 
-        let mut position =
-            SolautoPosition::new(1, Pubkey::default(), data, PositionState::default());
+        let mut position = SolautoPosition::new(
+            1,
+            Pubkey::default(),
+            PositionType::default(),
+            data,
+            PositionState::default(),
+        );
 
         position.state.liq_threshold_bps = 8000;
         position.state.max_ltv_bps = 6500;
@@ -471,24 +506,27 @@ mod tests {
             dca_settings.clone(),
             current_liq_utilization_rate_bps,
         );
-        let solauto_fees = solauto_utils::get_solauto_fees_bps(
-            false,
-            FeeType::Default,
-            solauto_position.state.net_worth.usd_value(),
-        );
 
         if rebalance_args.is_none() {
             rebalance_args = Some(RebalanceSettings::default());
         }
 
-        let (debt_adjustment_usd, debt_to_add) = get_rebalance_values(
+        let solauto_fees = solauto_utils::SolautoFeesBps::from(
+            false,
+            rebalance_args
+                .clone()
+                .map_or(None, |args| args.target_liq_utilization_rate_bps),
+            solauto_position.state.net_worth.usd_value(),
+        );
+
+        let (debt_adjustment_usd, amount_to_dca_in) = get_rebalance_values(
             &mut solauto_position,
             rebalance_args.as_ref().unwrap(),
             &solauto_fees,
             current_timestamp.map_or_else(|| 0, |timestamp| timestamp),
         )?;
 
-        Ok((solauto_position, debt_adjustment_usd, debt_to_add))
+        Ok((solauto_position, debt_adjustment_usd, amount_to_dca_in))
     }
 
     fn rebalance_with_std_validation(
@@ -499,15 +537,15 @@ mod tests {
         dca_settings: Option<DCASettings>,
         rebalance_args: Option<RebalanceSettings>,
     ) -> Result<SolautoPosition, ProgramError> {
-        let (mut solauto_position, debt_adjustment_usd, debt_to_add) = test_rebalance(
+        let (mut solauto_position, debt_adjustment_usd, amount_to_dca_in) = test_rebalance(
             current_timestamp,
             current_liq_utilization_rate_bps,
             setting_params,
             dca_settings.clone(),
-            rebalance_args,
+            rebalance_args.clone(),
         )?;
 
-        let boosting = debt_to_add.is_some()
+        let boosting = amount_to_dca_in.is_some()
             || current_liq_utilization_rate_bps <= expected_liq_utilization_rate_bps;
         if boosting {
             expected_liq_utilization_rate_bps = max(
@@ -515,38 +553,54 @@ mod tests {
                 current_liq_utilization_rate_bps,
             );
         }
-        let adjustment_fee_bps = if boosting {
-            solauto_utils::get_solauto_fees_bps(
-                false,
-                FeeType::Default,
-                solauto_position.state.net_worth.usd_value(),
-            )
-            .total
+        let rebalance_direction = if boosting {
+            RebalanceDirection::Boost
         } else {
-            0
+            RebalanceDirection::Repay
         };
 
-        let debt_to_add_usd = debt_to_add.map_or_else(
-            || 0.0,
-            |debt| {
-                from_base_unit::<u64, u8, f64>(debt, solauto_position.state.debt.decimals)
-                    .mul(solauto_position.state.debt.market_price())
-            },
-        );
+        let adjustment_fee_bps = solauto_utils::SolautoFeesBps::from(
+            false,
+            rebalance_args.map_or(None, |args| args.target_liq_utilization_rate_bps),
+            solauto_position.state.net_worth.usd_value(),
+        )
+        .fetch_fees(rebalance_direction)
+        .total;
+
+        let amount_to_dca_in_usd = if amount_to_dca_in.is_some() {
+            if dca_settings.as_ref().unwrap().token_type == TokenType::Supply {
+                from_base_unit::<u64, u8, f64>(
+                    amount_to_dca_in.unwrap(),
+                    solauto_position.state.supply.decimals,
+                )
+                .mul(solauto_position.state.supply.market_price())
+            } else {
+                from_base_unit::<u64, u8, f64>(
+                    amount_to_dca_in.unwrap(),
+                    solauto_position.state.debt.decimals,
+                )
+                .mul(solauto_position.state.debt.market_price())
+            }
+        } else {
+            0.0
+        };
 
         let expected_debt_adjustment_usd = math_utils::get_std_debt_adjustment_usd(
             from_bps(solauto_position.state.liq_threshold_bps),
-            solauto_position.state.supply.amount_used.usd_value() + debt_to_add_usd,
+            solauto_position.state.supply.amount_used.usd_value() + amount_to_dca_in_usd,
             solauto_position.state.debt.amount_used.usd_value(),
             expected_liq_utilization_rate_bps,
             adjustment_fee_bps,
         );
+        println!("{}, {}", debt_adjustment_usd, expected_debt_adjustment_usd);
         assert!(debt_adjustment_usd == expected_debt_adjustment_usd);
 
         // Factor into account the adjustment fee
-        let supply_adjustment = (expected_debt_adjustment_usd + debt_to_add_usd)
-            .sub(expected_debt_adjustment_usd.mul(from_bps(adjustment_fee_bps)))
-            .sub(debt_to_add_usd.mul(from_bps(adjustment_fee_bps)));
+        let mut supply_adjustment = (expected_debt_adjustment_usd + amount_to_dca_in_usd)
+            .sub(expected_debt_adjustment_usd.mul(from_bps(adjustment_fee_bps)));
+        if dca_settings.is_some() && dca_settings.as_ref().unwrap().token_type == TokenType::Debt {
+            supply_adjustment -= amount_to_dca_in_usd.mul(from_bps(adjustment_fee_bps));
+        }
         let supply_adjustment = supply_adjustment.div(solauto_position.state.supply.market_price());
 
         solauto_position.update_usage(
@@ -616,7 +670,7 @@ mod tests {
             Some(RebalanceSettings {
                 rebalance_type: SolautoRebalanceType::Regular,
                 target_liq_utilization_rate_bps: Some(target_liq_utilization_rate_bps),
-                limit_gap_bps: None,
+                target_in_amount_base_unit: None,
             }),
         )
         .unwrap();
@@ -688,7 +742,8 @@ mod tests {
                     unix_start_date: 0,
                     interval_seconds: 5,
                 },
-                debt_to_add_base_unit: 0,
+                dca_in_base_unit: 0,
+                token_type: TokenType::Supply,
             }),
             None,
         );
@@ -700,7 +755,7 @@ mod tests {
 
     #[test]
     fn test_dca_in() {
-        let debt_to_add_base_unit: u64 = 10000000;
+        let dca_in_base_unit: u64 = 10000000;
 
         // curr_liq_utilization_rate_bps > setting_params.boost_to_bps
         test_dca_rebalance_with_std_validation(
@@ -713,7 +768,8 @@ mod tests {
                     unix_start_date: 0,
                     interval_seconds: 5,
                 },
-                debt_to_add_base_unit,
+                dca_in_base_unit,
+                token_type: TokenType::Debt,
             }),
             None,
         )
@@ -730,7 +786,8 @@ mod tests {
                     unix_start_date: 0,
                     interval_seconds: 5,
                 },
-                debt_to_add_base_unit,
+                dca_in_base_unit,
+                token_type: TokenType::Debt,
             }),
             None,
         )
@@ -748,7 +805,8 @@ mod tests {
                     unix_start_date: 0,
                     interval_seconds: 5,
                 },
-                debt_to_add_base_unit,
+                dca_in_base_unit,
+                token_type: TokenType::Debt,
             }),
             None,
         )
@@ -768,7 +826,8 @@ mod tests {
                     unix_start_date: 0,
                     interval_seconds: 5,
                 },
-                debt_to_add_base_unit: 0,
+                dca_in_base_unit: 0,
+                token_type: TokenType::Supply,
             }),
             None,
         )
@@ -785,7 +844,8 @@ mod tests {
                     unix_start_date: 0,
                     interval_seconds: 5,
                 },
-                debt_to_add_base_unit: 0,
+                dca_in_base_unit: 0,
+                token_type: TokenType::Supply,
             }),
             None,
         )

@@ -1,9 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.findMarginfiAccounts = findMarginfiAccounts;
+exports.marginfiMaxLtvAndLiqThresholdBps = marginfiMaxLtvAndLiqThresholdBps;
 exports.getMaxLtvAndLiqThreshold = getMaxLtvAndLiqThreshold;
 exports.getAllMarginfiAccountsByAuthority = getAllMarginfiAccountsByAuthority;
 exports.getMarginfiAccountPositionState = getMarginfiAccountPositionState;
+exports.calculateAnnualAPYs = calculateAnnualAPYs;
 exports.getUpToDateShareValues = getUpToDateShareValues;
 const web3_js_1 = require("@solana/web3.js");
 const umi_1 = require("@metaplex-foundation/umi");
@@ -11,32 +13,48 @@ const umi_web3js_adapters_1 = require("@metaplex-foundation/umi-web3js-adapters"
 const marginfi_sdk_1 = require("../marginfi-sdk");
 const generalUtils_1 = require("./generalUtils");
 const numberUtils_1 = require("./numberUtils");
-const solautoConstants_1 = require("../constants/solautoConstants");
 const marginfiAccounts_1 = require("../constants/marginfiAccounts");
 const generalAccounts_1 = require("../constants/generalAccounts");
-const solanaUtils_1 = require("./solanaUtils");
+const constants_1 = require("../constants");
 function findMarginfiAccounts(bank) {
-    for (const key in marginfiAccounts_1.MARGINFI_ACCOUNTS) {
-        const account = marginfiAccounts_1.MARGINFI_ACCOUNTS[key];
-        if (account.bank.toString().toLowerCase() === bank.toString().toLowerCase()) {
-            return account;
+    for (const group in marginfiAccounts_1.MARGINFI_ACCOUNTS) {
+        for (const key in marginfiAccounts_1.MARGINFI_ACCOUNTS[group]) {
+            const account = marginfiAccounts_1.MARGINFI_ACCOUNTS[group][key];
+            if (account.bank.toString().toLowerCase() === bank.toString().toLowerCase()) {
+                return account;
+            }
         }
     }
     throw new Error(`Marginfi accounts not found by the bank: ${bank}`);
 }
-async function getMaxLtvAndLiqThreshold(umi, supply, debt, supplyPrice) {
+function marginfiMaxLtvAndLiqThresholdBps(supplyBank, debtBank, supplyPrice) {
+    let maxLtv = (0, numberUtils_1.bytesToI80F48)(supplyBank.config.assetWeightInit.value) /
+        (0, numberUtils_1.bytesToI80F48)(debtBank.config.liabilityWeightInit.value);
+    const liqThreshold = (0, numberUtils_1.bytesToI80F48)(supplyBank.config.assetWeightMaint.value) /
+        (0, numberUtils_1.bytesToI80F48)(debtBank.config.liabilityWeightMaint.value);
+    const totalDepositedUsdValue = (0, numberUtils_1.fromBaseUnit)(BigInt(Math.round((0, numberUtils_1.bytesToI80F48)(supplyBank.totalAssetShares.value) *
+        (0, numberUtils_1.bytesToI80F48)(supplyBank.assetShareValue.value))), supplyBank.mintDecimals) * supplyPrice;
+    if (supplyBank.config.totalAssetValueInitLimit !== BigInt(0) &&
+        totalDepositedUsdValue > supplyBank.config.totalAssetValueInitLimit) {
+        const discount = Number(supplyBank.config.totalAssetValueInitLimit) /
+            totalDepositedUsdValue;
+        maxLtv = Math.round(maxLtv * Number(discount));
+    }
+    return [maxLtv, liqThreshold];
+}
+async function getMaxLtvAndLiqThreshold(umi, marginfiGroup, supply, debt, supplyPrice) {
     if (!supply.bank && supply.mint.equals(web3_js_1.PublicKey.default)) {
         return [0, 0];
     }
     if (!supply.bank || supply.bank === null) {
-        supply.bank = await (0, marginfi_sdk_1.safeFetchBank)(umi, (0, umi_1.publicKey)(marginfiAccounts_1.MARGINFI_ACCOUNTS[supply.mint.toString()].bank));
+        supply.bank = await (0, marginfi_sdk_1.safeFetchBank)(umi, (0, umi_1.publicKey)(marginfiAccounts_1.MARGINFI_ACCOUNTS[marginfiGroup.toString()][supply.mint.toString()].bank), { commitment: "confirmed" });
     }
     if ((!debt.bank || debt.bank === null) &&
         !debt.mint.equals(web3_js_1.PublicKey.default)) {
-        debt.bank = await (0, marginfi_sdk_1.safeFetchBank)(umi, (0, umi_1.publicKey)(marginfiAccounts_1.MARGINFI_ACCOUNTS[debt.mint.toString()].bank));
+        debt.bank = await (0, marginfi_sdk_1.safeFetchBank)(umi, (0, umi_1.publicKey)(marginfiAccounts_1.MARGINFI_ACCOUNTS[marginfiGroup.toString()][debt.mint.toString()].bank), { commitment: "confirmed" });
     }
     if (!supplyPrice) {
-        const [price] = await (0, generalUtils_1.getTokenPrices)([
+        const [price] = await (0, generalUtils_1.fetchTokenPrices)([
             (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(supply.bank.mint),
         ]);
         supplyPrice = price;
@@ -44,23 +62,11 @@ async function getMaxLtvAndLiqThreshold(umi, supply, debt, supplyPrice) {
     if (!debt.bank || debt.bank === null) {
         return [0, 0];
     }
-    let maxLtv = (0, numberUtils_1.bytesToI80F48)(supply.bank.config.assetWeightInit.value) /
-        (0, numberUtils_1.bytesToI80F48)(debt.bank.config.liabilityWeightInit.value);
-    const liqThreshold = (0, numberUtils_1.bytesToI80F48)(supply.bank.config.assetWeightMaint.value) /
-        (0, numberUtils_1.bytesToI80F48)(debt.bank.config.liabilityWeightMaint.value);
-    const totalDepositedUsdValue = (0, numberUtils_1.fromBaseUnit)(BigInt(Math.round((0, numberUtils_1.bytesToI80F48)(supply.bank.totalAssetShares.value) *
-        (0, numberUtils_1.bytesToI80F48)(supply.bank.assetShareValue.value))), supply.bank.mintDecimals) * supplyPrice;
-    if (supply.bank.config.totalAssetValueInitLimit !== BigInt(0) &&
-        totalDepositedUsdValue > supply.bank.config.totalAssetValueInitLimit) {
-        const discount = Number(supply.bank.config.totalAssetValueInitLimit) /
-            totalDepositedUsdValue;
-        maxLtv = Math.round(maxLtv * Number(discount));
-    }
-    return [maxLtv, liqThreshold];
+    return marginfiMaxLtvAndLiqThresholdBps(supply.bank, debt.bank, supplyPrice);
 }
 async function getAllMarginfiAccountsByAuthority(umi, authority, compatibleWithSolauto) {
     const marginfiAccounts = await umi.rpc.getProgramAccounts(marginfi_sdk_1.MARGINFI_PROGRAM_ID, {
-        commitment: "finalized",
+        commitment: "confirmed",
         dataSlice: {
             offset: 0,
             length: 0,
@@ -80,9 +86,11 @@ async function getAllMarginfiAccountsByAuthority(umi, authority, compatibleWithS
     if (compatibleWithSolauto) {
         const positionStates = await Promise.all(marginfiAccounts.map(async (x) => ({
             publicKey: x.publicKey,
-            state: await getMarginfiAccountPositionState(umi, (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(x.publicKey)),
+            state: await getMarginfiAccountPositionState(umi, { pk: (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(x.publicKey) }),
         })));
         return positionStates
+            .sort((a, b) => (0, numberUtils_1.fromBaseUnit)(b.state?.netWorth.baseAmountUsdValue ?? BigInt(0), generalAccounts_1.USD_DECIMALS) -
+            (0, numberUtils_1.fromBaseUnit)(a.state?.netWorth.baseAmountUsdValue ?? BigInt(0), generalAccounts_1.USD_DECIMALS))
             .filter((x) => x.state !== undefined)
             .map((x) => ({
             marginfiAccount: (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(x.publicKey),
@@ -96,13 +104,13 @@ async function getAllMarginfiAccountsByAuthority(umi, authority, compatibleWithS
         }));
     }
 }
-async function getTokenUsage(umi, bank, isAsset, shares, amountUsedAdjustment) {
+async function getTokenUsage(bank, isAsset, shares, amountUsedAdjustment) {
     let amountUsed = 0;
     let amountCanBeUsed = 0;
     let marketPrice = 0;
     if (bank !== null) {
-        [marketPrice] = await (0, generalUtils_1.getTokenPrices)([(0, umi_web3js_adapters_1.toWeb3JsPublicKey)(bank.mint)]);
-        const [assetShareValue, liabilityShareValue] = await getUpToDateShareValues(umi, bank);
+        [marketPrice] = await (0, generalUtils_1.fetchTokenPrices)([(0, umi_web3js_adapters_1.toWeb3JsPublicKey)(bank.mint)]);
+        const [assetShareValue, liabilityShareValue] = await getUpToDateShareValues(bank);
         const shareValue = isAsset ? assetShareValue : liabilityShareValue;
         amountUsed = shares * shareValue + Number(amountUsedAdjustment ?? 0);
         const totalDeposited = (0, numberUtils_1.bytesToI80F48)(bank.totalAssetShares.value) * assetShareValue;
@@ -135,14 +143,30 @@ async function getTokenUsage(umi, bank, isAsset, shares, amountUsedAdjustment) {
         padding: new Uint8Array([]),
     };
 }
-async function getMarginfiAccountPositionState(umi, marginfiAccountPk, supplyMint, debtMint, livePositionUpdates) {
-    let marginfiAccount = await (0, marginfi_sdk_1.safeFetchMarginfiAccount)(umi, (0, umi_1.publicKey)(marginfiAccountPk));
-    let supplyBank = supplyMint && supplyMint !== web3_js_1.PublicKey.default
-        ? await (0, marginfi_sdk_1.safeFetchBank)(umi, (0, umi_1.publicKey)(marginfiAccounts_1.MARGINFI_ACCOUNTS[supplyMint.toString()].bank))
-        : null;
-    let debtBank = debtMint && debtMint !== web3_js_1.PublicKey.default
-        ? await (0, marginfi_sdk_1.safeFetchBank)(umi, (0, umi_1.publicKey)(marginfiAccounts_1.MARGINFI_ACCOUNTS[debtMint.toString()].bank))
-        : null;
+async function getMarginfiAccountPositionState(umi, protocolAccount, marginfiGroup, supply, debt, livePositionUpdates) {
+    let marginfiAccount = protocolAccount.data ??
+        (await (0, marginfi_sdk_1.safeFetchMarginfiAccount)(umi, (0, umi_1.publicKey)(protocolAccount.pk), {
+            commitment: "confirmed",
+        }));
+    if (!supply) {
+        supply = {};
+    }
+    if (!debt) {
+        debt = {};
+    }
+    if (!marginfiGroup && marginfiAccount) {
+        marginfiGroup = (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(marginfiAccount.group);
+    }
+    let supplyBank = supply?.banksCache && supply.mint && marginfiGroup
+        ? supply.banksCache[marginfiGroup.toString()][supply?.mint?.toString()]
+        : supply?.mint && supply?.mint !== web3_js_1.PublicKey.default
+            ? await (0, marginfi_sdk_1.safeFetchBank)(umi, (0, umi_1.publicKey)(marginfiAccounts_1.MARGINFI_ACCOUNTS[marginfiGroup?.toString() ?? ""][supply?.mint.toString()].bank), { commitment: "confirmed" })
+            : null;
+    let debtBank = debt?.banksCache && debt.mint && marginfiGroup
+        ? debt.banksCache[marginfiGroup.toString()][debt?.mint?.toString()]
+        : debt?.mint && debt?.mint !== web3_js_1.PublicKey.default
+            ? await (0, marginfi_sdk_1.safeFetchBank)(umi, (0, umi_1.publicKey)(marginfiAccounts_1.MARGINFI_ACCOUNTS[marginfiGroup?.toString() ?? ""][debt?.mint.toString()].bank), { commitment: "confirmed" })
+            : null;
     let supplyUsage = undefined;
     let debtUsage = undefined;
     if (marginfiAccount !== null &&
@@ -155,34 +179,46 @@ async function getMarginfiAccountPositionState(umi, marginfiAccountPk, supplyMin
         }
         if (supplyBalances.length > 0) {
             if (supplyBank === null) {
-                supplyBank = await (0, marginfi_sdk_1.safeFetchBank)(umi, supplyBalances[0].bankPk);
+                supplyBank = await (0, marginfi_sdk_1.safeFetchBank)(umi, supplyBalances[0].bankPk, {
+                    commitment: "confirmed",
+                });
             }
-            if (!supplyMint) {
-                supplyMint = (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(supplyBank.mint);
+            if (!supply.mint) {
+                supply.mint = (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(supplyBank.mint);
             }
-            supplyUsage = await getTokenUsage(umi, supplyBank, true, (0, numberUtils_1.bytesToI80F48)(supplyBalances[0].assetShares.value), livePositionUpdates?.supplyAdjustment);
+            supplyUsage = await getTokenUsage(supplyBank, true, (0, numberUtils_1.bytesToI80F48)(supplyBalances[0].assetShares.value), livePositionUpdates?.supplyAdjustment);
         }
         if (debtBalances.length > 0) {
             if (debtBank === null) {
-                debtBank = await (0, marginfi_sdk_1.safeFetchBank)(umi, debtBalances[0].bankPk);
+                debtBank = await (0, marginfi_sdk_1.safeFetchBank)(umi, debtBalances[0].bankPk, {
+                    commitment: "confirmed",
+                });
             }
-            if (!debtMint) {
-                debtMint = (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(debtBank.mint);
+            if (!debt.mint) {
+                debt.mint = (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(debtBank.mint);
             }
-            debtUsage = await getTokenUsage(umi, debtBank, false, (0, numberUtils_1.bytesToI80F48)(debtBalances[0].liabilityShares.value), livePositionUpdates?.debtAdjustment);
+            debtUsage = await getTokenUsage(debtBank, false, (0, numberUtils_1.bytesToI80F48)(debtBalances[0].liabilityShares.value), livePositionUpdates?.debtAdjustment);
         }
     }
     if (supplyBank === null) {
         return undefined;
     }
+    if (!(0, umi_web3js_adapters_1.toWeb3JsPublicKey)(supplyBank.group).equals(new web3_js_1.PublicKey(marginfiAccounts_1.DEFAULT_MARGINFI_GROUP))) {
+        // Temporarily disabled for now
+        return undefined;
+    }
     if (!supplyUsage) {
-        supplyUsage = await getTokenUsage(umi, supplyBank, true, 0, livePositionUpdates?.supplyAdjustment);
+        supplyUsage = await getTokenUsage(supplyBank, true, 0, livePositionUpdates?.supplyAdjustment);
+    }
+    if (constants_1.TOKEN_INFO[supplyBank.mint.toString()].isStableCoin &&
+        (debtBank === null || constants_1.TOKEN_INFO[debtBank.mint.toString()].isStableCoin)) {
+        return undefined;
     }
     if (!debtUsage) {
-        debtUsage = await getTokenUsage(umi, debtBank, false, 0, livePositionUpdates?.debtAdjustment);
+        debtUsage = await getTokenUsage(debtBank, false, 0, livePositionUpdates?.debtAdjustment);
     }
-    const supplyPrice = solautoConstants_1.PRICES[supplyMint.toString()].price;
-    let [maxLtv, liqThreshold] = await getMaxLtvAndLiqThreshold(umi, {
+    const supplyPrice = (0, generalUtils_1.safeGetPrice)(supply.mint);
+    let [maxLtv, liqThreshold] = await getMaxLtvAndLiqThreshold(umi, marginfiGroup ?? new web3_js_1.PublicKey(marginfiAccounts_1.DEFAULT_MARGINFI_GROUP), {
         mint: (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(supplyBank.mint),
         bank: supplyBank,
     }, {
@@ -212,7 +248,7 @@ function marginfiInterestRateCurve(bank, utilizationRatio) {
     const plateauIr = (0, numberUtils_1.bytesToI80F48)(bank.config.interestRateConfig.plateauInterestRate.value);
     const maxIr = (0, numberUtils_1.bytesToI80F48)(bank.config.interestRateConfig.maxInterestRate.value);
     if (utilizationRatio <= optimalUr) {
-        return (utilizationRatio / optimalUr) * plateauIr;
+        return (utilizationRatio * plateauIr) / optimalUr;
     }
     else {
         return (((utilizationRatio - optimalUr) / (1 - optimalUr)) * (maxIr - plateauIr) +
@@ -228,7 +264,7 @@ function calcInterestRate(bank, utilizationRatio) {
     const insuranceFixedFeeApr = (0, numberUtils_1.bytesToI80F48)(bank.config.interestRateConfig.insuranceFeeFixedApr.value);
     const rateFee = protocolIrFee + insuranceIrFee;
     const totalFixedFeeApr = protocolFixedFeeApr + insuranceFixedFeeApr;
-    const borrowingRate = baseRate * (1 + rateFee) * totalFixedFeeApr;
+    const borrowingRate = baseRate * (1 + rateFee) + totalFixedFeeApr;
     return [lendingRate, borrowingRate];
 }
 function calcAccruedInterestPaymentPerPeriod(apr, timeDelta, shareValue) {
@@ -236,15 +272,17 @@ function calcAccruedInterestPaymentPerPeriod(apr, timeDelta, shareValue) {
     const newValue = shareValue * (1 + irPerPeriod);
     return newValue;
 }
-async function getUpToDateShareValues(umi, bank) {
-    const currentTime = await (0, solanaUtils_1.currentUnixSecondsSolana)(umi);
-    let timeDelta = currentTime - Number(bank.lastUpdate);
+function calculateAnnualAPYs(bank) {
     const totalAssets = (0, numberUtils_1.bytesToI80F48)(bank.totalAssetShares.value) *
         (0, numberUtils_1.bytesToI80F48)(bank.assetShareValue.value);
     const totalLiabilities = (0, numberUtils_1.bytesToI80F48)(bank.totalLiabilityShares.value) *
         (0, numberUtils_1.bytesToI80F48)(bank.liabilityShareValue.value);
     const utilizationRatio = totalLiabilities / totalAssets;
-    const [lendingApr, borrowingApr] = calcInterestRate(bank, utilizationRatio);
+    return calcInterestRate(bank, utilizationRatio);
+}
+async function getUpToDateShareValues(bank) {
+    let timeDelta = (0, generalUtils_1.currentUnixSeconds)() - Number(bank.lastUpdate);
+    const [lendingApr, borrowingApr] = calculateAnnualAPYs(bank);
     return [
         calcAccruedInterestPaymentPerPeriod(lendingApr, timeDelta, (0, numberUtils_1.bytesToI80F48)(bank.assetShareValue.value)),
         calcAccruedInterestPaymentPerPeriod(borrowingApr, timeDelta, (0, numberUtils_1.bytesToI80F48)(bank.liabilityShareValue.value)),
