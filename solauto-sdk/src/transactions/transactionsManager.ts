@@ -372,7 +372,6 @@ export class TransactionsManager {
       await item.initialize();
     }
 
-    let choresBeforeName: string | undefined;
     const [choresBefore, choresAfter] = await getTransactionChores(
       client,
       transactionBuilder().add(
@@ -383,10 +382,9 @@ export class TransactionsManager {
     );
     if (updateLookupTable && !updateLookupTable.needsToBeIsolated) {
       choresBefore.prepend(updateLookupTable.updateLutTx);
-      choresBeforeName = "update lookup table";
     }
     if (choresBefore.getInstructions().length > 0) {
-      const chore = new TransactionItem(async () => ({ tx: choresBefore, }), choresBeforeName);
+      const chore = new TransactionItem(async () => ({ tx: choresBefore }));
       await chore.initialize();
       items.unshift(chore);
       this.txHandler.log(
@@ -490,7 +488,7 @@ export class TransactionsManager {
         this.updateStatus(
           itemSet.name(),
           TransactionStatus.Failed,
-          this.retries,
+          this.retries
         );
       }
       throw e;
@@ -504,17 +502,21 @@ export class TransactionsManager {
   ): Promise<TransactionSet | undefined> {
     const itemSet = itemSets[currentIndex];
     await itemSet.refetchAll(attemptNum);
-  
+
     const newItemSets = await this.assembleTransactionSets([
       ...itemSet.items,
       ...itemSets.slice(currentIndex + 1).flatMap((set) => set.items),
     ]);
-  
+
     if (newItemSets.length > 1) {
-      itemSets.splice(currentIndex + 1, itemSets.length - currentIndex - 1, ...newItemSets.slice(1));
+      itemSets.splice(
+        currentIndex + 1,
+        itemSets.length - currentIndex - 1,
+        ...newItemSets.slice(1)
+      );
       this.updateStatusForSets(newItemSets.slice(1));
     }
-  
+
     return newItemSets[0];
   }
 

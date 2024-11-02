@@ -250,16 +250,14 @@ class TransactionsManager {
         for (const item of items) {
             await item.initialize();
         }
-        let choresBeforeName;
         const [choresBefore, choresAfter] = await (0, transactionUtils_1.getTransactionChores)(client, (0, umi_1.transactionBuilder)().add(items
             .filter((x) => x.tx && x.tx.getInstructions().length > 0)
             .map((x) => x.tx)));
         if (updateLookupTable && !updateLookupTable.needsToBeIsolated) {
             choresBefore.prepend(updateLookupTable.updateLutTx);
-            choresBeforeName = "update lookup table";
         }
         if (choresBefore.getInstructions().length > 0) {
-            const chore = new TransactionItem(async () => ({ tx: choresBefore, }), choresBeforeName);
+            const chore = new TransactionItem(async () => ({ tx: choresBefore }));
             await chore.initialize();
             items.unshift(chore);
             this.txHandler.log("Chores before: ", choresBefore.getInstructions().length);
