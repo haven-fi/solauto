@@ -230,6 +230,9 @@ export abstract class SolautoClient extends ReferralStateManager {
       this.referralState,
       ...(this.referredBySupplyTa() ? [this.referredBySupplyTa()!] : []),
       ...(this.referredByDebtTa() ? [this.referredByDebtTa()!] : []),
+      ...(this.referredBy && !this.referralStateData?.referredByState
+        ? [this.referredBy]
+        : []),
     ];
   }
 
@@ -290,13 +293,11 @@ export abstract class SolautoClient extends ReferralStateManager {
       );
     }
 
-    const addingReferredBy = accountsToAdd.length <= 2;
-
     if (tx.getInstructions().length > 0) {
       this.log("Updating authority lookup table...");
     }
 
-    return { updateLutTx: tx, needsToBeIsolated: !addingReferredBy };
+    return { updateLutTx: tx, needsToBeIsolated: true };
   }
 
   solautoPositionSettings(): SolautoSettingsParameters | undefined {
