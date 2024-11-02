@@ -372,6 +372,7 @@ export class TransactionsManager {
       await item.initialize();
     }
 
+    let choresBeforeName: string | undefined;
     const [choresBefore, choresAfter] = await getTransactionChores(
       client,
       transactionBuilder().add(
@@ -382,9 +383,10 @@ export class TransactionsManager {
     );
     if (updateLookupTable && !updateLookupTable.needsToBeIsolated) {
       choresBefore.prepend(updateLookupTable.updateLutTx);
+      choresBeforeName = "update lookup table";
     }
     if (choresBefore.getInstructions().length > 0) {
-      const chore = new TransactionItem(async () => ({ tx: choresBefore }));
+      const chore = new TransactionItem(async () => ({ tx: choresBefore, }), choresBeforeName);
       await chore.initialize();
       items.unshift(chore);
       this.txHandler.log(

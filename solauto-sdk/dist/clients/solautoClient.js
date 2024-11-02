@@ -110,6 +110,7 @@ class SolautoClient extends referralStateManager_1.ReferralStateManager {
             this.positionDebtTa,
             this.referralState,
             ...(this.referredBySupplyTa() ? [this.referredBySupplyTa()] : []),
+            ...(this.referredByDebtTa() ? [this.referredByDebtTa()] : []),
         ];
     }
     async fetchExistingAuthorityLutAccounts() {
@@ -149,9 +150,7 @@ class SolautoClient extends referralStateManager_1.ReferralStateManager {
                 addresses: accountsToAdd,
             })));
         }
-        const addingReferredBy = accountsToAdd.length === 1 &&
-            accountsToAdd[0].toString().toLowerCase() ===
-                this.referredBySupplyTa()?.toString().toLowerCase();
+        const addingReferredBy = accountsToAdd.length <= 2;
         if (tx.getInstructions().length > 0) {
             this.log("Updating authority lookup table...");
         }

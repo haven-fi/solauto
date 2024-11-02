@@ -36,7 +36,10 @@ import {
   getWrappedInstruction,
   splTokenTransferUmiIx,
 } from "../utils/solanaUtils";
-import { FlashLoanDetails, RebalanceValues } from "../utils/solauto/rebalanceUtils";
+import {
+  FlashLoanDetails,
+  RebalanceValues,
+} from "../utils/solauto/rebalanceUtils";
 import {
   MIN_POSITION_STATE_FRESHNESS_SECS,
   SOLAUTO_LUT,
@@ -170,7 +173,7 @@ export abstract class SolautoClient extends ReferralStateManager {
     }
     return undefined;
   }
-  
+
   referredByDebtTa(): PublicKey | undefined {
     if (this.referredByState !== undefined) {
       return getTokenAccount(this.referredByState, this.debtMint);
@@ -226,6 +229,7 @@ export abstract class SolautoClient extends ReferralStateManager {
       this.positionDebtTa,
       this.referralState,
       ...(this.referredBySupplyTa() ? [this.referredBySupplyTa()!] : []),
+      ...(this.referredByDebtTa() ? [this.referredByDebtTa()!] : []),
     ];
   }
 
@@ -286,10 +290,7 @@ export abstract class SolautoClient extends ReferralStateManager {
       );
     }
 
-    const addingReferredBy =
-      accountsToAdd.length === 1 &&
-      accountsToAdd[0].toString().toLowerCase() ===
-        this.referredBySupplyTa()?.toString().toLowerCase();
+    const addingReferredBy = accountsToAdd.length <= 2;
 
     if (tx.getInstructions().length > 0) {
       this.log("Updating authority lookup table...");
