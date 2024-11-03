@@ -90,14 +90,15 @@ async function getAddressLookupInputs(umi, lookupTableAddresses) {
         return acc;
     }, new Array());
 }
-function assembleFinalTransaction(signer, tx, computeUnitPrice, computeUnitLimit) {
-    tx = tx
+function assembleFinalTransaction(signer, transaction, computeUnitPrice, computeUnitLimit) {
+    let tx = (0, umi_1.transactionBuilder)()
         .prepend(computeUnitPrice !== undefined
         ? setComputeUnitPriceUmiIx(signer, computeUnitPrice)
         : (0, umi_1.transactionBuilder)())
         .prepend(computeUnitLimit
         ? setComputeUnitLimitUmiIx(signer, computeUnitLimit)
-        : (0, umi_1.transactionBuilder)());
+        : (0, umi_1.transactionBuilder)())
+        .add(transaction);
     const marginfiStartFlSerializer = (0, marginfi_sdk_1.getLendingAccountStartFlashloanInstructionDataSerializer)();
     const marginfiStartFlDiscriminator = marginfiStartFlSerializer
         .serialize({

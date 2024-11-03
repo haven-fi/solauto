@@ -11,6 +11,7 @@ const generalUtils_1 = require("../utils/generalUtils");
 const transactionUtils_1 = require("./transactionUtils");
 const types_1 = require("../types");
 const web3_js_1 = require("@solana/web3.js");
+const umi_web3js_adapters_1 = require("@metaplex-foundation/umi-web3js-adapters");
 // import { sendJitoBundledTransactions } from "../utils/jitoUtils";
 class TransactionTooLargeError extends Error {
     constructor(message) {
@@ -44,9 +45,11 @@ class TransactionItem {
     constructor(fetchTx, name) {
         this.fetchTx = fetchTx;
         this.name = name;
+        this.initialized = false;
     }
     async initialize() {
         await this.refetch(0);
+        this.initialized = true;
     }
     async refetch(attemptNum) {
         const resp = await this.fetchTx(attemptNum);
@@ -236,28 +239,45 @@ class TransactionsManager {
             this.updateStatus(itemSet.name(), TransactionStatus.Queued, 0);
         });
     }
+    async updateLut(tx, newLut) {
+        const updateLutTxName = `${newLut ? "create" : "update"} lookup table`;
+        await (0, generalUtils_1.retryWithExponentialBackoff)(async (attemptNum, prevError) => await this.sendTransaction(tx, updateLutTxName, attemptNum, this.getUpdatedPriorityFeeSetting(prevError)), 3, 150, this.errorsToThrow);
+    }
     async clientSend(transactions) {
         const items = [...transactions];
         const client = this.txHandler;
         const updateLookupTable = await client.updateLookupTable();
-        const updateLutTxName = "create lookup table";
-        if (updateLookupTable &&
-            updateLookupTable.updateLutTx.getInstructions().length > 0 &&
-            updateLookupTable?.needsToBeIsolated) {
-            await (0, generalUtils_1.retryWithExponentialBackoff)(async (attemptNum, prevError) => await this.sendTransaction(updateLookupTable.updateLutTx, updateLutTxName, attemptNum, this.getUpdatedPriorityFeeSetting(prevError)), 3, 150, this.errorsToThrow);
+        let isolatedLutTx = updateLookupTable?.new;
+        if (updateLookupTable && !isolatedLutTx) {
+            for (const item of items) {
+                await item.initialize();
+            }
+            const txAccounts = items.flatMap((x) => x.tx.getInstructions().flatMap((x) => x.keys.map((x) => x.pubkey)));
+            const newAccountsUsage = txAccounts.reduce((count, pk) => {
+                return updateLookupTable.accountsToAdd.find((x) => x.equals((0, umi_web3js_adapters_1.toWeb3JsPublicKey)(pk)))
+                    ? count + 1
+                    : count;
+            }, 0);
+            isolatedLutTx = Boolean(newAccountsUsage);
+        }
+        this.txHandler.log(updateLookupTable?.accountsToAdd.map(x => x.toString()));
+        if (updateLookupTable && isolatedLutTx) {
+            await this.updateLut(updateLookupTable.tx, updateLookupTable.new);
         }
         this.lookupTables.defaultLuts = client.defaultLookupTables();
-        for (const item of items) {
-            await item.initialize();
+        if (!items[0].initialized || (updateLookupTable && isolatedLutTx)) {
+            for (const item of items) {
+                await item.initialize();
+            }
         }
         const [choresBefore, choresAfter] = await (0, transactionUtils_1.getTransactionChores)(client, (0, umi_1.transactionBuilder)().add(items
             .filter((x) => x.tx && x.tx.getInstructions().length > 0)
             .map((x) => x.tx)));
-        if (updateLookupTable && !updateLookupTable.needsToBeIsolated) {
-            choresBefore.prepend(updateLookupTable.updateLutTx);
+        if (updateLookupTable && !isolatedLutTx) {
+            choresBefore.prepend(updateLookupTable.tx);
         }
         if (choresBefore.getInstructions().length > 0) {
-            const chore = new TransactionItem(async () => ({ tx: choresBefore }));
+            const chore = new TransactionItem(async () => ({ tx: choresBefore }), "account chores");
             await chore.initialize();
             items.unshift(chore);
             this.txHandler.log("Chores before: ", choresBefore.getInstructions().length);
@@ -268,7 +288,7 @@ class TransactionsManager {
             items.push(chore);
             this.txHandler.log("Chores after: ", choresAfter.getInstructions().length);
         }
-        const result = await this.send(items, true).catch((e) => {
+        const result = await this.send(items).catch((e) => {
             client.resetLiveTxUpdates(false);
             throw e;
         });
@@ -277,16 +297,18 @@ class TransactionsManager {
         }
         return result;
     }
-    async send(items, initialized) {
+    async send(items) {
         this.statuses = [];
         this.lookupTables.reset();
-        if (!initialized) {
+        if (!items[0].initialized) {
             for (const item of items) {
                 await item.initialize();
             }
         }
+        this.txHandler.log("Transaction items:", items.length);
         const itemSets = await this.assembleTransactionSets(items);
         this.updateStatusForSets(itemSets);
+        this.txHandler.log("Initial item sets:", itemSets.length);
         if (this.txType === "only-simulate" && itemSets.length > 1) {
             this.txHandler.log("Only simulate and more than 1 transaction. Skipping...");
             return [];

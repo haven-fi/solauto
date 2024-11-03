@@ -93,7 +93,10 @@ export class ReferralStateManager extends TxHandler {
     this.referredBy = finalReferredBy;
     this.referredByState = finalReferredBy
       ? getReferralState(finalReferredBy, this.programId)
-      : this.referralStateData
+      : this.referralStateData &&
+          !toWeb3JsPublicKey(this.referralStateData.referredByState).equals(
+            PublicKey.default
+          )
         ? toWeb3JsPublicKey(this.referralStateData.referredByState)
         : undefined;
   }
@@ -126,12 +129,7 @@ export class ReferralStateManager extends TxHandler {
     );
     const feesDestinationTa =
       referralFeesDestMint !== NATIVE_MINT
-        ? publicKey(
-            getTokenAccount(
-              this.authority,
-              referralFeesDestMint
-            )
-          )
+        ? publicKey(getTokenAccount(this.authority, referralFeesDestMint))
         : undefined;
 
     return claimReferralFees(this.umi, {

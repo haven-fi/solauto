@@ -183,11 +183,11 @@ export async function getAddressLookupInputs(
 
 export function assembleFinalTransaction(
   signer: Signer,
-  tx: TransactionBuilder,
+  transaction: TransactionBuilder,
   computeUnitPrice?: number,
   computeUnitLimit?: number
 ) {
-  tx = tx
+  let tx = transactionBuilder()
     .prepend(
       computeUnitPrice !== undefined
         ? setComputeUnitPriceUmiIx(signer, computeUnitPrice)
@@ -197,7 +197,8 @@ export function assembleFinalTransaction(
       computeUnitLimit
         ? setComputeUnitLimitUmiIx(signer, computeUnitLimit)
         : transactionBuilder()
-    );
+    )
+    .add(transaction);
 
   const marginfiStartFlSerializer =
     getLendingAccountStartFlashloanInstructionDataSerializer();

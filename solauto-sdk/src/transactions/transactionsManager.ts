@@ -23,6 +23,7 @@ import {
 } from "../types";
 import { ReferralStateManager, TxHandler } from "../clients";
 import { TransactionExpiredBlockheightExceededError } from "@solana/web3.js";
+import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 // import { sendJitoBundledTransactions } from "../utils/jitoUtils";
 
 export class TransactionTooLargeError extends Error {
@@ -71,6 +72,7 @@ class LookupTables {
 export class TransactionItem {
   lookupTableAddresses!: string[];
   tx?: TransactionBuilder;
+  public initialized: boolean = false;
 
   constructor(
     public fetchTx: (
@@ -81,6 +83,7 @@ export class TransactionItem {
 
   async initialize() {
     await this.refetch(0);
+    this.initialized = true;
   }
 
   async refetch(attemptNum: number) {
@@ -339,6 +342,22 @@ export class TransactionsManager {
     });
   }
 
+  private async updateLut(tx: TransactionBuilder, newLut: boolean) {
+    const updateLutTxName = `${newLut ? "create" : "update"} lookup table`;
+    await retryWithExponentialBackoff(
+      async (attemptNum, prevError) =>
+        await this.sendTransaction(
+          tx,
+          updateLutTxName,
+          attemptNum,
+          this.getUpdatedPriorityFeeSetting(prevError)
+        ),
+      3,
+      150,
+      this.errorsToThrow
+    );
+  }
+
   public async clientSend(
     transactions: TransactionItem[]
   ): Promise<TransactionManagerStatuses> {
@@ -346,30 +365,34 @@ export class TransactionsManager {
     const client = this.txHandler as SolautoClient;
 
     const updateLookupTable = await client.updateLookupTable();
-    const updateLutTxName = "create lookup table";
-    if (
-      updateLookupTable &&
-      updateLookupTable.updateLutTx.getInstructions().length > 0 &&
-      updateLookupTable?.needsToBeIsolated
-    ) {
-      await retryWithExponentialBackoff(
-        async (attemptNum, prevError) =>
-          await this.sendTransaction(
-            updateLookupTable.updateLutTx,
-            updateLutTxName,
-            attemptNum,
-            this.getUpdatedPriorityFeeSetting(prevError)
-          ),
-        3,
-        150,
-        this.errorsToThrow
-      );
-    }
 
+    let isolatedLutTx = updateLookupTable?.new;
+    if (updateLookupTable && !isolatedLutTx) {
+      for (const item of items) {
+        await item.initialize();
+      }
+      const txAccounts = items.flatMap((x) =>
+        x.tx!.getInstructions().flatMap((x) => x.keys.map((x) => x.pubkey))
+      );
+      const newAccountsUsage = txAccounts.reduce((count, pk) => {
+        return updateLookupTable.accountsToAdd.find((x) =>
+          x.equals(toWeb3JsPublicKey(pk))
+        )
+          ? count + 1
+          : count;
+      }, 0);
+      isolatedLutTx = Boolean(newAccountsUsage);
+    }
+    this.txHandler.log(updateLookupTable?.accountsToAdd.map(x => x.toString()));
+    if (updateLookupTable && isolatedLutTx) {
+      await this.updateLut(updateLookupTable.tx, updateLookupTable.new);
+    }
     this.lookupTables.defaultLuts = client.defaultLookupTables();
 
-    for (const item of items) {
-      await item.initialize();
+    if (!items[0].initialized || (updateLookupTable && isolatedLutTx)) {
+      for (const item of items) {
+        await item.initialize();
+      }
     }
 
     const [choresBefore, choresAfter] = await getTransactionChores(
@@ -380,11 +403,11 @@ export class TransactionsManager {
           .map((x) => x.tx!)
       )
     );
-    if (updateLookupTable && !updateLookupTable.needsToBeIsolated) {
-      choresBefore.prepend(updateLookupTable.updateLutTx);
+    if (updateLookupTable && !isolatedLutTx) {
+      choresBefore.prepend(updateLookupTable.tx);
     }
     if (choresBefore.getInstructions().length > 0) {
-      const chore = new TransactionItem(async () => ({ tx: choresBefore }));
+      const chore = new TransactionItem(async () => ({ tx: choresBefore }), "account chores");
       await chore.initialize();
       items.unshift(chore);
       this.txHandler.log(
@@ -402,7 +425,7 @@ export class TransactionsManager {
       );
     }
 
-    const result = await this.send(items, true).catch((e) => {
+    const result = await this.send(items).catch((e) => {
       client.resetLiveTxUpdates(false);
       throw e;
     });
@@ -415,20 +438,21 @@ export class TransactionsManager {
   }
 
   public async send(
-    items: TransactionItem[],
-    initialized?: boolean
+    items: TransactionItem[]
   ): Promise<TransactionManagerStatuses> {
     this.statuses = [];
     this.lookupTables.reset();
 
-    if (!initialized) {
+    if (!items[0].initialized) {
       for (const item of items) {
         await item.initialize();
       }
     }
 
+    this.txHandler.log("Transaction items:", items.length);
     const itemSets = await this.assembleTransactionSets(items);
     this.updateStatusForSets(itemSets);
+    this.txHandler.log("Initial item sets:", itemSets.length);
 
     if (this.txType === "only-simulate" && itemSets.length > 1) {
       this.txHandler.log(

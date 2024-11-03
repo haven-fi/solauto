@@ -11,6 +11,7 @@ export declare class TransactionItem {
     name?: string | undefined;
     lookupTableAddresses: string[];
     tx?: TransactionBuilder;
+    initialized: boolean;
     constructor(fetchTx: (attemptNum: number) => Promise<TransactionItemInputs | undefined>, name?: string | undefined);
     initialize(): Promise<void>;
     refetch(attemptNum: number): Promise<void>;
@@ -47,8 +48,9 @@ export declare class TransactionsManager {
     private debugAccounts;
     private getUpdatedPriorityFeeSetting;
     private updateStatusForSets;
+    private updateLut;
     clientSend(transactions: TransactionItem[]): Promise<TransactionManagerStatuses>;
-    send(items: TransactionItem[], initialized?: boolean): Promise<TransactionManagerStatuses>;
+    send(items: TransactionItem[]): Promise<TransactionManagerStatuses>;
     private processTransactionSet;
     private refreshItemSet;
     private sendTransaction;

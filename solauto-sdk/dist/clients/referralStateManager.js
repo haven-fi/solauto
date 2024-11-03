@@ -45,7 +45,8 @@ class ReferralStateManager extends txHandler_1.TxHandler {
         this.referredBy = finalReferredBy;
         this.referredByState = finalReferredBy
             ? (0, utils_1.getReferralState)(finalReferredBy, this.programId)
-            : this.referralStateData
+            : this.referralStateData &&
+                !(0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.referralStateData.referredByState).equals(web3_js_1.PublicKey.default)
                 ? (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.referralStateData.referredByState)
                 : undefined;
     }

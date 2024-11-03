@@ -325,7 +325,7 @@ export function getJupSwapRebalanceDetails(
           Math.round(
             Number(output.amountUsed.baseUnit) *
               // Add this small percentage to account for the APR on the debt between now and the transaction
-              0.00001
+              0.0001
           )
         )
       : toBaseUnit(usdToSwap / safeGetPrice(output.mint)!, output.decimals);

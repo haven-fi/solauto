@@ -439,8 +439,8 @@ function getErrorInfo(umi, tx, error) {
         let programError = null;
         if (typeof error === "object" && error["InstructionError"]) {
             const err = error["InstructionError"];
-            const errIx = tx.getInstructions()[Math.max(0, err[0] - 2)];
-            const errCode = typeof err[1] === "object" ? err[1]["Custom"] : undefined;
+            const errIx = tx.getInstructions()[Math.max(0, err[0])];
+            const errCode = typeof err[1] === "object" && "Custom" in err[1] ? err[1]["Custom"] : undefined;
             const errName = errCode === undefined ? err[1] : undefined;
             let programName = "";
             if (errIx.programId.toString() ===
@@ -454,11 +454,11 @@ function getErrorInfo(umi, tx, error) {
             }
             else if (errIx.programId === marginfi_sdk_1.MARGINFI_PROGRAM_ID) {
                 programName = "Marginfi";
-                programError = (0, marginfi_sdk_1.getMarginfiErrorFromName)(errCode, (0, marginfi_sdk_1.createMarginfiProgram)());
+                programError = (0, marginfi_sdk_1.getMarginfiErrorFromCode)(errCode, (0, marginfi_sdk_1.createMarginfiProgram)());
             }
             else if (errIx.programId === jupiter_sdk_1.JUPITER_PROGRAM_ID) {
                 programName = "Jupiter";
-                programError = (0, jupiter_sdk_1.getJupiterErrorFromName)(errCode, (0, jupiter_sdk_1.createJupiterProgram)());
+                programError = (0, jupiter_sdk_1.getJupiterErrorFromCode)(errCode, (0, jupiter_sdk_1.createJupiterProgram)());
             }
             if (errName && errCode === undefined) {
                 errorName = `${programName ?? "Program"} error`;

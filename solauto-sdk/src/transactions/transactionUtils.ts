@@ -15,7 +15,6 @@ import {
 import {
   InvalidRebalanceConditionError,
   LendingPlatform,
-  RebalanceDirection,
   SolautoAction,
   SolautoRebalanceType,
   TokenType,
@@ -47,7 +46,6 @@ import {
 } from "../utils/generalUtils";
 import { SolautoMarginfiClient } from "../clients/solautoMarginfiClient";
 import {
-  fromBaseUnit,
   getMaxLiqUtilizationRateBps,
   uint8ArrayToBigInt,
 } from "../utils/numberUtils";
@@ -62,16 +60,16 @@ import {
   getLendingAccountDepositInstructionDataSerializer,
   getLendingAccountRepayInstructionDataSerializer,
   getLendingAccountWithdrawInstructionDataSerializer,
-  getMarginfiErrorFromName,
+  getMarginfiErrorFromCode,
   MARGINFI_PROGRAM_ID,
 } from "../marginfi-sdk";
-import { ReferralStateManager, TxHandler } from "../clients";
+import { ReferralStateManager } from "../clients";
 import {
   createJupiterProgram,
-  getJupiterErrorFromName,
+  getJupiterErrorFromCode,
   JUPITER_PROGRAM_ID,
 } from "../jupiter-sdk";
-import { MIN_USD_SUPPORTED_POSITION, PRICES, USD_DECIMALS } from "../constants";
+import { PRICES } from "../constants";
 import { TransactionItemInputs } from "../types";
 
 interface wSolTokenUsage {
@@ -812,8 +810,8 @@ export function getErrorInfo(umi: Umi, tx: TransactionBuilder, error: any) {
 
     if (typeof error === "object" && (error as any)["InstructionError"]) {
       const err = (error as any)["InstructionError"];
-      const errIx = tx.getInstructions()[Math.max(0, err[0] - 2)];
-      const errCode = typeof err[1] === "object" ? err[1]["Custom"] : undefined;
+      const errIx = tx.getInstructions()[Math.max(0, err[0])];
+      const errCode = typeof err[1] === "object" && "Custom" in err[1] ? err[1]["Custom"] : undefined;
       const errName = errCode === undefined ? (err[1] as string) : undefined;
       let programName = "";
 
@@ -831,13 +829,13 @@ export function getErrorInfo(umi: Umi, tx: TransactionBuilder, error: any) {
         }
       } else if (errIx.programId === MARGINFI_PROGRAM_ID) {
         programName = "Marginfi";
-        programError = getMarginfiErrorFromName(
+        programError = getMarginfiErrorFromCode(
           errCode,
           createMarginfiProgram()
         );
       } else if (errIx.programId === JUPITER_PROGRAM_ID) {
         programName = "Jupiter";
-        programError = getJupiterErrorFromName(errCode, createJupiterProgram());
+        programError = getJupiterErrorFromCode(errCode, createJupiterProgram());
       }
 
       if (errName && errCode === undefined) {

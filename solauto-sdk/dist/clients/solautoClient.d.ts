@@ -42,8 +42,9 @@ export declare abstract class SolautoClient extends ReferralStateManager {
     lutAccountsToAdd(): PublicKey[];
     fetchExistingAuthorityLutAccounts(): Promise<PublicKey[]>;
     updateLookupTable(): Promise<{
-        updateLutTx: TransactionBuilder;
-        needsToBeIsolated: boolean;
+        tx: TransactionBuilder;
+        new: boolean;
+        accountsToAdd: PublicKey[];
     } | undefined>;
     solautoPositionSettings(): SolautoSettingsParameters | undefined;
     solautoPositionActiveDca(): DCASettings | undefined;

@@ -97,6 +97,9 @@ class SolautoClient extends referralStateManager_1.ReferralStateManager {
         ];
     }
     lutAccountsToAdd() {
+        const newReferral = this.referredBy &&
+            (!this.referralStateData ||
+                (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.referralStateData.referredByState).equals(web3_js_1.PublicKey.default));
         return [
             this.authority,
             ...((0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.signer.publicKey).equals(this.authority)
@@ -111,9 +114,7 @@ class SolautoClient extends referralStateManager_1.ReferralStateManager {
             this.referralState,
             ...(this.referredBySupplyTa() ? [this.referredBySupplyTa()] : []),
             ...(this.referredByDebtTa() ? [this.referredByDebtTa()] : []),
-            ...(this.referredBy && !this.referralStateData?.referredByState
-                ? [this.referredBy]
-                : []),
+            ...(newReferral ? [this.referredBy] : []), // Minimizes risk of exceeding tx size limit on next tx
         ];
     }
     async fetchExistingAuthorityLutAccounts() {
@@ -145,18 +146,21 @@ class SolautoClient extends referralStateManager_1.ReferralStateManager {
         const accountsToAdd = this.lutAccountsToAdd().filter((x) => !existingLutAccounts
             .map((x) => x.toString().toLowerCase())
             .includes(x.toString().toLowerCase()));
-        if (accountsToAdd.length > 0) {
-            tx = tx.add((0, solanaUtils_1.getWrappedInstruction)(this.signer, web3_js_1.AddressLookupTableProgram.extendLookupTable({
-                payer: (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.signer.publicKey),
-                authority: this.authority,
-                lookupTable: this.authorityLutAddress,
-                addresses: accountsToAdd,
-            })));
+        if (accountsToAdd.length === 0) {
+            return undefined;
         }
-        if (tx.getInstructions().length > 0) {
-            this.log("Updating authority lookup table...");
-        }
-        return { updateLutTx: tx, needsToBeIsolated: true };
+        tx = tx.add((0, solanaUtils_1.getWrappedInstruction)(this.signer, web3_js_1.AddressLookupTableProgram.extendLookupTable({
+            payer: (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.signer.publicKey),
+            authority: this.authority,
+            lookupTable: this.authorityLutAddress,
+            addresses: accountsToAdd,
+        })));
+        this.log("Requires authority LUT update...");
+        return {
+            tx,
+            new: existingLutAccounts.length === 0,
+            accountsToAdd,
+        };
     }
     solautoPositionSettings() {
         return (this.livePositionUpdates.settings ??
