@@ -391,11 +391,6 @@ export class TransactionsManager {
     );
     if (updateLookupTable && !updateLookupTable?.new) {
       choresBefore = choresBefore.prepend(updateLookupTable.tx);
-      this.txHandler.log(
-        updateLookupTable.tx
-          .getInstructions()
-          .map((x) => x.programId.toString())
-      );
     }
     if (choresBefore.getInstructions().length > 0) {
       const chore = new TransactionItem(
@@ -455,7 +450,6 @@ export class TransactionsManager {
       const programs = (await itemSet.getSingleTransaction())
         .getInstructions()
         .map((x) => x.programId);
-      this.txHandler.log(programs.map((x) => x.toString()));
     }
 
     if (this.txType === "only-simulate" && itemSets.length > 1) {
