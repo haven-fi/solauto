@@ -92,14 +92,13 @@ async function getAddressLookupInputs(umi, lookupTableAddresses) {
     }, new Array());
 }
 function addTxOptimizations(signer, transaction, computeUnitPrice, computeUnitLimit) {
-    return (0, umi_1.transactionBuilder)()
+    return transaction
         .prepend(computeUnitPrice !== undefined
         ? setComputeUnitPriceUmiIx(signer, computeUnitPrice)
         : (0, umi_1.transactionBuilder)())
         .prepend(computeUnitLimit
         ? setComputeUnitLimitUmiIx(signer, computeUnitLimit)
-        : (0, umi_1.transactionBuilder)())
-        .add(transaction);
+        : (0, umi_1.transactionBuilder)());
 }
 function assembleFinalTransaction(signer, transaction, computeUnitPrice, computeUnitLimit) {
     const tx = addTxOptimizations(signer, transaction, computeUnitPrice, computeUnitLimit);
@@ -138,8 +137,14 @@ function assembleFinalTransaction(signer, transaction, computeUnitPrice, compute
     }
     return tx;
 }
-async function simulateTransaction(connection, transaction) {
-    const simulationResult = await connection.simulateTransaction(transaction, {
+async function simulateTransaction(umi, connection, transaction) {
+    (0, generalUtils_1.consoleLog)("TRANSACTION SIZE", transaction.getTransactionSize(umi));
+    (0, generalUtils_1.consoleLog)("TRANSACTION SIZE", transaction.useV0().getTransactionSize(umi));
+    const tx = (0, umi_web3js_adapters_1.toWeb3JsTransaction)(transaction.build(umi));
+    (0, generalUtils_1.consoleLog)("TRANSACTIONS REQUIRED", transaction.minimumTransactionsRequired(umi));
+    (0, generalUtils_1.consoleLog)("TRANSACTION SIZE", transaction.getTransactionSize(umi));
+    (0, generalUtils_1.consoleLog)("FITS IN ONE TX", transaction.fitsInOneTransaction(umi));
+    const simulationResult = await connection.simulateTransaction(tx, {
         sigVerify: false,
         commitment: "processed",
     });
@@ -217,7 +222,7 @@ async function sendSingleOptimizedTransaction(umi, connection, tx, txType, prior
     }
     let computeUnitLimit = undefined;
     if (txType !== "skip-simulation") {
-        const simulationResult = await (0, generalUtils_1.retryWithExponentialBackoff)(async () => await simulateTransaction(connection, (0, umi_web3js_adapters_1.toWeb3JsTransaction)(await (await assembleFinalTransaction(umi.identity, tx, cuPrice, 1400000).setLatestBlockhash(umi)).build(umi))), 3);
+        const simulationResult = await (0, generalUtils_1.retryWithExponentialBackoff)(async () => await simulateTransaction(umi, connection, await assembleFinalTransaction(umi.identity, tx, cuPrice, 1400000).setLatestBlockhash(umi)), 3);
         simulationResult.value.err;
         computeUnitLimit = Math.round(simulationResult.value.unitsConsumed * 1.1);
         (0, generalUtils_1.consoleLog)("Compute unit limit: ", computeUnitLimit);

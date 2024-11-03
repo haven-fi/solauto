@@ -162,7 +162,6 @@ class TransactionSet {
       .map((x) => x.tx!);
 
     const lutInputs = await this.lookupTables.getLutInputs(this.lutAddresses());
-    this.txHandler.log(lutInputs);
     return transactionBuilder()
       .add(transactions)
       .setAddressLookupTables(lutInputs);
@@ -446,12 +445,6 @@ export class TransactionsManager {
     this.updateStatusForSets(itemSets);
     this.txHandler.log("Initial item sets:", itemSets.length);
 
-    for (const itemSet of itemSets) {
-      const programs = (await itemSet.getSingleTransaction())
-        .getInstructions()
-        .map((x) => x.programId);
-    }
-
     if (this.txType === "only-simulate" && itemSets.length > 1) {
       this.txHandler.log(
         "Only simulate and more than 1 transaction. Skipping..."
@@ -605,7 +598,6 @@ export class TransactionsManager {
           ? errorString
           : e.message
       );
-      this.txHandler.log(errorString);
 
       if (!errorDetails.canBeIgnored) {
         throw e;

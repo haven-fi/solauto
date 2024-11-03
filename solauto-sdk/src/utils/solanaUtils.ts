@@ -187,7 +187,7 @@ export function addTxOptimizations(
   computeUnitPrice?: number,
   computeUnitLimit?: number
 ) {
-  return transactionBuilder()
+  return transaction
     .prepend(
       computeUnitPrice !== undefined
         ? setComputeUnitPriceUmiIx(signer, computeUnitPrice)
@@ -197,8 +197,7 @@ export function addTxOptimizations(
       computeUnitLimit
         ? setComputeUnitLimitUmiIx(signer, computeUnitLimit)
         : transactionBuilder()
-    )
-    .add(transaction);
+    );
 }
 
 export function assembleFinalTransaction(
@@ -267,13 +266,17 @@ export function assembleFinalTransaction(
 }
 
 async function simulateTransaction(
+  umi: Umi,
   connection: Connection,
-  transaction: VersionedTransaction
+  transaction: TransactionBuilder
 ): Promise<RpcResponseAndContext<SimulatedTransactionResponse>> {
-  const simulationResult = await connection.simulateTransaction(transaction, {
-    sigVerify: false,
-    commitment: "processed",
-  });
+  const simulationResult = await connection.simulateTransaction(
+    toWeb3JsTransaction(transaction.build(umi)),
+    {
+      sigVerify: false,
+      commitment: "processed",
+    }
+  );
   if (simulationResult.value.err) {
     simulationResult.value.logs?.forEach((x: any) => {
       consoleLog(x);
@@ -384,17 +387,14 @@ export async function sendSingleOptimizedTransaction(
     const simulationResult = await retryWithExponentialBackoff(
       async () =>
         await simulateTransaction(
+          umi,
           connection,
-          toWeb3JsTransaction(
-            await (
-              await assembleFinalTransaction(
-                umi.identity,
-                tx,
-                cuPrice,
-                1_400_000
-              ).setLatestBlockhash(umi)
-            ).build(umi)
-          )
+          await assembleFinalTransaction(
+            umi.identity,
+            tx,
+            cuPrice,
+            1_400_000
+          ).setLatestBlockhash(umi)
         ),
       3
     );

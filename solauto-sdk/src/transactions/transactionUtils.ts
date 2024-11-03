@@ -137,10 +137,13 @@ async function transactionChoresBefore(
   if (
     client.referralStateData === null ||
     (client.referredBy !== undefined &&
-      client.referralStateData?.referredByState ===
-        publicKey(PublicKey.default)) ||
+      toWeb3JsPublicKey(client.referralStateData!.referredByState).equals(
+        PublicKey.default
+      )) ||
     (client.authorityLutAddress !== undefined &&
-      client.referralStateData!.lookupTable == publicKey(PublicKey.default))
+      toWeb3JsPublicKey(client.referralStateData!.lookupTable).equals(
+        PublicKey.default
+      ))
   ) {
     chores = chores.add(
       client.updateReferralStatesIx(undefined, client.authorityLutAddress)
@@ -811,7 +814,10 @@ export function getErrorInfo(umi: Umi, tx: TransactionBuilder, error: any) {
     if (typeof error === "object" && (error as any)["InstructionError"]) {
       const err = (error as any)["InstructionError"];
       const errIx = tx.getInstructions()[Math.max(0, err[0])];
-      const errCode = typeof err[1] === "object" && "Custom" in err[1] ? err[1]["Custom"] : undefined;
+      const errCode =
+        typeof err[1] === "object" && "Custom" in err[1]
+          ? err[1]["Custom"]
+          : undefined;
       const errName = errCode === undefined ? (err[1] as string) : undefined;
       let programName = "";
 

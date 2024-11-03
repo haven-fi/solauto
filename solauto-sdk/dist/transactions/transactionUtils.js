@@ -53,10 +53,9 @@ async function transactionChoresBefore(client, accountsGettingCreated, solautoAc
     let chores = (0, umi_1.transactionBuilder)();
     if (client.referralStateData === null ||
         (client.referredBy !== undefined &&
-            client.referralStateData?.referredByState ===
-                (0, umi_1.publicKey)(web3_js_1.PublicKey.default)) ||
+            (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(client.referralStateData.referredByState).equals(web3_js_1.PublicKey.default)) ||
         (client.authorityLutAddress !== undefined &&
-            client.referralStateData.lookupTable == (0, umi_1.publicKey)(web3_js_1.PublicKey.default))) {
+            (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(client.referralStateData.lookupTable).equals(web3_js_1.PublicKey.default))) {
         chores = chores.add(client.updateReferralStatesIx(undefined, client.authorityLutAddress));
     }
     if (client.selfManaged) {
@@ -440,7 +439,9 @@ function getErrorInfo(umi, tx, error) {
         if (typeof error === "object" && error["InstructionError"]) {
             const err = error["InstructionError"];
             const errIx = tx.getInstructions()[Math.max(0, err[0])];
-            const errCode = typeof err[1] === "object" && "Custom" in err[1] ? err[1]["Custom"] : undefined;
+            const errCode = typeof err[1] === "object" && "Custom" in err[1]
+                ? err[1]["Custom"]
+                : undefined;
             const errName = errCode === undefined ? err[1] : undefined;
             let programName = "";
             if (errIx.programId.toString() ===

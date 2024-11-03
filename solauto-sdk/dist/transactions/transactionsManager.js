@@ -105,8 +105,10 @@ class TransactionSet {
         const transactions = this.items
             .filter((x) => x.tx && x.tx.getInstructions().length > 0)
             .map((x) => x.tx);
+        const txSpecificLuts = this.lutAddresses();
+        this.txHandler.log("Tx-specific LUTs: ", txSpecificLuts.map(x => x.toString()));
         const lutInputs = await this.lookupTables.getLutInputs(this.lutAddresses());
-        this.txHandler.log(lutInputs);
+        this.txHandler.log("Lut inputs:", lutInputs);
         return (0, umi_1.transactionBuilder)()
             .add(transactions)
             .setAddressLookupTables(lutInputs);
@@ -264,9 +266,6 @@ class TransactionsManager {
             .map((x) => x.tx)));
         if (updateLookupTable && !updateLookupTable?.new) {
             choresBefore = choresBefore.prepend(updateLookupTable.tx);
-            this.txHandler.log(updateLookupTable.tx
-                .getInstructions()
-                .map((x) => x.programId.toString()));
         }
         if (choresBefore.getInstructions().length > 0) {
             const chore = new TransactionItem(async () => ({ tx: choresBefore }), CHORES_TX_NAME);
@@ -301,12 +300,6 @@ class TransactionsManager {
         const itemSets = await this.assembleTransactionSets(items);
         this.updateStatusForSets(itemSets);
         this.txHandler.log("Initial item sets:", itemSets.length);
-        for (const itemSet of itemSets) {
-            const programs = (await itemSet.getSingleTransaction())
-                .getInstructions()
-                .map((x) => x.programId);
-            this.txHandler.log(programs.map((x) => x.toString()));
-        }
         if (this.txType === "only-simulate" && itemSets.length > 1) {
             this.txHandler.log("Only simulate and more than 1 transaction. Skipping...");
             return [];
@@ -375,7 +368,6 @@ class TransactionsManager {
                 : TransactionStatus.Failed, attemptNum, undefined, undefined, errorDetails.errorName || errorDetails.errorInfo
                 ? errorString
                 : e.message);
-            this.txHandler.log(errorString);
             if (!errorDetails.canBeIgnored) {
                 throw e;
             }
