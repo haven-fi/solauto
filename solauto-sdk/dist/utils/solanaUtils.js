@@ -213,7 +213,6 @@ async function sendSingleOptimizedTransaction(umi, connection, tx, txType, prior
     }
     let computeUnitLimit = undefined;
     if (txType !== "skip-simulation") {
-        // TODO: we should only retry simulation if it's not a solauto error
         const simulationResult = await (0, generalUtils_1.retryWithExponentialBackoff)(async () => await simulateTransaction(connection, (0, umi_web3js_adapters_1.toWeb3JsTransaction)(await (await assembleFinalTransaction(umi.identity, tx, cuPrice, 1400000).setLatestBlockhash(umi)).build(umi))), 3);
         simulationResult.value.err;
         computeUnitLimit = Math.round(simulationResult.value.unitsConsumed * 1.1);
@@ -221,20 +220,6 @@ async function sendSingleOptimizedTransaction(umi, connection, tx, txType, prior
     }
     if (txType !== "only-simulate") {
         onAwaitingSign?.();
-        // const result = await assembleFinalTransaction(
-        //   umi.identity,
-        //   tx,
-        //   cuPrice,
-        //   computeUnitLimit
-        // ).sendAndConfirm(umi, {
-        //   send: {
-        //     skipPreflight: true,
-        //     commitment: "confirmed",
-        //     maxRetries: 0
-        //   },
-        //   confirm: { commitment: "confirmed" },
-        // });
-        // const txSig = bs58.encode(result.signature);
         const blockhash = await connection.getLatestBlockhash("confirmed");
         const signedTx = await assembleFinalTransaction(umi.identity, tx, cuPrice, computeUnitLimit)
             .setBlockhash(blockhash)

@@ -159,11 +159,11 @@ class TransactionSet {
       .filter((x) => x.tx && x.tx.getInstructions().length > 0)
       .map((x) => x.tx!);
 
+    const lutInputs = await this.lookupTables.getLutInputs(this.lutAddresses());
+    this.txHandler.log(lutInputs);
     return transactionBuilder()
       .add(transactions)
-      .setAddressLookupTables(
-        await this.lookupTables.getLutInputs(this.lutAddresses())
-      );
+      .setAddressLookupTables(lutInputs);
   }
 
   lutAddresses(): string[] {
@@ -208,7 +208,6 @@ export type TransactionManagerStatuses = {
 
 export class TransactionsManager {
   private statuses: TransactionManagerStatuses = [];
-  private statusesStartIdx: number = 0;
   private lookupTables: LookupTables;
 
   constructor(
@@ -443,7 +442,6 @@ export class TransactionsManager {
 
     this.txHandler.log("Transaction items:", items.length);
     const itemSets = await this.assembleTransactionSets(items);
-    this.statusesStartIdx = this.statuses.length;
     this.updateStatusForSets(itemSets);
     this.txHandler.log("Initial item sets:", itemSets.length);
 
@@ -503,9 +501,16 @@ export class TransactionsManager {
       this.retries,
       this.retryDelay,
       this.errorsToThrow
-    ).catch((e) => {
+    ).catch((e: Error) => {
       if (itemSet) {
-        this.updateStatus(itemSet.name(), TransactionStatus.Failed, num);
+        this.updateStatus(
+          itemSet.name(),
+          TransactionStatus.Failed,
+          num,
+          undefined,
+          undefined,
+          e.message
+        );
       }
       throw e;
     });
@@ -530,14 +535,17 @@ export class TransactionsManager {
         itemSets.length - currentIndex,
         ...newItemSets
       );
-      const startOfQueuedStatuses = this.statuses.findIndex(x => x.status === TransactionStatus.Queued);
+      const startOfQueuedStatuses = this.statuses.findIndex(
+        (x) => x.status === TransactionStatus.Queued
+      );
       this.statuses.splice(
         startOfQueuedStatuses,
         this.statuses.length - startOfQueuedStatuses,
         ...newItemSets.map((x, i) => ({
           name: x.name(),
           attemptNum: i === 0 ? attemptNum : 0,
-          status: TransactionStatus.Queued,
+          status:
+            i === 0 ? TransactionStatus.Processing : TransactionStatus.Queued,
         }))
       );
     }
@@ -586,7 +594,9 @@ export class TransactionsManager {
         attemptNum,
         undefined,
         undefined,
-        errorString
+        errorDetails.errorName || errorDetails.errorInfo
+          ? errorString
+          : e.message
       );
       this.txHandler.log(errorString);
 

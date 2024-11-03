@@ -1,6 +1,6 @@
 {
   "name": "@haven-fi/solauto-sdk",
-  "version": "1.0.271",
+  "version": "1.0.274",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "description": "Typescript SDK for the Solauto program on the Solana blockchain",
@@ -21,7 +21,7 @@
     "@metaplex-foundation/umi-signer-wallet-adapters": "^0.9.1",
     "@metaplex-foundation/umi-web3js-adapters": "^0.9.1",
     "@solana/spl-token": "^0.4.0",
-    "@solana/web3.js": "^1.92.1",
+    "@solana/web3.js": "^1.95.4",
     "bs58": "^5.0.0",
     "cross-fetch": "^4.0.0",
     "rpc-websockets": "7.11.0"

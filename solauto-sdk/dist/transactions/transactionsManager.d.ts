@@ -41,7 +41,6 @@ export declare class TransactionsManager {
     private retries;
     private retryDelay;
     private statuses;
-    private statusesStartIdx;
     private lookupTables;
     constructor(txHandler: SolautoClient | ReferralStateManager, statusCallback?: ((statuses: TransactionManagerStatuses) => void) | undefined, txType?: TransactionRunType | undefined, priorityFeeSetting?: PriorityFeeSetting, errorsToThrow?: ErrorsToThrow | undefined, retries?: number, retryDelay?: number);
     private assembleTransactionSets;

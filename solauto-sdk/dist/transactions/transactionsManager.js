@@ -104,9 +104,11 @@ class TransactionSet {
         const transactions = this.items
             .filter((x) => x.tx && x.tx.getInstructions().length > 0)
             .map((x) => x.tx);
+        const lutInputs = await this.lookupTables.getLutInputs(this.lutAddresses());
+        this.txHandler.log(lutInputs);
         return (0, umi_1.transactionBuilder)()
             .add(transactions)
-            .setAddressLookupTables(await this.lookupTables.getLutInputs(this.lutAddresses()));
+            .setAddressLookupTables(lutInputs);
     }
     lutAddresses() {
         return Array.from(new Set(this.items.map((x) => x.lookupTableAddresses).flat()));
@@ -144,7 +146,6 @@ class TransactionsManager {
         this.retries = retries;
         this.retryDelay = retryDelay;
         this.statuses = [];
-        this.statusesStartIdx = 0;
         this.lookupTables = new LookupTables(this.txHandler.defaultLookupTables(), this.txHandler.umi);
     }
     async assembleTransactionSets(items) {
@@ -295,7 +296,6 @@ class TransactionsManager {
         }
         this.txHandler.log("Transaction items:", items.length);
         const itemSets = await this.assembleTransactionSets(items);
-        this.statusesStartIdx = this.statuses.length;
         this.updateStatusForSets(itemSets);
         this.txHandler.log("Initial item sets:", itemSets.length);
         if (this.txType === "only-simulate" && itemSets.length > 1) {
@@ -329,7 +329,7 @@ class TransactionsManager {
             }
         }, this.retries, this.retryDelay, this.errorsToThrow).catch((e) => {
             if (itemSet) {
-                this.updateStatus(itemSet.name(), TransactionStatus.Failed, num);
+                this.updateStatus(itemSet.name(), TransactionStatus.Failed, num, undefined, undefined, e.message);
             }
             throw e;
         });
@@ -343,15 +343,12 @@ class TransactionsManager {
         ]);
         if (newItemSets.length > 1) {
             itemSets.splice(currentIndex, itemSets.length - currentIndex, ...newItemSets);
-            const startOfQueuedStatuses = this.statuses.findIndex(x => x.status === TransactionStatus.Queued);
+            const startOfQueuedStatuses = this.statuses.findIndex((x) => x.status === TransactionStatus.Queued);
             this.statuses.splice(startOfQueuedStatuses, this.statuses.length - startOfQueuedStatuses, ...newItemSets.map((x, i) => ({
                 name: x.name(),
                 attemptNum: i === 0 ? attemptNum : 0,
-                status: TransactionStatus.Queued,
+                status: i === 0 ? TransactionStatus.Processing : TransactionStatus.Queued,
             })));
-            // if (this.statuses.map(x => x.name).includes(newItemSets[0].name())) {
-            // }
-            // this.updateStatusForSets(newItemSets.splice(1));
         }
         return newItemSets[0];
     }
@@ -366,7 +363,9 @@ class TransactionsManager {
             const errorString = `${errorDetails.errorName ?? "Unknown error"}: ${errorDetails.errorInfo ?? "unknown"}`;
             this.updateStatus(txName, errorDetails.canBeIgnored
                 ? TransactionStatus.Skipped
-                : TransactionStatus.Failed, attemptNum, undefined, undefined, errorString);
+                : TransactionStatus.Failed, attemptNum, undefined, undefined, errorDetails.errorName || errorDetails.errorInfo
+                ? errorString
+                : e.message);
             this.txHandler.log(errorString);
             if (!errorDetails.canBeIgnored) {
                 throw e;
