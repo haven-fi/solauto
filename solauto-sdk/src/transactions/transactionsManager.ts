@@ -526,6 +526,11 @@ export class TransactionsManager {
     ]);
 
     if (newItemSets.length > 1) {
+      itemSets.splice(
+        currentIndex + 1,
+        itemSets.length - currentIndex - 1,
+        ...newItemSets.slice(1)
+      );
       this.statuses.splice(
         this.statusesStartIdx + 1,
         itemSets.length - 1,
@@ -534,11 +539,6 @@ export class TransactionsManager {
           status: TransactionStatus.Queued,
           attemptNum: i === 0 ? attemptNum : 0,
         }))
-      );
-      itemSets.splice(
-        currentIndex + 1,
-        itemSets.length - currentIndex - 1,
-        ...newItemSets.slice(1)
       );
       this.updateStatusForSets(newItemSets.slice(1));
     }

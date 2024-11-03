@@ -97,9 +97,6 @@ class SolautoClient extends referralStateManager_1.ReferralStateManager {
         ];
     }
     lutAccountsToAdd() {
-        const newReferral = this.referredBy &&
-            (!this.referralStateData ||
-                (0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.referralStateData.referredByState).equals(web3_js_1.PublicKey.default));
         return [
             this.authority,
             ...((0, umi_web3js_adapters_1.toWeb3JsPublicKey)(this.signer.publicKey).equals(this.authority)
@@ -114,7 +111,6 @@ class SolautoClient extends referralStateManager_1.ReferralStateManager {
             this.referralState,
             ...(this.referredBySupplyTa() ? [this.referredBySupplyTa()] : []),
             ...(this.referredByDebtTa() ? [this.referredByDebtTa()] : []),
-            ...(newReferral ? [this.referredBy] : []), // Minimizes risk of exceeding tx size limit on next tx
         ];
     }
     async fetchExistingAuthorityLutAccounts() {

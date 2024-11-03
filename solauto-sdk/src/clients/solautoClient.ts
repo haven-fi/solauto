@@ -216,12 +216,6 @@ export abstract class SolautoClient extends ReferralStateManager {
   }
 
   lutAccountsToAdd(): PublicKey[] {
-    const newReferral =
-      this.referredBy &&
-      (!this.referralStateData ||
-        toWeb3JsPublicKey(this.referralStateData.referredByState).equals(
-          PublicKey.default
-        ));
     return [
       this.authority,
       ...(toWeb3JsPublicKey(this.signer.publicKey).equals(this.authority)
@@ -236,7 +230,6 @@ export abstract class SolautoClient extends ReferralStateManager {
       this.referralState,
       ...(this.referredBySupplyTa() ? [this.referredBySupplyTa()!] : []),
       ...(this.referredByDebtTa() ? [this.referredByDebtTa()!] : []),
-      ...(newReferral ? [this.referredBy!] : []), // Minimizes risk of exceeding tx size limit on next tx
     ];
   }
 
