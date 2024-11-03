@@ -14,6 +14,7 @@ exports.systemTransferUmiIx = systemTransferUmiIx;
 exports.closeTokenAccountUmiIx = closeTokenAccountUmiIx;
 exports.splTokenTransferUmiIx = splTokenTransferUmiIx;
 exports.getAddressLookupInputs = getAddressLookupInputs;
+exports.addTxOptimizations = addTxOptimizations;
 exports.assembleFinalTransaction = assembleFinalTransaction;
 exports.getComputeUnitPriceEstimate = getComputeUnitPriceEstimate;
 exports.sendSingleOptimizedTransaction = sendSingleOptimizedTransaction;
@@ -90,8 +91,8 @@ async function getAddressLookupInputs(umi, lookupTableAddresses) {
         return acc;
     }, new Array());
 }
-function assembleFinalTransaction(signer, transaction, computeUnitPrice, computeUnitLimit) {
-    let tx = (0, umi_1.transactionBuilder)()
+function addTxOptimizations(signer, transaction, computeUnitPrice, computeUnitLimit) {
+    return (0, umi_1.transactionBuilder)()
         .prepend(computeUnitPrice !== undefined
         ? setComputeUnitPriceUmiIx(signer, computeUnitPrice)
         : (0, umi_1.transactionBuilder)())
@@ -99,6 +100,9 @@ function assembleFinalTransaction(signer, transaction, computeUnitPrice, compute
         ? setComputeUnitLimitUmiIx(signer, computeUnitLimit)
         : (0, umi_1.transactionBuilder)())
         .add(transaction);
+}
+function assembleFinalTransaction(signer, transaction, computeUnitPrice, computeUnitLimit) {
+    const tx = addTxOptimizations(signer, transaction, computeUnitPrice, computeUnitLimit);
     const marginfiStartFlSerializer = (0, marginfi_sdk_1.getLendingAccountStartFlashloanInstructionDataSerializer)();
     const marginfiStartFlDiscriminator = marginfiStartFlSerializer
         .serialize({

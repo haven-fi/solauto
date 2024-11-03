@@ -181,13 +181,13 @@ export async function getAddressLookupInputs(
   }, new Array<AddressLookupTableInput>());
 }
 
-export function assembleFinalTransaction(
+export function addTxOptimizations(
   signer: Signer,
   transaction: TransactionBuilder,
   computeUnitPrice?: number,
   computeUnitLimit?: number
 ) {
-  let tx = transactionBuilder()
+  return transactionBuilder()
     .prepend(
       computeUnitPrice !== undefined
         ? setComputeUnitPriceUmiIx(signer, computeUnitPrice)
@@ -199,6 +199,20 @@ export function assembleFinalTransaction(
         : transactionBuilder()
     )
     .add(transaction);
+}
+
+export function assembleFinalTransaction(
+  signer: Signer,
+  transaction: TransactionBuilder,
+  computeUnitPrice?: number,
+  computeUnitLimit?: number
+) {
+  const tx = addTxOptimizations(
+    signer,
+    transaction,
+    computeUnitPrice,
+    computeUnitLimit
+  );
 
   const marginfiStartFlSerializer =
     getLendingAccountStartFlashloanInstructionDataSerializer();

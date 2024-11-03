@@ -83,7 +83,8 @@ class TransactionSet {
         if (accountLocks > 128) {
             return false;
         }
-        return (await this.getSingleTransaction())
+        const singleTx = await this.getSingleTransaction();
+        return (0, solanaUtils_1.addTxOptimizations)(this.txHandler.umi.identity, singleTx, 1, 1)
             .add(item.tx)
             .setAddressLookupTables(await this.lookupTables.getLutInputs([
             ...this.lutAddresses(),
@@ -216,7 +217,6 @@ class TransactionsManager {
         this.txHandler.log(`${name} is ${status.toString().toLowerCase()}`);
         this.statusCallback?.([...this.statuses]);
     }
-    // TODO remove me
     async debugAccounts(itemSet, tx) {
         const lutInputs = await itemSet.lookupTables.getLutInputs([]);
         const lutAccounts = lutInputs.map((x) => x.addresses).flat();
@@ -259,11 +259,14 @@ class TransactionsManager {
         for (const item of items) {
             await item.initialize();
         }
-        const [choresBefore, choresAfter] = await (0, transactionUtils_1.getTransactionChores)(client, (0, umi_1.transactionBuilder)().add(items
+        let [choresBefore, choresAfter] = await (0, transactionUtils_1.getTransactionChores)(client, (0, umi_1.transactionBuilder)().add(items
             .filter((x) => x.tx && x.tx.getInstructions().length > 0)
             .map((x) => x.tx)));
         if (updateLookupTable && !updateLookupTable?.new) {
-            choresBefore.prepend(updateLookupTable.tx);
+            choresBefore = choresBefore.prepend(updateLookupTable.tx);
+            this.txHandler.log(updateLookupTable.tx
+                .getInstructions()
+                .map((x) => x.programId.toString()));
         }
         if (choresBefore.getInstructions().length > 0) {
             const chore = new TransactionItem(async () => ({ tx: choresBefore }), CHORES_TX_NAME);
@@ -298,6 +301,12 @@ class TransactionsManager {
         const itemSets = await this.assembleTransactionSets(items);
         this.updateStatusForSets(itemSets);
         this.txHandler.log("Initial item sets:", itemSets.length);
+        for (const itemSet of itemSets) {
+            const programs = (await itemSet.getSingleTransaction())
+                .getInstructions()
+                .map((x) => x.programId);
+            this.txHandler.log(programs.map((x) => x.toString()));
+        }
         if (this.txType === "only-simulate" && itemSets.length > 1) {
             this.txHandler.log("Only simulate and more than 1 transaction. Skipping...");
             return [];

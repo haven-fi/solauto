@@ -7,6 +7,7 @@ import {
 } from "@metaplex-foundation/umi";
 import { SolautoClient } from "../clients/solautoClient";
 import {
+  addTxOptimizations,
   getAddressLookupInputs,
   sendSingleOptimizedTransaction,
 } from "../utils/solanaUtils";
@@ -130,7 +131,8 @@ class TransactionSet {
       return false;
     }
 
-    return (await this.getSingleTransaction())
+    const singleTx = await this.getSingleTransaction();
+    return addTxOptimizations(this.txHandler.umi.identity, singleTx, 1, 1)
       .add(item.tx)
       .setAddressLookupTables(
         await this.lookupTables.getLutInputs([
@@ -310,7 +312,6 @@ export class TransactionsManager {
     this.statusCallback?.([...this.statuses]);
   }
 
-  // TODO remove me
   private async debugAccounts(itemSet: TransactionSet, tx: TransactionBuilder) {
     const lutInputs = await itemSet.lookupTables.getLutInputs([]);
     const lutAccounts = lutInputs.map((x) => x.addresses).flat();
@@ -380,7 +381,7 @@ export class TransactionsManager {
       await item.initialize();
     }
 
-    const [choresBefore, choresAfter] = await getTransactionChores(
+    let [choresBefore, choresAfter] = await getTransactionChores(
       client,
       transactionBuilder().add(
         items
@@ -389,7 +390,12 @@ export class TransactionsManager {
       )
     );
     if (updateLookupTable && !updateLookupTable?.new) {
-      choresBefore.prepend(updateLookupTable.tx);
+      choresBefore = choresBefore.prepend(updateLookupTable.tx);
+      this.txHandler.log(
+        updateLookupTable.tx
+          .getInstructions()
+          .map((x) => x.programId.toString())
+      );
     }
     if (choresBefore.getInstructions().length > 0) {
       const chore = new TransactionItem(
@@ -444,6 +450,13 @@ export class TransactionsManager {
     const itemSets = await this.assembleTransactionSets(items);
     this.updateStatusForSets(itemSets);
     this.txHandler.log("Initial item sets:", itemSets.length);
+
+    for (const itemSet of itemSets) {
+      const programs = (await itemSet.getSingleTransaction())
+        .getInstructions()
+        .map((x) => x.programId);
+      this.txHandler.log(programs.map((x) => x.toString()));
+    }
 
     if (this.txType === "only-simulate" && itemSets.length > 1) {
       this.txHandler.log(

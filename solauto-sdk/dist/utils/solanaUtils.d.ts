@@ -12,6 +12,7 @@ export declare function systemTransferUmiIx(signer: Signer, destination: PublicK
 export declare function closeTokenAccountUmiIx(signer: Signer, tokenAccount: PublicKey, authority: PublicKey): WrappedInstruction;
 export declare function splTokenTransferUmiIx(signer: Signer, fromTa: PublicKey, toTa: PublicKey, authority: PublicKey, amount: bigint): WrappedInstruction;
 export declare function getAddressLookupInputs(umi: Umi, lookupTableAddresses: string[]): Promise<AddressLookupTableInput[]>;
+export declare function addTxOptimizations(signer: Signer, transaction: TransactionBuilder, computeUnitPrice?: number, computeUnitLimit?: number): TransactionBuilder;
 export declare function assembleFinalTransaction(signer: Signer, transaction: TransactionBuilder, computeUnitPrice?: number, computeUnitLimit?: number): TransactionBuilder;
 export declare function getComputeUnitPriceEstimate(umi: Umi, tx: TransactionBuilder, prioritySetting: PriorityFeeSetting): Promise<number | undefined>;
 export declare function sendSingleOptimizedTransaction(umi: Umi, connection: Connection, tx: TransactionBuilder, txType?: TransactionRunType, prioritySetting?: PriorityFeeSetting, onAwaitingSign?: () => void): Promise<Uint8Array | undefined>;
