@@ -311,7 +311,9 @@ class TransactionsManager {
     }
     async processTransactionSet(itemSets, currentIndex) {
         let itemSet = itemSets[currentIndex];
+        let num = 0;
         await (0, generalUtils_1.retryWithExponentialBackoff)(async (attemptNum, prevError) => {
+            num = attemptNum;
             if (currentIndex > 0 || attemptNum > 0) {
                 itemSet = await this.refreshItemSet(itemSets, currentIndex, attemptNum);
             }
@@ -327,7 +329,7 @@ class TransactionsManager {
             }
         }, this.retries, this.retryDelay, this.errorsToThrow).catch((e) => {
             if (itemSet) {
-                this.updateStatus(itemSet.name(), TransactionStatus.Failed, this.retries);
+                this.updateStatus(itemSet.name(), TransactionStatus.Failed, num);
             }
             throw e;
         });
@@ -340,13 +342,16 @@ class TransactionsManager {
             ...itemSets.slice(currentIndex + 1).flatMap((set) => set.items),
         ]);
         if (newItemSets.length > 1) {
-            this.statuses.splice(this.statusesStartIdx + 1, itemSets.length - 1, ...newItemSets.map((x, i) => ({
+            itemSets.splice(currentIndex, itemSets.length - currentIndex, ...newItemSets);
+            const startOfQueuedStatuses = this.statuses.findIndex(x => x.status === TransactionStatus.Queued);
+            this.statuses.splice(startOfQueuedStatuses, this.statuses.length - startOfQueuedStatuses, ...newItemSets.map((x, i) => ({
                 name: x.name(),
-                status: TransactionStatus.Queued,
                 attemptNum: i === 0 ? attemptNum : 0,
+                status: TransactionStatus.Queued,
             })));
-            itemSets.splice(currentIndex + 1, itemSets.length - currentIndex - 1, ...newItemSets.slice(1));
-            this.updateStatusForSets(newItemSets.slice(1));
+            // if (this.statuses.map(x => x.name).includes(newItemSets[0].name())) {
+            // }
+            // this.updateStatusForSets(newItemSets.splice(1));
         }
         return newItemSets[0];
     }

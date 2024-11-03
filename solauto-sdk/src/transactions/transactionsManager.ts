@@ -468,9 +468,12 @@ export class TransactionsManager {
     currentIndex: number
   ) {
     let itemSet: TransactionSet | undefined = itemSets[currentIndex];
+    let num = 0;
 
     await retryWithExponentialBackoff(
       async (attemptNum, prevError) => {
+        num = attemptNum;
+
         if (currentIndex > 0 || attemptNum > 0) {
           itemSet = await this.refreshItemSet(
             itemSets,
@@ -502,11 +505,7 @@ export class TransactionsManager {
       this.errorsToThrow
     ).catch((e) => {
       if (itemSet) {
-        this.updateStatus(
-          itemSet.name(),
-          TransactionStatus.Failed,
-          this.retries
-        );
+        this.updateStatus(itemSet.name(), TransactionStatus.Failed, num);
       }
       throw e;
     });
@@ -527,20 +526,20 @@ export class TransactionsManager {
 
     if (newItemSets.length > 1) {
       itemSets.splice(
-        currentIndex + 1,
-        itemSets.length - currentIndex - 1,
-        ...newItemSets.slice(1)
+        currentIndex,
+        itemSets.length - currentIndex,
+        ...newItemSets
       );
+      const startOfQueuedStatuses = this.statuses.findIndex(x => x.status === TransactionStatus.Queued);
       this.statuses.splice(
-        this.statusesStartIdx + 1,
-        itemSets.length - 1,
+        startOfQueuedStatuses,
+        this.statuses.length - startOfQueuedStatuses,
         ...newItemSets.map((x, i) => ({
           name: x.name(),
-          status: TransactionStatus.Queued,
           attemptNum: i === 0 ? attemptNum : 0,
+          status: TransactionStatus.Queued,
         }))
       );
-      this.updateStatusForSets(newItemSets.slice(1));
     }
 
     return newItemSets[0];
