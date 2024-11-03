@@ -26,6 +26,8 @@ import { TransactionExpiredBlockheightExceededError } from "@solana/web3.js";
 import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 // import { sendJitoBundledTransactions } from "../utils/jitoUtils";
 
+const CHORES_TX_NAME = "account chores";
+
 export class TransactionTooLargeError extends Error {
   constructor(message: string) {
     super(message);
@@ -171,9 +173,12 @@ class TransactionSet {
   }
 
   name(): string {
-    const names = this.items
+    let names = this.items
       .filter((x) => x.tx && x.name !== undefined)
       .map((x) => x.name!.toLowerCase());
+    if (names.length > 1) {
+      names = names.filter((x) => x !== CHORES_TX_NAME);
+    }
     if (names.length >= 3) {
       return [names.slice(0, -1).join(", "), names[names.length - 1]].join(
         ", and "
@@ -203,6 +208,7 @@ export type TransactionManagerStatuses = {
 
 export class TransactionsManager {
   private statuses: TransactionManagerStatuses = [];
+  private statusesStartIdx: number = 0;
   private lookupTables: LookupTables;
 
   constructor(
@@ -366,33 +372,13 @@ export class TransactionsManager {
 
     const updateLookupTable = await client.updateLookupTable();
 
-    let isolatedLutTx = updateLookupTable?.new;
-    if (updateLookupTable && !isolatedLutTx) {
-      for (const item of items) {
-        await item.initialize();
-      }
-      const txAccounts = items.flatMap((x) =>
-        x.tx!.getInstructions().flatMap((x) => x.keys.map((x) => x.pubkey))
-      );
-      const newAccountsUsage = txAccounts.reduce((count, pk) => {
-        return updateLookupTable.accountsToAdd.find((x) =>
-          x.equals(toWeb3JsPublicKey(pk))
-        )
-          ? count + 1
-          : count;
-      }, 0);
-      isolatedLutTx = Boolean(newAccountsUsage);
-    }
-    this.txHandler.log(updateLookupTable?.accountsToAdd.map(x => x.toString()));
-    if (updateLookupTable && isolatedLutTx) {
+    if (updateLookupTable && updateLookupTable?.new) {
       await this.updateLut(updateLookupTable.tx, updateLookupTable.new);
     }
     this.lookupTables.defaultLuts = client.defaultLookupTables();
 
-    if (!items[0].initialized || (updateLookupTable && isolatedLutTx)) {
-      for (const item of items) {
-        await item.initialize();
-      }
+    for (const item of items) {
+      await item.initialize();
     }
 
     const [choresBefore, choresAfter] = await getTransactionChores(
@@ -403,11 +389,14 @@ export class TransactionsManager {
           .map((x) => x.tx!)
       )
     );
-    if (updateLookupTable && !isolatedLutTx) {
+    if (updateLookupTable && !updateLookupTable?.new) {
       choresBefore.prepend(updateLookupTable.tx);
     }
     if (choresBefore.getInstructions().length > 0) {
-      const chore = new TransactionItem(async () => ({ tx: choresBefore }), "account chores");
+      const chore = new TransactionItem(
+        async () => ({ tx: choresBefore }),
+        CHORES_TX_NAME
+      );
       await chore.initialize();
       items.unshift(chore);
       this.txHandler.log(
@@ -416,7 +405,10 @@ export class TransactionsManager {
       );
     }
     if (choresAfter.getInstructions().length > 0) {
-      const chore = new TransactionItem(async () => ({ tx: choresAfter }));
+      const chore = new TransactionItem(
+        async () => ({ tx: choresAfter }),
+        CHORES_TX_NAME
+      );
       await chore.initialize();
       items.push(chore);
       this.txHandler.log(
@@ -451,6 +443,7 @@ export class TransactionsManager {
 
     this.txHandler.log("Transaction items:", items.length);
     const itemSets = await this.assembleTransactionSets(items);
+    this.statusesStartIdx = this.statuses.length;
     this.updateStatusForSets(itemSets);
     this.txHandler.log("Initial item sets:", itemSets.length);
 
@@ -533,6 +526,15 @@ export class TransactionsManager {
     ]);
 
     if (newItemSets.length > 1) {
+      this.statuses.splice(
+        this.statusesStartIdx + 1,
+        itemSets.length - 1,
+        ...newItemSets.map((x, i) => ({
+          name: x.name(),
+          status: TransactionStatus.Queued,
+          attemptNum: i === 0 ? attemptNum : 0,
+        }))
+      );
       itemSets.splice(
         currentIndex + 1,
         itemSets.length - currentIndex - 1,

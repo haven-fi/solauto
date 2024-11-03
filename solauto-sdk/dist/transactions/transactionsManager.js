@@ -11,8 +11,8 @@ const generalUtils_1 = require("../utils/generalUtils");
 const transactionUtils_1 = require("./transactionUtils");
 const types_1 = require("../types");
 const web3_js_1 = require("@solana/web3.js");
-const umi_web3js_adapters_1 = require("@metaplex-foundation/umi-web3js-adapters");
 // import { sendJitoBundledTransactions } from "../utils/jitoUtils";
+const CHORES_TX_NAME = "account chores";
 class TransactionTooLargeError extends Error {
     constructor(message) {
         super(message);
@@ -112,9 +112,12 @@ class TransactionSet {
         return Array.from(new Set(this.items.map((x) => x.lookupTableAddresses).flat()));
     }
     name() {
-        const names = this.items
+        let names = this.items
             .filter((x) => x.tx && x.name !== undefined)
             .map((x) => x.name.toLowerCase());
+        if (names.length > 1) {
+            names = names.filter((x) => x !== CHORES_TX_NAME);
+        }
         if (names.length >= 3) {
             return [names.slice(0, -1).join(", "), names[names.length - 1]].join(", and ");
         }
@@ -141,6 +144,7 @@ class TransactionsManager {
         this.retries = retries;
         this.retryDelay = retryDelay;
         this.statuses = [];
+        this.statusesStartIdx = 0;
         this.lookupTables = new LookupTables(this.txHandler.defaultLookupTables(), this.txHandler.umi);
     }
     async assembleTransactionSets(items) {
@@ -247,43 +251,27 @@ class TransactionsManager {
         const items = [...transactions];
         const client = this.txHandler;
         const updateLookupTable = await client.updateLookupTable();
-        let isolatedLutTx = updateLookupTable?.new;
-        if (updateLookupTable && !isolatedLutTx) {
-            for (const item of items) {
-                await item.initialize();
-            }
-            const txAccounts = items.flatMap((x) => x.tx.getInstructions().flatMap((x) => x.keys.map((x) => x.pubkey)));
-            const newAccountsUsage = txAccounts.reduce((count, pk) => {
-                return updateLookupTable.accountsToAdd.find((x) => x.equals((0, umi_web3js_adapters_1.toWeb3JsPublicKey)(pk)))
-                    ? count + 1
-                    : count;
-            }, 0);
-            isolatedLutTx = Boolean(newAccountsUsage);
-        }
-        this.txHandler.log(updateLookupTable?.accountsToAdd.map(x => x.toString()));
-        if (updateLookupTable && isolatedLutTx) {
+        if (updateLookupTable && updateLookupTable?.new) {
             await this.updateLut(updateLookupTable.tx, updateLookupTable.new);
         }
         this.lookupTables.defaultLuts = client.defaultLookupTables();
-        if (!items[0].initialized || (updateLookupTable && isolatedLutTx)) {
-            for (const item of items) {
-                await item.initialize();
-            }
+        for (const item of items) {
+            await item.initialize();
         }
         const [choresBefore, choresAfter] = await (0, transactionUtils_1.getTransactionChores)(client, (0, umi_1.transactionBuilder)().add(items
             .filter((x) => x.tx && x.tx.getInstructions().length > 0)
             .map((x) => x.tx)));
-        if (updateLookupTable && !isolatedLutTx) {
+        if (updateLookupTable && !updateLookupTable?.new) {
             choresBefore.prepend(updateLookupTable.tx);
         }
         if (choresBefore.getInstructions().length > 0) {
-            const chore = new TransactionItem(async () => ({ tx: choresBefore }), "account chores");
+            const chore = new TransactionItem(async () => ({ tx: choresBefore }), CHORES_TX_NAME);
             await chore.initialize();
             items.unshift(chore);
             this.txHandler.log("Chores before: ", choresBefore.getInstructions().length);
         }
         if (choresAfter.getInstructions().length > 0) {
-            const chore = new TransactionItem(async () => ({ tx: choresAfter }));
+            const chore = new TransactionItem(async () => ({ tx: choresAfter }), CHORES_TX_NAME);
             await chore.initialize();
             items.push(chore);
             this.txHandler.log("Chores after: ", choresAfter.getInstructions().length);
@@ -307,6 +295,7 @@ class TransactionsManager {
         }
         this.txHandler.log("Transaction items:", items.length);
         const itemSets = await this.assembleTransactionSets(items);
+        this.statusesStartIdx = this.statuses.length;
         this.updateStatusForSets(itemSets);
         this.txHandler.log("Initial item sets:", itemSets.length);
         if (this.txType === "only-simulate" && itemSets.length > 1) {
@@ -351,6 +340,11 @@ class TransactionsManager {
             ...itemSets.slice(currentIndex + 1).flatMap((set) => set.items),
         ]);
         if (newItemSets.length > 1) {
+            this.statuses.splice(this.statusesStartIdx + 1, itemSets.length - 1, ...newItemSets.map((x, i) => ({
+                name: x.name(),
+                status: TransactionStatus.Queued,
+                attemptNum: i === 0 ? attemptNum : 0,
+            })));
             itemSets.splice(currentIndex + 1, itemSets.length - currentIndex - 1, ...newItemSets.slice(1));
             this.updateStatusForSets(newItemSets.slice(1));
         }
