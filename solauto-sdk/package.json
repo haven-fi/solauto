@@ -7,7 +7,7 @@
   "author": "Chelioso",
   "license": "MIT",
   "scripts": {
-    "build": "rm -r dist && npx tsc",
+    "build": "rm -rf dist && npx tsc",
     "test:txs": "ts-mocha -p ./tsconfig.json -t 1000000 tests/transactions/**/*.ts",
     "test:unit": "ts-mocha -p ./tsconfig.json -t 1000000 tests/unit/**/*.ts",
     "test:all": "pnpm test:unit && pnpm test:txs",
