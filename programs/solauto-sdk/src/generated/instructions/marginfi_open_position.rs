@@ -5,6 +5,7 @@
 //! [https://github.com/metaplex-foundation/kinobi]
 //!
 
+use crate::generated::types::PositionType;
 use crate::generated::types::UpdatePositionData;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
@@ -22,12 +23,6 @@ pub struct MarginfiOpenPosition {
     pub ata_program: solana_program::pubkey::Pubkey,
 
     pub rent: solana_program::pubkey::Pubkey,
-
-    pub solauto_manager: solana_program::pubkey::Pubkey,
-
-    pub solauto_fees_wallet: solana_program::pubkey::Pubkey,
-
-    pub solauto_fees_supply_ta: solana_program::pubkey::Pubkey,
 
     pub signer_referral_state: solana_program::pubkey::Pubkey,
 
@@ -69,7 +64,7 @@ impl MarginfiOpenPosition {
         args: MarginfiOpenPositionInstructionArgs,
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
-        let mut accounts = Vec::with_capacity(22 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(19 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.signer,
             true,
@@ -92,18 +87,6 @@ impl MarginfiOpenPosition {
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.rent, false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            self.solauto_manager,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.solauto_fees_wallet,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            self.solauto_fees_supply_ta,
-            false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.signer_referral_state,
@@ -207,6 +190,7 @@ impl MarginfiOpenPositionInstructionData {
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct MarginfiOpenPositionInstructionArgs {
+    pub position_type: PositionType,
     pub position_data: UpdatePositionData,
     pub marginfi_account_seed_idx: Option<u64>,
 }
@@ -221,22 +205,19 @@ pub struct MarginfiOpenPositionInstructionArgs {
 ///   3. `[optional]` token_program (default to `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA`)
 ///   4. `[optional]` ata_program (default to `ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL`)
 ///   5. `[optional]` rent (default to `SysvarRent111111111111111111111111111111111`)
-///   6. `[writable]` solauto_manager
-///   7. `[]` solauto_fees_wallet
-///   8. `[writable]` solauto_fees_supply_ta
-///   9. `[]` signer_referral_state
-///   10. `[optional]` referred_by_state
-///   11. `[writable, optional]` referred_by_supply_ta
-///   12. `[writable]` solauto_position
-///   13. `[]` marginfi_group
-///   14. `[writable, signer]` marginfi_account
-///   15. `[]` supply_mint
-///   16. `[]` supply_bank
-///   17. `[writable]` position_supply_ta
-///   18. `[]` debt_mint
-///   19. `[]` debt_bank
-///   20. `[writable]` position_debt_ta
-///   21. `[writable, optional]` signer_debt_ta
+///   6. `[]` signer_referral_state
+///   7. `[optional]` referred_by_state
+///   8. `[writable, optional]` referred_by_supply_ta
+///   9. `[writable]` solauto_position
+///   10. `[]` marginfi_group
+///   11. `[writable, signer]` marginfi_account
+///   12. `[]` supply_mint
+///   13. `[]` supply_bank
+///   14. `[writable]` position_supply_ta
+///   15. `[]` debt_mint
+///   16. `[]` debt_bank
+///   17. `[writable]` position_debt_ta
+///   18. `[writable, optional]` signer_debt_ta
 #[derive(Default)]
 pub struct MarginfiOpenPositionBuilder {
     signer: Option<solana_program::pubkey::Pubkey>,
@@ -245,9 +226,6 @@ pub struct MarginfiOpenPositionBuilder {
     token_program: Option<solana_program::pubkey::Pubkey>,
     ata_program: Option<solana_program::pubkey::Pubkey>,
     rent: Option<solana_program::pubkey::Pubkey>,
-    solauto_manager: Option<solana_program::pubkey::Pubkey>,
-    solauto_fees_wallet: Option<solana_program::pubkey::Pubkey>,
-    solauto_fees_supply_ta: Option<solana_program::pubkey::Pubkey>,
     signer_referral_state: Option<solana_program::pubkey::Pubkey>,
     referred_by_state: Option<solana_program::pubkey::Pubkey>,
     referred_by_supply_ta: Option<solana_program::pubkey::Pubkey>,
@@ -261,6 +239,7 @@ pub struct MarginfiOpenPositionBuilder {
     debt_bank: Option<solana_program::pubkey::Pubkey>,
     position_debt_ta: Option<solana_program::pubkey::Pubkey>,
     signer_debt_ta: Option<solana_program::pubkey::Pubkey>,
+    position_type: Option<PositionType>,
     position_data: Option<UpdatePositionData>,
     marginfi_account_seed_idx: Option<u64>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
@@ -305,30 +284,6 @@ impl MarginfiOpenPositionBuilder {
     #[inline(always)]
     pub fn rent(&mut self, rent: solana_program::pubkey::Pubkey) -> &mut Self {
         self.rent = Some(rent);
-        self
-    }
-    #[inline(always)]
-    pub fn solauto_manager(
-        &mut self,
-        solauto_manager: solana_program::pubkey::Pubkey,
-    ) -> &mut Self {
-        self.solauto_manager = Some(solauto_manager);
-        self
-    }
-    #[inline(always)]
-    pub fn solauto_fees_wallet(
-        &mut self,
-        solauto_fees_wallet: solana_program::pubkey::Pubkey,
-    ) -> &mut Self {
-        self.solauto_fees_wallet = Some(solauto_fees_wallet);
-        self
-    }
-    #[inline(always)]
-    pub fn solauto_fees_supply_ta(
-        &mut self,
-        solauto_fees_supply_ta: solana_program::pubkey::Pubkey,
-    ) -> &mut Self {
-        self.solauto_fees_supply_ta = Some(solauto_fees_supply_ta);
         self
     }
     #[inline(always)]
@@ -425,6 +380,11 @@ impl MarginfiOpenPositionBuilder {
         self
     }
     #[inline(always)]
+    pub fn position_type(&mut self, position_type: PositionType) -> &mut Self {
+        self.position_type = Some(position_type);
+        self
+    }
+    #[inline(always)]
     pub fn position_data(&mut self, position_data: UpdatePositionData) -> &mut Self {
         self.position_data = Some(position_data);
         self
@@ -470,13 +430,6 @@ impl MarginfiOpenPositionBuilder {
             rent: self.rent.unwrap_or(solana_program::pubkey!(
                 "SysvarRent111111111111111111111111111111111"
             )),
-            solauto_manager: self.solauto_manager.expect("solauto_manager is not set"),
-            solauto_fees_wallet: self
-                .solauto_fees_wallet
-                .expect("solauto_fees_wallet is not set"),
-            solauto_fees_supply_ta: self
-                .solauto_fees_supply_ta
-                .expect("solauto_fees_supply_ta is not set"),
             signer_referral_state: self
                 .signer_referral_state
                 .expect("signer_referral_state is not set"),
@@ -496,6 +449,10 @@ impl MarginfiOpenPositionBuilder {
             signer_debt_ta: self.signer_debt_ta,
         };
         let args = MarginfiOpenPositionInstructionArgs {
+            position_type: self
+                .position_type
+                .clone()
+                .expect("position_type is not set"),
             position_data: self
                 .position_data
                 .clone()
@@ -520,12 +477,6 @@ pub struct MarginfiOpenPositionCpiAccounts<'a, 'b> {
     pub ata_program: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub rent: &'b solana_program::account_info::AccountInfo<'a>,
-
-    pub solauto_manager: &'b solana_program::account_info::AccountInfo<'a>,
-
-    pub solauto_fees_wallet: &'b solana_program::account_info::AccountInfo<'a>,
-
-    pub solauto_fees_supply_ta: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub signer_referral_state: &'b solana_program::account_info::AccountInfo<'a>,
 
@@ -571,12 +522,6 @@ pub struct MarginfiOpenPositionCpi<'a, 'b> {
 
     pub rent: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub solauto_manager: &'b solana_program::account_info::AccountInfo<'a>,
-
-    pub solauto_fees_wallet: &'b solana_program::account_info::AccountInfo<'a>,
-
-    pub solauto_fees_supply_ta: &'b solana_program::account_info::AccountInfo<'a>,
-
     pub signer_referral_state: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub referred_by_state: Option<&'b solana_program::account_info::AccountInfo<'a>>,
@@ -620,9 +565,6 @@ impl<'a, 'b> MarginfiOpenPositionCpi<'a, 'b> {
             token_program: accounts.token_program,
             ata_program: accounts.ata_program,
             rent: accounts.rent,
-            solauto_manager: accounts.solauto_manager,
-            solauto_fees_wallet: accounts.solauto_fees_wallet,
-            solauto_fees_supply_ta: accounts.solauto_fees_supply_ta,
             signer_referral_state: accounts.signer_referral_state,
             referred_by_state: accounts.referred_by_state,
             referred_by_supply_ta: accounts.referred_by_supply_ta,
@@ -672,7 +614,7 @@ impl<'a, 'b> MarginfiOpenPositionCpi<'a, 'b> {
             bool,
         )],
     ) -> solana_program::entrypoint::ProgramResult {
-        let mut accounts = Vec::with_capacity(22 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(19 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             *self.signer.key,
             true,
@@ -695,18 +637,6 @@ impl<'a, 'b> MarginfiOpenPositionCpi<'a, 'b> {
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             *self.rent.key,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.solauto_manager.key,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.solauto_fees_wallet.key,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.solauto_fees_supply_ta.key,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
@@ -800,7 +730,7 @@ impl<'a, 'b> MarginfiOpenPositionCpi<'a, 'b> {
             accounts,
             data,
         };
-        let mut account_infos = Vec::with_capacity(22 + 1 + remaining_accounts.len());
+        let mut account_infos = Vec::with_capacity(19 + 1 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
         account_infos.push(self.signer.clone());
         account_infos.push(self.marginfi_program.clone());
@@ -808,9 +738,6 @@ impl<'a, 'b> MarginfiOpenPositionCpi<'a, 'b> {
         account_infos.push(self.token_program.clone());
         account_infos.push(self.ata_program.clone());
         account_infos.push(self.rent.clone());
-        account_infos.push(self.solauto_manager.clone());
-        account_infos.push(self.solauto_fees_wallet.clone());
-        account_infos.push(self.solauto_fees_supply_ta.clone());
         account_infos.push(self.signer_referral_state.clone());
         if let Some(referred_by_state) = self.referred_by_state {
             account_infos.push(referred_by_state.clone());
@@ -852,22 +779,19 @@ impl<'a, 'b> MarginfiOpenPositionCpi<'a, 'b> {
 ///   3. `[]` token_program
 ///   4. `[]` ata_program
 ///   5. `[]` rent
-///   6. `[writable]` solauto_manager
-///   7. `[]` solauto_fees_wallet
-///   8. `[writable]` solauto_fees_supply_ta
-///   9. `[]` signer_referral_state
-///   10. `[optional]` referred_by_state
-///   11. `[writable, optional]` referred_by_supply_ta
-///   12. `[writable]` solauto_position
-///   13. `[]` marginfi_group
-///   14. `[writable, signer]` marginfi_account
-///   15. `[]` supply_mint
-///   16. `[]` supply_bank
-///   17. `[writable]` position_supply_ta
-///   18. `[]` debt_mint
-///   19. `[]` debt_bank
-///   20. `[writable]` position_debt_ta
-///   21. `[writable, optional]` signer_debt_ta
+///   6. `[]` signer_referral_state
+///   7. `[optional]` referred_by_state
+///   8. `[writable, optional]` referred_by_supply_ta
+///   9. `[writable]` solauto_position
+///   10. `[]` marginfi_group
+///   11. `[writable, signer]` marginfi_account
+///   12. `[]` supply_mint
+///   13. `[]` supply_bank
+///   14. `[writable]` position_supply_ta
+///   15. `[]` debt_mint
+///   16. `[]` debt_bank
+///   17. `[writable]` position_debt_ta
+///   18. `[writable, optional]` signer_debt_ta
 pub struct MarginfiOpenPositionCpiBuilder<'a, 'b> {
     instruction: Box<MarginfiOpenPositionCpiBuilderInstruction<'a, 'b>>,
 }
@@ -882,9 +806,6 @@ impl<'a, 'b> MarginfiOpenPositionCpiBuilder<'a, 'b> {
             token_program: None,
             ata_program: None,
             rent: None,
-            solauto_manager: None,
-            solauto_fees_wallet: None,
-            solauto_fees_supply_ta: None,
             signer_referral_state: None,
             referred_by_state: None,
             referred_by_supply_ta: None,
@@ -898,6 +819,7 @@ impl<'a, 'b> MarginfiOpenPositionCpiBuilder<'a, 'b> {
             debt_bank: None,
             position_debt_ta: None,
             signer_debt_ta: None,
+            position_type: None,
             position_data: None,
             marginfi_account_seed_idx: None,
             __remaining_accounts: Vec::new(),
@@ -947,30 +869,6 @@ impl<'a, 'b> MarginfiOpenPositionCpiBuilder<'a, 'b> {
     #[inline(always)]
     pub fn rent(&mut self, rent: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
         self.instruction.rent = Some(rent);
-        self
-    }
-    #[inline(always)]
-    pub fn solauto_manager(
-        &mut self,
-        solauto_manager: &'b solana_program::account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.solauto_manager = Some(solauto_manager);
-        self
-    }
-    #[inline(always)]
-    pub fn solauto_fees_wallet(
-        &mut self,
-        solauto_fees_wallet: &'b solana_program::account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.solauto_fees_wallet = Some(solauto_fees_wallet);
-        self
-    }
-    #[inline(always)]
-    pub fn solauto_fees_supply_ta(
-        &mut self,
-        solauto_fees_supply_ta: &'b solana_program::account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.solauto_fees_supply_ta = Some(solauto_fees_supply_ta);
         self
     }
     #[inline(always)]
@@ -1082,6 +980,11 @@ impl<'a, 'b> MarginfiOpenPositionCpiBuilder<'a, 'b> {
         self
     }
     #[inline(always)]
+    pub fn position_type(&mut self, position_type: PositionType) -> &mut Self {
+        self.instruction.position_type = Some(position_type);
+        self
+    }
+    #[inline(always)]
     pub fn position_data(&mut self, position_data: UpdatePositionData) -> &mut Self {
         self.instruction.position_data = Some(position_data);
         self
@@ -1134,6 +1037,11 @@ impl<'a, 'b> MarginfiOpenPositionCpiBuilder<'a, 'b> {
         signers_seeds: &[&[&[u8]]],
     ) -> solana_program::entrypoint::ProgramResult {
         let args = MarginfiOpenPositionInstructionArgs {
+            position_type: self
+                .instruction
+                .position_type
+                .clone()
+                .expect("position_type is not set"),
             position_data: self
                 .instruction
                 .position_data
@@ -1167,21 +1075,6 @@ impl<'a, 'b> MarginfiOpenPositionCpiBuilder<'a, 'b> {
                 .expect("ata_program is not set"),
 
             rent: self.instruction.rent.expect("rent is not set"),
-
-            solauto_manager: self
-                .instruction
-                .solauto_manager
-                .expect("solauto_manager is not set"),
-
-            solauto_fees_wallet: self
-                .instruction
-                .solauto_fees_wallet
-                .expect("solauto_fees_wallet is not set"),
-
-            solauto_fees_supply_ta: self
-                .instruction
-                .solauto_fees_supply_ta
-                .expect("solauto_fees_supply_ta is not set"),
 
             signer_referral_state: self
                 .instruction
@@ -1249,9 +1142,6 @@ struct MarginfiOpenPositionCpiBuilderInstruction<'a, 'b> {
     token_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     ata_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     rent: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    solauto_manager: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    solauto_fees_wallet: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    solauto_fees_supply_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     signer_referral_state: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     referred_by_state: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     referred_by_supply_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
@@ -1265,6 +1155,7 @@ struct MarginfiOpenPositionCpiBuilderInstruction<'a, 'b> {
     debt_bank: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     position_debt_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     signer_debt_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    position_type: Option<PositionType>,
     position_data: Option<UpdatePositionData>,
     marginfi_account_seed_idx: Option<u64>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.

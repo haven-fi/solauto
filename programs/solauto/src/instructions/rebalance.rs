@@ -2,7 +2,8 @@ use std::ops::Sub;
 
 use marginfi_sdk::generated::accounts::Bank;
 use solana_program::{
-    clock::Clock, entrypoint::ProgramResult, msg, program_error::ProgramError, sysvar::Sysvar,
+    clock::Clock, entrypoint::ProgramResult, msg, program_error::ProgramError, pubkey::Pubkey,
+    sysvar::Sysvar,
 };
 
 use crate::{
@@ -17,7 +18,7 @@ use crate::{
         shared::{DeserializedAccount, RebalanceStep},
         solauto_manager::{SolautoManager, SolautoManagerAccounts},
     },
-    utils::ix_utils,
+    utils::{ix_utils, solauto_utils},
 };
 
 use super::refresh;
@@ -31,13 +32,13 @@ pub fn marginfi_rebalance<'a>(
     let supply_tas = LendingProtocolTokenAccounts::from(
         None,
         Some(ctx.accounts.position_supply_ta),
-        ctx.accounts.signer_supply_ta,
+        ctx.accounts.authority_supply_ta,
         ctx.accounts.vault_supply_ta,
     )?;
     let debt_tas = LendingProtocolTokenAccounts::from(
         None,
         Some(ctx.accounts.position_debt_ta),
-        ctx.accounts.signer_debt_ta,
+        ctx.accounts.authority_debt_ta,
         ctx.accounts.vault_debt_ta,
     )?;
 
@@ -55,11 +56,8 @@ pub fn marginfi_rebalance<'a>(
         debt_tas.clone(),
         ctx.accounts.debt_vault_authority,
     )?);
-    let solauto_manager_accounts = Box::new(SolautoManagerAccounts::from(
-        supply_tas,
-        debt_tas,
-        ctx.accounts.intermediary_ta,
-    )?);
+    let solauto_manager_accounts =
+        SolautoManagerAccounts::from(supply_tas, debt_tas, ctx.accounts.intermediary_ta, None)?;
 
     if rebalance_step == RebalanceStep::Initial
         || std_accounts.solauto_position.data.rebalance.rebalance_type
@@ -117,21 +115,7 @@ fn needs_refresh(
         return Ok(true);
     }
 
-    // In case we did a refresh in this same transaction before this ix
     let current_timestamp = Clock::get()?.unix_timestamp as u64;
-    if current_timestamp.sub(solauto_position.data.state.last_updated) <= 2 {
-        return Ok(false);
-    }
-
-    if current_timestamp.sub(solauto_position.data.state.last_updated) > 60 * 60 * 24 {
-        return Ok(true);
-    }
-
-    if args.target_liq_utilization_rate_bps.is_some()
-        && args.target_liq_utilization_rate_bps.unwrap() == 0
-    {
-        return Ok(true);
-    }
 
     if solauto_position.data.position.is_some()
         && solauto_position
@@ -149,12 +133,23 @@ fn needs_refresh(
             .eligible_for_next_period(current_timestamp));
     }
 
+    // In case we did a refresh in this same transaction before this ix
+    if current_timestamp.sub(solauto_position.data.state.last_updated) <= 2 {
+        return Ok(false);
+    }
+
+    if args.target_liq_utilization_rate_bps.is_some()
+        && args.target_liq_utilization_rate_bps.unwrap() == 0
+    {
+        return Ok(true);
+    }
+
     Ok(false)
 }
 
 fn rebalance<'a>(
     client: Box<dyn LendingProtocolClient<'a> + 'a>,
-    solauto_manager_accounts: Box<SolautoManagerAccounts<'a>>,
+    solauto_manager_accounts: SolautoManagerAccounts<'a>,
     std_accounts: Box<SolautoStandardAccounts<'a>>,
     rebalance_step: RebalanceStep,
     args: RebalanceSettings,
@@ -168,7 +163,29 @@ fn rebalance<'a>(
         return Err(ProgramError::InvalidInstructionData.into());
     }
 
-    let mut solauto_manager = SolautoManager::from(client, solauto_manager_accounts, std_accounts)?;
+    let fees_bps = solauto_utils::SolautoFeesBps::from(
+        std_accounts
+            .authority_referral_state
+            .as_ref()
+            .unwrap()
+            .data
+            .referred_by_state
+            != Pubkey::default(),
+        args.target_liq_utilization_rate_bps,
+        std_accounts
+            .solauto_position
+            .data
+            .state
+            .net_worth
+            .usd_value(),
+    );
+
+    let mut solauto_manager = SolautoManager::from(
+        client,
+        solauto_manager_accounts,
+        std_accounts,
+        Some(fees_bps),
+    )?;
     if rebalance_step == RebalanceStep::Initial {
         solauto_manager.begin_rebalance(&args)?;
     } else {

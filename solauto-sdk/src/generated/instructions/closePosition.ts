@@ -33,9 +33,9 @@ export type ClosePositionInstructionAccounts = {
   tokenProgram?: PublicKey | Pda;
   ataProgram?: PublicKey | Pda;
   solautoPosition: PublicKey | Pda;
-  signerSupplyTa: PublicKey | Pda;
+  protocolAccount: PublicKey | Pda;
   positionSupplyTa: PublicKey | Pda;
-  positionSupplyCollateralTa?: PublicKey | Pda;
+  signerSupplyTa: PublicKey | Pda;
   positionDebtTa: PublicKey | Pda;
   signerDebtTa: PublicKey | Pda;
 };
@@ -102,20 +102,20 @@ export function closePosition(
       isWritable: true as boolean,
       value: input.solautoPosition ?? null,
     },
-    signerSupplyTa: {
+    protocolAccount: {
       index: 5,
       isWritable: true as boolean,
-      value: input.signerSupplyTa ?? null,
+      value: input.protocolAccount ?? null,
     },
     positionSupplyTa: {
       index: 6,
       isWritable: true as boolean,
       value: input.positionSupplyTa ?? null,
     },
-    positionSupplyCollateralTa: {
+    signerSupplyTa: {
       index: 7,
       isWritable: true as boolean,
-      value: input.positionSupplyCollateralTa ?? null,
+      value: input.signerSupplyTa ?? null,
     },
     positionDebtTa: {
       index: 8,

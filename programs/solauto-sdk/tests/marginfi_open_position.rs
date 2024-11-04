@@ -15,7 +15,7 @@ mod open_position {
             AutomationSettingsInp,
             DCASettingsInp,
             LendingPlatform,
-            SolautoSettingsParametersInp,
+            SolautoSettingsParametersInp, TokenType,
         },
     };
     use spl_associated_token_account::get_associated_token_address;
@@ -82,7 +82,8 @@ mod open_position {
                 periods_passed: 0,
                 target_periods: 5,
             },
-            debt_to_add_base_unit: dca_amount,
+            dca_in_base_unit: dca_amount,
+            token_type: TokenType::Debt
         };
         data.open_position(
             Some(data.general.default_setting_params.clone()),
@@ -94,7 +95,7 @@ mod open_position {
         ).await;
         let position = &position_account.position;
         assert!(&position.dca.automation.target_periods == &active_dca.automation.target_periods);
-        assert!(position.dca.debt_to_add_base_unit == dca_amount);
+        assert!(position.dca.dca_in_base_unit == dca_amount);
 
         let position_debt_ta = data.general.unpack_account_data::<TokenAccount>(
             data.general.position_debt_ta.clone()

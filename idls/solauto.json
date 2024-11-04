@@ -131,6 +131,11 @@
           "isSigner": false
         },
         {
+          "name": "ataProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
           "name": "rent",
           "isMut": false,
           "isSigner": false
@@ -193,19 +198,19 @@
           "isSigner": false
         },
         {
-          "name": "debtMint",
+          "name": "dcaMint",
           "isMut": false,
           "isSigner": false,
           "isOptional": true
         },
         {
-          "name": "positionDebtTa",
+          "name": "positionDcaTa",
           "isMut": true,
           "isSigner": false,
           "isOptional": true
         },
         {
-          "name": "signerDebtTa",
+          "name": "signerDcaTa",
           "isMut": true,
           "isSigner": false,
           "isOptional": true
@@ -253,7 +258,7 @@
           "isSigner": false
         },
         {
-          "name": "signerSupplyTa",
+          "name": "protocolAccount",
           "isMut": true,
           "isSigner": false
         },
@@ -263,10 +268,9 @@
           "isSigner": false
         },
         {
-          "name": "positionSupplyCollateralTa",
+          "name": "signerSupplyTa",
           "isMut": true,
-          "isSigner": false,
-          "isOptional": true
+          "isSigner": false
         },
         {
           "name": "positionDebtTa",
@@ -314,19 +318,19 @@
           "isSigner": false
         },
         {
-          "name": "debtMint",
+          "name": "dcaMint",
           "isMut": false,
           "isSigner": false,
           "isOptional": true
         },
         {
-          "name": "positionDebtTa",
+          "name": "positionDcaTa",
           "isMut": true,
           "isSigner": false,
           "isOptional": true
         },
         {
-          "name": "signerDebtTa",
+          "name": "signerDcaTa",
           "isMut": true,
           "isSigner": false,
           "isOptional": true
@@ -369,21 +373,6 @@
         {
           "name": "rent",
           "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "solautoManager",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "solautoFeesWallet",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "solautoFeesSupplyTa",
-          "isMut": true,
           "isSigner": false
         },
         {
@@ -673,7 +662,7 @@
           "isSigner": false
         },
         {
-          "name": "solautoFeesSupplyTa",
+          "name": "solautoFeesTa",
           "isMut": true,
           "isSigner": false,
           "isOptional": true
@@ -684,7 +673,13 @@
           "isSigner": false
         },
         {
-          "name": "referredBySupplyTa",
+          "name": "referredByTa",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "positionAuthority",
           "isMut": true,
           "isSigner": false,
           "isOptional": true
@@ -727,7 +722,7 @@
           "isSigner": false
         },
         {
-          "name": "signerSupplyTa",
+          "name": "authoritySupplyTa",
           "isMut": true,
           "isSigner": false,
           "isOptional": true
@@ -761,7 +756,7 @@
           "isSigner": false
         },
         {
-          "name": "signerDebtTa",
+          "name": "authorityDebtTa",
           "isMut": true,
           "isSigner": false,
           "isOptional": true
@@ -875,11 +870,17 @@
             }
           },
           {
+            "name": "positionType",
+            "type": {
+              "defined": "PositionType"
+            }
+          },
+          {
             "name": "padding1",
             "type": {
               "array": [
                 "u8",
-                5
+                4
               ]
             }
           },
@@ -906,26 +907,11 @@
             }
           },
           {
-            "name": "feeType",
-            "type": {
-              "defined": "FeeType"
-            }
-          },
-          {
-            "name": "padding2",
-            "type": {
-              "array": [
-                "u8",
-                7
-              ]
-            }
-          },
-          {
             "name": "padding",
             "type": {
               "array": [
                 "u32",
-                30
+                32
               ]
             }
           }
@@ -1095,8 +1081,14 @@
             }
           },
           {
-            "name": "debtToAddBaseUnit",
+            "name": "dcaInBaseUnit",
             "type": "u64"
+          },
+          {
+            "name": "tokenType",
+            "type": {
+              "defined": "TokenType"
+            }
           }
         ]
       }
@@ -1113,15 +1105,21 @@
             }
           },
           {
-            "name": "debtToAddBaseUnit",
+            "name": "dcaInBaseUnit",
             "type": "u64"
+          },
+          {
+            "name": "tokenType",
+            "type": {
+              "defined": "TokenType"
+            }
           },
           {
             "name": "padding",
             "type": {
               "array": [
                 "u8",
-                32
+                31
               ]
             }
           }
@@ -1364,19 +1362,17 @@
             }
           },
           {
-            "name": "priceSlippageBps",
-            "type": "u16"
-          },
-          {
-            "name": "targetLiqUtilizationRateBps",
-            "type": "u16"
+            "name": "rebalanceDirection",
+            "type": {
+              "defined": "RebalanceDirection"
+            }
           },
           {
             "name": "padding2",
             "type": {
               "array": [
                 "u8",
-                4
+                7
               ]
             }
           },
@@ -1421,6 +1417,12 @@
       "type": {
         "kind": "struct",
         "fields": [
+          {
+            "name": "positionType",
+            "type": {
+              "defined": "PositionType"
+            }
+          },
           {
             "name": "positionData",
             "type": {
@@ -1482,9 +1484,9 @@
             }
           },
           {
-            "name": "limitGapBps",
+            "name": "targetInAmountBaseUnit",
             "type": {
-              "option": "u16"
+              "option": "u64"
             }
           }
         ]
@@ -1565,23 +1567,48 @@
         "variants": [
           {
             "name": "Marginfi"
-          },
-          {
-            "name": "Kamino"
           }
         ]
       }
     },
     {
-      "name": "FeeType",
+      "name": "PositionType",
       "type": {
         "kind": "enum",
         "variants": [
           {
-            "name": "Small"
+            "name": "Leverage"
           },
           {
-            "name": "Default"
+            "name": "SafeLoan"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TokenType",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Supply"
+          },
+          {
+            "name": "Debt"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RebalanceDirection",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Boost"
+          },
+          {
+            "name": "Repay"
           }
         ]
       }
@@ -1613,57 +1640,42 @@
     {
       "code": 1,
       "name": "FailedAccountDeserialization",
-      "msg": "Failed to deserialize account data, incorrect account was likely given"
+      "msg": "Failed to deserialize account data"
     },
     {
       "code": 2,
       "name": "InvalidPositionSettings",
-      "msg": "Invalid position settings given"
+      "msg": "Invalid position settings provided"
     },
     {
       "code": 3,
       "name": "InvalidDCASettings",
-      "msg": "Invalid DCA settings given"
+      "msg": "Invalid DCA configuration provided"
     },
     {
       "code": 4,
       "name": "InvalidAutomationData",
-      "msg": "Invalid automation data given"
+      "msg": "Invalid automation settings provided"
     },
     {
       "code": 5,
-      "name": "StaleProtocolData",
-      "msg": "Stale protocol data. Refresh instruction must be invoked before taking a protocol action"
-    },
-    {
-      "code": 6,
-      "name": "UnableToRebalance",
-      "msg": "Unable to adjust position to the desired utilization rate"
-    },
-    {
-      "code": 7,
-      "name": "ExceededValidUtilizationRate",
-      "msg": "Desired action brought the utilization rate to an unsafe amount"
-    },
-    {
-      "code": 8,
       "name": "InvalidRebalanceCondition",
       "msg": "Invalid position condition to rebalance"
     },
     {
-      "code": 9,
+      "code": 6,
       "name": "InstructionIsCPI",
       "msg": "Unable to invoke instruction through a CPI"
     },
     {
-      "code": 10,
-      "name": "RebalanceAbuse",
-      "msg": "Too many rebalance instruction invocations in the same transaction"
-    },
-    {
-      "code": 11,
+      "code": 7,
       "name": "IncorrectInstructions",
       "msg": "Incorrect set of instructions in the transaction"
+    },
+    {
+      "code": 8,
+      "name": "IncorrectDebtAdjustment",
+      "msg": "Incorrect swap amount provided. Likely due to high price volatility"
     }
   ],
   "metadata": {

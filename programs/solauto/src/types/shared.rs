@@ -3,6 +3,7 @@ use bytemuck::AnyBitPattern;
 use bytemuck::Pod;
 use bytemuck::Zeroable;
 use shank::ShankType;
+use solana_program::msg;
 use solana_program::{
     account_info::AccountInfo,
     program_error::ProgramError,
@@ -15,7 +16,6 @@ use thiserror::Error;
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, PartialEq, Copy)]
 pub enum LendingPlatform {
     Marginfi,
-    Kamino,
 }
 
 unsafe impl Zeroable for LendingPlatform {}
@@ -42,11 +42,27 @@ impl PodBool {
     }
 }
 
-#[derive(PartialEq)]
+#[repr(u8)]
+#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, Default, PartialEq, Copy)]
+pub enum PositionType {
+    #[default]
+    Leverage,
+    SafeLoan,
+}
+
+unsafe impl Zeroable for PositionType {}
+unsafe impl Pod for PositionType {}
+
+#[repr(u8)]
+#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, Default, PartialEq, Copy)]
 pub enum TokenType {
+    #[default]
     Supply,
     Debt,
 }
+
+unsafe impl Zeroable for TokenType {}
+unsafe impl Pod for TokenType {}
 
 impl fmt::Display for TokenType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -58,14 +74,15 @@ impl fmt::Display for TokenType {
 }
 
 #[repr(u8)]
-#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, PartialEq, Copy)]
-pub enum FeeType {
-    Small,
-    Default,
+#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, Default, PartialEq, Copy)]
+pub enum RebalanceDirection {
+    #[default]
+    Boost,
+    Repay,
 }
 
-unsafe impl Zeroable for FeeType {}
-unsafe impl Pod for FeeType {}
+unsafe impl Zeroable for RebalanceDirection {}
+unsafe impl Pod for RebalanceDirection {}
 
 #[derive(Debug)]
 pub struct RefreshedTokenData {
@@ -118,8 +135,10 @@ impl<'a, T: Pack + IsInitialized> DeserializedAccount<'a, T> {
     pub fn unpack(account: Option<&'a AccountInfo<'a>>) -> Result<Option<Self>, ProgramError> {
         match account {
             Some(account_info) => {
-                let deserialized_data = T::unpack(&account_info.data.borrow())
-                    .map_err(|_| SolautoError::FailedAccountDeserialization)?;
+                let deserialized_data = T::unpack(&account_info.data.borrow()).map_err(|_| {
+                    msg!("Failed to deserialize account data");
+                    SolautoError::FailedAccountDeserialization
+                })?;
                 Ok(Some(Self {
                     account_info,
                     data: Box::new(deserialized_data),
@@ -134,30 +153,22 @@ impl<'a, T: Pack + IsInitialized> DeserializedAccount<'a, T> {
 pub enum SolautoError {
     #[error("Missing or incorrect accounts provided for the given instruction")]
     IncorrectAccounts,
-    #[error("Failed to deserialize account data, incorrect account was likely given")]
+    #[error("Failed to deserialize account data")]
     FailedAccountDeserialization,
-    #[error("Invalid position settings given")]
+    #[error("Invalid position settings provided")]
     InvalidPositionSettings,
-    #[error("Invalid DCA settings given")]
+    #[error("Invalid DCA configuration provided")]
     InvalidDCASettings,
-    #[error("Invalid automation data given")]
+    #[error("Invalid automation settings provided")]
     InvalidAutomationData,
-    #[error(
-        "Stale protocol data. Refresh instruction must be invoked before taking a protocol action"
-    )]
-    StaleProtocolData,
-    #[error("Unable to adjust position to the desired utilization rate")]
-    UnableToRebalance,
-    #[error("Desired action brought the utilization rate to an unsafe amount")]
-    ExceededValidUtilizationRate,
     #[error("Invalid position condition to rebalance")]
     InvalidRebalanceCondition,
     #[error("Unable to invoke instruction through a CPI")]
     InstructionIsCPI,
-    #[error("Too many rebalance instruction invocations in the same transaction")]
-    RebalanceAbuse,
     #[error("Incorrect set of instructions in the transaction")]
     IncorrectInstructions,
+    #[error("Incorrect swap amount provided. Likely due to high price volatility")]
+    IncorrectDebtAdjustment,
 }
 
 impl From<SolautoError> for ProgramError {

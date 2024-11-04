@@ -45,8 +45,7 @@ pub fn marginfi_interaction<'a>(
         debt_tas.clone(),
         ctx.accounts.debt_vault_authority,
     )?);
-    let solauto_manager_accounts =
-        Box::new(SolautoManagerAccounts::from(supply_tas, debt_tas, None)?);
+    let solauto_manager_accounts = SolautoManagerAccounts::from(supply_tas, debt_tas, None, None)?;
 
     protocol_interaction(
         marginfi_client,
@@ -58,11 +57,12 @@ pub fn marginfi_interaction<'a>(
 
 fn protocol_interaction<'a>(
     client: Box<dyn LendingProtocolClient<'a> + 'a>,
-    solauto_manager_accounts: Box<SolautoManagerAccounts<'a>>,
+    solauto_manager_accounts: SolautoManagerAccounts<'a>,
     std_accounts: Box<SolautoStandardAccounts<'a>>,
     action: SolautoAction,
 ) -> ProgramResult {
-    let mut solauto_manager = SolautoManager::from(client, solauto_manager_accounts, std_accounts)?;
+    let mut solauto_manager =
+        SolautoManager::from(client, solauto_manager_accounts, std_accounts, None)?;
     solauto_manager.protocol_interaction(action)?;
 
     ix_utils::update_data(&mut solauto_manager.std_accounts.solauto_position)

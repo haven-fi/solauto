@@ -8,26 +8,32 @@
 
 import {
   Serializer,
-  bytes,
+  array,
   struct,
   u64,
+  u8,
 } from '@metaplex-foundation/umi/serializers';
 import {
   AutomationSettings,
   AutomationSettingsArgs,
+  TokenType,
+  TokenTypeArgs,
   getAutomationSettingsSerializer,
+  getTokenTypeSerializer,
 } from '.';
 
 export type DCASettings = {
   automation: AutomationSettings;
-  debtToAddBaseUnit: bigint;
-  padding: Uint8Array;
+  dcaInBaseUnit: bigint;
+  tokenType: TokenType;
+  padding: Array<number>;
 };
 
 export type DCASettingsArgs = {
   automation: AutomationSettingsArgs;
-  debtToAddBaseUnit: number | bigint;
-  padding: Uint8Array;
+  dcaInBaseUnit: number | bigint;
+  tokenType: TokenTypeArgs;
+  padding: Array<number>;
 };
 
 export function getDCASettingsSerializer(): Serializer<
@@ -37,8 +43,9 @@ export function getDCASettingsSerializer(): Serializer<
   return struct<DCASettings>(
     [
       ['automation', getAutomationSettingsSerializer()],
-      ['debtToAddBaseUnit', u64()],
-      ['padding', bytes({ size: 32 })],
+      ['dcaInBaseUnit', u64()],
+      ['tokenType', getTokenTypeSerializer()],
+      ['padding', array(u8(), { size: 31 })],
     ],
     { description: 'DCASettings' }
   ) as Serializer<DCASettingsArgs, DCASettings>;

@@ -22,6 +22,7 @@ import {
   option,
   struct,
   u16,
+  u64,
   u8,
 } from '@metaplex-foundation/umi/serializers';
 import {
@@ -42,9 +43,10 @@ export type MarginfiRebalanceInstructionAccounts = {
   systemProgram?: PublicKey | Pda;
   tokenProgram?: PublicKey | Pda;
   ixsSysvar: PublicKey | Pda;
-  solautoFeesSupplyTa?: PublicKey | Pda;
+  solautoFeesTa?: PublicKey | Pda;
   authorityReferralState: PublicKey | Pda;
-  referredBySupplyTa?: PublicKey | Pda;
+  referredByTa?: PublicKey | Pda;
+  positionAuthority?: PublicKey | Pda;
   solautoPosition: PublicKey | Pda;
   marginfiGroup: PublicKey | Pda;
   marginfiAccount: PublicKey | Pda;
@@ -52,13 +54,13 @@ export type MarginfiRebalanceInstructionAccounts = {
   supplyBank: PublicKey | Pda;
   supplyPriceOracle?: PublicKey | Pda;
   positionSupplyTa: PublicKey | Pda;
-  signerSupplyTa?: PublicKey | Pda;
+  authoritySupplyTa?: PublicKey | Pda;
   vaultSupplyTa?: PublicKey | Pda;
   supplyVaultAuthority?: PublicKey | Pda;
   debtBank: PublicKey | Pda;
   debtPriceOracle?: PublicKey | Pda;
   positionDebtTa: PublicKey | Pda;
-  signerDebtTa?: PublicKey | Pda;
+  authorityDebtTa?: PublicKey | Pda;
   vaultDebtTa?: PublicKey | Pda;
   debtVaultAuthority?: PublicKey | Pda;
 };
@@ -68,13 +70,13 @@ export type MarginfiRebalanceInstructionData = {
   discriminator: number;
   rebalanceType: SolautoRebalanceType;
   targetLiqUtilizationRateBps: Option<number>;
-  limitGapBps: Option<number>;
+  targetInAmountBaseUnit: Option<bigint>;
 };
 
 export type MarginfiRebalanceInstructionDataArgs = {
   rebalanceType: SolautoRebalanceTypeArgs;
   targetLiqUtilizationRateBps: OptionOrNullable<number>;
-  limitGapBps: OptionOrNullable<number>;
+  targetInAmountBaseUnit: OptionOrNullable<number | bigint>;
 };
 
 export function getMarginfiRebalanceInstructionDataSerializer(): Serializer<
@@ -91,7 +93,7 @@ export function getMarginfiRebalanceInstructionDataSerializer(): Serializer<
         ['discriminator', u8()],
         ['rebalanceType', getSolautoRebalanceTypeSerializer()],
         ['targetLiqUtilizationRateBps', option(u16())],
-        ['limitGapBps', option(u16())],
+        ['targetInAmountBaseUnit', option(u64())],
       ],
       { description: 'MarginfiRebalanceInstructionData' }
     ),
@@ -144,98 +146,103 @@ export function marginfiRebalance(
       isWritable: false as boolean,
       value: input.ixsSysvar ?? null,
     },
-    solautoFeesSupplyTa: {
+    solautoFeesTa: {
       index: 5,
       isWritable: true as boolean,
-      value: input.solautoFeesSupplyTa ?? null,
+      value: input.solautoFeesTa ?? null,
     },
     authorityReferralState: {
       index: 6,
       isWritable: false as boolean,
       value: input.authorityReferralState ?? null,
     },
-    referredBySupplyTa: {
+    referredByTa: {
       index: 7,
       isWritable: true as boolean,
-      value: input.referredBySupplyTa ?? null,
+      value: input.referredByTa ?? null,
+    },
+    positionAuthority: {
+      index: 8,
+      isWritable: true as boolean,
+      value: input.positionAuthority ?? null,
     },
     solautoPosition: {
-      index: 8,
+      index: 9,
       isWritable: true as boolean,
       value: input.solautoPosition ?? null,
     },
     marginfiGroup: {
-      index: 9,
+      index: 10,
       isWritable: false as boolean,
       value: input.marginfiGroup ?? null,
     },
     marginfiAccount: {
-      index: 10,
+      index: 11,
       isWritable: true as boolean,
       value: input.marginfiAccount ?? null,
     },
     intermediaryTa: {
-      index: 11,
+      index: 12,
       isWritable: true as boolean,
       value: input.intermediaryTa ?? null,
     },
     supplyBank: {
-      index: 12,
+      index: 13,
       isWritable: true as boolean,
       value: input.supplyBank ?? null,
     },
     supplyPriceOracle: {
-      index: 13,
+      index: 14,
       isWritable: false as boolean,
       value: input.supplyPriceOracle ?? null,
     },
     positionSupplyTa: {
-      index: 14,
+      index: 15,
       isWritable: true as boolean,
       value: input.positionSupplyTa ?? null,
     },
-    signerSupplyTa: {
-      index: 15,
+    authoritySupplyTa: {
+      index: 16,
       isWritable: true as boolean,
-      value: input.signerSupplyTa ?? null,
+      value: input.authoritySupplyTa ?? null,
     },
     vaultSupplyTa: {
-      index: 16,
+      index: 17,
       isWritable: true as boolean,
       value: input.vaultSupplyTa ?? null,
     },
     supplyVaultAuthority: {
-      index: 17,
+      index: 18,
       isWritable: true as boolean,
       value: input.supplyVaultAuthority ?? null,
     },
     debtBank: {
-      index: 18,
+      index: 19,
       isWritable: true as boolean,
       value: input.debtBank ?? null,
     },
     debtPriceOracle: {
-      index: 19,
+      index: 20,
       isWritable: false as boolean,
       value: input.debtPriceOracle ?? null,
     },
     positionDebtTa: {
-      index: 20,
+      index: 21,
       isWritable: true as boolean,
       value: input.positionDebtTa ?? null,
     },
-    signerDebtTa: {
-      index: 21,
+    authorityDebtTa: {
+      index: 22,
       isWritable: true as boolean,
-      value: input.signerDebtTa ?? null,
+      value: input.authorityDebtTa ?? null,
     },
     vaultDebtTa: {
-      index: 22,
+      index: 23,
       isWritable: true as boolean,
       value: input.vaultDebtTa ?? null,
     },
     debtVaultAuthority: {
-      index: 23,
+      index: 24,
       isWritable: true as boolean,
       value: input.debtVaultAuthority ?? null,
     },

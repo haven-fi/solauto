@@ -11,7 +11,7 @@ use super::{
     solana_utils::{account_has_data, init_account, init_ata_if_needed, spl_token_transfer},
 };
 use crate::{
-    constants::{SOLAUTO_FEES_WALLET, WSOL_MINT},
+    constants::WSOL_MINT,
     state::{
         referral_state::ReferralState,
         solauto_position::{
@@ -20,7 +20,9 @@ use crate::{
     },
     types::{
         instruction::UpdatePositionData,
-        shared::{DeserializedAccount, FeeType, LendingPlatform, SolautoError},
+        shared::{
+            DeserializedAccount, LendingPlatform, PositionType, RebalanceDirection, SolautoError,
+        },
     },
 };
 
@@ -38,6 +40,7 @@ pub fn get_owner<'a, 'b>(
 pub fn create_new_solauto_position<'a>(
     signer: &AccountInfo<'a>,
     solauto_position: &'a AccountInfo<'a>,
+    position_type: PositionType,
     update_position_data: UpdatePositionData,
     lending_platform: LendingPlatform,
     supply_mint: &'a AccountInfo<'a>,
@@ -82,6 +85,7 @@ pub fn create_new_solauto_position<'a>(
         Box::new(SolautoPosition::new(
             update_position_data.position_id,
             *signer.key,
+            position_type,
             position_data,
             state,
         ))
@@ -89,6 +93,7 @@ pub fn create_new_solauto_position<'a>(
         Box::new(SolautoPosition::new(
             0,
             *signer.key,
+            position_type,
             PositionData::default(),
             PositionState::default(),
         ))
@@ -114,8 +119,8 @@ pub fn create_or_update_referral_state<'a>(
             let mut referral_state_account =
                 DeserializedAccount::<ReferralState>::zerocopy(Some(referral_state))?.unwrap();
 
-            if &referral_state_account.data.referred_by_state == &Pubkey::default()
-                && referred_by_state.is_some()
+            if referred_by_state.is_some()
+                && &referral_state_account.data.referred_by_state == &Pubkey::default()
             {
                 referral_state_account.data.referred_by_state = *referred_by_state.unwrap().key;
             }
@@ -178,34 +183,12 @@ pub fn create_or_update_referral_state<'a>(
     Ok(referral_state_account)
 }
 
-pub fn init_solauto_fees_supply_ta<'a>(
-    token_program: &'a AccountInfo<'a>,
-    system_program: &'a AccountInfo<'a>,
-    signer: &'a AccountInfo<'a>,
-    solauto_fees_wallet: &'a AccountInfo<'a>,
-    solauto_fees_supply_ta: &'a AccountInfo<'a>,
-    supply_mint: &'a AccountInfo<'a>,
-) -> ProgramResult {
-    if solauto_fees_wallet.key != &SOLAUTO_FEES_WALLET {
-        msg!("Provided the incorrect solauto fees wallet account");
-        return Err(SolautoError::IncorrectAccounts.into());
-    }
-    init_ata_if_needed(
-        token_program,
-        system_program,
-        signer,
-        solauto_fees_wallet,
-        solauto_fees_supply_ta,
-        supply_mint,
-    )
-}
-
 pub fn initiate_dca_in_if_necessary<'a, 'b>(
     token_program: &'a AccountInfo<'a>,
     solauto_position: &'b mut DeserializedAccount<'a, SolautoPosition>,
     position_debt_ta: Option<&'a AccountInfo<'a>>,
     signer: &'a AccountInfo<'a>,
-    signer_debt_ta: Option<&'a AccountInfo<'a>>,
+    signer_dca_ta: Option<&'a AccountInfo<'a>>,
 ) -> ProgramResult {
     if solauto_position.data.self_managed.val {
         return Ok(());
@@ -220,7 +203,7 @@ pub fn initiate_dca_in_if_necessary<'a, 'b>(
         return Ok(());
     }
 
-    if position_debt_ta.is_none() || signer_debt_ta.is_none() {
+    if position_debt_ta.is_none() || signer_dca_ta.is_none() {
         msg!("Missing required accounts in order to initiate DCA-in");
         return Err(SolautoError::IncorrectAccounts.into());
     }
@@ -232,49 +215,48 @@ pub fn initiate_dca_in_if_necessary<'a, 'b>(
         return Err(SolautoError::IncorrectAccounts.into());
     }
 
-    let base_unit_amount_to_add = position.dca.debt_to_add_base_unit;
-    let signer_token_account = TokenAccount::unpack(&signer_debt_ta.unwrap().data.borrow())?;
+    let signer_token_account = TokenAccount::unpack(&signer_dca_ta.unwrap().data.borrow())?;
     let balance = signer_token_account.amount;
 
-    if base_unit_amount_to_add > balance {
+    if position.dca.dca_in_base_unit > balance {
         msg!("Provided greater DCA-in value than exists in the signer debt token account");
         return Err(ProgramError::InvalidInstructionData.into());
     }
 
     spl_token_transfer(
         token_program,
-        signer_debt_ta.unwrap(),
+        signer_dca_ta.unwrap(),
         signer,
         position_debt_ta.unwrap(),
-        base_unit_amount_to_add,
+        position.dca.dca_in_base_unit,
         None,
     )?;
 
     Ok(())
 }
 
-pub fn cancel_dca_in_if_necessary<'a, 'b>(
+pub fn cancel_dca_in<'a, 'b>(
     signer: &'a AccountInfo<'a>,
     system_program: &'a AccountInfo<'a>,
     token_program: &'a AccountInfo<'a>,
     solauto_position: &'b mut DeserializedAccount<'a, SolautoPosition>,
-    debt_mint: Option<&'a AccountInfo<'a>>,
-    position_debt_ta: Option<&'a AccountInfo<'a>>,
-    signer_debt_ta: Option<&'a AccountInfo<'a>>,
+    dca_mint: Option<&'a AccountInfo<'a>>,
+    position_dca_ta: Option<&'a AccountInfo<'a>>,
+    signer_dca_ta: Option<&'a AccountInfo<'a>>,
 ) -> ProgramResult {
     let active_dca = &solauto_position.data.position.dca;
 
     if active_dca.dca_in() {
-        if debt_mint.is_none() || position_debt_ta.is_none() || signer_debt_ta.is_none() {
+        if dca_mint.is_none() || position_dca_ta.is_none() || signer_dca_ta.is_none() {
             msg!(
-                "Requires debt_mint, position_debt_ta & signer_debt_ta in order to cancel the active DCA-in"
+                "Requires dca_mint, position_dca_ta & signer_dca_ta in order to cancel the active DCA-in"
             );
             return Err(SolautoError::IncorrectAccounts.into());
         }
 
-        let debt_ta_current_balance =
-            TokenAccount::unpack(&position_debt_ta.unwrap().data.borrow())?.amount;
-        if debt_ta_current_balance == 0 {
+        let dca_ta_current_balance =
+            TokenAccount::unpack(&position_dca_ta.unwrap().data.borrow())?.amount;
+        if dca_ta_current_balance == 0 {
             return Ok(());
         }
 
@@ -283,16 +265,16 @@ pub fn cancel_dca_in_if_necessary<'a, 'b>(
             system_program,
             signer,
             signer,
-            signer_debt_ta.unwrap(),
-            debt_mint.unwrap(),
+            signer_dca_ta.unwrap(),
+            dca_mint.unwrap(),
         )?;
 
         spl_token_transfer(
             token_program,
-            position_debt_ta.unwrap(),
+            position_dca_ta.unwrap(),
             solauto_position.account_info,
-            signer_debt_ta.unwrap(),
-            debt_ta_current_balance,
+            signer_dca_ta.unwrap(),
+            dca_ta_current_balance,
             Some(&solauto_position.data.seeds_with_bump()),
         )?;
     }
@@ -301,42 +283,81 @@ pub fn cancel_dca_in_if_necessary<'a, 'b>(
     Ok(())
 }
 
-pub struct SolautoFeesBps {
+pub struct FeePayout {
     pub solauto: u16,
     pub referrer: u16,
     pub total: u16,
 }
-pub fn get_solauto_fees_bps(
+pub struct SolautoFeesBps {
     has_been_referred: bool,
-    fee_type: FeeType,
+    target_liq_utilization_rate_bps: Option<u16>,
     position_net_worth_usd: f64,
-) -> SolautoFeesBps {
-    let min_size: f64 = 10000.0; // Minimum position size
-    let max_size: f64 = 1000000.0; // Maximum position size
-    let max_fee_bps: f64 = 500.0; // Fee in basis points for min_size (5%)
-    let min_fee_bps: f64 = 100.0; // Fee in basis points for max_size (1%)
-
-    let fee_bps: f64;
-    if fee_type == FeeType::Small {
-        fee_bps = 100.0;
-    } else if position_net_worth_usd <= min_size {
-        fee_bps = max_fee_bps;
-    } else if position_net_worth_usd >= max_size {
-        fee_bps = min_fee_bps;
-    } else {
-        let t = (position_net_worth_usd.ln() - min_size.ln()) / (max_size.ln() - min_size.ln());
-        fee_bps = (min_fee_bps + (max_fee_bps - min_fee_bps) * (1.0 - t)).round();
+}
+impl SolautoFeesBps {
+    pub fn from(
+        has_been_referred: bool,
+        target_liq_utilization_rate_bps: Option<u16>,
+        position_net_worth_usd: f64,
+    ) -> Self {
+        Self {
+            has_been_referred,
+            target_liq_utilization_rate_bps,
+            position_net_worth_usd,
+        }
     }
+    pub fn fetch_fees(&self, rebalance_direction: RebalanceDirection) -> FeePayout {
+        let min_size: f64 = 10000.0; // Minimum position size
+        let max_size: f64 = 500000.0; // Maximum position size
+        let max_fee_bps: f64 = 200.0; // Fee in basis points for min_size (2%)
+        let min_fee_bps: f64 = 50.0; // Fee in basis points for max_size (0.5%)
+        let k = 1.5;
 
-    let referrer_fee = if has_been_referred {
-        fee_bps.div(4.0).floor()
+        let fee_bps: f64;
+        if self.target_liq_utilization_rate_bps.is_some()
+            && self.target_liq_utilization_rate_bps.unwrap() == 0
+        {
+            return FeePayout {
+                solauto: 0,
+                referrer: 0,
+                total: 0,
+            };
+        }
+
+        if self.target_liq_utilization_rate_bps.is_some()
+            || rebalance_direction == RebalanceDirection::Repay
+        {
+            fee_bps = 25.0;
+        } else if self.position_net_worth_usd <= min_size {
+            fee_bps = max_fee_bps;
+        } else if self.position_net_worth_usd >= max_size {
+            fee_bps = min_fee_bps;
+        } else {
+            let t = (self.position_net_worth_usd.ln() - min_size.ln())
+                / (max_size.ln() - min_size.ln());
+            fee_bps = (min_fee_bps + (max_fee_bps - min_fee_bps) * (1.0 - t.powf(k))).round();
+        }
+
+        let referrer_fee = if self.has_been_referred {
+            fee_bps.div(5.0).floor()
+        } else {
+            0.0
+        };
+
+        FeePayout {
+            solauto: (fee_bps - referrer_fee) as u16,
+            referrer: referrer_fee as u16,
+            total: fee_bps as u16,
+        }
+    }
+}
+
+pub fn safe_unpack_token_account<'a>(
+    account: Option<&'a AccountInfo<'a>>,
+) -> Result<Option<DeserializedAccount<'a, TokenAccount>>, ProgramError> {
+    if account.is_some() && account_has_data(account.unwrap()) {
+        DeserializedAccount::<TokenAccount>::unpack(account)
+            .map_err(|_| ProgramError::InvalidAccountData)
     } else {
-        0.0
-    };
-
-    SolautoFeesBps {
-        solauto: (fee_bps - referrer_fee) as u16,
-        referrer: referrer_fee as u16,
-        total: fee_bps as u16,
+        Ok(None)
     }
 }

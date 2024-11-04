@@ -1,87 +1,66 @@
 import "rpc-websockets/dist/lib/client";
-import {
-  AddressLookupTableProgram,
-  Connection,
-  PublicKey,
-} from "@solana/web3.js";
+import { AddressLookupTableProgram, PublicKey } from "@solana/web3.js";
 import {
   Signer,
   TransactionBuilder,
-  Umi,
   isOption,
   publicKey,
   PublicKey as UmiPublicKey,
   isSome,
   transactionBuilder,
-  signerIdentity,
-  some,
 } from "@metaplex-foundation/umi";
 import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
-import {
-  WalletAdapter,
-  walletAdapterIdentity,
-} from "@metaplex-foundation/umi-signer-wallet-adapters";
 import {
   DCASettings,
   DCASettingsInpArgs,
   LendingPlatform,
   PositionState,
-  ReferralState,
   SolautoActionArgs,
   SolautoPosition,
   SolautoRebalanceTypeArgs,
   SolautoSettingsParameters,
   SolautoSettingsParametersInpArgs,
+  TokenType,
   UpdatePositionDataArgs,
   cancelDCA,
-  claimReferralFees,
   closePosition,
-  createSolautoProgram,
-  safeFetchReferralState,
   safeFetchSolautoPosition,
   updatePosition,
-  updateReferralStates,
 } from "../generated";
 import {
-  getReferralState,
   getSolautoPositionAccount,
   getTokenAccount,
 } from "../utils/accountUtils";
+import { SOLAUTO_FEES_WALLET } from "../constants/generalAccounts";
 import {
-  SOLAUTO_FEES_WALLET,
-} from "../constants/generalAccounts";
-import { JupSwapDetails } from "../utils/jupiterUtils";
-import {
-  getSolanaRpcConnection,
   getWrappedInstruction,
   splTokenTransferUmiIx,
 } from "../utils/solanaUtils";
-import { FlashLoanDetails } from "../utils/solauto/rebalanceUtils";
-import { NATIVE_MINT } from "@solana/spl-token";
+import {
+  FlashLoanDetails,
+  RebalanceValues,
+} from "../utils/solauto/rebalanceUtils";
 import {
   MIN_POSITION_STATE_FRESHNESS_SECS,
   SOLAUTO_LUT,
 } from "../constants/solautoConstants";
 import { currentUnixSeconds } from "../utils/generalUtils";
 import { LivePositionUpdates } from "../utils/solauto/generalUtils";
+import {
+  ReferralStateManager,
+  ReferralStateManagerArgs,
+} from "./referralStateManager";
+import { QuoteResponse } from "@jup-ag/api";
 
-export interface SolautoClientArgs {
-  authority?: PublicKey;
-  positionId: number;
-  signer?: Signer;
-  wallet?: WalletAdapter;
-
+export interface SolautoClientArgs extends ReferralStateManagerArgs {
+  new?: boolean;
+  positionId?: number;
   supplyMint?: PublicKey;
   debtMint?: PublicKey;
-
-  referralFeesDestMint?: PublicKey;
-  referredByAuthority?: PublicKey;
 }
 
-export abstract class SolautoClient {
-  public umi!: Umi;
-  public connection!: Connection;
-  public lendingPlatform!: LendingPlatform;
+export abstract class SolautoClient extends ReferralStateManager {
+  public lendingPlatform?: LendingPlatform;
 
   public authority!: PublicKey;
   public signer!: Signer;
@@ -92,6 +71,9 @@ export abstract class SolautoClient {
   public solautoPositionData!: SolautoPosition | null;
   public solautoPositionState!: PositionState | undefined;
 
+  public maxLtvBps?: number;
+  public liqThresholdBps?: number;
+
   public supplyMint!: PublicKey;
   public positionSupplyTa!: PublicKey;
   public signerSupplyTa!: PublicKey;
@@ -100,65 +82,40 @@ export abstract class SolautoClient {
   public positionDebtTa!: PublicKey;
   public signerDebtTa!: PublicKey;
 
-  public authorityReferralState!: PublicKey;
-  public authorityReferralStateData!: ReferralState | null;
-  public authorityReferralFeesDestMint!: PublicKey;
-  public authorityReferralDestTa!: PublicKey;
-
-  public referredByState?: PublicKey;
-  public referredByAuthority?: PublicKey;
-  public referredBySupplyTa?: PublicKey;
-
-  public solautoFeesWallet!: PublicKey;
   public solautoFeesSupplyTa!: PublicKey;
+  public solautoFeesDebtTa!: PublicKey;
 
   public authorityLutAddress?: PublicKey;
-  public upToDateLutAccounts!: PublicKey[];
 
   public livePositionUpdates: LivePositionUpdates = new LivePositionUpdates();
 
-  constructor(
-    heliusApiKey: string,
-    public localTest?: boolean
-  ) {
-    const [connection, umi] = getSolanaRpcConnection(heliusApiKey);
-    this.connection = connection;
-    this.umi = umi.use({
-      install(umi) {
-        umi.programs.add(createSolautoProgram(), false);
-      },
-    });
-  }
+  async initialize(args: SolautoClientArgs) {
+    await super.initialize(args);
 
-  async initialize(args: SolautoClientArgs, lendingPlatform: LendingPlatform) {
-    if (!args.signer && !args.wallet) {
-      throw new Error("Signer or wallet must be provided");
-    }
-    this.umi = this.umi.use(
-      args.signer
-        ? signerIdentity(args.signer)
-        : walletAdapterIdentity(args.wallet!, true)
-    );
-
-    this.signer = this.umi.identity;
-    this.authority = args.authority ?? toWeb3JsPublicKey(this.signer.publicKey);
-
-    this.positionId = args.positionId;
+    this.positionId = args.positionId ?? 0;
     this.selfManaged = this.positionId === 0;
-    this.lendingPlatform = lendingPlatform;
-    this.solautoPosition = await getSolautoPositionAccount(
+    this.solautoPosition = getSolautoPositionAccount(
       this.authority,
-      this.positionId
+      this.positionId,
+      this.programId
     );
-    this.solautoPositionData = await safeFetchSolautoPosition(
-      this.umi,
-      publicKey(this.solautoPosition)
-    );
+    this.solautoPositionData = !args.new
+      ? await safeFetchSolautoPosition(
+          this.umi,
+          publicKey(this.solautoPosition),
+          { commitment: "confirmed" }
+        )
+      : null;
     this.solautoPositionState = this.solautoPositionData?.state;
+
+    this.maxLtvBps = undefined;
+    this.liqThresholdBps = undefined;
 
     this.supplyMint =
       args.supplyMint ??
-      toWeb3JsPublicKey(this.solautoPositionData!.position.supplyMint);
+      (this.solautoPositionData
+        ? toWeb3JsPublicKey(this.solautoPositionData!.position.supplyMint)
+        : PublicKey.default);
     this.positionSupplyTa = getTokenAccount(
       this.solautoPosition,
       this.supplyMint
@@ -170,65 +127,31 @@ export abstract class SolautoClient {
 
     this.debtMint =
       args.debtMint ??
-      toWeb3JsPublicKey(this.solautoPositionData!.position.debtMint);
+      (this.solautoPositionData
+        ? toWeb3JsPublicKey(this.solautoPositionData!.position.debtMint)
+        : PublicKey.default);
     this.positionDebtTa = getTokenAccount(this.solautoPosition, this.debtMint);
     this.signerDebtTa = getTokenAccount(
       toWeb3JsPublicKey(this.signer.publicKey),
       this.debtMint
     );
 
-    this.authorityReferralState = await getReferralState(this.authority);
-    this.authorityReferralStateData = await safeFetchReferralState(
-      this.umi,
-      publicKey(this.authorityReferralState)
-    );
-    this.authorityReferralFeesDestMint = args.referralFeesDestMint
-      ? args.referralFeesDestMint
-      : this.authorityReferralStateData?.destFeesMint
-        ? toWeb3JsPublicKey(this.authorityReferralStateData?.destFeesMint)
-        : NATIVE_MINT;
-    this.authorityReferralDestTa = getTokenAccount(
-      this.authorityReferralState,
-      this.authorityReferralFeesDestMint
-    );
-
-    const hasReferredBy =
-      this.authorityReferralStateData &&
-      this.authorityReferralStateData.referredByState !==
-        publicKey(PublicKey.default);
-    const referredByAuthority =
-      !hasReferredBy &&
-      args.referredByAuthority &&
-      !args.referredByAuthority.equals(toWeb3JsPublicKey(this.signer.publicKey))
-        ? args.referredByAuthority
-        : undefined;
-    this.referredByState = hasReferredBy
-      ? toWeb3JsPublicKey(this.authorityReferralStateData!.referredByState)
-      : referredByAuthority
-        ? await getReferralState(referredByAuthority!)
-        : undefined;
-    this.referredByAuthority = referredByAuthority;
-    if (this.referredByState !== undefined) {
-      this.referredBySupplyTa = getTokenAccount(
-        this.referredByState,
-        this.supplyMint
-      );
-    }
-
-    this.solautoFeesWallet = SOLAUTO_FEES_WALLET;
     this.solautoFeesSupplyTa = getTokenAccount(
-      this.solautoFeesWallet,
+      SOLAUTO_FEES_WALLET,
       this.supplyMint
     );
+    this.solautoFeesDebtTa = getTokenAccount(
+      SOLAUTO_FEES_WALLET,
+      this.debtMint
+    );
 
-    this.authorityLutAddress = this.authorityReferralStateData?.lookupTable
-      ? toWeb3JsPublicKey(this.authorityReferralStateData?.lookupTable)
-      : undefined;
-    this.upToDateLutAccounts = toWeb3JsPublicKey(this.signer.publicKey).equals(
-      this.authority
-    )
-      ? await this.fetchExistingAuthorityLutAccounts()
-      : [];
+    this.authorityLutAddress =
+      this.referralStateData?.lookupTable &&
+      !toWeb3JsPublicKey(this.referralStateData.lookupTable).equals(
+        PublicKey.default
+      )
+        ? toWeb3JsPublicKey(this.referralStateData.lookupTable)
+        : undefined;
 
     this.log("Position state: ", this.solautoPositionState);
     this.log(
@@ -244,50 +167,69 @@ export abstract class SolautoClient {
     );
   }
 
-  log(...args: any[]): void {
-    if (this.localTest) {
-      console.log(...args);
+  referredBySupplyTa(): PublicKey | undefined {
+    if (this.referredByState !== undefined) {
+      return getTokenAccount(this.referredByState, this.supplyMint);
     }
+    return undefined;
   }
 
-  async resetLivePositionUpdates() {
-    if (!this.solautoPositionData) {
-      this.solautoPositionData = await safeFetchSolautoPosition(
-        this.umi,
-        publicKey(this.solautoPosition)
-      );
-    } else {
-      if (this.livePositionUpdates.activeDca) {
-        this.solautoPositionData.position.dca =
-          this.livePositionUpdates.activeDca;
+  referredByDebtTa(): PublicKey | undefined {
+    if (this.referredByState !== undefined) {
+      return getTokenAccount(this.referredByState, this.debtMint);
+    }
+    return undefined;
+  }
+
+  async resetLiveTxUpdates(success?: boolean) {
+    if (success) {
+      if (!this.solautoPositionData) {
+        this.solautoPositionData = await safeFetchSolautoPosition(
+          this.umi,
+          publicKey(this.solautoPosition),
+          { commitment: "confirmed" }
+        );
+      } else {
+        if (this.livePositionUpdates.activeDca) {
+          this.solautoPositionData.position.dca =
+            this.livePositionUpdates.activeDca;
+        }
+        if (this.livePositionUpdates.settings) {
+          this.solautoPositionData.position.settingParams =
+            this.livePositionUpdates.settings;
+        }
+        // All other live position updates can be derived by getting a fresh position state, so we don't need to do anything else form livePositionUpdates
       }
-      if (this.livePositionUpdates.settings) {
-        this.solautoPositionData.position.settingParams =
-          this.livePositionUpdates.settings;
-      }
-      // All other live position updates can be derived by getting a fresh position state, so we don't need to do anything else form livePositionUpdates
     }
     this.livePositionUpdates.reset();
   }
 
+  abstract protocolAccount(): PublicKey;
+
   defaultLookupTables(): string[] {
-    return [SOLAUTO_LUT];
+    return [
+      SOLAUTO_LUT,
+      ...(this.authorityLutAddress
+        ? [this.authorityLutAddress.toString()]
+        : []),
+    ];
   }
 
   lutAccountsToAdd(): PublicKey[] {
     return [
       this.authority,
-      ...(this.signer.publicKey.toString() === this.authority.toString()
+      ...(toWeb3JsPublicKey(this.signer.publicKey).equals(this.authority)
         ? [this.signerSupplyTa]
         : []),
-      ...(this.signer.publicKey.toString() === this.authority.toString()
+      ...(toWeb3JsPublicKey(this.signer.publicKey).equals(this.authority)
         ? [this.signerDebtTa]
         : []),
       this.solautoPosition,
       this.positionSupplyTa,
       this.positionDebtTa,
-      this.authorityReferralState,
-      ...(this.referredBySupplyTa ? [this.referredBySupplyTa] : []),
+      this.referralState,
+      ...(this.referredBySupplyTa() ? [this.referredBySupplyTa()!] : []),
+      ...(this.referredByDebtTa() ? [this.referredByDebtTa()!] : []),
     ];
   }
 
@@ -295,14 +237,19 @@ export abstract class SolautoClient {
     const lookupTable = this.authorityLutAddress
       ? await this.connection.getAddressLookupTable(this.authorityLutAddress)
       : null;
-    if (lookupTable === null) {
+    if (!lookupTable || lookupTable?.value === null) {
       this.authorityLutAddress = undefined;
     }
     return lookupTable?.value?.state.addresses ?? [];
   }
 
   async updateLookupTable(): Promise<
-    { updateLutTx: TransactionBuilder; needsToBeIsolated: boolean } | undefined
+    | {
+        tx: TransactionBuilder;
+        new: boolean;
+        accountsToAdd: PublicKey[];
+      }
+    | undefined
   > {
     const existingLutAccounts = await this.fetchExistingAuthorityLutAccounts();
     if (
@@ -334,32 +281,28 @@ export abstract class SolautoClient {
           .map((x) => x.toString().toLowerCase())
           .includes(x.toString().toLowerCase())
     );
-    this.upToDateLutAccounts = [...existingLutAccounts, ...accountsToAdd];
-
-    if (accountsToAdd.length > 0) {
-      tx = tx.add(
-        getWrappedInstruction(
-          this.signer,
-          AddressLookupTableProgram.extendLookupTable({
-            payer: toWeb3JsPublicKey(this.signer.publicKey),
-            authority: this.authority,
-            lookupTable: this.authorityLutAddress,
-            addresses: accountsToAdd,
-          })
-        )
-      );
+    if (accountsToAdd.length === 0) {
+      return undefined;
     }
 
-    const addingReferredBy =
-      accountsToAdd.length === 1 &&
-      accountsToAdd[0].toString().toLowerCase() ===
-        this.referredBySupplyTa?.toString().toLowerCase();
+    tx = tx.add(
+      getWrappedInstruction(
+        this.signer,
+        AddressLookupTableProgram.extendLookupTable({
+          payer: toWeb3JsPublicKey(this.signer.publicKey),
+          authority: this.authority,
+          lookupTable: this.authorityLutAddress,
+          addresses: accountsToAdd,
+        })
+      )
+    );
 
-    if (tx.getInstructions().length > 0) {
-      this.log("Updating authority lookup table...");
-    }
-
-    return { updateLutTx: tx, needsToBeIsolated: !addingReferredBy };
+    this.log("Requires authority LUT update...");
+    return {
+      tx,
+      new: existingLutAccounts.length === 0,
+      accountsToAdd,
+    };
   }
 
   solautoPositionSettings(): SolautoSettingsParameters | undefined {
@@ -376,52 +319,24 @@ export abstract class SolautoClient {
     );
   }
 
-  updateReferralStatesIx(): TransactionBuilder {
-    return updateReferralStates(this.umi, {
-      signer: this.signer,
-      signerReferralState: publicKey(this.authorityReferralState),
-      referralFeesDestMint: publicKey(this.authorityReferralFeesDestMint),
-      referredByState: this.referredByState
-        ? publicKey(this.referredByState)
-        : undefined,
-      referredByAuthority: this.referredByAuthority
-        ? publicKey(this.referredByAuthority)
-        : undefined,
-      addressLookupTable: this.authorityLutAddress
-        ? some(publicKey(this.authorityLutAddress))
-        : null,
-    });
-  }
-
-  claimReferralFeesIx(): TransactionBuilder {
-    const feesDestinationTa =
-      this.authorityReferralFeesDestMint !== NATIVE_MINT
-        ? publicKey(
-            getTokenAccount(
-              toWeb3JsPublicKey(this.signer.publicKey),
-              this.authorityReferralFeesDestMint
-            )
-          )
-        : undefined;
-    return claimReferralFees(this.umi, {
-      signer: this.signer,
-      signerWsolTa: publicKey(getTokenAccount(toWeb3JsPublicKey(this.signer.publicKey), NATIVE_MINT)),
-      referralAuthority: publicKey(this.authorityReferralStateData!.authority),
-      referralState: publicKey(this.authorityReferralState),
-      referralFeesDestTa: publicKey(this.authorityReferralDestTa),
-      referralFeesDestMint: publicKey(this.authorityReferralFeesDestMint),
-      feesDestinationTa,
-    });
+  async maxLtvAndLiqThresholdBps(): Promise<[number, number] | undefined> {
+    if (this.maxLtvBps !== undefined && this.liqThresholdBps !== undefined) {
+      return [this.maxLtvBps, this.liqThresholdBps];
+    }
+    return undefined;
   }
 
   openPosition(
     settingParams?: SolautoSettingsParametersInpArgs,
     dca?: DCASettingsInpArgs
   ): TransactionBuilder {
-    if (dca && dca.debtToAddBaseUnit > 0) {
+    if (dca && dca.dcaInBaseUnit > 0) {
       this.livePositionUpdates.new({
-        type: "debtDcaIn",
-        value: BigInt(dca.debtToAddBaseUnit),
+        type: "dcaInBalance",
+        value: {
+          amount: BigInt(dca.dcaInBaseUnit),
+          tokenType: dca.tokenType,
+        },
       });
     }
     if (settingParams) {
@@ -441,37 +356,34 @@ export abstract class SolautoClient {
   }
 
   updatePositionIx(args: UpdatePositionDataArgs): TransactionBuilder {
-    let debtMint: UmiPublicKey | undefined = undefined;
-    let positionDebtTa: UmiPublicKey | undefined = undefined;
-    let signerDebtTa: UmiPublicKey | undefined = undefined;
+    let dcaMint: UmiPublicKey | undefined = undefined;
+    let positionDcaTa: UmiPublicKey | undefined = undefined;
+    let signerDcaTa: UmiPublicKey | undefined = undefined;
     if (isOption(args.dca) && isSome(args.dca)) {
-      debtMint = publicKey(this.debtMint);
-      positionDebtTa = publicKey(this.positionDebtTa);
-      signerDebtTa = publicKey(this.signerDebtTa);
+      if (args.dca.value.tokenType === TokenType.Supply) {
+        dcaMint = publicKey(this.supplyMint);
+        positionDcaTa = publicKey(this.positionSupplyTa);
+        signerDcaTa = publicKey(this.signerSupplyTa);
+      } else {
+        dcaMint = publicKey(this.debtMint);
+        positionDcaTa = publicKey(this.positionDebtTa);
+        signerDcaTa = publicKey(this.signerDebtTa);
+      }
 
       let addingToPos = false;
       if (
         isOption(args.dca) &&
         isSome(args.dca) &&
-        args.dca.value.debtToAddBaseUnit > 0
+        args.dca.value.dcaInBaseUnit > 0
       ) {
         this.livePositionUpdates.new({
-          type: "debtDcaIn",
-          value: BigInt(args.dca.value.debtToAddBaseUnit),
+          type: "dcaInBalance",
+          value: {
+            amount: BigInt(args.dca.value.dcaInBaseUnit),
+            tokenType: args.dca.value.tokenType,
+          },
         });
         addingToPos = true;
-      }
-
-      if (
-        this.solautoPositionData?.position.dca.debtToAddBaseUnit &&
-        !addingToPos
-      ) {
-        this.livePositionUpdates.new({
-          type: "debtDcaIn",
-          value:
-            this.solautoPositionData.position.dca.debtToAddBaseUnit *
-            BigInt(-1),
-        });
       }
     }
 
@@ -492,9 +404,9 @@ export abstract class SolautoClient {
     return updatePosition(this.umi, {
       signer: this.signer,
       solautoPosition: publicKey(this.solautoPosition),
-      debtMint,
-      positionDebtTa,
-      signerDebtTa,
+      dcaMint,
+      positionDcaTa,
+      signerDcaTa,
       updatePositionData: args,
     });
   }
@@ -507,34 +419,39 @@ export abstract class SolautoClient {
       positionSupplyTa: publicKey(this.positionSupplyTa),
       positionDebtTa: publicKey(this.positionDebtTa),
       signerDebtTa: publicKey(this.signerDebtTa),
+      protocolAccount: publicKey(this.protocolAccount()),
     });
   }
 
   cancelDCAIx(): TransactionBuilder {
-    let debtMint: UmiPublicKey | undefined = undefined;
-    let positionDebtTa: UmiPublicKey | undefined = undefined;
-    let signerDebtTa: UmiPublicKey | undefined = undefined;
+    let dcaMint: UmiPublicKey | undefined = undefined;
+    let positionDcaTa: UmiPublicKey | undefined = undefined;
+    let signerDcaTa: UmiPublicKey | undefined = undefined;
 
-    if (this.solautoPositionData !== null && !this.selfManaged) {
-      const positionData = this.solautoPositionData!.position;
-      if (positionData.dca.debtToAddBaseUnit) {
-        debtMint = publicKey(this.debtMint);
-        positionDebtTa = publicKey(this.positionDebtTa);
-        signerDebtTa = publicKey(this.signerDebtTa);
-
-        this.livePositionUpdates.new({
-          type: "debtDcaIn",
-          value: positionData.dca.debtToAddBaseUnit * BigInt(-1),
-        });
+    const currDca = this.solautoPositionActiveDca()!;
+    if (currDca.dcaInBaseUnit > 0) {
+      if (currDca.tokenType === TokenType.Supply) {
+        dcaMint = publicKey(this.supplyMint);
+        positionDcaTa = publicKey(this.positionSupplyTa);
+        signerDcaTa = publicKey(this.signerSupplyTa);
+      } else {
+        dcaMint = publicKey(this.debtMint);
+        positionDcaTa = publicKey(this.positionDebtTa);
+        signerDcaTa = publicKey(this.signerDebtTa);
       }
+
+      this.livePositionUpdates.new({
+        type: "cancellingDca",
+        value: this.solautoPositionData!.position.dca.tokenType,
+      });
     }
 
     return cancelDCA(this.umi, {
       signer: this.signer,
       solautoPosition: publicKey(this.solautoPosition),
-      debtMint,
-      positionDebtTa,
-      signerDebtTa,
+      dcaMint,
+      positionDcaTa,
+      signerDcaTa,
     });
   }
 
@@ -636,15 +553,16 @@ export abstract class SolautoClient {
 
   abstract rebalance(
     rebalanceStep: "A" | "B",
-    swapDetails: JupSwapDetails,
+    jupQuote: QuoteResponse,
     rebalanceType: SolautoRebalanceTypeArgs,
+    rebalanceValues: RebalanceValues,
     flashLoan?: FlashLoanDetails,
-    targetLiqUtilizationRateBps?: number,
-    limitGapBps?: number
+    targetLiqUtilizationRateBps?: number
   ): TransactionBuilder;
 
   async getFreshPositionState(): Promise<PositionState | undefined> {
     if (
+      Boolean(this.solautoPositionData) &&
       Boolean(this.solautoPositionState) &&
       Number(this.solautoPositionState!.lastUpdated) >
         currentUnixSeconds() - MIN_POSITION_STATE_FRESHNESS_SECS &&

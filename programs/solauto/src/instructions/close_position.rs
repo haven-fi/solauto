@@ -1,5 +1,4 @@
-use solana_program::entrypoint::ProgramResult;
-use spl_token::state::Account as TokenAccount;
+use solana_program::{account_info::AccountInfo, entrypoint::ProgramResult};
 
 use crate::{
     constants::WSOL_MINT,
@@ -8,67 +7,55 @@ use crate::{
         instruction::accounts::{ClosePositionAccounts, Context},
         shared::DeserializedAccount,
     },
-    utils::solana_utils,
+    utils::{solana_utils, solauto_utils},
 };
 
-pub fn close_position<'a>(
-    ctx: Context<ClosePositionAccounts<'a>>,
-    solauto_position: DeserializedAccount<'a, SolautoPosition>,
-    position_supply_ta: DeserializedAccount<'a, TokenAccount>,
-    position_debt_ta: Option<DeserializedAccount<'a, TokenAccount>>,
+pub fn close_position_ta<'a>(
+    ctx: &Context<ClosePositionAccounts<'a>>,
+    solauto_position: &DeserializedAccount<'a, SolautoPosition>,
+    position_ta: &'a AccountInfo<'a>,
+    signer_ta: &'a AccountInfo<'a>,
 ) -> ProgramResult {
     let solauto_position_seeds = &solauto_position.data.seeds_with_bump();
+    let position_ta_data = solauto_utils::safe_unpack_token_account(Some(position_ta))?
+        .unwrap()
+        .data;
 
-    if position_supply_ta.data.amount > 0 && position_supply_ta.data.mint != WSOL_MINT {
+    if position_ta_data.amount > 0 && position_ta_data.mint != WSOL_MINT {
         solana_utils::spl_token_transfer(
             ctx.accounts.token_program,
-            ctx.accounts.position_supply_ta,
+            position_ta,
             solauto_position.account_info,
-            ctx.accounts.signer_supply_ta,
-            position_supply_ta.data.amount,
+            signer_ta,
+            position_ta_data.amount,
             Some(solauto_position_seeds),
         )?;
     }
 
     solana_utils::close_token_account(
         ctx.accounts.token_program,
+        position_ta,
+        ctx.accounts.signer,
+        ctx.accounts.solauto_position,
+        Some(solauto_position_seeds),
+    )
+}
+
+pub fn close_position<'a>(
+    ctx: &Context<ClosePositionAccounts<'a>>,
+    solauto_position: &DeserializedAccount<'a, SolautoPosition>,
+) -> ProgramResult {
+    close_position_ta(
+        ctx,
+        solauto_position,
         ctx.accounts.position_supply_ta,
-        ctx.accounts.signer,
-        ctx.accounts.solauto_position,
-        Some(solauto_position_seeds),
+        ctx.accounts.signer_supply_ta,
     )?;
-
-    if ctx.accounts.position_supply_collateral_ta.is_some() {
-        solana_utils::close_token_account(
-            ctx.accounts.token_program,
-            ctx.accounts.position_supply_collateral_ta.unwrap(),
-            ctx.accounts.signer,
-            ctx.accounts.solauto_position,
-            Some(solauto_position_seeds),
-        )?;
-    }
-
-    if position_debt_ta.is_some()
-        && position_debt_ta.as_ref().unwrap().data.mint != WSOL_MINT
-        && position_debt_ta.as_ref().unwrap().data.amount > 0
-    {
-        solana_utils::spl_token_transfer(
-            ctx.accounts.token_program,
-            ctx.accounts.position_debt_ta,
-            solauto_position.account_info,
-            ctx.accounts.signer_debt_ta,
-            position_debt_ta.as_ref().unwrap().data.amount,
-            Some(solauto_position_seeds),
-        )?;
-    }
-
-    solana_utils::close_token_account(
-        ctx.accounts.token_program,
+    close_position_ta(
+        ctx,
+        solauto_position,
         ctx.accounts.position_debt_ta,
-        ctx.accounts.signer,
-        ctx.accounts.solauto_position,
-        Some(solauto_position_seeds),
+        ctx.accounts.signer_debt_ta,
     )?;
-
     solana_utils::close_pda(ctx.accounts.solauto_position, ctx.accounts.signer)
 }

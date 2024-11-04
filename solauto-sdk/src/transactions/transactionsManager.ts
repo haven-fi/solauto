@@ -1,48 +1,62 @@
 import bs58 from "bs58";
 import {
   AddressLookupTableInput,
-  Instruction,
   transactionBuilder,
   TransactionBuilder,
+  Umi,
 } from "@metaplex-foundation/umi";
 import { SolautoClient } from "../clients/solautoClient";
 import {
-  getAdressLookupInputs,
+  addTxOptimizations,
+  getAddressLookupInputs,
   sendSingleOptimizedTransaction,
 } from "../utils/solanaUtils";
 import {
   ErrorsToThrow,
   retryWithExponentialBackoff,
 } from "../utils/generalUtils";
-import { getTransactionChores } from "./transactionUtils";
+import { getErrorInfo, getTransactionChores } from "./transactionUtils";
+import {
+  PriorityFeeSetting,
+  priorityFeeSettingValues,
+  TransactionItemInputs,
+  TransactionRunType,
+} from "../types";
+import { ReferralStateManager, TxHandler } from "../clients";
+import { TransactionExpiredBlockheightExceededError } from "@solana/web3.js";
 import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
-import { PriorityFeeSetting } from "../types";
 // import { sendJitoBundledTransactions } from "../utils/jitoUtils";
 
+const CHORES_TX_NAME = "account chores";
+
+export class TransactionTooLargeError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "TransactionTooLargeError";
+    Object.setPrototypeOf(this, TransactionTooLargeError.prototype);
+  }
+}
+
 class LookupTables {
-  defaultLuts: string[] = [];
   cache: AddressLookupTableInput[] = [];
 
-  constructor(private client: SolautoClient) {
-    this.defaultLuts = [...client.defaultLookupTables()];
-  }
+  constructor(
+    public defaultLuts: string[],
+    private umi: Umi
+  ) {}
 
   async getLutInputs(
     additionalAddresses: string[]
   ): Promise<AddressLookupTableInput[]> {
-    const addresses = [
-      ...this.defaultLuts,
-      this.client.authorityLutAddress!.toString(),
-      ...additionalAddresses,
-    ];
+    const addresses = [...this.defaultLuts, ...additionalAddresses];
     const currentCacheAddresses = this.cache.map((x) => x.publicKey.toString());
 
     const missingAddresses = addresses.filter(
       (x) => !currentCacheAddresses.includes(x)
     );
     if (missingAddresses) {
-      const additionalInputs = await getAdressLookupInputs(
-        this.client.umi,
+      const additionalInputs = await getAddressLookupInputs(
+        this.umi,
         missingAddresses
       );
       this.cache.push(...additionalInputs);
@@ -50,23 +64,29 @@ class LookupTables {
 
     return this.cache;
   }
+
+  reset() {
+    this.cache = this.cache.filter((x) =>
+      this.defaultLuts.includes(x.publicKey.toString())
+    );
+  }
 }
 
 export class TransactionItem {
   lookupTableAddresses!: string[];
   tx?: TransactionBuilder;
+  public initialized: boolean = false;
 
   constructor(
     public fetchTx: (
       attemptNum: number
-    ) => Promise<
-      { tx: TransactionBuilder; lookupTableAddresses?: string[] } | undefined
-    >,
+    ) => Promise<TransactionItemInputs | undefined>,
     public name?: string
   ) {}
 
   async initialize() {
     await this.refetch(0);
+    this.initialized = true;
   }
 
   async refetch(attemptNum: number) {
@@ -91,7 +111,7 @@ export class TransactionItem {
 
 class TransactionSet {
   constructor(
-    private client: SolautoClient,
+    private txHandler: TxHandler,
     public lookupTables: LookupTables,
     public items: TransactionItem[] = []
   ) {}
@@ -111,7 +131,8 @@ class TransactionSet {
       return false;
     }
 
-    return (await this.getSingleTransaction())
+    const singleTx = await this.getSingleTransaction();
+    return addTxOptimizations(this.txHandler.umi.identity, singleTx, 1, 1)
       .add(item.tx)
       .setAddressLookupTables(
         await this.lookupTables.getLutInputs([
@@ -119,7 +140,7 @@ class TransactionSet {
           ...item.lookupTableAddresses,
         ])
       )
-      .fitsInOneTransaction(this.client.umi);
+      .fitsInOneTransaction(this.txHandler.umi);
   }
 
   add(...items: TransactionItem[]) {
@@ -129,7 +150,7 @@ class TransactionSet {
   }
 
   async refetchAll(attemptNum: number) {
-    await this.client.resetLivePositionUpdates();
+    await this.txHandler.resetLiveTxUpdates();
     for (const item of this.items) {
       await item.refetch(attemptNum);
     }
@@ -140,11 +161,10 @@ class TransactionSet {
       .filter((x) => x.tx && x.tx.getInstructions().length > 0)
       .map((x) => x.tx!);
 
+    const lutInputs = await this.lookupTables.getLutInputs(this.lutAddresses());
     return transactionBuilder()
       .add(transactions)
-      .setAddressLookupTables(
-        await this.lookupTables.getLutInputs(this.lutAddresses())
-      );
+      .setAddressLookupTables(lutInputs);
   }
 
   lutAddresses(): string[] {
@@ -154,9 +174,12 @@ class TransactionSet {
   }
 
   name(): string {
-    const names = this.items
+    let names = this.items
       .filter((x) => x.tx && x.name !== undefined)
       .map((x) => x.name!.toLowerCase());
+    if (names.length > 1) {
+      names = names.filter((x) => x !== CHORES_TX_NAME);
+    }
     if (names.length >= 3) {
       return [names.slice(0, -1).join(", "), names[names.length - 1]].join(
         ", and "
@@ -172,11 +195,15 @@ export enum TransactionStatus {
   Processing = "Processing",
   Queued = "Queued",
   Successful = "Successful",
+  Failed = "Failed",
 }
 
 export type TransactionManagerStatuses = {
   name: string;
+  attemptNum: number;
   status: TransactionStatus;
+  moreInfo?: string;
+  simulationSuccessful?: boolean;
   txSig?: string;
 }[];
 
@@ -185,21 +212,25 @@ export class TransactionsManager {
   private lookupTables: LookupTables;
 
   constructor(
-    private client: SolautoClient,
-    private items: TransactionItem[],
+    private txHandler: SolautoClient | ReferralStateManager,
     private statusCallback?: (statuses: TransactionManagerStatuses) => void,
-    private simulateOnly?: boolean,
-    private mustBeAtomic?: boolean,
-    private errorsToThrow?: ErrorsToThrow
+    private txType?: TransactionRunType,
+    private priorityFeeSetting: PriorityFeeSetting = PriorityFeeSetting.Min,
+    private errorsToThrow?: ErrorsToThrow,
+    private retries: number = 4,
+    private retryDelay: number = 150
   ) {
-    this.lookupTables = new LookupTables(client);
+    this.lookupTables = new LookupTables(
+      this.txHandler.defaultLookupTables(),
+      this.txHandler.umi
+    );
   }
 
   private async assembleTransactionSets(
     items: TransactionItem[]
   ): Promise<TransactionSet[]> {
     let transactionSets: TransactionSet[] = [];
-    this.client.log(`Reassembling ${items.length} items`);
+    this.txHandler.log(`Reassembling ${items.length} items`);
 
     for (let i = 0; i < items.length; ) {
       let item = items[i];
@@ -212,16 +243,14 @@ export class TransactionsManager {
       const transaction = item.tx.setAddressLookupTables(
         await this.lookupTables.getLutInputs(item.lookupTableAddresses)
       );
-      if (!transaction.fitsInOneTransaction(this.client.umi)) {
-        // TODO: revert me
-        // throw new Error(
-        //   `Transaction exceeds max transaction size (${transaction.getTransactionSize(this.client.umi)})`
-        // );
-        transactionSets.push(
-          new TransactionSet(this.client, this.lookupTables, [item])
+      if (!transaction.fitsInOneTransaction(this.txHandler.umi)) {
+        throw new TransactionTooLargeError(
+          `Exceeds max transaction size (${transaction.getTransactionSize(this.txHandler.umi)})`
         );
       } else {
-        let newSet = new TransactionSet(this.client, this.lookupTables, [item]);
+        let newSet = new TransactionSet(this.txHandler, this.lookupTables, [
+          item,
+        ]);
         for (let j = i; j < items.length; j++) {
           if (await newSet.fitsWith(items[j])) {
             newSet.add(items[j]);
@@ -237,24 +266,52 @@ export class TransactionsManager {
     return transactionSets;
   }
 
-  updateStatus(name: string, status: TransactionStatus, txSig?: string) {
+  private updateStatus(
+    name: string,
+    status: TransactionStatus,
+    attemptNum: number,
+    txSig?: string,
+    simulationSuccessful?: boolean,
+    moreInfo?: string
+  ) {
     if (!this.statuses.filter((x) => x.name === name)) {
-      this.statuses.push({ name, status, txSig });
+      this.statuses.push({
+        name,
+        status,
+        txSig,
+        attemptNum,
+        simulationSuccessful,
+        moreInfo,
+      });
     } else {
-      const idx = this.statuses.findIndex((x) => x.name === name);
+      const idx = this.statuses.findIndex(
+        (x) => x.name === name && x.attemptNum === attemptNum
+      );
       if (idx !== -1) {
         this.statuses[idx].status = status;
         this.statuses[idx].txSig = txSig;
+        if (simulationSuccessful) {
+          this.statuses[idx].simulationSuccessful = simulationSuccessful;
+        }
+        if (moreInfo) {
+          this.statuses[idx].moreInfo = moreInfo;
+        }
       } else {
-        this.statuses.push({ name, status, txSig });
+        this.statuses.push({
+          name,
+          status,
+          txSig,
+          attemptNum,
+          simulationSuccessful,
+          moreInfo,
+        });
       }
     }
-    this.client.log(`${name} is ${status.toString().toLowerCase()}`);
-    this.statusCallback?.(this.statuses);
+    this.txHandler.log(`${name} is ${status.toString().toLowerCase()}`);
+    this.statusCallback?.([...this.statuses]);
   }
 
-  // TODO remove me
-  async debugAccounts(itemSet: TransactionSet, tx: TransactionBuilder) {
+  private async debugAccounts(itemSet: TransactionSet, tx: TransactionBuilder) {
     const lutInputs = await itemSet.lookupTables.getLutInputs([]);
     const lutAccounts = lutInputs.map((x) => x.addresses).flat();
     for (const ix of tx.getInstructions()) {
@@ -262,171 +319,289 @@ export class TransactionsManager {
       const accountsNotInLut = ixAccounts.filter(
         (x) => !lutAccounts.includes(x)
       );
-      this.client.log(`Program ${ix.programId}, data len: ${ix.data.length}, LUT accounts data: ${ix.keys.filter((x) => lutAccounts.includes(x.pubkey)).length * 3}`);
+      this.txHandler.log(
+        `Program ${ix.programId}, data len: ${ix.data.length}, LUT accounts data: ${ix.keys.filter((x) => lutAccounts.includes(x.pubkey)).length * 3}`
+      );
       if (accountsNotInLut.length > 0) {
-        this.client.log(`${accountsNotInLut.length} accounts not in LUT:`);
+        this.txHandler.log(`${accountsNotInLut.length} accounts not in LUT:`);
         for (const key of accountsNotInLut) {
-          this.client.log(key.toString());
+          this.txHandler.log(key.toString());
         }
       }
     }
   }
 
-  async send(prioritySetting?: PriorityFeeSetting) {
-    const updateLookupTable = await this.client.updateLookupTable();
-    if (
-      updateLookupTable &&
-      updateLookupTable.updateLutTx.getInstructions().length > 0 &&
-      updateLookupTable?.needsToBeIsolated
-    ) {
-      this.updateStatus("update lookup table", TransactionStatus.Processing);
-      await retryWithExponentialBackoff(
-        async (attemptNum) =>
-          await sendSingleOptimizedTransaction(
-            this.client.umi,
-            this.client.connection,
-            updateLookupTable.updateLutTx,
-            this.simulateOnly,
-            attemptNum
-          ),
-        3,
-        150,
-        this.errorsToThrow
-      );
-      this.updateStatus("update lookup table", TransactionStatus.Successful);
+  private getUpdatedPriorityFeeSetting(prevError?: Error) {
+    if (prevError instanceof TransactionExpiredBlockheightExceededError) {
+      const currIdx = priorityFeeSettingValues.indexOf(this.priorityFeeSetting);
+      return priorityFeeSettingValues[
+        Math.min(priorityFeeSettingValues.length - 1, currIdx + 1)
+      ];
     }
+    return this.priorityFeeSetting;
+  }
 
-    for (const item of this.items) {
+  private updateStatusForSets(itemSets: TransactionSet[]) {
+    itemSets.forEach((itemSet) => {
+      this.updateStatus(itemSet.name(), TransactionStatus.Queued, 0);
+    });
+  }
+
+  private async updateLut(tx: TransactionBuilder, newLut: boolean) {
+    const updateLutTxName = `${newLut ? "create" : "update"} lookup table`;
+    await retryWithExponentialBackoff(
+      async (attemptNum, prevError) =>
+        await this.sendTransaction(
+          tx,
+          updateLutTxName,
+          attemptNum,
+          this.getUpdatedPriorityFeeSetting(prevError)
+        ),
+      3,
+      150,
+      this.errorsToThrow
+    );
+  }
+
+  public async clientSend(
+    transactions: TransactionItem[]
+  ): Promise<TransactionManagerStatuses> {
+    const items = [...transactions];
+    const client = this.txHandler as SolautoClient;
+
+    const updateLookupTable = await client.updateLookupTable();
+
+    if (updateLookupTable && updateLookupTable?.new) {
+      await this.updateLut(updateLookupTable.tx, updateLookupTable.new);
+    }
+    this.lookupTables.defaultLuts = client.defaultLookupTables();
+
+    for (const item of items) {
       await item.initialize();
     }
 
-    const [choresBefore, choresAfter] = await getTransactionChores(
-      this.client,
+    let [choresBefore, choresAfter] = await getTransactionChores(
+      client,
       transactionBuilder().add(
-        this.items
+        items
           .filter((x) => x.tx && x.tx.getInstructions().length > 0)
           .map((x) => x.tx!)
       )
     );
-    if (updateLookupTable && !updateLookupTable.needsToBeIsolated) {
-      choresBefore.prepend(updateLookupTable.updateLutTx);
+    if (updateLookupTable && !updateLookupTable?.new) {
+      choresBefore = choresBefore.prepend(updateLookupTable.tx);
     }
     if (choresBefore.getInstructions().length > 0) {
       const chore = new TransactionItem(
         async () => ({ tx: choresBefore }),
-        "create account(s)"
+        CHORES_TX_NAME
       );
       await chore.initialize();
-      this.items.unshift(chore);
-      this.client.log("Chores before: ", choresBefore.getInstructions().length);
+      items.unshift(chore);
+      this.txHandler.log(
+        "Chores before: ",
+        choresBefore.getInstructions().length
+      );
     }
     if (choresAfter.getInstructions().length > 0) {
-      const chore = new TransactionItem(async () => ({ tx: choresAfter }));
-      await chore.initialize();
-      this.items.push(chore);
-      this.client.log("Chores after: ", choresAfter.getInstructions().length);
-    }
-
-    const itemSets = await this.assembleTransactionSets(this.items);
-    const statusesStartIdx = this.statuses.length;
-    for (const itemSet of itemSets) {
-      this.updateStatus(itemSet.name(), TransactionStatus.Queued);
-    }
-
-    if (this.mustBeAtomic && itemSets.length > 1) {
-      throw new Error(
-        `${itemSets.length} transactions required but jito bundles are not currently supported`
+      const chore = new TransactionItem(
+        async () => ({ tx: choresAfter }),
+        CHORES_TX_NAME
       );
-      // itemSets.forEach((set) => {
-      //   this.updateStatus(set.name(), TransactionStatus.Processing);
-      // });
-      // await sendJitoBundledTransactions(
-      //   this.client,
-      //   await Promise.all(itemSets.map((x) => x.getSingleTransaction())),
-      //   this.simulateOnly
-      // );
-      // TODO: check if successful or not
-      // itemSets.forEach((set) => {
-      //   this.updateStatus(set.name(), TransactionStatus.Successful);
-      // });
-    } else if (!this.simulateOnly || itemSets.length === 1) {
-      for (let i = 0; i < itemSets.length; i++) {
-        const getFreshItemSet = async (
-          itemSet: TransactionSet,
-          attemptNum: number
-        ) => {
-          await itemSet.refetchAll(attemptNum);
-          const newItemSets = await this.assembleTransactionSets([
-            ...itemSet.items,
-            ...itemSets
-              .slice(i + 1)
-              .map((x) => x.items)
-              .flat(),
-          ]);
-          if (newItemSets.length > 1) {
-            this.statuses.splice(
-              statusesStartIdx + i,
-              itemSets.length - i,
-              ...newItemSets.map((x) => ({
-                name: x.name(),
-                status: TransactionStatus.Queued,
-              }))
-            );
-            this.client.log(this.statuses);
-            itemSets.splice(
-              i + 1,
-              itemSets.length - i - 1,
-              ...newItemSets.slice(1)
-            );
-          }
-          return newItemSets.length > 0 ? newItemSets[0] : undefined;
-        };
+      await chore.initialize();
+      items.push(chore);
+      this.txHandler.log(
+        "Chores after: ",
+        choresAfter.getInstructions().length
+      );
+    }
 
-        let itemSet: TransactionSet | undefined = itemSets[i];
-        await retryWithExponentialBackoff(
-          async (attemptNum) => {
-            itemSet =
-              i > 0 || attemptNum > 0
-                ? await getFreshItemSet(itemSet!, attemptNum)
-                : itemSet;
-            if (!itemSet) {
-              return;
-            }
-            const tx = await itemSet.getSingleTransaction();
+    const result = await this.send(items).catch((e) => {
+      client.resetLiveTxUpdates(false);
+      throw e;
+    });
 
-            if (tx.getInstructions().length === 0) {
-              this.updateStatus(itemSet.name(), TransactionStatus.Skipped);
-            } else {
-              this.updateStatus(itemSet.name(), TransactionStatus.Processing);
+    if (this.txType !== "only-simulate") {
+      await client.resetLiveTxUpdates();
+    }
 
-              if (this.client.localTest) {
-                await this.debugAccounts(itemSet, tx);
-              }
+    return result;
+  }
 
-              const txSig = await sendSingleOptimizedTransaction(
-                this.client.umi,
-                this.client.connection,
-                tx,
-                this.simulateOnly,
-                attemptNum,
-                prioritySetting
-              );
-              this.updateStatus(
-                itemSet.name(),
-                TransactionStatus.Successful,
-                txSig ? bs58.encode(txSig) : undefined
-              );
-            }
-          },
-          4,
-          150,
-          this.errorsToThrow
-        );
+  public async send(
+    items: TransactionItem[]
+  ): Promise<TransactionManagerStatuses> {
+    this.statuses = [];
+    this.lookupTables.reset();
+
+    if (!items[0].initialized) {
+      for (const item of items) {
+        await item.initialize();
       }
     }
 
-    if (!this.simulateOnly) {
-      await this.client.resetLivePositionUpdates();
+    this.txHandler.log("Transaction items:", items.length);
+    const itemSets = await this.assembleTransactionSets(items);
+    this.updateStatusForSets(itemSets);
+    this.txHandler.log("Initial item sets:", itemSets.length);
+
+    if (this.txType === "only-simulate" && itemSets.length > 1) {
+      this.txHandler.log(
+        "Only simulate and more than 1 transaction. Skipping..."
+      );
+      return [];
+    }
+
+    let currentIndex = 0;
+    while (currentIndex < itemSets.length) {
+      await this.processTransactionSet(itemSets, currentIndex);
+      currentIndex++;
+    }
+
+    return this.statuses;
+  }
+
+  private async processTransactionSet(
+    itemSets: TransactionSet[],
+    currentIndex: number
+  ) {
+    let itemSet: TransactionSet | undefined = itemSets[currentIndex];
+    let num = 0;
+
+    await retryWithExponentialBackoff(
+      async (attemptNum, prevError) => {
+        num = attemptNum;
+
+        if (currentIndex > 0 || attemptNum > 0) {
+          itemSet = await this.refreshItemSet(
+            itemSets,
+            currentIndex,
+            attemptNum
+          );
+        }
+        if (!itemSet) return;
+
+        const tx = await itemSet.getSingleTransaction();
+        if (tx.getInstructions().length === 0) {
+          this.updateStatus(
+            itemSet.name(),
+            TransactionStatus.Skipped,
+            attemptNum
+          );
+        } else {
+          await this.debugAccounts(itemSet, tx);
+          await this.sendTransaction(
+            tx,
+            itemSet.name(),
+            attemptNum,
+            this.getUpdatedPriorityFeeSetting(prevError)
+          );
+        }
+      },
+      this.retries,
+      this.retryDelay,
+      this.errorsToThrow
+    ).catch((e: Error) => {
+      if (itemSet) {
+        this.updateStatus(
+          itemSet.name(),
+          TransactionStatus.Failed,
+          num,
+          undefined,
+          undefined,
+          e.message
+        );
+      }
+      throw e;
+    });
+  }
+
+  private async refreshItemSet(
+    itemSets: TransactionSet[],
+    currentIndex: number,
+    attemptNum: number
+  ): Promise<TransactionSet | undefined> {
+    const itemSet = itemSets[currentIndex];
+    await itemSet.refetchAll(attemptNum);
+
+    const newItemSets = await this.assembleTransactionSets([
+      ...itemSet.items,
+      ...itemSets.slice(currentIndex + 1).flatMap((set) => set.items),
+    ]);
+
+    if (newItemSets.length > 1) {
+      itemSets.splice(
+        currentIndex,
+        itemSets.length - currentIndex,
+        ...newItemSets
+      );
+      const startOfQueuedStatuses = this.statuses.findIndex(
+        (x) => x.status === TransactionStatus.Queued
+      );
+      this.statuses.splice(
+        startOfQueuedStatuses,
+        this.statuses.length - startOfQueuedStatuses,
+        ...newItemSets.map((x, i) => ({
+          name: x.name(),
+          attemptNum: i === 0 ? attemptNum : 0,
+          status:
+            i === 0 ? TransactionStatus.Processing : TransactionStatus.Queued,
+        }))
+      );
+    }
+
+    return newItemSets[0];
+  }
+
+  private async sendTransaction(
+    tx: TransactionBuilder,
+    txName: string,
+    attemptNum: number,
+    priorityFeeSetting?: PriorityFeeSetting
+  ) {
+    this.updateStatus(txName, TransactionStatus.Processing, attemptNum);
+    try {
+      const txSig = await sendSingleOptimizedTransaction(
+        this.txHandler.umi,
+        this.txHandler.connection,
+        tx,
+        this.txType,
+        priorityFeeSetting,
+        () =>
+          this.updateStatus(
+            txName,
+            TransactionStatus.Processing,
+            attemptNum,
+            undefined,
+            true
+          )
+      );
+      this.updateStatus(
+        txName,
+        TransactionStatus.Successful,
+        attemptNum,
+        txSig ? bs58.encode(txSig) : undefined
+      );
+    } catch (e: any) {
+      const errorDetails = getErrorInfo(this.txHandler.umi, tx, e);
+
+      const errorString = `${errorDetails.errorName ?? "Unknown error"}: ${errorDetails.errorInfo ?? "unknown"}`;
+      this.updateStatus(
+        txName,
+        errorDetails.canBeIgnored
+          ? TransactionStatus.Skipped
+          : TransactionStatus.Failed,
+        attemptNum,
+        undefined,
+        undefined,
+        errorDetails.errorName || errorDetails.errorInfo
+          ? errorString
+          : e.message
+      );
+
+      if (!errorDetails.canBeIgnored) {
+        throw e;
+      }
     }
   }
 }

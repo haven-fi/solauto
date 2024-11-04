@@ -1,19 +1,22 @@
 import { PublicKey } from "@solana/web3.js";
-import { isOption, isSome, publicKey, Umi } from "@metaplex-foundation/umi";
+import { isOption, isSome, Program, publicKey, Umi } from "@metaplex-foundation/umi";
 import {
   AutomationSettings,
   DCASettings,
   DCASettingsInpArgs,
   LendingPlatform,
   PositionState,
-  SOLAUTO_PROGRAM_ID,
+  PositionType,
   SolautoSettingsParameters,
   SolautoSettingsParametersInpArgs,
+  TokenType,
   getReferralStateSize,
+  getSolautoErrorFromCode,
+  getSolautoErrorFromName,
   getSolautoPositionAccountDataSerializer,
   getSolautoPositionSize,
 } from "../../generated";
-import { currentUnixSeconds, getTokenPrices } from "../generalUtils";
+import { currentUnixSeconds, fetchTokenPrices } from "../generalUtils";
 import {
   fromBaseUnit,
   getLiqUtilzationRateBps,
@@ -28,6 +31,22 @@ import {
 } from "../../constants";
 import { getAllMarginfiAccountsByAuthority } from "../marginfiUtils";
 import { RebalanceAction, SolautoPositionDetails } from "../../types/solauto";
+
+export function createDynamicSolautoProgram(programId: PublicKey): Program {
+  return {
+    name: 'solauto',
+    publicKey: publicKey(programId),
+    getErrorFromCode(code: number, cause?: Error) {
+      return getSolautoErrorFromCode(code, this, cause);
+    },
+    getErrorFromName(name: string, cause?: Error) {
+      return getSolautoErrorFromName(name, this, cause);
+    },
+    isOnCluster() {
+      return true;
+    },
+  };
+}
 
 function newPeriodsPassed(
   automation: AutomationSettings,
@@ -102,7 +121,8 @@ export function eligibleForRebalance(
   positionState: PositionState,
   positionSettings: SolautoSettingsParameters,
   positionDca: DCASettings | undefined,
-  currentUnixTime: number
+  currentUnixTime: number,
+  bpsDistanceThreshold = 0
 ): RebalanceAction | undefined {
   if (
     positionDca &&
@@ -129,9 +149,9 @@ export function eligibleForRebalance(
   const repayFrom = positionSettings.repayToBps + positionSettings.repayGap;
   const boostFrom = boostToBps - positionSettings.boostGap;
 
-  if (positionState.liqUtilizationRateBps < boostFrom) {
+  if (Math.max(0, positionState.liqUtilizationRateBps - boostFrom) <= bpsDistanceThreshold) {
     return "boost";
-  } else if (positionState.liqUtilizationRateBps > repayFrom) {
+  } else if (Math.max(0, repayFrom - positionState.liqUtilizationRateBps) <= bpsDistanceThreshold) {
     return "repay";
   }
 
@@ -158,20 +178,26 @@ export function eligibleForRefresh(
 
 export async function getSolautoManagedPositions(
   umi: Umi,
-  authority?: PublicKey
+  authority?: PublicKey,
+  positionTypeFilter?: PositionType
 ): Promise<SolautoPositionDetails[]> {
   // bump: [u8; 1]
   // position_id: [u8; 1]
   // self_managed: u8 - (1 for true, 0 for false)
-  // padding: [u8; 5]
-  // authority: Pubkey
+  // position_type: PositionType
+  // padding: [u8; 4]
+  // authority: pubkey
   // lending_platform: u8
+  // padding: [u8; 7]
+  // protocol account: pubkey
+  // supply mint: pubkey
+  // debt mint: pubkey
 
-  const accounts = await umi.rpc.getProgramAccounts(SOLAUTO_PROGRAM_ID, {
-    commitment: "finalized",
+  const accounts = await umi.rpc.getProgramAccounts(umi.programs.get("solauto").publicKey, {
+    commitment: "confirmed",
     dataSlice: {
       offset: 0,
-      length: 1 + 1 + 1 + 5 + 32 + 1, // bump + position_id + self_managed + padding + authority (pubkey) + lending_platform
+      length: 1 + 1 + 1 + 1 + 4 + 32 + 1 + 7 + 32 + 32 + 32, // bump + position_id + self_managed + position_type + padding (4) + authority (pubkey) + lending_platform + padding (7) + protocol account (pubkey) + supply mint (pubkey) + debt mint (pubkey)
     },
     filters: [
       {
@@ -193,6 +219,14 @@ export async function getSolautoManagedPositions(
             },
           ]
         : []),
+      ...(positionTypeFilter !== undefined ? [
+        {
+          memcmp: {
+            bytes: new Uint8Array(positionTypeFilter),
+            offset: 3
+          }
+        }
+      ] : [])
     ],
   });
 
@@ -208,13 +242,17 @@ export async function getSolautoManagedPositions(
       authority: toWeb3JsPublicKey(position.authority),
       positionId: position.positionId[0],
       lendingPlatform: position.position.lendingPlatform,
+      positionType: position.positionType,
+      protocolAccount: toWeb3JsPublicKey(position.position.protocolAccount),
+      supplyMint: toWeb3JsPublicKey(position.position.supplyMint),
+      debtMint: toWeb3JsPublicKey(position.position.debtMint),
     };
   });
 }
 
 export async function getAllReferralStates(umi: Umi): Promise<PublicKey[]> {
-  const accounts = await umi.rpc.getProgramAccounts(SOLAUTO_PROGRAM_ID, {
-    commitment: "finalized",
+  const accounts = await umi.rpc.getProgramAccounts(umi.programs.get("solauto").publicKey, {
+    commitment: "confirmed",
     dataSlice: {
       offset: 0,
       length: 0,
@@ -238,9 +276,10 @@ export async function getReferralsByUser(
   // authority: Pubkey,
   // referred_by_state: Pubkey,
 
-  const userReferralState = await getReferralState(user);
-  const accounts = await umi.rpc.getProgramAccounts(SOLAUTO_PROGRAM_ID, {
-    commitment: "finalized",
+  const programId = umi.programs.get("solauto").publicKey;
+  const userReferralState = getReferralState(user, toWeb3JsPublicKey(programId));
+  const accounts = await umi.rpc.getProgramAccounts(programId, {
+    commitment: "confirmed",
     dataSlice: {
       offset: 0,
       length: 0,
@@ -263,46 +302,52 @@ export async function getReferralsByUser(
 
 export async function getAllPositionsByAuthority(
   umi: Umi,
-  user: PublicKey
+  user: PublicKey,
+  positionTypeFilter?: PositionType
 ): Promise<SolautoPositionDetails[]> {
-  const allPositions: SolautoPositionDetails[] = [];
+  const solautoCompatiblePositions: SolautoPositionDetails[][] =
+    await Promise.all([
+      (async () => {
+        const solautoManagedPositions = await getSolautoManagedPositions(
+          umi,
+          user,
+          positionTypeFilter
+        );
+        return solautoManagedPositions.map((x) => ({
+          ...x,
+          authority: user,
+        }));
+      })(),
+      (async () => {
+        if (positionTypeFilter === PositionType.SafeLoan) {
+          return [];
+        }
 
-  const solautoManagedPositions = await getSolautoManagedPositions(umi, user);
-  allPositions.push(
-    ...solautoManagedPositions.map((x) => ({
-      publicKey: x.publicKey,
-      authority: user,
-      positionId: x.positionId,
-      lendingPlatform: x.lendingPlatform,
-    }))
-  );
+        let marginfiPositions = await getAllMarginfiAccountsByAuthority(
+          umi,
+          user,
+          true
+        );
+        marginfiPositions = marginfiPositions.filter(
+          (x) =>
+            x.supplyMint &&
+            (x.debtMint!.equals(PublicKey.default) ||
+              ALL_SUPPORTED_TOKENS.includes(x.debtMint!.toString()))
+        );
+        return marginfiPositions.map((x) => ({
+          publicKey: x.marginfiAccount,
+          authority: user,
+          positionId: 0,
+          positionType: PositionType.Leverage,
+          lendingPlatform: LendingPlatform.Marginfi,
+          protocolAccount: x.marginfiAccount,
+          supplyMint: x.supplyMint,
+          debtMint: x.debtMint,
+        }));
+      })(),
+    ]);
 
-  let marginfiPositions = await getAllMarginfiAccountsByAuthority(
-    umi,
-    user,
-    true
-  );
-  marginfiPositions = marginfiPositions.filter(
-    (x) =>
-      x.supplyMint &&
-      (x.debtMint!.equals(PublicKey.default) ||
-        ALL_SUPPORTED_TOKENS.includes(x.debtMint!.toString()))
-  );
-  allPositions.push(
-    ...marginfiPositions.map((x) => ({
-      publicKey: x.marginfiAccount,
-      authority: user,
-      positionId: 0,
-      lendingPlatform: LendingPlatform.Marginfi,
-      protocolAccount: x.marginfiAccount,
-      supplyMint: x.supplyMint,
-      debtMint: x.debtMint,
-    }))
-  );
-
-  // TODO support other platforms
-
-  return allPositions;
+  return solautoCompatiblePositions.flat();
 }
 
 export async function positionStateWithLatestPrices(
@@ -311,7 +356,7 @@ export async function positionStateWithLatestPrices(
   debtPrice?: number
 ): Promise<PositionState> {
   if (!supplyPrice || !debtPrice) {
-    [supplyPrice, debtPrice] = await getTokenPrices([
+    [supplyPrice, debtPrice] = await fetchTokenPrices([
       toWeb3JsPublicKey(state.supply.mint),
       toWeb3JsPublicKey(state.debt.mint),
     ]);
@@ -429,15 +474,15 @@ export function createFakePositionState(
   };
 }
 
-export function createSolautoSettings(settings: SolautoSettingsParametersInpArgs): SolautoSettingsParameters {
+export function createSolautoSettings(
+  settings: SolautoSettingsParametersInpArgs
+): SolautoSettingsParameters {
   return {
     automation:
       isOption(settings.automation) && isSome(settings.automation)
         ? {
             ...settings.automation.value,
-            intervalSeconds: BigInt(
-              settings.automation.value.intervalSeconds
-            ),
+            intervalSeconds: BigInt(settings.automation.value.intervalSeconds),
             unixStartDate: BigInt(settings.automation.value.unixStartDate),
             padding: new Uint8Array([]),
             padding1: [],
@@ -451,8 +496,7 @@ export function createSolautoSettings(settings: SolautoSettingsParametersInpArgs
             padding1: [],
           },
     targetBoostToBps:
-      isOption(settings.targetBoostToBps) &&
-      isSome(settings.targetBoostToBps)
+      isOption(settings.targetBoostToBps) && isSome(settings.targetBoostToBps)
         ? settings.targetBoostToBps.value
         : 0,
     boostGap: settings.boostGap,
@@ -467,24 +511,24 @@ export function createSolautoSettings(settings: SolautoSettingsParametersInpArgs
 type PositionAdjustment =
   | { type: "supply"; value: bigint }
   | { type: "debt"; value: bigint }
-  | { type: "debtDcaIn"; value: bigint }
   | { type: "settings"; value: SolautoSettingsParametersInpArgs }
-  | { type: "dca"; value: DCASettingsInpArgs };
+  | { type: "dca"; value: DCASettingsInpArgs }
+  | { type: "dcaInBalance"; value: { amount: bigint; tokenType: TokenType; } }
+  | { type: "cancellingDca"; value: TokenType; };
 
 export class LivePositionUpdates {
-  public supplyAdjustment: bigint = BigInt(0);
-  public debtAdjustment: bigint = BigInt(0);
-  public debtTaBalanceAdjustment: bigint = BigInt(0);
+  public supplyAdjustment = BigInt(0);
+  public debtAdjustment = BigInt(0);
   public settings: SolautoSettingsParameters | undefined = undefined;
   public activeDca: DCASettings | undefined = undefined;
-
+  public dcaInBalance?: { amount: bigint; tokenType: TokenType; } = undefined;
+  public cancellingDca: TokenType | undefined = undefined;
+  
   new(update: PositionAdjustment) {
     if (update.type === "supply") {
       this.supplyAdjustment += update.value;
     } else if (update.type === "debt") {
       this.debtAdjustment += update.value;
-    } else if (update.type === "debtDcaIn") {
-      this.debtTaBalanceAdjustment += update.value;
     } else if (update.type === "settings") {
       const settings = update.value;
       this.settings = createSolautoSettings(settings);
@@ -498,26 +542,33 @@ export class LivePositionUpdates {
           padding: new Uint8Array([]),
           padding1: [],
         },
-        debtToAddBaseUnit: BigInt(dca.debtToAddBaseUnit),
-        padding: new Uint8Array([]),
+        dcaInBaseUnit: BigInt(dca.dcaInBaseUnit),
+        tokenType: dca.tokenType,
+        padding: [],
       };
+    } else if (update.type === "cancellingDca") {
+      this.cancellingDca = update.value;
+    } else if (update.type === "dcaInBalance") {
+      this.dcaInBalance = update.value;
     }
   }
 
   reset() {
     this.supplyAdjustment = BigInt(0);
     this.debtAdjustment = BigInt(0);
-    this.debtTaBalanceAdjustment = BigInt(0);
     this.settings = undefined;
     this.activeDca = undefined;
+    this.dcaInBalance = undefined;
+    this.cancellingDca = undefined;
   }
 
   hasUpdates(): boolean {
     return (
       this.supplyAdjustment !== BigInt(0) ||
       this.debtAdjustment !== BigInt(0) ||
-      this.debtTaBalanceAdjustment !== BigInt(0) ||
-      this.settings !== undefined
+      this.dcaInBalance !== undefined ||
+      this.settings !== undefined ||
+      this.cancellingDca !== undefined
     );
   }
 }

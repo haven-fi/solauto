@@ -37,9 +37,9 @@ export type UpdatePositionInstructionAccounts = {
   systemProgram?: PublicKey | Pda;
   tokenProgram?: PublicKey | Pda;
   solautoPosition: PublicKey | Pda;
-  debtMint?: PublicKey | Pda;
-  positionDebtTa?: PublicKey | Pda;
-  signerDebtTa?: PublicKey | Pda;
+  dcaMint?: PublicKey | Pda;
+  positionDcaTa?: PublicKey | Pda;
+  signerDcaTa?: PublicKey | Pda;
 };
 
 // Data.
@@ -111,20 +111,20 @@ export function updatePosition(
       isWritable: true as boolean,
       value: input.solautoPosition ?? null,
     },
-    debtMint: {
+    dcaMint: {
       index: 4,
       isWritable: false as boolean,
-      value: input.debtMint ?? null,
+      value: input.dcaMint ?? null,
     },
-    positionDebtTa: {
+    positionDcaTa: {
       index: 5,
       isWritable: true as boolean,
-      value: input.positionDebtTa ?? null,
+      value: input.positionDcaTa ?? null,
     },
-    signerDebtTa: {
+    signerDcaTa: {
       index: 6,
       isWritable: true as boolean,
-      value: input.signerDebtTa ?? null,
+      value: input.signerDcaTa ?? null,
     },
   } satisfies ResolvedAccountsWithIndices;
 

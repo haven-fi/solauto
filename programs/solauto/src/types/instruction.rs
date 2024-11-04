@@ -40,6 +40,7 @@ pub enum Instruction {
     #[account(mut, optional, name = "signer_wsol_ta")]
     #[account(name = "system_program")]
     #[account(name = "token_program")]
+    #[account(name = "ata_program")]
     #[account(name = "rent")]
     #[account(name = "referral_state")]
     #[account(mut, name = "referral_fees_dest_ta")]
@@ -53,9 +54,9 @@ pub enum Instruction {
     #[account(name = "system_program")]
     #[account(name = "token_program")]
     #[account(mut, name = "solauto_position")]
-    #[account(optional, name = "debt_mint")]
-    #[account(mut, optional, name = "position_debt_ta")]
-    #[account(mut, optional, name = "signer_debt_ta")]
+    #[account(optional, name = "dca_mint")]
+    #[account(mut, optional, name = "position_dca_ta")]
+    #[account(mut, optional, name = "signer_dca_ta")]
     UpdatePosition(UpdatePositionData),
     
     /// Close the Solauto position and return the rent for the various accounts
@@ -64,9 +65,9 @@ pub enum Instruction {
     #[account(name = "token_program")]
     #[account(name = "ata_program")]
     #[account(mut, name = "solauto_position")]
-    #[account(mut, name = "signer_supply_ta")]
+    #[account(mut, name = "protocol_account")]
     #[account(mut, name = "position_supply_ta")]
-    #[account(mut, optional, name = "position_supply_collateral_ta")]
+    #[account(mut, name = "signer_supply_ta")]
     #[account(mut, name = "position_debt_ta")]
     #[account(mut, name = "signer_debt_ta")]
     ClosePosition,
@@ -77,9 +78,9 @@ pub enum Instruction {
     #[account(name = "token_program")]
     #[account(name = "ata_program")]
     #[account(mut, name = "solauto_position")]
-    #[account(optional, name = "debt_mint")]
-    #[account(mut, optional, name = "position_debt_ta")]
-    #[account(mut, optional, name = "signer_debt_ta")]
+    #[account(optional, name = "dca_mint")]
+    #[account(mut, optional, name = "position_dca_ta")]
+    #[account(mut, optional, name = "signer_dca_ta")]
     CancelDCA,
 
     /// Open a new Solauto position with Marginfi
@@ -89,9 +90,6 @@ pub enum Instruction {
     #[account(name = "token_program")]
     #[account(name = "ata_program")]
     #[account(name = "rent")]
-    #[account(mut, name = "solauto_manager")]
-    #[account(name = "solauto_fees_wallet")]
-    #[account(mut, name = "solauto_fees_supply_ta")]
     #[account(name = "signer_referral_state")]
     #[account(optional, name = "referred_by_state")]
     #[account(mut, optional, name = "referred_by_supply_ta")]
@@ -147,9 +145,10 @@ pub enum Instruction {
     #[account(name = "system_program")]
     #[account(name = "token_program")]
     #[account(name = "ixs_sysvar")]
-    #[account(mut, optional, name = "solauto_fees_supply_ta")]
+    #[account(mut, optional, name = "solauto_fees_ta")]
     #[account(name = "authority_referral_state")]
-    #[account(mut, optional, name = "referred_by_supply_ta")]
+    #[account(mut, optional, name = "referred_by_ta")]
+    #[account(mut, optional, name = "position_authority")]
     #[account(mut, name = "solauto_position")]
     #[account(name = "marginfi_group")]
     #[account(mut, name = "marginfi_account")]
@@ -157,13 +156,13 @@ pub enum Instruction {
     #[account(mut, name = "supply_bank")]
     #[account(optional, name = "supply_price_oracle")]
     #[account(mut, name = "position_supply_ta")]
-    #[account(mut, optional, name = "signer_supply_ta")]
+    #[account(mut, optional, name = "authority_supply_ta")]
     #[account(mut, optional, name = "vault_supply_ta")]
     #[account(mut, optional, name = "supply_vault_authority")]
     #[account(mut, name = "debt_bank")]
     #[account(optional, name = "debt_price_oracle")]
     #[account(mut, name = "position_debt_ta")]
-    #[account(mut, optional, name = "signer_debt_ta")]
+    #[account(mut, optional, name = "authority_debt_ta")]
     #[account(mut, optional, name = "vault_debt_ta")]
     #[account(mut, optional, name = "debt_vault_authority")]
     MarginfiRebalance(RebalanceSettings),
@@ -181,6 +180,7 @@ pub struct UpdateReferralStatesArgs {
 
 #[derive(BorshDeserialize, Clone, Debug)]
 pub struct MarginfiOpenPositionData {
+    pub position_type: PositionType,
     pub position_data: UpdatePositionData,
     /// Marginfi account seed index if the position is Solauto-managed
     pub marginfi_account_seed_idx: Option<u64>,
@@ -213,9 +213,8 @@ pub struct RebalanceSettings {
     pub rebalance_type: SolautoRebalanceType,
     /// Target liq utilization rate. Only used/allowed if signed by the position authority.
     pub target_liq_utilization_rate_bps: Option<u16>,
-    /// Gap basis points between what is allowed to be borrowed/withdrawn and what we are trying to borrow/withdraw. Defaults to 1000 (10%).
-    /// Can increase this amount if lending protocol activity is hyper and we are close to limits.
-    pub limit_gap_bps: Option<u16>,
+    /// The amount to use in the token swap. Gets validated by the program.
+    pub target_in_amount_base_unit: Option<u64>,
 }
 
 pub struct SolautoStandardAccounts<'a> {
@@ -227,8 +226,7 @@ pub struct SolautoStandardAccounts<'a> {
     pub rent: Option<&'a AccountInfo<'a>>,
     pub ixs_sysvar: Option<&'a AccountInfo<'a>>,
     pub solauto_position: DeserializedAccount<'a, SolautoPosition>,
-    pub solauto_fees_supply_ta: Option<&'a AccountInfo<'a>>,
+    pub solauto_fees_ta: Option<&'a AccountInfo<'a>>,
     pub authority_referral_state: Option<DeserializedAccount<'a, ReferralState>>,
-    pub referred_by_state: Option<&'a AccountInfo<'a>>,
-    pub referred_by_supply_ta: Option<&'a AccountInfo<'a>>,
+    pub referred_by_ta: Option<&'a AccountInfo<'a>>,
 }

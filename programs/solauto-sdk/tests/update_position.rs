@@ -12,7 +12,7 @@ mod update_position {
     };
     use solauto_sdk::generated::{
         accounts::SolautoPosition,
-        types::{ AutomationSettingsInp, DCASettingsInp, SolautoSettingsParametersInp },
+        types::{ AutomationSettingsInp, DCASettingsInp, SolautoSettingsParametersInp, TokenType },
     };
     use spl_associated_token_account::get_associated_token_address;
 
@@ -36,25 +36,17 @@ mod update_position {
             ).await
             .unwrap();
 
-        let active_dca = DCASettingsInp {
-            automation: AutomationSettingsInp {
-                unix_start_date: (Utc::now().timestamp() as u64) - 1,
-                interval_seconds: 60 * 60 * 24,
-                periods_passed: 0,
-                target_periods: 5,
-            },
-            debt_to_add_base_unit: dca_amount,
-        };
+
         data.open_position(
             Some(data.general.default_setting_params.clone()),
-            Some(active_dca.clone())
+            None
         ).await.unwrap();
 
         let solauto_position = data.general.deserialize_account_data::<SolautoPosition>(
             data.general.solauto_position
         ).await;
-        assert!(solauto_position.position.dca.automation.target_periods == active_dca.automation.target_periods);
-        assert!(solauto_position.position.dca.debt_to_add_base_unit == dca_amount);
+        assert!(solauto_position.position.dca.automation.target_periods == 0);
+        assert!(solauto_position.position.dca.dca_in_base_unit == 0);
 
         // Update position's settings and add a DCA
         let dca_out_automation = AutomationSettingsInp {
@@ -73,7 +65,8 @@ mod update_position {
         };
         let new_dca = DCASettingsInp {
             automation: dca_out_automation,
-            debt_to_add_base_unit: 0,
+            dca_in_base_unit: 0,
+            token_type: TokenType::Debt
         };
         data.general
             .update_position(Some(new_settings.clone()), Some(new_dca.clone())).await
@@ -83,7 +76,7 @@ mod update_position {
             data.general.solauto_position
         ).await;
         assert!(solauto_position.position.setting_params.automation.target_periods == new_settings.automation.as_ref().unwrap().target_periods);
-        assert!(solauto_position.position.dca.debt_to_add_base_unit == new_dca.debt_to_add_base_unit);
+        assert!(solauto_position.position.dca.dca_in_base_unit == new_dca.dca_in_base_unit);
     }
 
     #[tokio::test]
@@ -131,12 +124,23 @@ mod update_position {
         );
         data.general.create_ata(temp_wallet, data.general.debt_mint).await.unwrap();
 
+        let dca_automation = AutomationSettingsInp {
+            unix_start_date: (Utc::now().timestamp() as u64) - 1,
+            interval_seconds: 60 * 60 * 10,
+            periods_passed: 0,
+            target_periods: 5,
+        };
+        let new_dca = DCASettingsInp {
+            automation: dca_automation,
+            dca_in_base_unit: 0,
+            token_type: TokenType::Debt
+        };
         let err = data.general
             .execute_instructions(
                 vec![
                     data.general
-                        .update_position_ix(None, None)
-                        .position_debt_ta(Some(fake_debt_ta))
+                        .update_position_ix(None, Some(new_dca))
+                        .position_dca_ta(Some(fake_debt_ta))
                         .instruction()
                 ],
                 None

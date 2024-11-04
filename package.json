@@ -3,9 +3,12 @@
     "push": "git add . && git commit -m 'wip' && git push",
     "format:rust": "find ./programs/* -name '*.rs' -exec rustfmt {} +",
     "build:rs": "cargo build-sbf",
+    "verified-build": "solana-verify build --library-name solauto",
     "build:rs:test": "cargo build-sbf -- --package solauto --features test",
     "build:ts": "cd solauto-sdk && npm run build",
-    "deploy:rs": "solana program deploy target/deploy/solauto.so --keypair ~/.config/solana/id.json --program-id AutoyKBRaHSBHy9RsmXCZMy6nNFAg5FYijrvZyQcNLV --use-rpc --buffer ~/.config/solana/buffer.json",
+    "deploy:buffer": "solana program write-buffer target/deploy/solauto.so --keypair ~/.config/solana/solauto-auth.json --buffer ~/.config/solana/buffer.json",
+    "deploy:rs:test": "solana program deploy target/deploy/solauto.so --keypair ~/.config/solana/solauto-auth.json --program-id TesTjfQ6TbXv96Tv6fqr95XTZ1LYPxtkafmShN9PjBp --use-rpc --buffer ~/.config/solana/buffer.json --max-sign-attempts 10",
+    "deploy:rs:prod": "solana program deploy target/deploy/solauto.so --keypair ~/.config/solana/solauto-auth.json --program-id AutoyKBRaHSBHy9RsmXCZMy6nNFAg5FYijrvZyQcNLV --use-rpc --buffer ~/.config/solana/buffer.json --max-sign-attempts 10",
     "deploy:ts": "cd solauto-sdk && npm publish",
     "generate": "pnpm generate:idl && pnpm generate:clients",
     "generate:idl": "shank idl --crate-root programs/solauto --out-dir idls --out-filename solauto.json",
@@ -20,10 +23,10 @@
     "update-lut:marginfi": "cd solauto-sdk && pnpm update-lut:marginfi"
   },
   "dependencies": {
-    "@metaplex-foundation/kinobi": "^0.18.2"
+    "@metaplex-foundation/kinobi": "^0.18.5"
   },
   "devDependencies": {
-    "solauto-sdk": "file:./solauto-sdk",
-    "typescript": "^4.3.5"
+    "solauto-sdk": "file:solauto-sdk",
+    "typescript": "^4.9.5"
   }
 }
