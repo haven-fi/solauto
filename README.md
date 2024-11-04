@@ -17,12 +17,3 @@ pnpm install -g ts-node
 ```
 
 Define `HELIUS_API_KEY` environment variable
-
-
-
-
-TEMP:
-```
-Ticket: 3941
-Domain: HavenFi.xyz
-```
