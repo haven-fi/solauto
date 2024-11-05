@@ -4,6 +4,7 @@ use bytemuck::Pod;
 use bytemuck::Zeroable;
 use shank::ShankType;
 use solana_program::msg;
+use solana_program::pubkey::Pubkey;
 use solana_program::{
     account_info::AccountInfo,
     program_error::ProgramError,
@@ -86,6 +87,7 @@ unsafe impl Pod for RebalanceDirection {}
 
 #[derive(Debug)]
 pub struct RefreshedTokenData {
+    pub mint: Pubkey,
     pub decimals: u8,
     pub amount_used: u64,
     pub amount_can_be_used: u64,

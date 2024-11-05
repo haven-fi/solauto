@@ -1,7 +1,6 @@
 use rebalance_utils::get_rebalance_step;
 use solana_program::{
-    account_info::AccountInfo, clock::Clock, entrypoint::ProgramResult, msg,
-    program_error::ProgramError, sysvar::Sysvar,
+    account_info::AccountInfo, clock::Clock, entrypoint::ProgramResult, msg, program_error::ProgramError, pubkey::Pubkey, sysvar::Sysvar
 };
 
 use crate::{
@@ -58,7 +57,7 @@ pub fn process_marginfi_open_position_instruction<'a>(
         max_ltv,
         liq_threshold,
     )?;
-    if solauto_position.data.position.is_some() {
+    if !solauto_position.data.self_managed.val {
         let current_timestamp = Clock::get()?.unix_timestamp as u64;
         validation_utils::validate_position_settings(&solauto_position.data, current_timestamp)?;
         validation_utils::validate_dca_settings(

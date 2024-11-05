@@ -115,10 +115,7 @@ impl<'a> SolautoManager<'a> {
     }
 
     fn update_usage(&mut self, base_unit_amount: i64, token_type: TokenType) {
-        if
-            self.std_accounts.solauto_position.data.position.is_some() ||
-            self.std_accounts.solauto_position.data.rebalance.active()
-        {
+        if !self.std_accounts.solauto_position.data.self_managed.val || self.std_accounts.solauto_position.data.rebalance.active() {
             self.std_accounts.solauto_position.data.update_usage(token_type, base_unit_amount);
         }
     }
@@ -333,9 +330,9 @@ impl<'a> SolautoManager<'a> {
         let rebalance_direction =
             self.std_accounts.solauto_position.data.rebalance.rebalance_direction;
         let token_mint = if rebalance_direction == RebalanceDirection::Boost {
-            self.std_accounts.solauto_position.data.position.supply_mint
+            self.std_accounts.solauto_position.data.state.supply.mint
         } else {
-            self.std_accounts.solauto_position.data.position.debt_mint
+            self.std_accounts.solauto_position.data.state.debt.mint
         };
 
         let position_ta = if rebalance_direction == RebalanceDirection::Boost {
@@ -400,6 +397,11 @@ impl<'a> SolautoManager<'a> {
         updated_data: RefreshStateProps,
         clock: Clock
     ) -> ProgramResult {
+        if solauto_position.self_managed.val {
+            solauto_position.state.supply.mint = updated_data.supply.mint;
+            solauto_position.state.debt.mint = updated_data.debt.mint;
+        }
+
         solauto_position.state.max_ltv_bps = to_bps(updated_data.max_ltv);
         solauto_position.state.liq_threshold_bps = to_bps(updated_data.liq_threshold);
 

@@ -213,6 +213,7 @@ impl<'a> MarginfiClient<'a> {
 
         Ok((
             RefreshedTokenData {
+                mint: bank.data.mint,
                 decimals: bank.data.mint_decimals,
                 amount_used: base_unit_account_deposits,
                 amount_can_be_used: math_utils::i80f48_to_u64(base_unit_deposit_room_available),
@@ -256,6 +257,7 @@ impl<'a> MarginfiClient<'a> {
         );
 
         Ok(RefreshedTokenData {
+            mint: bank.data.mint,
             decimals: bank.data.mint_decimals,
             amount_used: base_unit_account_debt,
             amount_can_be_used,

@@ -310,13 +310,6 @@ pub struct PositionData {
     _padding: [u32; 4],
 }
 
-impl PositionData {
-    #[inline(always)]
-    pub fn is_some(&self) -> bool {
-        self.supply_mint != Pubkey::default()
-    }
-}
-
 #[repr(u8)]
 #[derive(ShankType, BorshDeserialize, BorshSerialize, Clone, Debug, Default, PartialEq, Copy)]
 pub enum SolautoRebalanceType {

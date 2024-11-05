@@ -190,7 +190,7 @@ export function getRebalanceValues(
     fromBaseUnit(BigInt(Math.round(amountToDcaIn ?? 0)), state.debt.decimals) *
     (dca?.tokenType === TokenType.Debt ? debtPrice : supplyPrice);
 
-  const rebalanceDirection = amountUsdToDcaIn > 0 || state.liqUtilizationRateBps < targetRateBps ? RebalanceDirection.Boost : RebalanceDirection.Repay;
+  const rebalanceDirection = amountUsdToDcaIn > 0 || state.liqUtilizationRateBps <= targetRateBps ? RebalanceDirection.Boost : RebalanceDirection.Repay;
   const adjustmentFeeBps = getSolautoFeesBps(
     false,
     targetLiqUtilizationRateBps,
