@@ -174,7 +174,7 @@ pub fn process_marginfi_interaction_instruction<'a>(
         &std_accounts,
         LendingPlatform::Marginfi,
         true,
-        true,
+        false,
     )?;
 
     protocol_interaction::marginfi_interaction(ctx, std_accounts, action)

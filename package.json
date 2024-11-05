@@ -20,7 +20,8 @@
     "test:ts:txs": "cd solauto-sdk && pnpm test:txs",
     "test:ts:all": "cd solauto-sdk && pnpm test:all",
     "update-lut:solauto": "cd solauto-sdk && pnpm update-lut:solauto",
-    "update-lut:marginfi": "cd solauto-sdk && pnpm update-lut:marginfi"
+    "update-lut:marginfi": "cd solauto-sdk && pnpm update-lut:marginfi",
+    "solana-verify": "solana-verify verify-from-repo --remote -um --program-id AutoyKBRaHSBHy9RsmXCZMy6nNFAg5FYijrvZyQcNLV https://github.com/haven-fi/solauto --library-name solauto"
   },
   "dependencies": {
     "@metaplex-foundation/kinobi": "^0.18.5"
