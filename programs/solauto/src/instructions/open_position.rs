@@ -5,7 +5,7 @@ use crate::{
     state::solauto_position::SolautoPosition,
     types::{
         instruction::accounts::{Context, MarginfiOpenPositionAccounts},
-        shared::{DeserializedAccount, LendingPlatform},
+        shared::DeserializedAccount,
     },
     utils::*,
 };

@@ -317,7 +317,7 @@ impl SolautoFeesBps {
         let min_fee_bps: f64 = 50.0; // Fee in basis points for max_size (0.5%)
         let k = 1.5;
 
-        let fee_bps: f64;
+        let mut fee_bps: f64;
         if self.target_liq_utilization_rate_bps.is_some()
             && self.target_liq_utilization_rate_bps.unwrap() == 0
         {
@@ -342,10 +342,10 @@ impl SolautoFeesBps {
             fee_bps = (min_fee_bps + (max_fee_bps - min_fee_bps) * (1.0 - t.powf(k))).round();
         }
 
-        let referrer_fee = if self.has_been_referred {
-            fee_bps.div(5.0).floor()
-        } else {
-            0.0
+        let mut referrer_fee = 0.0;
+        if self.has_been_referred {
+            fee_bps = fee_bps * 0.9;
+            referrer_fee = fee_bps.div(5.0).floor()
         };
 
         FeePayout {
