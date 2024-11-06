@@ -323,15 +323,15 @@ pub fn validate_marginfi_bank<'a>(
 pub fn validate_lending_program_accounts_with_position<'a>(
     lending_platform: LendingPlatform,
     solauto_position: &DeserializedAccount<SolautoPosition>,
-    protocol_position: &'a AccountInfo<'a>,
+    protocol_user_account: &'a AccountInfo<'a>,
     protocol_supply_account: &'a AccountInfo<'a>,
     protocol_debt_account: &'a AccountInfo<'a>,
 ) -> ProgramResult {
-    let supply_mint = &solauto_position.data.position.supply_mint;
-    let debt_mint = &solauto_position.data.position.debt_mint;
+    let supply_mint = &solauto_position.data.state.supply.mint;
+    let debt_mint = &solauto_position.data.state.debt.mint;
 
     if !solauto_position.data.self_managed.val
-        && protocol_position.key != &solauto_position.data.position.protocol_account
+        && protocol_user_account.key != &solauto_position.data.position.protocol_user_account
     {
         msg!("Incorrect protocol-owned account");
         return Err(SolautoError::IncorrectAccounts.into());
@@ -373,17 +373,17 @@ pub fn validate_token_account<'a>(
     token_type: Option<TokenType>,
     token_mint: Option<&Pubkey>,
 ) -> ProgramResult {
+    if solauto_position.data.self_managed.val && token_mint.is_none() {
+        return Ok(());
+    }
+
     let mint_key = if token_mint.is_some() {
         token_mint.unwrap()
     } else {
-        let mint_key = if token_type.is_some() {
-            if token_type.unwrap() == TokenType::Supply {
-                &solauto_position.data.position.supply_mint
-            } else {
-                &solauto_position.data.position.debt_mint
-            }
+        let mint_key = if token_type.unwrap() == TokenType::Supply {
+            &solauto_position.data.state.supply.mint
         } else {
-            token_mint.unwrap()
+            &solauto_position.data.state.debt.mint
         };
         mint_key
     };
@@ -393,8 +393,7 @@ pub fn validate_token_account<'a>(
     let associated_authority_ta =
         get_associated_token_address(&solauto_position.data.authority, mint_key);
 
-    if !solauto_position.data.self_managed.val
-        && source_ta.is_some()
+    if source_ta.is_some()
         && source_ta.unwrap().key != &associated_position_ta
         && source_ta.unwrap().key != &associated_authority_ta
     {

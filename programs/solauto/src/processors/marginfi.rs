@@ -1,6 +1,7 @@
 use rebalance_utils::get_rebalance_step;
 use solana_program::{
-    account_info::AccountInfo, clock::Clock, entrypoint::ProgramResult, msg, program_error::ProgramError, pubkey::Pubkey, sysvar::Sysvar
+    account_info::AccountInfo, clock::Clock, entrypoint::ProgramResult, msg,
+    program_error::ProgramError, sysvar::Sysvar,
 };
 
 use crate::{
@@ -30,14 +31,6 @@ pub fn process_marginfi_open_position_instruction<'a>(
     let (max_ltv, liq_threshold) = if cfg!(feature = "test") {
         (0.65, 0.8)
     } else {
-        validation_utils::validate_marginfi_bank(
-            ctx.accounts.supply_bank,
-            ctx.accounts.supply_mint.key,
-        )?;
-        validation_utils::validate_marginfi_bank(
-            ctx.accounts.debt_bank,
-            ctx.accounts.debt_mint.key,
-        )?;
         let (max_ltv, liq_threshold) = MarginfiClient::get_max_ltv_and_liq_threshold(
             ctx.accounts.supply_bank,
             ctx.accounts.debt_bank,
@@ -52,7 +45,9 @@ pub fn process_marginfi_open_position_instruction<'a>(
         args.position_data,
         LendingPlatform::Marginfi,
         ctx.accounts.supply_mint,
+        ctx.accounts.supply_bank,
         ctx.accounts.debt_mint,
+        ctx.accounts.debt_bank,
         ctx.accounts.marginfi_account,
         max_ltv,
         liq_threshold,
@@ -78,6 +73,16 @@ pub fn process_marginfi_open_position_instruction<'a>(
             ctx.accounts.referred_by_state.unwrap(),
             ctx.accounts.referred_by_supply_ta.unwrap(),
             ctx.accounts.supply_mint,
+        )?;
+    }
+
+    if !cfg!(feature = "test") {
+        validation_utils::validate_lending_program_accounts_with_position(
+            LendingPlatform::Marginfi,
+            &solauto_position,
+            ctx.accounts.marginfi_account,
+            ctx.accounts.supply_bank,
+            ctx.accounts.debt_bank,
         )?;
     }
 

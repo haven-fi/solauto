@@ -104,7 +104,7 @@ export class SolautoMarginfiClient extends SolautoClient {
     } else {
       this.marginfiAccountSeedIdx = generateRandomU64();
       this.marginfiAccount = this.solautoPositionData
-        ? toWeb3JsPublicKey(this.solautoPositionData.position.protocolAccount)
+        ? toWeb3JsPublicKey(this.solautoPositionData.position.protocolUserAccount)
         : getMarginfiAccountPDA(
             this.solautoPosition,
             this.marginfiAccountSeedIdx,

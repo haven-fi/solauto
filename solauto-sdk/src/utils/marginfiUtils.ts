@@ -31,14 +31,18 @@ import { USD_DECIMALS } from "../constants/generalAccounts";
 import { LivePositionUpdates } from "./solauto/generalUtils";
 import { TOKEN_INFO } from "../constants";
 
-export function findMarginfiAccounts(bank: PublicKey): MarginfiAssetAccounts {
+interface AllMarginfiAssetAccounts extends MarginfiAssetAccounts {
+  mint: PublicKey;
+}
+
+export function findMarginfiAccounts(bank: PublicKey): AllMarginfiAssetAccounts {
   for (const group in MARGINFI_ACCOUNTS) {
     for (const key in MARGINFI_ACCOUNTS[group]) {
       const account = MARGINFI_ACCOUNTS[group][key];
       if (
         account.bank.toString().toLowerCase() === bank.toString().toLowerCase()
       ) {
-        return account;
+        return { ...account, mint: new PublicKey(key) };
       }
     }
   }

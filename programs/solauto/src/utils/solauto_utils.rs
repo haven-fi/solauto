@@ -44,8 +44,10 @@ pub fn create_new_solauto_position<'a>(
     update_position_data: UpdatePositionData,
     lending_platform: LendingPlatform,
     supply_mint: &'a AccountInfo<'a>,
+    protocol_supply_account: &'a AccountInfo<'a>,
     debt_mint: &'a AccountInfo<'a>,
-    lending_protocol_account: &'a AccountInfo<'a>,
+    protocol_debt_account: &'a AccountInfo<'a>,
+    protocol_user_account: &'a AccountInfo<'a>,
     max_ltv: f64,
     liq_threshold: f64,
 ) -> Result<DeserializedAccount<'a, SolautoPosition>, ProgramError> {
@@ -74,9 +76,9 @@ pub fn create_new_solauto_position<'a>(
         position_data.lending_platform = lending_platform;
         position_data.setting_params =
             SolautoSettingsParameters::from(*update_position_data.setting_params.as_ref().unwrap());
-        position_data.protocol_account = *lending_protocol_account.key;
-        position_data.supply_mint = *supply_mint.key;
-        position_data.debt_mint = *debt_mint.key;
+        position_data.protocol_user_account = *protocol_user_account.key;
+        position_data.protocol_supply_account = *protocol_supply_account.key;
+        position_data.protocol_debt_account = *protocol_debt_account.key;
 
         if update_position_data.dca.is_some() {
             position_data.dca = DCASettings::from(*update_position_data.dca.as_ref().unwrap());
@@ -209,7 +211,10 @@ pub fn initiate_dca_in_if_necessary<'a, 'b>(
     }
 
     if position_debt_ta.unwrap().key
-        != &get_associated_token_address(solauto_position.account_info.key, &position.debt_mint)
+        != &get_associated_token_address(
+            solauto_position.account_info.key,
+            &solauto_position.data.state.debt.mint,
+        )
     {
         msg!("Incorrect position token account provided");
         return Err(SolautoError::IncorrectAccounts.into());

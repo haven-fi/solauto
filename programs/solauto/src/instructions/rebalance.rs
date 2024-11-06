@@ -118,11 +118,11 @@ fn needs_refresh(
     let current_timestamp = Clock::get()?.unix_timestamp as u64;
 
     if solauto_position
-            .data
-            .position
-            .setting_params
-            .automation
-            .is_active()
+        .data
+        .position
+        .setting_params
+        .automation
+        .is_active()
     {
         return Ok(solauto_position
             .data

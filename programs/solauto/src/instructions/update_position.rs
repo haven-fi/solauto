@@ -50,10 +50,9 @@ fn update_dca<'a, 'b>(
 
     if new_dca.dca_in_base_unit > 0 {
         if (new_dca.token_type == TokenType::Debt
-            && solauto_position.data.position.debt_mint != *ctx.accounts.dca_mint.unwrap().key)
+            && solauto_position.data.state.debt.mint != *ctx.accounts.dca_mint.unwrap().key)
             || (new_dca.token_type == TokenType::Supply
-                && solauto_position.data.position.supply_mint
-                    != *ctx.accounts.dca_mint.unwrap().key)
+                && solauto_position.data.state.supply.mint != *ctx.accounts.dca_mint.unwrap().key)
         {
             msg!("Incorrect dca mint account provided for the given DCA");
             return Err(SolautoError::IncorrectAccounts.into());
