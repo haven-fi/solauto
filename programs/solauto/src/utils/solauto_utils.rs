@@ -1,6 +1,5 @@
 use solana_program::{
-    account_info::AccountInfo, entrypoint::ProgramResult, msg, program_error::ProgramError,
-    program_pack::Pack, pubkey::Pubkey,
+    account_info::AccountInfo, clock::Clock, entrypoint::ProgramResult, msg, program_error::ProgramError, program_pack::Pack, pubkey::Pubkey, sysvar::Sysvar
 };
 use spl_associated_token_account::get_associated_token_address;
 use spl_token::state::{Account as TokenAccount, Mint};
@@ -71,6 +70,7 @@ pub fn create_new_solauto_position<'a>(
         state.debt.decimals = debt.data.decimals;
         state.max_ltv_bps = to_bps(max_ltv);
         state.liq_threshold_bps = to_bps(liq_threshold);
+        state.last_updated = Clock::get()?.unix_timestamp as u64;
 
         let mut position_data = PositionData::default();
         position_data.lending_platform = lending_platform;

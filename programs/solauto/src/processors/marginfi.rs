@@ -28,7 +28,7 @@ pub fn process_marginfi_open_position_instruction<'a>(
     msg!("Instruction: Marginfi open position");
     let ctx = MarginfiOpenPositionAccounts::context(accounts)?;
 
-    let (max_ltv, liq_threshold) = if cfg!(feature = "test") {
+    let (max_ltv, liq_threshold) = if cfg!(feature = "banks") {
         (0.65, 0.8)
     } else {
         let (max_ltv, liq_threshold) = MarginfiClient::get_max_ltv_and_liq_threshold(
