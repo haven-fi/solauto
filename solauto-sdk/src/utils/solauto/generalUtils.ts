@@ -128,11 +128,15 @@ export function getAdjustedSettingsFromAutomation(
 
 export function eligibleForRebalance(
   positionState: PositionState,
-  positionSettings: SolautoSettingsParameters,
+  positionSettings: SolautoSettingsParameters | undefined,
   positionDca: DCASettings | undefined,
   currentUnixTime: number,
   bpsDistanceThreshold = 0
 ): RebalanceAction | undefined {
+  if (!positionSettings) {
+    return undefined;
+  }
+  
   if (
     positionDca &&
     positionDca.automation.targetPeriods > 0 &&
