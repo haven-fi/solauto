@@ -17,7 +17,6 @@ import { NATIVE_MINT } from "@solana/spl-token";
 import { consoleLog, fetchTokenPrices } from "../../src/utils/generalUtils";
 import {
   TransactionItem,
-  TransactionManagerStatuses,
   TransactionsManager,
 } from "../../src/transactions/transactionsManager";
 import { PublicKey } from "@solana/web3.js";
@@ -34,7 +33,7 @@ describe("Solauto Marginfi tests", async () => {
   // const signer = setupTest("solauto-manager");
 
   const payForTransactions = false;
-  const testProgram = false;
+  const testProgram = true;
   const positionId = 1;
 
   it("open - deposit - borrow - rebalance to 0 - withdraw - close", async () => {
@@ -63,7 +62,7 @@ describe("Solauto Marginfi tests", async () => {
     const settingParams: SolautoSettingsParametersInpArgs = {
       boostToBps: 6950,
       boostGap: 50,
-      repayToBps: 7100,
+      repayToBps: 7000,
       repayGap: 50,
       automation: none(),
       targetBoostToBps: none(),
@@ -126,7 +125,7 @@ describe("Solauto Marginfi tests", async () => {
     // transactionItems.push(
     //   new TransactionItem(
     //     async (attemptNum) =>
-    //       await buildSolautoRebalanceTransaction(client, 0, attemptNum),
+    //       await buildSolautoRebalanceTransaction(client, settingParams.boostToBps, attemptNum),
     //     "rebalance"
     //   )
     // );
@@ -158,6 +157,7 @@ describe("Solauto Marginfi tests", async () => {
       PriorityFeeSetting.Low
     ).clientSend(transactionItems);
 
-    // console.log(statuses);
+    console.log(statuses);
+
   });
 });
