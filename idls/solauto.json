@@ -1306,15 +1306,15 @@
             }
           },
           {
-            "name": "protocolAccount",
+            "name": "protocolUserAccount",
             "type": "publicKey"
           },
           {
-            "name": "supplyMint",
+            "name": "protocolSupplyAccount",
             "type": "publicKey"
           },
           {
-            "name": "debtMint",
+            "name": "protocolDebtAccount",
             "type": "publicKey"
           },
           {

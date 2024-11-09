@@ -1,6 +1,5 @@
 use solana_program::{
-    account_info::AccountInfo, entrypoint::ProgramResult, msg, program_error::ProgramError,
-    program_pack::Pack, pubkey::Pubkey,
+    account_info::AccountInfo, clock::Clock, entrypoint::ProgramResult, msg, program_error::ProgramError, program_pack::Pack, pubkey::Pubkey, sysvar::Sysvar
 };
 use spl_associated_token_account::get_associated_token_address;
 use spl_token::state::{Account as TokenAccount, Mint};
@@ -44,8 +43,10 @@ pub fn create_new_solauto_position<'a>(
     update_position_data: UpdatePositionData,
     lending_platform: LendingPlatform,
     supply_mint: &'a AccountInfo<'a>,
+    protocol_supply_account: &'a AccountInfo<'a>,
     debt_mint: &'a AccountInfo<'a>,
-    lending_protocol_account: &'a AccountInfo<'a>,
+    protocol_debt_account: &'a AccountInfo<'a>,
+    protocol_user_account: &'a AccountInfo<'a>,
     max_ltv: f64,
     liq_threshold: f64,
 ) -> Result<DeserializedAccount<'a, SolautoPosition>, ProgramError> {
@@ -69,14 +70,15 @@ pub fn create_new_solauto_position<'a>(
         state.debt.decimals = debt.data.decimals;
         state.max_ltv_bps = to_bps(max_ltv);
         state.liq_threshold_bps = to_bps(liq_threshold);
+        state.last_updated = Clock::get()?.unix_timestamp as u64;
 
         let mut position_data = PositionData::default();
         position_data.lending_platform = lending_platform;
         position_data.setting_params =
             SolautoSettingsParameters::from(*update_position_data.setting_params.as_ref().unwrap());
-        position_data.protocol_account = *lending_protocol_account.key;
-        position_data.supply_mint = *supply_mint.key;
-        position_data.debt_mint = *debt_mint.key;
+        position_data.protocol_user_account = *protocol_user_account.key;
+        position_data.protocol_supply_account = *protocol_supply_account.key;
+        position_data.protocol_debt_account = *protocol_debt_account.key;
 
         if update_position_data.dca.is_some() {
             position_data.dca = DCASettings::from(*update_position_data.dca.as_ref().unwrap());
@@ -209,7 +211,10 @@ pub fn initiate_dca_in_if_necessary<'a, 'b>(
     }
 
     if position_debt_ta.unwrap().key
-        != &get_associated_token_address(solauto_position.account_info.key, &position.debt_mint)
+        != &get_associated_token_address(
+            solauto_position.account_info.key,
+            &solauto_position.data.state.debt.mint,
+        )
     {
         msg!("Incorrect position token account provided");
         return Err(SolautoError::IncorrectAccounts.into());
@@ -312,7 +317,7 @@ impl SolautoFeesBps {
         let min_fee_bps: f64 = 50.0; // Fee in basis points for max_size (0.5%)
         let k = 1.5;
 
-        let fee_bps: f64;
+        let mut fee_bps: f64;
         if self.target_liq_utilization_rate_bps.is_some()
             && self.target_liq_utilization_rate_bps.unwrap() == 0
         {
@@ -337,10 +342,10 @@ impl SolautoFeesBps {
             fee_bps = (min_fee_bps + (max_fee_bps - min_fee_bps) * (1.0 - t.powf(k))).round();
         }
 
-        let referrer_fee = if self.has_been_referred {
-            fee_bps.div(5.0).floor()
-        } else {
-            0.0
+        let mut referrer_fee = 0.0;
+        if self.has_been_referred {
+            fee_bps = fee_bps * 0.9;
+            referrer_fee = fee_bps.div(5.0).floor()
         };
 
         FeePayout {

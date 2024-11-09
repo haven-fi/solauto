@@ -113,8 +113,8 @@ export abstract class SolautoClient extends ReferralStateManager {
 
     this.supplyMint =
       args.supplyMint ??
-      (this.solautoPositionData
-        ? toWeb3JsPublicKey(this.solautoPositionData!.position.supplyMint)
+      (this.solautoPositionData && !this.selfManaged
+        ? toWeb3JsPublicKey(this.solautoPositionData!.state.supply.mint)
         : PublicKey.default);
     this.positionSupplyTa = getTokenAccount(
       this.solautoPosition,
@@ -127,8 +127,8 @@ export abstract class SolautoClient extends ReferralStateManager {
 
     this.debtMint =
       args.debtMint ??
-      (this.solautoPositionData
-        ? toWeb3JsPublicKey(this.solautoPositionData!.position.debtMint)
+      (this.solautoPositionData && !this.selfManaged
+        ? toWeb3JsPublicKey(this.solautoPositionData!.state.debt.mint)
         : PublicKey.default);
     this.positionDebtTa = getTokenAccount(this.solautoPosition, this.debtMint);
     this.signerDebtTa = getTokenAccount(

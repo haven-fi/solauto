@@ -18,4 +18,9 @@ security_txt! {
 }
 
 use solana_program::declare_id;
+
+#[cfg(feature = "test")]
+declare_id!("TesTjfQ6TbXv96Tv6fqr95XTZ1LYPxtkafmShN9PjBp");
+
+#[cfg(not(feature = "test"))]
 declare_id!("AutoyKBRaHSBHy9RsmXCZMy6nNFAg5FYijrvZyQcNLV");

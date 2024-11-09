@@ -302,9 +302,9 @@ pub struct PositionState {
 pub struct PositionData {
     pub lending_platform: LendingPlatform,
     _padding1: [u8; 7],
-    pub protocol_account: Pubkey,
-    pub supply_mint: Pubkey,
-    pub debt_mint: Pubkey,
+    pub protocol_user_account: Pubkey,
+    pub protocol_supply_account: Pubkey,
+    pub protocol_debt_account: Pubkey,
     pub setting_params: SolautoSettingsParameters,
     pub dca: DCASettings,
     _padding: [u32; 4],

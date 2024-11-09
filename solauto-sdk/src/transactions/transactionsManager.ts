@@ -331,11 +331,17 @@ export class TransactionsManager {
     }
   }
 
-  private getUpdatedPriorityFeeSetting(prevError?: Error) {
+  private getUpdatedPriorityFeeSetting(
+    prevError: Error | undefined,
+    attemptNum: number
+  ) {
     if (prevError instanceof TransactionExpiredBlockheightExceededError) {
       const currIdx = priorityFeeSettingValues.indexOf(this.priorityFeeSetting);
       return priorityFeeSettingValues[
-        Math.min(priorityFeeSettingValues.length - 1, currIdx + 1)
+        Math.min(
+          priorityFeeSettingValues.length - 1,
+          currIdx + 1 + Math.floor(attemptNum / 3)
+        )
       ];
     }
     return this.priorityFeeSetting;
@@ -355,7 +361,7 @@ export class TransactionsManager {
           tx,
           updateLutTxName,
           attemptNum,
-          this.getUpdatedPriorityFeeSetting(prevError)
+          this.getUpdatedPriorityFeeSetting(prevError, attemptNum)
         ),
       3,
       150,
@@ -494,7 +500,7 @@ export class TransactionsManager {
             tx,
             itemSet.name(),
             attemptNum,
-            this.getUpdatedPriorityFeeSetting(prevError)
+            this.getUpdatedPriorityFeeSetting(prevError, attemptNum)
           );
         }
       },

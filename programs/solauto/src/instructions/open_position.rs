@@ -5,7 +5,7 @@ use crate::{
     state::solauto_position::SolautoPosition,
     types::{
         instruction::accounts::{Context, MarginfiOpenPositionAccounts},
-        shared::{DeserializedAccount, LendingPlatform},
+        shared::DeserializedAccount,
     },
     utils::*,
 };
@@ -17,16 +17,6 @@ pub fn marginfi_open_position<'a>(
     mut solauto_position: DeserializedAccount<'a, SolautoPosition>,
     marginfi_account_seed_idx: Option<u64>,
 ) -> ProgramResult {
-    if !cfg!(feature = "test") {
-        validation_utils::validate_lending_program_accounts_with_position(
-            LendingPlatform::Marginfi,
-            &solauto_position,
-            ctx.accounts.marginfi_account,
-            ctx.accounts.supply_bank,
-            ctx.accounts.debt_bank,
-        )?;
-    }
-
     initialize_solauto_position(
         &mut solauto_position,
         ctx.accounts.system_program,

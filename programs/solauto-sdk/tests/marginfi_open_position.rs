@@ -52,9 +52,9 @@ mod open_position {
         let position = &solauto_position.position;
         assert!(position.setting_params.boost_to_bps == setting_params.boost_to_bps);
         assert!(position.lending_platform == LendingPlatform::Marginfi);
-        assert!(position.supply_mint == data.general.supply_mint.pubkey());
-        assert!(position.debt_mint == data.general.debt_mint.pubkey());
-        assert!(position.protocol_account == data.marginfi_account);
+        assert!(solauto_position.state.supply.mint == data.general.supply_mint.pubkey());
+        assert!(solauto_position.state.debt.mint == data.general.debt_mint.pubkey());
+        assert!(position.protocol_user_account == data.marginfi_account);
     }
 
     #[tokio::test]

@@ -53,7 +53,6 @@ impl ReferralState {
 
 mod tests {
     use super::*;
-    use solana_program::pubkey::Pubkey;
 
     #[test]
     fn validate_size() {
