@@ -3,7 +3,7 @@ use solana_program::{
 };
 use spl_associated_token_account::get_associated_token_address;
 use spl_token::state::{Account as TokenAccount, Mint};
-use std::ops::Div;
+use std::ops::Mul;
 
 use super::{
     math_utils::to_bps,
@@ -345,7 +345,7 @@ impl SolautoFeesBps {
         let mut referrer_fee = 0.0;
         if self.has_been_referred {
             fee_bps = fee_bps * 0.9;
-            referrer_fee = fee_bps.div(5.0).floor()
+            referrer_fee = fee_bps.mul(0.15).floor()
         };
 
         FeePayout {

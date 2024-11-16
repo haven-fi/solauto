@@ -2,9 +2,9 @@
   "scripts": {
     "push": "git add . && git commit -m 'wip' && git push",
     "format:rust": "find ./programs/* -name '*.rs' -exec rustfmt {} +",
-    "build:rs": "cargo build-sbf",
     "build:rs:local": "cargo build-sbf -- --package solauto --features local",
     "build:rs:test": "cargo build-sbf -- --package solauto --features test",
+    "build:rs:prod": "cargo build-sbf",
     "verified-build": "solana-verify build --library-name solauto",
     "build:ts": "cd solauto-sdk && npm run build",
     "deploy:buffer": "solana program write-buffer target/deploy/solauto.so --keypair ~/.config/solana/solauto-auth.json --buffer ~/.config/solana/buffer.json",
