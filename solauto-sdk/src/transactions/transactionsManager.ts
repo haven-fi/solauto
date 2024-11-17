@@ -340,7 +340,7 @@ export class TransactionsManager {
       return priorityFeeSettingValues[
         Math.min(
           priorityFeeSettingValues.length - 1,
-          currIdx + 1 + Math.floor(attemptNum / 3)
+          currIdx + Math.floor(attemptNum / 2)
         )
       ];
     }
