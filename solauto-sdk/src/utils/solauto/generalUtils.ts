@@ -264,9 +264,6 @@ export async function getSolautoManagedPositions(
 
     let tokens: [PublicKey, PublicKey] | undefined;
     if (position.position.lendingPlatform === LendingPlatform.Marginfi) {
-      console.log(position.position.protocolSupplyAccount.toString());
-      console.log(position.position.protocolDebtAccount.toString());
-
       tokens = [
         findMarginfiAccounts(
           toWeb3JsPublicKey(position.position.protocolSupplyAccount)
