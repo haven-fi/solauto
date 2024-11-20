@@ -379,6 +379,7 @@ export async function sendSingleOptimizedTransaction(
     if (!cuPrice) {
       cuPrice = 1000000;
     }
+    cuPrice = Math.min(cuPrice, 100 * 1_000_000);
     consoleLog("Compute unit price: ", cuPrice);
   }
 
