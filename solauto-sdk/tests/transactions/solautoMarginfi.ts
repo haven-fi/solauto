@@ -54,8 +54,8 @@ describe("Solauto Marginfi tests", async () => {
       // marginfiAccount: new PublicKey(
       //   "4nNvUXF5YqHFcH2nGweSiuvy1ct7V5FXfoCLKFYUN36z"
       // ),
-      supplyMint: NATIVE_MINT,
-      debtMint: new PublicKey(USDC),
+      // supplyMint: NATIVE_MINT,
+      // debtMint: new PublicKey(USDC),
     });
 
     const transactionItems: TransactionItem[] = [];

@@ -9,6 +9,9 @@ import {
 } from "../../src/utils/solanaUtils";
 import { publicKey } from "@metaplex-foundation/umi";
 import { assert } from "chai";
+import { getTokenAccount } from "../../src/utils";
+import { SOLAUTO_FEES_WALLET } from "../../src/constants";
+import { PublicKey } from "@solana/web3.js";
 
 describe("Assert Solauto fee token accounts are created", async () => {
   it("all Solauto fee token accounts created", async () => {
@@ -17,9 +20,12 @@ describe("Assert Solauto fee token accounts are created", async () => {
     );
 
     const tokenAccounts = await umi.rpc.getAccounts(
-      ALL_SUPPORTED_TOKENS.map((x) => publicKey(x))
+      ALL_SUPPORTED_TOKENS.map((x) =>
+        publicKey(getTokenAccount(SOLAUTO_FEES_WALLET, new PublicKey(x)))
+      )
     );
     for (let i = 0; i < tokenAccounts.length; i++) {
+      console.log(tokenAccounts[i].publicKey.toString());
       if (!tokenAccounts[i].exists) {
         console.log(
           "Missing Solauto fees TA for ",
