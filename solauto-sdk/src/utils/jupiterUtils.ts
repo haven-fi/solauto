@@ -69,7 +69,8 @@ export async function getJupSwapTransaction(
         slippageBps: 50,
         maxAccounts: !swapDetails.exactOut ? 60 : undefined,
       }),
-    3
+    4,
+    200
   );
 
   const priceImpactBps =
@@ -84,23 +85,30 @@ export async function getJupSwapTransaction(
   if (swapDetails.exactOut) {
     quoteResponse.inAmount = (
       parseInt(quoteResponse.inAmount) +
-      Math.ceil(parseInt(quoteResponse.inAmount) * fromBps(finalPriceSlippageBps))
+      Math.ceil(
+        parseInt(quoteResponse.inAmount) * fromBps(finalPriceSlippageBps)
+      )
     ).toString();
   }
 
   consoleLog("Getting jup instructions...");
-  const instructions = await jupApi.swapInstructionsPost({
-    swapRequest: {
-      userPublicKey: signer.publicKey.toString(),
-      quoteResponse,
-      wrapAndUnwrapSol: false,
-      useTokenLedger: !swapDetails.exactOut && !swapDetails.exactIn,
-      destinationTokenAccount: getTokenAccount(
-        swapDetails.destinationWallet,
-        swapDetails.outputMint
-      ).toString(),
-    },
-  });
+  const instructions = await retryWithExponentialBackoff(
+    async () =>
+      await jupApi.swapInstructionsPost({
+        swapRequest: {
+          userPublicKey: signer.publicKey.toString(),
+          quoteResponse,
+          wrapAndUnwrapSol: false,
+          useTokenLedger: !swapDetails.exactOut && !swapDetails.exactIn,
+          destinationTokenAccount: getTokenAccount(
+            swapDetails.destinationWallet,
+            swapDetails.outputMint
+          ).toString(),
+        },
+      }),
+    4,
+    200
+  );
 
   if (!instructions.swapInstruction) {
     throw new Error("No swap instruction was returned by Jupiter");
