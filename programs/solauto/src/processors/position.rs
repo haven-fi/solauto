@@ -74,7 +74,7 @@ pub fn process_close_position_instruction<'a>(accounts: &'a [AccountInfo<'a>]) -
         Some(ctx.accounts.signer_debt_ta),
     )?;
 
-    if !cfg!(feature = "test") {
+    if !cfg!(feature = "local") {
         validation_utils::validate_no_active_balances(
             ctx.accounts.protocol_account,
             solauto_position.data.position.lending_platform,
