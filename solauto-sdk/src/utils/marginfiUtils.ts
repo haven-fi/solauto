@@ -49,7 +49,7 @@ export function findMarginfiAccounts(bank: PublicKey): AllMarginfiAssetAccounts 
   throw new Error(`Marginfi accounts not found by the bank: ${bank}`);
 }
 
-export function marginfiMaxLtvAndLiqThresholdBps(
+export function calcMaxLtvAndLiqThreshold(
   supplyBank: Bank,
   debtBank: Bank,
   supplyPrice: number
@@ -135,7 +135,7 @@ export async function getMaxLtvAndLiqThreshold(
     return [0, 0];
   }
 
-  return marginfiMaxLtvAndLiqThresholdBps(supply.bank!, debt.bank, supplyPrice);
+  return calcMaxLtvAndLiqThreshold(supply.bank!, debt.bank, supplyPrice);
 }
 
 export async function getAllMarginfiAccountsByAuthority(
