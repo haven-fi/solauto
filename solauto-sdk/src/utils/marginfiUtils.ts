@@ -78,7 +78,7 @@ export function marginfiMaxLtvAndLiqThresholdBps(
     const discount =
       Number(supplyBank.config.totalAssetValueInitLimit) /
       totalDepositedUsdValue;
-    maxLtv = Math.round(maxLtv * Number(discount));
+    maxLtv = maxLtv * Number(discount);
   }
 
   return [maxLtv, liqThreshold];
