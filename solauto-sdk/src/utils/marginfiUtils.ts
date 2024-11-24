@@ -391,15 +391,6 @@ export async function getMarginfiAccountPositionState(
     return undefined;
   }
 
-  if (
-    !toWeb3JsPublicKey(supplyBank.group).equals(
-      new PublicKey(DEFAULT_MARGINFI_GROUP)
-    )
-  ) {
-    // Temporarily disabled for now
-    return undefined;
-  }
-
   if (!supplyUsage) {
     supplyUsage = await getTokenUsage(
       conn,

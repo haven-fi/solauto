@@ -104,7 +104,9 @@ export class SolautoMarginfiClient extends SolautoClient {
     } else {
       this.marginfiAccountSeedIdx = generateRandomU64();
       this.marginfiAccount = this.solautoPositionData
-        ? toWeb3JsPublicKey(this.solautoPositionData.position.protocolUserAccount)
+        ? toWeb3JsPublicKey(
+            this.solautoPositionData.position.protocolUserAccount
+          )
         : getMarginfiAccountPDA(
             this.solautoPosition,
             this.marginfiAccountSeedIdx,
@@ -124,9 +126,9 @@ export class SolautoMarginfiClient extends SolautoClient {
         )
       : null;
     this.marginfiGroup = new PublicKey(
-      marginfiAccountData
+      (marginfiAccountData
         ? marginfiAccountData.group.toString()
-        : (args.marginfiGroup ?? DEFAULT_MARGINFI_GROUP)
+        : args.marginfiGroup) ?? DEFAULT_MARGINFI_GROUP
     );
 
     this.marginfiSupplyAccounts =

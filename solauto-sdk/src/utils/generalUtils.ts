@@ -1,6 +1,5 @@
 import {
   Connection,
-  Keypair,
   PublicKey,
   Transaction,
   VersionedTransaction,
@@ -15,11 +14,9 @@ import { PYTH_PRICE_FEED_IDS } from "../constants/pythConstants";
 import { fromBaseUnit, toBaseUnit } from "./numberUtils";
 import { PRICES } from "../constants/solautoConstants";
 import {
-  getProgramId,
   PullFeed,
-  SwitchboardPermission,
 } from "@switchboard-xyz/on-demand";
-import { AnchorProvider, Idl, Program, Wallet } from "@coral-xyz/anchor";
+import { AnchorProvider, Idl, Program } from "@coral-xyz/anchor";
 import switchboardIdl from "../idls/switchboard.json";
 import { SWITCHBOARD_PRICE_FEED_IDS } from "../constants/switchboardConstants";
 
@@ -125,6 +122,10 @@ export async function fetchTokenPrices(
 }
 
 export async function getPythPrices(mints: PublicKey[]) {
+  if (mints.length === 0) {
+    return [];
+  }
+
   const priceFeedIds = mints.map(
     (mint) => PYTH_PRICE_FEED_IDS[mint.toString()]
   );
@@ -166,6 +167,10 @@ export async function getSwitchboardPrices(
   conn: Connection,
   mints: PublicKey[]
 ) {
+  if (mints.length === 0) {
+    return [];
+  }
+
   const dummyWallet = {
     publicKey: new PublicKey("11111111111111111111111111111111"),
     signTransaction: async <T extends Transaction | VersionedTransaction>(
