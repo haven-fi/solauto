@@ -1,4 +1,4 @@
-import { PublicKey } from "@solana/web3.js";
+import { Connection, PublicKey } from "@solana/web3.js";
 import { publicKey, Umi } from "@metaplex-foundation/umi";
 import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 import {
@@ -35,7 +35,9 @@ interface AllMarginfiAssetAccounts extends MarginfiAssetAccounts {
   mint: PublicKey;
 }
 
-export function findMarginfiAccounts(bank: PublicKey): AllMarginfiAssetAccounts {
+export function findMarginfiAccounts(
+  bank: PublicKey
+): AllMarginfiAssetAccounts {
   for (const group in MARGINFI_ACCOUNTS) {
     for (const key in MARGINFI_ACCOUNTS[group]) {
       const account = MARGINFI_ACCOUNTS[group][key];
@@ -85,6 +87,7 @@ export function calcMaxLtvAndLiqThreshold(
 }
 
 export async function getMaxLtvAndLiqThreshold(
+  conn: Connection,
   umi: Umi,
   marginfiGroup: PublicKey,
   supply: {
@@ -125,7 +128,7 @@ export async function getMaxLtvAndLiqThreshold(
   }
 
   if (!supplyPrice) {
-    const [price] = await fetchTokenPrices([
+    const [price] = await fetchTokenPrices(conn, [
       toWeb3JsPublicKey(supply.bank!.mint),
     ]);
     supplyPrice = price;
@@ -139,6 +142,7 @@ export async function getMaxLtvAndLiqThreshold(
 }
 
 export async function getAllMarginfiAccountsByAuthority(
+  conn: Connection,
   umi: Umi,
   authority: PublicKey,
   compatibleWithSolauto?: boolean
@@ -171,10 +175,9 @@ export async function getAllMarginfiAccountsByAuthority(
     const positionStates = await Promise.all(
       marginfiAccounts.map(async (x) => ({
         publicKey: x.publicKey,
-        state: await getMarginfiAccountPositionState(
-          umi,
-          { pk: toWeb3JsPublicKey(x.publicKey) }
-        ),
+        state: await getMarginfiAccountPositionState(conn, umi, {
+          pk: toWeb3JsPublicKey(x.publicKey),
+        }),
       }))
     );
     return positionStates
@@ -203,6 +206,7 @@ export async function getAllMarginfiAccountsByAuthority(
 }
 
 async function getTokenUsage(
+  conn: Connection,
   bank: Bank | null,
   isAsset: boolean,
   shares: number,
@@ -213,7 +217,9 @@ async function getTokenUsage(
   let marketPrice = 0;
 
   if (bank !== null) {
-    [marketPrice] = await fetchTokenPrices([toWeb3JsPublicKey(bank.mint)]);
+    [marketPrice] = await fetchTokenPrices(conn, [
+      toWeb3JsPublicKey(bank.mint),
+    ]);
     const [assetShareValue, liabilityShareValue] =
       await getUpToDateShareValues(bank);
     const shareValue = isAsset ? assetShareValue : liabilityShareValue;
@@ -269,6 +275,7 @@ interface BankSelection {
 type BanksCache = { [group: string]: { [mint: string]: Bank } };
 
 export async function getMarginfiAccountPositionState(
+  conn: Connection,
   umi: Umi,
   protocolAccount: { pk: PublicKey; data?: MarginfiAccount },
   marginfiGroup?: PublicKey,
@@ -353,6 +360,7 @@ export async function getMarginfiAccountPositionState(
         supply.mint = toWeb3JsPublicKey(supplyBank!.mint);
       }
       supplyUsage = await getTokenUsage(
+        conn,
         supplyBank!,
         true,
         bytesToI80F48(supplyBalances[0].assetShares.value),
@@ -370,6 +378,7 @@ export async function getMarginfiAccountPositionState(
         debt.mint = toWeb3JsPublicKey(debtBank!.mint);
       }
       debtUsage = await getTokenUsage(
+        conn,
         debtBank!,
         false,
         bytesToI80F48(debtBalances[0].liabilityShares.value),
@@ -393,6 +402,7 @@ export async function getMarginfiAccountPositionState(
 
   if (!supplyUsage) {
     supplyUsage = await getTokenUsage(
+      conn,
       supplyBank,
       true,
       0,
@@ -409,6 +419,7 @@ export async function getMarginfiAccountPositionState(
 
   if (!debtUsage) {
     debtUsage = await getTokenUsage(
+      conn,
       debtBank,
       false,
       0,
@@ -418,6 +429,7 @@ export async function getMarginfiAccountPositionState(
 
   const supplyPrice = safeGetPrice(supply.mint!)!;
   let [maxLtv, liqThreshold] = await getMaxLtvAndLiqThreshold(
+    conn,
     umi,
     marginfiGroup ?? new PublicKey(DEFAULT_MARGINFI_GROUP),
     {

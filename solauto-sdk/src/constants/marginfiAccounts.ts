@@ -2,11 +2,14 @@ import { NATIVE_MINT } from "@solana/spl-token";
 import * as tokens from "./tokenConstants";
 import { MarginfiAssetAccounts } from "../types/accounts";
 import { PublicKey } from "@solana/web3.js";
+import { SWITCHBOARD_PRICE_FEED_IDS } from "./switchboardConstants";
 
 export const DEFAULT_MARGINFI_GROUP =
   "4qp6Fx6tnZkY5Wropq9wUYgtFxXKwE6viZxFHg3rdAG8";
 
 export const DEFAULT_PUBKEY = PublicKey.default.toString();
+
+const USDC_PRICE_ORACLE = "Dpw1EAVrSB1ibxiDQyTAW6Zip3J4Btk2x4SgApQCeFbX";
 
 export const MARGINFI_ACCOUNTS: {
   [group: string]: { [token: string]: MarginfiAssetAccounts };
@@ -48,23 +51,23 @@ export const MARGINFI_ACCOUNTS: {
       vaultAuthority: "AEZb1XH5bfLwqk3hBKDuLfWyJKdLTgDPCkgn64BJKcvV",
       priceOracle: "DCNeMcAZGU7pAsqu5q2xMKerq35BnUuTkagt1dkR1xB",
     },
+    [tokens.H_SOL]: {
+      bank: "GJCi1uj3kYPZ64puA5sLUiCQfFapxT2xnREzrbDzFkYY",
+      liquidityVault: "8M97jkdr4rJtPnQ4yQ9stD6qVwaUvjrBdDPDbHJnPJLf",
+      vaultAuthority: "8x7mgTn5RvHR8Tn3CJqexSuQwrs6MLEy8csuXCDVvvpt",
+      priceOracle: SWITCHBOARD_PRICE_FEED_IDS[tokens.H_SOL.toString()],
+    },
+    [tokens.JUP_SOL]: {
+      bank: "8LaUZadNqtzuCG7iCvZd7d5cbquuYfv19KjAg6GPuuCb",
+      liquidityVault: "B1zjqKPoYp9bTMhzFADaAvjyGb49FMitLpi6P3Pa3YR6",
+      vaultAuthority: "93Qqsge2jHVsWLd8vas4cWghrsZJooMUr5JKN5DtcfMX",
+      priceOracle: SWITCHBOARD_PRICE_FEED_IDS[tokens.JUP_SOL.toString()],
+    },
     [tokens.JUP]: {
       bank: "Guu5uBc8k1WK1U2ihGosNaCy57LSgCkpWAabtzQqrQf8",
       liquidityVault: "4w49W4fNDn778wsBa6TNq9hvebZKU17ymsptrEZ8zrsm",
       vaultAuthority: "2MBwwAhL3c73Jy7HkWd9ofzh1bU39JBabrZCFQR2tUof",
       priceOracle: "7dbob1psH1iZBS7qPsm3Kwbf5DzSXK8Jyg31CTgTnxH5",
-    },
-    [tokens.BONK]: {
-      bank: "DeyH7QxWvnbbaVB4zFrf4hoq7Q8z1ZT14co42BGwGtfM",
-      liquidityVault: "7FdQsXmCW3N5JQbknj3F9Yqq73er9VZJjGhEEMS8Ct2A",
-      vaultAuthority: "26kcZkdjJc94PdhqiLiEaGiLCYgAVVUfpDaZyK4cqih3",
-      priceOracle: "DBE3N8uNjhKPRHfANdwGvCZghWXyLPdqdSbEW2XFwBiX",
-    },
-    [tokens.WIF]: {
-      bank: "9dpu8KL5ABYiD3WP2Cnajzg1XaotcJvZspv29Y1Y3tn1",
-      liquidityVault: "4kT3EXc5dDVndUU9mV6EH3Jh3CSEvpcCZjuMkwqrtxUy",
-      vaultAuthority: "9gNrvvZ9RuTyRWooiEEypwcXU6kyXW8yWuhXU8tWUH5L",
-      priceOracle: "6B23K3tkb51vLZA14jcEQVCA1pfHptzEHFA93V5dYwbT",
     },
     [tokens.JTO]: {
       bank: "EdB7YADw4XUt6wErT8kHGCUok4mnTpWGzPUU9rWDebzb",
@@ -106,13 +109,67 @@ export const MARGINFI_ACCOUNTS: {
       bank: "2s37akK2eyBbp8DZgCm7RtsaEz8eJP3Nxd4urLHQv7yB",
       liquidityVault: "7jaiZR5Sk8hdYN9MxTpczTcwbWpb5WEoxSANuUwveuat",
       vaultAuthority: "3uxNepDbmkDNq6JhRja5Z8QwbTrfmkKP8AKZV5chYDGG",
-      priceOracle: "Dpw1EAVrSB1ibxiDQyTAW6Zip3J4Btk2x4SgApQCeFbX",
+      priceOracle: USDC_PRICE_ORACLE,
     },
     [tokens.USDT]: {
       bank: "HmpMfL8942u22htC4EMiWgLX931g3sacXFR6KjuLgKLV",
       liquidityVault: "77t6Fi9qj4s4z22K1toufHtstM8rEy7Y3ytxik7mcsTy",
       vaultAuthority: "9r6z6KgkEytHCdQWNxvDQH98PsfU98f1m5PCg47mY2XE",
       priceOracle: "HT2PLQBcG5EiCcNSaMHAjSgd9F98ecpATbk4Sk5oYuM",
+    },
+    [tokens.BONK]: {
+      bank: "DeyH7QxWvnbbaVB4zFrf4hoq7Q8z1ZT14co42BGwGtfM",
+      liquidityVault: "7FdQsXmCW3N5JQbknj3F9Yqq73er9VZJjGhEEMS8Ct2A",
+      vaultAuthority: "26kcZkdjJc94PdhqiLiEaGiLCYgAVVUfpDaZyK4cqih3",
+      priceOracle: "DBE3N8uNjhKPRHfANdwGvCZghWXyLPdqdSbEW2XFwBiX",
+    },
+    [tokens.WIF]: {
+      bank: "9dpu8KL5ABYiD3WP2Cnajzg1XaotcJvZspv29Y1Y3tn1",
+      liquidityVault: "4kT3EXc5dDVndUU9mV6EH3Jh3CSEvpcCZjuMkwqrtxUy",
+      vaultAuthority: "9gNrvvZ9RuTyRWooiEEypwcXU6kyXW8yWuhXU8tWUH5L",
+      priceOracle: "6B23K3tkb51vLZA14jcEQVCA1pfHptzEHFA93V5dYwbT",
+    },
+  },
+  ["DQ2jqDJw9uzTwttf6h6r217BQ7kws3jZbJXDkfbCJa1q"]: {
+    [tokens.POPCAT]: {
+      bank: "845oEvt1oduoBj5zQxTr21cWWaUVnRjGerJuW3yMo2nn",
+      liquidityVault: "At6R64ip51zay4dT6k1WnVGETSMcaiY5vggD5DVTgxri",
+      vaultAuthority: "dNraDCWb5usDSoW4kD1Mi2E9WsNu6EABcQZqnrDfjNb",
+      priceOracle: SWITCHBOARD_PRICE_FEED_IDS[tokens.POPCAT.toString()],
+    },
+    [tokens.USDC]: {
+      bank: "EXrnNVfLagt3j4hCHSD9WqK75o6dkZBtjpnrSrSC78MA",
+      liquidityVault: "D9HSUYz3Rg2cTH65dUPaQS1MYxofNTeLecsAjiBgVPur",
+      vaultAuthority: "5ivKgJnxQ9CewJcKYSPQUiQFdfJki6YS87FqohnMSsFM",
+      priceOracle: USDC_PRICE_ORACLE,
+    },
+  },
+  ["EpzY5EYF1A5eFDRfjtsPXSYMPmEx1FXKaXPnouTMF4dm"]: {
+    [tokens.RETARDIO]: {
+      bank: "3J5rKmCi7JXG6qmiobFJyAidVTnnNAMGj4jomfBxKGRM",
+      liquidityVault: "863K9YPVT3xbUGFZevrQJLqMux3UdRkwNQ6usAp4hJyy",
+      vaultAuthority: "Qsv2rnNRdv59AwRU3YmGPMCTdKT41CDAKyYAr4srCJR",
+      priceOracle: SWITCHBOARD_PRICE_FEED_IDS[tokens.RETARDIO.toString()],
+    },
+    [tokens.USDC]: {
+      bank: "6cgYhBFWCc5sNHxkvSRhd5H9AdAHR41zKwuF37HmLry5",
+      liquidityVault: "7orVfNL5ZjqvdSaDgYLgBk4i5B3AnwFXNqqAvJbx6DFy",
+      vaultAuthority: "G4Azxk4PYtNRmDZkJppYo3rNAinkZXzYpQPG5dVDh4Nj",
+      priceOracle: USDC_PRICE_ORACLE,
+    },
+  },
+  ["G1rt3EpQ43K3bY457rhukQGRAo2QxydFAGRKqnjKzyr5"]: {
+    [tokens.BILLY]: {
+      bank: "Dj3PndQ3j1vuga5ApiFWWAfQ4h3wBtgS2SeLZBT2LD4g",
+      liquidityVault: "BRcRMDVPBQzXNXWtSS6bNotcGxhVsxfiAt1qf8nFVUpx",
+      vaultAuthority: "36SgFh1qBRyj1PEhsn7Kg9Sfwbrn7rHP7kvTM5o5n6AL",
+      priceOracle: SWITCHBOARD_PRICE_FEED_IDS[tokens.BILLY.toString()],
+    },
+    [tokens.USDC]: {
+      bank: "A7vBgCowCYeja7GTc3pyqUBdC9Gkue2gWaMjGZW38meM",
+      liquidityVault: "DBGhZ8TJTG2Pacdva27zY9etaro24o1tTA3LToSjYHbx",
+      vaultAuthority: "Cg6BCqkGny7A2AXCV8rikhHXM82wqqfzmdsTobEeTQkH",
+      priceOracle: USDC_PRICE_ORACLE,
     },
   },
 };

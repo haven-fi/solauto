@@ -609,6 +609,7 @@ export async function requiresRefreshBeforeRebalance(client: SolautoClient) {
     }
 
     const oldStateWithLatestPrices = await positionStateWithLatestPrices(
+      client.connection,
       client.solautoPositionData.state,
       PRICES[client.supplyMint.toString()].price,
       PRICES[client.debtMint.toString()].price

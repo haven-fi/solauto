@@ -1,4 +1,4 @@
-import { PublicKey } from "@solana/web3.js";
+import { Connection, PublicKey } from "@solana/web3.js";
 import {
   isOption,
   isSome,
@@ -136,7 +136,7 @@ export function eligibleForRebalance(
   if (!positionSettings) {
     return undefined;
   }
-  
+
   if (
     positionDca &&
     positionDca.automation.targetPeriods > 0 &&
@@ -345,6 +345,7 @@ export async function getReferralsByUser(
 }
 
 export async function getAllPositionsByAuthority(
+  conn: Connection,
   umi: Umi,
   user: PublicKey,
   positionTypeFilter?: PositionType
@@ -368,6 +369,7 @@ export async function getAllPositionsByAuthority(
         }
 
         let marginfiPositions = await getAllMarginfiAccountsByAuthority(
+          conn,
           umi,
           user,
           true
@@ -395,12 +397,13 @@ export async function getAllPositionsByAuthority(
 }
 
 export async function positionStateWithLatestPrices(
+  conn: Connection,
   state: PositionState,
   supplyPrice?: number,
   debtPrice?: number
 ): Promise<PositionState> {
   if (!supplyPrice || !debtPrice) {
-    [supplyPrice, debtPrice] = await fetchTokenPrices([
+    [supplyPrice, debtPrice] = await fetchTokenPrices(conn, [
       toWeb3JsPublicKey(state.supply.mint),
       toWeb3JsPublicKey(state.debt.mint),
     ]);

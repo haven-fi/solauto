@@ -159,6 +159,7 @@ export class SolautoMarginfiClient extends SolautoClient {
   async setIntermediaryMarginfiDetails() {
     const existingMarginfiAccounts = (
       await getAllMarginfiAccountsByAuthority(
+        this.connection,
         this.umi,
         toWeb3JsPublicKey(this.signer.publicKey),
         false
@@ -227,6 +228,7 @@ export class SolautoMarginfiClient extends SolautoClient {
       return [0, 0];
     } else {
       const [maxLtv, liqThreshold] = await getMaxLtvAndLiqThreshold(
+        this.connection,
         this.umi,
         this.marginfiGroup,
         {
@@ -676,6 +678,7 @@ export class SolautoMarginfiClient extends SolautoClient {
         !toWeb3JsPublicKey(this.signer.publicKey).equals(this.authority));
 
     const freshState = await getMarginfiAccountPositionState(
+      this.connection,
       this.umi,
       { pk: this.marginfiAccountPk },
       this.marginfiGroup,

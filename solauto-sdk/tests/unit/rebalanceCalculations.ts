@@ -37,9 +37,12 @@ import {
   safeGetPrice,
 } from "../../src/utils/generalUtils";
 import { USDC } from "../../src/constants/tokenConstants";
-import { buildHeliusApiUrl } from "../../src/utils";
+import { buildHeliusApiUrl, getSolanaRpcConnection } from "../../src/utils";
 
 const signer = setupTest(undefined, true);
+const [conn, _] = getSolanaRpcConnection(
+  buildHeliusApiUrl(process.env.HELIUS_API_URL!)
+);
 
 function assertAccurateRebalance(
   client: SolautoClient,
@@ -123,6 +126,7 @@ async function getFakePosition(
   const maxLtvBps = 6400;
   const liqThresholdBps = 8181;
   client.solautoPositionState = await positionStateWithLatestPrices(
+    conn,
     createFakePositionState(
       {
         amountUsed: supplyUsd / supplyPrice,
@@ -283,7 +287,7 @@ describe("Rebalance tests", async () => {
   let supplyPrice: number, debtPrice: number;
 
   before(async () => {
-    [supplyPrice, debtPrice] = await fetchTokenPrices([
+    [supplyPrice, debtPrice] = await fetchTokenPrices(conn, [
       NATIVE_MINT,
       new PublicKey(USDC),
     ]);

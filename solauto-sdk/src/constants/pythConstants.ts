@@ -17,10 +17,6 @@ export const PYTH_PRICE_FEED_IDS = {
     "0xf51570985c642c49c2d6e50156390fdba80bb6d5f7fa389d2f012ced4f7d208f",
   [tokens.JUP]:
     "0x0a0408d619e9380abad35060f9192039ed5042fa6f82301d0e48bb52be830996",
-  [tokens.BONK]:
-    "0x72b021217ca3fe68922a19aaf990109cb9d84e9ad004b4d2025ad6f529314419",
-  [tokens.WIF]:
-    "0x4ca4beeca86f0d164160323817a4e42b10010a724c2217c6ee41b54cd4cc61fc",
   [tokens.JTO]:
     "0xb43660a5f790c69354b0729a5ef9d50d68f1df92107540210b9cccba1f947cc2",
   [tokens.JLP]:
@@ -37,4 +33,8 @@ export const PYTH_PRICE_FEED_IDS = {
     "0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a",
   [tokens.USDT]:
     "0x2b89b9dc8fdf9f34709a5b106b472f0f39bb6ca9ce04b0fd7f2e971688e2e53b",
+  [tokens.BONK]:
+    "0x72b021217ca3fe68922a19aaf990109cb9d84e9ad004b4d2025ad6f529314419",
+  [tokens.WIF]:
+    "0x4ca4beeca86f0d164160323817a4e42b10010a724c2217c6ee41b54cd4cc61fc",
 };

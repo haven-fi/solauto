@@ -80,7 +80,7 @@ describe("Solauto Marginfi tests", async () => {
     //   // const initialSupplyUsd = 150;
     //   transactionItems.push(
     //     new TransactionItem(async () => {
-    //       // const [supplyPrice] = await fetchTokenPrices([supply]);
+    //       // const [supplyPrice] = await fetchTokenPrices(client.connection, [supply]);
     //       return {
     //         tx: client.protocolInteraction(
     //           solautoAction("Deposit", [toBaseUnit(9.5, supplyDecimals)])
