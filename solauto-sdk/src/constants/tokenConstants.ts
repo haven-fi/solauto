@@ -54,6 +54,8 @@ interface TokenInfo {
   decimals: number;
   isStableCoin?: boolean;
   isLST?: boolean;
+  isMeme?: boolean;
+  isMajor?: boolean;
 }
 
 export const TOKEN_INFO: { [key: string]: TokenInfo } = {
@@ -64,6 +66,7 @@ export const TOKEN_INFO: { [key: string]: TokenInfo } = {
   [NATIVE_MINT.toString()]: {
     ticker: "SOL",
     decimals: 9,
+    isMajor: true,
   },
   [B_SOL]: {
     ticker: "bSOL",
@@ -93,10 +96,12 @@ export const TOKEN_INFO: { [key: string]: TokenInfo } = {
   [H_SOL]: {
     ticker: "hSOL",
     decimals: 9,
+    isLST: true,
   },
   [JUP_SOL]: {
     ticker: "JupSOL",
     decimals: 9,
+    isLST: true,
   },
   [JUP]: {
     ticker: "JUP",
@@ -113,10 +118,12 @@ export const TOKEN_INFO: { [key: string]: TokenInfo } = {
   [WBTC]: {
     ticker: "WBTC",
     decimals: 8,
+    isMajor: true,
   },
   [WETH]: {
     ticker: "WETH",
     decimals: 8,
+    isMajor: true,
   },
   [HNT]: {
     ticker: "HNT",
@@ -139,21 +146,26 @@ export const TOKEN_INFO: { [key: string]: TokenInfo } = {
   [BONK]: {
     ticker: "BONK",
     decimals: 5,
+    isMeme: true,
   },
   [WIF]: {
     ticker: "WIF",
     decimals: 6,
+    isMeme: true,
   },
   [POPCAT]: {
     ticker: "POPCAT",
     decimals: 9,
+    isMeme: true,
   },
   [RETARDIO]: {
     ticker: "RETARDIO",
     decimals: 6,
+    isMeme: true,
   },
   [BILLY]: {
     ticker: "BILLY",
     decimals: 6,
+    isMeme: true,
   },
 };

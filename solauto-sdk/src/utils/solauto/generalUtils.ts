@@ -273,7 +273,7 @@ export async function getSolautoManagedPositions(
         ).mint,
       ];
     }
-    // TODO: PK
+    // TODO: PF
 
     return {
       publicKey: toWeb3JsPublicKey(x.publicKey),
