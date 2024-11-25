@@ -5,7 +5,7 @@ use marginfi_sdk::generated::{
     instructions::*,
     types::{ Balance, OracleSetup },
 };
-use num_traits::pow;
+use fixed_macro::types::I80F48;
 use pyth_sdk_solana::state::SolanaPriceAccount;
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 use solana_program::{
@@ -19,7 +19,7 @@ use solana_program::{
 };
 use std::{ cmp::min, ops::{ Div, Mul, Sub } };
 use switchboard_v2::AggregatorAccountData;
-use switchboard_on_demand::{ CurrentResult, PullFeedAccountData };
+use switchboard_on_demand::PullFeedAccountData;
 
 use crate::{
     state::solauto_position::SolautoPosition,
@@ -411,7 +411,8 @@ impl<'a> MarginfiClient<'a> {
                 )?;
 
                 let price = I80F48::from_num(feed.result.value)
-                    .checked_div(I80F48::from(pow(10, 18)))
+                    // 10^18
+                    .checked_div(I80F48!(1000000000000000000))
                     .unwrap();
 
                 Ok(i80f48_to_f64(price))

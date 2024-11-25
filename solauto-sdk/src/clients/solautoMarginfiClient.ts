@@ -33,11 +33,7 @@ import {
   marginfiRebalance,
   marginfiRefreshData,
 } from "../generated";
-import {
-  getMarginfiAccountPDA,
-  getReferralState,
-  getTokenAccount,
-} from "../utils/accountUtils";
+import { getMarginfiAccountPDA, getTokenAccount } from "../utils/accountUtils";
 import { generateRandomU64, safeGetPrice } from "../utils/generalUtils";
 import {
   MARGINFI_PROGRAM_ID,
@@ -64,7 +60,6 @@ import {
 } from "../utils/marginfiUtils";
 import { bytesToI80F48, fromBaseUnit, toBps } from "../utils/numberUtils";
 import { QuoteResponse } from "@jup-ag/api";
-import { TOKEN_INFO } from "../constants";
 
 export interface SolautoMarginfiClientArgs extends SolautoClientArgs {
   marginfiAccount?: PublicKey | Signer;
@@ -250,9 +245,9 @@ export class SolautoMarginfiClient extends SolautoClient {
     }
   }
 
-  marginfiAccountInitialize(): TransactionBuilder {
+  marginfiAccountInitialize(marginfiAccount: Signer): TransactionBuilder {
     return marginfiAccountInitialize(this.umi, {
-      marginfiAccount: this.marginfiAccount as Signer,
+      marginfiAccount: marginfiAccount,
       marginfiGroup: publicKey(this.marginfiGroup),
       authority: this.signer,
       feePayer: this.signer,
@@ -661,15 +656,6 @@ export class SolautoMarginfiClient extends SolautoClient {
           signer: this.signer,
         }).addRemainingAccounts(remainingAccounts)
       );
-  }
-
-  createIntermediaryMarginfiAccount(): TransactionBuilder {
-    return marginfiAccountInitialize(this.umi, {
-      marginfiAccount: this.intermediaryMarginfiAccountSigner!,
-      marginfiGroup: publicKey(this.marginfiGroup),
-      authority: this.signer,
-      feePayer: this.signer,
-    });
   }
 
   async getFreshPositionState(): Promise<PositionState | undefined> {

@@ -331,7 +331,7 @@ export function getJupSwapRebalanceDetails(
       : toBaseUnit(usdToSwap / safeGetPrice(output.mint)!, output.decimals);
 
   const exactOut =
-    targetLiqUtilizationRateBps === 0 || values.repayingCloseToMaxLtv;
+    targetLiqUtilizationRateBps === 0 || values.repayingCloseToMaxLtv || !client.solautoPositionState?.liqUtilizationRateBps;
   const exactIn = !exactOut;
 
   return {

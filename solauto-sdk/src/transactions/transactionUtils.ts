@@ -1,6 +1,7 @@
 import {
   Instruction,
   ProgramError,
+  Signer,
   TransactionBuilder,
   Umi,
   publicKey,
@@ -161,7 +162,9 @@ async function transactionChoresBefore(
       ))
     ) {
       chores = chores.add(
-        (client as SolautoMarginfiClient).marginfiAccountInitialize()
+        (client as SolautoMarginfiClient).marginfiAccountInitialize(
+          (client as SolautoMarginfiClient).marginfiAccount as Signer
+        )
       );
     }
     // TODO: PF
@@ -335,7 +338,9 @@ export async function rebalanceChoresBefore(
   ) {
     client.log("Creating intermediary marginfi account");
     chores = chores.add(
-      (client as SolautoMarginfiClient).createIntermediaryMarginfiAccount()
+      (client as SolautoMarginfiClient).marginfiAccountInitialize(
+        (client as SolautoMarginfiClient).intermediaryMarginfiAccountSigner!
+      )
     );
   }
 

@@ -58,6 +58,7 @@ export async function getJupSwapTransaction(
   const memecoinSwap =
     TOKEN_INFO[swapDetails.inputMint.toString()].isMeme ||
     TOKEN_INFO[swapDetails.outputMint.toString()].isMeme;
+
   const quoteResponse = await retryWithExponentialBackoff(
     async () =>
       await jupApi.quoteGet({
@@ -69,7 +70,7 @@ export async function getJupSwapTransaction(
           : swapDetails.exactIn
             ? "ExactIn"
             : undefined,
-        slippageBps: memecoinSwap ? 500 : 50,
+        slippageBps: memecoinSwap ? 75 : 50,
         maxAccounts: !swapDetails.exactOut
           ? memecoinSwap
             ? 40
@@ -97,6 +98,12 @@ export async function getJupSwapTransaction(
       )
     ).toString();
   }
+  // else {
+  //   quoteResponse.inAmount = (
+  //     parseInt(quoteResponse.inAmount) +
+  //     Math.ceil(parseInt(quoteResponse.inAmount) * fromBps(priceImpactBps))
+  //   ).toString();
+  // }
 
   consoleLog("Getting jup instructions...");
   const instructions = await retryWithExponentialBackoff(
