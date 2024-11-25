@@ -13,6 +13,7 @@
     "test:all": "pnpm test:unit && pnpm test:txs",
     "update-lut:solauto": "npx ts-node local/updateSolautoLUT.ts",
     "update-lut:marginfi": "npx ts-node local/updateMarginfiLUT.ts",
+    "create-ism-accounts": "npx ts-node local/createISMAccounts.ts",
     "create-fee-accounts": "npx ts-node local/createFeeAccounts.ts"
   },
   "dependencies": {
