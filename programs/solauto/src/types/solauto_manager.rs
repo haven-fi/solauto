@@ -321,14 +321,12 @@ impl<'a> SolautoManager<'a> {
             )
         };
 
-            msg!("Has {} ", available_balance);
         let amount_after_fees = self.payout_fees(available_balance)?;
 
         if boosting {
             if self.std_accounts.solauto_position.data.self_managed.val {
                 transfer_to_authority_ta(&self.accounts.supply, amount_after_fees)?;
             }
-            msg!("Depositing {}", amount_after_fees);
             self.deposit(amount_after_fees)?;
         } else if available_balance > 0 {
             if self.std_accounts.solauto_position.data.self_managed.val {
