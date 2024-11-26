@@ -127,7 +127,6 @@ async function getFakePosition(
   const maxLtvBps = 6400;
   const liqThresholdBps = 8181;
   client.solautoPositionState = await positionStateWithLatestPrices(
-    conn,
     createFakePositionState(
       {
         amountUsed: supplyUsd / supplyPrice,

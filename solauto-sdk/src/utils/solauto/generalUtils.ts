@@ -398,7 +398,6 @@ export async function getAllPositionsByAuthority(
 }
 
 export async function positionStateWithLatestPrices(
-  conn: Connection,
   state: PositionState,
   supplyPrice?: number,
   debtPrice?: number

@@ -8,13 +8,14 @@ import {
 } from "../../src/generated";
 import { buildSolautoRebalanceTransaction } from "../../src/transactions/transactionUtils";
 import {
+  getLiqUtilzationRateBps,
   maxBoostToBps,
   maxRepayFromBps,
   maxRepayToBps,
   toBaseUnit,
 } from "../../src/utils/numberUtils";
 import { NATIVE_MINT } from "@solana/spl-token";
-import { consoleLog, fetchTokenPrices } from "../../src/utils/generalUtils";
+import { consoleLog } from "../../src/utils/generalUtils";
 import {
   TransactionItem,
   TransactionsManager,
@@ -32,9 +33,9 @@ describe("Solauto Marginfi tests", async () => {
   const signer = setupTest();
   // const signer = setupTest("solauto-manager");
 
-  const payForTransactions = false;
+  const payForTransactions = true;
   const testProgram = true;
-  const positionId = 1;
+  const positionId = 3;
 
   it("open - deposit - borrow - rebalance to 0 - withdraw - close", async () => {
     const client = new SolautoMarginfiClient(
@@ -44,25 +45,33 @@ describe("Solauto Marginfi tests", async () => {
     );
 
     const supply = NATIVE_MINT;
-    const supplyDecimals = 9;
+    const supplyDecimals = 6;
     const debtDecimals = 6;
 
     await client.initialize({
       signer,
       positionId,
       authority: new PublicKey("rC5dMP5dmSsfQ66rynzfFzuc122Eex9h1RJHVDkeH6D"),
+      // new: true,
       // marginfiAccount: new PublicKey(
       //   "4nNvUXF5YqHFcH2nGweSiuvy1ct7V5FXfoCLKFYUN36z"
       // ),
-      // supplyMint: NATIVE_MINT,
+      // marginfiGroup: new PublicKey("G1rt3EpQ43K3bY457rhukQGRAo2QxydFAGRKqnjKzyr5"),
+      // supplyMint: new PublicKey("3B5wuUrMEi5yATD7on46hKfej3pfmd7t1RKgrsN3pump"),
       // debtMint: new PublicKey(USDC),
     });
 
     const transactionItems: TransactionItem[] = [];
     const settingParams: SolautoSettingsParametersInpArgs = {
-      boostToBps: 6950,
+      boostToBps: maxBoostToBps(
+        client.solautoPositionState?.maxLtvBps ?? 0,
+        client.solautoPositionState?.liqThresholdBps ?? 0
+      ),
       boostGap: 50,
-      repayToBps: 7000,
+      repayToBps: maxRepayToBps(
+        client.solautoPositionState?.maxLtvBps ?? 0,
+        client.solautoPositionState?.liqThresholdBps ?? 0
+      ),
       repayGap: 50,
       automation: none(),
       targetBoostToBps: none(),
@@ -77,17 +86,17 @@ describe("Solauto Marginfi tests", async () => {
     //     }, "open position")
     //   );
 
-    //   // const initialSupplyUsd = 150;
-    //   transactionItems.push(
-    //     new TransactionItem(async () => {
-    //       // const [supplyPrice] = await fetchTokenPrices(client.connection, [supply]);
-    //       return {
-    //         tx: client.protocolInteraction(
-    //           solautoAction("Deposit", [toBaseUnit(9.5, supplyDecimals)])
-    //         ),
-    //       };
-    //     }, "deposit")
-    //   );
+    // const initialSupplyUsd = 150;
+    // transactionItems.push(
+    //   new TransactionItem(async () => {
+    //     // const [supplyPrice] = await fetchTokenPrices([supply]);
+    //     return {
+    //       tx: client.protocolInteraction(
+    //         solautoAction("Deposit", [toBaseUnit(300, supplyDecimals)])
+    //       ),
+    //     };
+    //   }, "deposit")
+    // );
     // }
 
     // const maxLtvBps = client.solautoPositionState!.maxLtvBps;
@@ -102,10 +111,6 @@ describe("Solauto Marginfi tests", async () => {
     //         positionId: client.positionId,
     //         settingParams: some({
     //           ...settingParams,
-    //           boostToBps: maxBoostTo,
-    //           boostGap: 50,
-    //           repayToBps: maxRepayTo,
-    //           repayGap: maxRepayFrom - maxRepayTo
     //         }),
     //         dca: null,
     //       }),
@@ -117,7 +122,7 @@ describe("Solauto Marginfi tests", async () => {
     transactionItems.push(
       new TransactionItem(
         async (attemptNum) =>
-          await buildSolautoRebalanceTransaction(client, undefined, attemptNum),
+          await buildSolautoRebalanceTransaction(client, 3000, attemptNum),
         "rebalance"
       )
     );
@@ -158,6 +163,5 @@ describe("Solauto Marginfi tests", async () => {
     ).clientSend(transactionItems);
 
     console.log(statuses);
-
   });
 });
