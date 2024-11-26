@@ -16,7 +16,7 @@ import {
 import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 import { QuoteResponse } from "@jup-ag/api";
 import { JupSwapDetails } from "../jupiterUtils";
-import { currentUnixSeconds, safeGetPrice } from "../generalUtils";
+import { currentUnixSeconds } from "../generalUtils";
 import {
   fromBaseUnit,
   fromBps,
@@ -29,6 +29,7 @@ import {
 } from "../numberUtils";
 import { USD_DECIMALS } from "../../constants/generalAccounts";
 import { RebalanceAction } from "../../types";
+import { safeGetPrice } from "../priceUtils";
 
 function getAdditionalAmountToDcaIn(dca: DCASettings): number {
   if (dca.dcaInBaseUnit === BigInt(0)) {

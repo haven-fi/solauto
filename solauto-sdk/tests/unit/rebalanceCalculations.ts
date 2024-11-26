@@ -31,13 +31,14 @@ import {
   getUpdatedValueFromAutomation,
   positionStateWithLatestPrices,
 } from "../../src/utils/solauto/generalUtils";
-import {
-  currentUnixSeconds,
-  fetchTokenPrices,
-  safeGetPrice,
-} from "../../src/utils/generalUtils";
+import { currentUnixSeconds } from "../../src/utils/generalUtils";
 import { USDC } from "../../src/constants/tokenConstants";
-import { buildHeliusApiUrl, getSolanaRpcConnection } from "../../src/utils";
+import {
+  buildHeliusApiUrl,
+  fetchTokenPrices,
+  getSolanaRpcConnection,
+  safeGetPrice,
+} from "../../src/utils";
 
 const signer = setupTest(undefined, true);
 const [conn, _] = getSolanaRpcConnection(
@@ -287,7 +288,7 @@ describe("Rebalance tests", async () => {
   let supplyPrice: number, debtPrice: number;
 
   before(async () => {
-    [supplyPrice, debtPrice] = await fetchTokenPrices(conn, [
+    [supplyPrice, debtPrice] = await fetchTokenPrices([
       NATIVE_MINT,
       new PublicKey(USDC),
     ]);

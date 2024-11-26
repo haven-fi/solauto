@@ -34,7 +34,7 @@ import {
   marginfiRefreshData,
 } from "../generated";
 import { getMarginfiAccountPDA, getTokenAccount } from "../utils/accountUtils";
-import { generateRandomU64, safeGetPrice } from "../utils/generalUtils";
+import { generateRandomU64 } from "../utils/generalUtils";
 import {
   MARGINFI_PROGRAM_ID,
   MarginfiAccount,
@@ -60,6 +60,7 @@ import {
 } from "../utils/marginfiUtils";
 import { bytesToI80F48, fromBaseUnit, toBps } from "../utils/numberUtils";
 import { QuoteResponse } from "@jup-ag/api";
+import { safeGetPrice } from "../utils";
 
 export interface SolautoMarginfiClientArgs extends SolautoClientArgs {
   marginfiAccount?: PublicKey | Signer;
@@ -229,7 +230,6 @@ export class SolautoMarginfiClient extends SolautoClient {
       return [0, 0];
     } else {
       const [maxLtv, liqThreshold] = await getMaxLtvAndLiqThreshold(
-        this.connection,
         this.umi,
         this.marginfiGroup,
         {
@@ -670,7 +670,6 @@ export class SolautoMarginfiClient extends SolautoClient {
         !toWeb3JsPublicKey(this.signer.publicKey).equals(this.authority));
 
     const freshState = await getMarginfiAccountPositionState(
-      this.connection,
       this.umi,
       { pk: this.marginfiAccountPk },
       this.marginfiGroup,

@@ -22,7 +22,7 @@ import {
   getSolautoPositionAccountDataSerializer,
   getSolautoPositionSize,
 } from "../../generated";
-import { currentUnixSeconds, fetchTokenPrices } from "../generalUtils";
+import { currentUnixSeconds } from "../generalUtils";
 import {
   fromBaseUnit,
   getLiqUtilzationRateBps,
@@ -40,6 +40,7 @@ import {
   getAllMarginfiAccountsByAuthority,
 } from "../marginfiUtils";
 import { RebalanceAction, SolautoPositionDetails } from "../../types/solauto";
+import { fetchTokenPrices } from "../priceUtils";
 
 export function createDynamicSolautoProgram(programId: PublicKey): Program {
   return {
@@ -403,7 +404,7 @@ export async function positionStateWithLatestPrices(
   debtPrice?: number
 ): Promise<PositionState> {
   if (!supplyPrice || !debtPrice) {
-    [supplyPrice, debtPrice] = await fetchTokenPrices(conn, [
+    [supplyPrice, debtPrice] = await fetchTokenPrices([
       toWeb3JsPublicKey(state.supply.mint),
       toWeb3JsPublicKey(state.debt.mint),
     ]);

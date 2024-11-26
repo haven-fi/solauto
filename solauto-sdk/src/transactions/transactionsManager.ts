@@ -23,8 +23,12 @@ import {
   TransactionRunType,
 } from "../types";
 import { ReferralStateManager, TxHandler } from "../clients";
-import { TransactionExpiredBlockheightExceededError } from "@solana/web3.js";
-import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
+import {
+  PublicKey,
+  TransactionExpiredBlockheightExceededError,
+} from "@solana/web3.js";
+import { SWITCHBOARD_PRICE_FEED_IDS } from "../constants/switchboardConstants";
+import { buildSwbSubmitResponseTx, getSwitchboardPrices } from "../utils";
 // import { sendJitoBundledTransactions } from "../utils/jitoUtils";
 
 const CHORES_TX_NAME = "account chores";
@@ -384,6 +388,33 @@ export class TransactionsManager {
 
     for (const item of items) {
       await item.initialize();
+    }
+
+    const allAccounts = items.flatMap((x) =>
+      x.tx
+        ?.getInstructions()
+        .flatMap((x) => x.keys.map((x) => x.pubkey.toString()))
+    );
+    const swbOracle = allAccounts.find((x) =>
+      Object.values(SWITCHBOARD_PRICE_FEED_IDS).includes(x ?? "")
+    );
+    if (swbOracle) {
+      const mint = new PublicKey(
+        Object.keys(SWITCHBOARD_PRICE_FEED_IDS).find(
+          (x) => SWITCHBOARD_PRICE_FEED_IDS[x] === swbOracle
+        )!
+      );
+      const stale = (await getSwitchboardPrices(client.connection, [mint]))[0]
+        .stale;
+
+      if (stale) {
+        const swbTx = new TransactionItem(
+          async () =>
+            buildSwbSubmitResponseTx(client.connection, client.signer, mint),
+          items.length === 1 ? "Update oracle" : ""
+        );
+        items.unshift(swbTx);
+      }
     }
 
     let [choresBefore, choresAfter] = await getTransactionChores(

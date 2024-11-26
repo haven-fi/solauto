@@ -43,7 +43,6 @@ import {
   currentUnixSeconds,
   getSolanaAccountCreated,
   rpcAccountCreated,
-  safeGetPrice,
 } from "../utils/generalUtils";
 import { SolautoMarginfiClient } from "../clients/solautoMarginfiClient";
 import {
@@ -72,6 +71,7 @@ import {
 } from "../jupiter-sdk";
 import { PRICES } from "../constants";
 import { TransactionItemInputs } from "../types";
+import { safeGetPrice } from "../utils";
 
 interface wSolTokenUsage {
   wSolTokenAccount: PublicKey;

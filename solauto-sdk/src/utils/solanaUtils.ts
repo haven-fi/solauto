@@ -16,7 +16,6 @@ import {
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
 import {
   AddressLookupTableAccount,
-  Blockhash,
   BlockhashWithExpiryBlockHeight,
   ComputeBudgetProgram,
   Connection,
@@ -318,7 +317,7 @@ async function spamSendTransactionUntilConfirmed(
   connection: Connection,
   transaction: Transaction | VersionedTransaction,
   blockhash: BlockhashWithExpiryBlockHeight,
-  spamInterval: number = 1000
+  spamInterval: number = 3000
 ): Promise<string> {
   let transactionSignature: string | null = null;
 
