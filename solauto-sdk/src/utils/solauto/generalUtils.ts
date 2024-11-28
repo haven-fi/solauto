@@ -450,6 +450,7 @@ interface AssetProps {
   mint: PublicKey;
   price?: number;
   amountUsed?: number;
+  amountCanBeUsed?: number;
 }
 
 export function createFakePositionState(
@@ -476,8 +477,10 @@ export function createFakePositionState(
         baseAmountUsdValue: toBaseUnit(supplyUsd, USD_DECIMALS),
       },
       amountCanBeUsed: {
-        baseUnit: toBaseUnit(1000000, supplyDecimals),
-        baseAmountUsdValue: BigInt(Math.round(1000000 * (supply.price ?? 0))),
+        baseUnit: toBaseUnit(supply.amountCanBeUsed ?? 0, supplyDecimals),
+        baseAmountUsdValue: BigInt(
+          Math.round((supply.amountUsed ?? 0) * (supply.price ?? 0))
+        ),
       },
       baseAmountMarketPriceUsd: toBaseUnit(supply.price ?? 0, USD_DECIMALS),
       borrowFeeBps: 0,
@@ -494,8 +497,10 @@ export function createFakePositionState(
         baseAmountUsdValue: toBaseUnit(debtUsd, USD_DECIMALS),
       },
       amountCanBeUsed: {
-        baseUnit: toBaseUnit(1000000, debtDecimals),
-        baseAmountUsdValue: BigInt(Math.round(1000000 * (debt.price ?? 0))),
+        baseUnit: toBaseUnit(debt.amountCanBeUsed ?? 0, debtDecimals),
+        baseAmountUsdValue: BigInt(
+          Math.round((debt.amountCanBeUsed ?? 0) * (debt.price ?? 0))
+        ),
       },
       baseAmountMarketPriceUsd: toBaseUnit(debt.price ?? 0, USD_DECIMALS),
       borrowFeeBps: 0,

@@ -201,6 +201,25 @@ export async function getAllMarginfiAccountsByAuthority(
   }
 }
 
+export function getBankLiquidityAvailableBaseUnit(
+  bank: Bank | null,
+  isAsset: boolean
+) {
+  let amountCanBeUsed = 0;
+
+  if (bank !== null) {
+    const [assetShareValue, liabilityShareValue] = getUpToDateShareValues(bank);
+    const totalDeposited =
+      bytesToI80F48(bank.totalAssetShares.value) * assetShareValue;
+    amountCanBeUsed = isAsset
+      ? Number(bank.config.depositLimit) - totalDeposited
+      : totalDeposited -
+        bytesToI80F48(bank.totalLiabilityShares.value) * liabilityShareValue;
+  }
+
+  return amountCanBeUsed;
+}
+
 async function getTokenUsage(
   bank: Bank | null,
   isAsset: boolean,
@@ -212,20 +231,11 @@ async function getTokenUsage(
   let marketPrice = 0;
 
   if (bank !== null) {
-    [marketPrice] = await fetchTokenPrices([
-      toWeb3JsPublicKey(bank.mint),
-    ]);
-    const [assetShareValue, liabilityShareValue] =
-      await getUpToDateShareValues(bank);
+    [marketPrice] = await fetchTokenPrices([toWeb3JsPublicKey(bank.mint)]);
+    const [assetShareValue, liabilityShareValue] = getUpToDateShareValues(bank);
     const shareValue = isAsset ? assetShareValue : liabilityShareValue;
     amountUsed = shares * shareValue + Number(amountUsedAdjustment ?? 0);
-
-    const totalDeposited =
-      bytesToI80F48(bank.totalAssetShares.value) * assetShareValue;
-    amountCanBeUsed = isAsset
-      ? Number(bank.config.depositLimit) - totalDeposited
-      : totalDeposited -
-        bytesToI80F48(bank.totalLiabilityShares.value) * liabilityShareValue;
+    amountCanBeUsed = getBankLiquidityAvailableBaseUnit(bank, isAsset);
   }
 
   return {
@@ -528,9 +538,7 @@ export function calculateAnnualAPYs(bank: Bank) {
   return calcInterestRate(bank, utilizationRatio);
 }
 
-export async function getUpToDateShareValues(
-  bank: Bank
-): Promise<[number, number]> {
+export function getUpToDateShareValues(bank: Bank): [number, number] {
   let timeDelta = currentUnixSeconds() - Number(bank.lastUpdate);
   const [lendingApr, borrowingApr] = calculateAnnualAPYs(bank);
 
