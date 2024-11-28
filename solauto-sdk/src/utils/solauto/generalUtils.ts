@@ -478,8 +478,9 @@ export function createFakePositionState(
       },
       amountCanBeUsed: {
         baseUnit: toBaseUnit(supply.amountCanBeUsed ?? 0, supplyDecimals),
-        baseAmountUsdValue: BigInt(
-          Math.round((supply.amountUsed ?? 0) * (supply.price ?? 0))
+        baseAmountUsdValue: toBaseUnit(
+          (supply.amountCanBeUsed ?? 0) * (supply.price ?? 0),
+          USD_DECIMALS
         ),
       },
       baseAmountMarketPriceUsd: toBaseUnit(supply.price ?? 0, USD_DECIMALS),
@@ -498,8 +499,9 @@ export function createFakePositionState(
       },
       amountCanBeUsed: {
         baseUnit: toBaseUnit(debt.amountCanBeUsed ?? 0, debtDecimals),
-        baseAmountUsdValue: BigInt(
-          Math.round((debt.amountCanBeUsed ?? 0) * (debt.price ?? 0))
+        baseAmountUsdValue: toBaseUnit(
+          (debt.amountCanBeUsed ?? 0) * (debt.price ?? 0),
+          USD_DECIMALS
         ),
       },
       baseAmountMarketPriceUsd: toBaseUnit(debt.price ?? 0, USD_DECIMALS),
