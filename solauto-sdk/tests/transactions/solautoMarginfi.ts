@@ -3,6 +3,7 @@ import { none, publicKey, some } from "@metaplex-foundation/umi";
 import { setupTest } from "../shared";
 import { SolautoMarginfiClient } from "../../src/clients/solautoMarginfiClient";
 import {
+  safeFetchSolautoPosition,
   solautoAction,
   SolautoSettingsParametersInpArgs,
 } from "../../src/generated";
@@ -51,7 +52,7 @@ describe("Solauto Marginfi tests", async () => {
     await client.initialize({
       signer,
       positionId,
-      authority: new PublicKey("rC5dMP5dmSsfQ66rynzfFzuc122Eex9h1RJHVDkeH6D"),
+      authority: new PublicKey("rC5dMP5dmSsfQ66rynzfFzuc122Eex9h1RJHVDkeH6D"), // positions 1 & 3 are taken
       // new: true,
       // marginfiAccount: new PublicKey(
       //   "4nNvUXF5YqHFcH2nGweSiuvy1ct7V5FXfoCLKFYUN36z"
@@ -62,20 +63,20 @@ describe("Solauto Marginfi tests", async () => {
     });
 
     const transactionItems: TransactionItem[] = [];
-    const settingParams: SolautoSettingsParametersInpArgs = {
-      boostToBps: maxBoostToBps(
-        client.solautoPositionState?.maxLtvBps ?? 0,
-        client.solautoPositionState?.liqThresholdBps ?? 0
-      ),
-      boostGap: 50,
-      repayToBps: maxRepayToBps(
-        client.solautoPositionState?.maxLtvBps ?? 0,
-        client.solautoPositionState?.liqThresholdBps ?? 0
-      ),
-      repayGap: 50,
-      automation: none(),
-      targetBoostToBps: none(),
-    };
+    // const settingParams: SolautoSettingsParametersInpArgs = {
+    //   boostToBps: maxBoostToBps(
+    //     client.solautoPositionState?.maxLtvBps ?? 0,
+    //     client.solautoPositionState?.liqThresholdBps ?? 0
+    //   ),
+    //   boostGap: 50,
+    //   repayToBps: maxRepayToBps(
+    //     client.solautoPositionState?.maxLtvBps ?? 0,
+    //     client.solautoPositionState?.liqThresholdBps ?? 0
+    //   ),
+    //   repayGap: 50,
+    //   automation: none(),
+    //   targetBoostToBps: none(),
+    // };
 
     // if (client.solautoPositionData === null) {
     //   transactionItems.push(
@@ -122,7 +123,7 @@ describe("Solauto Marginfi tests", async () => {
     transactionItems.push(
       new TransactionItem(
         async (attemptNum) =>
-          await buildSolautoRebalanceTransaction(client, 3000, attemptNum),
+          await buildSolautoRebalanceTransaction(client, 5000, attemptNum),
         "rebalance"
       )
     );
@@ -159,7 +160,8 @@ describe("Solauto Marginfi tests", async () => {
       client,
       undefined,
       !payForTransactions ? "only-simulate" : "normal",
-      PriorityFeeSetting.Low
+      PriorityFeeSetting.Low,
+      true
     ).clientSend(transactionItems);
 
     console.log(statuses);

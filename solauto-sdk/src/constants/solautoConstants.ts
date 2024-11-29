@@ -9,7 +9,6 @@ import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
-// import { JitoRpcConnection } from "jito-ts";
 import { SOLAUTO_MANAGER } from "./generalAccounts";
 import { JUPITER_PROGRAM_ID } from "../jupiter-sdk";
 
@@ -46,8 +45,4 @@ export const STANDARD_LUT_ACCOUNTS = [
   JUPITER_PROGRAM_ID,
 ].map((x) => x.toString());
 
-// export const JITO_BLOCK_ENGINE = "ny.mainnet.block-engine.jito.wtf";
-// export const JITO_CONNECTION = new JitoRpcConnection(
-//   `https://${JITO_BLOCK_ENGINE}`,
-//   "finalized"
-// );
+export const JITO_BLOCK_ENGINE = "https://mainnet.block-engine.jito.wtf";

@@ -1,4 +1,4 @@
-import { Connection, PublicKey } from "@solana/web3.js";
+import { PublicKey } from "@solana/web3.js";
 import { PublicKey as UmiPublicKey } from "@metaplex-foundation/umi";
 import { PYTH_PRICE_FEED_IDS } from "../constants/pythConstants";
 import { fromBaseUnit, toBaseUnit } from "./numberUtils";
@@ -9,7 +9,7 @@ import {
   retryWithExponentialBackoff,
   zip,
 } from "./generalUtils";
-import { getPullFeed } from "./switchboardUtils";
+import { getSwitchboardPrices } from "./switchboardUtils";
 
 export async function fetchTokenPrices(
   mints: PublicKey[]
@@ -32,7 +32,7 @@ export async function fetchTokenPrices(
 
   const [pythData, switchboardData] = await Promise.all([
     zip(pythMints, await getPythPrices(pythMints)),
-    zip(switchboardMints, await getJupTokenPrices(switchboardMints)),
+    zip(switchboardMints, await getSwitchboardPrices(switchboardMints)),
   ]);
 
   const prices = mints.map((mint) => {
@@ -94,34 +94,6 @@ export async function getPythPrices(mints: PublicKey[]) {
   return prices;
 }
 
-export async function getSwitchboardPrices(
-  conn: Connection,
-  mints: PublicKey[]
-): Promise<{ mint: PublicKey; price: number; stale: boolean }[]> {
-  if (mints.length === 0) {
-    return [];
-  }
-
-  const currSlot = await retryWithExponentialBackoff(
-    async () => await conn.getSlot("confirmed"),
-    5
-  );
-
-  const results = await Promise.all(
-    mints.map(async (mint) => {
-      const feed = getPullFeed(conn, mint);
-      const result = await feed.loadData();
-      const price = Number(result.result.value) / Math.pow(10, 18);
-      const stale =
-        currSlot > result.result.slot.toNumber() + result.maxStaleness;
-
-      return { mint, price, stale };
-    })
-  );
-
-  return results;
-}
-
 export function safeGetPrice(
   mint: PublicKey | UmiPublicKey | undefined
 ): number | undefined {
@@ -140,11 +112,13 @@ export async function getJupTokenPrices(mints: PublicKey[]) {
     const res = (
       await fetch(
         "https://api.jup.ag/price/v2?ids=" +
-          mints.map((x) => x.toString()).join(",")
+          mints.map((x) => x.toString()).join(",") + "&showExtraInfo=true"
       )
     ).json();
     return res;
   }, 6);
+
+  console.log(data.data[mints[0].toString()].extraInfo.quotedPrice);
 
   const prices = Object.values(data.data as { [key: string]: any }).map(
     (x) => parseFloat(x.price as string) as number

@@ -14,6 +14,7 @@ import {
   fromWeb3JsInstruction,
   toWeb3JsPublicKey,
 } from "@metaplex-foundation/umi-web3js-adapters";
+import { retryWithExponentialBackoff } from "./generalUtils";
 
 export function getPullFeed(
   conn: Connection,
@@ -49,9 +50,14 @@ export async function buildSwbSubmitResponseTx(
 ): Promise<TransactionItemInputs | undefined> {
   const crossbar = new CrossbarClient("https://crossbar.switchboard.xyz");
   const feed = getPullFeed(conn, mint, toWeb3JsPublicKey(signer.publicKey));
-  const [pullIx, responses] = await feed.fetchUpdateIx({
-    crossbarClient: crossbar,
-  });
+  const [pullIx, responses] = await retryWithExponentialBackoff(
+    async () =>
+      await feed.fetchUpdateIx({
+        crossbarClient: crossbar,
+      }),
+    8,
+    200
+  );
 
   return {
     tx: transactionBuilder().add({
@@ -63,4 +69,53 @@ export async function buildSwbSubmitResponseTx(
       .filter((x) => Boolean(x.oracle.lut?.key))
       .map((x) => x.oracle.lut!.key.toString()),
   };
+}
+
+export async function getSwitchboardFeedData(
+  conn: Connection,
+  mints: PublicKey[]
+): Promise<{ mint: PublicKey; price: number; stale: boolean }[]> {
+  if (mints.length === 0) {
+    return [];
+  }
+
+  const currSlot = await retryWithExponentialBackoff(
+    async () => await conn.getSlot("confirmed"),
+    5
+  );
+
+  const results = await Promise.all(
+    mints.map(async (mint) => {
+      const feed = getPullFeed(conn, mint);
+      const result = await feed.loadData();
+      const price = Number(result.result.value) / Math.pow(10, 18);
+      const stale =
+        currSlot > result.result.slot.toNumber() + result.maxStaleness;
+
+      return { mint, price, stale };
+    })
+  );
+
+  return results;
+}
+
+export async function getSwitchboardPrices(
+  mints: PublicKey[]
+): Promise<number[]> {
+  if (mints.length === 0) {
+    return [];
+  }
+
+  const crossbar = new CrossbarClient("https://crossbar.switchboard.xyz");
+  const results = await retryWithExponentialBackoff(
+    async () =>
+      await crossbar.simulateSolanaFeeds(
+        "mainnet",
+        mints.map((x) => SWITCHBOARD_PRICE_FEED_IDS[x.toString()])
+      ),
+    8,
+    200
+  );
+
+  return results.flatMap((x) => x.results[0]);
 }

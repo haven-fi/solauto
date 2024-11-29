@@ -1,6 +1,6 @@
 {
   "name": "@haven-fi/solauto-sdk",
-  "version": "1.0.310",
+  "version": "1.0.311",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "description": "Typescript SDK for the Solauto program on the Solana blockchain",
@@ -26,6 +26,7 @@
     "@solana/spl-token": "^0.4.0",
     "@solana/web3.js": "^1.95.4",
     "@switchboard-xyz/on-demand": "^1.2.51",
+    "axios": "^1.7.8",
     "bs58": "^5.0.0",
     "cross-fetch": "^4.0.0",
     "rpc-websockets": "7.11.0"

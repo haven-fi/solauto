@@ -28,8 +28,8 @@ import {
   TransactionExpiredBlockheightExceededError,
 } from "@solana/web3.js";
 import { SWITCHBOARD_PRICE_FEED_IDS } from "../constants/switchboardConstants";
-import { buildSwbSubmitResponseTx, getSwitchboardPrices } from "../utils";
-// import { sendJitoBundledTransactions } from "../utils/jitoUtils";
+import { buildSwbSubmitResponseTx, getSwitchboardFeedData } from "../utils";
+import { sendJitoBundledTransactions } from "../utils/jitoUtils";
 
 const CHORES_TX_NAME = "account chores";
 
@@ -220,6 +220,7 @@ export class TransactionsManager {
     private statusCallback?: (statuses: TransactionManagerStatuses) => void,
     private txType?: TransactionRunType,
     private priorityFeeSetting: PriorityFeeSetting = PriorityFeeSetting.Min,
+    private atomically: boolean = false,
     private errorsToThrow?: ErrorsToThrow,
     private retries: number = 4,
     private retryDelay: number = 150
@@ -404,7 +405,7 @@ export class TransactionsManager {
           (x) => SWITCHBOARD_PRICE_FEED_IDS[x] === swbOracle
         )!
       );
-      const stale = (await getSwitchboardPrices(client.connection, [mint]))[0]
+      const stale = (await getSwitchboardFeedData(client.connection, [mint]))[0]
         .stale;
 
       if (stale) {
@@ -489,13 +490,79 @@ export class TransactionsManager {
       return [];
     }
 
-    let currentIndex = 0;
-    while (currentIndex < itemSets.length) {
-      await this.processTransactionSet(itemSets, currentIndex);
-      currentIndex++;
+    if (itemSets.length > 1 && this.atomically) {
+      await this.processTransactionsAtomically(itemSets);
+    } else {
+      let currentIndex = 0;
+      while (currentIndex < itemSets.length) {
+        await this.processTransactionSet(itemSets, currentIndex);
+        currentIndex++;
+      }
     }
 
     return this.statuses;
+  }
+
+  private async processTransactionsAtomically(itemSets: TransactionSet[]) {
+    let num = 0;
+
+    await retryWithExponentialBackoff(
+      async (attemptNum) => {
+        num = attemptNum;
+
+        let transactions = [];
+        for (const set of itemSets) {
+          transactions.push(await set.getSingleTransaction());
+        }
+
+        itemSets.forEach((x) =>
+          this.updateStatus(x.name(), TransactionStatus.Processing, attemptNum)
+        );
+        const txSigs = await sendJitoBundledTransactions(
+          this.txHandler.umi,
+          this.txHandler.signer,
+          transactions,
+          false,
+          this.priorityFeeSetting
+        );
+        if (txSigs) {
+          itemSets.forEach((x, i) =>
+            this.updateStatus(
+              x.name(),
+              TransactionStatus.Successful,
+              attemptNum,
+              txSigs[i]
+            )
+          );
+        } else {
+          itemSets.forEach((x) =>
+            this.updateStatus(
+              x.name(),
+              TransactionStatus.Failed,
+              attemptNum,
+              undefined,
+              true
+            )
+          );
+          throw new Error("Unknown error");
+        }
+      },
+      this.retries,
+      this.retryDelay,
+      this.errorsToThrow
+    ).catch((e: Error) => {
+      itemSets.forEach((x) =>
+        this.updateStatus(
+          x.name(),
+          TransactionStatus.Failed,
+          num,
+          undefined,
+          true,
+          e.message
+        )
+      );
+      throw e;
+    });
   }
 
   private async processTransactionSet(

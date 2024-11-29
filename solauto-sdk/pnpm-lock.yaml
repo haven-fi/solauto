@@ -32,6 +32,9 @@ dependencies:
   '@switchboard-xyz/on-demand':
     specifier: ^1.2.51
     version: 1.2.51(fastestsmallesttextencoderdecoder@1.0.22)
+  axios:
+    specifier: ^1.7.8
+    version: 1.7.8
   bs58:
     specifier: ^5.0.0
     version: 5.0.0
@@ -762,7 +765,7 @@ packages:
     engines: {node: '>=12'}
     dependencies:
       '@solana/web3.js': 1.95.5
-      axios: 1.7.7
+      axios: 1.7.8
       big.js: 6.2.2
       bn.js: 5.2.1
       bs58: 5.0.0
@@ -788,7 +791,7 @@ packages:
       '@solana/web3.js': 1.95.5
       '@solworks/soltoolkit-sdk': 0.0.23(fastestsmallesttextencoderdecoder@1.0.22)
       '@switchboard-xyz/common': 2.5.5
-      axios: 1.7.7
+      axios: 1.7.8
       big.js: 6.2.2
       bs58: 5.0.0
       js-yaml: 4.1.0
@@ -925,8 +928,8 @@ packages:
     resolution: {integrity: sha512-Oei9OH4tRh0YqU3GxhX79dM/mwVgvbZJaSNaRk+bshkj0S5cfHcgYakreBjrHwatXKbz+IoIdYLxrKim2MjW0Q==}
     dev: false
 
-  /axios@1.7.7:
-    resolution: {integrity: sha512-S4kL7XrjgBmvdGut0sN3yJxqYzrDOnivkBiN0OFs6hLiUam3UPvswUo0kqGyhqUZGEOytHyumEdXsAkgCOUf3Q==}
+  /axios@1.7.8:
+    resolution: {integrity: sha512-Uu0wb7KNqK2t5K+YQyVCLM76prD5sRFjKHbJYCP1J7JFGEQ6nN7HWn9+04LAeiJ3ji54lgS/gZCH1oxyrf1SPw==}
     dependencies:
       follow-redirects: 1.15.9
       form-data: 4.0.1
