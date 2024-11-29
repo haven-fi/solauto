@@ -94,12 +94,6 @@ export async function getJupSwapTransaction(
       )
     ).toString();
   }
-  // else {
-  //   quoteResponse.inAmount = (
-  //     parseInt(quoteResponse.inAmount) +
-  //     Math.ceil(parseInt(quoteResponse.inAmount) * fromBps(priceImpactBps))
-  //   ).toString();
-  // }
 
   consoleLog("Getting jup instructions...");
   const instructions = await retryWithExponentialBackoff(

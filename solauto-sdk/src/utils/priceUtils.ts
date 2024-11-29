@@ -103,6 +103,7 @@ export function safeGetPrice(
   return undefined;
 }
 
+// LEGACY, NOT USED
 export async function getJupTokenPrices(mints: PublicKey[]) {
   if (mints.length == 0) {
     return [];
@@ -117,8 +118,6 @@ export async function getJupTokenPrices(mints: PublicKey[]) {
     ).json();
     return res;
   }, 6);
-
-  console.log(data.data[mints[0].toString()].extraInfo.quotedPrice);
 
   const prices = Object.values(data.data as { [key: string]: any }).map(
     (x) => parseFloat(x.price as string) as number
