@@ -317,7 +317,7 @@ async function spamSendTransactionUntilConfirmed(
   connection: Connection,
   transaction: Transaction | VersionedTransaction,
   blockhash: BlockhashWithExpiryBlockHeight,
-  spamInterval: number = 3000
+  spamInterval: number = 1500
 ): Promise<string> {
   let transactionSignature: string | null = null;
 
