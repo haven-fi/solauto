@@ -288,27 +288,17 @@ async function simulateTransaction(
 export async function getComputeUnitPriceEstimate(
   umi: Umi,
   tx: TransactionBuilder,
-  prioritySetting: PriorityFeeSetting,
-  simMayFail: boolean
+  prioritySetting: PriorityFeeSetting
 ): Promise<number | undefined> {
   const web3Transaction = toWeb3JsTransaction(
     (await tx.setLatestBlockhash(umi, { commitment: "finalized" })).build(umi)
   );
-  const transaction = simMayFail
-    ? undefined
-    : bs58.encode(web3Transaction.serialize());
-  const accountKeys = simMayFail
-    ? tx
-        .getInstructions()
-        .flatMap((x) => x.keys.flatMap((x) => x.pubkey.toString()))
-    : undefined;
 
   let feeEstimate: number | undefined;
   try {
     const resp = await umi.rpc.call("getPriorityFeeEstimate", [
       {
-        transaction,
-        accountKeys,
+        transaction: bs58.encode(web3Transaction.serialize()),
         options: {
           priorityLevel: prioritySetting.toString(),
         },
@@ -316,7 +306,21 @@ export async function getComputeUnitPriceEstimate(
     ]);
     feeEstimate = Math.round((resp as any).priorityFeeEstimate as number);
   } catch (e) {
-    console.error(e);
+    try {
+      const resp = await umi.rpc.call("getPriorityFeeEstimate", [
+        {
+          accountKeys: tx
+            .getInstructions()
+            .flatMap((x) => x.keys.flatMap((x) => x.pubkey.toString())),
+          options: {
+            priorityLevel: prioritySetting.toString(),
+          },
+        },
+      ]);
+      feeEstimate = Math.round((resp as any).priorityFeeEstimate as number);
+    } catch (e) {
+      console.error(e);
+    }
   }
 
   return feeEstimate;
@@ -383,7 +387,11 @@ export async function sendSingleOptimizedTransaction(
 
   let cuPrice: number | undefined;
   if (prioritySetting !== PriorityFeeSetting.None) {
-    cuPrice = await getComputeUnitPriceEstimate(umi, tx, prioritySetting, false);
+    cuPrice = await getComputeUnitPriceEstimate(
+      umi,
+      tx,
+      prioritySetting,
+    );
     if (!cuPrice) {
       cuPrice = 1000000;
     }

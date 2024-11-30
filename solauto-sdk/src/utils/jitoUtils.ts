@@ -9,6 +9,7 @@ import {
 } from "@metaplex-foundation/umi";
 import {
   assembleFinalTransaction,
+  buildIronforgeApiUrl,
   getComputeUnitPriceEstimate,
   systemTransferUmiIx,
 } from "./solanaUtils";
@@ -16,6 +17,7 @@ import { consoleLog } from "./generalUtils";
 import { PriorityFeeSetting } from "../types";
 import axios from "axios";
 import base58 from "bs58";
+import { bs58 } from "@coral-xyz/anchor/dist/cjs/utils/bytes";
 
 export async function getRandomTipAccount(): Promise<PublicKey> {
   const tipAccounts = [
@@ -43,49 +45,52 @@ async function getTipInstruction(
   );
 }
 
-// async function simulateJitoBundle(
-//   txs: VersionedTransaction[]
-// ): Promise<SimulatedBundleTransactionResult[]> {
-//   const simulationResult = await JITO_CONNECTION.simulateBundle(txs, {
-//     preExecutionAccountsConfigs: txs.map((x) => null),
-//     postExecutionAccountsConfigs: txs.map((x) => null),
-//     skipSigVerify: true,
-//   });
-
-//   simulationResult.value.transactionResults.forEach((tx) => {
-//     if (tx.err) {
-//       tx.logs?.forEach((x) => {
-//         consoleLog(x);
-//       });
-//       throw tx.err;
+// TODO: fix
+// async function simulateJitoBundle(umi: Umi, txs: VersionedTransaction[]) {
+//   const simulationResult = await axios.post(
+//     `${JITO_BLOCK_ENGINE}/api/v1/bundles`,
+//     {
+//       method: "simulateBundle",
+//       id: 1,
+//       jsonrpc: "2.0",
+//       params: [
+//         {
+//           encodedTransactions: txs.map((x) => bs58.encode(x.serialize())),
+//           preExecutionAccountsConfigs: txs.map((_) => ""),
+//           postExecutionAccountsConfigs: txs.map((_) => ""),
+//           skipSigVerify: true,
+//         },
+//       ],
 //     }
-//   });
-
-//   return simulationResult.value.transactionResults;
+//   );
 // }
 
 async function umiToVersionedTransactions(
   umi: Umi,
   signer: Signer,
   txs: TransactionBuilder[],
+  sign: boolean,
   feeEstimates: number[],
   computeUnitLimits?: number[]
 ): Promise<VersionedTransaction[]> {
-  return await Promise.all(
+  const builtTxs = await Promise.all(
     txs.map(async (tx, i) => {
-      const versionedTx = toWeb3JsTransaction(
-        await (
-          await assembleFinalTransaction(
-            signer,
-            tx,
-            feeEstimates[i],
-            computeUnitLimits ? computeUnitLimits[i] : undefined
-          ).setLatestBlockhash(umi)
-        ).buildAndSign(umi)
-      );
-      return versionedTx;
+      return (
+        await assembleFinalTransaction(
+          signer,
+          tx,
+          feeEstimates[i],
+          computeUnitLimits ? computeUnitLimits[i] : undefined
+        ).setLatestBlockhash(umi)
+      ).build(umi);
     })
   );
+
+  if (sign) {
+    await signer.signAllTransactions(builtTxs);
+  }
+
+  return builtTxs.map((x) => toWeb3JsTransaction(x));
 }
 
 async function getBundleStatus(bundleId: string) {
@@ -155,7 +160,7 @@ export async function sendJitoBundledTransactions(
   const feeEstimates = await Promise.all(
     txs.map(
       async (x) =>
-        (await getComputeUnitPriceEstimate(umi, x, priorityFeeSetting, true)) ??
+        (await getComputeUnitPriceEstimate(umi, x, priorityFeeSetting)) ??
         1000000
     )
   );
@@ -164,16 +169,17 @@ export async function sendJitoBundledTransactions(
     umi,
     signer,
     txs,
+    true, // false if simulating first and rebuilding later
     feeEstimates
-    // Array(txs.length).fill(1_400_000)
   );
-  // // TODO: Skip over this for now, and instead don't specify a compute unit limit in the final bundle transactions
-  // const simulationResults = await simulateJitoBundle(builtTxs);
+
+  // const simulationResults = await simulateJitoBundle(umi, builtTxs);
 
   if (!simulateOnly) {
     // let builtTxs = await umiToVersionedTransactions(
     //   client.signer,
     //   txs,
+    //   true,
     //   feeEstimates,
     //   simulationResults.map((x) => x.unitsConsumed! * 1.15)
     // );
