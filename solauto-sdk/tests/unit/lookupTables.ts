@@ -28,7 +28,7 @@ describe("Assert lookup tables up-to-date", async () => {
 
         const accounts = MARGINFI_ACCOUNTS[group][key];
         const addresses = [
-          new PublicKey(key),
+          group,
           accounts.bank,
           accounts.liquidityVault,
           accounts.vaultAuthority,
