@@ -16,7 +16,6 @@ import {
   toBaseUnit,
 } from "../../src/utils/numberUtils";
 import { NATIVE_MINT } from "@solana/spl-token";
-import { consoleLog } from "../../src/utils/generalUtils";
 import {
   TransactionItem,
   TransactionsManager,
@@ -34,9 +33,9 @@ describe("Solauto Marginfi tests", async () => {
   const signer = setupTest();
   // const signer = setupTest("solauto-manager");
 
-  const payForTransactions = true;
+  const payForTransactions = false;
   const testProgram = true;
-  const positionId = 3;
+  const positionId = 1;
 
   it("open - deposit - borrow - rebalance to 0 - withdraw - close", async () => {
     const client = new SolautoMarginfiClient(
@@ -52,7 +51,7 @@ describe("Solauto Marginfi tests", async () => {
     await client.initialize({
       signer,
       positionId,
-      authority: new PublicKey("rC5dMP5dmSsfQ66rynzfFzuc122Eex9h1RJHVDkeH6D"), // positions 1 & 3 are taken
+      authority: new PublicKey("rC5dMP5dmSsfQ66rynzfFzuc122Eex9h1RJHVDkeH6D"),
       // new: true,
       // marginfiAccount: new PublicKey(
       //   "4nNvUXF5YqHFcH2nGweSiuvy1ct7V5FXfoCLKFYUN36z"
@@ -123,7 +122,7 @@ describe("Solauto Marginfi tests", async () => {
     transactionItems.push(
       new TransactionItem(
         async (attemptNum) =>
-          await buildSolautoRebalanceTransaction(client, 5000, attemptNum),
+          await buildSolautoRebalanceTransaction(client, undefined, attemptNum),
         "rebalance"
       )
     );

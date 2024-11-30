@@ -122,7 +122,6 @@ async function pollBundleStatus(
 }
 
 async function sendJitoBundle(transactions: string[]): Promise<string[]> {
-  consoleLog("Sending bundle...");
   const resp = await axios.post<{ result: string }>(
     `${JITO_BLOCK_ENGINE}/api/v1/bundles`,
     {
@@ -134,7 +133,8 @@ async function sendJitoBundle(transactions: string[]): Promise<string[]> {
   );
 
   const bundleId = resp.data.result;
-  return await pollBundleStatus(bundleId);
+  consoleLog("Bundle ID:", bundleId);
+  return bundleId ? await pollBundleStatus(bundleId) : [];
 }
 
 export async function sendJitoBundledTransactions(
@@ -155,7 +155,7 @@ export async function sendJitoBundledTransactions(
   const feeEstimates = await Promise.all(
     txs.map(
       async (x) =>
-        (await getComputeUnitPriceEstimate(umi, x, priorityFeeSetting)) ??
+        (await getComputeUnitPriceEstimate(umi, x, priorityFeeSetting, true)) ??
         1000000
     )
   );

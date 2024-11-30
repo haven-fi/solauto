@@ -288,18 +288,27 @@ async function simulateTransaction(
 export async function getComputeUnitPriceEstimate(
   umi: Umi,
   tx: TransactionBuilder,
-  prioritySetting: PriorityFeeSetting
+  prioritySetting: PriorityFeeSetting,
+  simMayFail: boolean
 ): Promise<number | undefined> {
   const web3Transaction = toWeb3JsTransaction(
     (await tx.setLatestBlockhash(umi, { commitment: "finalized" })).build(umi)
   );
-  const serializedTransaction = bs58.encode(web3Transaction.serialize());
+  const transaction = simMayFail
+    ? undefined
+    : bs58.encode(web3Transaction.serialize());
+  const accountKeys = simMayFail
+    ? tx
+        .getInstructions()
+        .flatMap((x) => x.keys.flatMap((x) => x.pubkey.toString()))
+    : undefined;
 
   let feeEstimate: number | undefined;
   try {
     const resp = await umi.rpc.call("getPriorityFeeEstimate", [
       {
-        transaction: serializedTransaction,
+        transaction,
+        accountKeys,
         options: {
           priorityLevel: prioritySetting.toString(),
         },
@@ -374,7 +383,7 @@ export async function sendSingleOptimizedTransaction(
 
   let cuPrice: number | undefined;
   if (prioritySetting !== PriorityFeeSetting.None) {
-    cuPrice = await getComputeUnitPriceEstimate(umi, tx, prioritySetting);
+    cuPrice = await getComputeUnitPriceEstimate(umi, tx, prioritySetting, false);
     if (!cuPrice) {
       cuPrice = 1000000;
     }

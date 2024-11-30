@@ -191,7 +191,10 @@ export function getRebalanceValues(
     fromBaseUnit(BigInt(Math.round(amountToDcaIn ?? 0)), state.debt.decimals) *
     (dca?.tokenType === TokenType.Debt ? debtPrice : supplyPrice);
 
-  const rebalanceDirection = amountUsdToDcaIn > 0 || state.liqUtilizationRateBps <= targetRateBps ? RebalanceDirection.Boost : RebalanceDirection.Repay;
+  const rebalanceDirection =
+    amountUsdToDcaIn > 0 || state.liqUtilizationRateBps <= targetRateBps
+      ? RebalanceDirection.Boost
+      : RebalanceDirection.Repay;
   const adjustmentFeeBps = getSolautoFeesBps(
     false,
     targetLiqUtilizationRateBps,
@@ -223,9 +226,13 @@ export function getRebalanceValues(
     amountUsdToDcaIn,
     dcaTokenType: dca?.tokenType,
     rebalanceAction:
-      (amountToDcaIn ?? 0) > 0 ? "dca" : rebalanceDirection === RebalanceDirection.Boost ? "boost" : "repay",
+      (amountToDcaIn ?? 0) > 0
+        ? "dca"
+        : rebalanceDirection === RebalanceDirection.Boost
+          ? "boost"
+          : "repay",
     rebalanceDirection,
-    feesUsd: debtAdjustmentUsd * fromBps(adjustmentFeeBps)
+    feesUsd: debtAdjustmentUsd * fromBps(adjustmentFeeBps),
   };
 }
 
@@ -250,11 +257,15 @@ export function getFlashLoanDetails(
     USD_DECIMALS
   );
 
-  const debtAdjustmentUsd = Math.abs(values.debtAdjustmentUsd);
+  const debtAdjustmentUsdAbs = Math.abs(values.debtAdjustmentUsd);
   supplyUsd =
-    values.debtAdjustmentUsd < 0 ? supplyUsd - debtAdjustmentUsd : supplyUsd;
+    values.rebalanceDirection === RebalanceDirection.Repay
+      ? supplyUsd - debtAdjustmentUsdAbs
+      : supplyUsd;
   debtUsd =
-    values.debtAdjustmentUsd > 0 ? debtUsd + debtAdjustmentUsd : debtUsd;
+    values.rebalanceDirection === RebalanceDirection.Boost
+      ? debtUsd + debtAdjustmentUsdAbs
+      : debtUsd;
 
   const tempLiqUtilizationRateBps = getLiqUtilzationRateBps(
     supplyUsd,
@@ -267,7 +278,7 @@ export function getFlashLoanDetails(
       getMaxLiqUtilizationRateBps(
         client.solautoPositionState!.maxLtvBps,
         client.solautoPositionState!.liqThresholdBps,
-        0.01
+        0.015
       );
 
   let flashLoanToken: PositionTokenUsage | undefined = undefined;
@@ -290,7 +301,7 @@ export function getFlashLoanDetails(
         baseUnitAmount: exactAmountBaseUnit
           ? exactAmountBaseUnit
           : toBaseUnit(
-              debtAdjustmentUsd / flashLoanTokenPrice,
+              debtAdjustmentUsdAbs / flashLoanTokenPrice,
               flashLoanToken.decimals
             ),
         mint: toWeb3JsPublicKey(flashLoanToken.mint),
@@ -304,12 +315,14 @@ export function getJupSwapRebalanceDetails(
   targetLiqUtilizationRateBps?: number,
   attemptNum?: number
 ): JupSwapDetails {
-  const input = values.rebalanceDirection === RebalanceDirection.Boost
-    ? client.solautoPositionState!.debt
-    : client.solautoPositionState!.supply;
-  const output = values.rebalanceDirection === RebalanceDirection.Boost
-    ? client.solautoPositionState!.supply
-    : client.solautoPositionState!.debt;
+  const input =
+    values.rebalanceDirection === RebalanceDirection.Boost
+      ? client.solautoPositionState!.debt
+      : client.solautoPositionState!.supply;
+  const output =
+    values.rebalanceDirection === RebalanceDirection.Boost
+      ? client.solautoPositionState!.supply
+      : client.solautoPositionState!.debt;
 
   const usdToSwap =
     Math.abs(values.debtAdjustmentUsd) +

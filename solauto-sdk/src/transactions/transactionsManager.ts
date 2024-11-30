@@ -153,6 +153,12 @@ class TransactionSet {
     );
   }
 
+  prepend(...items: TransactionItem[]) {
+    this.items.unshift(
+      ...items.filter((x) => x.tx && x.tx.getInstructions().length > 0)
+    );
+  }
+
   async refetchAll(attemptNum: number) {
     await this.txHandler.resetLiveTxUpdates();
     for (const item of this.items) {
@@ -179,7 +185,7 @@ class TransactionSet {
 
   name(): string {
     let names = this.items
-      .filter((x) => x.tx && x.name !== undefined)
+      .filter((x) => x.tx && Boolean(x.name))
       .map((x) => x.name!.toLowerCase());
     if (names.length > 1) {
       names = names.filter((x) => x !== CHORES_TX_NAME);
@@ -237,9 +243,9 @@ export class TransactionsManager {
     let transactionSets: TransactionSet[] = [];
     this.txHandler.log(`Reassembling ${items.length} items`);
 
-    for (let i = 0; i < items.length; ) {
+    for (let i = items.length - 1; i >= 0; ) {
       let item = items[i];
-      i++;
+      i--;
 
       if (!item.tx) {
         continue;
@@ -256,15 +262,15 @@ export class TransactionsManager {
         let newSet = new TransactionSet(this.txHandler, this.lookupTables, [
           item,
         ]);
-        for (let j = i; j < items.length; j++) {
+        for (let j = i; j >= 0; j--) {
           if (await newSet.fitsWith(items[j])) {
-            newSet.add(items[j]);
-            i++;
+            newSet.prepend(items[j]);
+            i--;
           } else {
             break;
           }
         }
-        transactionSets.push(newSet);
+        transactionSets.unshift(newSet);
       }
     }
 
@@ -409,11 +415,13 @@ export class TransactionsManager {
         .stale;
 
       if (stale) {
+        this.txHandler.log("Requires oracle update...");
         const swbTx = new TransactionItem(
           async () =>
             buildSwbSubmitResponseTx(client.connection, client.signer, mint),
-          items.length === 1 ? "Update oracle" : ""
+          "Update oracle"
         );
+        await swbTx.initialize();
         items.unshift(swbTx);
       }
     }
@@ -505,17 +513,28 @@ export class TransactionsManager {
 
   private async processTransactionsAtomically(itemSets: TransactionSet[]) {
     let num = 0;
+    let sets = itemSets;
 
     await retryWithExponentialBackoff(
       async (attemptNum) => {
         num = attemptNum;
 
+        if (attemptNum > 0) {
+          sets = [];
+          for (let i = 0; i < itemSets.length; i++) {
+            const txSet = await this.refreshItemSet(itemSets, i, attemptNum);
+            if (txSet) {
+              sets.push(txSet);
+            }
+          }
+        }
+
         let transactions = [];
-        for (const set of itemSets) {
+        for (const set of sets) {
           transactions.push(await set.getSingleTransaction());
         }
 
-        itemSets.forEach((x) =>
+        sets.forEach((x) =>
           this.updateStatus(x.name(), TransactionStatus.Processing, attemptNum)
         );
         const txSigs = await sendJitoBundledTransactions(
@@ -526,7 +545,7 @@ export class TransactionsManager {
           this.priorityFeeSetting
         );
         if (txSigs) {
-          itemSets.forEach((x, i) =>
+          sets.forEach((x, i) =>
             this.updateStatus(
               x.name(),
               TransactionStatus.Successful,
@@ -535,7 +554,7 @@ export class TransactionsManager {
             )
           );
         } else {
-          itemSets.forEach((x) =>
+          sets.forEach((x) =>
             this.updateStatus(
               x.name(),
               TransactionStatus.Failed,
@@ -551,7 +570,7 @@ export class TransactionsManager {
       this.retryDelay,
       this.errorsToThrow
     ).catch((e: Error) => {
-      itemSets.forEach((x) =>
+      sets.forEach((x) =>
         this.updateStatus(
           x.name(),
           TransactionStatus.Failed,

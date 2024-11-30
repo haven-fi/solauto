@@ -517,7 +517,7 @@ export abstract class SolautoClient extends ReferralStateManager {
           type: "supply",
           value:
             (this.solautoPositionState?.supply.amountUsed.baseUnit ??
-              BigInt(0)) + this.livePositionUpdates.supplyAdjustment,
+              BigInt(0)) * BigInt(-1),
         });
       }
     } else if (args.__kind === "Borrow") {
@@ -535,8 +535,8 @@ export abstract class SolautoClient extends ReferralStateManager {
         this.livePositionUpdates.new({
           type: "debt",
           value:
-            (this.solautoPositionState?.debt.amountUsed.baseUnit ?? BigInt(0)) +
-            this.livePositionUpdates.debtAdjustment,
+            (this.solautoPositionState?.debt.amountUsed.baseUnit ?? BigInt(0)) *
+            BigInt(-1),
         });
       }
     }
