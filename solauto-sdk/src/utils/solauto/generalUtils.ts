@@ -41,6 +41,7 @@ import {
 } from "../marginfiUtils";
 import { RebalanceAction, SolautoPositionDetails } from "../../types/solauto";
 import { fetchTokenPrices } from "../priceUtils";
+import { getRebalanceValues } from "./rebalanceUtils";
 
 export function createDynamicSolautoProgram(programId: PublicKey): Program {
   return {
@@ -132,6 +133,8 @@ export function eligibleForRebalance(
   positionSettings: SolautoSettingsParameters | undefined,
   positionDca: DCASettings | undefined,
   currentUnixTime: number,
+  supplyMintPrice: number,
+  debtMintPrice: number,
   bpsDistanceThreshold = 0
 ): RebalanceAction | undefined {
   if (!positionSettings) {
@@ -167,7 +170,26 @@ export function eligibleForRebalance(
     Math.max(0, positionState.liqUtilizationRateBps - boostFrom) <=
     bpsDistanceThreshold
   ) {
-    return "boost";
+    const values = getRebalanceValues(
+      positionState!,
+      positionSettings,
+      positionDca,
+      currentUnixSeconds(),
+      supplyMintPrice,
+      debtMintPrice
+    );
+    const sufficientLiquidity =
+      fromBaseUnit(
+        positionState.debt.amountCanBeUsed.baseAmountUsdValue,
+        USD_DECIMALS
+      ) *
+        0.95 >
+      values.debtAdjustmentUsd;
+    if (!sufficientLiquidity) {
+      console.log("Insufficient debt liquidity to further boost");
+    }
+
+    return sufficientLiquidity ? "boost" : undefined;
   } else if (
     Math.max(0, repayFrom - positionState.liqUtilizationRateBps) <=
     bpsDistanceThreshold

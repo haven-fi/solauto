@@ -646,6 +646,9 @@ export async function buildSolautoRebalanceTransaction(
   attemptNum?: number
 ): Promise<TransactionItemInputs | undefined> {
   client.solautoPositionState = await client.getFreshPositionState();
+  const supplyPrice = safeGetPrice(client.supplyMint) ?? 0;
+  const debtPrice = safeGetPrice(client.debtMint) ?? 0;
+
   if (
     (client.solautoPositionState?.supply.amountUsed.baseUnit === BigInt(0) &&
       client.livePositionUpdates.supplyAdjustment === BigInt(0)) ||
@@ -654,7 +657,9 @@ export async function buildSolautoRebalanceTransaction(
         client.solautoPositionState!,
         client.solautoPositionSettings(),
         client.solautoPositionActiveDca(),
-        currentUnixSeconds()
+        currentUnixSeconds(),
+        supplyPrice,
+        debtPrice
       ))
   ) {
     client.log("Not eligible for a rebalance");
@@ -666,8 +671,8 @@ export async function buildSolautoRebalanceTransaction(
     client.solautoPositionSettings(),
     client.solautoPositionActiveDca(),
     currentUnixSeconds(),
-    safeGetPrice(client.supplyMint)!,
-    safeGetPrice(client.debtMint)!,
+    supplyPrice,
+    debtPrice,
     targetLiqUtilizationRateBps
   );
   client.log("Rebalance values: ", values);
