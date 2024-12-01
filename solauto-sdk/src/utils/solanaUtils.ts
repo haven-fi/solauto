@@ -273,7 +273,7 @@ async function simulateTransaction(
     toWeb3JsTransaction(transaction.build(umi)),
     {
       sigVerify: false,
-      commitment: "processed",
+      commitment: "confirmed",
     }
   );
   if (simulationResult.value.err) {
