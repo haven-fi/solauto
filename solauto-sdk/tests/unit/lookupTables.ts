@@ -1,7 +1,6 @@
 import { describe, it } from "mocha";
 import { clusterApiUrl, Connection, PublicKey } from "@solana/web3.js";
 import {
-  DEFAULT_PUBKEY,
   MARGINFI_ACCOUNTS,
   MARGINFI_ACCOUNTS_LOOKUP_TABLE,
 } from "../../src/constants/marginfiAccounts";

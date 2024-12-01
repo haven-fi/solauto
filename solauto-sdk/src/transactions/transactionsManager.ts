@@ -513,28 +513,23 @@ export class TransactionsManager {
 
   private async processTransactionsAtomically(itemSets: TransactionSet[]) {
     let num = 0;
-    let sets = itemSets;
 
     await retryWithExponentialBackoff(
       async (attemptNum) => {
         num = attemptNum;
 
         if (attemptNum > 0) {
-          sets = [];
           for (let i = 0; i < itemSets.length; i++) {
-            const txSet = await this.refreshItemSet(itemSets, i, attemptNum);
-            if (txSet) {
-              sets.push(txSet);
-            }
+            await itemSets[i].refetchAll(attemptNum);
           }
         }
 
         let transactions = [];
-        for (const set of sets) {
+        for (const set of itemSets) {
           transactions.push(await set.getSingleTransaction());
         }
 
-        sets.forEach((x) =>
+        itemSets.forEach((x) =>
           this.updateStatus(x.name(), TransactionStatus.Processing, attemptNum)
         );
         const txSigs = await sendJitoBundledTransactions(
@@ -544,23 +539,23 @@ export class TransactionsManager {
           false,
           this.priorityFeeSetting
         );
-        if (txSigs) {
-          sets.forEach((x, i) =>
+        if (Boolean(txSigs) && txSigs!.length > 0) {
+          itemSets.forEach((x, i) =>
             this.updateStatus(
               x.name(),
               TransactionStatus.Successful,
               attemptNum,
-              txSigs[i]
+              txSigs![i]
             )
           );
         } else {
-          sets.forEach((x) =>
+          itemSets.forEach((x) =>
             this.updateStatus(
               x.name(),
               TransactionStatus.Failed,
               attemptNum,
               undefined,
-              true
+              true,
             )
           );
           throw new Error("Unknown error");
@@ -570,7 +565,7 @@ export class TransactionsManager {
       this.retryDelay,
       this.errorsToThrow
     ).catch((e: Error) => {
-      sets.forEach((x) =>
+      itemSets.forEach((x) =>
         this.updateStatus(
           x.name(),
           TransactionStatus.Failed,
