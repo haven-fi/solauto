@@ -522,6 +522,7 @@ export class TransactionsManager {
           for (let i = 0; i < itemSets.length; i++) {
             await itemSets[i].refetchAll(attemptNum);
           }
+          itemSets = await this.assembleTransactionSets(itemSets.flatMap(x => x.items));
         }
 
         let transactions = [];
