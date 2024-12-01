@@ -24,7 +24,7 @@ async function createIntermediarySolautoManagerAccounts() {
 
   umi = umi.use(signerIdentity(signer));
 
-  const accounts = await getAllMarginfiAccountsByAuthority(connection, umi, SOLAUTO_MANAGER, false);
+  const accounts = await getAllMarginfiAccountsByAuthority(umi, SOLAUTO_MANAGER, undefined, false);
   const data = await safeFetchAllMarginfiAccount(umi, accounts.map(x => publicKey(x.marginfiAccount)));
   const existingMarginfiGroups = data.map(x => x.group.toString());
 

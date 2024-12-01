@@ -1,5 +1,9 @@
 import { PublicKey } from "@solana/web3.js";
-import { ALL_SUPPORTED_TOKENS, SOLAUTO_FEES_WALLET } from "../src/constants";
+import {
+  ALL_SUPPORTED_TOKENS,
+  SOLAUTO_FEES_WALLET,
+  SOLAUTO_MANAGER,
+} from "../src/constants";
 import {
   buildHeliusApiUrl,
   createAssociatedTokenAccountUmiIx,
@@ -16,12 +20,12 @@ import {
   transactionBuilder,
 } from "@metaplex-foundation/umi";
 
-async function create() {
+async function createTokenAccounts(wallet: PublicKey) {
   let [connection, umi] = getSolanaRpcConnection(
     buildHeliusApiUrl(process.env.HELIUS_API_KEY!)
   );
 
-  const secretKey = getSecretKey("solauto-auth");
+  const secretKey = getSecretKey();
   const signerKeypair = umi.eddsa.createKeypairFromSecretKey(secretKey);
   const signer = createSignerFromKeypair(umi, signerKeypair);
 
@@ -29,7 +33,7 @@ async function create() {
 
   const tokenAccounts = await umi.rpc.getAccounts(
     ALL_SUPPORTED_TOKENS.map((x) =>
-      publicKey(getTokenAccount(SOLAUTO_FEES_WALLET, new PublicKey(x)))
+      publicKey(getTokenAccount(wallet, new PublicKey(x)))
     )
   );
 
@@ -37,7 +41,7 @@ async function create() {
     if (!accounts[0].exists) {
       const tx = createAssociatedTokenAccountUmiIx(
         signer,
-        SOLAUTO_FEES_WALLET,
+        wallet,
         new PublicKey(accounts[1])
       );
       await sendSingleOptimizedTransaction(
@@ -49,4 +53,4 @@ async function create() {
   }
 }
 
-create();
+createTokenAccounts(SOLAUTO_FEES_WALLET);

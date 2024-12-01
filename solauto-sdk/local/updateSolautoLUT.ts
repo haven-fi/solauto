@@ -28,14 +28,12 @@ const solautoFeeWalletTokenAccounts = getTokenAccounts(
 );
 
 export async function updateSolautoLut(additionalAccounts?: string[]) {
-  const [connection, umi] = getSolanaRpcConnection(
+  const [_, umi] = getSolanaRpcConnection(
     buildHeliusApiUrl(process.env.HELIUS_API_KEY!)
   );
   const ismAccounts = await getAllMarginfiAccountsByAuthority(
-    connection,
     umi,
-    SOLAUTO_MANAGER,
-    false
+    SOLAUTO_MANAGER
   );
 
   return updateLookupTable(

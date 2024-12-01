@@ -158,10 +158,9 @@ export class SolautoMarginfiClient extends SolautoClient {
   async setIntermediaryMarginfiDetails() {
     const existingMarginfiAccounts = (
       await getAllMarginfiAccountsByAuthority(
-        this.connection,
         this.umi,
         toWeb3JsPublicKey(this.signer.publicKey),
-        false
+        this.marginfiGroup
       )
     )
       .filter((x) => !x.marginfiAccount.equals(this.marginfiAccountPk))

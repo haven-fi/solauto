@@ -138,9 +138,9 @@ export async function getMaxLtvAndLiqThreshold(
 }
 
 export async function getAllMarginfiAccountsByAuthority(
-  conn: Connection,
   umi: Umi,
   authority: PublicKey,
+  group?: PublicKey,
   compatibleWithSolauto?: boolean
 ): Promise<
   { marginfiAccount: PublicKey; supplyMint?: PublicKey; debtMint?: PublicKey }[]
@@ -163,6 +163,16 @@ export async function getAllMarginfiAccountsByAuthority(
             offset: 40, // Anchor account discriminator + group pubkey
           },
         },
+        ...(group
+          ? [
+              {
+                memcmp: {
+                  bytes: new Uint8Array(group.toBuffer()),
+                  offset: 8,
+                },
+              },
+            ]
+          : []),
       ],
     }
   );

@@ -368,7 +368,6 @@ export async function getReferralsByUser(
 }
 
 export async function getAllPositionsByAuthority(
-  conn: Connection,
   umi: Umi,
   user: PublicKey,
   positionTypeFilter?: PositionType
@@ -392,9 +391,9 @@ export async function getAllPositionsByAuthority(
         }
 
         let marginfiPositions = await getAllMarginfiAccountsByAuthority(
-          conn,
           umi,
           user,
+          undefined,
           true
         );
         marginfiPositions = marginfiPositions.filter(

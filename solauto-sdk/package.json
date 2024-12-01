@@ -1,6 +1,6 @@
 {
   "name": "@haven-fi/solauto-sdk",
-  "version": "1.0.324",
+  "version": "1.0.325",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "description": "Typescript SDK for the Solauto program on the Solana blockchain",
@@ -14,7 +14,7 @@
     "update-lut:solauto": "npx ts-node local/updateSolautoLUT.ts",
     "update-lut:marginfi": "npx ts-node local/updateMarginfiLUT.ts",
     "create-ism-accounts": "npx ts-node local/createISMAccounts.ts",
-    "create-fee-accounts": "npx ts-node local/createFeeAccounts.ts"
+    "create-token-accounts": "npx ts-node local/createTokenAccounts.ts"
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.30.1",
