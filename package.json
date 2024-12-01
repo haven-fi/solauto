@@ -7,7 +7,7 @@
     "build:rs:prod": "cargo build-sbf",
     "verified-build": "solana-verify build --library-name solauto",
     "build:ts": "cd solauto-sdk && npm run build",
-    "deploy:buffer": "solana program write-buffer target/deploy/solauto.so --max-sign-attempts 50",
+    "deploy:buffer": "solana program write-buffer target/deploy/solauto.so --buffer ~/.config/solana/buffer.json --max-sign-attempts 50",
     "deploy:rs:test": "solana program deploy target/deploy/solauto.so --keypair ~/.config/solana/solauto-auth.json --program-id TesTjfQ6TbXv96Tv6fqr95XTZ1LYPxtkafmShN9PjBp --use-rpc --buffer ~/.config/solana/buffer.json --max-sign-attempts 50",
     "deploy:ts": "cd solauto-sdk && npm publish",
     "generate": "pnpm generate:idl && pnpm generate:clients",
