@@ -70,7 +70,7 @@ async function umiToVersionedTransactions(
   signer: Signer,
   txs: TransactionBuilder[],
   sign: boolean,
-  feeEstimates: number[],
+  feeEstimates?: number[],
   computeUnitLimits?: number[]
 ): Promise<VersionedTransaction[]> {
   const builtTxs = await Promise.all(
@@ -79,7 +79,7 @@ async function umiToVersionedTransactions(
         await assembleFinalTransaction(
           signer,
           tx,
-          feeEstimates[i],
+          feeEstimates ? feeEstimates[i] : undefined,
           computeUnitLimits ? computeUnitLimits[i] : undefined
         ).setLatestBlockhash(umi)
       ).build(umi);
@@ -157,13 +157,16 @@ export async function sendJitoBundledTransactions(
   );
 
   txs[0] = txs[0].prepend(await getTipInstruction(signer, 150_000));
-  const feeEstimates = await Promise.all(
-    txs.map(
-      async (x) =>
-        (await getComputeUnitPriceEstimate(umi, x, priorityFeeSetting)) ??
-        1000000
-    )
-  );
+  const feeEstimates =
+    priorityFeeSetting !== PriorityFeeSetting.None
+      ? await Promise.all(
+          txs.map(
+            async (x) =>
+              (await getComputeUnitPriceEstimate(umi, x, priorityFeeSetting)) ??
+              1000000
+          )
+        )
+      : undefined;
 
   let builtTxs = await umiToVersionedTransactions(
     umi,
