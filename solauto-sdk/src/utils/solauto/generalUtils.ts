@@ -166,32 +166,32 @@ export function eligibleForRebalance(
   const repayFrom = positionSettings.repayToBps + positionSettings.repayGap;
   const boostFrom = boostToBps - positionSettings.boostGap;
 
-  if (
-    Math.max(0, positionState.liqUtilizationRateBps - boostFrom) <=
-    bpsDistanceThreshold
-  ) {
-    const values = getRebalanceValues(
-      positionState!,
-      positionSettings,
-      positionDca,
-      currentUnixSeconds(),
-      supplyMintPrice,
-      debtMintPrice
-    );
-    const sufficientLiquidity =
-      fromBaseUnit(
-        positionState.debt.amountCanBeUsed.baseAmountUsdValue,
-        USD_DECIMALS
-      ) *
-        0.95 >
-      values.debtAdjustmentUsd;
-    if (!sufficientLiquidity) {
-      console.log("Insufficient debt liquidity to further boost");
+  if (positionState.liqUtilizationRateBps - boostFrom <= bpsDistanceThreshold) {
+    if (positionState.liqUtilizationRateBps < boostFrom) {
+      const values = getRebalanceValues(
+        positionState!,
+        positionSettings,
+        positionDca,
+        currentUnixSeconds(),
+        supplyMintPrice,
+        debtMintPrice
+      );
+      const sufficientLiquidity =
+        fromBaseUnit(
+          positionState.debt.amountCanBeUsed.baseAmountUsdValue,
+          USD_DECIMALS
+        ) *
+          0.95 >
+        values.debtAdjustmentUsd;
+      if (!sufficientLiquidity) {
+        console.log("Insufficient debt liquidity to further boost");
+      }
+      return sufficientLiquidity ? "boost" : undefined;
     }
 
-    return sufficientLiquidity ? "boost" : undefined;
+    return "boost";
   } else if (
-    Math.max(0, repayFrom - positionState.liqUtilizationRateBps) <=
+    repayFrom - positionState.liqUtilizationRateBps <=
     bpsDistanceThreshold
   ) {
     return "repay";
