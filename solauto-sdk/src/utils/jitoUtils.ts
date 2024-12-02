@@ -127,15 +127,24 @@ async function pollBundleStatus(
 }
 
 async function sendJitoBundle(transactions: string[]): Promise<string[]> {
-  const resp = await axios.post<{ result: string }>(
-    `${JITO_BLOCK_ENGINE}/api/v1/bundles`,
-    {
-      jsonrpc: "2.0",
-      id: 1,
-      method: "sendBundle",
-      params: [transactions],
+  let resp: any;
+  try {
+    resp = await axios.post<{ result: string }>(
+      `${JITO_BLOCK_ENGINE}/api/v1/bundles`,
+      {
+        jsonrpc: "2.0",
+        id: 1,
+        method: "sendBundle",
+        params: [transactions],
+      }
+    );
+  } catch (e: any) {
+    if (e.response) {
+      console.error("Jito send bundle error:", e.response.data);
+      console.error("Jito send bundle error:", e.response.data.error);
+      throw e;
     }
-  );
+  }
 
   const bundleId = resp.data.result;
   consoleLog("Bundle ID:", bundleId);

@@ -14,7 +14,7 @@ import {
   fromWeb3JsInstruction,
   toWeb3JsPublicKey,
 } from "@metaplex-foundation/umi-web3js-adapters";
-import { retryWithExponentialBackoff } from "./generalUtils";
+import { retryWithExponentialBackoff, zip } from "./generalUtils";
 
 export function getPullFeed(
   conn: Connection,
@@ -108,14 +108,22 @@ export async function getSwitchboardPrices(
 
   const crossbar = new CrossbarClient("https://crossbar.switchboard.xyz");
   const results = await retryWithExponentialBackoff(
-    async () =>
-      await crossbar.simulateSolanaFeeds(
+    async () => {
+      const res = await crossbar.simulateSolanaFeeds(
         "mainnet",
         mints.map((x) => SWITCHBOARD_PRICE_FEED_IDS[x.toString()])
-      ),
+      );
+
+      const prices = res.flatMap((x) => x.results[0]);
+      if (prices.find((x) => x === -Infinity || !Number.isFinite(x))) {
+        throw new Error("Unable to fetch Switchboard prices");
+      }
+
+      return prices;
+    },
     8,
-    200
+    250
   );
 
-  return results.flatMap((x) => x.results[0]);
+  return results;
 }
