@@ -530,7 +530,7 @@ export class TransactionsManager {
     let num = 0;
 
     await retryWithExponentialBackoff(
-      async (attemptNum) => {
+      async (attemptNum, prevError) => {
         num = attemptNum;
 
         if (attemptNum > 0) {
@@ -545,6 +545,17 @@ export class TransactionsManager {
         let transactions = [];
         for (const set of itemSets) {
           transactions.push(await set.getSingleTransaction());
+        }
+        transactions = transactions.filter(
+          (x) => x.getInstructions().length > 0
+        );
+        if (transactions.length === 0) {
+          this.updateStatusForSets(
+            itemSets,
+            TransactionStatus.Skipped,
+            attemptNum
+          );
+          return;
         }
 
         this.updateStatusForSets(
@@ -562,7 +573,7 @@ export class TransactionsManager {
             this.txHandler.signer,
             transactions,
             this.txType,
-            this.priorityFeeSetting
+            this.getUpdatedPriorityFeeSetting(prevError, attemptNum)
           );
         } catch (e: any) {
           error = e as Error;
@@ -577,9 +588,7 @@ export class TransactionsManager {
             true,
             error?.message
           );
-          if (error) {
-            throw error ? error : new Error("Unknown error");
-          }
+          throw error ? error : new Error("Unknown error");
         }
 
         this.updateStatusForSets(

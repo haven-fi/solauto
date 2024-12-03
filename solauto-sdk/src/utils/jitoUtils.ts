@@ -1,4 +1,4 @@
-import { Connection, PublicKey, VersionedTransaction } from "@solana/web3.js";
+import { Connection, PublicKey, TransactionExpiredBlockheightExceededError, VersionedTransaction } from "@solana/web3.js";
 import { toWeb3JsTransaction } from "@metaplex-foundation/umi-web3js-adapters";
 import { JITO_BLOCK_ENGINE } from "../constants/solautoConstants";
 import {
@@ -118,13 +118,14 @@ async function pollBundleStatus(
     await new Promise((resolve) => setTimeout(resolve, interval));
     const statuses = await getBundleStatus(bundleId);
     if (statuses?.value?.length > 0) {
+      consoleLog("Statuses:", statuses);
       const status = statuses.value[0].confirmation_status;
       if (status === "confirmed") {
         return statuses?.value[0].transactions as string[];
       }
     }
   }
-  return [];
+  throw new TransactionExpiredBlockheightExceededError("Unable to confirm transaction. Try a higher priority fee.");
 }
 
 async function sendJitoBundle(transactions: string[]): Promise<string[]> {
