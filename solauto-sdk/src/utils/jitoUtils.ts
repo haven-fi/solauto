@@ -1,4 +1,4 @@
-import { PublicKey, VersionedTransaction } from "@solana/web3.js";
+import { Connection, PublicKey, VersionedTransaction } from "@solana/web3.js";
 import { toWeb3JsTransaction } from "@metaplex-foundation/umi-web3js-adapters";
 import { JITO_BLOCK_ENGINE } from "../constants/solautoConstants";
 import {
@@ -11,10 +11,11 @@ import {
   assembleFinalTransaction,
   buildIronforgeApiUrl,
   getComputeUnitPriceEstimate,
+  sendSingleOptimizedTransaction,
   systemTransferUmiIx,
 } from "./solanaUtils";
 import { consoleLog } from "./generalUtils";
-import { PriorityFeeSetting } from "../types";
+import { PriorityFeeSetting, TransactionRunType } from "../types";
 import axios from "axios";
 import base58 from "bs58";
 import { bs58 } from "@coral-xyz/anchor/dist/cjs/utils/bytes";
@@ -73,7 +74,7 @@ async function umiToVersionedTransactions(
   feeEstimates?: number[],
   computeUnitLimits?: number[]
 ): Promise<VersionedTransaction[]> {
-  const builtTxs = await Promise.all(
+  let builtTxs = await Promise.all(
     txs.map(async (tx, i) => {
       return (
         await assembleFinalTransaction(
@@ -87,7 +88,7 @@ async function umiToVersionedTransactions(
   );
 
   if (sign) {
-    await signer.signAllTransactions(builtTxs);
+    builtTxs = await signer.signAllTransactions(builtTxs);
   }
 
   return builtTxs.map((x) => toWeb3JsTransaction(x));
@@ -139,8 +140,10 @@ async function sendJitoBundle(transactions: string[]): Promise<string[]> {
       }
     );
   } catch (e: any) {
-    if (e.response) {
+    if (e.response.data.error) {
       console.error("Jito send bundle error:", e.response.data.error);
+      throw new Error(e.response.data.error.message);
+    } else {
       throw e;
     }
   }
@@ -152,11 +155,23 @@ async function sendJitoBundle(transactions: string[]): Promise<string[]> {
 
 export async function sendJitoBundledTransactions(
   umi: Umi,
+  connection: Connection,
   signer: Signer,
   txs: TransactionBuilder[],
-  simulateOnly?: boolean,
+  txType?: TransactionRunType,
   priorityFeeSetting: PriorityFeeSetting = PriorityFeeSetting.Min
 ): Promise<string[] | undefined> {
+  if (txs.length === 1) {
+    const res = await sendSingleOptimizedTransaction(
+      umi,
+      connection,
+      txs[0],
+      txType,
+      priorityFeeSetting
+    );
+    return res ? [bs58.encode(res)] : undefined;
+  }
+
   consoleLog("Sending Jito bundle...");
   consoleLog("Transactions: ", txs.length);
   consoleLog(
@@ -186,7 +201,7 @@ export async function sendJitoBundledTransactions(
 
   // const simulationResults = await simulateJitoBundle(umi, builtTxs);
 
-  if (!simulateOnly) {
+  if (txType !== "only-simulate") {
     // let builtTxs = await umiToVersionedTransactions(
     //   client.signer,
     //   txs,

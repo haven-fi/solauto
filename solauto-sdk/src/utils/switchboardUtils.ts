@@ -98,32 +98,3 @@ export async function getSwitchboardFeedData(
 
   return results;
 }
-
-export async function getSwitchboardPrices(
-  mints: PublicKey[]
-): Promise<number[]> {
-  if (mints.length === 0) {
-    return [];
-  }
-
-  const crossbar = new CrossbarClient("https://crossbar.switchboard.xyz");
-  const results = await retryWithExponentialBackoff(
-    async () => {
-      const res = await crossbar.simulateSolanaFeeds(
-        "mainnet",
-        mints.map((x) => SWITCHBOARD_PRICE_FEED_IDS[x.toString()])
-      );
-
-      const prices = res.flatMap((x) => x.results[0]);
-      if (prices.find((x) => x === -Infinity || !Number.isFinite(x))) {
-        throw new Error("Unable to fetch Switchboard prices");
-      }
-
-      return prices;
-    },
-    8,
-    250
-  );
-
-  return results;
-}

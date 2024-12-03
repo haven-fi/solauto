@@ -22,7 +22,7 @@ import {
   getSolautoPositionAccountDataSerializer,
   getSolautoPositionSize,
 } from "../../generated";
-import { currentUnixSeconds } from "../generalUtils";
+import { consoleLog, currentUnixSeconds } from "../generalUtils";
 import {
   fromBaseUnit,
   getLiqUtilzationRateBps,
@@ -184,7 +184,7 @@ export function eligibleForRebalance(
           0.95 >
         values.debtAdjustmentUsd;
       if (!sufficientLiquidity) {
-        console.log("Insufficient debt liquidity to further boost");
+        consoleLog("Insufficient debt liquidity to further boost");
       }
       return sufficientLiquidity ? "boost" : undefined;
     }

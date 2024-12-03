@@ -5,15 +5,14 @@ import { fromBaseUnit, toBaseUnit } from "./numberUtils";
 import { PRICES } from "../constants/solautoConstants";
 import { SWITCHBOARD_PRICE_FEED_IDS } from "../constants/switchboardConstants";
 import {
+  consoleLog,
   currentUnixSeconds,
   retryWithExponentialBackoff,
   zip,
 } from "./generalUtils";
-import { getSwitchboardPrices } from "./switchboardUtils";
+import { CrossbarClient } from "@switchboard-xyz/on-demand";
 
-export async function fetchTokenPrices(
-  mints: PublicKey[]
-): Promise<number[]> {
+export async function fetchTokenPrices(mints: PublicKey[]): Promise<number[]> {
   const currentTime = currentUnixSeconds();
   if (
     !mints.some(
@@ -34,6 +33,8 @@ export async function fetchTokenPrices(
     zip(pythMints, await getPythPrices(pythMints)),
     zip(switchboardMints, await getSwitchboardPrices(switchboardMints)),
   ]);
+
+  consoleLog([...pythData, ...switchboardData]);
 
   const prices = mints.map((mint) => {
     const item = [...pythData, ...switchboardData].find((data) =>
@@ -94,16 +95,45 @@ export async function getPythPrices(mints: PublicKey[]) {
   return prices;
 }
 
-export function safeGetPrice(
-  mint: PublicKey | UmiPublicKey | undefined
-): number | undefined {
-  if (mint && mint?.toString() in PRICES) {
-    return PRICES[mint!.toString()].price;
+export async function getSwitchboardPrices(
+  mints: PublicKey[]
+): Promise<number[]> {
+  if (mints.length === 0) {
+    return [];
   }
-  return undefined;
+
+  const crossbar = new CrossbarClient("https://crossbar.switchboard.xyz");
+  let prices = await retryWithExponentialBackoff(
+    async () => {
+      const res = await crossbar.simulateSolanaFeeds(
+        "mainnet",
+        mints.map((x) => SWITCHBOARD_PRICE_FEED_IDS[x.toString()])
+      );
+
+      const prices = res.flatMap((x) => x.results[0]);
+      if (prices.find((x) => !x || x === -Infinity)) {
+        throw new Error("Unable to fetch Switchboard prices");
+      }
+
+      return prices;
+    },
+    8,
+    250
+  );
+
+  const missingPrices = zip(mints, prices).filter((x) => !x[1]);
+  const jupPrices = zip(
+    missingPrices.map((x) => x[0]),
+    await getJupTokenPrices(missingPrices.map((x) => x[0]))
+  );
+
+  prices = prices.map((x, i) =>
+    x ? x : jupPrices.find((y) => y[0].toString() === mints[i].toString())![1]
+  );
+
+  return prices;
 }
 
-// LEGACY, NOT USED
 export async function getJupTokenPrices(mints: PublicKey[]) {
   if (mints.length == 0) {
     return [];
@@ -113,7 +143,7 @@ export async function getJupTokenPrices(mints: PublicKey[]) {
     const res = (
       await fetch(
         "https://api.jup.ag/price/v2?ids=" +
-          mints.map((x) => x.toString()).join(",") + "&showExtraInfo=true"
+          mints.map((x) => x.toString()).join(",")
       )
     ).json();
     return res;
@@ -124,4 +154,13 @@ export async function getJupTokenPrices(mints: PublicKey[]) {
   );
 
   return prices;
+}
+
+export function safeGetPrice(
+  mint: PublicKey | UmiPublicKey | undefined
+): number | undefined {
+  if (mint && mint?.toString() in PRICES) {
+    return PRICES[mint!.toString()].price;
+  }
+  return undefined;
 }
