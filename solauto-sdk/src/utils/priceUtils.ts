@@ -34,8 +34,6 @@ export async function fetchTokenPrices(mints: PublicKey[]): Promise<number[]> {
     zip(switchboardMints, await getSwitchboardPrices(switchboardMints)),
   ]);
 
-  consoleLog([...pythData, ...switchboardData]);
-
   const prices = mints.map((mint) => {
     const item = [...pythData, ...switchboardData].find((data) =>
       data[0].equals(mint)

@@ -554,7 +554,7 @@ export class TransactionsManager {
         );
 
         let txSigs: string[] | undefined;
-        let error: string | undefined;
+        let error: Error | undefined;
         try {
           txSigs = await sendJitoBundledTransactions(
             this.txHandler.umi,
@@ -565,7 +565,7 @@ export class TransactionsManager {
             this.priorityFeeSetting
           );
         } catch (e: any) {
-          error = e.message;
+          error = e as Error;
         }
 
         if (error || !Boolean(txSigs) || txSigs?.length === 0) {
@@ -575,10 +575,10 @@ export class TransactionsManager {
             attemptNum,
             txSigs,
             true,
-            error
+            error?.message
           );
           if (error) {
-            throw new Error(error ? error : "Unknown error");
+            throw error ? error : new Error("Unknown error");
           }
         }
 
