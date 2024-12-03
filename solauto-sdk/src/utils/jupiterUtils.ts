@@ -13,6 +13,7 @@ import {
 } from "@jup-ag/api";
 import { getTokenAccount } from "./accountUtils";
 import { consoleLog, retryWithExponentialBackoff } from "./generalUtils";
+import { TOKEN_INFO } from "../constants";
 
 const jupApi = createJupiterApiClient();
 
@@ -54,7 +55,10 @@ export async function getJupSwapTransaction(
   swapDetails: JupSwapDetails,
   attemptNum?: number
 ): Promise<JupSwapTransaction> {
-  consoleLog("Getting jup quote...");
+  const memecoinSwap =
+    TOKEN_INFO[swapDetails.inputMint.toString()].isMeme ||
+    TOKEN_INFO[swapDetails.outputMint.toString()].isMeme;
+
   const quoteResponse = await retryWithExponentialBackoff(
     async () =>
       await jupApi.quoteGet({
@@ -66,10 +70,11 @@ export async function getJupSwapTransaction(
           : swapDetails.exactIn
             ? "ExactIn"
             : undefined,
-        slippageBps: 50,
+        slippageBps: memecoinSwap ? 150 : 50,
         maxAccounts: !swapDetails.exactOut ? 60 : undefined,
       }),
-    3
+    4,
+    200
   );
 
   const priceImpactBps =
@@ -84,23 +89,30 @@ export async function getJupSwapTransaction(
   if (swapDetails.exactOut) {
     quoteResponse.inAmount = (
       parseInt(quoteResponse.inAmount) +
-      Math.ceil(parseInt(quoteResponse.inAmount) * fromBps(finalPriceSlippageBps))
+      Math.ceil(
+        parseInt(quoteResponse.inAmount) * fromBps(finalPriceSlippageBps)
+      )
     ).toString();
   }
 
   consoleLog("Getting jup instructions...");
-  const instructions = await jupApi.swapInstructionsPost({
-    swapRequest: {
-      userPublicKey: signer.publicKey.toString(),
-      quoteResponse,
-      wrapAndUnwrapSol: false,
-      useTokenLedger: !swapDetails.exactOut && !swapDetails.exactIn,
-      destinationTokenAccount: getTokenAccount(
-        swapDetails.destinationWallet,
-        swapDetails.outputMint
-      ).toString(),
-    },
-  });
+  const instructions = await retryWithExponentialBackoff(
+    async () =>
+      await jupApi.swapInstructionsPost({
+        swapRequest: {
+          userPublicKey: signer.publicKey.toString(),
+          quoteResponse,
+          wrapAndUnwrapSol: false,
+          useTokenLedger: !swapDetails.exactOut && !swapDetails.exactIn,
+          destinationTokenAccount: getTokenAccount(
+            swapDetails.destinationWallet,
+            swapDetails.outputMint
+          ).toString(),
+        },
+      }),
+    4,
+    200
+  );
 
   if (!instructions.swapInstruction) {
     throw new Error("No swap instruction was returned by Jupiter");

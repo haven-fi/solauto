@@ -16,7 +16,6 @@ import {
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
 import {
   AddressLookupTableAccount,
-  Blockhash,
   BlockhashWithExpiryBlockHeight,
   ComputeBudgetProgram,
   Connection,
@@ -274,7 +273,7 @@ async function simulateTransaction(
     toWeb3JsTransaction(transaction.build(umi)),
     {
       sigVerify: false,
-      commitment: "processed",
+      commitment: "confirmed",
     }
   );
   if (simulationResult.value.err) {
@@ -294,13 +293,12 @@ export async function getComputeUnitPriceEstimate(
   const web3Transaction = toWeb3JsTransaction(
     (await tx.setLatestBlockhash(umi, { commitment: "finalized" })).build(umi)
   );
-  const serializedTransaction = bs58.encode(web3Transaction.serialize());
 
   let feeEstimate: number | undefined;
   try {
     const resp = await umi.rpc.call("getPriorityFeeEstimate", [
       {
-        transaction: serializedTransaction,
+        transaction: bs58.encode(web3Transaction.serialize()),
         options: {
           priorityLevel: prioritySetting.toString(),
         },
@@ -308,7 +306,21 @@ export async function getComputeUnitPriceEstimate(
     ]);
     feeEstimate = Math.round((resp as any).priorityFeeEstimate as number);
   } catch (e) {
-    console.error(e);
+    try {
+      const resp = await umi.rpc.call("getPriorityFeeEstimate", [
+        {
+          accountKeys: tx
+            .getInstructions()
+            .flatMap((x) => x.keys.flatMap((x) => x.pubkey.toString())),
+          options: {
+            priorityLevel: prioritySetting.toString(),
+          },
+        },
+      ]);
+      feeEstimate = Math.round((resp as any).priorityFeeEstimate as number);
+    } catch (e) {
+      console.error(e);
+    }
   }
 
   return feeEstimate;
@@ -318,7 +330,7 @@ async function spamSendTransactionUntilConfirmed(
   connection: Connection,
   transaction: Transaction | VersionedTransaction,
   blockhash: BlockhashWithExpiryBlockHeight,
-  spamInterval: number = 1000
+  spamInterval: number = 1500
 ): Promise<string> {
   let transactionSignature: string | null = null;
 
@@ -375,7 +387,11 @@ export async function sendSingleOptimizedTransaction(
 
   let cuPrice: number | undefined;
   if (prioritySetting !== PriorityFeeSetting.None) {
-    cuPrice = await getComputeUnitPriceEstimate(umi, tx, prioritySetting);
+    cuPrice = await getComputeUnitPriceEstimate(
+      umi,
+      tx,
+      prioritySetting,
+    );
     if (!cuPrice) {
       cuPrice = 1000000;
     }
@@ -400,7 +416,7 @@ export async function sendSingleOptimizedTransaction(
       3
     );
     simulationResult.value.err;
-    computeUnitLimit = Math.round(simulationResult.value.unitsConsumed! * 1.2);
+    computeUnitLimit = Math.round(simulationResult.value.unitsConsumed! * 1.15);
     consoleLog("Compute unit limit: ", computeUnitLimit);
   }
 

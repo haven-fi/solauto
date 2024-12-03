@@ -33,12 +33,8 @@ import {
   marginfiRebalance,
   marginfiRefreshData,
 } from "../generated";
-import {
-  getMarginfiAccountPDA,
-  getReferralState,
-  getTokenAccount,
-} from "../utils/accountUtils";
-import { generateRandomU64, safeGetPrice } from "../utils/generalUtils";
+import { getMarginfiAccountPDA, getTokenAccount } from "../utils/accountUtils";
+import { generateRandomU64 } from "../utils/generalUtils";
 import {
   MARGINFI_PROGRAM_ID,
   MarginfiAccount,
@@ -64,6 +60,7 @@ import {
 } from "../utils/marginfiUtils";
 import { bytesToI80F48, fromBaseUnit, toBps } from "../utils/numberUtils";
 import { QuoteResponse } from "@jup-ag/api";
+import { safeGetPrice } from "../utils";
 
 export interface SolautoMarginfiClientArgs extends SolautoClientArgs {
   marginfiAccount?: PublicKey | Signer;
@@ -104,7 +101,9 @@ export class SolautoMarginfiClient extends SolautoClient {
     } else {
       this.marginfiAccountSeedIdx = generateRandomU64();
       this.marginfiAccount = this.solautoPositionData
-        ? toWeb3JsPublicKey(this.solautoPositionData.position.protocolUserAccount)
+        ? toWeb3JsPublicKey(
+            this.solautoPositionData.position.protocolUserAccount
+          )
         : getMarginfiAccountPDA(
             this.solautoPosition,
             this.marginfiAccountSeedIdx,
@@ -161,14 +160,14 @@ export class SolautoMarginfiClient extends SolautoClient {
       await getAllMarginfiAccountsByAuthority(
         this.umi,
         toWeb3JsPublicKey(this.signer.publicKey),
-        false
+        this.marginfiGroup
       )
     )
       .filter((x) => !x.marginfiAccount.equals(this.marginfiAccountPk))
       .sort((a, b) =>
         a.marginfiAccount.toString().localeCompare(b.marginfiAccount.toString())
       );
-    const emptyMarginfiAccounts =
+    const compatibleMarginfiAccounts =
       existingMarginfiAccounts.length > 0
         ? (
             await safeFetchAllMarginfiAccount(
@@ -177,6 +176,7 @@ export class SolautoMarginfiClient extends SolautoClient {
             )
           ).filter(
             (x) =>
+              x.group.toString() === this.marginfiGroup.toString() &&
               x.lendingAccount.balances.find(
                 (y) =>
                   y.bankPk.toString() !== PublicKey.default.toString() &&
@@ -187,15 +187,17 @@ export class SolautoMarginfiClient extends SolautoClient {
         : [];
 
     this.intermediaryMarginfiAccountSigner =
-      emptyMarginfiAccounts.length > 0
+      compatibleMarginfiAccounts.length > 0
         ? undefined
         : createSignerFromKeypair(this.umi, this.umi.eddsa.generateKeypair());
     this.intermediaryMarginfiAccountPk =
-      emptyMarginfiAccounts.length > 0
-        ? toWeb3JsPublicKey(emptyMarginfiAccounts[0].publicKey)
+      compatibleMarginfiAccounts.length > 0
+        ? toWeb3JsPublicKey(compatibleMarginfiAccounts[0].publicKey)
         : toWeb3JsPublicKey(this.intermediaryMarginfiAccountSigner!.publicKey);
     this.intermediaryMarginfiAccount =
-      emptyMarginfiAccounts.length > 0 ? emptyMarginfiAccounts[0] : undefined;
+      compatibleMarginfiAccounts.length > 0
+        ? compatibleMarginfiAccounts[0]
+        : undefined;
   }
 
   protocolAccount(): PublicKey {
@@ -242,9 +244,9 @@ export class SolautoMarginfiClient extends SolautoClient {
     }
   }
 
-  marginfiAccountInitialize(): TransactionBuilder {
+  marginfiAccountInitialize(marginfiAccount: Signer): TransactionBuilder {
     return marginfiAccountInitialize(this.umi, {
-      marginfiAccount: this.marginfiAccount as Signer,
+      marginfiAccount: marginfiAccount,
       marginfiGroup: publicKey(this.marginfiGroup),
       authority: this.signer,
       feePayer: this.signer,
@@ -565,7 +567,7 @@ export class SolautoMarginfiClient extends SolautoClient {
           bankLiquidityVaultAuthority: publicKey(bank.vaultAuthority),
           destinationTokenAccount: publicKey(destinationTokenAccount),
           marginfiAccount: publicKey(this.intermediaryMarginfiAccountPk),
-          marginfiGroup: publicKey(DEFAULT_MARGINFI_GROUP),
+          marginfiGroup: publicKey(this.marginfiGroup),
           signer: this.signer,
         })
       );
@@ -637,7 +639,7 @@ export class SolautoMarginfiClient extends SolautoClient {
           bank: publicKey(accounts.data.bank),
           bankLiquidityVault: publicKey(accounts.data.liquidityVault),
           marginfiAccount: publicKey(this.intermediaryMarginfiAccountPk),
-          marginfiGroup: publicKey(DEFAULT_MARGINFI_GROUP),
+          marginfiGroup: publicKey(this.marginfiGroup),
           signer: this.signer,
           signerTokenAccount: publicKey(
             getTokenAccount(
@@ -653,15 +655,6 @@ export class SolautoMarginfiClient extends SolautoClient {
           signer: this.signer,
         }).addRemainingAccounts(remainingAccounts)
       );
-  }
-
-  createIntermediaryMarginfiAccount(): TransactionBuilder {
-    return marginfiAccountInitialize(this.umi, {
-      marginfiAccount: this.intermediaryMarginfiAccountSigner!,
-      marginfiGroup: publicKey(DEFAULT_MARGINFI_GROUP),
-      authority: this.signer,
-      feePayer: this.signer,
-    });
   }
 
   async getFreshPositionState(): Promise<PositionState | undefined> {

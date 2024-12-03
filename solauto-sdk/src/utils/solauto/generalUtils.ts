@@ -1,4 +1,4 @@
-import { PublicKey } from "@solana/web3.js";
+import { Connection, PublicKey } from "@solana/web3.js";
 import {
   isOption,
   isSome,
@@ -22,7 +22,7 @@ import {
   getSolautoPositionAccountDataSerializer,
   getSolautoPositionSize,
 } from "../../generated";
-import { currentUnixSeconds, fetchTokenPrices } from "../generalUtils";
+import { consoleLog, currentUnixSeconds } from "../generalUtils";
 import {
   fromBaseUnit,
   getLiqUtilzationRateBps,
@@ -40,6 +40,8 @@ import {
   getAllMarginfiAccountsByAuthority,
 } from "../marginfiUtils";
 import { RebalanceAction, SolautoPositionDetails } from "../../types/solauto";
+import { fetchTokenPrices } from "../priceUtils";
+import { getRebalanceValues } from "./rebalanceUtils";
 
 export function createDynamicSolautoProgram(programId: PublicKey): Program {
   return {
@@ -131,12 +133,14 @@ export function eligibleForRebalance(
   positionSettings: SolautoSettingsParameters | undefined,
   positionDca: DCASettings | undefined,
   currentUnixTime: number,
+  supplyMintPrice: number,
+  debtMintPrice: number,
   bpsDistanceThreshold = 0
 ): RebalanceAction | undefined {
   if (!positionSettings) {
     return undefined;
   }
-  
+
   if (
     positionDca &&
     positionDca.automation.targetPeriods > 0 &&
@@ -162,13 +166,32 @@ export function eligibleForRebalance(
   const repayFrom = positionSettings.repayToBps + positionSettings.repayGap;
   const boostFrom = boostToBps - positionSettings.boostGap;
 
-  if (
-    Math.max(0, positionState.liqUtilizationRateBps - boostFrom) <=
-    bpsDistanceThreshold
-  ) {
+  if (positionState.liqUtilizationRateBps - boostFrom <= bpsDistanceThreshold) {
+    if (positionState.liqUtilizationRateBps < boostFrom) {
+      const values = getRebalanceValues(
+        positionState!,
+        positionSettings,
+        positionDca,
+        currentUnixSeconds(),
+        supplyMintPrice,
+        debtMintPrice
+      );
+      const sufficientLiquidity =
+        fromBaseUnit(
+          positionState.debt.amountCanBeUsed.baseAmountUsdValue,
+          USD_DECIMALS
+        ) *
+          0.95 >
+        values.debtAdjustmentUsd;
+      if (!sufficientLiquidity) {
+        consoleLog("Insufficient debt liquidity to further boost");
+      }
+      return sufficientLiquidity ? "boost" : undefined;
+    }
+
     return "boost";
   } else if (
-    Math.max(0, repayFrom - positionState.liqUtilizationRateBps) <=
+    repayFrom - positionState.liqUtilizationRateBps <=
     bpsDistanceThreshold
   ) {
     return "repay";
@@ -273,7 +296,7 @@ export async function getSolautoManagedPositions(
         ).mint,
       ];
     }
-    // TODO: PK
+    // TODO: PF
 
     return {
       publicKey: toWeb3JsPublicKey(x.publicKey),
@@ -370,6 +393,7 @@ export async function getAllPositionsByAuthority(
         let marginfiPositions = await getAllMarginfiAccountsByAuthority(
           umi,
           user,
+          undefined,
           true
         );
         marginfiPositions = marginfiPositions.filter(
@@ -447,6 +471,7 @@ interface AssetProps {
   mint: PublicKey;
   price?: number;
   amountUsed?: number;
+  amountCanBeUsed?: number;
 }
 
 export function createFakePositionState(
@@ -473,8 +498,11 @@ export function createFakePositionState(
         baseAmountUsdValue: toBaseUnit(supplyUsd, USD_DECIMALS),
       },
       amountCanBeUsed: {
-        baseUnit: toBaseUnit(1000000, supplyDecimals),
-        baseAmountUsdValue: BigInt(Math.round(1000000 * (supply.price ?? 0))),
+        baseUnit: toBaseUnit(supply.amountCanBeUsed ?? 0, supplyDecimals),
+        baseAmountUsdValue: toBaseUnit(
+          (supply.amountCanBeUsed ?? 0) * (supply.price ?? 0),
+          USD_DECIMALS
+        ),
       },
       baseAmountMarketPriceUsd: toBaseUnit(supply.price ?? 0, USD_DECIMALS),
       borrowFeeBps: 0,
@@ -491,8 +519,11 @@ export function createFakePositionState(
         baseAmountUsdValue: toBaseUnit(debtUsd, USD_DECIMALS),
       },
       amountCanBeUsed: {
-        baseUnit: toBaseUnit(1000000, debtDecimals),
-        baseAmountUsdValue: BigInt(Math.round(1000000 * (debt.price ?? 0))),
+        baseUnit: toBaseUnit(debt.amountCanBeUsed ?? 0, debtDecimals),
+        baseAmountUsdValue: toBaseUnit(
+          (debt.amountCanBeUsed ?? 0) * (debt.price ?? 0),
+          USD_DECIMALS
+        ),
       },
       baseAmountMarketPriceUsd: toBaseUnit(debt.price ?? 0, USD_DECIMALS),
       borrowFeeBps: 0,

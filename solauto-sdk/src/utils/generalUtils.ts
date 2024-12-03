@@ -1,13 +1,5 @@
 import { PublicKey } from "@solana/web3.js";
-import {
-  MaybeRpcAccount,
-  publicKey,
-  Umi,
-  PublicKey as UmiPublicKey,
-} from "@metaplex-foundation/umi";
-import { PYTH_PRICE_FEED_IDS } from "../constants/pythConstants";
-import { fromBaseUnit, toBaseUnit } from "./numberUtils";
-import { PRICES } from "../constants/solautoConstants";
+import { MaybeRpcAccount, publicKey, Umi } from "@metaplex-foundation/umi";
 
 export function consoleLog(...args: any[]): void {
   if ((globalThis as any).LOCAL_TEST) {
@@ -57,69 +49,15 @@ export function arraysAreEqual(arrayA: number[], arrayB: number[]): boolean {
   return true;
 }
 
-export async function fetchTokenPrices(mints: PublicKey[]): Promise<number[]> {
-  const currentTime = currentUnixSeconds();
-  if (
-    !mints.some(
-      (mint) =>
-        !(mint.toString() in PRICES) ||
-        currentTime - PRICES[mint.toString()].time > 3
-    )
-  ) {
-    return mints.map((mint) => PRICES[mint.toString()].price);
+export function zip<T, U>(list1: T[], list2: U[]): [T, U][] {
+  const minLength = Math.min(list1.length, list2.length);
+  const result: [T, U][] = [];
+
+  for (let i = 0; i < minLength; i++) {
+    result.push([list1[i], list2[i]]);
   }
 
-  const priceFeedIds = mints.map(
-    (mint) => PYTH_PRICE_FEED_IDS[mint.toString()]
-  );
-
-  const getReq = async () =>
-    await fetch(
-      `https://hermes.pyth.network/v2/updates/price/latest?${priceFeedIds.map((x) => `ids%5B%5D=${x}`).join("&")}`
-    );
-
-  const prices = await retryWithExponentialBackoff(
-    async () => {
-      let resp = await getReq();
-      let status = resp.status;
-      if (status !== 200) {
-        throw new Error(JSON.stringify(resp));
-      }
-
-      const json = await resp.json();
-      const prices = json.parsed.map((x: any) => {
-        if (x.price.expo > 0) {
-          return Number(toBaseUnit(Number(x.price.price), x.price.expo));
-        } else if (x.price.expo < 0) {
-          return fromBaseUnit(BigInt(x.price.price), Math.abs(x.price.expo));
-        } else {
-          return Number(x.price.price);
-        }
-      });
-
-      return prices;
-    },
-    5,
-    200
-  );
-
-  for (var i = 0; i < mints.length; i++) {
-    PRICES[mints[i].toString()] = {
-      price: prices[i],
-      time: currentUnixSeconds(),
-    };
-  }
-
-  return prices;
-}
-
-export function safeGetPrice(
-  mint: PublicKey | UmiPublicKey | undefined
-): number | undefined {
-  if (mint && mint?.toString() in PRICES) {
-    return PRICES[mint!.toString()].price;
-  }
-  return undefined;
+  return result;
 }
 
 export type ErrorsToThrow = Array<new (...args: any[]) => Error>;

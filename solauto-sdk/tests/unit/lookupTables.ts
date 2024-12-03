@@ -1,7 +1,6 @@
 import { describe, it } from "mocha";
 import { clusterApiUrl, Connection, PublicKey } from "@solana/web3.js";
 import {
-  DEFAULT_PUBKEY,
   MARGINFI_ACCOUNTS,
   MARGINFI_ACCOUNTS_LOOKUP_TABLE,
 } from "../../src/constants/marginfiAccounts";
@@ -28,7 +27,7 @@ describe("Assert lookup tables up-to-date", async () => {
 
         const accounts = MARGINFI_ACCOUNTS[group][key];
         const addresses = [
-          new PublicKey(key),
+          group,
           accounts.bank,
           accounts.liquidityVault,
           accounts.vaultAuthority,

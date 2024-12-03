@@ -31,15 +31,19 @@ import {
   getUpdatedValueFromAutomation,
   positionStateWithLatestPrices,
 } from "../../src/utils/solauto/generalUtils";
-import {
-  currentUnixSeconds,
-  fetchTokenPrices,
-  safeGetPrice,
-} from "../../src/utils/generalUtils";
+import { currentUnixSeconds } from "../../src/utils/generalUtils";
 import { USDC } from "../../src/constants/tokenConstants";
-import { buildHeliusApiUrl } from "../../src/utils";
+import {
+  buildHeliusApiUrl,
+  fetchTokenPrices,
+  getSolanaRpcConnection,
+  safeGetPrice,
+} from "../../src/utils";
 
 const signer = setupTest(undefined, true);
+const [conn, _] = getSolanaRpcConnection(
+  buildHeliusApiUrl(process.env.HELIUS_API_URL!)
+);
 
 function assertAccurateRebalance(
   client: SolautoClient,

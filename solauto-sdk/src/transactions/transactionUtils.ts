@@ -1,6 +1,7 @@
 import {
   Instruction,
   ProgramError,
+  Signer,
   TransactionBuilder,
   Umi,
   publicKey,
@@ -42,7 +43,6 @@ import {
   currentUnixSeconds,
   getSolanaAccountCreated,
   rpcAccountCreated,
-  safeGetPrice,
 } from "../utils/generalUtils";
 import { SolautoMarginfiClient } from "../clients/solautoMarginfiClient";
 import {
@@ -71,6 +71,7 @@ import {
 } from "../jupiter-sdk";
 import { PRICES } from "../constants";
 import { TransactionItemInputs } from "../types";
+import { safeGetPrice } from "../utils";
 
 interface wSolTokenUsage {
   wSolTokenAccount: PublicKey;
@@ -161,7 +162,9 @@ async function transactionChoresBefore(
       ))
     ) {
       chores = chores.add(
-        (client as SolautoMarginfiClient).marginfiAccountInitialize()
+        (client as SolautoMarginfiClient).marginfiAccountInitialize(
+          (client as SolautoMarginfiClient).marginfiAccount as Signer
+        )
       );
     }
     // TODO: PF
@@ -335,7 +338,9 @@ export async function rebalanceChoresBefore(
   ) {
     client.log("Creating intermediary marginfi account");
     chores = chores.add(
-      (client as SolautoMarginfiClient).createIntermediaryMarginfiAccount()
+      (client as SolautoMarginfiClient).marginfiAccountInitialize(
+        (client as SolautoMarginfiClient).intermediaryMarginfiAccountSigner!
+      )
     );
   }
 
@@ -641,6 +646,9 @@ export async function buildSolautoRebalanceTransaction(
   attemptNum?: number
 ): Promise<TransactionItemInputs | undefined> {
   client.solautoPositionState = await client.getFreshPositionState();
+  const supplyPrice = safeGetPrice(client.supplyMint) ?? 0;
+  const debtPrice = safeGetPrice(client.debtMint) ?? 0;
+
   if (
     (client.solautoPositionState?.supply.amountUsed.baseUnit === BigInt(0) &&
       client.livePositionUpdates.supplyAdjustment === BigInt(0)) ||
@@ -649,7 +657,9 @@ export async function buildSolautoRebalanceTransaction(
         client.solautoPositionState!,
         client.solautoPositionSettings(),
         client.solautoPositionActiveDca(),
-        currentUnixSeconds()
+        currentUnixSeconds(),
+        supplyPrice,
+        debtPrice
       ))
   ) {
     client.log("Not eligible for a rebalance");
@@ -661,8 +671,8 @@ export async function buildSolautoRebalanceTransaction(
     client.solautoPositionSettings(),
     client.solautoPositionActiveDca(),
     currentUnixSeconds(),
-    safeGetPrice(client.supplyMint)!,
-    safeGetPrice(client.debtMint)!,
+    supplyPrice,
+    debtPrice,
     targetLiqUtilizationRateBps
   );
   client.log("Rebalance values: ", values);

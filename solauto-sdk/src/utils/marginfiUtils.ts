@@ -1,4 +1,4 @@
-import { PublicKey } from "@solana/web3.js";
+import { Connection, PublicKey } from "@solana/web3.js";
 import { publicKey, Umi } from "@metaplex-foundation/umi";
 import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 import {
@@ -9,11 +9,7 @@ import {
   safeFetchBank,
   safeFetchMarginfiAccount,
 } from "../marginfi-sdk";
-import {
-  currentUnixSeconds,
-  fetchTokenPrices,
-  safeGetPrice,
-} from "./generalUtils";
+import { currentUnixSeconds } from "./generalUtils";
 import {
   bytesToI80F48,
   fromBaseUnit,
@@ -30,12 +26,15 @@ import { PositionState, PositionTokenUsage } from "../generated";
 import { USD_DECIMALS } from "../constants/generalAccounts";
 import { LivePositionUpdates } from "./solauto/generalUtils";
 import { TOKEN_INFO } from "../constants";
+import { fetchTokenPrices, safeGetPrice } from "./priceUtils";
 
 interface AllMarginfiAssetAccounts extends MarginfiAssetAccounts {
   mint: PublicKey;
 }
 
-export function findMarginfiAccounts(bank: PublicKey): AllMarginfiAssetAccounts {
+export function findMarginfiAccounts(
+  bank: PublicKey
+): AllMarginfiAssetAccounts {
   for (const group in MARGINFI_ACCOUNTS) {
     for (const key in MARGINFI_ACCOUNTS[group]) {
       const account = MARGINFI_ACCOUNTS[group][key];
@@ -49,7 +48,7 @@ export function findMarginfiAccounts(bank: PublicKey): AllMarginfiAssetAccounts 
   throw new Error(`Marginfi accounts not found by the bank: ${bank}`);
 }
 
-export function marginfiMaxLtvAndLiqThresholdBps(
+export function calcMaxLtvAndLiqThreshold(
   supplyBank: Bank,
   debtBank: Bank,
   supplyPrice: number
@@ -78,7 +77,7 @@ export function marginfiMaxLtvAndLiqThresholdBps(
     const discount =
       Number(supplyBank.config.totalAssetValueInitLimit) /
       totalDepositedUsdValue;
-    maxLtv = Math.round(maxLtv * Number(discount));
+    maxLtv = maxLtv * Number(discount);
   }
 
   return [maxLtv, liqThreshold];
@@ -135,12 +134,13 @@ export async function getMaxLtvAndLiqThreshold(
     return [0, 0];
   }
 
-  return marginfiMaxLtvAndLiqThresholdBps(supply.bank!, debt.bank, supplyPrice);
+  return calcMaxLtvAndLiqThreshold(supply.bank!, debt.bank, supplyPrice);
 }
 
 export async function getAllMarginfiAccountsByAuthority(
   umi: Umi,
   authority: PublicKey,
+  group?: PublicKey,
   compatibleWithSolauto?: boolean
 ): Promise<
   { marginfiAccount: PublicKey; supplyMint?: PublicKey; debtMint?: PublicKey }[]
@@ -163,6 +163,16 @@ export async function getAllMarginfiAccountsByAuthority(
             offset: 40, // Anchor account discriminator + group pubkey
           },
         },
+        ...(group
+          ? [
+              {
+                memcmp: {
+                  bytes: new Uint8Array(group.toBuffer()),
+                  offset: 8,
+                },
+              },
+            ]
+          : []),
       ],
     }
   );
@@ -171,10 +181,9 @@ export async function getAllMarginfiAccountsByAuthority(
     const positionStates = await Promise.all(
       marginfiAccounts.map(async (x) => ({
         publicKey: x.publicKey,
-        state: await getMarginfiAccountPositionState(
-          umi,
-          { pk: toWeb3JsPublicKey(x.publicKey) }
-        ),
+        state: await getMarginfiAccountPositionState(umi, {
+          pk: toWeb3JsPublicKey(x.publicKey),
+        }),
       }))
     );
     return positionStates
@@ -202,6 +211,25 @@ export async function getAllMarginfiAccountsByAuthority(
   }
 }
 
+export function getBankLiquidityAvailableBaseUnit(
+  bank: Bank | null,
+  isAsset: boolean
+) {
+  let amountCanBeUsed = 0;
+
+  if (bank !== null) {
+    const [assetShareValue, liabilityShareValue] = getUpToDateShareValues(bank);
+    const totalDeposited =
+      bytesToI80F48(bank.totalAssetShares.value) * assetShareValue;
+    amountCanBeUsed = isAsset
+      ? Number(bank.config.depositLimit) - totalDeposited
+      : totalDeposited -
+        bytesToI80F48(bank.totalLiabilityShares.value) * liabilityShareValue;
+  }
+
+  return amountCanBeUsed;
+}
+
 async function getTokenUsage(
   bank: Bank | null,
   isAsset: boolean,
@@ -214,17 +242,10 @@ async function getTokenUsage(
 
   if (bank !== null) {
     [marketPrice] = await fetchTokenPrices([toWeb3JsPublicKey(bank.mint)]);
-    const [assetShareValue, liabilityShareValue] =
-      await getUpToDateShareValues(bank);
+    const [assetShareValue, liabilityShareValue] = getUpToDateShareValues(bank);
     const shareValue = isAsset ? assetShareValue : liabilityShareValue;
     amountUsed = shares * shareValue + Number(amountUsedAdjustment ?? 0);
-
-    const totalDeposited =
-      bytesToI80F48(bank.totalAssetShares.value) * assetShareValue;
-    amountCanBeUsed = isAsset
-      ? Number(bank.config.depositLimit) - totalDeposited
-      : totalDeposited -
-        bytesToI80F48(bank.totalLiabilityShares.value) * liabilityShareValue;
+    amountCanBeUsed = getBankLiquidityAvailableBaseUnit(bank, isAsset);
   }
 
   return {
@@ -382,15 +403,6 @@ export async function getMarginfiAccountPositionState(
     return undefined;
   }
 
-  if (
-    !toWeb3JsPublicKey(supplyBank.group).equals(
-      new PublicKey(DEFAULT_MARGINFI_GROUP)
-    )
-  ) {
-    // Temporarily disabled for now
-    return undefined;
-  }
-
   if (!supplyUsage) {
     supplyUsage = await getTokenUsage(
       supplyBank,
@@ -536,9 +548,7 @@ export function calculateAnnualAPYs(bank: Bank) {
   return calcInterestRate(bank, utilizationRatio);
 }
 
-export async function getUpToDateShareValues(
-  bank: Bank
-): Promise<[number, number]> {
+export function getUpToDateShareValues(bank: Bank): [number, number] {
   let timeDelta = currentUnixSeconds() - Number(bank.lastUpdate);
   const [lendingApr, borrowingApr] = calculateAnnualAPYs(bank);
 

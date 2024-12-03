@@ -5,3 +5,5 @@ export * from './jupiterUtils';
 export * from './marginfiUtils';
 export * from './numberUtils';
 export * from './solanaUtils';
+export * from './priceUtils';
+export * from './switchboardUtils';

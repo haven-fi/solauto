@@ -23,9 +23,13 @@ import {
   TransactionRunType,
 } from "../types";
 import { ReferralStateManager, TxHandler } from "../clients";
-import { TransactionExpiredBlockheightExceededError } from "@solana/web3.js";
-import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
-// import { sendJitoBundledTransactions } from "../utils/jitoUtils";
+import {
+  PublicKey,
+  TransactionExpiredBlockheightExceededError,
+} from "@solana/web3.js";
+import { SWITCHBOARD_PRICE_FEED_IDS } from "../constants/switchboardConstants";
+import { buildSwbSubmitResponseTx, getSwitchboardFeedData } from "../utils";
+import { sendJitoBundledTransactions } from "../utils/jitoUtils";
 
 const CHORES_TX_NAME = "account chores";
 
@@ -132,19 +136,26 @@ class TransactionSet {
     }
 
     const singleTx = await this.getSingleTransaction();
-    return addTxOptimizations(this.txHandler.umi.identity, singleTx, 1, 1)
+    const tx = addTxOptimizations(this.txHandler.umi.identity, singleTx, 1, 1)
       .add(item.tx)
       .setAddressLookupTables(
         await this.lookupTables.getLutInputs([
           ...this.lutAddresses(),
           ...item.lookupTableAddresses,
         ])
-      )
-      .fitsInOneTransaction(this.txHandler.umi);
+      );
+
+    return tx.fitsInOneTransaction(this.txHandler.umi);
   }
 
   add(...items: TransactionItem[]) {
     this.items.push(
+      ...items.filter((x) => x.tx && x.tx.getInstructions().length > 0)
+    );
+  }
+
+  prepend(...items: TransactionItem[]) {
+    this.items.unshift(
       ...items.filter((x) => x.tx && x.tx.getInstructions().length > 0)
     );
   }
@@ -175,7 +186,7 @@ class TransactionSet {
 
   name(): string {
     let names = this.items
-      .filter((x) => x.tx && x.name !== undefined)
+      .filter((x) => x.tx && Boolean(x.name))
       .map((x) => x.name!.toLowerCase());
     if (names.length > 1) {
       names = names.filter((x) => x !== CHORES_TX_NAME);
@@ -216,6 +227,7 @@ export class TransactionsManager {
     private statusCallback?: (statuses: TransactionManagerStatuses) => void,
     private txType?: TransactionRunType,
     private priorityFeeSetting: PriorityFeeSetting = PriorityFeeSetting.Min,
+    private atomically: boolean = false,
     private errorsToThrow?: ErrorsToThrow,
     private retries: number = 4,
     private retryDelay: number = 150
@@ -232,9 +244,9 @@ export class TransactionsManager {
     let transactionSets: TransactionSet[] = [];
     this.txHandler.log(`Reassembling ${items.length} items`);
 
-    for (let i = 0; i < items.length; ) {
+    for (let i = items.length - 1; i >= 0; ) {
       let item = items[i];
-      i++;
+      i--;
 
       if (!item.tx) {
         continue;
@@ -251,15 +263,15 @@ export class TransactionsManager {
         let newSet = new TransactionSet(this.txHandler, this.lookupTables, [
           item,
         ]);
-        for (let j = i; j < items.length; j++) {
+        for (let j = i; j >= 0; j--) {
           if (await newSet.fitsWith(items[j])) {
-            newSet.add(items[j]);
-            i++;
+            newSet.prepend(items[j]);
+            i--;
           } else {
             break;
           }
         }
-        transactionSets.push(newSet);
+        transactionSets.unshift(newSet);
       }
     }
 
@@ -347,9 +359,23 @@ export class TransactionsManager {
     return this.priorityFeeSetting;
   }
 
-  private updateStatusForSets(itemSets: TransactionSet[]) {
-    itemSets.forEach((itemSet) => {
-      this.updateStatus(itemSet.name(), TransactionStatus.Queued, 0);
+  private updateStatusForSets(
+    itemSets: TransactionSet[],
+    status: TransactionStatus,
+    attemptNum: number,
+    txSigs?: string[],
+    simulationSuccessful?: boolean,
+    moreInfo?: string
+  ) {
+    itemSets.forEach((itemSet, i) => {
+      this.updateStatus(
+        itemSet.name(),
+        status,
+        attemptNum,
+        txSigs !== undefined ? txSigs[i] : undefined,
+        simulationSuccessful,
+        moreInfo
+      );
     });
   }
 
@@ -384,6 +410,35 @@ export class TransactionsManager {
 
     for (const item of items) {
       await item.initialize();
+    }
+
+    const allAccounts = items.flatMap((x) =>
+      x.tx
+        ?.getInstructions()
+        .flatMap((x) => x.keys.map((x) => x.pubkey.toString()))
+    );
+    const swbOracle = allAccounts.find((x) =>
+      Object.values(SWITCHBOARD_PRICE_FEED_IDS).includes(x ?? "")
+    );
+    if (swbOracle) {
+      const mint = new PublicKey(
+        Object.keys(SWITCHBOARD_PRICE_FEED_IDS).find(
+          (x) => SWITCHBOARD_PRICE_FEED_IDS[x] === swbOracle
+        )!
+      );
+      const stale = (await getSwitchboardFeedData(client.connection, [mint]))[0]
+        .stale;
+
+      if (stale) {
+        this.txHandler.log("Requires oracle update...");
+        const swbTx = new TransactionItem(
+          async () =>
+            buildSwbSubmitResponseTx(client.connection, client.signer, mint),
+          "Update oracle"
+        );
+        await swbTx.initialize();
+        items.unshift(swbTx);
+      }
     }
 
     let [choresBefore, choresAfter] = await getTransactionChores(
@@ -448,7 +503,7 @@ export class TransactionsManager {
 
     this.txHandler.log("Transaction items:", items.length);
     const itemSets = await this.assembleTransactionSets(items);
-    this.updateStatusForSets(itemSets);
+    this.updateStatusForSets(itemSets, TransactionStatus.Queued, 0);
     this.txHandler.log("Initial item sets:", itemSets.length);
 
     if (this.txType === "only-simulate" && itemSets.length > 1) {
@@ -458,13 +513,105 @@ export class TransactionsManager {
       return [];
     }
 
-    let currentIndex = 0;
-    while (currentIndex < itemSets.length) {
-      await this.processTransactionSet(itemSets, currentIndex);
-      currentIndex++;
+    if (itemSets.length > 1 && this.atomically) {
+      await this.processTransactionsAtomically(itemSets);
+    } else {
+      let currentIndex = 0;
+      while (currentIndex < itemSets.length) {
+        await this.processTransactionSet(itemSets, currentIndex);
+        currentIndex++;
+      }
     }
 
     return this.statuses;
+  }
+
+  private async processTransactionsAtomically(itemSets: TransactionSet[]) {
+    let num = 0;
+
+    await retryWithExponentialBackoff(
+      async (attemptNum, prevError) => {
+        num = attemptNum;
+
+        if (attemptNum > 0) {
+          for (let i = 0; i < itemSets.length; i++) {
+            await itemSets[i].refetchAll(attemptNum);
+          }
+          itemSets = await this.assembleTransactionSets(
+            itemSets.flatMap((x) => x.items)
+          );
+        }
+
+        let transactions = [];
+        for (const set of itemSets) {
+          transactions.push(await set.getSingleTransaction());
+        }
+        transactions = transactions.filter(
+          (x) => x.getInstructions().length > 0
+        );
+        if (transactions.length === 0) {
+          this.updateStatusForSets(
+            itemSets,
+            TransactionStatus.Skipped,
+            attemptNum
+          );
+          return;
+        }
+
+        this.updateStatusForSets(
+          itemSets,
+          TransactionStatus.Processing,
+          attemptNum
+        );
+
+        let txSigs: string[] | undefined;
+        let error: Error | undefined;
+        try {
+          txSigs = await sendJitoBundledTransactions(
+            this.txHandler.umi,
+            this.txHandler.connection,
+            this.txHandler.signer,
+            transactions,
+            this.txType,
+            this.getUpdatedPriorityFeeSetting(prevError, attemptNum)
+          );
+        } catch (e: any) {
+          error = e as Error;
+        }
+
+        if (error || !Boolean(txSigs) || txSigs?.length === 0) {
+          this.updateStatusForSets(
+            itemSets,
+            TransactionStatus.Failed,
+            attemptNum,
+            txSigs,
+            true,
+            error?.message
+          );
+          throw error ? error : new Error("Unknown error");
+        }
+
+        this.updateStatusForSets(
+          itemSets,
+          TransactionStatus.Successful,
+          attemptNum,
+          txSigs
+        );
+      },
+      this.retries,
+      this.retryDelay,
+      this.errorsToThrow
+    ).catch((e: Error) => {
+      this.updateStatusForSets(
+        itemSets,
+        TransactionStatus.Failed,
+        num,
+        undefined,
+        true,
+        e.message
+      );
+      throw e;
+    });
   }
 
   private async processTransactionSet(
