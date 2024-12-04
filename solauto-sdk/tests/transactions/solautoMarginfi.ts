@@ -28,13 +28,12 @@ import {
 } from "../../src/constants";
 import {
   buildHeliusApiUrl,
-  positionStateWithLatestPrices,
 } from "../../src/utils";
 import { PriorityFeeSetting } from "../../src/types";
 
 describe("Solauto Marginfi tests", async () => {
-  // const signer = setupTest();
-  const signer = setupTest("solauto-manager");
+  const signer = setupTest();
+  // const signer = setupTest("solauto-manager");
 
   const payForTransactions = true;
   const testProgram = false;
@@ -54,7 +53,7 @@ describe("Solauto Marginfi tests", async () => {
     await client.initialize({
       signer,
       positionId,
-      authority: new PublicKey("5UqsR2PGzbP8pGPbXEeXx86Gjz2N2UFBAuFZUSVydAEe"),
+      authority: new PublicKey("rC5dMP5dmSsfQ66rynzfFzuc122Eex9h1RJHVDkeH6D"),
       // new: true,
       // marginfiAccount: new PublicKey(
       //   "4nNvUXF5YqHFcH2nGweSiuvy1ct7V5FXfoCLKFYUN36z"
@@ -63,13 +62,6 @@ describe("Solauto Marginfi tests", async () => {
       // supplyMint: new PublicKey("3B5wuUrMEi5yATD7on46hKfej3pfmd7t1RKgrsN3pump"),
       // debtMint: new PublicKey(USDC),
     });
-
-    const data = client.solautoPositionData;
-    console.log(data);
-    console.log(data?.state.supply.amountCanBeUsed);
-    console.log(data?.state.debt.amountCanBeUsed);
-
-    console.log(await positionStateWithLatestPrices(data!.state));
 
     const transactionItems: TransactionItem[] = [];
     // const settingParams: SolautoSettingsParametersInpArgs = {
@@ -129,13 +121,13 @@ describe("Solauto Marginfi tests", async () => {
     //   )
     // );
 
-    // transactionItems.push(
-    //   new TransactionItem(
-    //     async (attemptNum) =>
-    //       await buildSolautoRebalanceTransaction(client, undefined, attemptNum),
-    //     "rebalance"
-    //   )
-    // );
+    transactionItems.push(
+      new TransactionItem(
+        async (attemptNum) =>
+          await buildSolautoRebalanceTransaction(client, undefined, attemptNum),
+        "rebalance"
+      )
+    );
 
     // transactionItems.push(
     //   new TransactionItem(
@@ -165,14 +157,14 @@ describe("Solauto Marginfi tests", async () => {
     //   )
     // );
 
-    // const statuses = await new TransactionsManager(
-    //   client,
-    //   undefined,
-    //   !payForTransactions ? "only-simulate" : "normal",
-    //   PriorityFeeSetting.Low,
-    //   true
-    // ).clientSend(transactionItems);
+    const statuses = await new TransactionsManager(
+      client,
+      undefined,
+      !payForTransactions ? "only-simulate" : "normal",
+      PriorityFeeSetting.Low,
+      true
+    ).clientSend(transactionItems);
 
-    // console.log(statuses);
+    console.log(statuses);
   });
 });

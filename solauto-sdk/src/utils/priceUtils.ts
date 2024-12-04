@@ -5,7 +5,6 @@ import { fromBaseUnit, toBaseUnit } from "./numberUtils";
 import { PRICES } from "../constants/solautoConstants";
 import { SWITCHBOARD_PRICE_FEED_IDS } from "../constants/switchboardConstants";
 import {
-  consoleLog,
   currentUnixSeconds,
   retryWithExponentialBackoff,
   zip,
@@ -108,14 +107,14 @@ export async function getSwitchboardPrices(
         mints.map((x) => SWITCHBOARD_PRICE_FEED_IDS[x.toString()])
       );
 
-      const prices = res.flatMap((x) => x.results[0]);
-      if (prices.find((x) => !x || x === -Infinity)) {
+      const p = res.flatMap((x) => x.results[0]);
+      if (p.filter((x) => !x).length > 0) {
         throw new Error("Unable to fetch Switchboard prices");
       }
 
-      return prices;
+      return p;
     },
-    8,
+    5,
     250
   );
 
