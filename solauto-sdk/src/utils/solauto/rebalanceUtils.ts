@@ -16,7 +16,7 @@ import {
 import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 import { QuoteResponse } from "@jup-ag/api";
 import { JupSwapDetails } from "../jupiterUtils";
-import { currentUnixSeconds } from "../generalUtils";
+import { consoleLog, currentUnixSeconds } from "../generalUtils";
 import {
   fromBaseUnit,
   fromBps,
@@ -272,14 +272,23 @@ export function getFlashLoanDetails(
     debtUsd,
     client.solautoPositionState!.liqThresholdBps
   );
+  const maxLiqUtilizationRateBps = getMaxLiqUtilizationRateBps(
+    client.solautoPositionState!.maxLtvBps,
+    client.solautoPositionState!.liqThresholdBps,
+    0.015
+  );
   const requiresFlashLoan =
-    supplyUsd <= 0 ||
-    tempLiqUtilizationRateBps >
-      getMaxLiqUtilizationRateBps(
-        client.solautoPositionState!.maxLtvBps,
-        client.solautoPositionState!.liqThresholdBps,
-        0.015
-      );
+    supplyUsd <= 0 || tempLiqUtilizationRateBps > maxLiqUtilizationRateBps;
+
+  consoleLog("Requires flash loan:", requiresFlashLoan);
+  consoleLog(
+    "Intermediary liq utilization rate:",
+    tempLiqUtilizationRateBps,
+    `$${supplyUsd}`,
+    `$${debtUsd}`,
+    "Max:",
+    maxLiqUtilizationRateBps
+  );
 
   let flashLoanToken: PositionTokenUsage | undefined = undefined;
   let flashLoanTokenPrice = 0;

@@ -573,7 +573,15 @@ export class TransactionsManager {
             this.txHandler.signer,
             transactions,
             this.txType,
-            this.getUpdatedPriorityFeeSetting(prevError, attemptNum)
+            this.getUpdatedPriorityFeeSetting(prevError, attemptNum),
+            () =>
+              this.updateStatusForSets(
+                itemSets,
+                TransactionStatus.Processing,
+                attemptNum,
+                undefined,
+                true
+              )
           );
         } catch (e: any) {
           error = e as Error;
@@ -585,7 +593,7 @@ export class TransactionsManager {
             TransactionStatus.Failed,
             attemptNum,
             txSigs,
-            true,
+            undefined,
             error?.message
           );
           throw error ? error : new Error("Unknown error");
@@ -607,7 +615,7 @@ export class TransactionsManager {
         TransactionStatus.Failed,
         num,
         undefined,
-        true,
+        undefined,
         e.message
       );
       throw e;

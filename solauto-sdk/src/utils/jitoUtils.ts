@@ -160,7 +160,8 @@ export async function sendJitoBundledTransactions(
   signer: Signer,
   txs: TransactionBuilder[],
   txType?: TransactionRunType,
-  priorityFeeSetting: PriorityFeeSetting = PriorityFeeSetting.Min
+  priorityFeeSetting: PriorityFeeSetting = PriorityFeeSetting.Min,
+  onAwaitingSign?: () => void
 ): Promise<string[] | undefined> {
   if (txs.length === 1) {
     const res = await sendSingleOptimizedTransaction(
@@ -211,8 +212,14 @@ export async function sendJitoBundledTransactions(
     //   simulationResults.map((x) => x.unitsConsumed! * 1.15)
     // );
 
+    const serializedTxs = builtTxs.map((x) => x.serialize());
+    if (serializedTxs.find(x => x.length > 1232)) {
+      throw new Error("A transaction is too large");
+    }
+
+    onAwaitingSign?.();
     const txSigs = await sendJitoBundle(
-      builtTxs.map((x) => base58.encode(x.serialize()))
+      serializedTxs.map((x) => base58.encode(x))
     );
     return txSigs.length > 0 ? txSigs : undefined;
   }

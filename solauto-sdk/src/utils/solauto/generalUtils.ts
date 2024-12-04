@@ -167,7 +167,11 @@ export function eligibleForRebalance(
   const boostFrom = boostToBps - positionSettings.boostGap;
 
   if (positionState.liqUtilizationRateBps - boostFrom <= bpsDistanceThreshold) {
-    if (positionState.liqUtilizationRateBps < boostFrom) {
+    const limitsUpToDate =
+      positionState.supply.amountCanBeUsed.baseUnit > BigInt(0) ||
+      positionState.debt.amountCanBeUsed.baseUnit > BigInt(0);
+
+    if (limitsUpToDate && positionState.liqUtilizationRateBps < boostFrom) {
       const values = getRebalanceValues(
         positionState!,
         positionSettings,

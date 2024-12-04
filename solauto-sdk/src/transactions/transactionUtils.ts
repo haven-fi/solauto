@@ -596,14 +596,21 @@ export async function getTransactionChores(
 }
 
 export async function requiresRefreshBeforeRebalance(client: SolautoClient) {
-  if (
+  const neverRefreshedBefore =
+    client.solautoPositionData &&
+    client.solautoPositionData.state.supply.amountCanBeUsed.baseUnit ===
+      BigInt(0) &&
+    client.solautoPositionData.state.debt.amountCanBeUsed.baseUnit ===
+      BigInt(0);
+  const aboveMaxLtv =
     client.solautoPositionState!.liqUtilizationRateBps >
     getMaxLiqUtilizationRateBps(
       client.solautoPositionState!.maxLtvBps,
       client.solautoPositionState!.liqThresholdBps,
       0.01
-    )
-  ) {
+    );
+
+  if (aboveMaxLtv || neverRefreshedBefore) {
     return true;
   } else if (client.solautoPositionData && !client.selfManaged) {
     if (
