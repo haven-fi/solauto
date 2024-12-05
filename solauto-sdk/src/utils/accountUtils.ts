@@ -59,21 +59,3 @@ export function getReferralState(authority: PublicKey, programId: PublicKey) {
 
   return ReferralState;
 }
-
-export function getMarginfiAccountPDA(
-  solautoPositionAccount: PublicKey,
-  marginfiAccountSeedIdx: bigint,
-  programId: PublicKey
-) {
-  const seeds = [
-    solautoPositionAccount.toBuffer(),
-    bufferFromU64(marginfiAccountSeedIdx),
-  ];
-
-  const [marginfiAccount, _] = PublicKey.findProgramAddressSync(
-    seeds,
-    programId
-  );
-
-  return marginfiAccount;
-}

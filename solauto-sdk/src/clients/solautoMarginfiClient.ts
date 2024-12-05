@@ -33,8 +33,7 @@ import {
   marginfiRebalance,
   marginfiRefreshData,
 } from "../generated";
-import { getMarginfiAccountPDA, getTokenAccount } from "../utils/accountUtils";
-import { generateRandomU64 } from "../utils/generalUtils";
+import { getTokenAccount } from "../utils/accountUtils";
 import {
   MARGINFI_PROGRAM_ID,
   MarginfiAccount,
@@ -99,16 +98,11 @@ export class SolautoMarginfiClient extends SolautoClient {
         args.marginfiAccount ??
         createSignerFromKeypair(this.umi, this.umi.eddsa.generateKeypair());
     } else {
-      this.marginfiAccountSeedIdx = generateRandomU64();
       this.marginfiAccount = this.solautoPositionData
         ? toWeb3JsPublicKey(
             this.solautoPositionData.position.protocolUserAccount
           )
-        : getMarginfiAccountPDA(
-            this.solautoPosition,
-            this.marginfiAccountSeedIdx,
-            this.programId
-          );
+        : createSignerFromKeypair(this.umi, this.umi.eddsa.generateKeypair());
     }
     this.marginfiAccountPk =
       "publicKey" in this.marginfiAccount
