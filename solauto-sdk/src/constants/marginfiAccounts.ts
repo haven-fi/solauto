@@ -49,7 +49,7 @@ export const MARGINFI_ACCOUNTS: {
       bank: "AwLRW3aPMMftXEjgWhTkYwM9CGBHdtKecvahCJZBwAqY",
       liquidityVault: "HQ1CGcqRshMhuonTGTnnmgw9ffcXxizGdZ6F6PKffWWi",
       vaultAuthority: "AEZb1XH5bfLwqk3hBKDuLfWyJKdLTgDPCkgn64BJKcvV",
-      priceOracle: "DCNeMcAZGU7pAsqu5q2xMKerq35BnUuTkagt1dkR1xB",
+      priceOracle: "Ceg5oePJv1a6RR541qKeQaTepvERA3i8SvyueX9tT8Sq",
     },
     [tokens.H_SOL]: {
       bank: "GJCi1uj3kYPZ64puA5sLUiCQfFapxT2xnREzrbDzFkYY",

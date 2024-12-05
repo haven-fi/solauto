@@ -387,7 +387,8 @@ export class TransactionsManager {
           tx,
           updateLutTxName,
           attemptNum,
-          this.getUpdatedPriorityFeeSetting(prevError, attemptNum)
+          this.getUpdatedPriorityFeeSetting(prevError, attemptNum),
+          "skip-simulation"
         ),
       3,
       150,
@@ -403,7 +404,10 @@ export class TransactionsManager {
 
     const updateLookupTable = await client.updateLookupTable();
 
-    if (updateLookupTable && updateLookupTable?.new) {
+    if (
+      updateLookupTable &&
+      (updateLookupTable?.new || updateLookupTable.accountsToAdd.length > 4)
+    ) {
       await this.updateLut(updateLookupTable.tx, updateLookupTable.new);
     }
     this.lookupTables.defaultLuts = client.defaultLookupTables();
@@ -718,7 +722,8 @@ export class TransactionsManager {
     tx: TransactionBuilder,
     txName: string,
     attemptNum: number,
-    priorityFeeSetting?: PriorityFeeSetting
+    priorityFeeSetting?: PriorityFeeSetting,
+    txType?: TransactionRunType
   ) {
     this.updateStatus(txName, TransactionStatus.Processing, attemptNum);
     try {
@@ -726,7 +731,7 @@ export class TransactionsManager {
         this.txHandler.umi,
         this.txHandler.connection,
         tx,
-        this.txType,
+        txType ?? this.txType,
         priorityFeeSetting,
         () =>
           this.updateStatus(

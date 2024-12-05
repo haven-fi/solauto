@@ -47,7 +47,7 @@ export class ReferralStateManager extends TxHandler {
     }
     this.umi = this.umi.use(
       args.signer
-        ? signerIdentity(args.signer)
+        ? signerIdentity(args.signer, true)
         : walletAdapterIdentity(args.wallet!, true)
     );
     this.signer = this.umi.identity;
