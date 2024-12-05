@@ -565,3 +565,14 @@ export function getUpToDateShareValues(bank: Bank): [number, number] {
     ),
   ];
 }
+
+export function marginfiAccountEmpty(marginfiAccount: MarginfiAccount) {
+  return (
+    marginfiAccount.lendingAccount.balances.find(
+      (x) =>
+        x.bankPk.toString() !== PublicKey.default.toString() &&
+        (Math.round(bytesToI80F48(x.assetShares.value)) != 0 ||
+          Math.round(bytesToI80F48(x.liabilityShares.value)) != 0)
+    ) === undefined
+  );
+}

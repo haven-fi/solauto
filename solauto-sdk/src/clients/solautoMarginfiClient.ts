@@ -56,6 +56,7 @@ import {
   getAllMarginfiAccountsByAuthority,
   getMarginfiAccountPositionState,
   getMaxLtvAndLiqThreshold,
+  marginfiAccountEmpty,
 } from "../utils/marginfiUtils";
 import { bytesToI80F48, fromBaseUnit, toBps } from "../utils/numberUtils";
 import { QuoteResponse } from "@jup-ag/api";
@@ -68,7 +69,7 @@ export interface SolautoMarginfiClientArgs extends SolautoClientArgs {
 }
 
 export class SolautoMarginfiClient extends SolautoClient {
-  private initialized: boolean = false;
+  private initializedFor?: PublicKey;
 
   public marginfiProgram!: PublicKey;
 
@@ -98,11 +99,34 @@ export class SolautoMarginfiClient extends SolautoClient {
         args.marginfiAccount ??
         createSignerFromKeypair(this.umi, this.umi.eddsa.generateKeypair());
     } else {
-      this.marginfiAccount = this.solautoPositionData
-        ? toWeb3JsPublicKey(
-            this.solautoPositionData.position.protocolUserAccount
-          )
-        : createSignerFromKeypair(this.umi, this.umi.eddsa.generateKeypair());
+      if (this.solautoPositionData) {
+        this.marginfiAccount = toWeb3JsPublicKey(
+          this.solautoPositionData.position.protocolUserAccount
+        );
+      } else {
+        const accounts = await getAllMarginfiAccountsByAuthority(
+          this.umi,
+          this.solautoPosition,
+          args.marginfiGroup,
+          false
+        );
+        const reusableAccounts =
+          accounts.length > 0
+            ? (
+                await safeFetchAllMarginfiAccount(
+                  this.umi,
+                  accounts.map((x) => publicKey(x.marginfiAccount))
+                )
+              ).filter((x) => marginfiAccountEmpty(x))
+            : [];
+        this.marginfiAccount =
+          reusableAccounts.length > 0
+            ? toWeb3JsPublicKey(reusableAccounts[0].publicKey)
+            : createSignerFromKeypair(
+                this.umi,
+                this.umi.eddsa.generateKeypair()
+              );
+      }
     }
     this.marginfiAccountPk =
       "publicKey" in this.marginfiAccount
@@ -143,10 +167,13 @@ export class SolautoMarginfiClient extends SolautoClient {
     );
     this.debtPriceOracle = new PublicKey(this.marginfiDebtAccounts.priceOracle);
 
-    if (!this.initialized) {
+    if (
+      !this.initializedFor ||
+      !this.initializedFor.equals(toWeb3JsPublicKey(this.signer.publicKey))
+    ) {
       await this.setIntermediaryMarginfiDetails();
+      this.initializedFor = toWeb3JsPublicKey(this.signer.publicKey);
     }
-    this.initialized = true;
   }
 
   async setIntermediaryMarginfiDetails() {
@@ -168,16 +195,7 @@ export class SolautoMarginfiClient extends SolautoClient {
               this.umi,
               existingMarginfiAccounts.map((x) => publicKey(x.marginfiAccount))
             )
-          ).filter(
-            (x) =>
-              x.group.toString() === this.marginfiGroup.toString() &&
-              x.lendingAccount.balances.find(
-                (y) =>
-                  y.bankPk.toString() !== PublicKey.default.toString() &&
-                  (Math.round(bytesToI80F48(y.assetShares.value)) != 0 ||
-                    Math.round(bytesToI80F48(y.liabilityShares.value)) != 0)
-              ) === undefined
-          )
+          ).filter((x) => marginfiAccountEmpty(x))
         : [];
 
     this.intermediaryMarginfiAccountSigner =
