@@ -86,15 +86,6 @@ export async function getJupSwapTransaction(
   quoteResponse.slippageBps = finalPriceSlippageBps;
   consoleLog(quoteResponse);
 
-  if (swapDetails.exactOut) {
-    quoteResponse.inAmount = (
-      parseInt(quoteResponse.inAmount) +
-      Math.ceil(
-        parseInt(quoteResponse.inAmount) * fromBps(finalPriceSlippageBps)
-      )
-    ).toString();
-  }
-
   consoleLog("Getting jup instructions...");
   const instructions = await retryWithExponentialBackoff(
     async () =>
