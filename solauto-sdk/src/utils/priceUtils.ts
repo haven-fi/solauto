@@ -5,6 +5,7 @@ import { fromBaseUnit, toBaseUnit } from "./numberUtils";
 import { PRICES } from "../constants/solautoConstants";
 import { SWITCHBOARD_PRICE_FEED_IDS } from "../constants/switchboardConstants";
 import {
+  consoleLog,
   currentUnixSeconds,
   retryWithExponentialBackoff,
   zip,
@@ -100,23 +101,33 @@ export async function getSwitchboardPrices(
   }
 
   const crossbar = new CrossbarClient("https://crossbar.switchboard.xyz");
-  let prices = await retryWithExponentialBackoff(
-    async () => {
-      const res = await crossbar.simulateSolanaFeeds(
-        "mainnet",
-        mints.map((x) => SWITCHBOARD_PRICE_FEED_IDS[x.toString()])
-      );
 
-      const p = res.flatMap((x) => x.results[0]);
-      if (p.filter((x) => !x).length > 0) {
-        throw new Error("Unable to fetch Switchboard prices");
-      }
+  let prices: number[] = [];
+  try {
+    prices = await retryWithExponentialBackoff(
+      async () => {
+        const res = await crossbar.simulateSolanaFeeds(
+          "mainnet",
+          mints.map((x) => SWITCHBOARD_PRICE_FEED_IDS[x.toString()])
+        );
+  
+        const p = res.flatMap((x) => x.results[0]);
+        if (p.filter((x) => !x).length > 0) {
+          throw new Error("Unable to fetch Switchboard prices");
+        }
+  
+        return p;
+      },
+      3,
+      350
+    );
+  } catch {
+    consoleLog("Failed to fetch Switchboard prices after multiple retries");
+  }
 
-      return p;
-    },
-    8,
-    250
-  );
+  if (prices.length === 0) {
+    prices = Array(mints.length).fill(0);
+  }
 
   const missingPrices = zip(mints, prices).filter((x) => !x[1]);
   const jupPrices = zip(
