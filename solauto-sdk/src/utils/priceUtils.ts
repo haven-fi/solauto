@@ -118,7 +118,7 @@ export async function getSwitchboardPrices(
   
         return p;
       },
-      3,
+      4,
       350
     );
   } catch {

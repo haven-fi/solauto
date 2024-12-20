@@ -413,8 +413,9 @@ export async function getMarginfiAccountPositionState(
   }
 
   if (
-    TOKEN_INFO[supplyBank.mint.toString()].isStableCoin &&
-    (debtBank === null || TOKEN_INFO[debtBank.mint.toString()].isStableCoin)
+    debtBank === null ||
+    (!TOKEN_INFO[supplyBank.mint.toString()].isStableCoin &&
+      !TOKEN_INFO[debtBank.mint.toString()].isStableCoin)
   ) {
     return undefined;
   }
