@@ -58,7 +58,7 @@ import {
   getMaxLtvAndLiqThreshold,
   marginfiAccountEmpty,
 } from "../utils/marginfiUtils";
-import { bytesToI80F48, fromBaseUnit, toBps } from "../utils/numberUtils";
+import { fromBaseUnit, toBps } from "../utils/numberUtils";
 import { QuoteResponse } from "@jup-ag/api";
 import { safeGetPrice } from "../utils";
 

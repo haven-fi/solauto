@@ -271,7 +271,7 @@ export async function getSolautoManagedPositions(
           ? [
               {
                 memcmp: {
-                  bytes: new Uint8Array(positionTypeFilter),
+                  bytes: new Uint8Array([positionTypeFilter]),
                   offset: 3,
                 },
               },
@@ -384,6 +384,7 @@ export async function getAllPositionsByAuthority(
           user,
           positionTypeFilter
         );
+        console.log(solautoManagedPositions);
         return solautoManagedPositions.map((x) => ({
           ...x,
           authority: user,
