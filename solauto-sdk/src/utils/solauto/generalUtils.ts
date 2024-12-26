@@ -384,7 +384,6 @@ export async function getAllPositionsByAuthority(
           user,
           positionTypeFilter
         );
-        console.log(solautoManagedPositions);
         return solautoManagedPositions.map((x) => ({
           ...x,
           authority: user,

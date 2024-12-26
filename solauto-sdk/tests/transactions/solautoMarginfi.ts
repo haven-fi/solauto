@@ -1,5 +1,10 @@
 import { describe, it } from "mocha";
-import { none, publicKey, some } from "@metaplex-foundation/umi";
+import {
+  none,
+  publicKey,
+  some,
+  transactionBuilder,
+} from "@metaplex-foundation/umi";
 import { setupTest } from "../shared";
 import { SolautoMarginfiClient } from "../../src/clients/solautoMarginfiClient";
 import {
@@ -22,18 +27,24 @@ import {
 } from "../../src/transactions/transactionsManager";
 import { PublicKey } from "@solana/web3.js";
 import {
+  SOLAUTO_MANAGER,
   SOLAUTO_PROD_PROGRAM,
   SOLAUTO_TEST_PROGRAM,
   USDC,
 } from "../../src/constants";
 import {
   buildHeliusApiUrl,
+  getAllMarginfiAccountsByAuthority,
+  getAllPositionsByAuthority,
+  getSolautoManagedPositions,
+  getTokenAccount,
+  splTokenTransferUmiIx,
 } from "../../src/utils";
 import { PriorityFeeSetting } from "../../src/types";
 
 describe("Solauto Marginfi tests", async () => {
-  const signer = setupTest();
-  // const signer = setupTest("solauto-manager");
+  // const signer = setupTest();
+  const signer = setupTest("solauto-manager");
 
   const payForTransactions = true;
   const testProgram = false;
@@ -50,18 +61,22 @@ describe("Solauto Marginfi tests", async () => {
     const supplyDecimals = 6;
     const debtDecimals = 6;
 
-    await client.initialize({
-      signer,
-      positionId,
-      authority: new PublicKey("rC5dMP5dmSsfQ66rynzfFzuc122Eex9h1RJHVDkeH6D"),
-      // new: true,
-      // marginfiAccount: new PublicKey(
-      //   "4nNvUXF5YqHFcH2nGweSiuvy1ct7V5FXfoCLKFYUN36z"
-      // ),
-      // marginfiGroup: new PublicKey("G1rt3EpQ43K3bY457rhukQGRAo2QxydFAGRKqnjKzyr5"),
-      // supplyMint: new PublicKey("3B5wuUrMEi5yATD7on46hKfej3pfmd7t1RKgrsN3pump"),
-      // debtMint: new PublicKey(USDC),
-    });
+    // await client.initialize({
+    //   signer,
+    //   positionId,
+    //   authority: new PublicKey("5FALSVLRjuRZHSmQVdT2RUZC6KadCuDmxY7gaQFWFBxf"),
+    //   // new: true,
+    //   // marginfiAccount: new PublicKey(
+    //   //   "4nNvUXF5YqHFcH2nGweSiuvy1ct7V5FXfoCLKFYUN36z"
+    //   // ),
+    //   // marginfiGroup: new PublicKey("G1rt3EpQ43K3bY457rhukQGRAo2QxydFAGRKqnjKzyr5"),
+    //   // supplyMint: new PublicKey("3B5wuUrMEi5yATD7on46hKfej3pfmd7t1RKgrsN3pump"),
+    //   // debtMint: new PublicKey(USDC),
+    // });
+
+    // console.log(await getSolautoManagedPositions(client.umi));
+
+    console.log("hello", await getAllPositionsByAuthority(client.umi, new PublicKey("E5BBsR1sUToPc3jXVwhrK5ttSiy6xhWJDMdQLvkgNppe"), 0));
 
     const transactionItems: TransactionItem[] = [];
     // const settingParams: SolautoSettingsParametersInpArgs = {
@@ -157,14 +172,14 @@ describe("Solauto Marginfi tests", async () => {
     //   )
     // );
 
-    const statuses = await new TransactionsManager(
-      client,
-      undefined,
-      !payForTransactions ? "only-simulate" : "normal",
-      PriorityFeeSetting.Low,
-      true
-    ).clientSend(transactionItems);
+    // const statuses = await new TransactionsManager(
+    //   client,
+    //   undefined,
+    //   !payForTransactions ? "only-simulate" : "normal",
+    //   PriorityFeeSetting.Low,
+    //   true
+    // ).clientSend(transactionItems);
 
-    console.log(statuses);
+    // console.log(statuses);
   });
 });
