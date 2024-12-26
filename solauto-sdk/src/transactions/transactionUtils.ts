@@ -830,7 +830,7 @@ export function getErrorInfo(umi: Umi, tx: TransactionBuilder, error: any) {
 
     if (typeof error === "object" && (error as any)["InstructionError"]) {
       const err = (error as any)["InstructionError"];
-      const errIx = tx.getInstructions()[Math.max(0, err[0]) - 2]; // - 2 to account for computeUnitLimit and computeUnitPrice ixs at start
+      const errIx = tx.getInstructions()[Math.max(0, err[0] - 2)]; // - 2 to account for computeUnitLimit and computeUnitPrice ixs at start
       const errCode =
         typeof err[1] === "object" && "Custom" in err[1]
           ? err[1]["Custom"]
