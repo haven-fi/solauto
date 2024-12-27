@@ -385,6 +385,29 @@ export async function sendSingleOptimizedTransaction(
   consoleLog("Instructions: ", tx.getInstructions().length);
   consoleLog("Serialized transaction size: ", tx.getTransactionSize(umi));
 
+  const blockhash = await connection.getLatestBlockhash("confirmed");
+
+  let computeUnitLimit = undefined;
+  if (txType !== "skip-simulation") {
+    const simulationResult = await retryWithExponentialBackoff(
+      async () =>
+        await simulateTransaction(
+          umi,
+          connection,
+          await assembleFinalTransaction(
+            umi.identity,
+            tx,
+            undefined,
+            1_400_000
+          ).setBlockhash(blockhash)
+        ),
+      3
+    );
+    simulationResult.value.err;
+    computeUnitLimit = Math.round(simulationResult.value.unitsConsumed! * 1.15);
+    consoleLog("Compute unit limit: ", computeUnitLimit);
+  }
+
   let cuPrice: number | undefined;
   if (prioritySetting !== PriorityFeeSetting.None) {
     cuPrice = await getComputeUnitPriceEstimate(
@@ -399,30 +422,8 @@ export async function sendSingleOptimizedTransaction(
     consoleLog("Compute unit price: ", cuPrice);
   }
 
-  let computeUnitLimit = undefined;
-  if (txType !== "skip-simulation") {
-    const simulationResult = await retryWithExponentialBackoff(
-      async () =>
-        await simulateTransaction(
-          umi,
-          connection,
-          await assembleFinalTransaction(
-            umi.identity,
-            tx,
-            cuPrice,
-            1_400_000
-          ).setLatestBlockhash(umi)
-        ),
-      3
-    );
-    simulationResult.value.err;
-    computeUnitLimit = Math.round(simulationResult.value.unitsConsumed! * 1.15);
-    consoleLog("Compute unit limit: ", computeUnitLimit);
-  }
-
   if (txType !== "only-simulate") {
     onAwaitingSign?.();
-    const blockhash = await connection.getLatestBlockhash("confirmed");
     const signedTx = await assembleFinalTransaction(
       umi.identity,
       tx,

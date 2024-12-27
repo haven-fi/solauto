@@ -40,6 +40,7 @@ import {
   getRebalanceValues,
 } from "../utils/solauto/rebalanceUtils";
 import {
+  consoleLog,
   currentUnixSeconds,
   getSolanaAccountCreated,
   rpcAccountCreated,
@@ -820,7 +821,7 @@ export async function convertReferralFeesToDestination(
   return { tx, lookupTableAddresses };
 }
 
-export function getErrorInfo(umi: Umi, tx: TransactionBuilder, error: any) {
+export function getErrorInfo(umi: Umi, tx: TransactionBuilder, error: any, simulationSuccessful?: boolean) {
   let canBeIgnored = false;
   let errorName: string | undefined = undefined;
   let errorInfo: string | undefined = undefined;
@@ -830,7 +831,15 @@ export function getErrorInfo(umi: Umi, tx: TransactionBuilder, error: any) {
 
     if (typeof error === "object" && (error as any)["InstructionError"]) {
       const err = (error as any)["InstructionError"];
-      const errIx = tx.getInstructions()[Math.max(0, err[0] - 2)]; // - 2 to account for computeUnitLimit and computeUnitPrice ixs at start
+
+      const computeIxs = simulationSuccessful ? 2 : 1; // sub ixs to account for computeUnitLimit and computeUnitPrice that get added
+      const errIxIdx = err[0] - computeIxs;
+
+      consoleLog("Transaction instructions:", tx.getInstructions().map(x => x.programId.toString()).join(","));
+      consoleLog("Error instruction index:", errIxIdx);
+
+      const errIx = tx.getInstructions()[Math.max(0, errIxIdx)];
+
       const errCode =
         typeof err[1] === "object" && "Custom" in err[1]
           ? err[1]["Custom"]

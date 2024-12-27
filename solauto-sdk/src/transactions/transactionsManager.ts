@@ -749,7 +749,8 @@ export class TransactionsManager {
         txSig ? bs58.encode(txSig) : undefined
       );
     } catch (e: any) {
-      const errorDetails = getErrorInfo(this.txHandler.umi, tx, e);
+      this.txHandler.log("Caputring error info...");
+      const errorDetails = getErrorInfo(this.txHandler.umi, tx, e, this.statuses.find(x => x.name === txName)?.simulationSuccessful);
 
       const errorString = `${errorDetails.errorName ?? "Unknown error"}: ${errorDetails.errorInfo?.split("\n")[0] ?? "unknown"}`;
       this.updateStatus(
