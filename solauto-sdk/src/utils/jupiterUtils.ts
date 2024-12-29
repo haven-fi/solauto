@@ -71,7 +71,7 @@ export async function getJupSwapTransaction(
             ? "ExactIn"
             : undefined,
         slippageBps: memecoinSwap ? 150 : 50,
-        maxAccounts: !swapDetails.exactOut ? 60 : undefined,
+        maxAccounts: !swapDetails.exactOut ? 50 : undefined,
       }),
     4,
     200

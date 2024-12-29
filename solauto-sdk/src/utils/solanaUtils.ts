@@ -385,6 +385,14 @@ export async function sendSingleOptimizedTransaction(
   consoleLog("Instructions: ", tx.getInstructions().length);
   consoleLog("Serialized transaction size: ", tx.getTransactionSize(umi));
 
+  const accounts = tx
+    .getInstructions()
+    .flatMap((x) => [
+      x.programId.toString(),
+      ...x.keys.map((y) => y.pubkey.toString()),
+    ]);
+  consoleLog("Unique account locks: ", Array.from(new Set(accounts)).length);
+
   const blockhash = await connection.getLatestBlockhash("confirmed");
 
   let computeUnitLimit = undefined;
@@ -410,11 +418,7 @@ export async function sendSingleOptimizedTransaction(
 
   let cuPrice: number | undefined;
   if (prioritySetting !== PriorityFeeSetting.None) {
-    cuPrice = await getComputeUnitPriceEstimate(
-      umi,
-      tx,
-      prioritySetting,
-    );
+    cuPrice = await getComputeUnitPriceEstimate(umi, tx, prioritySetting);
     if (!cuPrice) {
       cuPrice = 1000000;
     }

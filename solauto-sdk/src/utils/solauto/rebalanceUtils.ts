@@ -232,7 +232,7 @@ export function getRebalanceValues(
           ? "boost"
           : "repay",
     rebalanceDirection,
-    feesUsd: debtAdjustmentUsd * fromBps(adjustmentFeeBps),
+    feesUsd: Math.abs(debtAdjustmentUsd * fromBps(adjustmentFeeBps)),
   };
 }
 
