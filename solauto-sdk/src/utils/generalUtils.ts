@@ -1,5 +1,6 @@
 import { PublicKey } from "@solana/web3.js";
 import { MaybeRpcAccount, publicKey, Umi } from "@metaplex-foundation/umi";
+import { LendingPlatform } from "../generated";
 
 export function consoleLog(...args: any[]): void {
   if ((globalThis as any).LOCAL_TEST) {
@@ -97,4 +98,14 @@ export function retryWithExponentialBackoff<T>(
     };
     return attempt(0);
   });
+}
+
+export function toEnumValue<E extends object>(enumObj: E, value: number): E[keyof E] | undefined {
+  const numericValues = Object.values(enumObj).filter(v => typeof v === "number") as number[];
+
+  if (numericValues.includes(value)) {
+    return value as E[keyof E];
+  }
+  
+  return undefined;
 }
