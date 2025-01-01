@@ -48,7 +48,7 @@ export function findMarginfiAccounts(
   throw new Error(`Marginfi accounts not found by the bank: ${bank}`);
 }
 
-export function calcMaxLtvAndLiqThreshold(
+export function calcMarginfiMaxLtvAndLiqThreshold(
   supplyBank: Bank,
   debtBank: Bank,
   supplyPrice: number
@@ -83,7 +83,7 @@ export function calcMaxLtvAndLiqThreshold(
   return [maxLtv, liqThreshold];
 }
 
-export async function getMaxLtvAndLiqThreshold(
+export async function getMarginfiMaxLtvAndLiqThreshold(
   umi: Umi,
   marginfiGroup: PublicKey,
   supply: {
@@ -134,7 +134,7 @@ export async function getMaxLtvAndLiqThreshold(
     return [0, 0];
   }
 
-  return calcMaxLtvAndLiqThreshold(supply.bank!, debt.bank, supplyPrice);
+  return calcMarginfiMaxLtvAndLiqThreshold(supply.bank!, debt.bank, supplyPrice);
 }
 
 export async function getAllMarginfiAccountsByAuthority(
@@ -430,7 +430,7 @@ export async function getMarginfiAccountPositionState(
   }
 
   const supplyPrice = safeGetPrice(supply.mint!)!;
-  let [maxLtv, liqThreshold] = await getMaxLtvAndLiqThreshold(
+  let [maxLtv, liqThreshold] = await getMarginfiMaxLtvAndLiqThreshold(
     umi,
     marginfiGroup ?? new PublicKey(DEFAULT_MARGINFI_GROUP),
     {

@@ -55,7 +55,7 @@ import {
   findMarginfiAccounts,
   getAllMarginfiAccountsByAuthority,
   getMarginfiAccountPositionState,
-  getMaxLtvAndLiqThreshold,
+  getMarginfiMaxLtvAndLiqThreshold,
   marginfiAccountEmpty,
 } from "../utils/marginfiUtils";
 import { fromBaseUnit, toBps } from "../utils/numberUtils";
@@ -240,7 +240,7 @@ export class SolautoMarginfiClient extends SolautoClient {
     ) {
       return [0, 0];
     } else {
-      const [maxLtv, liqThreshold] = await getMaxLtvAndLiqThreshold(
+      const [maxLtv, liqThreshold] = await getMarginfiMaxLtvAndLiqThreshold(
         this.umi,
         this.marginfiGroup,
         {
