@@ -43,7 +43,7 @@ export async function fetchTokenPrices(mints: PublicKey[]): Promise<number[]> {
 
   for (var i = 0; i < mints.length; i++) {
     PRICES[mints[i].toString()] = {
-      price: prices[i],
+      price: Number(prices[i]),
       time: currentUnixSeconds(),
     };
   }
