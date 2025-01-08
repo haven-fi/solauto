@@ -1,4 +1,9 @@
-import { Connection, PublicKey, TransactionExpiredBlockheightExceededError, VersionedTransaction } from "@solana/web3.js";
+import {
+  PublicKey,
+  SimulatedTransactionResponse,
+  TransactionExpiredBlockheightExceededError,
+  VersionedTransaction,
+} from "@solana/web3.js";
 import { toWeb3JsTransaction } from "@metaplex-foundation/umi-web3js-adapters";
 import { JITO_BLOCK_ENGINE } from "../constants/solautoConstants";
 import {
@@ -9,16 +14,13 @@ import {
 } from "@metaplex-foundation/umi";
 import {
   assembleFinalTransaction,
-  buildIronforgeApiUrl,
   getComputeUnitPriceEstimate,
-  sendSingleOptimizedTransaction,
   systemTransferUmiIx,
 } from "./solanaUtils";
-import { consoleLog } from "./generalUtils";
+import { consoleLog, retryWithExponentialBackoff } from "./generalUtils";
 import { PriorityFeeSetting, TransactionRunType } from "../types";
 import axios from "axios";
 import base58 from "bs58";
-import { bs58 } from "@coral-xyz/anchor/dist/cjs/utils/bytes";
 
 export async function getRandomTipAccount(): Promise<PublicKey> {
   const tipAccounts = [
@@ -46,28 +48,76 @@ async function getTipInstruction(
   );
 }
 
-// TODO: fix
-// async function simulateJitoBundle(umi: Umi, txs: VersionedTransaction[]) {
-//   const simulationResult = await axios.post(
-//     `${JITO_BLOCK_ENGINE}/api/v1/bundles`,
-//     {
-//       method: "simulateBundle",
-//       id: 1,
-//       jsonrpc: "2.0",
-//       params: [
-//         {
-//           encodedTransactions: txs.map((x) => bs58.encode(x.serialize())),
-//           preExecutionAccountsConfigs: txs.map((_) => ""),
-//           postExecutionAccountsConfigs: txs.map((_) => ""),
-//           skipSigVerify: true,
-//         },
-//       ],
-//     }
-//   );
-// }
+async function simulateJitoBundle(umi: Umi, txs: VersionedTransaction[]) {
+  const simulationResult = await retryWithExponentialBackoff(async () => {
+    // const resp = await umi.rpc.call("simulateBundle", [
+    //   {
+    //     encodedTransactions: txs.map((x) =>
+    //       Buffer.from(x.serialize()).toString("base64")
+    //     ),
+    //   },
+    //   {
+    //     preExecutionAccountsConfigs: txs.map((_) => ""),
+    //     postExecutionAccountsConfigs: txs.map((_) => ""),
+    //     skipSigVerify: true,
+    //   },
+    // ]);
+
+    const resp = await axios.post(
+      umi.rpc.getEndpoint(),
+      {
+        jsonrpc: "2.0",
+        id: 1,
+        method: "simulateBundle",
+        params: [
+          {
+            encodedTransactions: txs.map((x) =>
+              Buffer.from(x.serialize()).toString("base64")
+            ),
+          },
+          {
+            encoding: "base64",
+            commitment: "confirmed",
+            preExecutionAccountsConfigs: txs.map((_) => {}),
+            postExecutionAccountsConfigs: txs.map((_) => {}),
+            skipSigVerify: true,
+          },
+        ],
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    const res = resp.data.result.value as any;
+
+    if (res && res.summary.failed) {
+      const transactionResults =
+        res.transactionResults as SimulatedTransactionResponse[];
+      transactionResults.forEach((x) => {
+        x.logs?.forEach((y) => {
+          consoleLog(y);
+        });
+      });
+
+      const txFailure = res.summary.failed.error.TransactionFailure;
+      throw new Error(txFailure ? txFailure[1] : res.summary.failed.toString());
+    }
+
+    return res;
+  });
+
+  const transactionResults =
+    simulationResult.transactionResults as SimulatedTransactionResponse[];
+
+  return transactionResults;
+}
 
 async function umiToVersionedTransactions(
   umi: Umi,
+  blockhash: string,
   signer: Signer,
   txs: TransactionBuilder[],
   sign: boolean,
@@ -76,14 +126,14 @@ async function umiToVersionedTransactions(
 ): Promise<VersionedTransaction[]> {
   let builtTxs = await Promise.all(
     txs.map(async (tx, i) => {
-      return (
-        await assembleFinalTransaction(
-          signer,
-          tx,
-          feeEstimates ? feeEstimates[i] : undefined,
-          computeUnitLimits ? computeUnitLimits[i] : undefined
-        ).setLatestBlockhash(umi)
-      ).build(umi);
+      return assembleFinalTransaction(
+        signer,
+        tx,
+        feeEstimates ? feeEstimates[i] : undefined,
+        computeUnitLimits ? computeUnitLimits[i] : undefined
+      )
+        .setBlockhash(blockhash)
+        .build(umi);
     })
   );
 
@@ -125,7 +175,9 @@ async function pollBundleStatus(
       }
     }
   }
-  throw new TransactionExpiredBlockheightExceededError("Unable to confirm transaction. Try a higher priority fee.");
+  throw new TransactionExpiredBlockheightExceededError(
+    "Unable to confirm transaction. Try a higher priority fee."
+  );
 }
 
 async function sendJitoBundle(transactions: string[]): Promise<string[]> {
@@ -156,24 +208,12 @@ async function sendJitoBundle(transactions: string[]): Promise<string[]> {
 
 export async function sendJitoBundledTransactions(
   umi: Umi,
-  connection: Connection,
   signer: Signer,
   txs: TransactionBuilder[],
   txType?: TransactionRunType,
   priorityFeeSetting: PriorityFeeSetting = PriorityFeeSetting.Min,
   onAwaitingSign?: () => void
 ): Promise<string[] | undefined> {
-  if (txs.length === 1) {
-    const res = await sendSingleOptimizedTransaction(
-      umi,
-      connection,
-      txs[0],
-      txType,
-      priorityFeeSetting
-    );
-    return res ? [bs58.encode(res)] : undefined;
-  }
-
   consoleLog("Sending Jito bundle...");
   consoleLog("Transactions: ", txs.length);
   consoleLog(
@@ -193,27 +233,32 @@ export async function sendJitoBundledTransactions(
         )
       : undefined;
 
+  const latestBlockhash = (
+    await umi.rpc.getLatestBlockhash({ commitment: "confirmed" })
+  ).blockhash;
   let builtTxs = await umiToVersionedTransactions(
     umi,
+    latestBlockhash,
     signer,
     txs,
-    true, // false if simulating first and rebuilding later
+    false,
     feeEstimates
   );
-
-  // const simulationResults = await simulateJitoBundle(umi, builtTxs);
+  const simulationResults = await simulateJitoBundle(umi, builtTxs);
 
   if (txType !== "only-simulate") {
-    // let builtTxs = await umiToVersionedTransactions(
-    //   client.signer,
-    //   txs,
-    //   true,
-    //   feeEstimates,
-    //   simulationResults.map((x) => x.unitsConsumed! * 1.15)
-    // );
+    builtTxs = await umiToVersionedTransactions(
+      umi,
+      latestBlockhash,
+      signer,
+      txs,
+      true,
+      feeEstimates,
+      simulationResults.map((x) => x.unitsConsumed! * 1.15)
+    );
 
     const serializedTxs = builtTxs.map((x) => x.serialize());
-    if (serializedTxs.find(x => x.length > 1232)) {
+    if (serializedTxs.find((x) => x.length > 1232)) {
       throw new Error("A transaction is too large");
     }
 

@@ -83,7 +83,9 @@ export async function getJupSwapTransaction(
     Math.max(50, quoteResponse.slippageBps, priceImpactBps) *
       (1 + (swapDetails.slippageIncFactor ?? 0))
   );
-  quoteResponse.slippageBps = finalPriceSlippageBps;
+  if (!swapDetails.exactOut) {
+    quoteResponse.slippageBps = finalPriceSlippageBps;
+  }
   consoleLog(quoteResponse);
 
   consoleLog("Getting jup instructions...");

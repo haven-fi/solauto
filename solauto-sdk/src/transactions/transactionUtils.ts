@@ -637,7 +637,10 @@ export async function requiresRefreshBeforeRebalance(client: SolautoClient) {
       client.livePositionUpdates.debtAdjustment === BigInt(0) &&
       utilizationRateDiff >= 10
     ) {
-      client.log("Choosing to refresh before rebalance. Utilization rate diff:", utilizationRateDiff);
+      client.log(
+        "Choosing to refresh before rebalance. Utilization rate diff:",
+        utilizationRateDiff
+      );
       return true;
     }
   }
@@ -821,7 +824,36 @@ export async function convertReferralFeesToDestination(
   return { tx, lookupTableAddresses };
 }
 
-export function getErrorInfo(umi: Umi, tx: TransactionBuilder, error: any, simulationSuccessful?: boolean) {
+function parseJitoErrorMessage(message: string) {
+  const regex =
+    /Error processing Instruction (\d+): custom program error: (0x[0-9A-Fa-f]+|\d+)/;
+  const match = message.match(regex);
+
+  if (match) {
+    const instructionIndex = parseInt(match[1], 10);
+
+    let errorCode: number;
+    if (match[2].toLowerCase().startsWith("0x")) {
+      errorCode = parseInt(match[2], 16);
+    } else {
+      errorCode = parseInt(match[2], 10);
+    }
+
+    return {
+      instructionIndex,
+      errorCode,
+    };
+  } else {
+    return null;
+  }
+}
+
+export function getErrorInfo(
+  umi: Umi,
+  tx: TransactionBuilder,
+  error: any,
+  simulationSuccessful?: boolean
+) {
   let canBeIgnored = false;
   let errorName: string | undefined = undefined;
   let errorInfo: string | undefined = undefined;
@@ -835,7 +867,13 @@ export function getErrorInfo(umi: Umi, tx: TransactionBuilder, error: any, simul
       const computeIxs = simulationSuccessful ? 2 : 1; // sub ixs to account for computeUnitLimit and computeUnitPrice that get added
       const errIxIdx = err[0] - computeIxs;
 
-      consoleLog("Transaction instructions:", tx.getInstructions().map(x => x.programId.toString()).join(","));
+      consoleLog(
+        "Transaction instructions:",
+        tx
+          .getInstructions()
+          .map((x) => x.programId.toString())
+          .join(",")
+      );
       consoleLog("Error instruction index:", errIxIdx);
 
       const errIx = tx.getInstructions()[Math.max(0, errIxIdx)];

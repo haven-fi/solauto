@@ -319,7 +319,7 @@ export async function getComputeUnitPriceEstimate(
       ]);
       feeEstimate = Math.round((resp as any).priorityFeeEstimate as number);
     } catch (e) {
-      console.error(e);
+      // console.error(e);
     }
   }
 
@@ -402,7 +402,7 @@ export async function sendSingleOptimizedTransaction(
         await simulateTransaction(
           umi,
           connection,
-          await assembleFinalTransaction(
+          assembleFinalTransaction(
             umi.identity,
             tx,
             undefined,

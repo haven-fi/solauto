@@ -510,13 +510,6 @@ export class TransactionsManager {
     this.updateStatusForSets(itemSets, TransactionStatus.Queued, 0);
     this.txHandler.log("Initial item sets:", itemSets.length);
 
-    if (this.txType === "only-simulate" && itemSets.length > 1) {
-      this.txHandler.log(
-        "Only simulate and more than 1 transaction. Skipping..."
-      );
-      return [];
-    }
-
     if (itemSets.length > 1 && this.atomically) {
       await this.processTransactionsAtomically(itemSets);
     } else {
@@ -532,6 +525,7 @@ export class TransactionsManager {
 
   private async processTransactionsAtomically(itemSets: TransactionSet[]) {
     let num = 0;
+    let transactions: TransactionBuilder[] = [];
 
     await retryWithExponentialBackoff(
       async (attemptNum, prevError) => {
@@ -546,7 +540,7 @@ export class TransactionsManager {
           );
         }
 
-        let transactions = [];
+        transactions = [];
         for (const set of itemSets) {
           transactions.push(await set.getSingleTransaction());
         }
@@ -573,7 +567,6 @@ export class TransactionsManager {
         try {
           txSigs = await sendJitoBundledTransactions(
             this.txHandler.umi,
-            this.txHandler.connection,
             this.txHandler.signer,
             transactions,
             this.txType,
@@ -591,7 +584,11 @@ export class TransactionsManager {
           error = e as Error;
         }
 
-        if (error || !Boolean(txSigs) || txSigs?.length === 0) {
+        if (
+          error ||
+          (this.txType !== "only-simulate" &&
+            (!Boolean(txSigs) || txSigs?.length === 0))
+        ) {
           this.updateStatusForSets(
             itemSets,
             TransactionStatus.Failed,
@@ -614,15 +611,34 @@ export class TransactionsManager {
       this.retryDelay,
       this.errorsToThrow
     ).catch((e: Error) => {
+      this.txHandler.log("Capturing error info...");
+      const errorDetails = getErrorInfo(
+        this.txHandler.umi,
+        transactionBuilder().add(transactions),
+        e,
+        itemSets.filter(
+          (x) =>
+            this.statuses.find((y) => x.name() === y.name)?.simulationSuccessful
+        ).length === itemSets.length
+      );
+
+      const errorString = `${errorDetails.errorName ?? "Unknown error"}: ${errorDetails.errorInfo?.split("\n")[0] ?? "unknown"}`;
       this.updateStatusForSets(
         itemSets,
-        TransactionStatus.Failed,
+        errorDetails.canBeIgnored
+          ? TransactionStatus.Skipped
+          : TransactionStatus.Failed,
         num,
         undefined,
         undefined,
-        e.message
+        errorDetails.errorName || errorDetails.errorInfo
+          ? errorString
+          : e.message
       );
-      throw e;
+
+      if (!errorDetails.canBeIgnored) {
+        throw e;
+      }
     });
   }
 
@@ -666,19 +682,7 @@ export class TransactionsManager {
       this.retries,
       this.retryDelay,
       this.errorsToThrow
-    ).catch((e: Error) => {
-      if (itemSet) {
-        this.updateStatus(
-          itemSet.name(),
-          TransactionStatus.Failed,
-          num,
-          undefined,
-          undefined,
-          e.message
-        );
-      }
-      throw e;
-    });
+    );
   }
 
   private async refreshItemSet(
@@ -749,8 +753,13 @@ export class TransactionsManager {
         txSig ? bs58.encode(txSig) : undefined
       );
     } catch (e: any) {
-      this.txHandler.log("Caputring error info...");
-      const errorDetails = getErrorInfo(this.txHandler.umi, tx, e, this.statuses.find(x => x.name === txName)?.simulationSuccessful);
+      this.txHandler.log("Capturing error info...");
+      const errorDetails = getErrorInfo(
+        this.txHandler.umi,
+        tx,
+        e,
+        this.statuses.find((x) => x.name === txName)?.simulationSuccessful
+      );
 
       const errorString = `${errorDetails.errorName ?? "Unknown error"}: ${errorDetails.errorInfo?.split("\n")[0] ?? "unknown"}`;
       this.updateStatus(
