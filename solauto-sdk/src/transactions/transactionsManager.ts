@@ -263,14 +263,14 @@ export class TransactionsManager {
         let newSet = new TransactionSet(this.txHandler, this.lookupTables, [
           item,
         ]);
-        // for (let j = i; j >= 0; j--) {
-        //   if (await newSet.fitsWith(items[j])) {
-        //     newSet.prepend(items[j]);
-        //     i--;
-        //   } else {
-        //     break;
-        //   }
-        // }
+        for (let j = i; j >= 0; j--) {
+          if (await newSet.fitsWith(items[j])) {
+            newSet.prepend(items[j]);
+            i--;
+          } else {
+            break;
+          }
+        }
         transactionSets.unshift(newSet);
       }
     }
