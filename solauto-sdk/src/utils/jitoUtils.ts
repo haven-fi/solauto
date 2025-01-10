@@ -50,19 +50,6 @@ async function getTipInstruction(
 
 async function simulateJitoBundle(umi: Umi, txs: VersionedTransaction[]) {
   const simulationResult = await retryWithExponentialBackoff(async () => {
-    // const resp = await umi.rpc.call("simulateBundle", [
-    //   {
-    //     encodedTransactions: txs.map((x) =>
-    //       Buffer.from(x.serialize()).toString("base64")
-    //     ),
-    //   },
-    //   {
-    //     preExecutionAccountsConfigs: txs.map((_) => ""),
-    //     postExecutionAccountsConfigs: txs.map((_) => ""),
-    //     skipSigVerify: true,
-    //   },
-    // ]);
-
     const resp = await axios.post(
       umi.rpc.getEndpoint(),
       {
@@ -171,7 +158,12 @@ async function pollBundleStatus(
       consoleLog("Statuses:", statuses);
       const status = statuses.value[0].confirmation_status;
       if (status === "confirmed") {
-        return statuses?.value[0].transactions as string[];
+        return statuses.value[0].transactions as string[];
+      }
+      const err = statuses.value[0].err;
+      if (err) {
+        consoleLog("Jito bundle err:", JSON.stringify(err, null, 2));
+        throw new Error(err);
       }
     }
   }
@@ -236,15 +228,27 @@ export async function sendJitoBundledTransactions(
   const latestBlockhash = (
     await umi.rpc.getLatestBlockhash({ commitment: "confirmed" })
   ).blockhash;
-  let builtTxs = await umiToVersionedTransactions(
-    umi,
-    latestBlockhash,
-    signer,
-    txs,
-    false,
-    feeEstimates
-  );
-  const simulationResults = await simulateJitoBundle(umi, builtTxs);
+
+  let builtTxs: VersionedTransaction[];
+  let simulationResults: SimulatedTransactionResponse[] | undefined;
+  if (txType !== "skip-simulation") {
+    builtTxs = await umiToVersionedTransactions(
+      umi,
+      latestBlockhash,
+      signer,
+      txs,
+      false,
+      feeEstimates
+    );
+    consoleLog(
+      builtTxs.map((x) =>
+        x.message.compiledInstructions.map((y) =>
+          x.message.staticAccountKeys[y.programIdIndex].toString()
+        )
+      )
+    );
+    simulationResults = await simulateJitoBundle(umi, builtTxs);
+  }
 
   if (txType !== "only-simulate") {
     builtTxs = await umiToVersionedTransactions(
@@ -254,7 +258,9 @@ export async function sendJitoBundledTransactions(
       txs,
       true,
       feeEstimates,
-      simulationResults.map((x) => x.unitsConsumed! * 1.15)
+      simulationResults
+        ? simulationResults.map((x) => x.unitsConsumed! * 1.15)
+        : undefined
     );
 
     const serializedTxs = builtTxs.map((x) => x.serialize());

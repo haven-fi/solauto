@@ -134,7 +134,11 @@ export async function getMarginfiMaxLtvAndLiqThreshold(
     return [0, 0];
   }
 
-  return calcMarginfiMaxLtvAndLiqThreshold(supply.bank!, debt.bank, supplyPrice);
+  return calcMarginfiMaxLtvAndLiqThreshold(
+    supply.bank!,
+    debt.bank,
+    supplyPrice
+  );
 }
 
 export async function getAllMarginfiAccountsByAuthority(
@@ -412,10 +416,16 @@ export async function getMarginfiAccountPositionState(
     );
   }
 
+  if (debtBank === null) {
+    return undefined;
+  }
+
+  const supplyMint = TOKEN_INFO[supplyBank.mint.toString()];
+  const debtMint = TOKEN_INFO[debtBank.mint.toString()];
+
   if (
-    debtBank === null ||
-    (!TOKEN_INFO[supplyBank.mint.toString()].isStableCoin &&
-      !TOKEN_INFO[debtBank.mint.toString()].isStableCoin)
+    (!supplyMint.isStableCoin && !debtMint.isStableCoin) ||
+    (supplyMint.isStableCoin && debtMint.isStableCoin)
   ) {
     return undefined;
   }

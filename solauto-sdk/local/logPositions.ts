@@ -13,6 +13,7 @@ async function main() {
   const positions = await getSolautoManagedPositions(umi);
   // TODO: filter out certain wallet authorities using an env variable
 
+  console.log(positions);
   console.log("Total positions:", positions.length);
   // TODO: log net worth / balances
 }
