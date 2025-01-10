@@ -112,13 +112,13 @@ export async function getSwitchboardPrices(
         );
   
         const p = res.flatMap((x) => x.results[0]);
-        if (p.filter((x) => !x).length > 0) {
+        if (p.filter((x) => !x || isNaN(Number(x))).length > 0) {
           throw new Error("Unable to fetch Switchboard prices");
         }
   
         return p;
       },
-      4,
+      2,
       350
     );
   } catch {
@@ -129,7 +129,7 @@ export async function getSwitchboardPrices(
     prices = Array(mints.length).fill(0);
   }
 
-  const missingPrices = zip(mints, prices).filter((x) => !x[1]);
+  const missingPrices = zip(mints, prices).filter((x) => !x[1] || isNaN(Number(x)));
   const jupPrices = zip(
     missingPrices.map((x) => x[0]),
     await getJupTokenPrices(missingPrices.map((x) => x[0]))

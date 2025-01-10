@@ -14,10 +14,16 @@ export function getLiqUtilzationRateBps(
 }
 
 export function toBaseUnit(value: number, decimals: number): bigint {
+  if (!decimals) {
+    return BigInt(Math.floor(value));
+  }
   return BigInt(Math.round(value * Math.pow(10, decimals)));
 }
 
 export function fromBaseUnit(value: bigint, decimals: number): number {
+  if (!decimals) {
+    return Number(value);
+  }
   return Number(value) / Math.pow(10, decimals);
 }
 

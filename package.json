@@ -23,6 +23,7 @@
     "update-lut:marginfi": "cd solauto-sdk && npx ts-node local/updateMarginfiLUT.ts",
     "create-token-accounts": "cd solauto-sdk && npx ts-node local/createTokenAccounts.ts",
     "create-ism-accounts": "cd solauto-sdk && npx ts-node local/createISMAccounts.ts",
+    "prepare-accounts": "pnpm create-token-accounts && pnpm create-ism-accounts && pnpm update-lut:solauto && pnpm update-lut:marginfi",
     "log-positions": "cd solauto-sdk && npx ts-node local/logPositions.ts"
   },
   "dependencies": {

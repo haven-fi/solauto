@@ -172,6 +172,20 @@ export const MARGINFI_ACCOUNTS: {
       priceOracle: USDC_PRICE_ORACLE,
     },
   },
+  // ["DESG67cExEcw7d6MmENLEzaocR8pLrhfiw9VrNtGWUKD"]: {
+  //   [tokens.HMTR]: {
+  //     bank: "Br3yzg2WSb81RaFWK9UsKtq8fD5viwooZG34mKqQWxdM",
+  //     liquidityVault: "J45Je52qv2rDBuCQWPwp3bjRhf3bGzRWhKZtGDuLooCX",
+  //     vaultAuthority: "CKDsAKjNruDSz4tmUairh8PDGD1Rqh9WMTLWERYnnZrH",
+  //     priceOracle: SWITCHBOARD_PRICE_FEED_IDS[tokens.HMTR.toString()],
+  //   },
+  //   [tokens.USDC]: {
+  //     bank: "9yNnhJ8c1vGbu3DMf6eeeUi6TDJ2ddGgaRA88rL2R3rP",
+  //     liquidityVault: "4U1UBjXrPrW7JuQ894JbLUBqcb5LFfK9rfkWFwT7EdQ9",
+  //     vaultAuthority: "CY74V1r48kuuHA6APD3AaU2oPV1mBqe9srikrQQSHNR6",
+  //     priceOracle: USDC_PRICE_ORACLE,
+  //   }
+  // }
 };
 
 export const MARGINFI_ACCOUNTS_LOOKUP_TABLE =
