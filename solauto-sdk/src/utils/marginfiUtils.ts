@@ -424,6 +424,8 @@ export async function getMarginfiAccountPositionState(
   const debtMint = TOKEN_INFO[debtBank.mint.toString()];
 
   if (
+    supplyMint === undefined ||
+    debtMint === undefined ||
     (!supplyMint.isStableCoin && !debtMint.isStableCoin) ||
     (supplyMint.isStableCoin && debtMint.isStableCoin)
   ) {
