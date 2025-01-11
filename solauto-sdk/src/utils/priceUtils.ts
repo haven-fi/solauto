@@ -10,7 +10,8 @@ import {
   retryWithExponentialBackoff,
   zip,
 } from "./generalUtils";
-import { CrossbarClient } from "@switchboard-xyz/on-demand";
+import * as OnDemand from "@switchboard-xyz/on-demand";
+import { getJupPriceData } from "./jupiterUtils";
 
 export async function fetchTokenPrices(mints: PublicKey[]): Promise<number[]> {
   const currentTime = currentUnixSeconds();
@@ -100,7 +101,8 @@ export async function getSwitchboardPrices(
     return [];
   }
 
-  const crossbar = new CrossbarClient("https://crossbar.switchboard.xyz");
+  const { CrossbarClient } = OnDemand;
+  const crossbar = CrossbarClient.default();
 
   let prices: number[] = [];
   try {
@@ -147,17 +149,9 @@ export async function getJupTokenPrices(mints: PublicKey[]) {
     return [];
   }
 
-  const data = await retryWithExponentialBackoff(async () => {
-    const res = (
-      await fetch(
-        "https://api.jup.ag/price/v2?ids=" +
-          mints.map((x) => x.toString()).join(",")
-      )
-    ).json();
-    return res;
-  }, 6);
+  const data = await getJupPriceData(mints);
 
-  const prices = Object.values(data.data as { [key: string]: any }).map(
+  const prices = Object.values(data).map(
     (x) => parseFloat(x.price as string) as number
   );
 

@@ -103,11 +103,12 @@ async function simulateJitoBundle(umi: Umi, txs: VersionedTransaction[]) {
       }
     );
 
-    const res = resp.data.result.value as any;
+    const res = resp.data as any;
 
-    if (res && res.summary.failed) {
+    if (res.result.value && res.result.value.summary.failed) {
+      const resValue = res.result.value;
       const transactionResults =
-        res.transactionResults as SimulatedTransactionResponse[];
+        resValue.transactionResults as SimulatedTransactionResponse[];
       transactionResults.forEach((x) => {
         x.logs?.forEach((y) => {
           consoleLog(y);
@@ -115,7 +116,7 @@ async function simulateJitoBundle(umi: Umi, txs: VersionedTransaction[]) {
       });
 
       const failedTxIdx = transactionResults.length;
-      const txFailure = res.summary.failed.error.TransactionFailure;
+      const txFailure = resValue.summary.failed.error.TransactionFailure;
 
       if (txFailure) {
         const info = parseJitoErrorMessage(txFailure[1] as string);
@@ -128,7 +129,9 @@ async function simulateJitoBundle(umi: Umi, txs: VersionedTransaction[]) {
         }
       }
 
-      throw new Error(txFailure ? txFailure[1] : res.summary.failed.toString());
+      throw new Error(txFailure ? txFailure[1] : resValue.summary.failed.toString());
+    } else if (res.error.message) {
+      throw new Error(res.error.message);
     }
 
     return res;

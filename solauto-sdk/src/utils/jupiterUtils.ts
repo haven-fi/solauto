@@ -70,7 +70,7 @@ export async function getJupSwapTransaction(
           : swapDetails.exactIn
             ? "ExactIn"
             : undefined,
-        slippageBps: memecoinSwap ? 150 : 50,
+        slippageBps: memecoinSwap ? 500 : 50,
         maxAccounts: !swapDetails.exactOut ? 50 : undefined,
       }),
     4,
@@ -140,4 +140,18 @@ export async function getJupSwapTransaction(
       )
     ),
   };
+}
+
+export async function getJupPriceData(mints: PublicKey[], extraInfo?: boolean) {
+  const data = await retryWithExponentialBackoff(async () => {
+    const res = await (
+      await fetch(
+        "https://api.jup.ag/price/v2?ids=" +
+          mints.map((x) => x.toString()).join(",") + (extraInfo ? "&showExtraInfo=true" : "")
+      )
+    ).json();
+    return res;
+  }, 6);
+
+  return data.data as { [key: string]: any };
 }

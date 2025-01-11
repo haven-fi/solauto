@@ -6,7 +6,7 @@ import {
   Transaction,
   VersionedTransaction,
 } from "@solana/web3.js";
-import { CrossbarClient, PullFeed } from "@switchboard-xyz/on-demand";
+import * as OnDemand from "@switchboard-xyz/on-demand";
 import { SWITCHBOARD_PRICE_FEED_IDS } from "../constants/switchboardConstants";
 import { TransactionItemInputs } from "../types";
 import { Signer, transactionBuilder } from "@metaplex-foundation/umi";
@@ -37,6 +37,7 @@ export function getPullFeed(
   );
   const program = new Program(switchboardIdl as Idl, provider);
 
+  const { PullFeed } = OnDemand;
   return new PullFeed(
     program,
     new PublicKey(SWITCHBOARD_PRICE_FEED_IDS[mint.toString()])
@@ -48,7 +49,9 @@ export async function buildSwbSubmitResponseTx(
   signer: Signer,
   mint: PublicKey
 ): Promise<TransactionItemInputs | undefined> {
-  const crossbar = new CrossbarClient("https://crossbar.switchboard.xyz");
+  const { CrossbarClient } = OnDemand;
+
+  const crossbar = CrossbarClient.default();
   const feed = getPullFeed(conn, mint, toWeb3JsPublicKey(signer.publicKey));
   const [pullIx, responses] = await retryWithExponentialBackoff(
     async () =>

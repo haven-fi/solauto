@@ -26,6 +26,7 @@ export interface ReferralStateManagerArgs {
   signer?: Signer;
   wallet?: WalletAdapter;
   authority?: PublicKey;
+  referralState?: PublicKey;
   referredByAuthority?: PublicKey;
 }
 
@@ -52,7 +53,7 @@ export class ReferralStateManager extends TxHandler {
     this.signer = this.umi.identity;
     this.authority = args.authority ?? toWeb3JsPublicKey(this.signer.publicKey);
 
-    this.referralState = getReferralState(this.authority, this.programId);
+    this.referralState = args.referralState ?? getReferralState(this.authority, this.programId);
 
     this.referralStateData = await safeFetchReferralState(
       this.umi,
