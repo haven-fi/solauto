@@ -48,7 +48,7 @@ export const ALL_SUPPORTED_TOKENS = [
   POPCAT,
   RETARDIO,
   BILLY,
-  // HMTR,
+  HMTR,
 ];
 
 interface TokenInfo {

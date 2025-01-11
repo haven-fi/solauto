@@ -614,7 +614,7 @@ export class TransactionsManager {
       this.txHandler.log("Capturing error info...");
       const errorDetails = getErrorInfo(
         this.txHandler.umi,
-        transactionBuilder().add(transactions),
+        transactions,
         e,
         itemSets.filter(
           (x) =>
@@ -756,7 +756,7 @@ export class TransactionsManager {
       this.txHandler.log("Capturing error info...");
       const errorDetails = getErrorInfo(
         this.txHandler.umi,
-        tx,
+        [tx],
         e,
         this.statuses.find((x) => x.name === txName)?.simulationSuccessful
       );

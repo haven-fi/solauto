@@ -10,10 +10,8 @@ import { Serializer, scalarEnum } from '@metaplex-foundation/umi/serializers';
 
 export enum OracleSetup {
   None,
-  PythLegacy,
-  SwitchboardLegacy,
-  PythPushOracle,
-  SwitchboardPull,
+  PythEma,
+  SwitchboardV2,
 }
 
 export type OracleSetupArgs = OracleSetup;

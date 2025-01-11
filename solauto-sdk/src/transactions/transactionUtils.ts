@@ -73,6 +73,7 @@ import {
 import { PRICES } from "../constants";
 import { TransactionItemInputs } from "../types";
 import { safeGetPrice } from "../utils";
+import { BundleSimulationError } from "../types/transactions";
 
 interface wSolTokenUsage {
   wSolTokenAccount: PublicKey;
@@ -824,101 +825,96 @@ export async function convertReferralFeesToDestination(
   return { tx, lookupTableAddresses };
 }
 
-function parseJitoErrorMessage(message: string) {
-  const regex =
-    /Error processing Instruction (\d+): custom program error: (0x[0-9A-Fa-f]+|\d+)/;
-  const match = message.match(regex);
-
-  if (match) {
-    const instructionIndex = parseInt(match[1], 10);
-
-    let errorCode: number;
-    if (match[2].toLowerCase().startsWith("0x")) {
-      errorCode = parseInt(match[2], 16);
-    } else {
-      errorCode = parseInt(match[2], 10);
-    }
-
-    return {
-      instructionIndex,
-      errorCode,
-    };
-  } else {
-    return null;
-  }
-}
-
 export function getErrorInfo(
   umi: Umi,
-  tx: TransactionBuilder,
-  error: any,
+  txs: TransactionBuilder[],
+  error: Error,
   simulationSuccessful?: boolean
 ) {
   let canBeIgnored = false;
   let errorName: string | undefined = undefined;
   let errorInfo: string | undefined = undefined;
 
-  try {
-    let programError: ProgramError | null = null;
+  let errTxIdx: number | undefined;
+  let errIxIdx: number | undefined;
+  let errCode: number | undefined;
+  let errName: string | undefined;
 
+  const computeIxs = simulationSuccessful ? 2 : 1; // sub ixs to account for computeUnitLimit and computeUnitPrice that get added
+
+  try {
     if (typeof error === "object" && (error as any)["InstructionError"]) {
       const err = (error as any)["InstructionError"];
 
-      const computeIxs = simulationSuccessful ? 2 : 1; // sub ixs to account for computeUnitLimit and computeUnitPrice that get added
-      const errIxIdx = err[0] - computeIxs;
-
-      consoleLog(
-        "Transaction instructions:",
-        tx
-          .getInstructions()
-          .map((x) => x.programId.toString())
-          .join(",")
-      );
-      consoleLog("Error instruction index:", errIxIdx);
-
-      const errIx = tx.getInstructions()[Math.max(0, errIxIdx)];
-
-      const errCode =
+      errTxIdx = 0;
+      errIxIdx = err[0] - computeIxs;
+      errCode =
         typeof err[1] === "object" && "Custom" in err[1]
           ? err[1]["Custom"]
           : undefined;
-      const errName = errCode === undefined ? (err[1] as string) : undefined;
-      let programName = "";
+      errName = errCode === undefined ? (err[1] as string) : undefined;
+    } else if (error instanceof BundleSimulationError) {
+      errTxIdx = error.details.transactionIdx;
+      errIxIdx = error.details.instructionIdx - computeIxs;
+      errCode = error.details.errorCode;
+    }
 
-      if (
-        errIx.programId.toString() ===
+    consoleLog(
+      "Transaction instructions:",
+      txs.map((x) =>
+        x
+          .getInstructions()
+          .map((y) => y.programId.toString())
+          .join(",")
+      )
+    );
+
+    let programError: ProgramError | null = null;
+    let programName = "";
+    const errIx =
+      errTxIdx !== undefined && errIxIdx !== undefined
+        ? txs[errTxIdx].getInstructions()[Math.max(0, errIxIdx)]
+        : undefined;
+
+    consoleLog("Error transaction index:", errTxIdx);
+    consoleLog("Error instruction index:", errIxIdx);
+    consoleLog("Error code:", errCode);
+    consoleLog("Error instruction program:", errIx?.programId.toString());
+
+    const solautoError = getSolautoErrorFromCode(errCode ?? -1, createSolautoProgram());
+    const marginfiError = getMarginfiErrorFromCode(errCode ?? -1, createMarginfiProgram());
+
+    if (
+      errCode &&
+      errIx?.programId.toString() ===
         umi.programs.get("solauto").publicKey.toString()
+    ) {
+      programError = solautoError ?? marginfiError;
+      programName = "Haven";
+      if (
+        programError?.name ===
+        new InvalidRebalanceConditionError(createSolautoProgram()).name
       ) {
-        programError = getSolautoErrorFromCode(errCode, createSolautoProgram());
-        programName = "Haven";
-        if (
-          programError?.name ===
-          new InvalidRebalanceConditionError(createSolautoProgram()).name
-        ) {
-          canBeIgnored = true;
-        }
-      } else if (errIx.programId === MARGINFI_PROGRAM_ID) {
-        programName = "Marginfi";
-        programError = getMarginfiErrorFromCode(
-          errCode,
-          createMarginfiProgram()
-        );
-      } else if (errIx.programId === JUPITER_PROGRAM_ID) {
-        programName = "Jupiter";
-        programError = getJupiterErrorFromCode(errCode, createJupiterProgram());
+        canBeIgnored = true;
       }
-
-      if (errName && errCode === undefined) {
-        errorName = `${programName ?? "Program"} error`;
-        errorInfo = errName;
-      }
+    } else if (errCode && errIx?.programId === MARGINFI_PROGRAM_ID) {
+      programName = "Marginfi";
+      programError = marginfiError;
+    } else if (errCode && errIx?.programId === JUPITER_PROGRAM_ID) {
+      programName = "Jupiter";
+      programError = getJupiterErrorFromCode(errCode, createJupiterProgram());
     }
 
     if (programError) {
       errorName = programError?.name;
       errorInfo = programError?.message;
+    } else if (errName) {
+      errorName = `${programName ?? "Program"} error`;
+      errorInfo = errName;
     }
-  } catch {}
+  } catch (e) {
+    consoleLog(e);
+  }
 
   return {
     errorName: errorName,

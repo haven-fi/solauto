@@ -21,6 +21,7 @@ import { consoleLog, retryWithExponentialBackoff } from "./generalUtils";
 import { PriorityFeeSetting, TransactionRunType } from "../types";
 import axios from "axios";
 import base58 from "bs58";
+import { BundleSimulationError } from "../types/transactions";
 
 export async function getRandomTipAccount(): Promise<PublicKey> {
   const tipAccounts = [
@@ -46,6 +47,30 @@ async function getTipInstruction(
     await getRandomTipAccount(),
     BigInt(tipLamports)
   );
+}
+
+function parseJitoErrorMessage(message: string) {
+  const regex =
+    /Error processing Instruction (\d+): custom program error: (0x[0-9A-Fa-f]+|\d+)/;
+  const match = message.match(regex);
+
+  if (match) {
+    const instructionIndex = parseInt(match[1], 10);
+
+    let errorCode: number;
+    if (match[2].toLowerCase().startsWith("0x")) {
+      errorCode = parseInt(match[2], 16);
+    } else {
+      errorCode = parseInt(match[2], 10);
+    }
+
+    return {
+      instructionIndex,
+      errorCode,
+    };
+  } else {
+    return null;
+  }
 }
 
 async function simulateJitoBundle(umi: Umi, txs: VersionedTransaction[]) {
@@ -89,7 +114,20 @@ async function simulateJitoBundle(umi: Umi, txs: VersionedTransaction[]) {
         });
       });
 
+      const failedTxIdx = transactionResults.length;
       const txFailure = res.summary.failed.error.TransactionFailure;
+
+      if (txFailure) {
+        const info = parseJitoErrorMessage(txFailure[1] as string);
+        if (info) {
+          throw new BundleSimulationError("Failed to simulate transaction", 400, {
+            transactionIdx: failedTxIdx,
+            instructionIdx: info.instructionIndex,
+            errorCode: info.errorCode,
+          });
+        }
+      }
+
       throw new Error(txFailure ? txFailure[1] : res.summary.failed.toString());
     }
 
