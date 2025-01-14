@@ -288,17 +288,25 @@ async function simulateTransaction(
 export async function getComputeUnitPriceEstimate(
   umi: Umi,
   tx: TransactionBuilder,
-  prioritySetting: PriorityFeeSetting
+  prioritySetting: PriorityFeeSetting,
+  useAccounts?: boolean
 ): Promise<number | undefined> {
   const web3Transaction = toWeb3JsTransaction(
     (await tx.setLatestBlockhash(umi, { commitment: "finalized" })).build(umi)
   );
 
+  const accountKeys = tx
+    .getInstructions()
+    .flatMap((x) => x.keys.flatMap((x) => x.pubkey.toString()));
+
   let feeEstimate: number | undefined;
   try {
     const resp = await umi.rpc.call("getPriorityFeeEstimate", [
       {
-        transaction: bs58.encode(web3Transaction.serialize()),
+        transaction: !useAccounts
+          ? bs58.encode(web3Transaction.serialize())
+          : undefined,
+        accountKeys: useAccounts ? accountKeys : undefined,
         options: {
           priorityLevel: prioritySetting.toString(),
         },
@@ -309,9 +317,7 @@ export async function getComputeUnitPriceEstimate(
     try {
       const resp = await umi.rpc.call("getPriorityFeeEstimate", [
         {
-          accountKeys: tx
-            .getInstructions()
-            .flatMap((x) => x.keys.flatMap((x) => x.pubkey.toString())),
+          accountKeys,
           options: {
             priorityLevel: prioritySetting.toString(),
           },

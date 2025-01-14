@@ -121,16 +121,22 @@ async function simulateJitoBundle(umi: Umi, txs: VersionedTransaction[]) {
       if (txFailure) {
         const info = parseJitoErrorMessage(txFailure[1] as string);
         if (info) {
-          throw new BundleSimulationError("Failed to simulate transaction", 400, {
-            transactionIdx: failedTxIdx,
-            instructionIdx: info.instructionIndex,
-            errorCode: info.errorCode,
-          });
+          throw new BundleSimulationError(
+            `Failed to simulate transaction: TX: ${failedTxIdx}, IX: ${info.instructionIndex}, Error: ${info.errorCode}`,
+            400,
+            {
+              transactionIdx: failedTxIdx,
+              instructionIdx: info.instructionIndex,
+              errorCode: info.errorCode,
+            }
+          );
         }
       }
 
-      throw new Error(txFailure ? txFailure[1] : resValue.summary.failed.toString());
-    } else if (res.error.message) {
+      throw new Error(
+        txFailure ? txFailure[1] : resValue.summary.failed.toString()
+      );
+    } else if (res.error && res.error.message) {
       throw new Error(res.error.message);
     }
 
@@ -213,18 +219,18 @@ async function pollBundleStatus(
   );
 }
 
-async function sendJitoBundle(transactions: string[]): Promise<string[]> {
+async function sendJitoBundle(
+  umi: Umi,
+  transactions: string[]
+): Promise<string[]> {
   let resp: any;
   try {
-    resp = await axios.post<{ result: string }>(
-      `${JITO_BLOCK_ENGINE}/api/v1/bundles`,
-      {
-        jsonrpc: "2.0",
-        id: 1,
-        method: "sendBundle",
-        params: [transactions],
-      }
-    );
+    resp = await axios.post<{ result: string }>(umi.rpc.getEndpoint(), {
+      jsonrpc: "2.0",
+      id: 1,
+      method: "sendBundle",
+      params: [transactions],
+    });
   } catch (e: any) {
     if (e.response.data.error) {
       console.error("Jito send bundle error:", e.response.data.error);
@@ -311,6 +317,7 @@ export async function sendJitoBundledTransactions(
 
     onAwaitingSign?.();
     const txSigs = await sendJitoBundle(
+      umi,
       serializedTxs.map((x) => base58.encode(x))
     );
     return txSigs.length > 0 ? txSigs : undefined;

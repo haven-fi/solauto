@@ -147,11 +147,16 @@ export async function getJupPriceData(mints: PublicKey[], extraInfo?: boolean) {
     const res = await (
       await fetch(
         "https://api.jup.ag/price/v2?ids=" +
-          mints.map((x) => x.toString()).join(",") + (extraInfo ? "&showExtraInfo=true" : "")
+          mints.map((x) => x.toString()).join(",") +
+          (extraInfo ? "&showExtraInfo=true" : "")
       )
     ).json();
-    return res;
+    const result = res.data;
+    if (!result) {
+      throw new Error("Failed to get token prices using Jupiter");
+    }
+    return result;
   }, 6);
 
-  return data.data as { [key: string]: any };
+  return data as { [key: string]: any };
 }
