@@ -36,7 +36,7 @@ dependencies:
     specifier: '=1.95.8'
     version: 1.95.8
   '@switchboard-xyz/on-demand':
-    specifier: ^1.2.51
+    specifier: '=1.2.51'
     version: 1.2.51(fastestsmallesttextencoderdecoder@1.0.22)
   axios:
     specifier: ^1.7.8
@@ -47,6 +47,9 @@ dependencies:
   cross-fetch:
     specifier: ^4.0.0
     version: 4.0.0
+  dotenv:
+    specifier: ^16.4.7
+    version: 16.4.7
   rpc-websockets:
     specifier: 7.11.0
     version: 7.11.0
