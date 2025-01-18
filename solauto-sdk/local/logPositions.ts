@@ -138,14 +138,14 @@ export function formatNumber(
   }
 }
 
-async function main(realUsers: boolean) {
+async function main(filterWhitelist: boolean) {
   const [_, umi] = getSolanaRpcConnection(
     buildHeliusApiUrl(process.env.HELIUS_API_KEY!),
     SOLAUTO_PROD_PROGRAM
   );
   let positions = await getSolautoManagedPositions(umi);
 
-  if (realUsers) {
+  if (filterWhitelist) {
     const addressWhitelist = process.env.ADDRESS_WHITELIST?.split(",") ?? [];
     positions = positions.filter(
       (x) => !addressWhitelist.includes(x.authority.toString())
@@ -221,5 +221,5 @@ async function main(realUsers: boolean) {
   console.log(`Total TVL: $${formatNumber(tvl, 2, 10000, 2)}`);
 }
 
-const realUsers = true;
-main(realUsers).then((x) => x);
+const filterWhitelist = true;
+main(filterWhitelist).then((x) => x);
