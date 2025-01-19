@@ -162,7 +162,8 @@ export async function getAddressLookupInputs(
   lookupTableAddresses: string[]
 ): Promise<AddressLookupTableInput[]> {
   const addressLookupTableAccountInfos = await umi.rpc.getAccounts(
-    lookupTableAddresses.map((key) => publicKey(key))
+    lookupTableAddresses.map((key) => publicKey(key)),
+    { commitment: "confirmed" }
   );
 
   return addressLookupTableAccountInfos.reduce((acc, accountInfo, index) => {
