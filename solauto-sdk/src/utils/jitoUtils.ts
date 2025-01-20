@@ -229,15 +229,12 @@ async function sendJitoBundle(
 ): Promise<string[]> {
   let resp: any;
   try {
-    resp = await axios.post<{ result: string }>(
-      umi.rpc.getEndpoint(),
-      {
-        jsonrpc: "2.0",
-        id: 1,
-        method: "sendBundle",
-        params: [transactions],
-      }
-    );
+    resp = await axios.post<{ result: string }>(umi.rpc.getEndpoint(), {
+      jsonrpc: "2.0",
+      id: 1,
+      method: "sendBundle",
+      params: [transactions],
+    });
   } catch (e: any) {
     if (e.response.data.error) {
       console.error("Jito send bundle error:", e.response.data.error);
@@ -346,7 +343,10 @@ export async function sendJitoBundledTransactions(
 
   if (txType !== "only-simulate") {
     const signers = [...builtTxs].map((tx) => getRequiredSigners(tx.message));
-    if (Array.from(new Set(signers.flatMap(x => x).filter(x => x.publicKey))).length > 1) {
+    if (
+      Array.from(new Set(signers.flatMap((x) => x).filter((x) => x.publicKey)))
+        .length > 1
+    ) {
       consoleLog("Signers:", signers);
       throw new Error("Unexpected error 301. Please retry.");
     }
@@ -370,14 +370,11 @@ export async function sendJitoBundledTransactions(
       throw new Error("A transaction is too large");
     }
 
-    console.log(serializedTxs.map((x) => base58.encode(x)));
-
-    // const txSigs = await sendJitoBundle(
-    //   umi,
-    //   serializedTxs.map((x) => base58.encode(x))
-    // );
-    // return txSigs.length > 0 ? txSigs : undefined;
-    return ["test"];
+    const txSigs = await sendJitoBundle(
+      umi,
+      serializedTxs.map((x) => base58.encode(x))
+    );
+    return txSigs.length > 0 ? txSigs : undefined;
   }
 
   return undefined;
