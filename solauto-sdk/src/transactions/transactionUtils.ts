@@ -808,7 +808,7 @@ export async function convertReferralFeesToDestination(
     .add(setupInstructions)
     .add(
       convertReferralFees(referralManager.umi, {
-        signer: referralManager.umi.identity,
+        signer: referralManager.signer,
         intermediaryTa: publicKey(
           getTokenAccount(
             toWeb3JsPublicKey(referralManager.umi.identity.publicKey),
@@ -846,7 +846,6 @@ export function getErrorInfo(
     if (typeof error === "object" && (error as any)["InstructionError"]) {
       const err = (error as any)["InstructionError"];
 
-      errTxIdx = 0;
       errIxIdx = err[0] - computeIxs;
       errCode =
         typeof err[1] === "object" && "Custom" in err[1]

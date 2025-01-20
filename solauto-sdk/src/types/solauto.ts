@@ -19,6 +19,7 @@ export enum PriorityFeeSetting {
   Low = "Low",
   Default = "Medium",
   High = "High",
+  VeryHigh = "VeryHigh",
 }
 
 export const priorityFeeSettingValues = Object.values(PriorityFeeSetting) as PriorityFeeSetting[];

@@ -567,6 +567,7 @@ export class TransactionsManager {
         try {
           txSigs = await sendJitoBundledTransactions(
             this.txHandler.umi,
+            this.txHandler.connection,
             this.txHandler.signer,
             transactions,
             this.txType,

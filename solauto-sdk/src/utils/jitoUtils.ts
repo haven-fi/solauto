@@ -1,7 +1,9 @@
 import {
+  Connection,
   PublicKey,
   SimulatedTransactionResponse,
   TransactionExpiredBlockheightExceededError,
+  VersionedMessage,
   VersionedTransaction,
 } from "@solana/web3.js";
 import { toWeb3JsTransaction } from "@metaplex-foundation/umi-web3js-adapters";
@@ -15,6 +17,7 @@ import {
 import {
   assembleFinalTransaction,
   getComputeUnitPriceEstimate,
+  sendSingleOptimizedTransaction,
   systemTransferUmiIx,
 } from "./solanaUtils";
 import { consoleLog, retryWithExponentialBackoff } from "./generalUtils";
@@ -22,8 +25,9 @@ import { PriorityFeeSetting, TransactionRunType } from "../types";
 import axios from "axios";
 import base58 from "bs58";
 import { BundleSimulationError } from "../types/transactions";
+import { bs58 } from "@coral-xyz/anchor/dist/cjs/utils/bytes";
 
-export async function getRandomTipAccount(): Promise<PublicKey> {
+export function getRandomTipAccount(): PublicKey {
   const tipAccounts = [
     "96gYZGLnJYVFmbjzopPSU6QiEV5fGqZNyN9nmNhvrZU5",
     "HFqU5x63VTqvQss8hp11i4wVV8bD44PvwucfZ2bU7gRe",
@@ -38,13 +42,13 @@ export async function getRandomTipAccount(): Promise<PublicKey> {
   return new PublicKey(tipAccounts[randomInt]);
 }
 
-async function getTipInstruction(
+function getTipInstruction(
   signer: Signer,
   tipLamports: number
-): Promise<WrappedInstruction> {
+): WrappedInstruction {
   return systemTransferUmiIx(
     signer,
-    await getRandomTipAccount(),
+    getRandomTipAccount(),
     BigInt(tipLamports)
   );
 }
@@ -105,7 +109,7 @@ async function simulateJitoBundle(umi: Umi, txs: VersionedTransaction[]) {
 
     const res = resp.data as any;
 
-    if (res.result.value && res.result.value.summary.failed) {
+    if (res.result && res.result.value && res.result.value.summary.failed) {
       const resValue = res.result.value;
       const transactionResults =
         resValue.transactionResults as SimulatedTransactionResponse[];
@@ -225,12 +229,15 @@ async function sendJitoBundle(
 ): Promise<string[]> {
   let resp: any;
   try {
-    resp = await axios.post<{ result: string }>(umi.rpc.getEndpoint(), {
-      jsonrpc: "2.0",
-      id: 1,
-      method: "sendBundle",
-      params: [transactions],
-    });
+    resp = await axios.post<{ result: string }>(
+      umi.rpc.getEndpoint(),
+      {
+        jsonrpc: "2.0",
+        id: 1,
+        method: "sendBundle",
+        params: [transactions],
+      }
+    );
   } catch (e: any) {
     if (e.response.data.error) {
       console.error("Jito send bundle error:", e.response.data.error);
@@ -245,29 +252,69 @@ async function sendJitoBundle(
   return bundleId ? await pollBundleStatus(bundleId) : [];
 }
 
+export function getRequiredSigners(message: VersionedMessage) {
+  const { numRequiredSignatures, numReadonlySignedAccounts } = message.header;
+
+  const numWritableSigners = numRequiredSignatures - numReadonlySignedAccounts;
+
+  const signersInfo = [];
+  for (let i = 0; i < numRequiredSignatures; i++) {
+    const publicKey = message.staticAccountKeys[i].toBase58();
+    const isWritable = i < numWritableSigners;
+
+    signersInfo.push({
+      index: i,
+      publicKey,
+      isWritable,
+    });
+  }
+
+  return signersInfo;
+}
+
 export async function sendJitoBundledTransactions(
   umi: Umi,
+  connection: Connection,
   signer: Signer,
   txs: TransactionBuilder[],
   txType?: TransactionRunType,
   priorityFeeSetting: PriorityFeeSetting = PriorityFeeSetting.Min,
   onAwaitingSign?: () => void
 ): Promise<string[] | undefined> {
+  if (txs.length === 1) {
+    const resp = await sendSingleOptimizedTransaction(
+      umi,
+      connection,
+      txs[0],
+      txType,
+      priorityFeeSetting,
+      onAwaitingSign
+    );
+    return resp ? [bs58.encode(resp)] : undefined;
+  }
+
   consoleLog("Sending Jito bundle...");
   consoleLog("Transactions: ", txs.length);
+  consoleLog(
+    txs.map((tx) => tx.getInstructions().map((x) => x.programId.toString()))
+  );
   consoleLog(
     "Transaction sizes: ",
     txs.map((x) => x.getTransactionSize(umi))
   );
 
-  txs[0] = txs[0].prepend(await getTipInstruction(signer, 150_000));
+  txs[0] = txs[0].prepend(getTipInstruction(signer, 150_000));
   const feeEstimates =
     priorityFeeSetting !== PriorityFeeSetting.None
       ? await Promise.all(
           txs.map(
             async (x) =>
-              (await getComputeUnitPriceEstimate(umi, x, priorityFeeSetting)) ??
-              1000000
+              (await getComputeUnitPriceEstimate(
+                umi,
+                x,
+                priorityFeeSetting,
+                true
+              )) ?? 1000000
           )
         )
       : undefined;
@@ -276,7 +323,7 @@ export async function sendJitoBundledTransactions(
     await umi.rpc.getLatestBlockhash({ commitment: "confirmed" })
   ).blockhash;
 
-  let builtTxs: VersionedTransaction[];
+  let builtTxs: VersionedTransaction[] = [];
   let simulationResults: SimulatedTransactionResponse[] | undefined;
   if (txType !== "skip-simulation") {
     builtTxs = await umiToVersionedTransactions(
@@ -298,6 +345,14 @@ export async function sendJitoBundledTransactions(
   }
 
   if (txType !== "only-simulate") {
+    const signers = [...builtTxs].map((tx) => getRequiredSigners(tx.message));
+    if (Array.from(new Set(signers.flatMap(x => x).filter(x => x.publicKey))).length > 1) {
+      consoleLog("Signers:", signers);
+      throw new Error("Unexpected error 301. Please retry.");
+    }
+
+    onAwaitingSign?.();
+
     builtTxs = await umiToVersionedTransactions(
       umi,
       latestBlockhash,
@@ -315,12 +370,14 @@ export async function sendJitoBundledTransactions(
       throw new Error("A transaction is too large");
     }
 
-    onAwaitingSign?.();
-    const txSigs = await sendJitoBundle(
-      umi,
-      serializedTxs.map((x) => base58.encode(x))
-    );
-    return txSigs.length > 0 ? txSigs : undefined;
+    console.log(serializedTxs.map((x) => base58.encode(x)));
+
+    // const txSigs = await sendJitoBundle(
+    //   umi,
+    //   serializedTxs.map((x) => base58.encode(x))
+    // );
+    // return txSigs.length > 0 ? txSigs : undefined;
+    return ["test"];
   }
 
   return undefined;

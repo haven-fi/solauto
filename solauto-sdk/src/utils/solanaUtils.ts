@@ -301,34 +301,18 @@ export async function getComputeUnitPriceEstimate(
     .flatMap((x) => x.keys.flatMap((x) => x.pubkey.toString()));
 
   let feeEstimate: number | undefined;
-  try {
-    const resp = await umi.rpc.call("getPriorityFeeEstimate", [
-      {
-        transaction: !useAccounts
-          ? bs58.encode(web3Transaction.serialize())
-          : undefined,
-        accountKeys: useAccounts ? accountKeys : undefined,
-        options: {
-          priorityLevel: prioritySetting.toString(),
-        },
+  const resp = await umi.rpc.call("getPriorityFeeEstimate", [
+    {
+      transaction: !useAccounts
+        ? bs58.encode(web3Transaction.serialize())
+        : undefined,
+      accountKeys: useAccounts ? accountKeys : undefined,
+      options: {
+        priorityLevel: prioritySetting.toString(),
       },
-    ]);
-    feeEstimate = Math.round((resp as any).priorityFeeEstimate as number);
-  } catch (e) {
-    try {
-      const resp = await umi.rpc.call("getPriorityFeeEstimate", [
-        {
-          accountKeys,
-          options: {
-            priorityLevel: prioritySetting.toString(),
-          },
-        },
-      ]);
-      feeEstimate = Math.round((resp as any).priorityFeeEstimate as number);
-    } catch (e) {
-      // console.error(e);
-    }
-  }
+    },
+  ]);
+  feeEstimate = Math.round((resp as any).priorityFeeEstimate as number);
 
   return feeEstimate;
 }
@@ -418,7 +402,6 @@ export async function sendSingleOptimizedTransaction(
         ),
       3
     );
-    simulationResult.value.err;
     computeUnitLimit = Math.round(simulationResult.value.unitsConsumed! * 1.15);
     consoleLog("Compute unit limit: ", computeUnitLimit);
   }
@@ -427,7 +410,7 @@ export async function sendSingleOptimizedTransaction(
   if (prioritySetting !== PriorityFeeSetting.None) {
     cuPrice = await getComputeUnitPriceEstimate(umi, tx, prioritySetting);
     if (!cuPrice) {
-      cuPrice = 1000000;
+      cuPrice = 1_000_000;
     }
     cuPrice = Math.min(cuPrice, 100 * 1_000_000);
     consoleLog("Compute unit price: ", cuPrice);

@@ -361,7 +361,7 @@ export function getJupSwapRebalanceDetails(
     inputMint: toWeb3JsPublicKey(input.mint),
     outputMint: toWeb3JsPublicKey(output.mint),
     destinationWallet: client.solautoPosition,
-    slippageIncFactor: 0.5 + (attemptNum ?? 0) * 0.2,
+    slippageIncFactor: 1 + (attemptNum ?? 0) * 0.25,
     amount: exactOut ? outputAmount : inputAmount,
     exactIn: exactIn,
     exactOut: exactOut,
