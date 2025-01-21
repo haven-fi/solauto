@@ -63,7 +63,6 @@ export abstract class SolautoClient extends ReferralStateManager {
   public lendingPlatform?: LendingPlatform;
 
   public authority!: PublicKey;
-  public signer!: Signer;
 
   public positionId!: number;
   public selfManaged!: boolean;

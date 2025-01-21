@@ -2,11 +2,11 @@ import { publicKey } from "@metaplex-foundation/umi";
 import {
   buildHeliusApiUrl,
   fetchTokenPrices,
+  fromBaseUnit,
   getSolanaRpcConnection,
   getSolautoManagedPositions,
   PositionState,
   positionStateWithLatestPrices,
-  PRICES,
   retryWithExponentialBackoff,
   safeFetchAllSolautoPosition,
   safeGetPrice,
@@ -17,11 +17,10 @@ import {
 import { PublicKey } from "@solana/web3.js";
 import { NATIVE_MINT } from "@solana/spl-token";
 import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
-import { fromBaseUnit } from "../dist";
-import path from 'path';
-import { config } from 'dotenv';
+import path from "path";
+import { config } from "dotenv";
 
-config({ path: path.join(__dirname, '.env') });
+config({ path: path.join(__dirname, ".env") });
 
 function getBatches<T>(items: T[], batchSize: number): T[][] {
   const batches: T[][] = [];

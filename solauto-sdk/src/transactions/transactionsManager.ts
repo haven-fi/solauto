@@ -569,6 +569,7 @@ export class TransactionsManager {
             this.txHandler.umi,
             this.txHandler.connection,
             this.txHandler.signer,
+            this.txHandler.otherSigners,
             transactions,
             this.txType,
             this.getUpdatedPriorityFeeSetting(prevError, attemptNum),

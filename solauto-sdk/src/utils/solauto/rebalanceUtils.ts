@@ -357,9 +357,7 @@ export function getJupSwapRebalanceDetails(
     targetLiqUtilizationRateBps === 0 || values.repayingCloseToMaxLtv;
   const exactIn = !exactOut;
 
-  const addPadding = toWeb3JsPublicKey(client.signer.publicKey).equals(
-    client.authority
-  );
+  const addPadding = targetLiqUtilizationRateBps === 0;
 
   return {
     inputMint: toWeb3JsPublicKey(input.mint),

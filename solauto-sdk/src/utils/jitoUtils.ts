@@ -13,6 +13,7 @@ import {
   TransactionBuilder,
   Umi,
   WrappedInstruction,
+  TransactionMessage,
 } from "@metaplex-foundation/umi";
 import {
   assembleFinalTransaction,
@@ -156,7 +157,8 @@ async function simulateJitoBundle(umi: Umi, txs: VersionedTransaction[]) {
 async function umiToVersionedTransactions(
   umi: Umi,
   blockhash: string,
-  signer: Signer,
+  userSigner: Signer,
+  otherSigners: Signer[],
   txs: TransactionBuilder[],
   sign: boolean,
   feeEstimates?: number[],
@@ -165,7 +167,7 @@ async function umiToVersionedTransactions(
   let builtTxs = await Promise.all(
     txs.map(async (tx, i) => {
       return assembleFinalTransaction(
-        signer,
+        userSigner,
         tx,
         feeEstimates ? feeEstimates[i] : undefined,
         computeUnitLimits ? computeUnitLimits[i] : undefined
@@ -176,7 +178,19 @@ async function umiToVersionedTransactions(
   );
 
   if (sign) {
-    builtTxs = await signer.signAllTransactions(builtTxs);
+    builtTxs = await userSigner.signAllTransactions(builtTxs);
+    for (const signer of otherSigners) {
+      for (let i = 0; i < builtTxs.length; i++) {
+        const requiredSigners = getRequiredSigners(builtTxs[i].message);
+        if (
+          requiredSigners
+            .map((x) => x.publicKey)
+            .includes(signer.publicKey.toString())
+        ) {
+          builtTxs[i] = await signer.signTransaction(builtTxs[i]);
+        }
+      }
+    }
   }
 
   return builtTxs.map((x) => toWeb3JsTransaction(x));
@@ -249,14 +263,14 @@ async function sendJitoBundle(
   return bundleId ? await pollBundleStatus(bundleId) : [];
 }
 
-export function getRequiredSigners(message: VersionedMessage) {
+export function getRequiredSigners(message: TransactionMessage) {
   const { numRequiredSignatures, numReadonlySignedAccounts } = message.header;
 
   const numWritableSigners = numRequiredSignatures - numReadonlySignedAccounts;
 
   const signersInfo = [];
   for (let i = 0; i < numRequiredSignatures; i++) {
-    const publicKey = message.staticAccountKeys[i].toBase58();
+    const publicKey = message.accounts[i].toString();
     const isWritable = i < numWritableSigners;
 
     signersInfo.push({
@@ -272,7 +286,8 @@ export function getRequiredSigners(message: VersionedMessage) {
 export async function sendJitoBundledTransactions(
   umi: Umi,
   connection: Connection,
-  signer: Signer,
+  userSigner: Signer,
+  otherSigners: Signer[],
   txs: TransactionBuilder[],
   txType?: TransactionRunType,
   priorityFeeSetting: PriorityFeeSetting = PriorityFeeSetting.Min,
@@ -300,7 +315,7 @@ export async function sendJitoBundledTransactions(
     txs.map((x) => x.getTransactionSize(umi))
   );
 
-  txs[0] = txs[0].prepend(getTipInstruction(signer, 150_000));
+  txs[0] = txs[0].prepend(getTipInstruction(userSigner, 150_000));
   const feeEstimates =
     priorityFeeSetting !== PriorityFeeSetting.None
       ? await Promise.all(
@@ -326,7 +341,8 @@ export async function sendJitoBundledTransactions(
     builtTxs = await umiToVersionedTransactions(
       umi,
       latestBlockhash,
-      signer,
+      userSigner,
+      otherSigners,
       txs,
       false,
       feeEstimates
@@ -342,21 +358,13 @@ export async function sendJitoBundledTransactions(
   }
 
   if (txType !== "only-simulate") {
-    const signers = [...builtTxs].map((tx) => getRequiredSigners(tx.message));
-    const uniqueSigners = Array.from(
-      new Set(signers.flatMap((x) => x).map((x) => x.publicKey))
-    );
-    if (uniqueSigners.length > 1) {
-      consoleLog("Signers:", signers);
-      throw new Error("Unexpected error 301. Please retry.");
-    }
-
     onAwaitingSign?.();
 
     builtTxs = await umiToVersionedTransactions(
       umi,
       latestBlockhash,
-      signer,
+      userSigner,
+      otherSigners,
       txs,
       true,
       feeEstimates,

@@ -133,6 +133,10 @@ export class SolautoMarginfiClient extends SolautoClient {
         ? toWeb3JsPublicKey(this.marginfiAccount.publicKey)
         : this.marginfiAccount;
 
+    if ("publicKey" in this.marginfiAccount) {
+      this.otherSigners.push(this.marginfiAccount);
+    }
+
     const marginfiAccountData = !args.new
       ? await safeFetchMarginfiAccount(
           this.umi,
@@ -210,6 +214,10 @@ export class SolautoMarginfiClient extends SolautoClient {
       compatibleMarginfiAccounts.length > 0
         ? compatibleMarginfiAccounts[0]
         : undefined;
+
+    if (this.intermediaryMarginfiAccountSigner) {
+      this.otherSigners.push(this.intermediaryMarginfiAccountSigner);
+    }
   }
 
   protocolAccount(): PublicKey {

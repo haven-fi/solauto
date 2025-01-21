@@ -1,4 +1,4 @@
-import { Umi } from "@metaplex-foundation/umi";
+import { Signer, Umi } from "@metaplex-foundation/umi";
 import { Connection, PublicKey } from "@solana/web3.js";
 import {
   consoleLog,
@@ -9,6 +9,8 @@ import { SOLAUTO_PROD_PROGRAM } from "../constants";
 export abstract class TxHandler {
   public connection!: Connection;
   public umi!: Umi;
+  public signer!: Signer;
+  public otherSigners: Signer[] = [];
 
   constructor(
     public rpcUrl: string,

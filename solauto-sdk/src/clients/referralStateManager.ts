@@ -32,7 +32,6 @@ export interface ReferralStateManagerArgs {
 
 export class ReferralStateManager extends TxHandler {
   public umi!: Umi;
-  public signer!: Signer;
 
   public referralState!: PublicKey;
   public referralStateData!: ReferralState | null;
