@@ -510,7 +510,7 @@ export class TransactionsManager {
     this.updateStatusForSets(itemSets, TransactionStatus.Queued, 0);
     this.txHandler.log("Initial item sets:", itemSets.length);
 
-    if (itemSets.length > 1 && this.atomically) {
+    if (this.atomically) {
       await this.processTransactionsAtomically(itemSets);
     } else {
       let currentIndex = 0;

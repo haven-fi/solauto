@@ -25,6 +25,7 @@ export interface JupSwapDetails {
   slippageIncFactor?: number;
   exactOut?: boolean;
   exactIn?: boolean;
+  addPadding?: boolean;
 }
 
 function createTransactionInstruction(
@@ -70,8 +71,8 @@ export async function getJupSwapTransaction(
           : swapDetails.exactIn
             ? "ExactIn"
             : undefined,
-        slippageBps: memecoinSwap ? 500 : 200,
-        maxAccounts: !swapDetails.exactOut ? 50 : undefined,
+        slippageBps: memecoinSwap ? 500 : 300,
+        maxAccounts: !swapDetails.exactOut ? 45 : undefined,
       }),
     4,
     200
@@ -83,9 +84,7 @@ export async function getJupSwapTransaction(
     Math.max(50, quoteResponse.slippageBps, priceImpactBps) *
       (1 + (swapDetails.slippageIncFactor ?? 0))
   );
-  if (!swapDetails.exactOut) {
-    quoteResponse.slippageBps = finalPriceSlippageBps;
-  }
+  quoteResponse.slippageBps = finalPriceSlippageBps;
   consoleLog(quoteResponse);
 
   consoleLog("Getting jup instructions...");
@@ -115,6 +114,19 @@ export async function getJupSwapTransaction(
   const finalPriceImpactBps =
     priceImpactBps * (1 + (swapDetails.slippageIncFactor ?? 0));
   consoleLog("Increased price impact bps:", finalPriceImpactBps);
+
+  if (swapDetails.addPadding) {
+    consoleLog("Raw inAmount:", quoteResponse.inAmount);
+    const inc = Math.max(
+      fromBps(finalPriceImpactBps),
+      fromBps(finalPriceSlippageBps) / 4
+    );
+    consoleLog("Inc:", inc);
+    quoteResponse.inAmount = Math.round(
+      parseInt(quoteResponse.inAmount) + parseInt(quoteResponse.inAmount) * inc
+    ).toString();
+    consoleLog("Increased inAmount:", quoteResponse.inAmount);
+  }
 
   return {
     jupQuote: quoteResponse,

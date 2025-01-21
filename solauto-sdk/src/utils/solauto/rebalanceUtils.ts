@@ -275,7 +275,7 @@ export function getFlashLoanDetails(
   const maxLiqUtilizationRateBps = getMaxLiqUtilizationRateBps(
     client.solautoPositionState!.maxLtvBps,
     client.solautoPositionState!.liqThresholdBps,
-    0.015
+    0.02
   );
   const requiresFlashLoan =
     supplyUsd <= 0 || tempLiqUtilizationRateBps > maxLiqUtilizationRateBps;
@@ -357,13 +357,18 @@ export function getJupSwapRebalanceDetails(
     targetLiqUtilizationRateBps === 0 || values.repayingCloseToMaxLtv;
   const exactIn = !exactOut;
 
+  const addPadding = toWeb3JsPublicKey(client.signer.publicKey).equals(
+    client.authority
+  );
+
   return {
     inputMint: toWeb3JsPublicKey(input.mint),
     outputMint: toWeb3JsPublicKey(output.mint),
     destinationWallet: client.solautoPosition,
-    slippageIncFactor: 1 + (attemptNum ?? 0) * 0.25,
+    slippageIncFactor: 0.5 + (attemptNum ?? 0) * 0.25,
     amount: exactOut ? outputAmount : inputAmount,
     exactIn: exactIn,
     exactOut: exactOut,
+    addPadding,
   };
 }

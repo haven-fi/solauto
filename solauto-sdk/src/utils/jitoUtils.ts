@@ -343,10 +343,10 @@ export async function sendJitoBundledTransactions(
 
   if (txType !== "only-simulate") {
     const signers = [...builtTxs].map((tx) => getRequiredSigners(tx.message));
-    if (
-      Array.from(new Set(signers.flatMap((x) => x).filter((x) => x.publicKey)))
-        .length > 1
-    ) {
+    const uniqueSigners = Array.from(
+      new Set(signers.flatMap((x) => x).map((x) => x.publicKey))
+    );
+    if (uniqueSigners.length > 1) {
       consoleLog("Signers:", signers);
       throw new Error("Unexpected error 301. Please retry.");
     }
