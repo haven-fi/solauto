@@ -203,12 +203,12 @@ async function main(filterWhitelist: boolean) {
 
     const repayFrom = pos.position.settingParams.repayToBps + pos.position.settingParams.repayGap;
     const unhealthy = latestState.liqUtilizationRateBps > repayFrom;
-    const healthText = unhealthy ? `(Unhealthy: ${latestState.liqUtilizationRateBps - repayFrom}` : "";
+    const healthText = unhealthy ? `(Unhealthy: ${latestState.liqUtilizationRateBps - repayFrom}bps)` : "";
     if (unhealthy) {
       unhealthyPositions += 1;
     }
 
-    console.log(pos.publicKey.toString(), `(${pos.authority.toString()})`);
+    console.log(pos.publicKey.toString(), `(${pos.authority.toString()} ${pos.positionId})`);
     console.log(
       `${strategy}: $${formatNumber(fromBaseUnit(latestState.netWorth.baseAmountUsdValue, USD_DECIMALS), 2, 10000, 2)} ${healthText}`
     );
