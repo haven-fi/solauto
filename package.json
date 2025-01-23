@@ -5,7 +5,6 @@
     "build:rs:local": "cargo build-sbf -- --package solauto --features local",
     "build:rs:test": "cargo build-sbf -- --package solauto --features test",
     "build:rs:prod": "cargo build-sbf",
-    "verified-build": "solana-verify build --library-name solauto",
     "build:ts": "cd solauto-sdk && npm run build",
     "deploy:buffer": "solana program write-buffer target/deploy/solauto.so --buffer ~/.config/solana/buffer.json --max-sign-attempts 50",
     "deploy:rs:test": "solana program deploy target/deploy/solauto.so --keypair ~/.config/solana/solauto-auth.json --program-id TesTjfQ6TbXv96Tv6fqr95XTZ1LYPxtkafmShN9PjBp --use-rpc --buffer ~/.config/solana/buffer.json --max-sign-attempts 50",
@@ -19,11 +18,13 @@
     "test:ts:unit": "cd solauto-sdk && pnpm test:unit",
     "test:ts:txs": "cd solauto-sdk && pnpm test:txs",
     "test:ts:all": "cd solauto-sdk && pnpm test:all",
-    "update-lut:solauto": "cd solauto-sdk && pnpm update-lut:solauto",
-    "update-lut:marginfi": "cd solauto-sdk && pnpm update-lut:marginfi",
-    "create-token-accounts": "cd solauto-sdk && pnpm create-token-accounts",
-    "create-ism-accounts": "cd solauto-sdk && pnpm create-sm-accounts",
-    "solana-verify": "solana-verify verify-from-repo --remote -um --program-id AutoyKBRaHSBHy9RsmXCZMy6nNFAg5FYijrvZyQcNLV https://github.com/haven-fi/solauto --library-name solauto"
+    "solana-verify": "solana-verify verify-from-repo --remote -um --program-id AutoyKBRaHSBHy9RsmXCZMy6nNFAg5FYijrvZyQcNLV https://github.com/haven-fi/solauto --library-name solauto --base-image solanafoundation/solana-verifiable-build@sha256:f3d3a4adaa8008644fc4535373c6818275c7e35a0b07660890b4a95ef434221e",
+    "update-lut:solauto": "cd solauto-sdk && npx ts-node local/updateSolautoLUT.ts",
+    "update-lut:marginfi": "cd solauto-sdk && npx ts-node local/updateMarginfiLUT.ts",
+    "create-token-accounts": "cd solauto-sdk && npx ts-node local/createTokenAccounts.ts",
+    "create-ism-accounts": "cd solauto-sdk && npx ts-node local/createISMAccounts.ts",
+    "prepare-accounts": "pnpm create-token-accounts && pnpm create-ism-accounts && pnpm update-lut:solauto && pnpm update-lut:marginfi",
+    "log-positions": "cd solauto-sdk && npx ts-node local/logPositions.ts"
   },
   "dependencies": {
     "@metaplex-foundation/kinobi": "^0.18.5"

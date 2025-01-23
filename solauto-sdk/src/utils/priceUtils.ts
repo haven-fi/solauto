@@ -10,7 +10,8 @@ import {
   retryWithExponentialBackoff,
   zip,
 } from "./generalUtils";
-import { CrossbarClient } from "@switchboard-xyz/on-demand";
+import * as OnDemand from "@switchboard-xyz/on-demand";
+import { getJupPriceData } from "./jupiterUtils";
 
 export async function fetchTokenPrices(mints: PublicKey[]): Promise<number[]> {
   const currentTime = currentUnixSeconds();
@@ -43,7 +44,7 @@ export async function fetchTokenPrices(mints: PublicKey[]): Promise<number[]> {
 
   for (var i = 0; i < mints.length; i++) {
     PRICES[mints[i].toString()] = {
-      price: prices[i],
+      price: Number(prices[i]),
       time: currentUnixSeconds(),
     };
   }
@@ -100,26 +101,37 @@ export async function getSwitchboardPrices(
     return [];
   }
 
-  const crossbar = new CrossbarClient("https://crossbar.switchboard.xyz");
-  let prices = await retryWithExponentialBackoff(
-    async () => {
-      const res = await crossbar.simulateSolanaFeeds(
-        "mainnet",
-        mints.map((x) => SWITCHBOARD_PRICE_FEED_IDS[x.toString()])
-      );
+  const { CrossbarClient } = OnDemand;
+  const crossbar = CrossbarClient.default();
 
-      const prices = res.flatMap((x) => x.results[0]);
-      if (prices.find((x) => !x || x === -Infinity)) {
-        throw new Error("Unable to fetch Switchboard prices");
-      }
+  let prices: number[] = [];
+  try {
+    prices = await retryWithExponentialBackoff(
+      async () => {
+        const res = await crossbar.simulateSolanaFeeds(
+          "mainnet",
+          mints.map((x) => SWITCHBOARD_PRICE_FEED_IDS[x.toString()])
+        );
+  
+        const p = res.flatMap((x) => x.results[0]);
+        if (p.filter((x) => !x || isNaN(Number(x))).length > 0) {
+          throw new Error("Unable to fetch Switchboard prices");
+        }
+  
+        return p;
+      },
+      2,
+      350
+    );
+  } catch {
+    consoleLog("Failed to fetch Switchboard prices after multiple retries");
+  }
 
-      return prices;
-    },
-    8,
-    250
-  );
+  if (prices.length === 0) {
+    prices = Array(mints.length).fill(0);
+  }
 
-  const missingPrices = zip(mints, prices).filter((x) => !x[1]);
+  const missingPrices = zip(mints, prices).filter((x) => !x[1] || isNaN(Number(x)));
   const jupPrices = zip(
     missingPrices.map((x) => x[0]),
     await getJupTokenPrices(missingPrices.map((x) => x[0]))
@@ -137,17 +149,9 @@ export async function getJupTokenPrices(mints: PublicKey[]) {
     return [];
   }
 
-  const data = await retryWithExponentialBackoff(async () => {
-    const res = (
-      await fetch(
-        "https://api.jup.ag/price/v2?ids=" +
-          mints.map((x) => x.toString()).join(",")
-      )
-    ).json();
-    return res;
-  }, 6);
+  const data = await getJupPriceData(mints);
 
-  const prices = Object.values(data.data as { [key: string]: any }).map(
+  const prices = Object.values(data).map(
     (x) => parseFloat(x.price as string) as number
   );
 

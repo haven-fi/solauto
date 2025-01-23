@@ -48,7 +48,7 @@ export function findMarginfiAccounts(
   throw new Error(`Marginfi accounts not found by the bank: ${bank}`);
 }
 
-export function calcMaxLtvAndLiqThreshold(
+export function calcMarginfiMaxLtvAndLiqThreshold(
   supplyBank: Bank,
   debtBank: Bank,
   supplyPrice: number
@@ -83,7 +83,7 @@ export function calcMaxLtvAndLiqThreshold(
   return [maxLtv, liqThreshold];
 }
 
-export async function getMaxLtvAndLiqThreshold(
+export async function getMarginfiMaxLtvAndLiqThreshold(
   umi: Umi,
   marginfiGroup: PublicKey,
   supply: {
@@ -134,7 +134,11 @@ export async function getMaxLtvAndLiqThreshold(
     return [0, 0];
   }
 
-  return calcMaxLtvAndLiqThreshold(supply.bank!, debt.bank, supplyPrice);
+  return calcMarginfiMaxLtvAndLiqThreshold(
+    supply.bank!,
+    debt.bank,
+    supplyPrice
+  );
 }
 
 export async function getAllMarginfiAccountsByAuthority(
@@ -412,9 +416,18 @@ export async function getMarginfiAccountPositionState(
     );
   }
 
+  if (debtBank === null) {
+    return undefined;
+  }
+
+  const supplyMint = TOKEN_INFO[supplyBank.mint.toString()];
+  const debtMint = TOKEN_INFO[debtBank.mint.toString()];
+
   if (
-    TOKEN_INFO[supplyBank.mint.toString()].isStableCoin &&
-    (debtBank === null || TOKEN_INFO[debtBank.mint.toString()].isStableCoin)
+    supplyMint === undefined ||
+    debtMint === undefined ||
+    (!supplyMint.isStableCoin && !debtMint.isStableCoin) ||
+    (supplyMint.isStableCoin && debtMint.isStableCoin)
   ) {
     return undefined;
   }
@@ -429,7 +442,7 @@ export async function getMarginfiAccountPositionState(
   }
 
   const supplyPrice = safeGetPrice(supply.mint!)!;
-  let [maxLtv, liqThreshold] = await getMaxLtvAndLiqThreshold(
+  let [maxLtv, liqThreshold] = await getMarginfiMaxLtvAndLiqThreshold(
     umi,
     marginfiGroup ?? new PublicKey(DEFAULT_MARGINFI_GROUP),
     {
@@ -564,4 +577,15 @@ export function getUpToDateShareValues(bank: Bank): [number, number] {
       bytesToI80F48(bank.liabilityShareValue.value)
     ),
   ];
+}
+
+export function marginfiAccountEmpty(marginfiAccount: MarginfiAccount) {
+  return (
+    marginfiAccount.lendingAccount.balances.find(
+      (x) =>
+        x.bankPk.toString() !== PublicKey.default.toString() &&
+        (Math.round(bytesToI80F48(x.assetShares.value)) != 0 ||
+          Math.round(bytesToI80F48(x.liabilityShares.value)) != 0)
+    ) === undefined
+  );
 }

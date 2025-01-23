@@ -63,7 +63,6 @@ export abstract class SolautoClient extends ReferralStateManager {
   public lendingPlatform?: LendingPlatform;
 
   public authority!: PublicKey;
-  public signer!: Signer;
 
   public positionId!: number;
   public selfManaged!: boolean;
@@ -251,6 +250,10 @@ export abstract class SolautoClient extends ReferralStateManager {
       }
     | undefined
   > {
+    if (this.selfManaged) {
+      return undefined;
+    }
+
     const existingLutAccounts = await this.fetchExistingAuthorityLutAccounts();
     if (
       this.lutAccountsToAdd().every((element) =>

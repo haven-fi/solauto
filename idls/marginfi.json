@@ -2601,16 +2601,10 @@
             "name": "None"
           },
           {
-            "name": "PythLegacy"
+            "name": "PythEma"
           },
           {
-            "name": "SwitchboardLegacy"
-          },
-          {
-            "name": "PythPushOracle"
-          },
-          {
-            "name": "SwitchboardPull"
+            "name": "SwitchboardV2"
           }
         ]
       }

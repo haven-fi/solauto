@@ -33,9 +33,9 @@ import {
   marginfiRebalance,
   marginfiRefreshData,
 } from "../generated";
-import { getMarginfiAccountPDA, getTokenAccount } from "../utils/accountUtils";
-import { generateRandomU64 } from "../utils/generalUtils";
+import { getTokenAccount } from "../utils/accountUtils";
 import {
+  Bank,
   MARGINFI_PROGRAM_ID,
   MarginfiAccount,
   lendingAccountBorrow,
@@ -56,11 +56,12 @@ import {
   findMarginfiAccounts,
   getAllMarginfiAccountsByAuthority,
   getMarginfiAccountPositionState,
-  getMaxLtvAndLiqThreshold,
+  getMarginfiMaxLtvAndLiqThreshold,
+  marginfiAccountEmpty,
 } from "../utils/marginfiUtils";
-import { bytesToI80F48, fromBaseUnit, toBps } from "../utils/numberUtils";
+import { fromBaseUnit, toBps } from "../utils/numberUtils";
 import { QuoteResponse } from "@jup-ag/api";
-import { safeGetPrice } from "../utils";
+import { consoleLog, safeGetPrice } from "../utils";
 
 export interface SolautoMarginfiClientArgs extends SolautoClientArgs {
   marginfiAccount?: PublicKey | Signer;
@@ -69,7 +70,7 @@ export interface SolautoMarginfiClientArgs extends SolautoClientArgs {
 }
 
 export class SolautoMarginfiClient extends SolautoClient {
-  private initialized: boolean = false;
+  private initializedFor?: PublicKey;
 
   public marginfiProgram!: PublicKey;
 
@@ -99,21 +100,43 @@ export class SolautoMarginfiClient extends SolautoClient {
         args.marginfiAccount ??
         createSignerFromKeypair(this.umi, this.umi.eddsa.generateKeypair());
     } else {
-      this.marginfiAccountSeedIdx = generateRandomU64();
-      this.marginfiAccount = this.solautoPositionData
-        ? toWeb3JsPublicKey(
-            this.solautoPositionData.position.protocolUserAccount
-          )
-        : getMarginfiAccountPDA(
-            this.solautoPosition,
-            this.marginfiAccountSeedIdx,
-            this.programId
-          );
+      if (this.solautoPositionData) {
+        this.marginfiAccount = toWeb3JsPublicKey(
+          this.solautoPositionData.position.protocolUserAccount
+        );
+      } else {
+        const accounts = await getAllMarginfiAccountsByAuthority(
+          this.umi,
+          this.solautoPosition,
+          args.marginfiGroup ?? new PublicKey(DEFAULT_MARGINFI_GROUP),
+          false
+        );
+        const reusableAccounts =
+          accounts.length > 0
+            ? (
+                await safeFetchAllMarginfiAccount(
+                  this.umi,
+                  accounts.map((x) => publicKey(x.marginfiAccount))
+                )
+              ).filter((x) => marginfiAccountEmpty(x))
+            : [];
+        this.marginfiAccount =
+          reusableAccounts.length > 0
+            ? toWeb3JsPublicKey(reusableAccounts[0].publicKey)
+            : createSignerFromKeypair(
+                this.umi,
+                this.umi.eddsa.generateKeypair()
+              );
+      }
     }
     this.marginfiAccountPk =
       "publicKey" in this.marginfiAccount
         ? toWeb3JsPublicKey(this.marginfiAccount.publicKey)
         : this.marginfiAccount;
+
+    if ("publicKey" in this.marginfiAccount) {
+      this.otherSigners.push(this.marginfiAccount);
+    }
 
     const marginfiAccountData = !args.new
       ? await safeFetchMarginfiAccount(
@@ -149,10 +172,19 @@ export class SolautoMarginfiClient extends SolautoClient {
     );
     this.debtPriceOracle = new PublicKey(this.marginfiDebtAccounts.priceOracle);
 
-    if (!this.initialized) {
+    if (
+      !this.initializedFor ||
+      !this.initializedFor.equals(toWeb3JsPublicKey(this.signer.publicKey))
+    ) {
       await this.setIntermediaryMarginfiDetails();
+      this.initializedFor = toWeb3JsPublicKey(this.signer.publicKey);
     }
-    this.initialized = true;
+
+    consoleLog("Marginfi account:", this.marginfiAccountPk.toString());
+    consoleLog(
+      "Intermediary MF account:",
+      this.intermediaryMarginfiAccountPk.toString()
+    );
   }
 
   async setIntermediaryMarginfiDetails() {
@@ -174,16 +206,7 @@ export class SolautoMarginfiClient extends SolautoClient {
               this.umi,
               existingMarginfiAccounts.map((x) => publicKey(x.marginfiAccount))
             )
-          ).filter(
-            (x) =>
-              x.group.toString() === this.marginfiGroup.toString() &&
-              x.lendingAccount.balances.find(
-                (y) =>
-                  y.bankPk.toString() !== PublicKey.default.toString() &&
-                  (Math.round(bytesToI80F48(y.assetShares.value)) != 0 ||
-                    Math.round(bytesToI80F48(y.liabilityShares.value)) != 0)
-              ) === undefined
-          )
+          ).filter((x) => marginfiAccountEmpty(x))
         : [];
 
     this.intermediaryMarginfiAccountSigner =
@@ -198,6 +221,10 @@ export class SolautoMarginfiClient extends SolautoClient {
       compatibleMarginfiAccounts.length > 0
         ? compatibleMarginfiAccounts[0]
         : undefined;
+
+    if (this.intermediaryMarginfiAccountSigner) {
+      this.otherSigners.push(this.intermediaryMarginfiAccountSigner);
+    }
   }
 
   protocolAccount(): PublicKey {
@@ -228,7 +255,7 @@ export class SolautoMarginfiClient extends SolautoClient {
     ) {
       return [0, 0];
     } else {
-      const [maxLtv, liqThreshold] = await getMaxLtvAndLiqThreshold(
+      const [maxLtv, liqThreshold] = await getMarginfiMaxLtvAndLiqThreshold(
         this.umi,
         this.marginfiGroup,
         {
@@ -538,8 +565,7 @@ export class SolautoMarginfiClient extends SolautoClient {
         : undefined,
       rebalanceType,
       targetLiqUtilizationRateBps: targetLiqUtilizationRateBps ?? null,
-      targetInAmountBaseUnit:
-        rebalanceStep === "A" ? parseInt(jupQuote.inAmount) : null,
+      targetInAmountBaseUnit: parseInt(jupQuote.inAmount),
     });
   }
 
@@ -574,9 +600,9 @@ export class SolautoMarginfiClient extends SolautoClient {
   }
 
   flashRepay(flashLoanDetails: FlashLoanDetails): TransactionBuilder {
-    const accounts = flashLoanDetails.mint.equals(this.supplyMint)
-      ? { data: this.marginfiSupplyAccounts, oracle: this.supplyPriceOracle }
-      : { data: this.marginfiDebtAccounts, oracle: this.debtPriceOracle };
+    const accounts = flashLoanDetails.useDebtLiquidity
+      ? { data: this.marginfiDebtAccounts, oracle: this.debtPriceOracle }
+      : { data: this.marginfiSupplyAccounts, oracle: this.supplyPriceOracle };
 
     const remainingAccounts: AccountMeta[] = [];
     let includedFlashLoanToken = false;

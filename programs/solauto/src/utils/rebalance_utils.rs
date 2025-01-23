@@ -118,7 +118,7 @@ pub fn validate_rebalance_instructions(
             jup_swap: ((current_ix_idx as i16) + next_ix) as usize,
             marginfi_flash_borrow: Some(((current_ix_idx as i16) + prev_ix) as usize),
         })
-    } else if (rebalance_type == SolautoRebalanceType::SingleRebalanceWithFL
+    } else if (rebalance_type == SolautoRebalanceType::FLSwapThenRebalance
         || rebalance_type == SolautoRebalanceType::None)
         && marginfi_start_fl.matches(ix_3_before)
         && marginfi_borrow.matches(ix_2_before)
@@ -127,10 +127,24 @@ pub fn validate_rebalance_instructions(
         && marginfi_end_fl.matches(ix_2_after)
     {
         std_accounts.solauto_position.data.rebalance.rebalance_type =
-            SolautoRebalanceType::SingleRebalanceWithFL;
+            SolautoRebalanceType::FLSwapThenRebalance;
         Ok(RebalanceInstructionIndices {
             jup_swap: ((current_ix_idx as i16) + prev_ix) as usize,
             marginfi_flash_borrow: Some(((current_ix_idx as i16) + ix_2_before) as usize),
+        })
+    } else if (rebalance_type == SolautoRebalanceType::FLRebalanceThenSwap
+        || rebalance_type == SolautoRebalanceType::None)
+        && marginfi_start_fl.matches(ix_2_before)
+        && marginfi_borrow.matches(prev_ix)
+        && jup_swap.matches(next_ix)
+        && marginfi_repay.matches(ix_2_after)
+        && marginfi_end_fl.matches(ix_3_after)
+    {
+        std_accounts.solauto_position.data.rebalance.rebalance_type =
+            SolautoRebalanceType::FLRebalanceThenSwap;
+        Ok(RebalanceInstructionIndices {
+            jup_swap: ((current_ix_idx as i16) + next_ix) as usize,
+            marginfi_flash_borrow: Some(((current_ix_idx as i16) + prev_ix) as usize),
         })
     } else {
         msg!("Incorrect rebalance instructions");
@@ -394,6 +408,7 @@ pub fn get_rebalance_values(
             solauto_position,
             args.target_in_amount_base_unit.unwrap(),
             debt_adjustment_usd,
+            None
         )?;
     }
 

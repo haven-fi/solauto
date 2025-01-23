@@ -12,7 +12,8 @@ export enum SolautoRebalanceType {
   None,
   Regular,
   DoubleRebalanceWithFL,
-  SingleRebalanceWithFL,
+  FLSwapThenRebalance,
+  FLRebalanceThenSwap,
 }
 
 export type SolautoRebalanceTypeArgs = SolautoRebalanceType;

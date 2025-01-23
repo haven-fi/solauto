@@ -32,7 +32,6 @@ export interface ReferralStateManagerArgs {
 
 export class ReferralStateManager extends TxHandler {
   public umi!: Umi;
-  public signer!: Signer;
 
   public referralState!: PublicKey;
   public referralStateData!: ReferralState | null;
@@ -47,27 +46,25 @@ export class ReferralStateManager extends TxHandler {
     }
     this.umi = this.umi.use(
       args.signer
-        ? signerIdentity(args.signer)
+        ? signerIdentity(args.signer, true)
         : walletAdapterIdentity(args.wallet!, true)
     );
     this.signer = this.umi.identity;
+    this.authority = args.authority ?? toWeb3JsPublicKey(this.signer.publicKey);
 
-    this.referralState = args.referralState
-      ? args.referralState
-      : getReferralState(
-          args.authority ?? toWeb3JsPublicKey(this.signer.publicKey),
-          this.programId
-        );
+    this.referralState = args.referralState ?? getReferralState(this.authority, this.programId);
+
     this.referralStateData = await safeFetchReferralState(
       this.umi,
       publicKey(this.referralState),
       { commitment: "confirmed" }
     );
-    this.authority = this.referralStateData
-      ? toWeb3JsPublicKey(this.referralStateData.authority)
-      : toWeb3JsPublicKey(this.signer.publicKey);
 
     this.setReferredBy(args.referredByAuthority);
+
+    this.log("Authority:", this.authority.toString());
+    this.log("Signer:", this.signer.publicKey.toString());
+    this.log("Referral state:", this.referralState.toString());
   }
 
   defaultLookupTables(): string[] {

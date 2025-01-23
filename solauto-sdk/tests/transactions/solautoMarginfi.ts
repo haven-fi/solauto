@@ -1,5 +1,9 @@
 import { describe, it } from "mocha";
-import { none, publicKey, some } from "@metaplex-foundation/umi";
+import {
+  none,
+  publicKey,
+  some,
+} from "@metaplex-foundation/umi";
 import { setupTest } from "../shared";
 import { SolautoMarginfiClient } from "../../src/clients/solautoMarginfiClient";
 import {
@@ -9,7 +13,6 @@ import {
 } from "../../src/generated";
 import { buildSolautoRebalanceTransaction } from "../../src/transactions/transactionUtils";
 import {
-  getLiqUtilzationRateBps,
   maxBoostToBps,
   maxRepayFromBps,
   maxRepayToBps,
@@ -26,20 +29,24 @@ import {
   SOLAUTO_TEST_PROGRAM,
   USDC,
 } from "../../src/constants";
-import { buildHeliusApiUrl } from "../../src/utils";
+import {
+  buildHeliusApiUrl,
+  getSolautoManagedPositions,
+} from "../../src/utils";
 import { PriorityFeeSetting } from "../../src/types";
+import { buildIronforgeApiUrl } from "../../dist";
 
 describe("Solauto Marginfi tests", async () => {
-  const signer = setupTest();
-  // const signer = setupTest("solauto-manager");
+  // const signer = setupTest();
+  const signer = setupTest("solauto-manager");
 
   const payForTransactions = false;
-  const testProgram = true;
+  const testProgram = false;
   const positionId = 1;
 
   it("open - deposit - borrow - rebalance to 0 - withdraw - close", async () => {
     const client = new SolautoMarginfiClient(
-      buildHeliusApiUrl(process.env.HELIUS_API_KEY!),
+      buildIronforgeApiUrl(process.env.IRONFORGE_API_KEY!),
       true,
       testProgram ? SOLAUTO_TEST_PROGRAM : SOLAUTO_PROD_PROGRAM
     );
@@ -51,15 +58,17 @@ describe("Solauto Marginfi tests", async () => {
     await client.initialize({
       signer,
       positionId,
-      authority: new PublicKey("rC5dMP5dmSsfQ66rynzfFzuc122Eex9h1RJHVDkeH6D"),
+      authority: new PublicKey("He4ka5Q3N1UvZikZvykdi47xyk5PoVP2tcQL5sVp31Sz"),
       // new: true,
       // marginfiAccount: new PublicKey(
-      //   "4nNvUXF5YqHFcH2nGweSiuvy1ct7V5FXfoCLKFYUN36z"
+      //   ""
       // ),
-      // marginfiGroup: new PublicKey("G1rt3EpQ43K3bY457rhukQGRAo2QxydFAGRKqnjKzyr5"),
-      // supplyMint: new PublicKey("3B5wuUrMEi5yATD7on46hKfej3pfmd7t1RKgrsN3pump"),
+      // marginfiGroup: new PublicKey(""),
+      // supplyMint: new PublicKey(""),
       // debtMint: new PublicKey(USDC),
     });
+
+    // console.log(await getSolautoManagedPositions(client.umi));
 
     const transactionItems: TransactionItem[] = [];
     // const settingParams: SolautoSettingsParametersInpArgs = {
@@ -159,7 +168,7 @@ describe("Solauto Marginfi tests", async () => {
       client,
       undefined,
       !payForTransactions ? "only-simulate" : "normal",
-      PriorityFeeSetting.Low,
+      PriorityFeeSetting.Min,
       true
     ).clientSend(transactionItems);
 

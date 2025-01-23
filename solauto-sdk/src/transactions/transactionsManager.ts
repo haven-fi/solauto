@@ -352,7 +352,7 @@ export class TransactionsManager {
       return priorityFeeSettingValues[
         Math.min(
           priorityFeeSettingValues.length - 1,
-          currIdx + Math.floor(attemptNum / 2)
+          currIdx + Math.floor(attemptNum / 3)
         )
       ];
     }
@@ -387,7 +387,8 @@ export class TransactionsManager {
           tx,
           updateLutTxName,
           attemptNum,
-          this.getUpdatedPriorityFeeSetting(prevError, attemptNum)
+          this.getUpdatedPriorityFeeSetting(prevError, attemptNum),
+          "skip-simulation"
         ),
       3,
       150,
@@ -403,7 +404,10 @@ export class TransactionsManager {
 
     const updateLookupTable = await client.updateLookupTable();
 
-    if (updateLookupTable && updateLookupTable?.new) {
+    if (
+      updateLookupTable &&
+      (updateLookupTable?.new || updateLookupTable.accountsToAdd.length > 4)
+    ) {
       await this.updateLut(updateLookupTable.tx, updateLookupTable.new);
     }
     this.lookupTables.defaultLuts = client.defaultLookupTables();
@@ -506,14 +510,7 @@ export class TransactionsManager {
     this.updateStatusForSets(itemSets, TransactionStatus.Queued, 0);
     this.txHandler.log("Initial item sets:", itemSets.length);
 
-    if (this.txType === "only-simulate" && itemSets.length > 1) {
-      this.txHandler.log(
-        "Only simulate and more than 1 transaction. Skipping..."
-      );
-      return [];
-    }
-
-    if (itemSets.length > 1 && this.atomically) {
+    if (this.atomically) {
       await this.processTransactionsAtomically(itemSets);
     } else {
       let currentIndex = 0;
@@ -528,6 +525,7 @@ export class TransactionsManager {
 
   private async processTransactionsAtomically(itemSets: TransactionSet[]) {
     let num = 0;
+    let transactions: TransactionBuilder[] = [];
 
     await retryWithExponentialBackoff(
       async (attemptNum, prevError) => {
@@ -542,7 +540,7 @@ export class TransactionsManager {
           );
         }
 
-        let transactions = [];
+        transactions = [];
         for (const set of itemSets) {
           transactions.push(await set.getSingleTransaction());
         }
@@ -571,21 +569,34 @@ export class TransactionsManager {
             this.txHandler.umi,
             this.txHandler.connection,
             this.txHandler.signer,
+            this.txHandler.otherSigners,
             transactions,
             this.txType,
-            this.getUpdatedPriorityFeeSetting(prevError, attemptNum)
+            this.getUpdatedPriorityFeeSetting(prevError, attemptNum),
+            () =>
+              this.updateStatusForSets(
+                itemSets,
+                TransactionStatus.Processing,
+                attemptNum,
+                undefined,
+                true
+              )
           );
         } catch (e: any) {
           error = e as Error;
         }
 
-        if (error || !Boolean(txSigs) || txSigs?.length === 0) {
+        if (
+          error ||
+          (this.txType !== "only-simulate" &&
+            (!Boolean(txSigs) || txSigs?.length === 0))
+        ) {
           this.updateStatusForSets(
             itemSets,
             TransactionStatus.Failed,
             attemptNum,
             txSigs,
-            true,
+            undefined,
             error?.message
           );
           throw error ? error : new Error("Unknown error");
@@ -602,15 +613,34 @@ export class TransactionsManager {
       this.retryDelay,
       this.errorsToThrow
     ).catch((e: Error) => {
+      this.txHandler.log("Capturing error info...");
+      const errorDetails = getErrorInfo(
+        this.txHandler.umi,
+        transactions,
+        e,
+        itemSets.filter(
+          (x) =>
+            this.statuses.find((y) => x.name() === y.name)?.simulationSuccessful
+        ).length === itemSets.length
+      );
+
+      const errorString = `${errorDetails.errorName ?? "Unknown error"}: ${errorDetails.errorInfo?.split("\n")[0] ?? "unknown"}`;
       this.updateStatusForSets(
         itemSets,
-        TransactionStatus.Failed,
+        errorDetails.canBeIgnored
+          ? TransactionStatus.Skipped
+          : TransactionStatus.Failed,
         num,
         undefined,
-        true,
-        e.message
+        undefined,
+        errorDetails.errorName || errorDetails.errorInfo
+          ? errorString
+          : e.message
       );
-      throw e;
+
+      if (!errorDetails.canBeIgnored) {
+        throw e;
+      }
     });
   }
 
@@ -654,19 +684,7 @@ export class TransactionsManager {
       this.retries,
       this.retryDelay,
       this.errorsToThrow
-    ).catch((e: Error) => {
-      if (itemSet) {
-        this.updateStatus(
-          itemSet.name(),
-          TransactionStatus.Failed,
-          num,
-          undefined,
-          undefined,
-          e.message
-        );
-      }
-      throw e;
-    });
+    );
   }
 
   private async refreshItemSet(
@@ -710,7 +728,8 @@ export class TransactionsManager {
     tx: TransactionBuilder,
     txName: string,
     attemptNum: number,
-    priorityFeeSetting?: PriorityFeeSetting
+    priorityFeeSetting?: PriorityFeeSetting,
+    txType?: TransactionRunType
   ) {
     this.updateStatus(txName, TransactionStatus.Processing, attemptNum);
     try {
@@ -718,7 +737,7 @@ export class TransactionsManager {
         this.txHandler.umi,
         this.txHandler.connection,
         tx,
-        this.txType,
+        txType ?? this.txType,
         priorityFeeSetting,
         () =>
           this.updateStatus(
@@ -736,9 +755,15 @@ export class TransactionsManager {
         txSig ? bs58.encode(txSig) : undefined
       );
     } catch (e: any) {
-      const errorDetails = getErrorInfo(this.txHandler.umi, tx, e);
+      this.txHandler.log("Capturing error info...");
+      const errorDetails = getErrorInfo(
+        this.txHandler.umi,
+        [tx],
+        e,
+        this.statuses.find((x) => x.name === txName)?.simulationSuccessful
+      );
 
-      const errorString = `${errorDetails.errorName ?? "Unknown error"}: ${errorDetails.errorInfo ?? "unknown"}`;
+      const errorString = `${errorDetails.errorName ?? "Unknown error"}: ${errorDetails.errorInfo?.split("\n")[0] ?? "unknown"}`;
       this.updateStatus(
         txName,
         errorDetails.canBeIgnored

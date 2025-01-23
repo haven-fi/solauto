@@ -7,4 +7,5 @@ export const SWITCHBOARD_PRICE_FEED_IDS: { [key: string]: string } = {
   [tokens.POPCAT]: "FTcFqwCjAgv2VMaowQ9XSBcesVzFzZkaju25nKio6bki",
   [tokens.RETARDIO]: "EvPXnpMoyrj4B6P55LDP2VpSLkTBWom2SqL4486ToNhM",
   [tokens.BILLY]: "uBe4er4VSMgYvBNwSbFctSShRXNPkCfaPh7zHMBFeBi",
+  [tokens.HMTR]: "F2hKL67W4ZDe9k7ZrJKnp2LhWrgqg2JQTkJf2dgBggRD",
 };

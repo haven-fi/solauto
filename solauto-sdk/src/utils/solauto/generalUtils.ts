@@ -1,4 +1,4 @@
-import { Connection, PublicKey } from "@solana/web3.js";
+import { PublicKey } from "@solana/web3.js";
 import {
   isOption,
   isSome,
@@ -27,6 +27,7 @@ import {
   fromBaseUnit,
   getLiqUtilzationRateBps,
   toBaseUnit,
+  toBps,
 } from "../numberUtils";
 import { getReferralState } from "../accountUtils";
 import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
@@ -38,6 +39,7 @@ import {
 import {
   findMarginfiAccounts,
   getAllMarginfiAccountsByAuthority,
+  getMarginfiMaxLtvAndLiqThreshold,
 } from "../marginfiUtils";
 import { RebalanceAction, SolautoPositionDetails } from "../../types/solauto";
 import { fetchTokenPrices } from "../priceUtils";
@@ -167,7 +169,11 @@ export function eligibleForRebalance(
   const boostFrom = boostToBps - positionSettings.boostGap;
 
   if (positionState.liqUtilizationRateBps - boostFrom <= bpsDistanceThreshold) {
-    if (positionState.liqUtilizationRateBps < boostFrom) {
+    const limitsUpToDate =
+      positionState.supply.amountCanBeUsed.baseUnit > BigInt(0) ||
+      positionState.debt.amountCanBeUsed.baseUnit > BigInt(0);
+
+    if (limitsUpToDate && positionState.liqUtilizationRateBps < boostFrom) {
       const values = getRebalanceValues(
         positionState!,
         positionSettings,
@@ -267,7 +273,7 @@ export async function getSolautoManagedPositions(
           ? [
               {
                 memcmp: {
-                  bytes: new Uint8Array(positionTypeFilter),
+                  bytes: new Uint8Array([positionTypeFilter]),
                   offset: 3,
                 },
               },

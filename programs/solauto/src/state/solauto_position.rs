@@ -317,7 +317,8 @@ pub enum SolautoRebalanceType {
     None,
     Regular,
     DoubleRebalanceWithFL,
-    SingleRebalanceWithFL,
+    FLSwapThenRebalance,
+    FLRebalanceThenSwap,
 }
 
 unsafe impl Zeroable for SolautoRebalanceType {}

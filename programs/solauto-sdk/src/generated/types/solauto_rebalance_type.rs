@@ -17,5 +17,6 @@ pub enum SolautoRebalanceType {
     None,
     Regular,
     DoubleRebalanceWithFL,
-    SingleRebalanceWithFL,
+    FLSwapThenRebalance,
+    FLRebalanceThenSwap,
 }

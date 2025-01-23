@@ -162,7 +162,8 @@ export async function getAddressLookupInputs(
   lookupTableAddresses: string[]
 ): Promise<AddressLookupTableInput[]> {
   const addressLookupTableAccountInfos = await umi.rpc.getAccounts(
-    lookupTableAddresses.map((key) => publicKey(key))
+    lookupTableAddresses.map((key) => publicKey(key)),
+    { commitment: "confirmed" }
   );
 
   return addressLookupTableAccountInfos.reduce((acc, accountInfo, index) => {
@@ -288,30 +289,25 @@ async function simulateTransaction(
 export async function getComputeUnitPriceEstimate(
   umi: Umi,
   tx: TransactionBuilder,
-  prioritySetting: PriorityFeeSetting
+  prioritySetting: PriorityFeeSetting,
+  useAccounts?: boolean
 ): Promise<number | undefined> {
   const web3Transaction = toWeb3JsTransaction(
     (await tx.setLatestBlockhash(umi, { commitment: "finalized" })).build(umi)
   );
 
-  let feeEstimate: number | undefined;
-  try {
-    const resp = await umi.rpc.call("getPriorityFeeEstimate", [
-      {
-        transaction: bs58.encode(web3Transaction.serialize()),
-        options: {
-          priorityLevel: prioritySetting.toString(),
-        },
-      },
-    ]);
-    feeEstimate = Math.round((resp as any).priorityFeeEstimate as number);
-  } catch (e) {
+  const accountKeys = tx
+    .getInstructions()
+    .flatMap((x) => x.keys.flatMap((x) => x.pubkey.toString()));
+
+    let feeEstimate: number | undefined;
     try {
       const resp = await umi.rpc.call("getPriorityFeeEstimate", [
         {
-          accountKeys: tx
-            .getInstructions()
-            .flatMap((x) => x.keys.flatMap((x) => x.pubkey.toString())),
+          transaction: !useAccounts
+            ? bs58.encode(web3Transaction.serialize())
+            : undefined,
+          accountKeys: useAccounts ? accountKeys : undefined,
           options: {
             priorityLevel: prioritySetting.toString(),
           },
@@ -319,9 +315,20 @@ export async function getComputeUnitPriceEstimate(
       ]);
       feeEstimate = Math.round((resp as any).priorityFeeEstimate as number);
     } catch (e) {
-      console.error(e);
+      try {
+        const resp = await umi.rpc.call("getPriorityFeeEstimate", [
+          {
+            accountKeys,
+            options: {
+              priorityLevel: prioritySetting.toString(),
+            },
+          },
+        ]);
+        feeEstimate = Math.round((resp as any).priorityFeeEstimate as number);
+      } catch (e) {
+        // console.error(e);
+      }
     }
-  }
 
   return feeEstimate;
 }
@@ -385,19 +392,15 @@ export async function sendSingleOptimizedTransaction(
   consoleLog("Instructions: ", tx.getInstructions().length);
   consoleLog("Serialized transaction size: ", tx.getTransactionSize(umi));
 
-  let cuPrice: number | undefined;
-  if (prioritySetting !== PriorityFeeSetting.None) {
-    cuPrice = await getComputeUnitPriceEstimate(
-      umi,
-      tx,
-      prioritySetting,
-    );
-    if (!cuPrice) {
-      cuPrice = 1000000;
-    }
-    cuPrice = Math.min(cuPrice, 100 * 1_000_000);
-    consoleLog("Compute unit price: ", cuPrice);
-  }
+  const accounts = tx
+    .getInstructions()
+    .flatMap((x) => [
+      x.programId.toString(),
+      ...x.keys.map((y) => y.pubkey.toString()),
+    ]);
+  consoleLog("Unique account locks: ", Array.from(new Set(accounts)).length);
+
+  const blockhash = await connection.getLatestBlockhash("confirmed");
 
   let computeUnitLimit = undefined;
   if (txType !== "skip-simulation") {
@@ -406,23 +409,31 @@ export async function sendSingleOptimizedTransaction(
         await simulateTransaction(
           umi,
           connection,
-          await assembleFinalTransaction(
+          assembleFinalTransaction(
             umi.identity,
             tx,
-            cuPrice,
+            undefined,
             1_400_000
-          ).setLatestBlockhash(umi)
+          ).setBlockhash(blockhash)
         ),
       3
     );
-    simulationResult.value.err;
     computeUnitLimit = Math.round(simulationResult.value.unitsConsumed! * 1.15);
     consoleLog("Compute unit limit: ", computeUnitLimit);
   }
 
+  let cuPrice: number | undefined;
+  if (prioritySetting !== PriorityFeeSetting.None) {
+    cuPrice = await getComputeUnitPriceEstimate(umi, tx, prioritySetting);
+    if (!cuPrice) {
+      cuPrice = 1_000_000;
+    }
+    cuPrice = Math.min(cuPrice, 100 * 1_000_000);
+    consoleLog("Compute unit price: ", cuPrice);
+  }
+
   if (txType !== "only-simulate") {
     onAwaitingSign?.();
-    const blockhash = await connection.getLatestBlockhash("confirmed");
     const signedTx = await assembleFinalTransaction(
       umi.identity,
       tx,

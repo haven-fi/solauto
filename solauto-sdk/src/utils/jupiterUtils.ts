@@ -25,6 +25,7 @@ export interface JupSwapDetails {
   slippageIncFactor?: number;
   exactOut?: boolean;
   exactIn?: boolean;
+  addPadding?: boolean;
 }
 
 function createTransactionInstruction(
@@ -70,8 +71,8 @@ export async function getJupSwapTransaction(
           : swapDetails.exactIn
             ? "ExactIn"
             : undefined,
-        slippageBps: memecoinSwap ? 150 : 50,
-        maxAccounts: !swapDetails.exactOut ? 60 : undefined,
+        slippageBps: memecoinSwap ? 500 : 300,
+        maxAccounts: !swapDetails.exactOut ? 45 : undefined,
       }),
     4,
     200
@@ -85,15 +86,6 @@ export async function getJupSwapTransaction(
   );
   quoteResponse.slippageBps = finalPriceSlippageBps;
   consoleLog(quoteResponse);
-
-  if (swapDetails.exactOut) {
-    quoteResponse.inAmount = (
-      parseInt(quoteResponse.inAmount) +
-      Math.ceil(
-        parseInt(quoteResponse.inAmount) * fromBps(finalPriceSlippageBps)
-      )
-    ).toString();
-  }
 
   consoleLog("Getting jup instructions...");
   const instructions = await retryWithExponentialBackoff(
@@ -123,6 +115,19 @@ export async function getJupSwapTransaction(
     priceImpactBps * (1 + (swapDetails.slippageIncFactor ?? 0));
   consoleLog("Increased price impact bps:", finalPriceImpactBps);
 
+  if (swapDetails.addPadding) {
+    consoleLog("Raw inAmount:", quoteResponse.inAmount);
+    const inc = Math.max(
+      fromBps(finalPriceImpactBps) * 1.1,
+      fromBps(finalPriceSlippageBps) * 0.05
+    );
+    consoleLog("Inc:", inc);
+    quoteResponse.inAmount = Math.round(
+      parseInt(quoteResponse.inAmount) + parseInt(quoteResponse.inAmount) * inc
+    ).toString();
+    consoleLog("Increased inAmount:", quoteResponse.inAmount);
+  }
+
   return {
     jupQuote: quoteResponse,
     priceImpactBps: finalPriceImpactBps,
@@ -147,4 +152,23 @@ export async function getJupSwapTransaction(
       )
     ),
   };
+}
+
+export async function getJupPriceData(mints: PublicKey[], extraInfo?: boolean) {
+  const data = await retryWithExponentialBackoff(async () => {
+    const res = await (
+      await fetch(
+        "https://api.jup.ag/price/v2?ids=" +
+          mints.map((x) => x.toString()).join(",") +
+          (extraInfo ? "&showExtraInfo=true" : "")
+      )
+    ).json();
+    const result = res.data;
+    if (!result) {
+      throw new Error("Failed to get token prices using Jupiter");
+    }
+    return result;
+  }, 6);
+
+  return data as { [key: string]: any };
 }
