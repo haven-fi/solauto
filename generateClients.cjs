@@ -103,11 +103,11 @@ generateSolautoSDK();
 //   "MFv2hWf31Z9kbCa1snEPYctwafyhdvnV7FZnsebVacA"
 // );
 
-generateRustSDKForAnchorIDL(
-  "jupiter-sdk",
-  "jupiter.json",
-  "JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4"
-);
+// generateRustSDKForAnchorIDL(
+//   "jupiter-sdk",
+//   "jupiter.json",
+//   "JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4"
+// );
 // generateTypescriptSDKForAnchorIDL(
 //   "jupiter-sdk",
 //   "jupiter.json",

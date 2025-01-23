@@ -118,8 +118,8 @@ export async function getJupSwapTransaction(
   if (swapDetails.addPadding) {
     consoleLog("Raw inAmount:", quoteResponse.inAmount);
     const inc = Math.max(
-      fromBps(finalPriceImpactBps),
-      fromBps(finalPriceSlippageBps) / 4
+      fromBps(finalPriceImpactBps) * 1.1,
+      fromBps(finalPriceSlippageBps) * 0.05
     );
     consoleLog("Inc:", inc);
     quoteResponse.inAmount = Math.round(

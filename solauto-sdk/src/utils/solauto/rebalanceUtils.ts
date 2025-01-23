@@ -30,6 +30,7 @@ import {
 import { USD_DECIMALS } from "../../constants/generalAccounts";
 import { RebalanceAction } from "../../types";
 import { safeGetPrice } from "../priceUtils";
+import { TOKEN_INFO } from "../../constants";
 
 function getAdditionalAmountToDcaIn(dca: DCASettings): number {
   if (dca.dcaInBaseUnit === BigInt(0)) {
@@ -236,16 +237,10 @@ export function getRebalanceValues(
   };
 }
 
-export interface FlashLoanDetails {
-  baseUnitAmount: bigint;
-  mint: PublicKey;
-}
-
-export function getFlashLoanDetails(
+export function rebalanceRequiresFlashLoan(
   client: SolautoClient,
-  values: RebalanceValues,
-  jupQuote: QuoteResponse
-): FlashLoanDetails | undefined {
+  values: RebalanceValues
+) {
   let supplyUsd =
     fromBaseUnit(
       client.solautoPositionState!.supply.amountUsed.baseAmountUsdValue,
@@ -290,9 +285,40 @@ export function getFlashLoanDetails(
     maxLiqUtilizationRateBps
   );
 
+  const useDebtLiquidity =
+    Math.abs(values.debtAdjustmentUsd) * 1.1 <=
+    fromBaseUnit(
+      client.solautoPositionState?.debt.amountCanBeUsed.baseAmountUsdValue ??
+        BigInt(0),
+      USD_DECIMALS
+    );
+  return { requiresFlashLoan, useDebtLiquidity };
+}
+
+export interface FlashLoanDetails {
+  baseUnitAmount: bigint;
+  mint: PublicKey;
+  useDebtLiquidity: boolean;
+}
+
+export function getFlashLoanDetails(
+  client: SolautoClient,
+  values: RebalanceValues,
+  jupQuote: QuoteResponse
+): FlashLoanDetails | undefined {
+  const { requiresFlashLoan, useDebtLiquidity } = rebalanceRequiresFlashLoan(
+    client,
+    values
+  );
+
   let flashLoanToken: PositionTokenUsage | undefined = undefined;
   let flashLoanTokenPrice = 0;
-  if (values.rebalanceDirection === RebalanceDirection.Boost) {
+
+  const inAmount = BigInt(parseInt(jupQuote.inAmount));
+  const outAmount = BigInt(parseInt(jupQuote.outAmount));
+
+  const boosting = values.rebalanceDirection === RebalanceDirection.Boost;
+  if (boosting || useDebtLiquidity) {
     flashLoanToken = client.solautoPositionState!.debt;
     flashLoanTokenPrice = safeGetPrice(client.debtMint)!;
   } else {
@@ -300,20 +326,18 @@ export function getFlashLoanDetails(
     flashLoanTokenPrice = safeGetPrice(client.supplyMint)!;
   }
 
-  const exactAmountBaseUnit =
-    jupQuote.swapMode === "ExactOut" || jupQuote.swapMode === "ExactIn"
-      ? BigInt(parseInt(jupQuote.inAmount))
-      : undefined;
+  if (jupQuote.swapMode !== "ExactOut" && jupQuote.swapMode !== "ExactIn") {
+    throw new Error("Token ledger swap not currently supported");
+  }
+
+  const baseUnitAmount =
+    boosting || (!boosting && !useDebtLiquidity) ? inAmount : outAmount;
 
   return requiresFlashLoan
     ? {
-        baseUnitAmount: exactAmountBaseUnit
-          ? exactAmountBaseUnit
-          : toBaseUnit(
-              debtAdjustmentUsdAbs / flashLoanTokenPrice,
-              flashLoanToken.decimals
-            ),
+        baseUnitAmount,
         mint: toWeb3JsPublicKey(flashLoanToken.mint),
+        useDebtLiquidity,
       }
     : undefined;
 }
@@ -353,17 +377,31 @@ export function getJupSwapRebalanceDetails(
         )
       : toBaseUnit(usdToSwap / safeGetPrice(output.mint)!, output.decimals);
 
+  const repaying = values.rebalanceDirection === RebalanceDirection.Repay;
+
+  const { requiresFlashLoan, useDebtLiquidity } = rebalanceRequiresFlashLoan(
+    client,
+    values
+  );
+  const flashLoanRepayFromDebt =
+    repaying && requiresFlashLoan && useDebtLiquidity;
+
   const exactOut =
-    targetLiqUtilizationRateBps === 0 || values.repayingCloseToMaxLtv;
+    targetLiqUtilizationRateBps === 0 ||
+    values.repayingCloseToMaxLtv ||
+    flashLoanRepayFromDebt;
   const exactIn = !exactOut;
 
-  const addPadding = targetLiqUtilizationRateBps === 0;
+  // const addPadding = targetLiqUtilizationRateBps === 0;
+  const addPadding = exactOut;
 
   return {
     inputMint: toWeb3JsPublicKey(input.mint),
     outputMint: toWeb3JsPublicKey(output.mint),
-    destinationWallet: client.solautoPosition,
-    slippageIncFactor: 0.5 + (attemptNum ?? 0) * 0.25,
+    destinationWallet: flashLoanRepayFromDebt
+      ? toWeb3JsPublicKey(client.signer.publicKey)
+      : client.solautoPosition,
+    slippageIncFactor: 0.2 + (attemptNum ?? 0) * 0.25,
     amount: exactOut ? outputAmount : inputAmount,
     exactIn: exactIn,
     exactOut: exactOut,

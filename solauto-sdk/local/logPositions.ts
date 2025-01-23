@@ -19,6 +19,7 @@ import { NATIVE_MINT } from "@solana/spl-token";
 import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 import path from "path";
 import { config } from "dotenv";
+import { safeFetchMarginfiAccount } from "../src/marginfi-sdk";
 
 config({ path: path.join(__dirname, ".env") });
 
@@ -142,6 +143,7 @@ async function main(filterWhitelist: boolean) {
     buildHeliusApiUrl(process.env.HELIUS_API_KEY!),
     SOLAUTO_PROD_PROGRAM
   );
+
   let positions = await getSolautoManagedPositions(umi);
 
   if (filterWhitelist) {
@@ -186,6 +188,7 @@ async function main(filterWhitelist: boolean) {
   console.log("\n\n");
 
   const latestStates: PositionState[] = [];
+  let unhealthyPositions = 0;
   for (const pos of solautoPositionsData) {
     const latestState = await positionStateWithLatestPrices(
       pos.state,
@@ -199,15 +202,20 @@ async function main(filterWhitelist: boolean) {
       toWeb3JsPublicKey(pos.state.debt.mint)
     );
 
-    console.log("Position:", pos.publicKey.toString());
-    console.log("Authority:", pos.authority.toString());
+    const repayFrom = pos.position.settingParams.repayToBps + pos.position.settingParams.repayGap;
+    const unhealthy = pos.state.liqUtilizationRateBps > repayFrom;
+    const healthText = unhealthy ? `(Unhealthy: ${pos.state.liqUtilizationRateBps - repayFrom}` : "";
+    if (unhealthy) {
+      unhealthyPositions += 1;
+    }
+
+    console.log(pos.publicKey.toString(), `(${pos.authority.toString()})`);
     console.log(
-      `${strategy}: $${formatNumber(fromBaseUnit(latestState.netWorth.baseAmountUsdValue, USD_DECIMALS), 2, 10000, 2)}`
+      `${strategy}: $${formatNumber(fromBaseUnit(latestState.netWorth.baseAmountUsdValue, USD_DECIMALS), 2, 10000, 2)} ${healthText}`
     );
-    console.log("\n");
   }
 
-  console.log("Total positions:", solautoPositionsData.length);
+  console.log("\nTotal positions:", solautoPositionsData.length, unhealthyPositions ? ` (unhealthy: ${unhealthyPositions})` : "");
   console.log(
     "Total users:",
     Array.from(new Set(solautoPositionsData.map((x) => x.authority.toString())))

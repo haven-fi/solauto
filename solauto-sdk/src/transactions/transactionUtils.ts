@@ -16,6 +16,7 @@ import {
 import {
   InvalidRebalanceConditionError,
   LendingPlatform,
+  RebalanceDirection,
   SolautoAction,
   SolautoRebalanceType,
   TokenType,
@@ -713,41 +714,50 @@ export async function buildSolautoRebalanceTransaction(
   if (flashLoan) {
     client.log("Flash loan details: ", flashLoan);
     const addFirstRebalance = values.amountUsdToDcaIn > 0;
+
+    const rebalanceThenSwap =
+      values.rebalanceDirection === RebalanceDirection.Repay &&
+      flashLoan.useDebtLiquidity;
+
     const rebalanceType = addFirstRebalance
       ? SolautoRebalanceType.DoubleRebalanceWithFL
-      : SolautoRebalanceType.SingleRebalanceWithFL;
+      : rebalanceThenSwap
+        ? SolautoRebalanceType.FLRebalanceThenSwap
+        : SolautoRebalanceType.FLSwapThenRebalance;
+
+    client.log("Rebalance type:", rebalanceType);
+    const firstRebalance = client.rebalance(
+      "A",
+      jupQuote,
+      rebalanceType,
+      values,
+      flashLoan,
+      targetLiqUtilizationRateBps
+    );
+    const lastRebalance = client.rebalance(
+      "B",
+      jupQuote,
+      rebalanceType,
+      values,
+      flashLoan,
+      targetLiqUtilizationRateBps
+    );
+
+    const flashBorrowDest = getTokenAccount(
+      rebalanceThenSwap
+        ? client.solautoPosition
+        : toWeb3JsPublicKey(client.signer.publicKey),
+      rebalanceThenSwap ? swapDetails.outputMint : swapDetails.inputMint
+    );
 
     tx = tx.add([
       setupInstructions,
       tokenLedgerIx,
-      client.flashBorrow(
-        flashLoan,
-        getTokenAccount(
-          toWeb3JsPublicKey(client.signer.publicKey),
-          swapDetails.inputMint
-        )
-      ),
-      ...(addFirstRebalance
-        ? [
-            client.rebalance(
-              "A",
-              jupQuote,
-              rebalanceType,
-              values,
-              flashLoan,
-              targetLiqUtilizationRateBps
-            ),
-          ]
-        : []),
-      swapIx,
-      client.rebalance(
-        "B",
-        jupQuote,
-        rebalanceType,
-        values,
-        flashLoan,
-        targetLiqUtilizationRateBps
-      ),
+      client.flashBorrow(flashLoan, flashBorrowDest),
+      ...(addFirstRebalance ? [firstRebalance] : []),
+      ...(rebalanceThenSwap
+        ? [lastRebalance, swapIx]
+        : [swapIx, lastRebalance]),
       client.flashRepay(flashLoan),
     ]);
   } else {
@@ -880,8 +890,14 @@ export function getErrorInfo(
     consoleLog("Error code:", errCode);
     consoleLog("Error instruction program:", errIx?.programId.toString());
 
-    const solautoError = getSolautoErrorFromCode(errCode ?? -1, createSolautoProgram());
-    const marginfiError = getMarginfiErrorFromCode(errCode ?? -1, createMarginfiProgram());
+    const solautoError = getSolautoErrorFromCode(
+      errCode ?? -1,
+      createSolautoProgram()
+    );
+    const marginfiError = getMarginfiErrorFromCode(
+      errCode ?? -1,
+      createMarginfiProgram()
+    );
 
     if (
       errCode &&

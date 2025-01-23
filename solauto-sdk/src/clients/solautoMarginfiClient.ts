@@ -35,6 +35,7 @@ import {
 } from "../generated";
 import { getTokenAccount } from "../utils/accountUtils";
 import {
+  Bank,
   MARGINFI_PROGRAM_ID,
   MarginfiAccount,
   lendingAccountBorrow,
@@ -60,7 +61,7 @@ import {
 } from "../utils/marginfiUtils";
 import { fromBaseUnit, toBps } from "../utils/numberUtils";
 import { QuoteResponse } from "@jup-ag/api";
-import { safeGetPrice } from "../utils";
+import { consoleLog, safeGetPrice } from "../utils";
 
 export interface SolautoMarginfiClientArgs extends SolautoClientArgs {
   marginfiAccount?: PublicKey | Signer;
@@ -107,7 +108,7 @@ export class SolautoMarginfiClient extends SolautoClient {
         const accounts = await getAllMarginfiAccountsByAuthority(
           this.umi,
           this.solautoPosition,
-          args.marginfiGroup,
+          args.marginfiGroup ?? new PublicKey(DEFAULT_MARGINFI_GROUP),
           false
         );
         const reusableAccounts =
@@ -178,6 +179,12 @@ export class SolautoMarginfiClient extends SolautoClient {
       await this.setIntermediaryMarginfiDetails();
       this.initializedFor = toWeb3JsPublicKey(this.signer.publicKey);
     }
+
+    consoleLog("Marginfi account:", this.marginfiAccountPk.toString());
+    consoleLog(
+      "Intermediary MF account:",
+      this.intermediaryMarginfiAccountPk.toString()
+    );
   }
 
   async setIntermediaryMarginfiDetails() {
@@ -558,8 +565,7 @@ export class SolautoMarginfiClient extends SolautoClient {
         : undefined,
       rebalanceType,
       targetLiqUtilizationRateBps: targetLiqUtilizationRateBps ?? null,
-      targetInAmountBaseUnit:
-        rebalanceStep === "A" ? parseInt(jupQuote.inAmount) : null,
+      targetInAmountBaseUnit: parseInt(jupQuote.inAmount),
     });
   }
 
@@ -594,9 +600,9 @@ export class SolautoMarginfiClient extends SolautoClient {
   }
 
   flashRepay(flashLoanDetails: FlashLoanDetails): TransactionBuilder {
-    const accounts = flashLoanDetails.mint.equals(this.supplyMint)
-      ? { data: this.marginfiSupplyAccounts, oracle: this.supplyPriceOracle }
-      : { data: this.marginfiDebtAccounts, oracle: this.debtPriceOracle };
+    const accounts = flashLoanDetails.useDebtLiquidity
+      ? { data: this.marginfiDebtAccounts, oracle: this.debtPriceOracle }
+      : { data: this.marginfiSupplyAccounts, oracle: this.supplyPriceOracle };
 
     const remainingAccounts: AccountMeta[] = [];
     let includedFlashLoanToken = false;

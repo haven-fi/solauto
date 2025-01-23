@@ -59,9 +59,10 @@ pub fn marginfi_rebalance<'a>(
     let solauto_manager_accounts =
         SolautoManagerAccounts::from(supply_tas, debt_tas, ctx.accounts.intermediary_ta, None)?;
 
+    let rebalance_type = std_accounts.solauto_position.data.rebalance.rebalance_type;
     if rebalance_step == RebalanceStep::Initial
-        || std_accounts.solauto_position.data.rebalance.rebalance_type
-            == SolautoRebalanceType::SingleRebalanceWithFL
+        || rebalance_type == SolautoRebalanceType::FLSwapThenRebalance
+        || rebalance_type == SolautoRebalanceType::FLRebalanceThenSwap
     {
         if needs_refresh(&std_accounts.solauto_position, &args)? {
             refresh::marginfi_refresh_accounts(
