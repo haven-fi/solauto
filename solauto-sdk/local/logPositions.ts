@@ -19,7 +19,6 @@ import { NATIVE_MINT } from "@solana/spl-token";
 import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 import path from "path";
 import { config } from "dotenv";
-import { safeFetchMarginfiAccount } from "../src/marginfi-sdk";
 
 config({ path: path.join(__dirname, ".env") });
 
@@ -203,8 +202,8 @@ async function main(filterWhitelist: boolean) {
     );
 
     const repayFrom = pos.position.settingParams.repayToBps + pos.position.settingParams.repayGap;
-    const unhealthy = pos.state.liqUtilizationRateBps > repayFrom;
-    const healthText = unhealthy ? `(Unhealthy: ${pos.state.liqUtilizationRateBps - repayFrom}` : "";
+    const unhealthy = latestState.liqUtilizationRateBps > repayFrom;
+    const healthText = unhealthy ? `(Unhealthy: ${latestState.liqUtilizationRateBps - repayFrom}` : "";
     if (unhealthy) {
       unhealthyPositions += 1;
     }
