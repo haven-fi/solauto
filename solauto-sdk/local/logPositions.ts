@@ -212,6 +212,7 @@ async function main(filterWhitelist: boolean) {
     console.log(
       `${strategy}: $${formatNumber(fromBaseUnit(latestState.netWorth.baseAmountUsdValue, USD_DECIMALS), 2, 10000, 2)} ${healthText}`
     );
+    // console.log(latestState.liqUtilizationRateBps, repayFrom);
   }
 
   console.log("\nTotal positions:", solautoPositionsData.length, unhealthyPositions ? ` (unhealthy: ${unhealthyPositions})` : "");

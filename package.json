@@ -18,6 +18,8 @@
     "test:ts:unit": "cd solauto-sdk && pnpm test:unit",
     "test:ts:txs": "cd solauto-sdk && pnpm test:txs",
     "test:ts:all": "cd solauto-sdk && pnpm test:all",
+    "export-pda-tx": "solana-verify export-pda-tx https://github.com/haven-fi/solauto --program-id AutoyKBRaHSBHy9RsmXCZMy6nNFAg5FYijrvZyQcNLV --uploader B1ZqSSiAe7DKjh444gkxXAgoeyz2dZzBMwziBtt8mJ3T --encoding base58 --compute-unit-price 0 --library-name solauto",
+    "verify-submit-job": "solana-verify remote submit-job --program-id AutoyKBRaHSBHy9RsmXCZMy6nNFAg5FYijrvZyQcNLV --uploader B1ZqSSiAe7DKjh444gkxXAgoeyz2dZzBMwziBtt8mJ3T",
     "solana-verify": "solana-verify verify-from-repo --remote -um --skip-build --program-id AutoyKBRaHSBHy9RsmXCZMy6nNFAg5FYijrvZyQcNLV https://github.com/haven-fi/solauto --library-name solauto --base-image solanafoundation/solana-verifiable-build@sha256:f3d3a4adaa8008644fc4535373c6818275c7e35a0b07660890b4a95ef434221e",
     "update-lut:solauto": "cd solauto-sdk && npx ts-node local/updateSolautoLUT.ts",
     "update-lut:marginfi": "cd solauto-sdk && npx ts-node local/updateMarginfiLUT.ts",

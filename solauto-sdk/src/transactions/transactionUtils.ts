@@ -845,7 +845,7 @@ export function getErrorInfo(
   let errorName: string | undefined = undefined;
   let errorInfo: string | undefined = undefined;
 
-  let errTxIdx: number | undefined;
+  let errTxIdx: number = 0;
   let errIxIdx: number | undefined;
   let errCode: number | undefined;
   let errName: string | undefined;
