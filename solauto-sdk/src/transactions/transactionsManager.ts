@@ -218,9 +218,18 @@ export type TransactionManagerStatuses = {
   txSig?: string;
 }[];
 
+interface RetryConfig {
+  signableRetries?: number;
+  totalRetries?: number;
+  retryDelay?: number;
+}
+
 export class TransactionsManager {
   private statuses: TransactionManagerStatuses = [];
   private lookupTables: LookupTables;
+  private signableRetries: number;
+  private totalRetries: number;
+  private retryDelay: number;
 
   constructor(
     private txHandler: SolautoClient | ReferralStateManager,
@@ -229,13 +238,17 @@ export class TransactionsManager {
     private priorityFeeSetting: PriorityFeeSetting = PriorityFeeSetting.Min,
     private atomically: boolean = false,
     private errorsToThrow?: ErrorsToThrow,
-    private retries: number = 4,
-    private retryDelay: number = 150
+    retryConfig?: RetryConfig
   ) {
     this.lookupTables = new LookupTables(
       this.txHandler.defaultLookupTables(),
       this.txHandler.umi
     );
+    this.signableRetries =
+      retryConfig?.signableRetries ?? retryConfig?.totalRetries ?? 3;
+    this.totalRetries =
+      retryConfig?.totalRetries ?? retryConfig?.signableRetries ?? 4;
+    this.retryDelay = retryConfig?.retryDelay ?? 150;
   }
 
   private async assembleTransactionSets(
@@ -529,6 +542,14 @@ export class TransactionsManager {
 
     await retryWithExponentialBackoff(
       async (attemptNum, prevError) => {
+        if (
+          prevError &&
+          this.statuses.filter((x) => x.simulationSuccessful).length >
+            this.signableRetries
+        ) {
+          throw prevError;
+        }
+
         num = attemptNum;
 
         if (attemptNum > 0) {
@@ -609,7 +630,7 @@ export class TransactionsManager {
           txSigs
         );
       },
-      this.retries,
+      this.totalRetries,
       this.retryDelay,
       this.errorsToThrow
     ).catch((e: Error) => {
@@ -653,6 +674,14 @@ export class TransactionsManager {
 
     await retryWithExponentialBackoff(
       async (attemptNum, prevError) => {
+        if (
+          prevError &&
+          this.statuses.filter((x) => x.simulationSuccessful).length >
+            this.signableRetries
+        ) {
+          throw prevError;
+        }
+
         num = attemptNum;
 
         if (currentIndex > 0 || attemptNum > 0) {
@@ -681,7 +710,7 @@ export class TransactionsManager {
           );
         }
       },
-      this.retries,
+      this.totalRetries,
       this.retryDelay,
       this.errorsToThrow
     );

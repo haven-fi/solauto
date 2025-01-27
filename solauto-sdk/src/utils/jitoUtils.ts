@@ -196,8 +196,8 @@ async function umiToVersionedTransactions(
   return builtTxs.map((x) => toWeb3JsTransaction(x));
 }
 
-async function getBundleStatus(bundleId: string) {
-  const res = await axios.post(`${JITO_BLOCK_ENGINE}/api/v1/bundles`, {
+async function getBundleStatus(umi: Umi, bundleId: string) {
+  const res = await axios.post(umi.rpc.getEndpoint(), {
     jsonrpc: "2.0",
     id: 1,
     method: "getBundleStatuses",
@@ -211,6 +211,7 @@ async function getBundleStatus(bundleId: string) {
 }
 
 async function pollBundleStatus(
+  umi: Umi,
   bundleId: string,
   interval = 1000,
   timeout = 40000
@@ -218,7 +219,7 @@ async function pollBundleStatus(
   const endTime = Date.now() + timeout;
   while (Date.now() < endTime) {
     await new Promise((resolve) => setTimeout(resolve, interval));
-    const statuses = await getBundleStatus(bundleId);
+    const statuses = await getBundleStatus(umi, bundleId);
     if (statuses?.value?.length > 0) {
       consoleLog("Statuses:", statuses);
       const status = statuses.value[0].confirmation_status;
@@ -260,7 +261,7 @@ async function sendJitoBundle(
 
   const bundleId = resp.data.result;
   consoleLog("Bundle ID:", bundleId);
-  return bundleId ? await pollBundleStatus(bundleId) : [];
+  return bundleId ? await pollBundleStatus(umi, bundleId) : [];
 }
 
 export function getRequiredSigners(message: TransactionMessage) {

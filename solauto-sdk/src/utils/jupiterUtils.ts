@@ -72,7 +72,7 @@ export async function getJupSwapTransaction(
             ? "ExactIn"
             : undefined,
         slippageBps: memecoinSwap ? 500 : 300,
-        maxAccounts: !swapDetails.exactOut ? 45 : undefined,
+        maxAccounts: !swapDetails.exactOut ? 40 : undefined,
       }),
     4,
     200
@@ -164,7 +164,12 @@ export async function getJupPriceData(mints: PublicKey[], extraInfo?: boolean) {
       )
     ).json();
     const result = res.data;
-    if (!result) {
+    if (
+      !result ||
+      result === null ||
+      (typeof result === "object" &&
+        Object.values(result).includes([null, undefined]))
+    ) {
       throw new Error("Failed to get token prices using Jupiter");
     }
     return result;

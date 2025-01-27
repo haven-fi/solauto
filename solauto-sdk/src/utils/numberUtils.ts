@@ -166,7 +166,7 @@ export function getMaxLiqUtilizationRateBps(
 
 export function maxRepayFromBps(maxLtvBps: number, liqThresholdBps: number) {
   return Math.min(
-    9000,
+    8700,
     getMaxLiqUtilizationRateBps(maxLtvBps, liqThresholdBps - 1000, 0.01)
   );
 }
