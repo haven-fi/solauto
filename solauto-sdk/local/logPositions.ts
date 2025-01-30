@@ -230,7 +230,7 @@ async function main(filterWhitelist: boolean) {
     console.log(
       `${strategy}: $${formatNumber(fromBaseUnit(latestState.netWorth.baseAmountUsdValue, USD_DECIMALS), 2, 10000, 2)} ${healthText} ${boostText}`
     );
-    // console.log(latestState.liqUtilizationRateBps, repayFrom);
+    console.log(latestState.liqUtilizationRateBps, repayFrom);
   }
 
   console.log(
