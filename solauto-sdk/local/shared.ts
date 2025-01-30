@@ -21,7 +21,7 @@ export function getSecretKey(keypairFilename: string = "id"): Uint8Array {
   );
 }
 
-const keypair = Keypair.fromSecretKey(getSecretKey("solauto-auth"));
+const keypair = Keypair.fromSecretKey(getSecretKey("solauto-fees"));
 const [connection, _] = getSolanaRpcConnection(buildHeliusApiUrl(process.env.HELIUS_API_KEY ?? ""));
 
 async function createAndSendV0Tx(txInstructions: TransactionInstruction[]) {

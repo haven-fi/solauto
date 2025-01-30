@@ -188,6 +188,8 @@ async function main(filterWhitelist: boolean) {
 
   const latestStates: PositionState[] = [];
   let unhealthyPositions = 0;
+  let awaitingBoostPositions = 0;
+
   for (const pos of solautoPositionsData) {
     const latestState = await positionStateWithLatestPrices(
       pos.state,
@@ -201,21 +203,42 @@ async function main(filterWhitelist: boolean) {
       toWeb3JsPublicKey(pos.state.debt.mint)
     );
 
-    const repayFrom = pos.position.settingParams.repayToBps + pos.position.settingParams.repayGap;
+    const repayFrom =
+      pos.position.settingParams.repayToBps +
+      pos.position.settingParams.repayGap;
     const unhealthy = latestState.liqUtilizationRateBps > repayFrom;
-    const healthText = unhealthy ? `(Unhealthy: ${latestState.liqUtilizationRateBps - repayFrom}bps)` : "";
+    const healthText = unhealthy
+      ? `(Unhealthy: ${latestState.liqUtilizationRateBps - repayFrom}bps)`
+      : "";
     if (unhealthy) {
       unhealthyPositions += 1;
     }
 
-    console.log(pos.publicKey.toString(), `(${pos.authority.toString()} ${pos.positionId})`);
+    const awaitingBoost =
+      latestState.liqUtilizationRateBps <
+      pos.position.settingParams.boostToBps -
+        pos.position.settingParams.boostGap;
+    const boostText = awaitingBoost ? " (awaiting boost)" : "";
+    if (awaitingBoost) {
+      awaitingBoostPositions += 1;
+    }
+
     console.log(
-      `${strategy}: $${formatNumber(fromBaseUnit(latestState.netWorth.baseAmountUsdValue, USD_DECIMALS), 2, 10000, 2)} ${healthText}`
+      pos.publicKey.toString(),
+      `(${pos.authority.toString()} ${pos.positionId})`
+    );
+    console.log(
+      `${strategy}: $${formatNumber(fromBaseUnit(latestState.netWorth.baseAmountUsdValue, USD_DECIMALS), 2, 10000, 2)} ${healthText} ${boostText}`
     );
     // console.log(latestState.liqUtilizationRateBps, repayFrom);
   }
 
-  console.log("\nTotal positions:", solautoPositionsData.length, unhealthyPositions ? ` (unhealthy: ${unhealthyPositions})` : "");
+  console.log(
+    "\nTotal positions:",
+    solautoPositionsData.length,
+    unhealthyPositions ? ` (unhealthy: ${unhealthyPositions})` : "",
+    awaitingBoostPositions ? ` (awaiting boost: ${awaitingBoostPositions})` : ""
+  );
   console.log(
     "Total users:",
     Array.from(new Set(solautoPositionsData.map((x) => x.authority.toString())))

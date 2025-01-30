@@ -646,6 +646,10 @@ export class TransactionsManager {
       );
 
       const errorString = `${errorDetails.errorName ?? "Unknown error"}: ${errorDetails.errorInfo?.split("\n")[0] ?? "unknown"}`;
+      const errorInfo =
+        errorDetails.errorName || errorDetails.errorInfo
+          ? errorString
+          : e.message;
       this.updateStatusForSets(
         itemSets,
         errorDetails.canBeIgnored
@@ -654,13 +658,11 @@ export class TransactionsManager {
         num,
         undefined,
         undefined,
-        errorDetails.errorName || errorDetails.errorInfo
-          ? errorString
-          : e.message
+        errorInfo
       );
 
       if (!errorDetails.canBeIgnored) {
-        throw e;
+        throw new Error(errorInfo);
       }
     });
   }
@@ -793,6 +795,10 @@ export class TransactionsManager {
       );
 
       const errorString = `${errorDetails.errorName ?? "Unknown error"}: ${errorDetails.errorInfo?.split("\n")[0] ?? "unknown"}`;
+      const errorInfo =
+        errorDetails.errorName || errorDetails.errorInfo
+          ? errorString
+          : e.message;
       this.updateStatus(
         txName,
         errorDetails.canBeIgnored
@@ -801,13 +807,11 @@ export class TransactionsManager {
         attemptNum,
         undefined,
         undefined,
-        errorDetails.errorName || errorDetails.errorInfo
-          ? errorString
-          : e.message
+        errorInfo
       );
 
       if (!errorDetails.canBeIgnored) {
-        throw e;
+        throw new Error(errorInfo);
       }
     }
   }
