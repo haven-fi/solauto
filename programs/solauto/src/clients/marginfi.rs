@@ -178,6 +178,13 @@ impl<'a> MarginfiClient<'a> {
             debt_bank.data.config.liability_weight_maint.value,
         )));
 
+        msg!("Asset weight init {}", math_utils::i80f48_to_f64(I80F48::from_le_bytes(
+            supply_bank.data.config.asset_weight_init.value,
+        )));
+        msg!("Liab weight init {}", math_utils::i80f48_to_f64(I80F48::from_le_bytes(
+            debt_bank.data.config.liability_weight_init.value,
+        )));
+
         Ok((max_ltv, liq_threshold))
     }
 

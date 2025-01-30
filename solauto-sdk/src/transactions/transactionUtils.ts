@@ -19,6 +19,7 @@ import {
   RebalanceDirection,
   SolautoAction,
   SolautoRebalanceType,
+  SolautoSettingsParameters,
   TokenType,
   convertReferralFees,
   createSolautoProgram,
@@ -39,6 +40,7 @@ import {
   getFlashLoanDetails,
   getJupSwapRebalanceDetails,
   getRebalanceValues,
+  RebalanceValues,
 } from "../utils/solauto/rebalanceUtils";
 import {
   consoleLog,
@@ -49,6 +51,7 @@ import {
 import { SolautoMarginfiClient } from "../clients/solautoMarginfiClient";
 import {
   getMaxLiqUtilizationRateBps,
+  maxBoostToBps,
   uint8ArrayToBigInt,
 } from "../utils/numberUtils";
 import {
@@ -71,10 +74,11 @@ import {
   getJupiterErrorFromCode,
   JUPITER_PROGRAM_ID,
 } from "../jupiter-sdk";
-import { PRICES } from "../constants";
+import { JUP, PRICES, USDC } from "../constants";
 import { TransactionItemInputs } from "../types";
 import { safeGetPrice } from "../utils";
 import { BundleSimulationError } from "../types/transactions";
+import { getPackedSettings } from "http2";
 
 interface wSolTokenUsage {
   wSolTokenAccount: PublicKey;
@@ -598,7 +602,20 @@ export async function getTransactionChores(
   return [choresBefore, choresAfter];
 }
 
-export async function requiresRefreshBeforeRebalance(client: SolautoClient) {
+export async function requiresRefreshBeforeRebalance(client: SolautoClient, values: RebalanceValues) {
+  // REMOVE ME
+  const state = client.solautoPositionState!;
+  const settings = client.solautoPositionSettings();
+  if (
+    toWeb3JsPublicKey(state.supply.mint).equals(new PublicKey(JUP)) &&
+    toWeb3JsPublicKey(state.debt.mint).equals(new PublicKey(USDC)) &&
+    settings &&
+    settings.boostToBps ===
+      maxBoostToBps(state.maxLtvBps, state.liqThresholdBps) && values.targetRateBps === 6500
+  ) {
+    return true;
+  }
+
   const neverRefreshedBefore =
     client.solautoPositionData &&
     client.solautoPositionData.state.supply.amountCanBeUsed.baseUnit ===
@@ -707,7 +724,8 @@ export async function buildSolautoRebalanceTransaction(
 
   let tx = transactionBuilder();
 
-  if (await requiresRefreshBeforeRebalance(client)) {
+  // REVERT ME
+  if (await requiresRefreshBeforeRebalance(client, values)) {
     tx = tx.add(client.refresh());
   }
 

@@ -24,13 +24,14 @@ import {
   getLiqUtilzationRateBps,
   getMaxLiqUtilizationRateBps,
   getSolautoFeesBps,
+  maxBoostToBps,
   maxRepayToBps,
   toBaseUnit,
 } from "../numberUtils";
 import { USD_DECIMALS } from "../../constants/generalAccounts";
 import { RebalanceAction } from "../../types";
 import { safeGetPrice } from "../priceUtils";
-import { TOKEN_INFO } from "../../constants";
+import { JUP, TOKEN_INFO, USDC } from "../../constants";
 
 function getAdditionalAmountToDcaIn(dca: DCASettings): number {
   if (dca.dcaInBaseUnit === BigInt(0)) {
@@ -169,6 +170,7 @@ export interface RebalanceValues {
   rebalanceAction: RebalanceAction;
   rebalanceDirection: RebalanceDirection;
   feesUsd: number;
+  targetRateBps: number;
 }
 
 export function getRebalanceValues(
@@ -180,13 +182,24 @@ export function getRebalanceValues(
   debtPrice: number,
   targetLiqUtilizationRateBps?: number
 ): RebalanceValues {
-  const { targetRateBps, amountToDcaIn } = getTargetRateAndDcaAmount(
+  let { targetRateBps, amountToDcaIn } = getTargetRateAndDcaAmount(
     state,
     settings,
     dca,
     currentUnixTime,
     targetLiqUtilizationRateBps
   );
+
+  // REVERT ME AND GET TO THE ROOT OF THIS ISSUE
+  if (
+    toWeb3JsPublicKey(state.supply.mint).equals(new PublicKey(JUP)) &&
+    toWeb3JsPublicKey(state.debt.mint).equals(new PublicKey(USDC)) &&
+    settings &&
+    settings.boostToBps === maxBoostToBps(state.maxLtvBps, state.liqThresholdBps) &&
+    targetRateBps === settings.boostToBps
+  ) {
+    targetRateBps = 6500;
+  }
 
   const amountUsdToDcaIn =
     fromBaseUnit(BigInt(Math.round(amountToDcaIn ?? 0)), state.debt.decimals) *
@@ -218,6 +231,7 @@ export function getRebalanceValues(
     adjustmentFeeBps
   );
 
+  consoleLog("Target rate:", targetRateBps, maxBoostToBps(state.maxLtvBps, state.liqThresholdBps));
   const maxRepayTo = maxRepayToBps(state.maxLtvBps, state.liqThresholdBps);
   return {
     debtAdjustmentUsd,
@@ -234,6 +248,7 @@ export function getRebalanceValues(
           : "repay",
     rebalanceDirection,
     feesUsd: Math.abs(debtAdjustmentUsd * fromBps(adjustmentFeeBps)),
+    targetRateBps
   };
 }
 
