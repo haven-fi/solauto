@@ -276,9 +276,10 @@ export function rebalanceRequiresFlashLoan(
     supplyUsd <= 0 || tempLiqUtilizationRateBps > maxLiqUtilizationRateBps;
 
   const useDebtLiquidity =
+    values.rebalanceDirection === RebalanceDirection.Boost ||
     Math.abs(values.debtAdjustmentUsd) * 0.9 >
-    fromBaseUnit(client.supplyLiquidityAvailable(), USD_DECIMALS) *
-      (safeGetPrice(client.supplyMint) ?? 0);
+      fromBaseUnit(client.supplyLiquidityAvailable(), USD_DECIMALS) *
+        (safeGetPrice(client.supplyMint) ?? 0);
 
   consoleLog("Requires flash loan:", requiresFlashLoan);
   consoleLog("Use debt liquidity:", useDebtLiquidity);
