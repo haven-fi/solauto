@@ -185,9 +185,11 @@ export async function getAllMarginfiAccountsByAuthority(
     const positionStates = await Promise.all(
       marginfiAccounts.map(async (x) => ({
         publicKey: x.publicKey,
-        state: await getMarginfiAccountPositionState(umi, {
-          pk: toWeb3JsPublicKey(x.publicKey),
-        }),
+        state: (
+          await getMarginfiAccountPositionState(umi, {
+            pk: toWeb3JsPublicKey(x.publicKey),
+          })
+        )?.state,
       }))
     );
     return positionStates
@@ -217,7 +219,7 @@ export async function getAllMarginfiAccountsByAuthority(
 
 export function getBankLiquidityAvailableBaseUnit(
   bank: Bank | null,
-  isAsset: boolean
+  availableToDeposit: boolean
 ) {
   let amountCanBeUsed = 0;
 
@@ -225,13 +227,13 @@ export function getBankLiquidityAvailableBaseUnit(
     const [assetShareValue, liabilityShareValue] = getUpToDateShareValues(bank);
     const totalDeposited =
       bytesToI80F48(bank.totalAssetShares.value) * assetShareValue;
-    amountCanBeUsed = isAsset
+    amountCanBeUsed = availableToDeposit
       ? Number(bank.config.depositLimit) - totalDeposited
       : totalDeposited -
         bytesToI80F48(bank.totalLiabilityShares.value) * liabilityShareValue;
   }
 
-  return amountCanBeUsed;
+  return BigInt(Math.round(amountCanBeUsed));
 }
 
 async function getTokenUsage(
@@ -241,7 +243,7 @@ async function getTokenUsage(
   amountUsedAdjustment?: bigint
 ): Promise<PositionTokenUsage> {
   let amountUsed = 0;
-  let amountCanBeUsed = 0;
+  let amountCanBeUsed = BigInt(0);
   let marketPrice = 0;
 
   if (bank !== null) {
@@ -266,11 +268,11 @@ async function getTokenUsage(
         : BigInt(0),
     },
     amountCanBeUsed: {
-      baseUnit: BigInt(Math.round(amountCanBeUsed)),
+      baseUnit: amountCanBeUsed,
       baseAmountUsdValue: bank
         ? toBaseUnit(
             fromBaseUnit(
-              BigInt(Math.round(amountCanBeUsed)),
+              amountCanBeUsed,
               bank.mintDecimals
             ) * marketPrice,
             USD_DECIMALS
@@ -300,7 +302,10 @@ export async function getMarginfiAccountPositionState(
   supply?: BankSelection,
   debt?: BankSelection,
   livePositionUpdates?: LivePositionUpdates
-): Promise<PositionState | undefined> {
+): Promise<
+  | { supplyBank: Bank | null; debtBank: Bank | null; state: PositionState }
+  | undefined
+> {
   let marginfiAccount =
     protocolAccount.data ??
     (await safeFetchMarginfiAccount(umi, publicKey(protocolAccount.pk), {
@@ -465,26 +470,30 @@ export async function getMarginfiAccountPositionState(
   );
 
   return {
-    liqUtilizationRateBps: getLiqUtilzationRateBps(
-      supplyUsd,
-      debtUsd,
-      toBps(liqThreshold)
-    ),
-    netWorth: {
-      baseAmountUsdValue: toBaseUnit(supplyUsd - debtUsd, USD_DECIMALS),
-      baseUnit: toBaseUnit(
-        (supplyUsd - debtUsd) / supplyPrice,
-        supplyUsage!.decimals
+    supplyBank,
+    debtBank,
+    state: {
+      liqUtilizationRateBps: getLiqUtilzationRateBps(
+        supplyUsd,
+        debtUsd,
+        toBps(liqThreshold)
       ),
+      netWorth: {
+        baseAmountUsdValue: toBaseUnit(supplyUsd - debtUsd, USD_DECIMALS),
+        baseUnit: toBaseUnit(
+          (supplyUsd - debtUsd) / supplyPrice,
+          supplyUsage!.decimals
+        ),
+      },
+      supply: supplyUsage!,
+      debt: debtUsage!,
+      maxLtvBps: toBps(maxLtv),
+      liqThresholdBps: toBps(liqThreshold),
+      lastUpdated: BigInt(currentUnixSeconds()),
+      padding1: [],
+      padding2: [],
+      padding: [],
     },
-    supply: supplyUsage!,
-    debt: debtUsage!,
-    maxLtvBps: toBps(maxLtv),
-    liqThresholdBps: toBps(liqThreshold),
-    lastUpdated: BigInt(currentUnixSeconds()),
-    padding1: [],
-    padding2: [],
-    padding: [],
   };
 }
 

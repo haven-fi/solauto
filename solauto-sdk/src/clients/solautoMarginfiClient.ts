@@ -55,6 +55,7 @@ import {
 import {
   findMarginfiAccounts,
   getAllMarginfiAccountsByAuthority,
+  getBankLiquidityAvailableBaseUnit,
   getMarginfiAccountPositionState,
   getMarginfiMaxLtvAndLiqThreshold,
   marginfiAccountEmpty,
@@ -89,6 +90,9 @@ export class SolautoMarginfiClient extends SolautoClient {
   public intermediaryMarginfiAccountSigner?: Signer;
   public intermediaryMarginfiAccountPk!: PublicKey;
   public intermediaryMarginfiAccount?: MarginfiAccount;
+
+  private supplyBank: Bank | null = null;
+  private debtBank: Bank | null = null;
 
   async initialize(args: SolautoMarginfiClientArgs) {
     await super.initialize(args);
@@ -694,7 +698,7 @@ export class SolautoMarginfiClient extends SolautoClient {
       (this.solautoPositionData === null ||
         !toWeb3JsPublicKey(this.signer.publicKey).equals(this.authority));
 
-    const freshState = await getMarginfiAccountPositionState(
+    const resp = await getMarginfiAccountPositionState(
       this.umi,
       { pk: this.marginfiAccountPk },
       this.marginfiGroup,
@@ -703,7 +707,11 @@ export class SolautoMarginfiClient extends SolautoClient {
       this.livePositionUpdates
     );
 
-    if (freshState) {
+    if (resp) {
+      this.supplyBank = resp?.supplyBank;
+      this.debtBank = resp?.debtBank;
+      const freshState = resp.state;
+
       this.log("Fresh state", freshState);
       const supplyPrice = safeGetPrice(freshState?.supply.mint)!;
       const debtPrice = safeGetPrice(freshState?.debt.mint)!;
@@ -727,6 +735,14 @@ export class SolautoMarginfiClient extends SolautoClient {
       );
     }
 
-    return freshState;
+    return resp?.state;
+  }
+
+  supplyLiquidityAvailable(): bigint {
+    return getBankLiquidityAvailableBaseUnit(this.supplyBank, false);
+  }
+
+  debtLiquidityAvailable(): bigint {
+    return getBankLiquidityAvailableBaseUnit(this.debtBank, false);
   }
 }

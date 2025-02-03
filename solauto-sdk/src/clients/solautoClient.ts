@@ -576,4 +576,7 @@ export abstract class SolautoClient extends ReferralStateManager {
 
     return undefined;
   }
+
+  abstract supplyLiquidityAvailable(): bigint;
+  abstract debtLiquidityAvailable(): bigint;
 }

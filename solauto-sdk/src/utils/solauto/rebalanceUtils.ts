@@ -290,7 +290,14 @@ export function rebalanceRequiresFlashLoan(
   const requiresFlashLoan =
     supplyUsd <= 0 || tempLiqUtilizationRateBps > maxLiqUtilizationRateBps;
 
+  const useDebtLiquidity =
+    values.rebalanceDirection === RebalanceDirection.Boost ||
+    Math.abs(values.debtAdjustmentUsd) * 0.9 >
+      fromBaseUnit(client.supplyLiquidityAvailable(), USD_DECIMALS) *
+        (safeGetPrice(client.supplyMint) ?? 0);
+
   consoleLog("Requires flash loan:", requiresFlashLoan);
+  consoleLog("Use debt liquidity:", useDebtLiquidity);
   consoleLog(
     "Intermediary liq utilization rate:",
     tempLiqUtilizationRateBps,
@@ -300,13 +307,6 @@ export function rebalanceRequiresFlashLoan(
     maxLiqUtilizationRateBps
   );
 
-  const useDebtLiquidity =
-    Math.abs(values.debtAdjustmentUsd) * 1.1 <=
-    fromBaseUnit(
-      client.solautoPositionState?.debt.amountCanBeUsed.baseAmountUsdValue ??
-        BigInt(0),
-      USD_DECIMALS
-    );
   return { requiresFlashLoan, useDebtLiquidity };
 }
 
@@ -407,7 +407,6 @@ export function getJupSwapRebalanceDetails(
     flashLoanRepayFromDebt;
   const exactIn = !exactOut;
 
-  // const addPadding = targetLiqUtilizationRateBps === 0;
   const addPadding = exactOut;
 
   return {
@@ -418,8 +417,8 @@ export function getJupSwapRebalanceDetails(
       : client.solautoPosition,
     slippageIncFactor: 0.2 + (attemptNum ?? 0) * 0.25,
     amount: exactOut ? outputAmount : inputAmount,
-    exactIn: exactIn,
-    exactOut: exactOut,
+    exactIn,
+    exactOut,
     addPadding,
   };
 }
