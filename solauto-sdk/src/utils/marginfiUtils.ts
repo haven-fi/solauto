@@ -235,7 +235,7 @@ export function getBankLiquidityAvailableBaseUnit(
       ? Number(bank.config.depositLimit) - totalDeposited
       : Math.min(
           totalDeposited - totalBorrowed,
-          Number(bank.config.borrowLimit) - totalBorrowed
+          Math.max(0, Number(bank.config.borrowLimit) - totalBorrowed)
         );
   }
 
