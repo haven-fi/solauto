@@ -312,7 +312,6 @@ export function getFlashLoanDetails(
   );
 
   let flashLoanToken: PositionTokenUsage | undefined = undefined;
-  let flashLoanTokenPrice = 0;
 
   const inAmount = BigInt(parseInt(jupQuote.inAmount));
   const outAmount = BigInt(parseInt(jupQuote.outAmount));
@@ -320,10 +319,8 @@ export function getFlashLoanDetails(
   const boosting = values.rebalanceDirection === RebalanceDirection.Boost;
   if (boosting || useDebtLiquidity) {
     flashLoanToken = client.solautoPositionState!.debt;
-    flashLoanTokenPrice = safeGetPrice(client.debtMint)!;
   } else {
     flashLoanToken = client.solautoPositionState!.supply;
-    flashLoanTokenPrice = safeGetPrice(client.supplyMint)!;
   }
 
   if (jupQuote.swapMode !== "ExactOut" && jupQuote.swapMode !== "ExactIn") {

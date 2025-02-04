@@ -225,12 +225,18 @@ export function getBankLiquidityAvailableBaseUnit(
 
   if (bank !== null) {
     const [assetShareValue, liabilityShareValue] = getUpToDateShareValues(bank);
+
     const totalDeposited =
       bytesToI80F48(bank.totalAssetShares.value) * assetShareValue;
+    const totalBorrowed =
+      bytesToI80F48(bank.totalLiabilityShares.value) * liabilityShareValue;
+
     amountCanBeUsed = availableToDeposit
       ? Number(bank.config.depositLimit) - totalDeposited
-      : totalDeposited -
-        bytesToI80F48(bank.totalLiabilityShares.value) * liabilityShareValue;
+      : Math.min(
+          totalDeposited - totalBorrowed,
+          Number(bank.config.borrowLimit) - totalBorrowed
+        );
   }
 
   return BigInt(Math.round(amountCanBeUsed));
@@ -271,10 +277,7 @@ async function getTokenUsage(
       baseUnit: amountCanBeUsed,
       baseAmountUsdValue: bank
         ? toBaseUnit(
-            fromBaseUnit(
-              amountCanBeUsed,
-              bank.mintDecimals
-            ) * marketPrice,
+            fromBaseUnit(amountCanBeUsed, bank.mintDecimals) * marketPrice,
             USD_DECIMALS
           )
         : BigInt(0),
