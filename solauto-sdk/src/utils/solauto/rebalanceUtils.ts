@@ -31,7 +31,7 @@ import {
 import { USD_DECIMALS } from "../../constants/generalAccounts";
 import { RebalanceAction } from "../../types";
 import { safeGetPrice } from "../priceUtils";
-import { JUP, TOKEN_INFO, USDC } from "../../constants";
+import { BONK, JUP, TOKEN_INFO, USDC, WETH } from "../../constants";
 
 function getAdditionalAmountToDcaIn(dca: DCASettings): number {
   if (dca.dcaInBaseUnit === BigInt(0)) {
@@ -191,11 +191,15 @@ export function getRebalanceValues(
   );
 
   // REVERT ME AND GET TO THE ROOT OF THIS ISSUE
+  const supplyMint = toWeb3JsPublicKey(state.supply.mint);
   if (
-    toWeb3JsPublicKey(state.supply.mint).equals(new PublicKey(JUP)) &&
+    (supplyMint.equals(new PublicKey(JUP)) ||
+      supplyMint.equals(new PublicKey(BONK)) ||
+      supplyMint.equals(new PublicKey(WETH))) &&
     toWeb3JsPublicKey(state.debt.mint).equals(new PublicKey(USDC)) &&
     settings &&
-    settings.boostToBps === maxBoostToBps(state.maxLtvBps, state.liqThresholdBps) &&
+    settings.boostToBps ===
+      maxBoostToBps(state.maxLtvBps, state.liqThresholdBps) &&
     targetRateBps === settings.boostToBps
   ) {
     targetRateBps = 6500;
@@ -231,7 +235,11 @@ export function getRebalanceValues(
     adjustmentFeeBps
   );
 
-  consoleLog("Target rate:", targetRateBps, maxBoostToBps(state.maxLtvBps, state.liqThresholdBps));
+  consoleLog(
+    "Target rate:",
+    targetRateBps,
+    maxBoostToBps(state.maxLtvBps, state.liqThresholdBps)
+  );
   const maxRepayTo = maxRepayToBps(state.maxLtvBps, state.liqThresholdBps);
   return {
     debtAdjustmentUsd,
@@ -248,7 +256,7 @@ export function getRebalanceValues(
           : "repay",
     rebalanceDirection,
     feesUsd: Math.abs(debtAdjustmentUsd * fromBps(adjustmentFeeBps)),
-    targetRateBps
+    targetRateBps,
   };
 }
 
