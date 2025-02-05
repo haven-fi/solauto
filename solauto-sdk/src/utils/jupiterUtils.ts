@@ -168,12 +168,12 @@ export async function getJupPriceData(mints: PublicKey[], extraInfo?: boolean) {
       !result ||
       result === null ||
       (typeof result === "object" &&
-        Object.values(result).includes([null, undefined]))
+        Boolean(Object.values(data).filter((x) => x === null).length))
     ) {
       throw new Error("Failed to get token prices using Jupiter");
     }
     return result;
-  }, 6);
+  }, 8);
 
   return data as { [key: string]: any };
 }
