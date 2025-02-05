@@ -246,9 +246,16 @@ async function main(filterWhitelist: boolean) {
   );
 
   const tvl = latestStates
+    .map((x) =>
+      fromBaseUnit(x.supply.amountUsed.baseAmountUsdValue, USD_DECIMALS)
+    )
+    .reduce((acc, curr) => acc + curr, 0);
+  const netWorth = latestStates
     .map((x) => fromBaseUnit(x.netWorth.baseAmountUsdValue, USD_DECIMALS))
     .reduce((acc, curr) => acc + curr, 0);
-  console.log(`Total TVL: $${formatNumber(tvl, 2, 10000, 2)}`);
+
+  console.log(`TVL: $${formatNumber(tvl, 2, 10000, 2)}`);
+  console.log(`Total net worth: $${formatNumber(netWorth, 2, 10000, 2)}`);
 }
 
 const filterWhitelist = true;
