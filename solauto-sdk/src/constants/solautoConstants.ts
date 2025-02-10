@@ -11,6 +11,7 @@ import {
 } from "@solana/spl-token";
 import { SOLAUTO_MANAGER } from "./generalAccounts";
 import { JUPITER_PROGRAM_ID } from "../jupiter-sdk";
+import { HNT, JLP, JTO, JUP, PYTH, WETH } from "./tokenConstants";
 
 export const SOLAUTO_PROD_PROGRAM = new PublicKey(
   "AutoyKBRaHSBHy9RsmXCZMy6nNFAg5FYijrvZyQcNLV"
@@ -46,3 +47,12 @@ export const STANDARD_LUT_ACCOUNTS = [
 ].map((x) => x.toString());
 
 export const JITO_BLOCK_ENGINE = "https://mainnet.block-engine.jito.wtf";
+
+export const BROKEN_TOKENS = [
+  JUP,
+  JLP,
+  WETH,
+  HNT,
+  JTO,
+  PYTH
+]

@@ -31,7 +31,15 @@ import {
 import { USD_DECIMALS } from "../../constants/generalAccounts";
 import { RebalanceAction } from "../../types";
 import { safeGetPrice } from "../priceUtils";
-import { BONK, JUP, TOKEN_INFO, USDC, WETH } from "../../constants";
+import {
+  BONK,
+  BROKEN_TOKENS,
+  JUP,
+  TOKEN_INFO,
+  USDC,
+  USDT,
+  WETH,
+} from "../../constants";
 
 function getAdditionalAmountToDcaIn(dca: DCASettings): number {
   if (dca.dcaInBaseUnit === BigInt(0)) {
@@ -193,10 +201,9 @@ export function getRebalanceValues(
   // REVERT ME AND GET TO THE ROOT OF THIS ISSUE
   const supplyMint = toWeb3JsPublicKey(state.supply.mint);
   if (
-    (supplyMint.equals(new PublicKey(JUP)) ||
-      supplyMint.equals(new PublicKey(BONK)) ||
-      supplyMint.equals(new PublicKey(WETH))) &&
-    toWeb3JsPublicKey(state.debt.mint).equals(new PublicKey(USDC)) &&
+    BROKEN_TOKENS.includes(supplyMint.toString()) &&
+    (toWeb3JsPublicKey(state.debt.mint).equals(new PublicKey(USDC)) ||
+      toWeb3JsPublicKey(state.debt.mint).equals(new PublicKey(USDT))) &&
     settings &&
     settings.boostToBps ===
       maxBoostToBps(state.maxLtvBps, state.liqThresholdBps) &&

@@ -19,7 +19,6 @@ import {
   RebalanceDirection,
   SolautoAction,
   SolautoRebalanceType,
-  SolautoSettingsParameters,
   TokenType,
   convertReferralFees,
   createSolautoProgram,
@@ -51,7 +50,6 @@ import {
 import { SolautoMarginfiClient } from "../clients/solautoMarginfiClient";
 import {
   getMaxLiqUtilizationRateBps,
-  maxBoostToBps,
   uint8ArrayToBigInt,
 } from "../utils/numberUtils";
 import {
@@ -603,19 +601,6 @@ export async function getTransactionChores(
 }
 
 export async function requiresRefreshBeforeRebalance(client: SolautoClient, values: RebalanceValues) {
-  // REMOVE ME
-  const state = client.solautoPositionState!;
-  const settings = client.solautoPositionSettings();
-  if (
-    toWeb3JsPublicKey(state.supply.mint).equals(new PublicKey(JUP)) &&
-    toWeb3JsPublicKey(state.debt.mint).equals(new PublicKey(USDC)) &&
-    settings &&
-    settings.boostToBps ===
-      maxBoostToBps(state.maxLtvBps, state.liqThresholdBps) && values.targetRateBps === 6500
-  ) {
-    return true;
-  }
-
   const neverRefreshedBefore =
     client.solautoPositionData &&
     client.solautoPositionData.state.supply.amountCanBeUsed.baseUnit ===
