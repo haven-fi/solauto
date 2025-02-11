@@ -578,5 +578,6 @@ export abstract class SolautoClient extends ReferralStateManager {
   }
 
   abstract supplyLiquidityAvailable(): bigint;
+  abstract supplyLiquidityDepositable(): bigint;
   abstract debtLiquidityAvailable(): bigint;
 }
