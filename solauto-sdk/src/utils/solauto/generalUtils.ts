@@ -182,15 +182,21 @@ export function eligibleForRebalance(
         supplyMintPrice,
         debtMintPrice
       );
+
+      const debtAvailable = fromBaseUnit(
+        positionState.debt.amountCanBeUsed.baseAmountUsdValue,
+        USD_DECIMALS
+      );
+      const supplyDepositable = fromBaseUnit(
+        positionState.supply.amountCanBeUsed.baseAmountUsdValue,
+        USD_DECIMALS
+      );
       const sufficientLiquidity =
-        fromBaseUnit(
-          positionState.debt.amountCanBeUsed.baseAmountUsdValue,
-          USD_DECIMALS
-        ) *
-          0.95 >
-        values.debtAdjustmentUsd;
+        debtAvailable * 0.95 > values.debtAdjustmentUsd &&
+        supplyDepositable * 0.95 > values.debtAdjustmentUsd;
+
       if (!sufficientLiquidity) {
-        consoleLog("Insufficient debt liquidity to further boost");
+        consoleLog("Insufficient liquidity to further boost");
       }
       return sufficientLiquidity ? "boost" : undefined;
     }

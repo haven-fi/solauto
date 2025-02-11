@@ -742,6 +742,10 @@ export class SolautoMarginfiClient extends SolautoClient {
     return getBankLiquidityAvailableBaseUnit(this.supplyBank, false);
   }
 
+  supplyLiquidityDepositable(): bigint {
+    return getBankLiquidityAvailableBaseUnit(this.supplyBank, true);
+  }
+
   debtLiquidityAvailable(): bigint {
     return getBankLiquidityAvailableBaseUnit(this.debtBank, false);
   }
