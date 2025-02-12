@@ -112,12 +112,12 @@ export async function getSwitchboardPrices(
           "mainnet",
           mints.map((x) => SWITCHBOARD_PRICE_FEED_IDS[x.toString()])
         );
-  
+
         const p = res.flatMap((x) => x.results[0]);
         if (p.filter((x) => !x || isNaN(Number(x))).length > 0) {
           throw new Error("Unable to fetch Switchboard prices");
         }
-  
+
         return p;
       },
       2,
@@ -131,7 +131,9 @@ export async function getSwitchboardPrices(
     prices = Array(mints.length).fill(0);
   }
 
-  const missingPrices = zip(mints, prices).filter((x) => !x[1] || isNaN(Number(x)));
+  const missingPrices = zip(mints, prices).filter(
+    (x) => !x[1] || isNaN(Number(x))
+  );
   const jupPrices = zip(
     missingPrices.map((x) => x[0]),
     await getJupTokenPrices(missingPrices.map((x) => x[0]))
@@ -151,11 +153,7 @@ export async function getJupTokenPrices(mints: PublicKey[]) {
 
   const data = await getJupPriceData(mints);
 
-  const prices = Object.values(data).map(
-    (x) => parseFloat(x.price as string) as number
-  );
-
-  return prices;
+  return Object.values(data).map((x) => parseFloat(x.price as string));
 }
 
 export function safeGetPrice(
