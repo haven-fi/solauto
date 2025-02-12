@@ -1,6 +1,8 @@
 import { publicKey } from "@metaplex-foundation/umi";
 import {
   buildHeliusApiUrl,
+  currentUnixSeconds,
+  eligibleForRebalance,
   fetchTokenPrices,
   fromBaseUnit,
   getSolanaRpcConnection,
@@ -203,10 +205,20 @@ async function main(filterWhitelist: boolean) {
       toWeb3JsPublicKey(pos.state.debt.mint)
     );
 
+    const actionToTake = eligibleForRebalance(
+      pos.state,
+      pos.position.settingParams,
+      pos.position.dca,
+      currentUnixSeconds(),
+      safeGetPrice(pos.state.supply.mint)!,
+      safeGetPrice(pos.state.debt.mint)!,
+      0
+    );
+
     const repayFrom =
       pos.position.settingParams.repayToBps +
       pos.position.settingParams.repayGap;
-    const unhealthy = latestState.liqUtilizationRateBps > repayFrom;
+    const unhealthy = actionToTake === "repay";
     const healthText = unhealthy
       ? `(Unhealthy: ${latestState.liqUtilizationRateBps - repayFrom}bps)`
       : "";
@@ -214,10 +226,7 @@ async function main(filterWhitelist: boolean) {
       unhealthyPositions += 1;
     }
 
-    const awaitingBoost =
-      latestState.liqUtilizationRateBps <
-      pos.position.settingParams.boostToBps -
-        pos.position.settingParams.boostGap;
+    const awaitingBoost = actionToTake === "boost";
     const boostText = awaitingBoost ? " (awaiting boost)" : "";
     if (awaitingBoost) {
       awaitingBoostPositions += 1;
@@ -230,7 +239,6 @@ async function main(filterWhitelist: boolean) {
     console.log(
       `${strategy}: $${formatNumber(fromBaseUnit(latestState.netWorth.baseAmountUsdValue, USD_DECIMALS), 2, 10000, 2)} ${healthText} ${boostText}`
     );
-    // console.log(latestState.liqUtilizationRateBps, repayFrom);
   }
 
   console.log(
