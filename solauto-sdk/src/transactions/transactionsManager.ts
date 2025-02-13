@@ -231,6 +231,8 @@ export class TransactionsManager {
   private totalRetries: number;
   private retryDelay: number;
 
+  updateOracleTxName = "Update oracle";
+
   constructor(
     private txHandler: SolautoClient | ReferralStateManager,
     private statusCallback?: (statuses: TransactionManagerStatuses) => void,
@@ -451,7 +453,7 @@ export class TransactionsManager {
         const swbTx = new TransactionItem(
           async () =>
             buildSwbSubmitResponseTx(client.connection, client.signer, mint),
-          "Update oracle"
+          this.updateOracleTxName
         );
         await swbTx.initialize();
         items.unshift(swbTx);
@@ -730,6 +732,11 @@ export class TransactionsManager {
       ...itemSet.items,
       ...itemSets.slice(currentIndex + 1).flatMap((set) => set.items),
     ]);
+
+    const newItemSetNames = newItemSets.map(x => x.name());
+    if (newItemSetNames.length === 1 && newItemSetNames[0] === this.updateOracleTxName) {
+      return undefined;
+    }
 
     if (newItemSets.length > 1) {
       itemSets.splice(
