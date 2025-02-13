@@ -12,6 +12,7 @@ import {
   sendSingleOptimizedTransaction,
 } from "../utils/solanaUtils";
 import {
+  consoleLog,
   ErrorsToThrow,
   retryWithExponentialBackoff,
 } from "../utils/generalUtils";
@@ -231,7 +232,7 @@ export class TransactionsManager {
   private totalRetries: number;
   private retryDelay: number;
 
-  updateOracleTxName = "Update oracle";
+  updateOracleTxName = "update oracle";
 
   constructor(
     private txHandler: SolautoClient | ReferralStateManager,
@@ -555,12 +556,15 @@ export class TransactionsManager {
         num = attemptNum;
 
         if (attemptNum > 0) {
-          for (let i = 0; i < itemSets.length; i++) {
-            await itemSets[i].refetchAll(attemptNum);
-          }
-          itemSets = await this.assembleTransactionSets(
-            itemSets.flatMap((x) => x.items)
+          const refreshedSets = await this.refreshItemSets(
+            itemSets,
+            attemptNum
           );
+          if (!refreshedSets || !refreshedSets.length) {
+            return;
+          } else {
+            itemSets = refreshedSets;
+          }
         }
 
         transactions = [];
@@ -689,11 +693,12 @@ export class TransactionsManager {
         num = attemptNum;
 
         if (currentIndex > 0 || attemptNum > 0) {
-          itemSet = await this.refreshItemSet(
+          const refreshedSets = await this.refreshItemSets(
             itemSets,
-            currentIndex,
-            attemptNum
+            attemptNum,
+            currentIndex
           );
+          itemSet = refreshedSets ? refreshedSets[0] : undefined;
         }
         if (!itemSet) return;
 
@@ -720,25 +725,39 @@ export class TransactionsManager {
     );
   }
 
-  private async refreshItemSet(
+  private async refreshItemSets(
     itemSets: TransactionSet[],
-    currentIndex: number,
-    attemptNum: number
-  ): Promise<TransactionSet | undefined> {
-    const itemSet = itemSets[currentIndex];
-    await itemSet.refetchAll(attemptNum);
+    attemptNum: number,
+    currentIndex?: number
+  ): Promise<TransactionSet[] | undefined> {
+    if (currentIndex !== undefined) {
+      const itemSet = itemSets[currentIndex];
+      await itemSet.refetchAll(attemptNum);
+    } else {
+      for (const itemSet of itemSets) {
+        await itemSet.refetchAll(attemptNum);
+      }
+    }
 
-    const newItemSets = await this.assembleTransactionSets([
-      ...itemSet.items,
-      ...itemSets.slice(currentIndex + 1).flatMap((set) => set.items),
-    ]);
+    const newItemSets = await this.assembleTransactionSets(
+      currentIndex !== undefined
+        ? [
+            ...itemSets[currentIndex].items,
+            ...itemSets.slice(currentIndex + 1).flatMap((set) => set.items),
+          ]
+        : itemSets.flatMap((set) => set.items)
+    );
 
-    const newItemSetNames = newItemSets.map(x => x.name());
-    if (newItemSetNames.length === 1 && newItemSetNames[0] === this.updateOracleTxName) {
+    const newItemSetNames = newItemSets.map((x) => x.name());
+    if (
+      newItemSetNames.length === 1 &&
+      newItemSetNames[0] === this.updateOracleTxName
+    ) {
+      consoleLog("Skipping unnecessary oracle update");
       return undefined;
     }
 
-    if (newItemSets.length > 1) {
+    if (currentIndex !== undefined && newItemSets.length > 1) {
       itemSets.splice(
         currentIndex,
         itemSets.length - currentIndex,
@@ -759,7 +778,7 @@ export class TransactionsManager {
       );
     }
 
-    return newItemSets[0];
+    return newItemSets;
   }
 
   private async sendTransaction(
