@@ -36,7 +36,7 @@ export function tokenInfo(mint?: PublicKey) {
   return TOKEN_INFO[mint ? mint.toString() : PublicKey.default.toString()];
 }
 
-type StrategyType = "Long" | "Short";
+type StrategyType = "Long" | "Ratio Long" | "Short";
 
 function solautoStrategyName(supplyMint?: PublicKey, debtMint?: PublicKey) {
   const supplyInfo = tokenInfo(supplyMint);
@@ -47,11 +47,9 @@ function solautoStrategyName(supplyMint?: PublicKey, debtMint?: PublicKey) {
   );
 
   if (strat === "Long") {
-    return debtInfo.isStableCoin
-      ? `${supplyInfo.ticker} Long`
-      : supplyInfo.ticker
-        ? `${supplyInfo.ticker}/${debtInfo.ticker} Long`
-        : "";
+    return `${supplyInfo.ticker} Long`;
+  } else if (strat === "Ratio Long") {
+    return `${supplyInfo.ticker}/${debtInfo.ticker} Long`;
   } else {
     return `${debtInfo.ticker} Short`;
   }
@@ -65,7 +63,7 @@ function strategyType(
   const debtInfo = tokenInfo(debtMint);
 
   if (!supplyInfo.isStableCoin && !debtInfo.isStableCoin) {
-    return "Long";
+    return "Ratio Long";
   } else if (debtInfo.isStableCoin) {
     return "Long";
   } else if (supplyInfo.isStableCoin) {
