@@ -64,9 +64,8 @@ function strategyType(
   const supplyInfo = tokenInfo(supplyMint);
   const debtInfo = tokenInfo(debtMint);
 
-  if (supplyInfo.isLST && debtMint.equals(NATIVE_MINT)) {
-    // Yield
-    throw new Error("Not yet supported");
+  if (!supplyInfo.isStableCoin && !debtInfo.isStableCoin) {
+    return "Long";
   } else if (debtInfo.isStableCoin) {
     return "Long";
   } else if (supplyInfo.isStableCoin) {
