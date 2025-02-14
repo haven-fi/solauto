@@ -66,10 +66,8 @@ function strategyType(
     return "Ratio Long";
   } else if (debtInfo.isStableCoin) {
     return "Long";
-  } else if (supplyInfo.isStableCoin) {
-    return "Short";
   } else {
-    return "Long";
+    return "Short";
   }
 }
 
