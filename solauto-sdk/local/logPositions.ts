@@ -36,7 +36,7 @@ export function tokenInfo(mint?: PublicKey) {
   return TOKEN_INFO[mint ? mint.toString() : PublicKey.default.toString()];
 }
 
-type StrategyType = "Long" | "Ratio Long" | "Short";
+type StrategyType = "Long" | "Ratio" | "Short";
 
 function solautoStrategyName(supplyMint?: PublicKey, debtMint?: PublicKey) {
   const supplyInfo = tokenInfo(supplyMint);
@@ -63,7 +63,7 @@ function strategyType(
   const debtInfo = tokenInfo(debtMint);
 
   if (!supplyInfo.isStableCoin && !debtInfo.isStableCoin) {
-    return "Ratio Long";
+    return "Ratio";
   } else if (debtInfo.isStableCoin) {
     return "Long";
   } else {
