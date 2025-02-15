@@ -15,12 +15,14 @@ import {
   SOLAUTO_PROD_PROGRAM,
   TOKEN_INFO,
   USD_DECIMALS,
+  WBTC,
+  WETH,
 } from "../src";
 import { PublicKey } from "@solana/web3.js";
-import { NATIVE_MINT } from "@solana/spl-token";
 import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 import path from "path";
 import { config } from "dotenv";
+import { NATIVE_MINT } from "@solana/spl-token";
 
 config({ path: path.join(__dirname, ".env") });
 
@@ -38,6 +40,12 @@ export function tokenInfo(mint?: PublicKey) {
 
 type StrategyType = "Long" | "Ratio" | "Short";
 
+const MAJORS_PRIO = {
+  [WBTC.toString()]: 0,
+  [WETH.toString()]: 1,
+  [NATIVE_MINT.toString()]: 2,
+};
+
 function solautoStrategyName(supplyMint?: PublicKey, debtMint?: PublicKey) {
   const supplyInfo = tokenInfo(supplyMint);
   const debtInfo = tokenInfo(debtMint);
@@ -48,8 +56,17 @@ function solautoStrategyName(supplyMint?: PublicKey, debtMint?: PublicKey) {
 
   if (strat === "Long") {
     return `${supplyInfo.ticker} Long`;
-  } else if (strat === "Ratio Long") {
-    return `${supplyInfo.ticker}/${debtInfo.ticker} Long`;
+  } else if (strat === "Ratio") {
+    if (
+      (supplyInfo.isLST && debtMint?.equals(NATIVE_MINT)) ||
+      (supplyMint &&
+        debtMint &&
+        MAJORS_PRIO[supplyMint!.toString()] > MAJORS_PRIO[debtMint!.toString()])
+    ) {
+      return `${supplyInfo.ticker}/${debtInfo.ticker} Long`;
+    } else {
+      return `${debtInfo.ticker}/${supplyInfo.ticker} Short`;
+    }
   } else {
     return `${debtInfo.ticker} Short`;
   }
