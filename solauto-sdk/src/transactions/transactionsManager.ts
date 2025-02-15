@@ -406,7 +406,7 @@ export class TransactionsManager {
           this.getUpdatedPriorityFeeSetting(prevError, attemptNum),
           "skip-simulation"
         ),
-      3,
+      this.signableRetries,
       150,
       this.errorsToThrow
     );
