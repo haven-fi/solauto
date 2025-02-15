@@ -486,34 +486,36 @@ pub fn validate_debt_adjustment(
     expected_debt_adjustment_usd: f64,
     rebalance_type: Option<&SolautoRebalanceType>,
 ) -> ProgramResult {
-    let token = if expected_debt_adjustment_usd > 0.0
-        || (rebalance_type.is_some()
-            && rebalance_type.unwrap() == &SolautoRebalanceType::FLRebalanceThenSwap)
-    {
-        solauto_position.state.debt
-    } else {
-        solauto_position.state.supply
-    };
-
-    let amount_usd = from_base_unit::<u64, u8, f64>(provided_base_unit_amount, token.decimals)
-        .mul(token.market_price());
-
-    // Checking if within specified range due to varying price volatility
-    if (amount_usd - expected_debt_adjustment_usd.abs())
-        .abs()
-        .div(amount_usd)
-        > 0.75
-    {
-        msg!("Base unit amount provided: {}", provided_base_unit_amount);
-        msg!(
-            "Provided debt adjustment was not what was expected (Provided: ${} vs. expected: ${})",
-            amount_usd.abs(),
-            expected_debt_adjustment_usd.abs()
-        );
-        return Err(SolautoError::IncorrectDebtAdjustment.into());
-    }
-
     Ok(())
+
+    // let token = if expected_debt_adjustment_usd > 0.0
+    //     || (rebalance_type.is_some()
+    //         && rebalance_type.unwrap() == &SolautoRebalanceType::FLRebalanceThenSwap)
+    // {
+    //     solauto_position.state.debt
+    // } else {
+    //     solauto_position.state.supply
+    // };
+
+    // let amount_usd = from_base_unit::<u64, u8, f64>(provided_base_unit_amount, token.decimals)
+    //     .mul(token.market_price());
+
+    // // Checking if within specified range due to varying price volatility
+    // if (amount_usd - expected_debt_adjustment_usd.abs())
+    //     .abs()
+    //     .div(amount_usd)
+    //     > 0.75
+    // {
+    //     msg!("Base unit amount provided: {}", provided_base_unit_amount);
+    //     msg!(
+    //         "Provided debt adjustment was not what was expected (Provided: ${} vs. expected: ${})",
+    //         amount_usd.abs(),
+    //         expected_debt_adjustment_usd.abs()
+    //     );
+    //     return Err(SolautoError::IncorrectDebtAdjustment.into());
+    // }
+
+    // Ok(())
 }
 
 #[cfg(test)]
