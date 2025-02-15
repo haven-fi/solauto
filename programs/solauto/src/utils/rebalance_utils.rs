@@ -408,7 +408,7 @@ pub fn get_rebalance_values(
             solauto_position,
             args.target_in_amount_base_unit.unwrap(),
             debt_adjustment_usd,
-            None
+            None,
         )?;
     }
 

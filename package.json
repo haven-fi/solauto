@@ -10,7 +10,7 @@
     "deploy:rs:test": "solana program deploy target/deploy/solauto.so --program-id TesTjfQ6TbXv96Tv6fqr95XTZ1LYPxtkafmShN9PjBp --use-rpc --buffer ~/.config/solana/buffer.json --max-sign-attempts 50",
     "deploy:ts": "cd solauto-sdk && npm publish",
     "generate": "pnpm generate:idl && pnpm generate:clients",
-    "generate:idl": "shank idl --crate-root programs/solauto --out-dir idls --out-filename solauto.json",
+    "generate:idl": "shank idl --crate-root programs/solauto --out-dir idls --out-filename solauto.json -p AutoyKBRaHSBHy9RsmXCZMy6nNFAg5FYijrvZyQcNLV",
     "generate:clients": "node ./generateClients.cjs && pnpm format:rust",
     "test:rs:unit": "cargo test --package solauto -- --nocapture",
     "test:rs:solana": "cd programs/solauto-sdk && cargo test-sbf",
