@@ -903,7 +903,7 @@ export function getErrorInfo(
     );
 
     if (
-      errCode &&
+      errCode !== undefined &&
       errIx?.programId.toString() ===
         umi.programs.get("solauto").publicKey.toString()
     ) {
@@ -915,10 +915,10 @@ export function getErrorInfo(
       ) {
         canBeIgnored = true;
       }
-    } else if (errCode && errIx?.programId === MARGINFI_PROGRAM_ID) {
+    } else if (errCode !== undefined && errIx?.programId === MARGINFI_PROGRAM_ID) {
       programName = "Marginfi";
       programError = marginfiError;
-    } else if (errCode && errIx?.programId === JUPITER_PROGRAM_ID) {
+    } else if (errCode !== undefined && errIx?.programId === JUPITER_PROGRAM_ID) {
       programName = "Jupiter";
       programError = getJupiterErrorFromCode(errCode, createJupiterProgram());
     }
@@ -934,9 +934,12 @@ export function getErrorInfo(
     consoleLog(e);
   }
 
-  return {
-    errorName: errorName,
-    errorInfo: errorInfo,
+  const errData = {
+    errorName,
+    errorInfo,
     canBeIgnored,
   };
+  consoleLog(errData);
+
+  return errData;
 }
