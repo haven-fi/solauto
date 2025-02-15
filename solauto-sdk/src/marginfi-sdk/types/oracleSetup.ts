@@ -14,6 +14,7 @@ export enum OracleSetup {
   SwitchboardLegacy,
   PythPushOracle,
   SwitchboardPull,
+  StakedWithPythPush,
 }
 
 export type OracleSetupArgs = OracleSetup;

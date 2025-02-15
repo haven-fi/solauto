@@ -6,6 +6,7 @@ import {
   getMarginfiAccountSize,
   MARGINFI_PROGRAM_ID,
   MarginfiAccount,
+  OracleSetup,
   safeFetchBank,
   safeFetchMarginfiAccount,
 } from "../marginfi-sdk";
@@ -435,7 +436,9 @@ export async function getMarginfiAccountPositionState(
     supplyMint === undefined ||
     debtMint === undefined ||
     (!supplyMint.isStableCoin && !debtMint.isStableCoin) ||
-    (supplyMint.isStableCoin && debtMint.isStableCoin)
+    (supplyMint.isStableCoin && debtMint.isStableCoin) ||
+    supplyBank.config.oracleSetup === OracleSetup.StakedWithPythPush ||
+    debtBank.config.oracleSetup === OracleSetup.StakedWithPythPush
   ) {
     return undefined;
   }
