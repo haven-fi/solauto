@@ -180,7 +180,13 @@ async function main(filterWhitelist: boolean) {
         );
       })
     )
-  ).flat();
+  )
+    .flat()
+    .sort(
+      (a, b) =>
+        fromBaseUnit(a.state.netWorth.baseAmountUsdValue, USD_DECIMALS) -
+        fromBaseUnit(b.state.netWorth.baseAmountUsdValue, USD_DECIMALS)
+    );
 
   const tokensUsed = Array.from(
     new Set(
@@ -205,6 +211,11 @@ async function main(filterWhitelist: boolean) {
   let awaitingBoostPositions = 0;
 
   for (const pos of solautoPositionsData) {
+    const strategy = solautoStrategyName(
+      toWeb3JsPublicKey(pos.state.supply.mint),
+      toWeb3JsPublicKey(pos.state.debt.mint)
+    );
+
     const latestState = await positionStateWithLatestPrices(
       pos.state,
       safeGetPrice(pos.state.supply.mint),
@@ -212,18 +223,13 @@ async function main(filterWhitelist: boolean) {
     );
     latestStates.push(latestState);
 
-    const strategy = solautoStrategyName(
-      toWeb3JsPublicKey(pos.state.supply.mint),
-      toWeb3JsPublicKey(pos.state.debt.mint)
-    );
-
     const actionToTake = eligibleForRebalance(
-      pos.state,
+      latestState,
       pos.position.settingParams,
       pos.position.dca,
       currentUnixSeconds(),
-      safeGetPrice(pos.state.supply.mint)!,
-      safeGetPrice(pos.state.debt.mint)!,
+      safeGetPrice(latestState.supply.mint)!,
+      safeGetPrice(latestState.debt.mint)!,
       0
     );
 
