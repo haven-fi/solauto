@@ -180,7 +180,13 @@ async function main(filterWhitelist: boolean) {
         );
       })
     )
-  ).flat();
+  )
+    .flat()
+    .sort(
+      (a, b) =>
+        fromBaseUnit(a.state.netWorth.baseAmountUsdValue, USD_DECIMALS) -
+        fromBaseUnit(b.state.netWorth.baseAmountUsdValue, USD_DECIMALS)
+    );
 
   const tokensUsed = Array.from(
     new Set(
