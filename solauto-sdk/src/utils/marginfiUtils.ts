@@ -26,7 +26,7 @@ import { MarginfiAssetAccounts } from "../types/accounts";
 import { PositionState, PositionTokenUsage } from "../generated";
 import { USD_DECIMALS } from "../constants/generalAccounts";
 import { LivePositionUpdates } from "./solauto/generalUtils";
-import { TOKEN_INFO } from "../constants";
+import { ALL_SUPPORTED_TOKENS, TOKEN_INFO } from "../constants";
 import { fetchTokenPrices, safeGetPrice } from "./priceUtils";
 
 interface AllMarginfiAssetAccounts extends MarginfiAssetAccounts {
@@ -435,8 +435,9 @@ export async function getMarginfiAccountPositionState(
   if (
     supplyMint === undefined ||
     debtMint === undefined ||
-    (!supplyMint.isStableCoin && !debtMint.isStableCoin) ||
     (supplyMint.isStableCoin && debtMint.isStableCoin) ||
+    !ALL_SUPPORTED_TOKENS.includes(supplyBank.mint.toString()) ||
+    !ALL_SUPPORTED_TOKENS.includes(debtBank.mint.toString()) ||
     supplyBank.config.oracleSetup === OracleSetup.StakedWithPythPush ||
     debtBank.config.oracleSetup === OracleSetup.StakedWithPythPush
   ) {
