@@ -385,7 +385,7 @@ export function getJupSwapRebalanceDetails(
 
   const exactOut =
     targetLiqUtilizationRateBps === 0 ||
-    values.repayingCloseToMaxLtv ||
+    // values.repayingCloseToMaxLtv ||
     flashLoanRepayFromDebt;
   const exactIn = !exactOut;
 
