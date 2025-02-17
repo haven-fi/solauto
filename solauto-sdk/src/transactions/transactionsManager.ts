@@ -515,14 +515,20 @@ export class TransactionsManager {
     this.statuses = [];
     this.lookupTables.reset();
 
-    if (!items[0].initialized) {
-      for (const item of items) {
-        await item.initialize();
+    const itemSets = await retryWithExponentialBackoff(async (attemptNum) => {
+      if (!items[0].initialized) {
+        for (const item of items) {
+          await item.initialize();
+        }
+      } else if (attemptNum > 0) {
+        for (const item of items) {
+          await item.refetch(0);
+        }
       }
-    }
+      this.txHandler.log("Transaction items:", items.length);
+      return await this.assembleTransactionSets(items);
+    }, 2);
 
-    this.txHandler.log("Transaction items:", items.length);
-    const itemSets = await this.assembleTransactionSets(items);
     this.updateStatusForSets(itemSets, TransactionStatus.Queued, 0);
     this.txHandler.log("Initial item sets:", itemSets.length);
 
@@ -730,23 +736,25 @@ export class TransactionsManager {
     attemptNum: number,
     currentIndex?: number
   ): Promise<TransactionSet[] | undefined> {
-    if (currentIndex !== undefined) {
-      const itemSet = itemSets[currentIndex];
-      await itemSet.refetchAll(attemptNum);
-    } else {
-      for (const itemSet of itemSets) {
+    const newItemSets = await retryWithExponentialBackoff(async () => {
+      if (currentIndex !== undefined) {
+        const itemSet = itemSets[currentIndex];
         await itemSet.refetchAll(attemptNum);
+      } else {
+        for (const itemSet of itemSets) {
+          await itemSet.refetchAll(attemptNum);
+        }
       }
-    }
 
-    const newItemSets = await this.assembleTransactionSets(
-      currentIndex !== undefined
-        ? [
-            ...itemSets[currentIndex].items,
-            ...itemSets.slice(currentIndex + 1).flatMap((set) => set.items),
-          ]
-        : itemSets.flatMap((set) => set.items)
-    );
+      return await this.assembleTransactionSets(
+        currentIndex !== undefined
+          ? [
+              ...itemSets[currentIndex].items,
+              ...itemSets.slice(currentIndex + 1).flatMap((set) => set.items),
+            ]
+          : itemSets.flatMap((set) => set.items)
+      );
+    }, 2);
 
     const newItemSetNames = newItemSets.map((x) => x.name());
     if (
