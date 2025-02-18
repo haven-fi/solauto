@@ -71,7 +71,7 @@ export async function getJupSwapTransaction(
           : swapDetails.exactIn
             ? "ExactIn"
             : undefined,
-        slippageBps: memecoinSwap ? 500 : 300,
+        slippageBps: memecoinSwap ? 500 : 200,
         maxAccounts: !swapDetails.exactOut ? 40 : undefined,
       }),
     4,
@@ -119,7 +119,7 @@ export async function getJupSwapTransaction(
     consoleLog("Raw inAmount:", quoteResponse.inAmount);
     const inc = Math.max(
       fromBps(finalPriceImpactBps) * 1.1,
-      fromBps(finalPriceSlippageBps) * 0.025
+      fromBps(finalPriceSlippageBps) * 0.03
     );
     consoleLog("Inc:", inc);
     quoteResponse.inAmount = Math.round(
