@@ -104,9 +104,9 @@ export function getSolautoFeesBps(
   total: number;
 } {
   const minSize = 10_000; // Minimum position size
-  const maxSize = 500_000; // Maximum position size
-  const maxFeeBps = 200; // Fee in basis points for minSize (2%)
-  const minFeeBps = 50; // Fee in basis points for maxSize (0.5%)
+  const maxSize = 250_000; // Maximum position size
+  const maxFeeBps = 50; // Fee in basis points for minSize (0.5%)
+  const minFeeBps = 25; // Fee in basis points for maxSize (0.25%)
   const k = 1.5;
 
   if (
