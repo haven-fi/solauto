@@ -33,6 +33,7 @@ import { buildSwbSubmitResponseTx, getSwitchboardFeedData } from "../utils";
 import { sendJitoBundledTransactions } from "../utils/jitoUtils";
 
 const CHORES_TX_NAME = "account chores";
+const MAX_SUPPORTED_ACCOUNT_LOCKS = 64;
 
 export class TransactionTooLargeError extends Error {
   constructor(message: string) {
@@ -132,7 +133,7 @@ class TransactionSet {
         ...item.uniqueAccounts(),
       ])
     ).length;
-    if (accountLocks > 128) {
+    if (accountLocks > MAX_SUPPORTED_ACCOUNT_LOCKS) {
       return false;
     }
 
