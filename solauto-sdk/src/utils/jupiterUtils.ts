@@ -60,6 +60,7 @@ export async function getJupSwapTransaction(
     TOKEN_INFO[swapDetails.inputMint.toString()].isMeme ||
     TOKEN_INFO[swapDetails.outputMint.toString()].isMeme;
 
+  // TEMP REVERT ME
   const usingPyth =
     swapDetails.inputMint.equals(new PublicKey(PYTH)) ||
     swapDetails.outputMint.equals(new PublicKey(PYTH));
@@ -76,7 +77,7 @@ export async function getJupSwapTransaction(
             ? "ExactIn"
             : undefined,
         slippageBps: memecoinSwap ? 500 : 200,
-        maxAccounts: !swapDetails.exactOut ? (usingPyth ? 20 : 40) : undefined,
+        maxAccounts: !swapDetails.exactOut ? (usingPyth ? 15 : 40) : undefined,
       }),
     4,
     200
