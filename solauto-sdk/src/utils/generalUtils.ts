@@ -1,12 +1,40 @@
 import { PublicKey } from "@solana/web3.js";
 import { MaybeRpcAccount, publicKey, Umi } from "@metaplex-foundation/umi";
-import { LendingPlatform } from "../generated";
+import { TOKEN_INFO, TokenInfo } from "../constants";
 
 export function consoleLog(...args: any[]): void {
   if ((globalThis as any).LOCAL_TEST) {
     console.log(...args);
   }
 }
+
+export function tokenInfo(mint?: PublicKey): TokenInfo {
+  return TOKEN_INFO[mint ? mint.toString() : PublicKey.default.toString()];
+}
+
+export function findMintByTicker(ticker: string): PublicKey {
+  for (const key in TOKEN_INFO) {
+    const account = TOKEN_INFO[key];
+    if (
+      account.ticker.toString().toLowerCase() ===
+      ticker.toString().toLowerCase()
+    ) {
+      return new PublicKey(key);
+    }
+  }
+  throw new Error(`Token mint not found by the ticker: ${ticker}`);
+}
+
+export function tokenInfoByTicker(ticker: string) {
+  for (const key in TOKEN_INFO) {
+    const token = TOKEN_INFO[key];
+    if (token.ticker.toLowerCase() === ticker.toLowerCase()) {
+      return token;
+    }
+  }
+  return undefined;
+}
+
 export function generateRandomU8(): number {
   return Math.floor(Math.random() * 255 + 1);
 }
@@ -100,12 +128,17 @@ export function retryWithExponentialBackoff<T>(
   });
 }
 
-export function toEnumValue<E extends object>(enumObj: E, value: number): E[keyof E] | undefined {
-  const numericValues = Object.values(enumObj).filter(v => typeof v === "number") as number[];
+export function toEnumValue<E extends object>(
+  enumObj: E,
+  value: number
+): E[keyof E] | undefined {
+  const numericValues = Object.values(enumObj).filter(
+    (v) => typeof v === "number"
+  ) as number[];
 
   if (numericValues.includes(value)) {
     return value as E[keyof E];
   }
-  
+
   return undefined;
 }

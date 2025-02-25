@@ -13,16 +13,13 @@ import {
   safeFetchAllSolautoPosition,
   safeGetPrice,
   SOLAUTO_PROD_PROGRAM,
-  TOKEN_INFO,
+  solautoStrategyName,
   USD_DECIMALS,
-  WBTC,
-  WETH,
 } from "../src";
 import { PublicKey } from "@solana/web3.js";
 import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 import path from "path";
 import { config } from "dotenv";
-import { NATIVE_MINT } from "@solana/spl-token";
 
 config({ path: path.join(__dirname, ".env") });
 
@@ -32,60 +29,6 @@ function getBatches<T>(items: T[], batchSize: number): T[][] {
     batches.push(items.slice(i, i + batchSize));
   }
   return batches;
-}
-
-export function tokenInfo(mint?: PublicKey) {
-  return TOKEN_INFO[mint ? mint.toString() : PublicKey.default.toString()];
-}
-
-type StrategyType = "Long" | "Ratio" | "Short";
-
-const MAJORS_PRIO = {
-  [WBTC.toString()]: 0,
-  [WETH.toString()]: 1,
-  [NATIVE_MINT.toString()]: 2,
-};
-
-function solautoStrategyName(supplyMint?: PublicKey, debtMint?: PublicKey) {
-  const supplyInfo = tokenInfo(supplyMint);
-  const debtInfo = tokenInfo(debtMint);
-  const strat = strategyType(
-    supplyMint ?? PublicKey.default,
-    debtMint ?? PublicKey.default
-  );
-
-  if (strat === "Long") {
-    return `${supplyInfo.ticker} Long`;
-  } else if (strat === "Ratio") {
-    if (
-      (supplyInfo.isLST && debtMint?.equals(NATIVE_MINT)) ||
-      (supplyMint &&
-        debtMint &&
-        MAJORS_PRIO[supplyMint!.toString()] > MAJORS_PRIO[debtMint!.toString()])
-    ) {
-      return `${supplyInfo.ticker}/${debtInfo.ticker} Long`;
-    } else {
-      return `${debtInfo.ticker}/${supplyInfo.ticker} Short`;
-    }
-  } else {
-    return `${debtInfo.ticker} Short`;
-  }
-}
-
-function strategyType(
-  supplyMint: PublicKey,
-  debtMint: PublicKey
-): StrategyType {
-  const supplyInfo = tokenInfo(supplyMint);
-  const debtInfo = tokenInfo(debtMint);
-
-  if (!supplyInfo.isStableCoin && !debtInfo.isStableCoin) {
-    return "Ratio";
-  } else if (debtInfo.isStableCoin) {
-    return "Long";
-  } else {
-    return "Short";
-  }
 }
 
 export function roundToDecimals(value: number, decimals: number = 2): number {
