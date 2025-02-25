@@ -51,7 +51,7 @@ export const ALL_SUPPORTED_TOKENS = [
   HMTR,
 ];
 
-interface TokenInfo {
+export interface TokenInfo {
   ticker: string;
   decimals: number;
   isStableCoin?: boolean;
