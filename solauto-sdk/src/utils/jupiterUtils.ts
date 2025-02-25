@@ -13,7 +13,7 @@ import {
 } from "@jup-ag/api";
 import { getTokenAccount } from "./accountUtils";
 import { consoleLog, retryWithExponentialBackoff } from "./generalUtils";
-import { TOKEN_INFO } from "../constants";
+import { PYTH, TOKEN_INFO } from "../constants";
 
 const jupApi = createJupiterApiClient();
 
@@ -60,6 +60,10 @@ export async function getJupSwapTransaction(
     TOKEN_INFO[swapDetails.inputMint.toString()].isMeme ||
     TOKEN_INFO[swapDetails.outputMint.toString()].isMeme;
 
+  const usingPyth =
+    swapDetails.inputMint.equals(new PublicKey(PYTH)) ||
+    swapDetails.outputMint.equals(new PublicKey(PYTH));
+
   const quoteResponse = await retryWithExponentialBackoff(
     async () =>
       await jupApi.quoteGet({
@@ -72,7 +76,7 @@ export async function getJupSwapTransaction(
             ? "ExactIn"
             : undefined,
         slippageBps: memecoinSwap ? 500 : 200,
-        maxAccounts: !swapDetails.exactOut ? 40 : undefined,
+        maxAccounts: !swapDetails.exactOut ? (usingPyth ? 20 : 40) : undefined,
       }),
     4,
     200
