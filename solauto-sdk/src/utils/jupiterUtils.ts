@@ -82,7 +82,11 @@ export async function getJupSwapTransaction(
             ? "ExactIn"
             : undefined,
         slippageBps: memecoinSwap ? 500 : 200,
-        maxAccounts: !swapDetails.exactOut ? (useLowAccounts ? 15 : 40) : undefined,
+        maxAccounts: !swapDetails.exactOut
+          ? useLowAccounts
+            ? 15
+            : 40
+          : undefined,
       }),
     4,
     200
@@ -99,8 +103,8 @@ export async function getJupSwapTransaction(
 
   consoleLog("Getting jup instructions...");
   const instructions = await retryWithExponentialBackoff(
-    async () =>
-      await jupApi.swapInstructionsPost({
+    async () => {
+      const res = await jupApi.swapInstructionsPost({
         swapRequest: {
           userPublicKey: signer.publicKey.toString(),
           quoteResponse,
@@ -111,7 +115,12 @@ export async function getJupSwapTransaction(
             swapDetails.outputMint
           ).toString(),
         },
-      }),
+      });
+      if (!res) {
+        throw new Error("No instructions retrieved");
+      }
+      return res;
+    },
     4,
     200
   );
