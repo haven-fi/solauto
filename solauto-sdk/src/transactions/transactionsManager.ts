@@ -433,11 +433,15 @@ export class TransactionsManager {
       await item.initialize();
     }
 
-    const allAccounts = items.flatMap((x) =>
-      x.tx
-        ?.getInstructions()
-        .flatMap((x) => x.keys.map((x) => x.pubkey.toString()))
-    );
+    const allAccounts = items
+      .filter((x) =>
+        x.tx?.getInstructions().find((x) => x.programId !== JUPITER_PROGRAM_ID)
+      )
+      .flatMap((x) =>
+        x.tx
+          ?.getInstructions()
+          .flatMap((x) => x.keys.map((x) => x.pubkey.toString()))
+      );
     const swbOracle = allAccounts.find((x) =>
       Object.values(SWITCHBOARD_PRICE_FEED_IDS).includes(x ?? "")
     );
