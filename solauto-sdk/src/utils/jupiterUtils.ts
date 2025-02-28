@@ -89,8 +89,8 @@ export async function getJupSwapTransaction(
 
   consoleLog("Getting jup instructions...");
   const instructions = await retryWithExponentialBackoff(
-    async () =>
-      await jupApi.swapInstructionsPost({
+    async () => {
+      const res = await jupApi.swapInstructionsPost({
         swapRequest: {
           userPublicKey: signer.publicKey.toString(),
           quoteResponse,
@@ -101,7 +101,12 @@ export async function getJupSwapTransaction(
             swapDetails.outputMint
           ).toString(),
         },
-      }),
+      });
+      if (!res) {
+        throw new Error("No instructions retrieved");
+      }
+      return res;
+    },
     4,
     200
   );
