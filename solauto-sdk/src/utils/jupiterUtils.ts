@@ -152,7 +152,7 @@ export async function getJupSwapTransaction(
     priceImpactBps: finalPriceImpactBps,
     lookupTableAddresses: instructions.addressLookupTableAddresses,
     setupInstructions: transactionBuilder().add(
-      instructions.setupInstructions.map((ix) =>
+      (instructions.setupInstructions ?? []).map((ix) =>
         getWrappedInstruction(signer, createTransactionInstruction(ix))
       )
     ),
