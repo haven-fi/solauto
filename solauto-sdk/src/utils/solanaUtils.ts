@@ -300,14 +300,25 @@ export async function getComputeUnitPriceEstimate(
     .getInstructions()
     .flatMap((x) => x.keys.flatMap((x) => x.pubkey.toString()));
 
-    let feeEstimate: number | undefined;
+  let feeEstimate: number | undefined;
+  try {
+    const resp = await umi.rpc.call("getPriorityFeeEstimate", [
+      {
+        transaction: !useAccounts
+          ? bs58.encode(web3Transaction.serialize())
+          : undefined,
+        accountKeys: useAccounts ? accountKeys : undefined,
+        options: {
+          priorityLevel: prioritySetting.toString(),
+        },
+      },
+    ]);
+    feeEstimate = Math.round((resp as any).priorityFeeEstimate as number);
+  } catch (e) {
     try {
       const resp = await umi.rpc.call("getPriorityFeeEstimate", [
         {
-          transaction: !useAccounts
-            ? bs58.encode(web3Transaction.serialize())
-            : undefined,
-          accountKeys: useAccounts ? accountKeys : undefined,
+          accountKeys,
           options: {
             priorityLevel: prioritySetting.toString(),
           },
@@ -315,20 +326,9 @@ export async function getComputeUnitPriceEstimate(
       ]);
       feeEstimate = Math.round((resp as any).priorityFeeEstimate as number);
     } catch (e) {
-      try {
-        const resp = await umi.rpc.call("getPriorityFeeEstimate", [
-          {
-            accountKeys,
-            options: {
-              priorityLevel: prioritySetting.toString(),
-            },
-          },
-        ]);
-        feeEstimate = Math.round((resp as any).priorityFeeEstimate as number);
-      } catch (e) {
-        // console.error(e);
-      }
+      // console.error(e);
     }
+  }
 
   return feeEstimate;
 }
@@ -349,9 +349,7 @@ async function spamSendTransactionUntilConfirmed(
       );
       transactionSignature = txSignature;
       consoleLog(`Transaction sent`);
-    } catch (error) {
-      consoleLog("Error sending transaction:", error);
-    }
+    } catch (e) {}
   };
 
   await sendTx();
