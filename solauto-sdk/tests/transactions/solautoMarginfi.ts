@@ -51,12 +51,12 @@ export function getFlooredTimestampByMinute(
 }
 
 describe("Solauto Marginfi tests", async () => {
-  const signer = setupTest();
-  // const signer = setupTest("solauto-manager");
+  // const signer = setupTest();
+  const signer = setupTest("solauto-manager");
 
-  const payForTransactions = false;
+  const payForTransactions = true;
   const testProgram = false;
-  const positionId = 3;
+  const positionId = 1;
 
   it("open - deposit - borrow - rebalance to 0 - withdraw - close", async () => {
     const client = new SolautoMarginfiClient(
@@ -72,7 +72,7 @@ describe("Solauto Marginfi tests", async () => {
     await client.initialize({
       signer,
       positionId,
-      authority: new PublicKey("7GMmfZdCgJSCawA7roGiGgvueU3XoEHQXUtiCnuDYUde"),
+      authority: new PublicKey("9j53Z6bejUaAxJCEC64BbxozLPuvsuAFsr6iqWKKDvaw"),
       // new: true,
       // marginfiAccount: new PublicKey(
       //   ""
@@ -169,7 +169,7 @@ describe("Solauto Marginfi tests", async () => {
     transactionItems.push(
       new TransactionItem(
         async (attemptNum) =>
-          await buildSolautoRebalanceTransaction(client, 4000, attemptNum),
+          await buildSolautoRebalanceTransaction(client, undefined, attemptNum),
         "rebalance"
       )
     );

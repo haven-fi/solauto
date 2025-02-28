@@ -13,7 +13,7 @@ import {
 } from "@jup-ag/api";
 import { getTokenAccount } from "./accountUtils";
 import { consoleLog, retryWithExponentialBackoff } from "./generalUtils";
-import { PYTH, TOKEN_INFO } from "../constants";
+import { INF, PYTH, TOKEN_INFO } from "../constants";
 
 const jupApi = createJupiterApiClient();
 
@@ -60,10 +60,15 @@ export async function getJupSwapTransaction(
     TOKEN_INFO[swapDetails.inputMint.toString()].isMeme ||
     TOKEN_INFO[swapDetails.outputMint.toString()].isMeme;
 
+  const tokensWithLowAccounts = [PYTH, INF];
   // TEMP REVERT ME
-  const usingPyth =
-    swapDetails.inputMint.equals(new PublicKey(PYTH)) ||
-    swapDetails.outputMint.equals(new PublicKey(PYTH));
+  const useLowAccounts =
+    tokensWithLowAccounts.find((x) =>
+      swapDetails.inputMint.equals(new PublicKey(x))
+    ) ||
+    tokensWithLowAccounts.find((x) =>
+      swapDetails.outputMint.equals(new PublicKey(x))
+    );
 
   const quoteResponse = await retryWithExponentialBackoff(
     async () =>
@@ -77,7 +82,7 @@ export async function getJupSwapTransaction(
             ? "ExactIn"
             : undefined,
         slippageBps: memecoinSwap ? 500 : 200,
-        maxAccounts: !swapDetails.exactOut ? (usingPyth ? 15 : 40) : undefined,
+        maxAccounts: !swapDetails.exactOut ? (useLowAccounts ? 15 : 40) : undefined,
       }),
     4,
     200
