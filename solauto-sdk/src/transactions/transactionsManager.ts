@@ -31,6 +31,7 @@ import {
 import { SWITCHBOARD_PRICE_FEED_IDS } from "../constants/switchboardConstants";
 import { buildSwbSubmitResponseTx, getSwitchboardFeedData } from "../utils";
 import { sendJitoBundledTransactions } from "../utils/jitoUtils";
+import { JUPITER_PROGRAM_ID } from "../jupiter-sdk";
 
 const CHORES_TX_NAME = "account chores";
 const MAX_SUPPORTED_ACCOUNT_LOCKS = 64;
