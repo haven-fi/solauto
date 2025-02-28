@@ -72,7 +72,7 @@ describe("Solauto Marginfi tests", async () => {
     await client.initialize({
       signer,
       positionId,
-      authority: new PublicKey("FKYQs7KgRvaKQHxXwb8HKfoBcFdSxLL3JvHWpPdVQ16v"),
+      authority: new PublicKey("7yk7HcAJfwNao3NSbYiPNtJvCPTxsgkzuJmyMLyP297E"),
       // new: true,
       // marginfiAccount: new PublicKey(
       //   ""
@@ -82,7 +82,7 @@ describe("Solauto Marginfi tests", async () => {
       // debtMint: new PublicKey(USDC),
     });
 
-    // console.log(await client.getFreshPositionState());
+    // console.log(await client.getFreshPositionStat\e());
 
     // const debtBank = await safeFetchBank(
     //   client.umi,

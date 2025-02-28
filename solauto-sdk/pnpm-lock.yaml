@@ -9,7 +9,7 @@ dependencies:
     specifier: ^0.30.1
     version: 0.30.1
   '@jup-ag/api':
-    specifier: ^6.0.24
+    specifier: ^6.0.29
     version: 6.0.29
   '@metaplex-foundation/umi':
     specifier: ^0.9.1
