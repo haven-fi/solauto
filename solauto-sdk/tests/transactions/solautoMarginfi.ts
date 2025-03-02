@@ -3,6 +3,7 @@ import { none, publicKey, some } from "@metaplex-foundation/umi";
 import { setupTest } from "../shared";
 import { SolautoMarginfiClient } from "../../src/clients/solautoMarginfiClient";
 import {
+  PositionType,
   safeFetchSolautoPosition,
   solautoAction,
   SolautoSettingsParametersInpArgs,
@@ -33,8 +34,10 @@ import {
 } from "../../src/constants";
 import {
   buildHeliusApiUrl,
+  getAllPositionsByAuthority,
   getQnComputeUnitPriceEstimate,
   getSolautoManagedPositions,
+  getSolautoPositionAccount,
   retryWithExponentialBackoff,
 } from "../../src/utils";
 import { PriorityFeeSetting } from "../../src/types";
@@ -45,9 +48,9 @@ describe("Solauto Marginfi tests", async () => {
   // const signer = setupTest();
   const signer = setupTest("solauto-manager");
 
-  const payForTransactions = true;
+  const payForTransactions = false;
   const testProgram = false;
-  const positionId = 2;
+  const positionId = 1;
 
   it("open - deposit - borrow - rebalance to 0 - withdraw - close", async () => {
     const client = new SolautoMarginfiClient(
@@ -63,7 +66,7 @@ describe("Solauto Marginfi tests", async () => {
     await client.initialize({
       signer,
       positionId,
-      authority: new PublicKey("7yk7HcAJfwNao3NSbYiPNtJvCPTxsgkzuJmyMLyP297E"),
+      authority: new PublicKey("7F6v4HWZsyFP6yVFq92HQWygUgoYm5khUX8pXWGLoqUN"),
       // new: true,
       // marginfiAccount: new PublicKey(
       //   ""
@@ -170,7 +173,7 @@ describe("Solauto Marginfi tests", async () => {
     // transactionItems.push(
     //   new TransactionItem(
     //     async (attemptNum) =>
-    //       await buildSolautoRebalanceTransaction(client, settingParams.boostToBps, attemptNum),
+    //       await buildSolautoRebalanceTransaction(client, 0, attemptNum),
     //     "rebalance"
     //   )
     // );

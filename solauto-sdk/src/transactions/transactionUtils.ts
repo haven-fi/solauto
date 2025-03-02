@@ -705,6 +705,7 @@ export async function buildSolautoRebalanceTransaction(
     tokenLedgerIx,
     swapIx,
   } = await getJupSwapTransaction(client.signer, swapDetails, attemptNum);
+
   const flashLoan = getFlashLoanDetails(client, values, jupQuote);
 
   let tx = transactionBuilder();

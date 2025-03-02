@@ -32,6 +32,7 @@ import { SWITCHBOARD_PRICE_FEED_IDS } from "../constants/switchboardConstants";
 import { buildSwbSubmitResponseTx, getSwitchboardFeedData } from "../utils";
 import { sendJitoBundledTransactions } from "../utils/jitoUtils";
 import { JUPITER_PROGRAM_ID } from "../jupiter-sdk";
+import { SOLAUTO_PROD_PROGRAM, SOLAUTO_TEST_PROGRAM } from "../constants";
 
 const CHORES_TX_NAME = "account chores";
 const MAX_SUPPORTED_ACCOUNT_LOCKS = 64;
@@ -434,15 +435,23 @@ export class TransactionsManager {
       await item.initialize();
     }
 
-    const allAccounts = items
-      .filter((x) =>
-        x.tx?.getInstructions().find((x) => x.programId !== JUPITER_PROGRAM_ID)
-      )
-      .flatMap((x) =>
-        x.tx
+    // TODO: need better fix here
+    const allAccounts = items.flatMap((item) => {
+      return (
+        item.tx
           ?.getInstructions()
-          .flatMap((x) => x.keys.map((x) => x.pubkey.toString()))
+          .filter((ix) => {
+            return (
+              ix.programId.toString() === SOLAUTO_PROD_PROGRAM.toString() ||
+              ix.programId.toString() === SOLAUTO_TEST_PROGRAM.toString()
+            );
+          })
+          .flatMap((ix) => {
+            return ix.keys.map((key) => key.pubkey.toString());
+          }) ?? []
       );
+    });
+
     const swbOracle = allAccounts.find((x) =>
       Object.values(SWITCHBOARD_PRICE_FEED_IDS).includes(x ?? "")
     );
@@ -457,6 +466,7 @@ export class TransactionsManager {
 
       if (stale) {
         this.txHandler.log("Requires oracle update...");
+        console.log(mint);
         const swbTx = new TransactionItem(
           async () =>
             buildSwbSubmitResponseTx(client.connection, client.signer, mint),
