@@ -45,6 +45,7 @@ import {
 import { PriorityFeeSetting, TransactionRunType } from "../types";
 import { createDynamicSolautoProgram } from "./solauto";
 import { SOLAUTO_PROD_PROGRAM } from "../constants";
+import axios from "axios";
 
 export function buildHeliusApiUrl(heliusApiKey: string) {
   return `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`;
@@ -284,6 +285,23 @@ async function simulateTransaction(
     throw simulationResult.value.err;
   }
   return simulationResult;
+}
+
+export async function getQnComputeUnitPriceEstimate(
+  umi: Umi,
+  account: PublicKey,
+  blockheight: number = 50
+): Promise<any> {
+  return (
+    await axios.post(umi.rpc.getEndpoint(), {
+      method: "qn_estimatePriorityFees",
+      jsonrpc: "2.0",
+      id: 1,
+      params: {
+        account: account.toString(),
+      },
+    })
+  ).data;
 }
 
 export async function getComputeUnitPriceEstimate(

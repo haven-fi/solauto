@@ -33,22 +33,13 @@ import {
 } from "../../src/constants";
 import {
   buildHeliusApiUrl,
-  getMarginfiAccountPositionState,
+  getQnComputeUnitPriceEstimate,
   getSolautoManagedPositions,
   retryWithExponentialBackoff,
 } from "../../src/utils";
 import { PriorityFeeSetting } from "../../src/types";
-import { buildIronforgeApiUrl, fetchSolautoPosition, fetchTokenPrices } from "../../dist";
-import { safeFetchBank } from "../../src/marginfi-sdk";
-
-export function getFlooredTimestampByMinute(
-  unixSeconds: number,
-  intervalInMinutes: number = 1
-): number {
-  const unixTime = Math.floor(new Date(unixSeconds * 1000).getTime() / 1000);
-  const interval = intervalInMinutes * 60;
-  return Math.floor(unixTime / interval) * interval;
-}
+import { buildIronforgeApiUrl } from "../../dist";
+import { JUPITER_PROGRAM_ID } from "../../src/jupiter-sdk";
 
 describe("Solauto Marginfi tests", async () => {
   // const signer = setupTest();
@@ -82,21 +73,16 @@ describe("Solauto Marginfi tests", async () => {
       // debtMint: new PublicKey(USDC),
     });
 
-    // console.log(await client.getFreshPositionStat\e());
-
-    // const debtBank = await safeFetchBank(
-    //   client.umi,
-    //   publicKey(MARGINFI_ACCOUNTS[DEFAULT_MARGINFI_GROUP][USDC].bank)
-    // );
-    // const state = await getMarginfiAccountPositionState(client.umi, {
-    //   pk: new PublicKey("85YaXXB1uyDMLYf4ob6jfV1kr29muVNm7mpmM8qjbVq6"),
-    // });
-    // console.log(state);
-    // console.log(maxBoostToBps(state.maxLtvBps, state.liqThresholdBps));
     // console.log(
-    //   getMaxLiqUtilizationRateBps(state.maxLtvBps, state.liqThresholdBps, 0)
+    //   JSON.stringify(
+    //     await getQnComputeUnitPriceEstimate(
+    //       client.umi,
+    //       new PublicKey(JUPITER_PROGRAM_ID)
+    //     ),
+    //     null,
+    //     2
+    //   )
     // );
-    // console.log(getLiqUtilzationRateBps(18.78, 7.47, state.liqThresholdBps));
     // return;
 
     const transactionItems: TransactionItem[] = [];
