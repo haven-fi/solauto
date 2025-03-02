@@ -1,9 +1,5 @@
 import { describe, it } from "mocha";
-import {
-  none,
-  publicKey,
-  some,
-} from "@metaplex-foundation/umi";
+import { none, publicKey, some } from "@metaplex-foundation/umi";
 import { setupTest } from "../shared";
 import { SolautoMarginfiClient } from "../../src/clients/solautoMarginfiClient";
 import {
@@ -31,10 +27,12 @@ import {
 } from "../../src/constants";
 import {
   buildHeliusApiUrl,
+  getQnComputeUnitPriceEstimate,
   getSolautoManagedPositions,
 } from "../../src/utils";
 import { PriorityFeeSetting } from "../../src/types";
 import { buildIronforgeApiUrl } from "../../dist";
+import { JUPITER_PROGRAM_ID } from "../../src/jupiter-sdk";
 
 describe("Solauto Marginfi tests", async () => {
   // const signer = setupTest();
@@ -68,7 +66,17 @@ describe("Solauto Marginfi tests", async () => {
       // debtMint: new PublicKey(USDC),
     });
 
-    // console.log(await getSolautoManagedPositions(client.umi));
+    // console.log(
+    //   JSON.stringify(
+    //     await getQnComputeUnitPriceEstimate(
+    //       client.umi,
+    //       new PublicKey(JUPITER_PROGRAM_ID)
+    //     ),
+    //     null,
+    //     2
+    //   )
+    // );
+    // return;
 
     const transactionItems: TransactionItem[] = [];
     // const settingParams: SolautoSettingsParametersInpArgs = {
