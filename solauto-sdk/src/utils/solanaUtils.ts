@@ -289,7 +289,7 @@ async function simulateTransaction(
 
 export async function getQnComputeUnitPriceEstimate(
   umi: Umi,
-  account: PublicKey,
+  programId: PublicKey,
   blockheight: number = 50
 ): Promise<any> {
   return (
@@ -298,7 +298,8 @@ export async function getQnComputeUnitPriceEstimate(
       jsonrpc: "2.0",
       id: 1,
       params: {
-        account: account.toString(),
+        last_n_blocks: blockheight,
+        account: programId.toString(),
       },
     })
   ).data;
