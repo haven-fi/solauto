@@ -30,16 +30,8 @@ import {
 } from "../numberUtils";
 import { USD_DECIMALS } from "../../constants/generalAccounts";
 import { RebalanceAction } from "../../types";
-import { safeGetPrice } from "../priceUtils";
-import {
-  BONK,
-  BROKEN_TOKENS,
-  JUP,
-  TOKEN_INFO,
-  USDC,
-  USDT,
-  WETH,
-} from "../../constants";
+import { getPriceImpact, safeGetPrice } from "../priceUtils";
+import { BROKEN_TOKENS, USDC, USDT } from "../../constants";
 
 function getAdditionalAmountToDcaIn(dca: DCASettings): number {
   if (dca.dcaInBaseUnit === BigInt(0)) {
@@ -369,12 +361,12 @@ export function getFlashLoanDetails(
     : undefined;
 }
 
-export function getJupSwapRebalanceDetails(
+export async function getJupSwapRebalanceDetails(
   client: SolautoClient,
   values: RebalanceValues,
   targetLiqUtilizationRateBps?: number,
   attemptNum?: number
-): JupSwapDetails {
+): Promise<JupSwapDetails> {
   const input =
     values.rebalanceDirection === RebalanceDirection.Boost
       ? client.solautoPositionState!.debt
@@ -388,7 +380,7 @@ export function getJupSwapRebalanceDetails(
     Math.abs(values.debtAdjustmentUsd) +
     (values.dcaTokenType === TokenType.Debt ? values.amountUsdToDcaIn : 0);
 
-  const inputAmount = toBaseUnit(
+  let inputAmount = toBaseUnit(
     usdToSwap / safeGetPrice(input.mint)!,
     input.decimals
   );
@@ -414,10 +406,32 @@ export function getJupSwapRebalanceDetails(
     repaying && requiresFlashLoan && useDebtLiquidity;
 
   const exactOut =
-    targetLiqUtilizationRateBps === 0 ||
+    // targetLiqUtilizationRateBps === 0 ||
     // values.repayingCloseToMaxLtv ||
     flashLoanRepayFromDebt;
   const exactIn = !exactOut;
+
+  let jupQuote: QuoteResponse | undefined = undefined;
+  if (targetLiqUtilizationRateBps === 0) {
+    let priceImpact: number = 0;
+    inputAmount += BigInt(Math.round(Number(inputAmount) * 0.001));
+
+    do {
+      const res = await getPriceImpact(
+        toWeb3JsPublicKey(input.mint),
+        inputAmount + BigInt(Math.round(Number(inputAmount) * priceImpact)),
+        toWeb3JsPublicKey(output.mint)
+      );
+      priceImpact = res.priceImpact;
+      jupQuote = res.quote;
+      inputAmount =
+        BigInt(parseInt(res.quote.inAmount)) +
+        BigInt(Math.round(Number(inputAmount) * 0.001));
+    } while (
+      parseInt(jupQuote.outAmount) < outputAmount &&
+      priceImpact > 0.001
+    );
+  }
 
   const addPadding = exactOut;
 
@@ -432,5 +446,6 @@ export function getJupSwapRebalanceDetails(
     exactIn,
     exactOut,
     addPadding,
+    jupQuote,
   };
 }

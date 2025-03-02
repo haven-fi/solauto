@@ -692,7 +692,7 @@ export async function buildSolautoRebalanceTransaction(
   );
   client.log("Rebalance values: ", values);
 
-  const swapDetails = getJupSwapRebalanceDetails(
+  const swapDetails = await getJupSwapRebalanceDetails(
     client,
     values,
     targetLiqUtilizationRateBps,

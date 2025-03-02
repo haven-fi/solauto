@@ -1,17 +1,19 @@
 import { PublicKey } from "@solana/web3.js";
 import { PublicKey as UmiPublicKey } from "@metaplex-foundation/umi";
 import { PYTH_PRICE_FEED_IDS } from "../constants/pythConstants";
-import { fromBaseUnit, toBaseUnit } from "./numberUtils";
+import { fromBaseUnit, toBaseUnit, toBps } from "./numberUtils";
 import { PRICES } from "../constants/solautoConstants";
 import { SWITCHBOARD_PRICE_FEED_IDS } from "../constants/switchboardConstants";
 import {
   consoleLog,
   currentUnixSeconds,
   retryWithExponentialBackoff,
+  tokenInfo,
   zip,
 } from "./generalUtils";
 import * as OnDemand from "@switchboard-xyz/on-demand";
-import { getJupPriceData } from "./jupiterUtils";
+import { accountsLimit, getJupPriceData } from "./jupiterUtils";
+import { createJupiterApiClient } from "@jup-ag/api";
 
 export async function fetchTokenPrices(mints: PublicKey[]): Promise<number[]> {
   const currentTime = currentUnixSeconds();
@@ -163,4 +165,30 @@ export function safeGetPrice(
     return PRICES[mint!.toString()].price;
   }
   return undefined;
+}
+
+export async function getPriceImpact(
+  inputMint: PublicKey,
+  inputAmount: bigint,
+  outputMint: PublicKey
+) {
+  const jupApi = createJupiterApiClient();
+
+  const quoteResponse = await retryWithExponentialBackoff(
+    async () =>
+      await jupApi.quoteGet({
+        amount: Number(inputAmount),
+        inputMint: inputMint.toString(),
+        outputMint: outputMint.toString(),
+        swapMode: "ExactIn",
+        maxAccounts: accountsLimit(inputMint, outputMint),
+      }),
+    4,
+    200
+  );
+
+  return {
+    priceImpact: parseFloat(quoteResponse.priceImpactPct),
+    quote: quoteResponse,
+  };
 }

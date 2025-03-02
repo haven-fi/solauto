@@ -26,6 +26,7 @@ export interface JupSwapDetails {
   exactOut?: boolean;
   exactIn?: boolean;
   addPadding?: boolean;
+  jupQuote?: QuoteResponse;
 }
 
 function createTransactionInstruction(
@@ -40,6 +41,15 @@ function createTransactionInstruction(
     })),
     data: Buffer.from(instruction.data, "base64"),
   });
+}
+
+export function accountsLimit(inputMint: PublicKey, outputMint: PublicKey) {
+  const tokensWithLowAccounts = [PYTH, INF];
+  // TEMP REVERT ME
+  const useLowAccounts =
+    tokensWithLowAccounts.find((x) => inputMint.equals(new PublicKey(x))) ||
+    tokensWithLowAccounts.find((x) => outputMint.equals(new PublicKey(x)));
+  return useLowAccounts ? 15 : 40;
 }
 
 export interface JupSwapTransaction {
@@ -60,37 +70,27 @@ export async function getJupSwapTransaction(
     TOKEN_INFO[swapDetails.inputMint.toString()].isMeme ||
     TOKEN_INFO[swapDetails.outputMint.toString()].isMeme;
 
-  const tokensWithLowAccounts = [PYTH, INF];
-  // TEMP REVERT ME
-  const useLowAccounts =
-    tokensWithLowAccounts.find((x) =>
-      swapDetails.inputMint.equals(new PublicKey(x))
-    ) ||
-    tokensWithLowAccounts.find((x) =>
-      swapDetails.outputMint.equals(new PublicKey(x))
-    );
-
-  const quoteResponse = await retryWithExponentialBackoff(
-    async () =>
-      await jupApi.quoteGet({
-        amount: Number(swapDetails.amount),
-        inputMint: swapDetails.inputMint.toString(),
-        outputMint: swapDetails.outputMint.toString(),
-        swapMode: swapDetails.exactOut
-          ? "ExactOut"
-          : swapDetails.exactIn
-            ? "ExactIn"
+  const quoteResponse =
+    swapDetails.jupQuote ??
+    (await retryWithExponentialBackoff(
+      async () =>
+        await jupApi.quoteGet({
+          amount: Number(swapDetails.amount),
+          inputMint: swapDetails.inputMint.toString(),
+          outputMint: swapDetails.outputMint.toString(),
+          swapMode: swapDetails.exactOut
+            ? "ExactOut"
+            : swapDetails.exactIn
+              ? "ExactIn"
+              : undefined,
+          slippageBps: memecoinSwap ? 500 : 200,
+          maxAccounts: !swapDetails.exactOut
+            ? accountsLimit(swapDetails.inputMint, swapDetails.outputMint)
             : undefined,
-        slippageBps: memecoinSwap ? 500 : 200,
-        maxAccounts: !swapDetails.exactOut
-          ? useLowAccounts
-            ? 15
-            : 40
-          : undefined,
-      }),
-    4,
-    200
-  );
+        }),
+      4,
+      200
+    ));
 
   const priceImpactBps =
     Math.round(toBps(parseFloat(quoteResponse.priceImpactPct))) + 1;
