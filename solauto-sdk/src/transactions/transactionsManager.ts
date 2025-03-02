@@ -435,10 +435,6 @@ export class TransactionsManager {
       await item.initialize();
     }
 
-<<<<<<< HEAD
-    // TODO: need better fix here
-=======
->>>>>>> fixes
     const allAccounts = items.flatMap((item) => {
       return (
         item.tx
