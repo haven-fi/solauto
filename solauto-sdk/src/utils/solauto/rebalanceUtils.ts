@@ -15,7 +15,7 @@ import {
 } from "./generalUtils";
 import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 import { QuoteResponse } from "@jup-ag/api";
-import { JupSwapDetails } from "../jupiterUtils";
+import { getJupQuote, JupSwapDetails, JupSwapInput } from "../jupiterUtils";
 import { consoleLog, currentUnixSeconds } from "../generalUtils";
 import {
   fromBaseUnit,
@@ -354,6 +354,7 @@ export async function getJupSwapRebalanceDetails(
       ? client.solautoPositionState!.supply
       : client.solautoPositionState!.debt;
 
+  const rebalanceToZero = targetLiqUtilizationRateBps === 0;
   const usdToSwap =
     Math.abs(values.debtAdjustmentUsd) +
     (values.dcaTokenType === TokenType.Debt ? values.amountUsdToDcaIn : 0);
@@ -363,16 +364,14 @@ export async function getJupSwapRebalanceDetails(
     input.decimals
   );
   const outputAmount =
-    targetLiqUtilizationRateBps === 0
-      ? output.amountUsed.baseUnit +
-        BigInt(
-          Math.round(
-            Number(output.amountUsed.baseUnit) *
-              // Add this small percentage to account for the APR on the debt between now and the transaction
-              0.0001
-          )
-        )
-      : toBaseUnit(usdToSwap / safeGetPrice(output.mint)!, output.decimals);
+    output.amountUsed.baseUnit +
+    BigInt(
+      Math.round(
+        Number(output.amountUsed.baseUnit) *
+          // Add this small percentage to account for the APR on the debt between now and the transaction
+          0.0001
+      )
+    );
 
   const repaying = values.rebalanceDirection === RebalanceDirection.Repay;
 
@@ -383,41 +382,58 @@ export async function getJupSwapRebalanceDetails(
   const flashLoanRepayFromDebt =
     repaying && requiresFlashLoan && useDebtLiquidity;
 
-  const exactOut =
-    // targetLiqUtilizationRateBps === 0 ||
-    // values.repayingCloseToMaxLtv ||
-    flashLoanRepayFromDebt;
+  const exactOut = rebalanceToZero || flashLoanRepayFromDebt;
   const exactIn = !exactOut;
 
-  let jupQuote: QuoteResponse | undefined = undefined;
-  if (targetLiqUtilizationRateBps === 0) {
-    let priceImpact: number = 0;
-    inputAmount += BigInt(Math.round(Number(inputAmount) * 0.001));
+  const jupSwapInput: JupSwapInput = {
+    inputMint: toWeb3JsPublicKey(input.mint),
+    outputMint: toWeb3JsPublicKey(output.mint),
+    exactIn,
+    exactOut,
+    amount: exactOut ? outputAmount : inputAmount,
+  };
+  consoleLog(targetLiqUtilizationRateBps, rebalanceToZero);
+  consoleLog(jupSwapInput);
 
-    do {
-      const res = await getPriceImpact(
-        toWeb3JsPublicKey(input.mint),
-        inputAmount + BigInt(Math.round(Number(inputAmount) * priceImpact)),
-        toWeb3JsPublicKey(output.mint)
+  let jupQuote: QuoteResponse | undefined = undefined;
+  if (rebalanceToZero) {
+    try {
+      jupQuote = await getJupQuote(jupSwapInput);
+    } catch {
+      let priceImpact: number = 0;
+      jupSwapInput.exactIn = true;
+      jupSwapInput.exactOut = false;
+      jupSwapInput.amount =
+        inputAmount + BigInt(Math.round(Number(inputAmount) * 0.001));
+
+      do {
+        const res = await getPriceImpact(
+          jupSwapInput.inputMint,
+          jupSwapInput.outputMint,
+          jupSwapInput.amount +
+            BigInt(Math.round(Number(jupSwapInput.amount) * priceImpact)),
+          "ExactIn"
+        );
+        priceImpact = res.priceImpact;
+        jupQuote = res.quote;
+        jupSwapInput.amount =
+          BigInt(parseInt(res.quote.inAmount)) +
+          BigInt(Math.round(Number(jupSwapInput.amount) * 0.001));
+      } while (
+        parseInt(jupQuote.outAmount) < outputAmount &&
+        priceImpact > 0.001
       );
-      priceImpact = res.priceImpact;
-      jupQuote = res.quote;
-      inputAmount = BigInt(parseInt(res.quote.inAmount)) + BigInt(Math.round(Number(inputAmount) * 0.001));
-    } while (parseInt(jupQuote.outAmount) < outputAmount && priceImpact > 0.001);
+    }
   }
 
   const addPadding = exactOut;
 
   return {
-    inputMint: toWeb3JsPublicKey(input.mint),
-    outputMint: toWeb3JsPublicKey(output.mint),
+    ...jupSwapInput,
     destinationWallet: flashLoanRepayFromDebt
       ? toWeb3JsPublicKey(client.signer.publicKey)
       : client.solautoPosition,
     slippageIncFactor: 0.2 + (attemptNum ?? 0) * 0.25,
-    amount: exactOut ? outputAmount : inputAmount,
-    exactIn,
-    exactOut,
     addPadding,
     jupQuote,
   };

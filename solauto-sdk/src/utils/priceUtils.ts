@@ -12,8 +12,8 @@ import {
   zip,
 } from "./generalUtils";
 import * as OnDemand from "@switchboard-xyz/on-demand";
-import { getJupPriceData } from "./jupiterUtils";
-import { createJupiterApiClient } from "@jup-ag/api";
+import { getJupPriceData, getJupQuote } from "./jupiterUtils";
+import { createJupiterApiClient, QuoteGetSwapModeEnum } from "@jup-ag/api";
 
 export async function fetchTokenPrices(mints: PublicKey[]): Promise<number[]> {
   const currentTime = currentUnixSeconds();
@@ -169,22 +169,17 @@ export function safeGetPrice(
 
 export async function getPriceImpact(
   inputMint: PublicKey,
-  inputAmount: bigint,
-  outputMint: PublicKey
+  outputMint: PublicKey,
+  amount: bigint,
+  swapMode: QuoteGetSwapModeEnum
 ) {
-  const jupApi = createJupiterApiClient();
-
-  const quoteResponse = await retryWithExponentialBackoff(
-    async () =>
-      await jupApi.quoteGet({
-        amount: Number(inputAmount),
-        inputMint: inputMint.toString(),
-        outputMint: outputMint.toString(),
-        swapMode: "ExactIn",
-      }),
-    4,
-    200
-  );
+  const quoteResponse = await getJupQuote({
+    inputMint,
+    outputMint,
+    amount,
+    exactIn: swapMode === "ExactIn",
+    exactOut: swapMode === "ExactOut",
+  });
 
   return {
     priceImpact: parseFloat(quoteResponse.priceImpactPct),
