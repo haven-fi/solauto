@@ -17,6 +17,7 @@ import {
   PositionState,
   SolautoActionArgs,
   SolautoPosition,
+  SolautoRebalanceType,
   SolautoRebalanceTypeArgs,
   SolautoSettingsParameters,
   SolautoSettingsParametersInpArgs,
@@ -548,6 +549,7 @@ export abstract class SolautoClient extends ReferralStateManager {
   }
 
   abstract flashBorrow(
+    rebalanceType: SolautoRebalanceType,
     flashLoanDetails: FlashLoanDetails,
     destinationTokenAccount: PublicKey
   ): TransactionBuilder;

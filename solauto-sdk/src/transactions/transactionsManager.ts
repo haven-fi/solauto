@@ -31,7 +31,6 @@ import {
 import { SWITCHBOARD_PRICE_FEED_IDS } from "../constants/switchboardConstants";
 import { buildSwbSubmitResponseTx, getSwitchboardFeedData } from "../utils";
 import { sendJitoBundledTransactions } from "../utils/jitoUtils";
-import { JUPITER_PROGRAM_ID } from "../jupiter-sdk";
 import { SOLAUTO_PROD_PROGRAM, SOLAUTO_TEST_PROGRAM } from "../constants";
 
 const CHORES_TX_NAME = "account chores";
@@ -465,7 +464,6 @@ export class TransactionsManager {
 
       if (stale) {
         this.txHandler.log("Requires oracle update...");
-        console.log(mint);
         const swbTx = new TransactionItem(
           async () =>
             buildSwbSubmitResponseTx(client.connection, client.signer, mint),

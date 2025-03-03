@@ -78,9 +78,7 @@ export async function getJupQuote(swapDetails: JupSwapInput) {
             : undefined,
         slippageBps: memecoinSwap ? 500 : 200,
         maxAccounts: !swapDetails.exactOut
-          ? useLowAccounts
-            ? 15
-            : 40
+          ? 15
           : undefined,
       }),
     2,

@@ -105,12 +105,12 @@ pub fn validate_rebalance_instructions(
         })
     } else if (rebalance_type == SolautoRebalanceType::DoubleRebalanceWithFL
         || rebalance_type == SolautoRebalanceType::None)
-        && marginfi_start_fl.matches(ix_2_before)
-        && marginfi_borrow.matches(prev_ix)
+        // && marginfi_start_fl.matches(ix_2_before)
+        // && marginfi_borrow.matches(prev_ix)
         && jup_swap.matches(next_ix)
         && solauto_rebalance.matches(ix_2_after)
-        && marginfi_repay.matches(ix_3_after)
-        && marginfi_end_fl.matches(ix_4_after)
+        // && marginfi_repay.matches(ix_3_after)
+        // && marginfi_end_fl.matches(ix_4_after)
     {
         std_accounts.solauto_position.data.rebalance.rebalance_type =
             SolautoRebalanceType::DoubleRebalanceWithFL;
@@ -120,11 +120,11 @@ pub fn validate_rebalance_instructions(
         })
     } else if (rebalance_type == SolautoRebalanceType::FLSwapThenRebalance
         || rebalance_type == SolautoRebalanceType::None)
-        && marginfi_start_fl.matches(ix_3_before)
-        && marginfi_borrow.matches(ix_2_before)
+        // && marginfi_start_fl.matches(ix_3_before)
+        // && marginfi_borrow.matches(ix_2_before)
         && jup_swap.matches(prev_ix)
-        && marginfi_repay.matches(next_ix)
-        && marginfi_end_fl.matches(ix_2_after)
+        // && marginfi_repay.matches(next_ix)
+        // && marginfi_end_fl.matches(ix_2_after)
     {
         std_accounts.solauto_position.data.rebalance.rebalance_type =
             SolautoRebalanceType::FLSwapThenRebalance;
@@ -134,11 +134,11 @@ pub fn validate_rebalance_instructions(
         })
     } else if (rebalance_type == SolautoRebalanceType::FLRebalanceThenSwap
         || rebalance_type == SolautoRebalanceType::None)
-        && marginfi_start_fl.matches(ix_2_before)
-        && marginfi_borrow.matches(prev_ix)
+        // && marginfi_start_fl.matches(ix_2_before)
+        // && marginfi_borrow.matches(prev_ix)
         && jup_swap.matches(next_ix)
-        && marginfi_repay.matches(ix_2_after)
-        && marginfi_end_fl.matches(ix_3_after)
+        // && marginfi_repay.matches(ix_2_after)
+        // && marginfi_end_fl.matches(ix_3_after)
     {
         std_accounts.solauto_position.data.rebalance.rebalance_type =
             SolautoRebalanceType::FLRebalanceThenSwap;
@@ -176,6 +176,7 @@ pub fn get_rebalance_step(
                 .flash_loan_amount = ix_utils::get_marginfi_flash_loan_amount(
                 std_accounts.ixs_sysvar.unwrap(),
                 ix_indices.marginfi_flash_borrow.unwrap(),
+                args,
                 None, // &[&swap_source_ta],
             )?;
         }

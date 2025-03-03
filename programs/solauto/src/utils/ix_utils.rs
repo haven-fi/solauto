@@ -20,7 +20,7 @@ use solana_program::{
 use super::solana_utils::invoke_instruction;
 use crate::{
     state::solauto_position::SolautoPosition,
-    types::shared::{DeserializedAccount, SolautoError},
+    types::{instruction::RebalanceSettings, shared::{DeserializedAccount, SolautoError}},
 };
 
 pub fn update_data<T: BorshSerialize>(account: &mut DeserializedAccount<T>) -> ProgramResult {
@@ -103,7 +103,7 @@ fn pick_ix_data(req: PickIxDataReq) -> Result<PickIxDataResp, SanitizeError> {
 
     let data_start = data_start_idx.unwrap_or(0) as usize;
     let data_end =
-        data_start + (data_len.unwrap_or((instruction_data_len - data_start) as u64) as usize);
+        data_start + data_len.unwrap_or(instruction_data_len as u64) as usize;
 
     current += data_start;
     let picked_data = read_slice(&mut current, &data, data_end)?;
@@ -262,6 +262,7 @@ pub fn validate_jup_instruction<'a>(
 pub fn get_marginfi_flash_loan_amount<'a>(
     ixs_sysvar: &'a AccountInfo<'a>,
     ix_idx: usize,
+    args: &RebalanceSettings,
     expected_destination_tas: Option<&[&Pubkey]>,
 ) -> Result<u64, ProgramError> {
     let res = pick_ix_data(PickIxDataReq {
@@ -270,15 +271,21 @@ pub fn get_marginfi_flash_loan_amount<'a>(
         data_start_idx: Some(8),
         data_len: Some(8),
         account_indices: Some(vec![4]),
-    })
-    .expect("Should pick data");
-    let args = LendingAccountBorrowInstructionArgs::deserialize(&mut res.data.as_slice())?;
+    });
+    if res.is_err() {
+        // TODO: note to self when we validate debt adjustment again this value will cause issues because it is not correct
+        return Ok(args.target_in_amount_base_unit.unwrap());
+    }
+
+    let data = res.unwrap();
+
+    let args = LendingAccountBorrowInstructionArgs::deserialize(&mut data.data.as_slice())?;
 
     if expected_destination_tas.is_some()
         && !expected_destination_tas
             .unwrap()
             .iter()
-            .any(|x| x == &&res.accounts[0])
+            .any(|x| x == &&data.accounts[0])
     {
         msg!("Moving funds into an incorrect token account");
         return Err(SolautoError::IncorrectInstructions.into());

@@ -26,6 +26,7 @@ import {
   PositionType,
   RebalanceDirection,
   SolautoActionArgs,
+  SolautoRebalanceType,
   SolautoRebalanceTypeArgs,
   SolautoSettingsParametersInpArgs,
   marginfiOpenPosition,
@@ -62,7 +63,7 @@ import {
 } from "../utils/marginfiUtils";
 import { fromBaseUnit, toBps } from "../utils/numberUtils";
 import { QuoteResponse } from "@jup-ag/api";
-import { consoleLog, safeGetPrice } from "../utils";
+import { consoleLog, safeGetPrice, splTokenTransferUmiIx } from "../utils";
 
 export interface SolautoMarginfiClientArgs extends SolautoClientArgs {
   marginfiAccount?: PublicKey | Signer;
@@ -574,9 +575,26 @@ export class SolautoMarginfiClient extends SolautoClient {
   }
 
   flashBorrow(
+    rebalanceType: SolautoRebalanceType,
     flashLoanDetails: FlashLoanDetails,
     destinationTokenAccount: PublicKey
   ): TransactionBuilder {
+    if (flashLoanDetails.signerFlashLoan) {
+      if (rebalanceType === SolautoRebalanceType.FLRebalanceThenSwap) {
+        return transactionBuilder().add(
+          splTokenTransferUmiIx(
+            this.signer,
+            getTokenAccount(toWeb3JsPublicKey(this.signer.publicKey), this.debtMint),
+            destinationTokenAccount,
+            toWeb3JsPublicKey(this.signer.publicKey),
+            flashLoanDetails.baseUnitAmount
+          )
+        );
+      } else {
+        return transactionBuilder();
+      }
+    }
+
     const bank = flashLoanDetails.mint.equals(this.supplyMint)
       ? this.marginfiSupplyAccounts
       : this.marginfiDebtAccounts;
@@ -604,6 +622,10 @@ export class SolautoMarginfiClient extends SolautoClient {
   }
 
   flashRepay(flashLoanDetails: FlashLoanDetails): TransactionBuilder {
+    if (flashLoanDetails.signerFlashLoan) {
+      return transactionBuilder();
+    }
+
     const accounts = flashLoanDetails.useDebtLiquidity
       ? { data: this.marginfiDebtAccounts, oracle: this.debtPriceOracle }
       : { data: this.marginfiSupplyAccounts, oracle: this.supplyPriceOracle };

@@ -37,6 +37,7 @@ import {
 import { getJupSwapTransaction } from "../utils/jupiterUtils";
 import {
   getFlashLoanDetails,
+  getFlashLoanRequirements,
   getJupSwapRebalanceDetails,
   getRebalanceValues,
   RebalanceValues,
@@ -600,7 +601,10 @@ export async function getTransactionChores(
   return [choresBefore, choresAfter];
 }
 
-export async function requiresRefreshBeforeRebalance(client: SolautoClient, values: RebalanceValues) {
+export async function requiresRefreshBeforeRebalance(
+  client: SolautoClient,
+  values: RebalanceValues
+) {
   const neverRefreshedBefore =
     client.solautoPositionData &&
     client.solautoPositionData.state.supply.amountCanBeUsed.baseUnit ===
@@ -692,9 +696,11 @@ export async function buildSolautoRebalanceTransaction(
   );
   client.log("Rebalance values: ", values);
 
+  const flRequirements = getFlashLoanRequirements(client, values, attemptNum);
   const swapDetails = await getJupSwapRebalanceDetails(
     client,
     values,
+    flRequirements,
     targetLiqUtilizationRateBps,
     attemptNum
   );
@@ -706,7 +712,9 @@ export async function buildSolautoRebalanceTransaction(
     swapIx,
   } = await getJupSwapTransaction(client.signer, swapDetails, attemptNum);
 
-  const flashLoan = getFlashLoanDetails(client, values, jupQuote);
+  const flashLoan = flRequirements
+    ? getFlashLoanDetails(client, flRequirements, values, jupQuote)
+    : undefined;
 
   let tx = transactionBuilder();
 
@@ -757,7 +765,7 @@ export async function buildSolautoRebalanceTransaction(
     tx = tx.add([
       setupInstructions,
       tokenLedgerIx,
-      client.flashBorrow(flashLoan, flashBorrowDest),
+      client.flashBorrow(rebalanceType, flashLoan, flashBorrowDest),
       ...(addFirstRebalance ? [firstRebalance] : []),
       ...(rebalanceThenSwap
         ? [lastRebalance, swapIx]
@@ -916,10 +924,16 @@ export function getErrorInfo(
       ) {
         canBeIgnored = true;
       }
-    } else if (errCode !== undefined && errIx?.programId === MARGINFI_PROGRAM_ID) {
+    } else if (
+      errCode !== undefined &&
+      errIx?.programId === MARGINFI_PROGRAM_ID
+    ) {
       programName = "Marginfi";
       programError = marginfiError;
-    } else if (errCode !== undefined && errIx?.programId === JUPITER_PROGRAM_ID) {
+    } else if (
+      errCode !== undefined &&
+      errIx?.programId === JUPITER_PROGRAM_ID
+    ) {
       programName = "Jupiter";
       programError = getJupiterErrorFromCode(errCode, createJupiterProgram());
     }

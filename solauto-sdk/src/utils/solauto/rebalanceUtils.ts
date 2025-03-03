@@ -16,7 +16,7 @@ import {
 import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 import { QuoteResponse } from "@jup-ag/api";
 import { getJupQuote, JupSwapDetails, JupSwapInput } from "../jupiterUtils";
-import { consoleLog, currentUnixSeconds } from "../generalUtils";
+import { consoleLog, currentUnixSeconds, tokenInfo } from "../generalUtils";
 import {
   fromBaseUnit,
   fromBps,
@@ -31,7 +31,7 @@ import {
 import { USD_DECIMALS } from "../../constants/generalAccounts";
 import { RebalanceAction } from "../../types";
 import { getPriceImpact, safeGetPrice } from "../priceUtils";
-import { BROKEN_TOKENS, USDC, USDT } from "../../constants";
+import { BROKEN_TOKENS, JUP, USDC, USDT } from "../../constants";
 
 function getAdditionalAmountToDcaIn(dca: DCASettings): number {
   if (dca.dcaInBaseUnit === BigInt(0)) {
@@ -259,10 +259,16 @@ export function getRebalanceValues(
   };
 }
 
-export function rebalanceRequiresFlashLoan(
+export interface FlashLoanRequirements {
+  useDebtLiquidity: boolean;
+  signerFlashLoan: boolean;
+}
+
+export function getFlashLoanRequirements(
   client: SolautoClient,
-  values: RebalanceValues
-) {
+  values: RebalanceValues,
+  attemptNum?: number
+): FlashLoanRequirements | undefined {
   let supplyUsd =
     fromBaseUnit(
       client.solautoPositionState!.supply.amountUsed.baseAmountUsdValue,
@@ -297,11 +303,32 @@ export function rebalanceRequiresFlashLoan(
   const requiresFlashLoan =
     supplyUsd <= 0 || tempLiqUtilizationRateBps > maxLiqUtilizationRateBps;
 
-  const useDebtLiquidity =
-    values.rebalanceDirection === RebalanceDirection.Boost ||
+  const insufficientSupplyLiquidity =
     Math.abs(values.debtAdjustmentUsd) * 0.9 >
-      fromBaseUnit(client.supplyLiquidityAvailable(), USD_DECIMALS) *
-        (safeGetPrice(client.supplyMint) ?? 0);
+    fromBaseUnit(client.supplyLiquidityAvailable(), USD_DECIMALS) *
+      (safeGetPrice(client.supplyMint) ?? 0);
+  const insufficientDebtLiquidity =
+    Math.abs(values.debtAdjustmentUsd) * 0.9 >
+    fromBaseUnit(client.debtLiquidityAvailable(), USD_DECIMALS) *
+      (safeGetPrice(client.debtMint) ?? 0);
+
+  let useDebtLiquidity =
+    values.rebalanceDirection === RebalanceDirection.Boost ||
+    insufficientSupplyLiquidity;
+
+  const isJupLong =
+    client.supplyMint.equals(new PublicKey(JUP)) &&
+    tokenInfo(client.debtMint).isStableCoin;
+  const sufficientSignerSupplyLiquidity = false; // TODO
+  const sufficientSignerDebtLiquidity = isJupLong; // TODO
+  const signerFlashLoan = Boolean(
+    ((attemptNum ?? 0) > 3 ||
+      (insufficientDebtLiquidity && insufficientDebtLiquidity)) &&
+      (sufficientSignerSupplyLiquidity || sufficientSignerDebtLiquidity)
+  );
+  if (signerFlashLoan) {
+    useDebtLiquidity = !sufficientSignerSupplyLiquidity;
+  }
 
   consoleLog("Requires flash loan:", requiresFlashLoan);
   consoleLog("Use debt liquidity:", useDebtLiquidity);
@@ -314,32 +341,27 @@ export function rebalanceRequiresFlashLoan(
     maxLiqUtilizationRateBps
   );
 
-  return { requiresFlashLoan, useDebtLiquidity };
+  return requiresFlashLoan ? { useDebtLiquidity, signerFlashLoan } : undefined;
 }
 
-export interface FlashLoanDetails {
+export interface FlashLoanDetails extends FlashLoanRequirements {
   baseUnitAmount: bigint;
   mint: PublicKey;
-  useDebtLiquidity: boolean;
 }
 
 export function getFlashLoanDetails(
   client: SolautoClient,
+  flRequirements: FlashLoanRequirements,
   values: RebalanceValues,
   jupQuote: QuoteResponse
 ): FlashLoanDetails | undefined {
-  const { requiresFlashLoan, useDebtLiquidity } = rebalanceRequiresFlashLoan(
-    client,
-    values
-  );
-
   let flashLoanToken: PositionTokenUsage | undefined = undefined;
 
   const inAmount = BigInt(parseInt(jupQuote.inAmount));
   const outAmount = BigInt(parseInt(jupQuote.outAmount));
 
   const boosting = values.rebalanceDirection === RebalanceDirection.Boost;
-  if (boosting || useDebtLiquidity) {
+  if (boosting || flRequirements.useDebtLiquidity) {
     flashLoanToken = client.solautoPositionState!.debt;
   } else {
     flashLoanToken = client.solautoPositionState!.supply;
@@ -350,20 +372,21 @@ export function getFlashLoanDetails(
   }
 
   const baseUnitAmount =
-    boosting || (!boosting && !useDebtLiquidity) ? inAmount : outAmount;
+    boosting || (!boosting && !flRequirements.useDebtLiquidity)
+      ? inAmount
+      : outAmount;
 
-  return requiresFlashLoan
-    ? {
-        baseUnitAmount,
-        mint: toWeb3JsPublicKey(flashLoanToken.mint),
-        useDebtLiquidity,
-      }
-    : undefined;
+  return {
+    ...flRequirements,
+    baseUnitAmount,
+    mint: toWeb3JsPublicKey(flashLoanToken.mint),
+  };
 }
 
 export async function getJupSwapRebalanceDetails(
   client: SolautoClient,
   values: RebalanceValues,
+  flRequirements?: FlashLoanRequirements,
   targetLiqUtilizationRateBps?: number,
   attemptNum?: number
 ): Promise<JupSwapDetails> {
@@ -397,12 +420,8 @@ export async function getJupSwapRebalanceDetails(
 
   const repaying = values.rebalanceDirection === RebalanceDirection.Repay;
 
-  const { requiresFlashLoan, useDebtLiquidity } = rebalanceRequiresFlashLoan(
-    client,
-    values
-  );
   const flashLoanRepayFromDebt =
-    repaying && requiresFlashLoan && useDebtLiquidity;
+    repaying && flRequirements && flRequirements.useDebtLiquidity;
 
   const exactOut = rebalanceToZero || flashLoanRepayFromDebt;
   const exactIn = !exactOut;
@@ -414,7 +433,6 @@ export async function getJupSwapRebalanceDetails(
     exactOut,
     amount: exactOut ? outputAmount : inputAmount,
   };
-  consoleLog(targetLiqUtilizationRateBps, rebalanceToZero);
   consoleLog(jupSwapInput);
 
   let jupQuote: QuoteResponse | undefined = undefined;
