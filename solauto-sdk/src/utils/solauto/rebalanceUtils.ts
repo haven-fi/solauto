@@ -322,7 +322,7 @@ export function getFlashLoanRequirements(
   const sufficientSignerSupplyLiquidity = false; // TODO
   const sufficientSignerDebtLiquidity = isJupLong; // TODO
   const signerFlashLoan = Boolean(
-    ((attemptNum ?? 0) > 3 ||
+    ((attemptNum ?? 0) > 1 ||
       (insufficientDebtLiquidity && insufficientDebtLiquidity)) &&
       (sufficientSignerSupplyLiquidity || sufficientSignerDebtLiquidity)
   );
@@ -408,15 +408,16 @@ export async function getJupSwapRebalanceDetails(
     usdToSwap / safeGetPrice(input.mint)!,
     input.decimals
   );
-  const outputAmount =
-    output.amountUsed.baseUnit +
-    BigInt(
-      Math.round(
-        Number(output.amountUsed.baseUnit) *
-          // Add this small percentage to account for the APR on the debt between now and the transaction
-          0.0001
+  const outputAmount = rebalanceToZero
+    ? output.amountUsed.baseUnit +
+      BigInt(
+        Math.round(
+          Number(output.amountUsed.baseUnit) *
+            // Add this small percentage to account for the APR on the debt between now and the transaction
+            0.0001
+        )
       )
-    );
+    : toBaseUnit(usdToSwap / safeGetPrice(output.mint)!, output.decimals);
 
   const repaying = values.rebalanceDirection === RebalanceDirection.Repay;
 

@@ -66,7 +66,7 @@ describe("Solauto Marginfi tests", async () => {
     await client.initialize({
       signer,
       positionId,
-      authority: new PublicKey("HqpPtE5WbBh3xU9C1Tzz125iYDQyoyodvFCRpwHwQpNc"),
+      authority: new PublicKey("7F6v4HWZsyFP6yVFq92HQWygUgoYm5khUX8pXWGLoqUN"),
       // new: true,
       // marginfiAccount: new PublicKey(
       //   ""
@@ -203,7 +203,9 @@ describe("Solauto Marginfi tests", async () => {
       undefined,
       !payForTransactions ? "only-simulate" : "normal",
       PriorityFeeSetting.Min,
-      true
+      true,
+      undefined,
+      { totalRetries: 5 }
     ).clientSend(transactionItems);
 
     console.log(statuses);

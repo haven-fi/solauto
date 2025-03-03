@@ -408,6 +408,7 @@ export async function sendSingleOptimizedTransaction(
   consoleLog("Sending single optimized transaction...");
   consoleLog("Instructions: ", tx.getInstructions().length);
   consoleLog("Serialized transaction size: ", tx.getTransactionSize(umi));
+  consoleLog("Programs: ", tx.getInstructions().map(x => x.programId));
 
   const accounts = tx
     .getInstructions()
