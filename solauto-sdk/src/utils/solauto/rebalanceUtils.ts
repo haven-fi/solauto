@@ -322,13 +322,15 @@ export function getFlashLoanRequirements(
   const sufficientSignerSupplyLiquidity = false; // TODO
   const sufficientSignerDebtLiquidity = isJupLong; // TODO
   const signerFlashLoan = Boolean(
-    ((attemptNum ?? 0) > 1 ||
-      (insufficientDebtLiquidity && insufficientDebtLiquidity)) &&
+    ((attemptNum ?? 0) > 3 ||
+      (insufficientSupplyLiquidity && insufficientDebtLiquidity)) &&
       (sufficientSignerSupplyLiquidity || sufficientSignerDebtLiquidity)
   );
   if (signerFlashLoan) {
     useDebtLiquidity = !sufficientSignerSupplyLiquidity;
   }
+
+  // TODO: if not sufficient signer liquidity, throw error with details on how much liquidity is needed and of what token
 
   consoleLog("Requires flash loan:", requiresFlashLoan);
   consoleLog("Use debt liquidity:", useDebtLiquidity);
@@ -424,7 +426,8 @@ export async function getJupSwapRebalanceDetails(
   const flashLoanRepayFromDebt =
     repaying && flRequirements && flRequirements.useDebtLiquidity;
 
-  const exactOut = rebalanceToZero || flashLoanRepayFromDebt;
+  const exactOut = flashLoanRepayFromDebt;
+  // || rebalanceToZero
   const exactIn = !exactOut;
 
   const jupSwapInput: JupSwapInput = {
@@ -438,33 +441,12 @@ export async function getJupSwapRebalanceDetails(
 
   let jupQuote: QuoteResponse | undefined = undefined;
   if (rebalanceToZero) {
-    try {
-      jupQuote = await getJupQuote(jupSwapInput);
-    } catch {
-      let priceImpact: number = 0;
-      jupSwapInput.exactIn = true;
-      jupSwapInput.exactOut = false;
+    do {
       jupSwapInput.amount =
-        inputAmount + BigInt(Math.round(Number(inputAmount) * 0.001));
-
-      do {
-        const res = await getPriceImpact(
-          jupSwapInput.inputMint,
-          jupSwapInput.outputMint,
-          jupSwapInput.amount +
-            BigInt(Math.round(Number(jupSwapInput.amount) * priceImpact)),
-          "ExactIn"
-        );
-        priceImpact = res.priceImpact;
-        jupQuote = res.quote;
-        jupSwapInput.amount =
-          BigInt(parseInt(res.quote.inAmount)) +
-          BigInt(Math.round(Number(jupSwapInput.amount) * 0.001));
-      } while (
-        parseInt(jupQuote.outAmount) < outputAmount &&
-        priceImpact > 0.001
-      );
-    }
+        jupSwapInput.amount +
+        BigInt(Math.round(Number(jupSwapInput.amount) * 0.01));
+      jupQuote = await getJupQuote(jupSwapInput);
+    } while (parseInt(jupQuote.outAmount) < outputAmount);
   }
 
   const addPadding = exactOut;

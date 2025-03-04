@@ -17,7 +17,6 @@ import {
   retryWithExponentialBackoff,
   tokenInfo,
 } from "./generalUtils";
-import { INF, PYTH } from "../constants";
 
 const jupApi = createJupiterApiClient();
 
@@ -54,16 +53,6 @@ export async function getJupQuote(swapDetails: JupSwapInput) {
   const memecoinSwap =
     tokenInfo(swapDetails.inputMint).isMeme ||
     tokenInfo(swapDetails.outputMint).isMeme;
-
-  const tokensWithLowAccounts = [PYTH, INF];
-  // TEMP REVERT ME
-  const useLowAccounts =
-    tokensWithLowAccounts.find((x) =>
-      swapDetails.inputMint.equals(new PublicKey(x))
-    ) ||
-    tokensWithLowAccounts.find((x) =>
-      swapDetails.outputMint.equals(new PublicKey(x))
-    );
 
   return await retryWithExponentialBackoff(
     async () =>

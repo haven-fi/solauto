@@ -123,6 +123,18 @@ class TransactionSet {
     public items: TransactionItem[] = []
   ) {}
 
+  async lutInputs(): Promise<AddressLookupTableInput[]> {
+    const lutInputs = await this.lookupTables.getLutInputs(this.lutAddresses());
+
+    return lutInputs.filter(
+      (lut, index, self) =>
+        index ===
+        self.findIndex(
+          (item) => item.publicKey.toString() === lut.publicKey.toString()
+        )
+    );
+  }
+
   async fitsWith(item: TransactionItem): Promise<boolean> {
     if (!item.tx) {
       return true;
@@ -175,10 +187,9 @@ class TransactionSet {
       .filter((x) => x.tx && x.tx.getInstructions().length > 0)
       .map((x) => x.tx!);
 
-    const lutInputs = await this.lookupTables.getLutInputs(this.lutAddresses());
     return transactionBuilder()
       .add(transactions)
-      .setAddressLookupTables(lutInputs);
+      .setAddressLookupTables(await this.lutInputs());
   }
 
   lutAddresses(): string[] {
@@ -607,6 +618,12 @@ export class TransactionsManager {
           TransactionStatus.Processing,
           attemptNum
         );
+        for (const itemSet of itemSets) {
+          await this.debugAccounts(
+            itemSet,
+            await itemSet.getSingleTransaction()
+          );
+        }
 
         let txSigs: string[] | undefined;
         let error: Error | undefined;
