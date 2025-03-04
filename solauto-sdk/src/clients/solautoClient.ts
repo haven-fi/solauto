@@ -89,6 +89,9 @@ export abstract class SolautoClient extends ReferralStateManager {
 
   public livePositionUpdates: LivePositionUpdates = new LivePositionUpdates();
 
+  private signerSupplyBalance: bigint | undefined;
+  private signerDebtBalance: bigint | undefined;
+
   async initialize(args: SolautoClientArgs) {
     await super.initialize(args);
 
@@ -306,6 +309,49 @@ export abstract class SolautoClient extends ReferralStateManager {
       tx,
       new: existingLutAccounts.length === 0,
       accountsToAdd,
+    };
+  }
+
+  async signerBalances(): Promise<{
+    supplyBalance: bigint;
+    debtBalance: bigint;
+  }> {
+    if (
+      this.signerSupplyBalance !== undefined &&
+      this.signerDebtBalance !== undefined
+    ) {
+      return {
+        supplyBalance: this.signerSupplyBalance,
+        debtBalance: this.signerDebtBalance,
+      };
+    }
+
+    [this.signerSupplyBalance, this.signerDebtBalance] = await Promise.all([
+      (async () => {
+        const data = await this.connection.getTokenAccountBalance(
+          getTokenAccount(
+            toWeb3JsPublicKey(this.signer.publicKey),
+            this.supplyMint
+          ),
+          "confirmed"
+        );
+        return BigInt(parseInt(data?.value.amount ?? "0"));
+      })(),
+      (async () => {
+        const data = await this.connection.getTokenAccountBalance(
+          getTokenAccount(
+            toWeb3JsPublicKey(this.signer.publicKey),
+            this.debtMint
+          ),
+          "confirmed"
+        );
+        return BigInt(parseInt(data?.value.amount ?? "0"));
+      })(),
+    ]);
+
+    return {
+      supplyBalance: this.signerSupplyBalance,
+      debtBalance: this.signerDebtBalance,
     };
   }
 

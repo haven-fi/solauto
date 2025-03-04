@@ -30,8 +30,9 @@ import {
 } from "../numberUtils";
 import { USD_DECIMALS } from "../../constants/generalAccounts";
 import { RebalanceAction } from "../../types";
-import { getPriceImpact, safeGetPrice } from "../priceUtils";
+import { safeGetPrice } from "../priceUtils";
 import { BROKEN_TOKENS, JUP, USDC, USDT } from "../../constants";
+import { Umi } from "@metaplex-foundation/umi";
 
 function getAdditionalAmountToDcaIn(dca: DCASettings): number {
   if (dca.dcaInBaseUnit === BigInt(0)) {
@@ -259,16 +260,25 @@ export function getRebalanceValues(
   };
 }
 
+function insufficientLiquidity(
+  amountNeeded: number,
+  liquidity: bigint,
+  tokenDecimals: number,
+  tokenPrice: number
+) {
+  return amountNeeded > fromBaseUnit(liquidity, tokenDecimals) * tokenPrice;
+}
+
 export interface FlashLoanRequirements {
   useDebtLiquidity: boolean;
   signerFlashLoan: boolean;
 }
 
-export function getFlashLoanRequirements(
+export async function getFlashLoanRequirements(
   client: SolautoClient,
   values: RebalanceValues,
   attemptNum?: number
-): FlashLoanRequirements | undefined {
+): Promise<FlashLoanRequirements | undefined> {
   let supplyUsd =
     fromBaseUnit(
       client.solautoPositionState!.supply.amountUsed.baseAmountUsdValue,
@@ -303,31 +313,53 @@ export function getFlashLoanRequirements(
   const requiresFlashLoan =
     supplyUsd <= 0 || tempLiqUtilizationRateBps > maxLiqUtilizationRateBps;
 
-  const insufficientSupplyLiquidity =
-    Math.abs(values.debtAdjustmentUsd) * 0.9 >
-    fromBaseUnit(client.supplyLiquidityAvailable(), USD_DECIMALS) *
-      (safeGetPrice(client.supplyMint) ?? 0);
-  const insufficientDebtLiquidity =
-    Math.abs(values.debtAdjustmentUsd) * 0.9 >
-    fromBaseUnit(client.debtLiquidityAvailable(), USD_DECIMALS) *
-      (safeGetPrice(client.debtMint) ?? 0);
+  const supplyPrice = safeGetPrice(client.supplyMint) ?? 0;
+  const debtPrice = safeGetPrice(client.debtMint) ?? 0;
+  const insufficientSupplyLiquidity = insufficientLiquidity(
+    values.debtAdjustmentUsd,
+    client.supplyLiquidityAvailable(),
+    tokenInfo(client.supplyMint).decimals,
+    supplyPrice
+  );
+  const insufficientDebtLiquidity = insufficientLiquidity(
+    values.debtAdjustmentUsd,
+    client.debtLiquidityAvailable(),
+    tokenInfo(client.debtMint).decimals,
+    debtPrice
+  );
 
   let useDebtLiquidity =
     values.rebalanceDirection === RebalanceDirection.Boost ||
     insufficientSupplyLiquidity;
 
-  const isJupLong =
-    client.supplyMint.equals(new PublicKey(JUP)) &&
-    tokenInfo(client.debtMint).isStableCoin;
-  const sufficientSignerSupplyLiquidity = false; // TODO
-  const sufficientSignerDebtLiquidity = isJupLong; // TODO
-  const signerFlashLoan = Boolean(
-    ((attemptNum ?? 0) > 3 ||
-      (insufficientSupplyLiquidity && insufficientDebtLiquidity)) &&
-      (sufficientSignerSupplyLiquidity || sufficientSignerDebtLiquidity)
-  );
-  if (signerFlashLoan) {
-    useDebtLiquidity = !sufficientSignerSupplyLiquidity;
+  let signerFlashLoan = false;
+  if (
+    (attemptNum ?? 0) > 3 ||
+    (insufficientSupplyLiquidity && insufficientDebtLiquidity)
+  ) {
+    const { supplyBalance, debtBalance } = await client.signerBalances();
+    const sufficientSignerSupplyLiquidity = !insufficientLiquidity(
+      values.debtAdjustmentUsd,
+      supplyBalance,
+      tokenInfo(client.supplyMint).decimals,
+      supplyPrice
+    );
+    const sufficientSignerDebtLiquidity = !insufficientLiquidity(
+      values.debtAdjustmentUsd,
+      debtBalance,
+      tokenInfo(client.debtMint).decimals,
+      debtPrice
+    );
+
+    signerFlashLoan =
+      sufficientSignerSupplyLiquidity || sufficientSignerDebtLiquidity;
+    if (signerFlashLoan) {
+      useDebtLiquidity = !sufficientSignerSupplyLiquidity;
+    } else {
+      throw new Error(
+        `Need at least ${values.debtAdjustmentUsd / debtPrice} ${tokenInfo(client.debtMint).ticker} or ${values.debtAdjustmentUsd / supplyPrice} ${tokenInfo(client.supplyMint).ticker} to perform the transaction`
+      );
+    }
   }
 
   // TODO: if not sufficient signer liquidity, throw error with details on how much liquidity is needed and of what token
