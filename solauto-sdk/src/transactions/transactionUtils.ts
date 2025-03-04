@@ -603,7 +603,6 @@ export async function getTransactionChores(
 
 export async function requiresRefreshBeforeRebalance(
   client: SolautoClient,
-  values: RebalanceValues
 ) {
   const neverRefreshedBefore =
     client.solautoPositionData &&
@@ -718,8 +717,7 @@ export async function buildSolautoRebalanceTransaction(
 
   let tx = transactionBuilder();
 
-  // REVERT ME
-  if (await requiresRefreshBeforeRebalance(client, values)) {
+  if (await requiresRefreshBeforeRebalance(client)) {
     tx = tx.add(client.refresh());
   }
 

@@ -191,7 +191,7 @@ export function getRebalanceValues(
     targetLiqUtilizationRateBps
   );
 
-  // REVERT ME AND GET TO THE ROOT OF THIS ISSUE
+  // TODO: REVERT ME AND GET TO THE ROOT OF THIS ISSUE
   const supplyMint = toWeb3JsPublicKey(state.supply.mint);
   if (
     BROKEN_TOKENS.includes(supplyMint.toString()) &&
