@@ -426,7 +426,7 @@ export async function getJupSwapRebalanceDetails(
   const flashLoanRepayFromDebt =
     repaying && flRequirements && flRequirements.useDebtLiquidity;
 
-  const exactOut = flashLoanRepayFromDebt;
+  const exactOut = flashLoanRepayFromDebt && !rebalanceToZero;
   // || rebalanceToZero
   const exactIn = !exactOut;
 
