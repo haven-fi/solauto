@@ -48,9 +48,9 @@ describe("Solauto Marginfi tests", async () => {
   // const signer = setupTest();
   const signer = setupTest("solauto-manager");
 
-  const payForTransactions = false;
+  const payForTransactions = true;
   const testProgram = false;
-  const positionId = 2;
+  const positionId = 1;
 
   it("open - deposit - borrow - rebalance to 0 - withdraw - close", async () => {
     const client = new SolautoMarginfiClient(
@@ -66,7 +66,7 @@ describe("Solauto Marginfi tests", async () => {
     await client.initialize({
       signer,
       positionId,
-      authority: new PublicKey("7yk7HcAJfwNao3NSbYiPNtJvCPTxsgkzuJmyMLyP297E"),
+      authority: new PublicKey("7F6v4HWZsyFP6yVFq92HQWygUgoYm5khUX8pXWGLoqUN"),
       // new: true,
       // marginfiAccount: new PublicKey(
       //   ""
@@ -75,18 +75,6 @@ describe("Solauto Marginfi tests", async () => {
       // supplyMint: new PublicKey(""),
       // debtMint: new PublicKey(USDC),
     });
-
-    // console.log(
-    //   JSON.stringify(
-    //     await getQnComputeUnitPriceEstimate(
-    //       client.umi,
-    //       new PublicKey(JUPITER_PROGRAM_ID)
-    //     ),
-    //     null,
-    //     2
-    //   )
-    // );
-    // return;
 
     const transactionItems: TransactionItem[] = [];
     // const settingParams: SolautoSettingsParametersInpArgs = {

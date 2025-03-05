@@ -315,14 +315,16 @@ export async function getFlashLoanRequirements(
 
   const supplyPrice = safeGetPrice(client.supplyMint) ?? 0;
   const debtPrice = safeGetPrice(client.debtMint) ?? 0;
+  const debtAdjustmentUsd = Math.abs(values.debtAdjustmentUsd);
+  
   const insufficientSupplyLiquidity = insufficientLiquidity(
-    values.debtAdjustmentUsd,
+    debtAdjustmentUsd,
     client.supplyLiquidityAvailable(),
     tokenInfo(client.supplyMint).decimals,
     supplyPrice
   );
   const insufficientDebtLiquidity = insufficientLiquidity(
-    values.debtAdjustmentUsd,
+    debtAdjustmentUsd,
     client.debtLiquidityAvailable(),
     tokenInfo(client.debtMint).decimals,
     debtPrice
@@ -339,13 +341,13 @@ export async function getFlashLoanRequirements(
   ) {
     const { supplyBalance, debtBalance } = await client.signerBalances();
     const sufficientSignerSupplyLiquidity = !insufficientLiquidity(
-      values.debtAdjustmentUsd,
+      debtAdjustmentUsd,
       supplyBalance,
       tokenInfo(client.supplyMint).decimals,
       supplyPrice
     );
     const sufficientSignerDebtLiquidity = !insufficientLiquidity(
-      values.debtAdjustmentUsd,
+      debtAdjustmentUsd,
       debtBalance,
       tokenInfo(client.debtMint).decimals,
       debtPrice
