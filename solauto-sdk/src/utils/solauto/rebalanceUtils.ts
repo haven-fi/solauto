@@ -316,7 +316,7 @@ export async function getFlashLoanRequirements(
   const supplyPrice = safeGetPrice(client.supplyMint) ?? 0;
   const debtPrice = safeGetPrice(client.debtMint) ?? 0;
   const debtAdjustmentUsd = Math.abs(values.debtAdjustmentUsd);
-  
+
   const insufficientSupplyLiquidity = insufficientLiquidity(
     debtAdjustmentUsd,
     client.supplyLiquidityAvailable(),
@@ -363,8 +363,6 @@ export async function getFlashLoanRequirements(
       );
     }
   }
-
-  // TODO: if not sufficient signer liquidity, throw error with details on how much liquidity is needed and of what token
 
   consoleLog("Requires flash loan:", requiresFlashLoan);
   consoleLog("Use debt liquidity:", useDebtLiquidity);
