@@ -471,14 +471,15 @@ async function findSufficientQuote(
   let jupQuote: QuoteResponse;
   let insufficient: boolean = false;
 
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < 10; i++) {
     consoleLog("Finding sufficient quote...");
     jupQuote = await getJupQuote(jupSwapInput);
 
     const outputAmount = parseInt(jupQuote.outAmount);
     const postRebalanceRate = postRebalanceLiqUtilizationRateBps(
       client,
-      values
+      values,
+      BigInt(outputAmount)
     );
     insufficient = criteria.minOutputAmount
       ? outputAmount < Number(criteria.minOutputAmount)
@@ -490,7 +491,7 @@ async function findSufficientQuote(
       consoleLog(jupQuote);
       jupSwapInput.amount =
         jupSwapInput.amount +
-        BigInt(Math.round(Number(jupSwapInput.amount) * 0.005));
+        BigInt(Math.round(Number(jupSwapInput.amount) * 0.01));
     } else {
       break;
     }
@@ -564,7 +565,7 @@ export async function getJupSwapRebalanceDetails(
         ? maxRepayToBps(
             client.solautoPositionState?.maxLtvBps ?? 0,
             client.solautoPositionState?.liqThresholdBps ?? 0
-          )
+          ) - 15
         : undefined,
     });
   }
