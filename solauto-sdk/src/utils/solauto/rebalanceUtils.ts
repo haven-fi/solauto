@@ -480,6 +480,7 @@ export async function getJupSwapRebalanceDetails(
       jupQuote = await getJupQuote(jupSwapInput);
     } while (parseInt(jupQuote.outAmount) < outputAmount);
   }
+  consoleLog("Quote:", jupQuote);
 
   const addPadding = exactOut;
 

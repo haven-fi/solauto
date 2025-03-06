@@ -27,7 +27,6 @@ import {
   fromBaseUnit,
   getLiqUtilzationRateBps,
   toBaseUnit,
-  toBps,
 } from "../numberUtils";
 import { getReferralState } from "../accountUtils";
 import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
@@ -39,7 +38,6 @@ import {
 import {
   findMarginfiAccounts,
   getAllMarginfiAccountsByAuthority,
-  getMarginfiMaxLtvAndLiqThreshold,
 } from "../marginfiUtils";
 import { RebalanceAction, SolautoPositionDetails } from "../../types/solauto";
 import { fetchTokenPrices } from "../priceUtils";

@@ -66,7 +66,7 @@ describe("Solauto Marginfi tests", async () => {
     await client.initialize({
       signer,
       positionId,
-      authority: new PublicKey("7F6v4HWZsyFP6yVFq92HQWygUgoYm5khUX8pXWGLoqUN"),
+      authority: new PublicKey("EBhRj7jbF2EVE21i19JSuCX1BAbnZFYhoKW64HnaZ3kf"),
       // new: true,
       // marginfiAccount: new PublicKey(
       //   ""
