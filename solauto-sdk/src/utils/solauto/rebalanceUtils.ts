@@ -260,6 +260,47 @@ export function getRebalanceValues(
   };
 }
 
+function postRebalanceLiqUtilizationRateBps(
+  client: SolautoClient,
+  values: RebalanceValues,
+  swapOutputAmount?: bigint
+) {
+  let supplyUsd =
+    fromBaseUnit(
+      client.solautoPositionState!.supply.amountUsed.baseAmountUsdValue,
+      USD_DECIMALS
+    ) +
+    (values.dcaTokenType === TokenType.Supply ? values.amountUsdToDcaIn : 0);
+  let debtUsd = fromBaseUnit(
+    client.solautoPositionState!.debt.amountUsed.baseAmountUsdValue,
+    USD_DECIMALS
+  );
+
+  const boost = values.rebalanceDirection === RebalanceDirection.Boost;
+
+  const outputToken = toWeb3JsPublicKey(
+    boost
+      ? client.solautoPositionState!.supply.mint
+      : client.solautoPositionState!.debt.mint
+  );
+  const debtAdjustmentUsdAbs = Math.abs(values.debtAdjustmentUsd);
+  const swapOutputUsd = swapOutputAmount
+    ? fromBaseUnit(swapOutputAmount, tokenInfo(outputToken).decimals) *
+      (safeGetPrice(outputToken) ?? 0)
+    : debtAdjustmentUsdAbs;
+
+  supplyUsd = !boost
+    ? supplyUsd - debtAdjustmentUsdAbs
+    : supplyUsd + swapOutputUsd;
+  debtUsd = boost ? debtUsd + debtAdjustmentUsdAbs : debtUsd - swapOutputUsd;
+
+  return getLiqUtilzationRateBps(
+    supplyUsd,
+    debtUsd,
+    client.solautoPositionState?.liqThresholdBps ?? 0
+  );
+}
+
 function insufficientLiquidity(
   amountNeeded: number,
   liquidity: bigint,
@@ -336,7 +377,7 @@ export async function getFlashLoanRequirements(
 
   let signerFlashLoan = false;
   if (
-    (attemptNum ?? 0) > 3 ||
+    (attemptNum ?? 0) >= 3 ||
     (insufficientSupplyLiquidity && insufficientDebtLiquidity)
   ) {
     const { supplyBalance, debtBalance } = await client.signerBalances();
@@ -417,6 +458,47 @@ export function getFlashLoanDetails(
   };
 }
 
+async function findSufficientQuote(
+  client: SolautoClient,
+  values: RebalanceValues,
+  jupSwapInput: JupSwapInput,
+  criteria: {
+    minOutputAmount?: bigint;
+    minLiqUtilizationRateBps?: number;
+    maxLiqUtilizationRateBps?: number;
+  }
+): Promise<QuoteResponse> {
+  let jupQuote: QuoteResponse;
+  let insufficient: boolean = false;
+
+  for (let i = 0; i < 5; i++) {
+    consoleLog("Finding sufficient quote...");
+    jupQuote = await getJupQuote(jupSwapInput);
+
+    const outputAmount = parseInt(jupQuote.outAmount);
+    const postRebalanceRate = postRebalanceLiqUtilizationRateBps(
+      client,
+      values
+    );
+    insufficient = criteria.minOutputAmount
+      ? outputAmount < Number(criteria.minOutputAmount)
+      : criteria.minLiqUtilizationRateBps
+        ? postRebalanceRate < criteria.minLiqUtilizationRateBps
+        : postRebalanceRate > criteria.maxLiqUtilizationRateBps!;
+
+    if (insufficient) {
+      consoleLog(jupQuote);
+      jupSwapInput.amount =
+        jupSwapInput.amount +
+        BigInt(Math.round(Number(jupSwapInput.amount) * 0.005));
+    } else {
+      break;
+    }
+  }
+
+  return jupQuote!;
+}
+
 export async function getJupSwapRebalanceDetails(
   client: SolautoClient,
   values: RebalanceValues,
@@ -462,6 +544,9 @@ export async function getJupSwapRebalanceDetails(
   // || rebalanceToZero
   const exactIn = !exactOut;
 
+  if (exactIn && rebalanceToZero) {
+    inputAmount = inputAmount + BigInt(Math.round(Number(inputAmount) * 0.005));
+  }
   const jupSwapInput: JupSwapInput = {
     inputMint: toWeb3JsPublicKey(input.mint),
     outputMint: toWeb3JsPublicKey(output.mint),
@@ -472,15 +557,17 @@ export async function getJupSwapRebalanceDetails(
   consoleLog(jupSwapInput);
 
   let jupQuote: QuoteResponse | undefined = undefined;
-  if (rebalanceToZero) {
-    do {
-      jupSwapInput.amount =
-        jupSwapInput.amount +
-        BigInt(Math.round(Number(jupSwapInput.amount) * 0.01));
-      jupQuote = await getJupQuote(jupSwapInput);
-    } while (parseInt(jupQuote.outAmount) < outputAmount);
+  if (exactIn && (rebalanceToZero || values.repayingCloseToMaxLtv)) {
+    jupQuote = await findSufficientQuote(client, values, jupSwapInput, {
+      minOutputAmount: rebalanceToZero ? outputAmount : undefined,
+      maxLiqUtilizationRateBps: values.repayingCloseToMaxLtv
+        ? maxRepayToBps(
+            client.solautoPositionState?.maxLtvBps ?? 0,
+            client.solautoPositionState?.liqThresholdBps ?? 0
+          )
+        : undefined,
+    });
   }
-  consoleLog("Quote:", jupQuote);
 
   const addPadding = exactOut;
 
