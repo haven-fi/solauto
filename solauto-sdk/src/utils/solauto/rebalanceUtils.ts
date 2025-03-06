@@ -289,9 +289,9 @@ function postRebalanceLiqUtilizationRateBps(
       (safeGetPrice(outputToken) ?? 0)
     : debtAdjustmentUsdAbs;
 
-  supplyUsd = !boost
-    ? supplyUsd - debtAdjustmentUsdAbs
-    : supplyUsd + swapOutputUsd;
+  supplyUsd = boost
+    ? supplyUsd + swapOutputUsd
+    : supplyUsd - debtAdjustmentUsdAbs;
   debtUsd = boost ? debtUsd + debtAdjustmentUsdAbs : debtUsd - swapOutputUsd;
 
   return getLiqUtilzationRateBps(
