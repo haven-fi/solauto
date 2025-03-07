@@ -42,7 +42,6 @@ import {
 } from "../../src/utils";
 import { PriorityFeeSetting } from "../../src/types";
 import { buildIronforgeApiUrl, fromBaseUnit, tokenInfo, USD_DECIMALS } from "../../dist";
-import { JUPITER_PROGRAM_ID } from "../../src/jupiter-sdk";
 
 describe("Solauto Marginfi tests", async () => {
   // const signer = setupTest();
@@ -50,7 +49,7 @@ describe("Solauto Marginfi tests", async () => {
 
   const payForTransactions = true;
   const testProgram = false;
-  const positionId = 1;
+  const positionId = 3;
 
   it("open - deposit - borrow - rebalance to 0 - withdraw - close", async () => {
     const client = new SolautoMarginfiClient(
@@ -66,7 +65,7 @@ describe("Solauto Marginfi tests", async () => {
     await client.initialize({
       signer,
       positionId,
-      authority: new PublicKey("EBhRj7jbF2EVE21i19JSuCX1BAbnZFYhoKW64HnaZ3kf"),
+      authority: new PublicKey("FKYQs7KgRvaKQHxXwb8HKfoBcFdSxLL3JvHWpPdVQ16v"),
       // new: true,
       // marginfiAccount: new PublicKey(
       //   ""

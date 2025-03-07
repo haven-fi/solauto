@@ -302,12 +302,12 @@ function postRebalanceLiqUtilizationRateBps(
 }
 
 function insufficientLiquidity(
-  amountNeeded: number,
+  amountNeededUsd: number,
   liquidity: bigint,
   tokenDecimals: number,
   tokenPrice: number
 ) {
-  return amountNeeded > fromBaseUnit(liquidity, tokenDecimals) * tokenPrice;
+  return amountNeededUsd > fromBaseUnit(liquidity, tokenDecimals) * tokenPrice;
 }
 
 export interface FlashLoanRequirements {

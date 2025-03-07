@@ -181,18 +181,21 @@ export async function getJupPriceData(mints: PublicKey[], extraInfo?: boolean) {
       )
     ).json();
     const result = res.data;
-    if (
-      !result ||
-      result === null ||
-      (typeof result === "object" &&
-        Boolean(Object.values(result).filter((x) => x === null).length)) ||
-      (typeof result === "object" &&
-        Object.values(result)
-          .map((x) => parseFloat((x as any).price))
-          .includes(0))
-    ) {
+    if (!result || result === null || typeof result !== "object") {
       throw new Error("Failed to get token prices using Jupiter");
     }
+
+    const invalidValues =
+      Boolean(Object.values(result).filter((x) => x === null).length) ||
+      Boolean(
+        Object.values(result)
+          .map((x) => parseFloat((x as any).price))
+          .filter((x) => x <= 0).length
+      );
+    if (invalidValues) {
+      throw new Error("Invalid price values");
+    }
+
     return result;
   }, 8);
 

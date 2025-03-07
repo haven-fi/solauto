@@ -115,7 +115,7 @@ export async function getSwitchboardPrices(
         );
 
         const p = res.flatMap((x) => x.results[0]);
-        if (p.filter((x) => !x || isNaN(Number(x))).length > 0) {
+        if (p.filter((x) => !x || isNaN(Number(x)) || Number(x) < 0).length > 0) {
           throw new Error("Unable to fetch Switchboard prices");
         }
 
