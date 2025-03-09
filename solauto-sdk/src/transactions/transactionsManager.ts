@@ -546,12 +546,12 @@ export class TransactionsManager {
         }
       } else if (attemptNum > 0) {
         for (const item of items) {
-          await item.refetch(0);
+          await item.refetch(attemptNum);
         }
       }
       this.txHandler.log("Transaction items:", items.length);
       return await this.assembleTransactionSets(items);
-    }, 2);
+    }, this.totalRetries);
 
     this.updateStatusForSets(itemSets, TransactionStatus.Queued, 0);
     this.txHandler.log("Initial item sets:", itemSets.length);
@@ -766,25 +766,23 @@ export class TransactionsManager {
     attemptNum: number,
     currentIndex?: number
   ): Promise<TransactionSet[] | undefined> {
-    const newItemSets = await retryWithExponentialBackoff(async () => {
-      if (currentIndex !== undefined) {
-        const itemSet = itemSets[currentIndex];
+    if (currentIndex !== undefined) {
+      const itemSet = itemSets[currentIndex];
+      await itemSet.refetchAll(attemptNum);
+    } else {
+      for (const itemSet of itemSets) {
         await itemSet.refetchAll(attemptNum);
-      } else {
-        for (const itemSet of itemSets) {
-          await itemSet.refetchAll(attemptNum);
-        }
       }
+    }
 
-      return await this.assembleTransactionSets(
-        currentIndex !== undefined
-          ? [
-              ...itemSets[currentIndex].items,
-              ...itemSets.slice(currentIndex + 1).flatMap((set) => set.items),
-            ]
-          : itemSets.flatMap((set) => set.items)
-      );
-    }, 2);
+    const newItemSets = await this.assembleTransactionSets(
+      currentIndex !== undefined
+        ? [
+            ...itemSets[currentIndex].items,
+            ...itemSets.slice(currentIndex + 1).flatMap((set) => set.items),
+          ]
+        : itemSets.flatMap((set) => set.items)
+    );
 
     const newItemSetNames = newItemSets.map((x) => x.name());
     if (

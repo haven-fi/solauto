@@ -250,9 +250,9 @@ export class SolautoMarginfiClient extends SolautoClient {
     ];
   }
 
-  async maxLtvAndLiqThresholdBps(): Promise<[number, number] | undefined> {
+  async maxLtvAndLiqThresholdBps(): Promise<[number, number]> {
     const result = await super.maxLtvAndLiqThresholdBps();
-    if (result) {
+    if (result[0] && result[1]) {
       return result;
     } else if (
       this.supplyMint.equals(PublicKey.default) ||

@@ -30,14 +30,19 @@ export async function fetchTokenPrices(mints: PublicKey[]): Promise<number[]> {
   const switchboardMints = mints.filter(
     (x) => x.toString() in SWITCHBOARD_PRICE_FEED_IDS
   );
+  const otherMints = mints.filter(
+    (x) => !pythMints.includes(x) && !switchboardMints.includes(x)
+  );
+  console.log(mints.length, otherMints.length);
 
-  const [pythData, switchboardData] = await Promise.all([
+  const [pythData, switchboardData, jupData] = await Promise.all([
     zip(pythMints, await getPythPrices(pythMints)),
     zip(switchboardMints, await getSwitchboardPrices(switchboardMints)),
+    zip(otherMints, await getJupTokenPrices(otherMints, true)),
   ]);
 
   const prices = mints.map((mint) => {
-    const item = [...pythData, ...switchboardData].find((data) =>
+    const item = [...pythData, ...switchboardData, ...jupData].find((data) =>
       data[0].equals(mint)
     );
     return item ? item[1] : 0;
@@ -115,11 +120,15 @@ export async function getSwitchboardPrices(
         );
 
         const p = res.flatMap((x) => x.results[0]);
-        if (p.filter((x) => !x || isNaN(Number(x)) || Number(x) < 0).length > 0) {
+        if (
+          p.filter((x) => !x || isNaN(Number(x)) || Number(x) < 0).length > 0
+        ) {
           throw new Error("Unable to fetch Switchboard prices");
         }
 
-        return p;
+        return p.map((x) =>
+          typeof x === "string" ? parseFloat(x) : Number(x)
+        );
       },
       2,
       350
@@ -133,7 +142,7 @@ export async function getSwitchboardPrices(
   }
 
   const missingPrices = zip(mints, prices).filter(
-    (x) => !x[1] || isNaN(Number(x))
+    (x) => !x[1] || isNaN(Number(x[1]))
   );
   const jupPrices = zip(
     missingPrices.map((x) => x[0]),
@@ -147,14 +156,21 @@ export async function getSwitchboardPrices(
   return prices;
 }
 
-export async function getJupTokenPrices(mints: PublicKey[]) {
+export async function getJupTokenPrices(
+  mints: PublicKey[],
+  mayIncludeSpamTokens?: boolean
+) {
   if (mints.length == 0) {
     return [];
   }
 
-  const data = await getJupPriceData(mints);
+  const data = await getJupPriceData(mints, false, mayIncludeSpamTokens);
 
-  return Object.values(data).map((x) => parseFloat(x.price as string));
+  return Object.values(data).map((x) =>
+    x !== null && typeof x === "object" && "price" in x
+      ? parseFloat(x.price as string)
+      : 0
+  );
 }
 
 export function safeGetPrice(

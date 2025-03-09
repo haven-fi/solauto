@@ -369,11 +369,11 @@ export abstract class SolautoClient extends ReferralStateManager {
     );
   }
 
-  async maxLtvAndLiqThresholdBps(): Promise<[number, number] | undefined> {
+  async maxLtvAndLiqThresholdBps(): Promise<[number, number]> {
     if (this.maxLtvBps !== undefined && this.liqThresholdBps !== undefined) {
       return [this.maxLtvBps, this.liqThresholdBps];
     }
-    return undefined;
+    return [0, 0];
   }
 
   openPosition(
