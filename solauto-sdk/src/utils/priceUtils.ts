@@ -33,7 +33,6 @@ export async function fetchTokenPrices(mints: PublicKey[]): Promise<number[]> {
   const otherMints = mints.filter(
     (x) => !pythMints.includes(x) && !switchboardMints.includes(x)
   );
-  console.log(mints.length, otherMints.length);
 
   const [pythData, switchboardData, jupData] = await Promise.all([
     zip(pythMints, await getPythPrices(pythMints)),
