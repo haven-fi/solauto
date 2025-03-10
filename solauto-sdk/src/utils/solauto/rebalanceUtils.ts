@@ -397,7 +397,9 @@ export async function getFlashLoanRequirements(
     signerFlashLoan =
       sufficientSignerSupplyLiquidity || sufficientSignerDebtLiquidity;
     if (signerFlashLoan) {
-      useDebtLiquidity = !sufficientSignerSupplyLiquidity;
+      useDebtLiquidity =
+        values.rebalanceDirection === RebalanceDirection.Boost ||
+        !sufficientSignerSupplyLiquidity;
     } else {
       throw new Error(
         `Need at least ${values.debtAdjustmentUsd / debtPrice} ${tokenInfo(client.debtMint).ticker} or ${values.debtAdjustmentUsd / supplyPrice} ${tokenInfo(client.supplyMint).ticker} to perform the transaction`
