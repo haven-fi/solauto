@@ -1,10 +1,11 @@
 import { publicKey } from "@metaplex-foundation/umi";
 import {
   buildHeliusApiUrl,
+  calcNetWorthUsd,
+  calcSupplyUsd,
   currentUnixSeconds,
   eligibleForRebalance,
   fetchTokenPrices,
-  fromBaseUnit,
   getSolanaRpcConnection,
   getSolautoManagedPositions,
   PositionState,
@@ -14,7 +15,6 @@ import {
   safeGetPrice,
   SOLAUTO_PROD_PROGRAM,
   solautoStrategyName,
-  USD_DECIMALS,
 } from "../src";
 import { PublicKey } from "@solana/web3.js";
 import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
@@ -125,11 +125,7 @@ async function main(filterWhitelist: boolean) {
     )
   )
     .flat()
-    .sort(
-      (a, b) =>
-        fromBaseUnit(a.state.netWorth.baseAmountUsdValue, USD_DECIMALS) -
-        fromBaseUnit(b.state.netWorth.baseAmountUsdValue, USD_DECIMALS)
-    );
+    .sort((a, b) => calcNetWorthUsd(a.state) - calcNetWorthUsd(b.state));
 
   const tokensUsed = Array.from(
     new Set(
@@ -198,7 +194,7 @@ async function main(filterWhitelist: boolean) {
       `(${pos.authority.toString()} ${pos.positionId})`
     );
     console.log(
-      `${strategy}: $${formatNumber(fromBaseUnit(latestState.netWorth.baseAmountUsdValue, USD_DECIMALS), 2, 10000, 2)} ${healthText} ${boostText}`
+      `${strategy}: $${formatNumber(calcNetWorthUsd(latestState), 2, 10000, 2)} ${healthText} ${boostText}`
     );
   }
 
@@ -215,12 +211,10 @@ async function main(filterWhitelist: boolean) {
   );
 
   const tvl = latestStates
-    .map((x) =>
-      fromBaseUnit(x.supply.amountUsed.baseAmountUsdValue, USD_DECIMALS)
-    )
+    .map((x) => calcSupplyUsd(x))
     .reduce((acc, curr) => acc + curr, 0);
   const netWorth = latestStates
-    .map((x) => fromBaseUnit(x.netWorth.baseAmountUsdValue, USD_DECIMALS))
+    .map((x) => calcNetWorthUsd(x))
     .reduce((acc, curr) => acc + curr, 0);
 
   console.log(`TVL: $${formatNumber(tvl, 2, 10000, 2)}`);

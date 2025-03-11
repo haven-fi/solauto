@@ -18,6 +18,9 @@ import { QuoteResponse } from "@jup-ag/api";
 import { getJupQuote, JupSwapDetails, JupSwapInput } from "../jupiterUtils";
 import { consoleLog, currentUnixSeconds, tokenInfo } from "../generalUtils";
 import {
+  calcDebtUsd,
+  calcNetWorthUsd,
+  calcSupplyUsd,
   fromBaseUnit,
   fromBps,
   getDebtAdjustmentUsd,
@@ -216,21 +219,14 @@ export function getRebalanceValues(
   const adjustmentFeeBps = getSolautoFeesBps(
     false,
     targetLiqUtilizationRateBps,
-    fromBaseUnit(state.netWorth.baseAmountUsdValue, USD_DECIMALS),
+    calcNetWorthUsd(state),
     rebalanceDirection
   ).total;
 
-  const supplyUsd =
-    fromBaseUnit(state.supply.amountUsed.baseAmountUsdValue, USD_DECIMALS) +
-    amountUsdToDcaIn;
-  const debtUsd = fromBaseUnit(
-    state.debt.amountUsed.baseAmountUsdValue,
-    USD_DECIMALS
-  );
   let debtAdjustmentUsd = getDebtAdjustmentUsd(
     state.liqThresholdBps,
-    supplyUsd,
-    debtUsd,
+    calcSupplyUsd(state) + amountUsdToDcaIn,
+    calcDebtUsd(state),
     targetRateBps,
     adjustmentFeeBps
   );
@@ -266,15 +262,8 @@ function postRebalanceLiqUtilizationRateBps(
   swapOutputAmount?: bigint
 ) {
   let supplyUsd =
-    fromBaseUnit(
-      client.solautoPositionState!.supply.amountUsed.baseAmountUsdValue,
-      USD_DECIMALS
-    ) +
-    (values.dcaTokenType === TokenType.Supply ? values.amountUsdToDcaIn : 0);
-  let debtUsd = fromBaseUnit(
-    client.solautoPositionState!.debt.amountUsed.baseAmountUsdValue,
-    USD_DECIMALS
-  );
+    calcSupplyUsd(client.solautoPositionState) + values.amountUsdToDcaIn;
+  let debtUsd = calcDebtUsd(client.solautoPositionState);
 
   const boost = values.rebalanceDirection === RebalanceDirection.Boost;
 
@@ -321,15 +310,9 @@ export async function getFlashLoanRequirements(
   attemptNum?: number
 ): Promise<FlashLoanRequirements | undefined> {
   let supplyUsd =
-    fromBaseUnit(
-      client.solautoPositionState!.supply.amountUsed.baseAmountUsdValue,
-      USD_DECIMALS
-    ) +
+    calcSupplyUsd(client.solautoPositionState) +
     (values.dcaTokenType === TokenType.Supply ? values.amountUsdToDcaIn : 0);
-  let debtUsd = fromBaseUnit(
-    client.solautoPositionState!.debt.amountUsed.baseAmountUsdValue,
-    USD_DECIMALS
-  );
+  let debtUsd = calcDebtUsd(client.solautoPositionState);
 
   const debtAdjustmentUsdAbs = Math.abs(values.debtAdjustmentUsd);
   supplyUsd =
@@ -527,7 +510,7 @@ export async function getJupSwapRebalanceDetails(
     usdToSwap / safeGetPrice(input.mint)!,
     input.decimals
   );
-  const outputAmount = rebalanceToZero
+  let outputAmount = rebalanceToZero
     ? output.amountUsed.baseUnit +
       BigInt(
         Math.round(
@@ -547,9 +530,10 @@ export async function getJupSwapRebalanceDetails(
   // || rebalanceToZero
   const exactIn = !exactOut;
 
-  if (exactIn && rebalanceToZero) {
+  if (exactIn && (rebalanceToZero || values.repayingCloseToMaxLtv)) {
     inputAmount = inputAmount + BigInt(Math.round(Number(inputAmount) * 0.005));
   }
+
   const jupSwapInput: JupSwapInput = {
     inputMint: toWeb3JsPublicKey(input.mint),
     outputMint: toWeb3JsPublicKey(output.mint),

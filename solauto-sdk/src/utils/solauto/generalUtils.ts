@@ -24,8 +24,12 @@ import {
 } from "../../generated";
 import { consoleLog, currentUnixSeconds } from "../generalUtils";
 import {
+  calcTotalDebt,
+  calcTotalSupply,
+  debtLiquidityUsdAvailable,
   fromBaseUnit,
   getLiqUtilzationRateBps,
+  supplyLiquidityUsdDepositable,
   toBaseUnit,
 } from "../numberUtils";
 import { getReferralState } from "../accountUtils";
@@ -181,14 +185,8 @@ export function eligibleForRebalance(
         debtMintPrice
       );
 
-      const debtAvailable = fromBaseUnit(
-        positionState.debt.amountCanBeUsed.baseAmountUsdValue,
-        USD_DECIMALS
-      );
-      const supplyDepositable = fromBaseUnit(
-        positionState.supply.amountCanBeUsed.baseAmountUsdValue,
-        USD_DECIMALS
-      );
+      const debtAvailable = debtLiquidityUsdAvailable(positionState);
+      const supplyDepositable = supplyLiquidityUsdDepositable(positionState);
       const sufficientLiquidity =
         debtAvailable * 0.95 > values.debtAdjustmentUsd &&
         supplyDepositable * 0.95 > values.debtAdjustmentUsd;
@@ -440,12 +438,8 @@ export async function positionStateWithLatestPrices(
     ]);
   }
 
-  const supplyUsd =
-    fromBaseUnit(state.supply.amountUsed.baseUnit, state.supply.decimals) *
-    supplyPrice;
-  const debtUsd =
-    fromBaseUnit(state.debt.amountUsed.baseUnit, state.debt.decimals) *
-    debtPrice;
+  const supplyUsd = calcTotalSupply(state) * supplyPrice;
+  const debtUsd = calcTotalDebt(state) * debtPrice;
   return {
     ...state,
     liqUtilizationRateBps: getLiqUtilzationRateBps(

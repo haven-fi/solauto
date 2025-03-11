@@ -13,6 +13,7 @@ import {
 import { currentUnixSeconds } from "./generalUtils";
 import {
   bytesToI80F48,
+  calcNetWorthUsd,
   fromBaseUnit,
   getLiqUtilzationRateBps,
   toBaseUnit,
@@ -194,17 +195,7 @@ export async function getAllMarginfiAccountsByAuthority(
       }))
     );
     return positionStates
-      .sort(
-        (a, b) =>
-          fromBaseUnit(
-            b.state?.netWorth.baseAmountUsdValue ?? BigInt(0),
-            USD_DECIMALS
-          ) -
-          fromBaseUnit(
-            a.state?.netWorth.baseAmountUsdValue ?? BigInt(0),
-            USD_DECIMALS
-          )
-      )
+      .sort((a, b) => calcNetWorthUsd(b.state) - calcNetWorthUsd(a.state))
       .filter((x) => x.state !== undefined)
       .map((x) => ({
         marginfiAccount: toWeb3JsPublicKey(x.publicKey),

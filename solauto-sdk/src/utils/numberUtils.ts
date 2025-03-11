@@ -1,5 +1,61 @@
-import { BASIS_POINTS, MIN_REPAY_GAP_BPS } from "../constants";
-import { RebalanceDirection } from "../generated";
+import { BASIS_POINTS, MIN_REPAY_GAP_BPS, USD_DECIMALS } from "../constants";
+import { PositionState, RebalanceDirection } from "../generated";
+
+export function calcNetWorthUsd(state?: PositionState) {
+  return fromBaseUnit(
+    state?.netWorth.baseAmountUsdValue ?? BigInt(0),
+    USD_DECIMALS
+  );
+}
+
+export function calcSupplyUsd(state?: PositionState) {
+  return fromBaseUnit(
+    state?.supply.amountUsed.baseAmountUsdValue ?? BigInt(0),
+    USD_DECIMALS
+  );
+}
+
+export function calcDebtUsd(state?: PositionState) {
+  return fromBaseUnit(
+    state?.debt.amountUsed.baseAmountUsdValue ?? BigInt(0),
+    USD_DECIMALS
+  );
+}
+
+export function calcNetWorth(state?: PositionState) {
+  return fromBaseUnit(
+    state?.netWorth.baseUnit ?? BigInt(0),
+    state?.supply.decimals ?? 1
+  );
+}
+
+export function calcTotalSupply(state?: PositionState) {
+  return fromBaseUnit(
+    state?.supply.amountUsed.baseUnit ?? BigInt(0),
+    state?.supply.decimals ?? 1
+  );
+}
+
+export function calcTotalDebt(state?: PositionState) {
+  return fromBaseUnit(
+    state?.debt.amountUsed.baseUnit ?? BigInt(0),
+    state?.debt.decimals ?? 1
+  );
+}
+
+export function debtLiquidityUsdAvailable(state?: PositionState) {
+  return fromBaseUnit(
+    state?.debt.amountCanBeUsed.baseAmountUsdValue ?? BigInt(0),
+    USD_DECIMALS
+  );
+}
+
+export function supplyLiquidityUsdDepositable(state?: PositionState) {
+  return fromBaseUnit(
+    state?.supply.amountCanBeUsed.baseAmountUsdValue ?? BigInt(0),
+    USD_DECIMALS
+  );
+}
 
 export function getLiqUtilzationRateBps(
   supplyUsd: number,

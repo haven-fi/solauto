@@ -17,6 +17,9 @@ import {
   TokenType,
 } from "../../src/generated";
 import {
+  calcDebtUsd,
+  calcNetWorthUsd,
+  calcSupplyUsd,
   fromBaseUnit,
   fromBps,
   getLiqUtilzationRateBps,
@@ -66,10 +69,7 @@ function assertAccurateRebalance(
   adjustmentFeeBps = getSolautoFeesBps(
     client.referredBy !== undefined,
     targetLiqUtilizationRateBps,
-    fromBaseUnit(
-      client.solautoPositionState?.netWorth.baseAmountUsdValue ?? BigInt(0),
-      USD_DECIMALS
-    ),
+    calcNetWorthUsd(client.solautoPositionState),
     rebalanceDirection
   ).total;
 
@@ -81,17 +81,10 @@ function assertAccurateRebalance(
   );
 
   const newSupply =
-    fromBaseUnit(
-      client.solautoPositionState!.supply.amountUsed.baseAmountUsdValue,
-      USD_DECIMALS
-    ) +
+    calcSupplyUsd(client.solautoPositionState) +
     (debtAdjustmentUsd - debtAdjustmentUsd * fromBps(adjustmentFeeBps)) +
     amountUsdToDcaIn;
-  const newDebt =
-    fromBaseUnit(
-      client.solautoPositionState!.debt.amountUsed.baseAmountUsdValue,
-      USD_DECIMALS
-    ) + debtAdjustmentUsd;
+  const newDebt = calcDebtUsd(client.solautoPositionState) + debtAdjustmentUsd;
 
   const newLiqUtilizationRateBps = getLiqUtilzationRateBps(
     newSupply,
