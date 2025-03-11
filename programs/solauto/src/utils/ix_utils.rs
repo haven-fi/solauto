@@ -20,7 +20,10 @@ use solana_program::{
 use super::solana_utils::invoke_instruction;
 use crate::{
     state::solauto_position::SolautoPosition,
-    types::{instruction::RebalanceSettings, shared::{DeserializedAccount, SolautoError}},
+    types::{
+        instruction::RebalanceSettings,
+        shared::{DeserializedAccount, SolautoError},
+    },
 };
 
 pub fn update_data<T: BorshSerialize>(account: &mut DeserializedAccount<T>) -> ProgramResult {
@@ -102,8 +105,7 @@ fn pick_ix_data(req: PickIxDataReq) -> Result<PickIxDataResp, SanitizeError> {
     let instruction_data_len = read_u16(&mut current, &data)? as usize;
 
     let data_start = data_start_idx.unwrap_or(0) as usize;
-    let data_end =
-        data_start + data_len.unwrap_or(instruction_data_len as u64) as usize;
+    let data_end = data_start + data_len.unwrap_or(instruction_data_len as u64) as usize;
 
     current += data_start;
     let picked_data = read_slice(&mut current, &data, data_end)?;
@@ -261,23 +263,22 @@ pub fn validate_jup_instruction<'a>(
 
 pub fn get_marginfi_flash_loan_amount<'a>(
     ixs_sysvar: &'a AccountInfo<'a>,
-    ix_idx: usize,
+    ix_idx: Option<usize>,
     args: &RebalanceSettings,
     expected_destination_tas: Option<&[&Pubkey]>,
 ) -> Result<u64, ProgramError> {
-    let res = pick_ix_data(PickIxDataReq {
+    if ix_idx.is_none() {
+        // TODO: note to self when we validate debt adjustment again this value will cause issues for some rebalances
+        return Ok(args.target_in_amount_base_unit.unwrap());
+    }
+    
+    let data = pick_ix_data(PickIxDataReq {
         ixs_sysvar,
-        ix_idx,
+        ix_idx: ix_idx.unwrap(),
         data_start_idx: Some(8),
         data_len: Some(8),
         account_indices: Some(vec![4]),
-    });
-    if res.is_err() {
-        // TODO: note to self when we validate debt adjustment again this value will cause issues because it is not correct
-        return Ok(args.target_in_amount_base_unit.unwrap());
-    }
-
-    let data = res.unwrap();
+    }).expect("Should retrieve flash loan amount");
 
     let args = LendingAccountBorrowInstructionArgs::deserialize(&mut data.data.as_slice())?;
 

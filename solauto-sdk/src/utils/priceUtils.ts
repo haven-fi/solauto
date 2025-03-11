@@ -165,7 +165,15 @@ export async function getJupTokenPrices(
 
   const data = await getJupPriceData(mints, false, mayIncludeSpamTokens);
 
-  return Object.values(data).map((x) =>
+  const sortedData: { [key: string]: any } = {};
+  for (const mint of mints) {
+    const key = mint.toString();
+    if (data.hasOwnProperty(key)) {
+      sortedData[key] = data[key];
+    }
+  }
+
+  return Object.values(sortedData).map((x) =>
     x !== null && typeof x === "object" && "price" in x
       ? parseFloat(x.price as string)
       : 0

@@ -114,9 +114,15 @@ pub fn validate_rebalance_instructions(
     {
         std_accounts.solauto_position.data.rebalance.rebalance_type =
             SolautoRebalanceType::DoubleRebalanceWithFL;
+        let marginfi_flash_borrow = if current_ix_idx > 0 && marginfi_borrow.matches(prev_ix) {
+            Some(((current_ix_idx as i16) + prev_ix) as usize)
+        } else {
+            None
+        };
+
         Ok(RebalanceInstructionIndices {
             jup_swap: ((current_ix_idx as i16) + next_ix) as usize,
-            marginfi_flash_borrow: Some(((current_ix_idx as i16) + prev_ix) as usize),
+            marginfi_flash_borrow,
         })
     } else if (rebalance_type == SolautoRebalanceType::FLSwapThenRebalance
         || rebalance_type == SolautoRebalanceType::None)
@@ -128,9 +134,15 @@ pub fn validate_rebalance_instructions(
     {
         std_accounts.solauto_position.data.rebalance.rebalance_type =
             SolautoRebalanceType::FLSwapThenRebalance;
+        let marginfi_flash_borrow = if current_ix_idx > 1 && marginfi_borrow.matches(ix_2_before) {
+            Some(((current_ix_idx as i16) + ix_2_before) as usize)
+        } else {
+            None
+        };
+
         Ok(RebalanceInstructionIndices {
             jup_swap: ((current_ix_idx as i16) + prev_ix) as usize,
-            marginfi_flash_borrow: Some(((current_ix_idx as i16) + ix_2_before) as usize),
+            marginfi_flash_borrow,
         })
     } else if (rebalance_type == SolautoRebalanceType::FLRebalanceThenSwap
         || rebalance_type == SolautoRebalanceType::None)
@@ -142,9 +154,15 @@ pub fn validate_rebalance_instructions(
     {
         std_accounts.solauto_position.data.rebalance.rebalance_type =
             SolautoRebalanceType::FLRebalanceThenSwap;
+        let marginfi_flash_borrow = if current_ix_idx > 0 && marginfi_borrow.matches(prev_ix) {
+            Some(((current_ix_idx as i16) + prev_ix) as usize)
+        } else {
+            None
+        };
+
         Ok(RebalanceInstructionIndices {
             jup_swap: ((current_ix_idx as i16) + next_ix) as usize,
-            marginfi_flash_borrow: Some(((current_ix_idx as i16) + prev_ix) as usize),
+            marginfi_flash_borrow,
         })
     } else {
         msg!("Incorrect rebalance instructions");
@@ -175,7 +193,7 @@ pub fn get_rebalance_step(
                 .rebalance
                 .flash_loan_amount = ix_utils::get_marginfi_flash_loan_amount(
                 std_accounts.ixs_sysvar.unwrap(),
-                ix_indices.marginfi_flash_borrow.unwrap(),
+                ix_indices.marginfi_flash_borrow,
                 args,
                 None, // &[&swap_source_ta],
             )?;
