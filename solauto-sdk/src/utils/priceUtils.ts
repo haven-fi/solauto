@@ -163,7 +163,7 @@ export async function getJupTokenPrices(
     return [];
   }
 
-  const data = await getJupPriceData(mints, false, mayIncludeSpamTokens);
+  const data = await getJupPriceData(mints, mayIncludeSpamTokens);
 
   const sortedData: { [key: string]: any } = {};
   for (const mint of mints) {

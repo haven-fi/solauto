@@ -171,13 +171,16 @@ export async function getJupSwapTransaction(
   };
 }
 
-export async function getJupPriceData(mints: PublicKey[], extraInfo?: boolean, mayIncludeSpamTokens?: boolean) {
+export async function getJupPriceData(
+  mints: PublicKey[],
+  mayIncludeSpamTokens?: boolean
+) {
   const data = await retryWithExponentialBackoff(async () => {
     const res = await (
       await fetch(
         "https://api.jup.ag/price/v2?ids=" +
           mints.map((x) => x.toString()).join(",") +
-          (extraInfo ? "&showExtraInfo=true" : "")
+          "&showExtraInfo=true"
       )
     ).json();
     const result = res.data;
@@ -185,7 +188,7 @@ export async function getJupPriceData(mints: PublicKey[], extraInfo?: boolean, m
       throw new Error("Failed to get token prices using Jupiter");
     }
 
-    const invalidValues = 
+    const invalidValues =
       Boolean(Object.values(result).filter((x) => x === null).length) ||
       Boolean(
         Object.values(result)
@@ -196,8 +199,18 @@ export async function getJupPriceData(mints: PublicKey[], extraInfo?: boolean, m
       throw new Error("Invalid price values");
     }
 
-    return result;
+    const trueData: { [key: string]: any } = Object.entries(
+      result as { [key: string]: any }
+    ).reduce(
+      (acc, [key, val]) =>
+        val.extraInfo?.quotedPrice?.sellAt === null
+          ? { ...acc, [key]: { ...val, price: "0" } }
+          : { ...acc, [key]: val },
+      {}
+    );
+
+    return trueData;
   }, 8);
 
-  return data as { [key: string]: any };
+  return data;
 }
