@@ -132,6 +132,42 @@ export function getAdjustedSettingsFromAutomation(
   };
 }
 
+export function sufficientLiquidityToBoost(
+  positionState: PositionState,
+  positionSettings: SolautoSettingsParameters | undefined,
+  positionDca: DCASettings | undefined,
+  supplyMintPrice: number,
+  debtMintPrice: number
+) {
+  const limitsUpToDate =
+    positionState.supply.amountCanBeUsed.baseUnit > BigInt(0) ||
+    positionState.debt.amountCanBeUsed.baseUnit > BigInt(0);
+
+  if (limitsUpToDate) {
+    const values = getRebalanceValues(
+      positionState!,
+      positionSettings,
+      positionDca,
+      currentUnixSeconds(),
+      supplyMintPrice,
+      debtMintPrice
+    );
+
+    const debtAvailable = debtLiquidityUsdAvailable(positionState);
+    const supplyDepositable = supplyLiquidityUsdDepositable(positionState);
+    const sufficientLiquidity =
+      debtAvailable * 0.95 > values.debtAdjustmentUsd &&
+      supplyDepositable * 0.95 > values.debtAdjustmentUsd;
+
+    if (!sufficientLiquidity) {
+      consoleLog("Insufficient liquidity to further boost");
+    }
+    return sufficientLiquidity;
+  }
+
+  return true;
+}
+
 export function eligibleForRebalance(
   positionState: PositionState,
   positionSettings: SolautoSettingsParameters | undefined,
@@ -171,33 +207,14 @@ export function eligibleForRebalance(
   const boostFrom = boostToBps - positionSettings.boostGap;
 
   if (positionState.liqUtilizationRateBps - boostFrom <= bpsDistanceThreshold) {
-    const limitsUpToDate =
-      positionState.supply.amountCanBeUsed.baseUnit > BigInt(0) ||
-      positionState.debt.amountCanBeUsed.baseUnit > BigInt(0);
-
-    if (limitsUpToDate && positionState.liqUtilizationRateBps < boostFrom) {
-      const values = getRebalanceValues(
-        positionState!,
-        positionSettings,
-        positionDca,
-        currentUnixSeconds(),
-        supplyMintPrice,
-        debtMintPrice
-      );
-
-      const debtAvailable = debtLiquidityUsdAvailable(positionState);
-      const supplyDepositable = supplyLiquidityUsdDepositable(positionState);
-      const sufficientLiquidity =
-        debtAvailable * 0.95 > values.debtAdjustmentUsd &&
-        supplyDepositable * 0.95 > values.debtAdjustmentUsd;
-
-      if (!sufficientLiquidity) {
-        consoleLog("Insufficient liquidity to further boost");
-      }
-      return sufficientLiquidity ? "boost" : undefined;
-    }
-
-    return "boost";
+    const sufficientLiquidity = sufficientLiquidityToBoost(
+      positionState,
+      positionSettings,
+      positionDca,
+      supplyMintPrice,
+      debtMintPrice
+    );
+    return sufficientLiquidity ? "boost" : undefined;
   } else if (
     repayFrom - positionState.liqUtilizationRateBps <=
     bpsDistanceThreshold
