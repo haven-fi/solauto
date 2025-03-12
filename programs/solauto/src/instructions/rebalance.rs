@@ -133,7 +133,7 @@ fn needs_refresh(
             .eligible_for_next_period(current_timestamp));
     }
 
-    // In case we did a refresh in this same transaction before this ix
+    // In case we did a refresh recently
     if current_timestamp.sub(solauto_position.data.state.last_updated) <= 2 {
         return Ok(false);
     }

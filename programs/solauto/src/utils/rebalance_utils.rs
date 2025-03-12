@@ -186,19 +186,21 @@ pub fn get_rebalance_step(
         //     position_tas.as_slice(),
         // )?;
 
-        if ix_indices.marginfi_flash_borrow.is_some() {
-            let fl_amount = ix_utils::get_marginfi_flash_loan_amount(
-                std_accounts.ixs_sysvar.unwrap(),
-                ix_indices.marginfi_flash_borrow,
-                args,
-                None, // &[&swap_source_ta],
-            )?;
+        if args.rebalance_type == SolautoRebalanceType::FLRebalanceThenSwap || args.rebalance_type == SolautoRebalanceType::FLSwapThenRebalance {
             std_accounts
-                .solauto_position
-                .data
-                .rebalance
-                .flash_loan_amount = fl_amount;
-            msg!("Flash loan amount {}", fl_amount);
+                    .solauto_position
+                    .data
+                    .rebalance
+                    .flash_loan_amount = if ix_indices.marginfi_flash_borrow.is_some() {
+                ix_utils::get_marginfi_flash_loan_amount(
+                    std_accounts.ixs_sysvar.unwrap(),
+                    ix_indices.marginfi_flash_borrow,
+                    args,
+                    None, // &[&swap_source_ta],
+                )?
+            } else {
+                args.target_in_amount_base_unit.unwrap()
+            };
         }
     }
 
