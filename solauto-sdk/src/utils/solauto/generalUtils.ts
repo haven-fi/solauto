@@ -473,6 +473,16 @@ export async function positionStateWithLatestPrices(
     },
     supply: {
       ...state.supply,
+      amountCanBeUsed: {
+        ...state.supply.amountCanBeUsed,
+        baseAmountUsdValue: toBaseUnit(
+          fromBaseUnit(
+            state.supply.amountCanBeUsed.baseUnit,
+            state.supply.decimals
+          ) * supplyPrice,
+          USD_DECIMALS
+        ),
+      },
       amountUsed: {
         ...state.supply.amountUsed,
         baseAmountUsdValue: toBaseUnit(supplyUsd, USD_DECIMALS),
@@ -480,6 +490,16 @@ export async function positionStateWithLatestPrices(
     },
     debt: {
       ...state.debt,
+      amountCanBeUsed: {
+        ...state.debt.amountCanBeUsed,
+        baseAmountUsdValue: toBaseUnit(
+          fromBaseUnit(
+            state.debt.amountCanBeUsed.baseUnit,
+            state.debt.decimals
+          ) * debtPrice,
+          USD_DECIMALS
+        ),
+      },
       amountUsed: {
         ...state.debt.amountUsed,
         baseAmountUsdValue: toBaseUnit(debtUsd, USD_DECIMALS),

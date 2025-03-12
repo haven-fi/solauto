@@ -40,7 +40,6 @@ import {
   getFlashLoanRequirements,
   getJupSwapRebalanceDetails,
   getRebalanceValues,
-  RebalanceValues,
 } from "../utils/solauto/rebalanceUtils";
 import {
   consoleLog,
@@ -73,11 +72,10 @@ import {
   getJupiterErrorFromCode,
   JUPITER_PROGRAM_ID,
 } from "../jupiter-sdk";
-import { JUP, PRICES, USDC } from "../constants";
+import { PRICES } from "../constants";
 import { TransactionItemInputs } from "../types";
 import { safeGetPrice } from "../utils";
 import { BundleSimulationError } from "../types/transactions";
-import { getPackedSettings } from "http2";
 
 interface wSolTokenUsage {
   wSolTokenAccount: PublicKey;
