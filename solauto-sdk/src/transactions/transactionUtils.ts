@@ -707,7 +707,6 @@ export async function buildSolautoRebalanceTransaction(
     jupQuote,
     lookupTableAddresses,
     setupInstructions,
-    tokenLedgerIx,
     swapIx,
   } = await getJupSwapTransaction(client.signer, swapDetails, attemptNum);
 
@@ -762,7 +761,6 @@ export async function buildSolautoRebalanceTransaction(
 
     tx = tx.add([
       setupInstructions,
-      tokenLedgerIx,
       client.flashBorrow(rebalanceType, flashLoan, flashBorrowDest),
       ...(addFirstRebalance ? [firstRebalance] : []),
       ...(rebalanceThenSwap
@@ -774,7 +772,6 @@ export async function buildSolautoRebalanceTransaction(
     const rebalanceType = SolautoRebalanceType.Regular;
     tx = tx.add([
       setupInstructions,
-      tokenLedgerIx,
       client.rebalance(
         "A",
         jupQuote,

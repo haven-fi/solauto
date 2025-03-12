@@ -78,7 +78,7 @@ export interface JupSwapTransaction {
   priceImpactBps: number;
   lookupTableAddresses: string[];
   setupInstructions: TransactionBuilder;
-  tokenLedgerIx: TransactionBuilder;
+  tokenLedgerIx?: TransactionBuilder;
   swapIx: TransactionBuilder;
 }
 
@@ -154,14 +154,15 @@ export async function getJupSwapTransaction(
         getWrappedInstruction(signer, createTransactionInstruction(ix))
       )
     ),
-    tokenLedgerIx: transactionBuilder().add(
+    tokenLedgerIx:
       instructions.tokenLedgerInstruction !== undefined
-        ? getWrappedInstruction(
-            signer,
-            createTransactionInstruction(instructions.tokenLedgerInstruction)
+        ? transactionBuilder().add(
+            getWrappedInstruction(
+              signer,
+              createTransactionInstruction(instructions.tokenLedgerInstruction)
+            )
           )
-        : transactionBuilder()
-    ),
+        : undefined,
     swapIx: transactionBuilder().add(
       getWrappedInstruction(
         signer,

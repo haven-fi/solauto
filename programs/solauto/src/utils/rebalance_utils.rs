@@ -187,16 +187,18 @@ pub fn get_rebalance_step(
         // )?;
 
         if ix_indices.marginfi_flash_borrow.is_some() {
-            std_accounts
-                .solauto_position
-                .data
-                .rebalance
-                .flash_loan_amount = ix_utils::get_marginfi_flash_loan_amount(
+            let fl_amount = ix_utils::get_marginfi_flash_loan_amount(
                 std_accounts.ixs_sysvar.unwrap(),
                 ix_indices.marginfi_flash_borrow,
                 args,
                 None, // &[&swap_source_ta],
             )?;
+            std_accounts
+                .solauto_position
+                .data
+                .rebalance
+                .flash_loan_amount = fl_amount;
+            msg!("Flash loan amount {}", fl_amount);
         }
     }
 

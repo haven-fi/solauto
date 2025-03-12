@@ -393,6 +393,9 @@ impl<'a> SolautoManager<'a> {
                     self.accounts.intermediary_ta.unwrap(),
                 )?;
             }
+        } else if rebalance_type == SolautoRebalanceType::FLRebalanceThenSwap || rebalance_type == SolautoRebalanceType::FLSwapThenRebalance {
+            msg!("No flash loan to repay but rebalance type expects flash loan");
+            return Err(SolautoError::IncorrectInstructions.into());
         }
 
         self.std_accounts.solauto_position.data.rebalance = RebalanceData::default();
