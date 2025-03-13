@@ -204,7 +204,7 @@ export async function getJupPriceData(
       result as { [key: string]: any }
     ).reduce(
       (acc, [key, val]) =>
-        val.extraInfo?.quotedPrice?.sellAt === null
+        !val?.extraInfo?.quotedPrice?.sellAt
           ? { ...acc, [key]: { ...val, price: "0" } }
           : { ...acc, [key]: val },
       {}

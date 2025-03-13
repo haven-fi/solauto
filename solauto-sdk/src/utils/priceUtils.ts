@@ -181,30 +181,10 @@ export async function getJupTokenPrices(
 }
 
 export function safeGetPrice(
-  mint: PublicKey | UmiPublicKey | undefined
+  mint: PublicKey | UmiPublicKey | string | undefined
 ): number | undefined {
   if (mint && mint?.toString() in PRICES) {
     return PRICES[mint!.toString()].price;
   }
   return undefined;
-}
-
-export async function getPriceImpact(
-  inputMint: PublicKey,
-  outputMint: PublicKey,
-  amount: bigint,
-  swapMode: QuoteGetSwapModeEnum
-) {
-  const quoteResponse = await getJupQuote({
-    inputMint,
-    outputMint,
-    amount,
-    exactIn: swapMode === "ExactIn",
-    exactOut: swapMode === "ExactOut",
-  });
-
-  return {
-    priceImpact: parseFloat(quoteResponse.priceImpactPct),
-    quote: quoteResponse,
-  };
 }
