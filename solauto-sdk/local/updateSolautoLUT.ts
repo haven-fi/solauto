@@ -17,7 +17,7 @@ import {
 } from "../src/utils";
 import { SWITCHBOARD_PRICE_FEED_IDS } from "../src/constants/switchboardConstants";
 
-const LOOKUP_TABLE_ADDRESS = new PublicKey(SOLAUTO_LUT);
+const LOOKUP_TABLE_ADDRESS = Boolean(SOLAUTO_LUT) ? new PublicKey(SOLAUTO_LUT) : undefined;
 const solautoManagerTokenAccounts = getTokenAccounts(
   SOLAUTO_MANAGER,
   ALL_SUPPORTED_TOKENS.map((x) => new PublicKey(x))

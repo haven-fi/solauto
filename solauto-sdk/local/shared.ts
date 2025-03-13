@@ -10,6 +10,14 @@ import {
 } from "@solana/web3.js";
 import { buildHeliusApiUrl, getSolanaRpcConnection } from "../src/utils/solanaUtils";
 
+export function getBatches<T>(items: T[], batchSize: number): T[][] {
+  const batches: T[][] = [];
+  for (let i = 0; i < items.length; i += batchSize) {
+    batches.push(items.slice(i, i + batchSize));
+  }
+  return batches;
+}
+
 function loadSecretKey(keypairPath: string) {
   const secretKey = JSON.parse(fs.readFileSync(keypairPath, "utf8"));
   return new Uint8Array(secretKey);
@@ -59,16 +67,20 @@ async function addAddressesIfNeeded(
   const addresses = addressesToAdd
     .filter((x) => !existingAddresses.includes(x))
     .map((x) => new PublicKey(x));
-
+  
   if (addresses.length > 0) {
-    await createAndSendV0Tx([
-      AddressLookupTableProgram.extendLookupTable({
-        payer: keypair.publicKey,
-        authority: keypair.publicKey,
-        lookupTable: lookupTableAddress,
-        addresses,
-      }),
-    ]);
+    const batches = getBatches(addresses, 20);
+    for (const addressBatch of batches) {
+      console.log(addressBatch.map(x => x.toString()));
+      await createAndSendV0Tx([
+        AddressLookupTableProgram.extendLookupTable({
+          payer: keypair.publicKey,
+          authority: keypair.publicKey,
+          lookupTable: lookupTableAddress,
+          addresses: addressBatch,
+        }),
+      ]);
+    }
   }
 }
 
@@ -87,7 +99,7 @@ export async function updateLookupTable(
     });
     lookupTableAddress = addr;
     console.log("Lookup Table Address:", lookupTableAddress.toString());
-    createAndSendV0Tx([createLutIx]);
+    await createAndSendV0Tx([createLutIx]);
   }
 
   const existingAccounts =

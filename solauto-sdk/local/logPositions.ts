@@ -1,6 +1,6 @@
 import { publicKey } from "@metaplex-foundation/umi";
 import {
-  buildHeliusApiUrl,
+  buildIronforgeApiUrl,
   calcNetWorthUsd,
   calcSupplyUsd,
   currentUnixSeconds,
@@ -20,16 +20,9 @@ import { PublicKey } from "@solana/web3.js";
 import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 import path from "path";
 import { config } from "dotenv";
+import { getBatches } from "./shared";
 
 config({ path: path.join(__dirname, ".env") });
-
-function getBatches<T>(items: T[], batchSize: number): T[][] {
-  const batches: T[][] = [];
-  for (let i = 0; i < items.length; i += batchSize) {
-    batches.push(items.slice(i, i + batchSize));
-  }
-  return batches;
-}
 
 export function roundToDecimals(value: number, decimals: number = 2): number {
   if (!value || isNaN(value)) {
@@ -96,7 +89,7 @@ export function formatNumber(
 
 async function main(filterWhitelist: boolean) {
   const [_, umi] = getSolanaRpcConnection(
-    buildHeliusApiUrl(process.env.HELIUS_API_KEY!),
+    buildIronforgeApiUrl(process.env.IRONFORGE_API_KEY!),
     SOLAUTO_PROD_PROGRAM
   );
 
