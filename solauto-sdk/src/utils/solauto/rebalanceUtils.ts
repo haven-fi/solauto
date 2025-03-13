@@ -228,11 +228,6 @@ export function getRebalanceValues(
     adjustmentFeeBps
   );
 
-  consoleLog(
-    "Target rate:",
-    targetRateBps,
-    maxBoostToBps(state.maxLtvBps, state.liqThresholdBps)
-  );
   const maxRepayTo = maxRepayToBps(state.maxLtvBps, state.liqThresholdBps);
   return {
     debtAdjustmentUsd,

@@ -118,12 +118,12 @@ export const TOKEN_INFO: { [key: string]: TokenInfo } = {
     decimals: 6,
   },
   [WBTC]: {
-    ticker: "wBTC",
+    ticker: "WBTC",
     decimals: 8,
     isMajor: true,
   },
   [WETH]: {
-    ticker: "wETH",
+    ticker: "WETH",
     decimals: 8,
     isMajor: true,
   },

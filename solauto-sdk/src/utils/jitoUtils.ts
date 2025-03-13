@@ -139,7 +139,7 @@ async function simulateJitoBundle(umi: Umi, txs: VersionedTransaction[]) {
       throw new Error(res.error.message);
     }
 
-    return res;
+    return res.result.value;
   });
 
   const transactionResults =
@@ -253,6 +253,12 @@ async function sendJitoBundle(
     }
   }
 
+  if (resp?.data?.error?.message === "All providers failed") {
+    throw new Error(resp.data.error.responses[0].response.error.message);
+  } else if (resp.data.error) {
+    throw new Error(resp.data.error);
+  }
+
   const bundleId = resp.data.result;
   consoleLog("Bundle ID:", bundleId);
   return bundleId ? await pollBundleStatus(umi, bundleId) : [];
@@ -311,6 +317,7 @@ export async function sendJitoBundledTransactions(
   );
 
   txs[0] = txs[0].prepend(getTipInstruction(userSigner, 150_000));
+  
   const feeEstimates =
     priorityFeeSetting !== PriorityFeeSetting.None
       ? await Promise.all(
@@ -342,13 +349,6 @@ export async function sendJitoBundledTransactions(
       false,
       feeEstimates
     );
-    consoleLog(
-      builtTxs.map((x) =>
-        x.message.compiledInstructions.map((y) =>
-          x.message.staticAccountKeys[y.programIdIndex].toString()
-        )
-      )
-    );
     simulationResults = await simulateJitoBundle(umi, builtTxs);
   }
 
@@ -367,6 +367,13 @@ export async function sendJitoBundledTransactions(
         ? simulationResults.map((x) => x.unitsConsumed! * 1.15)
         : undefined
     );
+    // consoleLog(
+    //   builtTxs.map((x) =>
+    //     x.message.compiledInstructions.map((y) =>
+    //       x.message.staticAccountKeys[y.programIdIndex].toString()
+    //     )
+    //   )
+    // );
 
     const serializedTxs = builtTxs.map((x) => x.serialize());
     if (serializedTxs.find((x) => x.length > 1232)) {
