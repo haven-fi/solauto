@@ -9,7 +9,7 @@ use marginfi_sdk::generated::{
 use pyth_sdk_solana::state::SolanaPriceAccount;
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 use solana_program::{
-    account_info::AccountInfo, clock::Clock, entrypoint::ProgramResult, msg,
+    account_info::AccountInfo, clock::Clock, entrypoint::ProgramResult, rent::Rent, msg,
     program_error::ProgramError, pubkey::Pubkey, sysvar::Sysvar,
 };
 use std::{

@@ -377,7 +377,7 @@ export async function getFlashLoanRequirements(
         !sufficientSignerSupplyLiquidity;
     } else {
       throw new Error(
-        `Need at least ${values.debtAdjustmentUsd / debtPrice} ${tokenInfo(client.debtMint).ticker} or ${values.debtAdjustmentUsd / supplyPrice} ${tokenInfo(client.supplyMint).ticker} to perform the transaction`
+        `Insufficient liquidity to perform the transaction`
       );
     }
   }
