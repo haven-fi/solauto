@@ -50,10 +50,6 @@ function createTransactionInstruction(
 }
 
 export async function getJupQuote(swapDetails: JupSwapInput) {
-  const memecoinSwap =
-    tokenInfo(swapDetails.inputMint).isMeme ||
-    tokenInfo(swapDetails.outputMint).isMeme;
-
   return await retryWithExponentialBackoff(
     async (attemptNum: number) =>
       await jupApi.quoteGet({
@@ -65,7 +61,7 @@ export async function getJupQuote(swapDetails: JupSwapInput) {
           : swapDetails.exactIn
             ? "ExactIn"
             : undefined,
-        slippageBps: memecoinSwap ? 500 : 200,
+        slippageBps: 300,
         maxAccounts: !swapDetails.exactOut ? 15 + attemptNum * 5 : undefined,
       }),
     3,
