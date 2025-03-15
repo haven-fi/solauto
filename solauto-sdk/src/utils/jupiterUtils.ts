@@ -33,6 +33,7 @@ export interface JupSwapDetails extends JupSwapInput {
   slippageIncFactor?: number;
   addPadding?: boolean;
   jupQuote?: QuoteResponse;
+  wrapAndUnwrapSol?: boolean;
 }
 
 function createTransactionInstruction(
@@ -76,6 +77,7 @@ export interface JupSwapTransaction {
   setupInstructions: TransactionBuilder;
   tokenLedgerIx?: TransactionBuilder;
   swapIx: TransactionBuilder;
+  cleanupIx: TransactionBuilder;
 }
 
 export async function getJupSwapTransaction(
@@ -102,7 +104,7 @@ export async function getJupSwapTransaction(
         swapRequest: {
           userPublicKey: signer.publicKey.toString(),
           quoteResponse,
-          wrapAndUnwrapSol: false,
+          wrapAndUnwrapSol: swapDetails.wrapAndUnwrapSol ?? false,
           useTokenLedger: !swapDetails.exactOut && !swapDetails.exactIn,
           destinationTokenAccount: getTokenAccount(
             swapDetails.destinationWallet,
@@ -150,21 +152,28 @@ export async function getJupSwapTransaction(
         getWrappedInstruction(signer, createTransactionInstruction(ix))
       )
     ),
-    tokenLedgerIx:
-      instructions.tokenLedgerInstruction !== undefined
-        ? transactionBuilder().add(
-            getWrappedInstruction(
-              signer,
-              createTransactionInstruction(instructions.tokenLedgerInstruction)
-            )
+    tokenLedgerIx: instructions.tokenLedgerInstruction
+      ? transactionBuilder().add(
+          getWrappedInstruction(
+            signer,
+            createTransactionInstruction(instructions.tokenLedgerInstruction)
           )
-        : undefined,
+        )
+      : undefined,
     swapIx: transactionBuilder().add(
       getWrappedInstruction(
         signer,
         createTransactionInstruction(instructions.swapInstruction)
       )
     ),
+    cleanupIx: instructions.cleanupInstruction
+      ? transactionBuilder().add(
+          getWrappedInstruction(
+            signer,
+            createTransactionInstruction(instructions.cleanupInstruction)
+          )
+        )
+      : transactionBuilder(),
   };
 }
 

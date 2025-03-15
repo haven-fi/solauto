@@ -82,7 +82,8 @@ class LookupTables {
 export class TransactionItem {
   lookupTableAddresses!: string[];
   tx?: TransactionBuilder;
-  public initialized: boolean = false;
+  initialized: boolean = false;
+  orderPrio: number = 0;
 
   constructor(
     public fetchTx: (
@@ -100,6 +101,7 @@ export class TransactionItem {
     const resp = await this.fetchTx(attemptNum);
     this.tx = resp?.tx;
     this.lookupTableAddresses = resp?.lookupTableAddresses ?? [];
+    this.orderPrio = resp?.orderPrio ?? 0;
   }
 
   uniqueAccounts(): string[] {
@@ -273,8 +275,10 @@ export class TransactionsManager {
     let transactionSets: TransactionSet[] = [];
     this.txHandler.log(`Reassembling ${items.length} items`);
 
-    for (let i = items.length - 1; i >= 0; ) {
-      let item = items[i];
+    const txItems = items.sort((a, b) => a.orderPrio - b.orderPrio);
+
+    for (let i = txItems.length - 1; i >= 0; ) {
+      let item = txItems[i];
       i--;
 
       if (!item.tx) {
@@ -293,8 +297,8 @@ export class TransactionsManager {
           item,
         ]);
         for (let j = i; j >= 0; j--) {
-          if (await newSet.fitsWith(items[j])) {
-            newSet.prepend(items[j]);
+          if (await newSet.fitsWith(txItems[j])) {
+            newSet.prepend(txItems[j]);
             i--;
           } else {
             break;

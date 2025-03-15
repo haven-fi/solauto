@@ -31,4 +31,5 @@ export type TransactionRunType = "skip-simulation" | "only-simulate" | "normal";
 export interface TransactionItemInputs {
   tx: TransactionBuilder;
   lookupTableAddresses?: string[];
+  orderPrio?: number;
 }

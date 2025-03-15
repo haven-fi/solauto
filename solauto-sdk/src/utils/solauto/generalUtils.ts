@@ -46,6 +46,7 @@ import {
 import { RebalanceAction, SolautoPositionDetails } from "../../types/solauto";
 import { fetchTokenPrices } from "../priceUtils";
 import { getRebalanceValues } from "./rebalanceUtils";
+import { QuoteResponse } from "@jup-ag/api";
 
 export function createDynamicSolautoProgram(programId: PublicKey): Program {
   return {
@@ -630,7 +631,8 @@ type PositionAdjustment =
   | { type: "settings"; value: SolautoSettingsParametersInpArgs }
   | { type: "dca"; value: DCASettingsInpArgs }
   | { type: "dcaInBalance"; value: { amount: bigint; tokenType: TokenType } }
-  | { type: "cancellingDca"; value: TokenType };
+  | { type: "cancellingDca"; value: TokenType }
+  | { type: "jupSwap", value: QuoteResponse };
 
 export class LivePositionUpdates {
   public supplyAdjustment = BigInt(0);
@@ -639,6 +641,7 @@ export class LivePositionUpdates {
   public activeDca: DCASettings | undefined = undefined;
   public dcaInBalance?: { amount: bigint; tokenType: TokenType } = undefined;
   public cancellingDca: TokenType | undefined = undefined;
+  public jupSwap: QuoteResponse | undefined = undefined;
 
   new(update: PositionAdjustment) {
     if (update.type === "supply") {
@@ -666,6 +669,8 @@ export class LivePositionUpdates {
       this.cancellingDca = update.value;
     } else if (update.type === "dcaInBalance") {
       this.dcaInBalance = update.value;
+    } else if (update.type === "jupSwap") {
+      this.jupSwap = update.value;
     }
   }
 
@@ -676,6 +681,7 @@ export class LivePositionUpdates {
     this.activeDca = undefined;
     this.dcaInBalance = undefined;
     this.cancellingDca = undefined;
+    this.jupSwap = undefined;
   }
 
   hasUpdates(): boolean {
