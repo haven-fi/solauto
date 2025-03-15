@@ -583,7 +583,7 @@ export async function getTransactionChores(
       client,
       accountsGettingCreated,
       solautoActions,
-      client.livePositionUpdates.dcaInBalance
+      client.contextUpdates.dcaInBalance
     ),
     await rebalanceChoresBefore(client, tx, accountsGettingCreated),
   ]);
@@ -592,7 +592,7 @@ export async function getTransactionChores(
     transactionChoresAfter(
       client,
       solautoActions,
-      client.livePositionUpdates.cancellingDca
+      client.contextUpdates.cancellingDca
     )
   );
 
@@ -620,8 +620,8 @@ export async function requiresRefreshBeforeRebalance(
     return true;
   } else if (client.solautoPositionData && !client.selfManaged) {
     if (
-      client.livePositionUpdates.supplyAdjustment > BigInt(0) ||
-      client.livePositionUpdates.debtAdjustment > BigInt(0)
+      client.contextUpdates.supplyAdjustment > BigInt(0) ||
+      client.contextUpdates.debtAdjustment > BigInt(0)
     ) {
       return false;
     }
@@ -638,8 +638,8 @@ export async function requiresRefreshBeforeRebalance(
 
     client.log("Liq utilization rate diff:", utilizationRateDiff);
     if (
-      client.livePositionUpdates.supplyAdjustment === BigInt(0) &&
-      client.livePositionUpdates.debtAdjustment === BigInt(0) &&
+      client.contextUpdates.supplyAdjustment === BigInt(0) &&
+      client.contextUpdates.debtAdjustment === BigInt(0) &&
       utilizationRateDiff >= 10
     ) {
       client.log(
@@ -667,7 +667,7 @@ export async function buildSolautoRebalanceTransaction(
 
   if (
     (client.solautoPositionState?.supply.amountUsed.baseUnit === BigInt(0) &&
-      client.livePositionUpdates.supplyAdjustment === BigInt(0)) ||
+      client.contextUpdates.supplyAdjustment === BigInt(0)) ||
     (targetLiqUtilizationRateBps === undefined &&
       !eligibleForRebalance(
         client.solautoPositionState!,

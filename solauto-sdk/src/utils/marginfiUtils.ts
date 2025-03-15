@@ -26,7 +26,7 @@ import {
 import { MarginfiAssetAccounts } from "../types/accounts";
 import { PositionState, PositionTokenUsage } from "../generated";
 import { USD_DECIMALS } from "../constants/generalAccounts";
-import { LivePositionUpdates } from "./solauto/generalUtils";
+import { ContextUpdates } from "./solauto/generalUtils";
 import { ALL_SUPPORTED_TOKENS, TOKEN_INFO } from "../constants";
 import { fetchTokenPrices, safeGetPrice } from "./priceUtils";
 
@@ -296,7 +296,7 @@ export async function getMarginfiAccountPositionState(
   marginfiGroup?: PublicKey,
   supply?: BankSelection,
   debt?: BankSelection,
-  livePositionUpdates?: LivePositionUpdates
+  contextUpdates?: ContextUpdates
 ): Promise<
   | { supplyBank: Bank | null; debtBank: Bank | null; state: PositionState }
   | undefined
@@ -381,7 +381,7 @@ export async function getMarginfiAccountPositionState(
         supplyBank!,
         true,
         bytesToI80F48(supplyBalances[0].assetShares.value),
-        livePositionUpdates?.supplyAdjustment
+        contextUpdates?.supplyAdjustment
       );
     }
 
@@ -398,7 +398,7 @@ export async function getMarginfiAccountPositionState(
         debtBank!,
         false,
         bytesToI80F48(debtBalances[0].liabilityShares.value),
-        livePositionUpdates?.debtAdjustment
+        contextUpdates?.debtAdjustment
       );
     }
   }
@@ -412,7 +412,7 @@ export async function getMarginfiAccountPositionState(
       supplyBank,
       true,
       0,
-      livePositionUpdates?.supplyAdjustment
+      contextUpdates?.supplyAdjustment
     );
   }
 
@@ -440,7 +440,7 @@ export async function getMarginfiAccountPositionState(
       debtBank,
       false,
       0,
-      livePositionUpdates?.debtAdjustment
+      contextUpdates?.debtAdjustment
     );
   }
 

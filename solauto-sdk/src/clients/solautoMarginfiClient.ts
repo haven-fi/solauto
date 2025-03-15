@@ -726,7 +726,7 @@ export class SolautoMarginfiClient extends SolautoClient {
       this.marginfiGroup,
       useDesignatedMint ? { mint: this.supplyMint } : undefined,
       useDesignatedMint ? { mint: this.debtMint } : undefined,
-      this.livePositionUpdates
+      this.contextUpdates
     );
 
     if (resp) {

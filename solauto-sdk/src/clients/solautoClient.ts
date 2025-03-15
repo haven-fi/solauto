@@ -46,7 +46,7 @@ import {
   SOLAUTO_LUT,
 } from "../constants/solautoConstants";
 import { currentUnixSeconds } from "../utils/generalUtils";
-import { LivePositionUpdates } from "../utils/solauto/generalUtils";
+import { ContextUpdates } from "../utils/solauto/generalUtils";
 import {
   ReferralStateManager,
   ReferralStateManagerArgs,
@@ -87,7 +87,7 @@ export abstract class SolautoClient extends ReferralStateManager {
 
   public authorityLutAddress?: PublicKey;
 
-  public livePositionUpdates: LivePositionUpdates = new LivePositionUpdates();
+  public contextUpdates: ContextUpdates = new ContextUpdates();
 
   private signerSupplyBalance: bigint | undefined;
   private signerDebtBalance: bigint | undefined;
@@ -193,18 +193,18 @@ export abstract class SolautoClient extends ReferralStateManager {
           { commitment: "confirmed" }
         );
       } else {
-        if (this.livePositionUpdates.activeDca) {
+        if (this.contextUpdates.activeDca) {
           this.solautoPositionData.position.dca =
-            this.livePositionUpdates.activeDca;
+            this.contextUpdates.activeDca;
         }
-        if (this.livePositionUpdates.settings) {
+        if (this.contextUpdates.settings) {
           this.solautoPositionData.position.settingParams =
-            this.livePositionUpdates.settings;
+            this.contextUpdates.settings;
         }
-        // All other live position updates can be derived by getting a fresh position state, so we don't need to do anything else form livePositionUpdates
+        // All other live position updates can be derived by getting a fresh position state, so we don't need to do anything else form contextUpdates
       }
     }
-    this.livePositionUpdates.reset();
+    this.contextUpdates.reset();
   }
 
   abstract protocolAccount(): PublicKey;
@@ -357,14 +357,14 @@ export abstract class SolautoClient extends ReferralStateManager {
 
   solautoPositionSettings(): SolautoSettingsParameters | undefined {
     return (
-      this.livePositionUpdates.settings ??
+      this.contextUpdates.settings ??
       this.solautoPositionData?.position.settingParams
     );
   }
 
   solautoPositionActiveDca(): DCASettings | undefined {
     return (
-      this.livePositionUpdates.activeDca ??
+      this.contextUpdates.activeDca ??
       this.solautoPositionData?.position.dca
     );
   }
@@ -381,7 +381,7 @@ export abstract class SolautoClient extends ReferralStateManager {
     dca?: DCASettingsInpArgs
   ): TransactionBuilder {
     if (dca && dca.dcaInBaseUnit > 0) {
-      this.livePositionUpdates.new({
+      this.contextUpdates.new({
         type: "dcaInBalance",
         value: {
           amount: BigInt(dca.dcaInBaseUnit),
@@ -390,13 +390,13 @@ export abstract class SolautoClient extends ReferralStateManager {
       });
     }
     if (settingParams) {
-      this.livePositionUpdates.new({
+      this.contextUpdates.new({
         type: "settings",
         value: settingParams,
       });
     }
     if (dca) {
-      this.livePositionUpdates.new({
+      this.contextUpdates.new({
         type: "dca",
         value: dca,
       });
@@ -425,7 +425,7 @@ export abstract class SolautoClient extends ReferralStateManager {
         isSome(args.dca) &&
         args.dca.value.dcaInBaseUnit > 0
       ) {
-        this.livePositionUpdates.new({
+        this.contextUpdates.new({
           type: "dcaInBalance",
           value: {
             amount: BigInt(args.dca.value.dcaInBaseUnit),
@@ -436,14 +436,14 @@ export abstract class SolautoClient extends ReferralStateManager {
     }
 
     if (isOption(args.settingParams) && isSome(args.settingParams)) {
-      this.livePositionUpdates.new({
+      this.contextUpdates.new({
         type: "settings",
         value: args.settingParams.value,
       });
     }
 
     if (isOption(args.dca) && isSome(args.dca)) {
-      this.livePositionUpdates.new({
+      this.contextUpdates.new({
         type: "dca",
         value: args.dca.value,
       });
@@ -488,7 +488,7 @@ export abstract class SolautoClient extends ReferralStateManager {
         signerDcaTa = publicKey(this.signerDebtTa);
       }
 
-      this.livePositionUpdates.new({
+      this.contextUpdates.new({
         type: "cancellingDca",
         value: this.solautoPositionData!.position.dca.tokenType,
       });
@@ -550,18 +550,18 @@ export abstract class SolautoClient extends ReferralStateManager {
     }
 
     if (args.__kind === "Deposit") {
-      this.livePositionUpdates.new({
+      this.contextUpdates.new({
         type: "supply",
         value: BigInt(args.fields[0]),
       });
     } else if (args.__kind === "Withdraw") {
       if (args.fields[0].__kind === "Some") {
-        this.livePositionUpdates.new({
+        this.contextUpdates.new({
           type: "supply",
           value: BigInt(args.fields[0].fields[0]) * BigInt(-1),
         });
       } else {
-        this.livePositionUpdates.new({
+        this.contextUpdates.new({
           type: "supply",
           value:
             (this.solautoPositionState?.supply.amountUsed.baseUnit ??
@@ -569,18 +569,18 @@ export abstract class SolautoClient extends ReferralStateManager {
         });
       }
     } else if (args.__kind === "Borrow") {
-      this.livePositionUpdates.new({
+      this.contextUpdates.new({
         type: "debt",
         value: BigInt(args.fields[0]),
       });
     } else {
       if (args.fields[0].__kind === "Some") {
-        this.livePositionUpdates.new({
+        this.contextUpdates.new({
           type: "debt",
           value: BigInt(args.fields[0].fields[0]) * BigInt(-1),
         });
       } else {
-        this.livePositionUpdates.new({
+        this.contextUpdates.new({
           type: "debt",
           value:
             (this.solautoPositionState?.debt.amountUsed.baseUnit ?? BigInt(0)) *
@@ -615,7 +615,7 @@ export abstract class SolautoClient extends ReferralStateManager {
       Boolean(this.solautoPositionState) &&
       Number(this.solautoPositionState!.lastUpdated) >
         currentUnixSeconds() - MIN_POSITION_STATE_FRESHNESS_SECS &&
-      !this.livePositionUpdates.hasUpdates()
+      !this.contextUpdates.positionUpdates()
     ) {
       return this.solautoPositionState;
     }

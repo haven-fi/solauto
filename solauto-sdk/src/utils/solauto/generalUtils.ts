@@ -625,7 +625,7 @@ export function createSolautoSettings(
   };
 }
 
-type PositionAdjustment =
+type ContextAdjustment =
   | { type: "supply"; value: bigint }
   | { type: "debt"; value: bigint }
   | { type: "settings"; value: SolautoSettingsParametersInpArgs }
@@ -634,7 +634,7 @@ type PositionAdjustment =
   | { type: "cancellingDca"; value: TokenType }
   | { type: "jupSwap", value: QuoteResponse };
 
-export class LivePositionUpdates {
+export class ContextUpdates {
   public supplyAdjustment = BigInt(0);
   public debtAdjustment = BigInt(0);
   public settings: SolautoSettingsParameters | undefined = undefined;
@@ -643,7 +643,7 @@ export class LivePositionUpdates {
   public cancellingDca: TokenType | undefined = undefined;
   public jupSwap: QuoteResponse | undefined = undefined;
 
-  new(update: PositionAdjustment) {
+  new(update: ContextAdjustment) {
     if (update.type === "supply") {
       this.supplyAdjustment += update.value;
     } else if (update.type === "debt") {
@@ -684,7 +684,7 @@ export class LivePositionUpdates {
     this.jupSwap = undefined;
   }
 
-  hasUpdates(): boolean {
+  positionUpdates(): boolean {
     return (
       this.supplyAdjustment !== BigInt(0) ||
       this.debtAdjustment !== BigInt(0) ||
