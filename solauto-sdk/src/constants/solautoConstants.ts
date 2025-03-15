@@ -44,10 +44,6 @@ export const JITO_TIP_ACCOUNTS = [
   "3AVi9Tg9Uo68tJfuvoKvqKNWKkC5wPdSSdeBnizKZ6jT",
 ];
 
-// "9D4xwZwDf46n9ft5gQxZzq3rBbdRXsXojKQLZbBdskPY";
-// "J97FEQeJzChRnaAjNy3dRvm9FBavKqAdxo8jKXzw17ut"
-// "ByhmNseaYZXBDcBm6xhbgarwixgjym6H4ddLsvgoL3BL"
-// "2VJK8AHqtiaiJKYbBtFr3EHV4Hcy1FHCiEYQFmUvxot8"
 export const SOLAUTO_LUT = "8b7KefQDroVLGao71J5H3hFwABeyMCgCrLpXWssNFhk9";
 export const STANDARD_LUT_ACCOUNTS = [
   PublicKey.default,
