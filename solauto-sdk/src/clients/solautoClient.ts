@@ -420,7 +420,6 @@ export abstract class SolautoClient extends ReferralStateManager {
         signerDcaTa = publicKey(this.signerDebtTa);
       }
 
-      let addingToPos = false;
       if (
         isOption(args.dca) &&
         isSome(args.dca) &&
@@ -433,7 +432,6 @@ export abstract class SolautoClient extends ReferralStateManager {
             tokenType: args.dca.value.tokenType,
           },
         });
-        addingToPos = true;
       }
     }
 

@@ -714,8 +714,6 @@ export class TransactionsManager {
     currentIndex: number
   ) {
     let itemSet: TransactionSet | undefined = itemSets[currentIndex];
-    let num = 0;
-
     await retryWithExponentialBackoff(
       async (attemptNum, prevError) => {
         if (
@@ -725,8 +723,6 @@ export class TransactionsManager {
         ) {
           throw prevError;
         }
-
-        num = attemptNum;
 
         if (currentIndex > 0 || attemptNum > 0) {
           const refreshedSets = await this.refreshItemSets(
