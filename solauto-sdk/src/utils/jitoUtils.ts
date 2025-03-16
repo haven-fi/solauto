@@ -25,7 +25,11 @@ import {
   sendSingleOptimizedTransaction,
   systemTransferUmiIx,
 } from "./solanaUtils";
-import { consoleLog, retryWithExponentialBackoff } from "./generalUtils";
+import {
+  consoleLog,
+  customRpcCall,
+  retryWithExponentialBackoff,
+} from "./generalUtils";
 import { PriorityFeeSetting, TransactionRunType } from "../types";
 import axios from "axios";
 import base58 from "bs58";
@@ -74,40 +78,24 @@ function parseJitoErrorMessage(message: string) {
 
 async function simulateJitoBundle(umi: Umi, txs: VersionedTransaction[]) {
   const simulationResult = await retryWithExponentialBackoff(async () => {
-    const resp = await axios.post(
-      umi.rpc.getEndpoint(),
+    const res = await customRpcCall(umi, "simulateBundle", [
       {
-        jsonrpc: "2.0",
-        id: 1,
-        method: "simulateBundle",
-        params: [
-          {
-            encodedTransactions: txs.map((x) =>
-              Buffer.from(x.serialize()).toString("base64")
-            ),
-          },
-          {
-            encoding: "base64",
-            commitment: "confirmed",
-            preExecutionAccountsConfigs: txs.map((_) => {}),
-            postExecutionAccountsConfigs: txs.map((_) => {}),
-            skipSigVerify: true,
-          },
-        ],
+        encodedTransactions: txs.map((x) =>
+          Buffer.from(x.serialize()).toString("base64")
+        ),
       },
       {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
-    );
+        encoding: "base64",
+        commitment: "confirmed",
+        preExecutionAccountsConfigs: txs.map((_) => {}),
+        postExecutionAccountsConfigs: txs.map((_) => {}),
+        skipSigVerify: true,
+      },
+    ]);
 
-    const res = resp.data as any;
-
-    if (res.result && res.result.value && res.result.value.summary.failed) {
-      const resValue = res.result.value;
-      const transactionResults =
-        resValue.transactionResults as SimulatedTransactionResponse[];
+    if (res.value && res.value.summary.failed) {
+      const transactionResults = res.value
+        .transactionResults as SimulatedTransactionResponse[];
       transactionResults.forEach((x) => {
         x.logs?.forEach((y) => {
           consoleLog(y);
@@ -115,7 +103,7 @@ async function simulateJitoBundle(umi: Umi, txs: VersionedTransaction[]) {
       });
 
       const failedTxIdx = transactionResults.length;
-      const txFailure = resValue.summary.failed.error.TransactionFailure;
+      const txFailure = res.value.summary.failed.error.TransactionFailure;
 
       if (txFailure) {
         const info = parseJitoErrorMessage(txFailure[1] as string);
@@ -133,13 +121,13 @@ async function simulateJitoBundle(umi: Umi, txs: VersionedTransaction[]) {
       }
 
       throw new Error(
-        txFailure ? txFailure[1] : resValue.summary.failed.toString()
+        txFailure ? txFailure[1] : res.value.summary.failed.toString()
       );
     } else if (res.error && res.error.message) {
       throw new Error(res.error.message);
     }
 
-    return res.result.value;
+    return res.value;
   });
 
   const transactionResults =
@@ -191,17 +179,11 @@ async function umiToVersionedTransactions(
 }
 
 async function getBundleStatus(umi: Umi, bundleId: string) {
-  const res = await axios.post(umi.rpc.getEndpoint(), {
-    jsonrpc: "2.0",
-    id: 1,
-    method: "getBundleStatuses",
-    params: [[bundleId]],
-  });
-  if (res.data.error) {
-    throw new Error(`Failed to get bundle status: ${res.data.error}`);
+  const res = await customRpcCall(umi, "getBundleStatuses", [[bundleId]]);
+  if (res.error) {
+    throw new Error(`Failed to get bundle status: ${res.error}`);
   }
-
-  return res.data.result;
+  return res;
 }
 
 async function pollBundleStatus(
@@ -238,12 +220,7 @@ async function sendJitoBundle(
 ): Promise<string[]> {
   let resp: any;
   try {
-    resp = await axios.post<{ result: string }>(umi.rpc.getEndpoint(), {
-      jsonrpc: "2.0",
-      id: 1,
-      method: "sendBundle",
-      params: [transactions],
-    });
+    resp = await customRpcCall(umi, "sendBundle", [transactions]);
   } catch (e: any) {
     if (e.response.data.error) {
       console.error("Jito send bundle error:", e.response.data.error);
@@ -253,13 +230,13 @@ async function sendJitoBundle(
     }
   }
 
-  if (resp?.data?.error?.message === "All providers failed") {
-    throw new Error(resp.data.error.responses[0].response.error.message);
-  } else if (resp.data.error) {
-    throw new Error(resp.data.error);
+  if (resp.error?.message === "All providers failed") {
+    throw new Error(resp.error.responses[0].response.error.message);
+  } else if (resp.error) {
+    throw new Error(resp.error);
   }
 
-  const bundleId = resp.data.result;
+  const bundleId = resp.result as string;
   consoleLog("Bundle ID:", bundleId);
   return bundleId ? await pollBundleStatus(umi, bundleId) : [];
 }
@@ -317,7 +294,7 @@ export async function sendJitoBundledTransactions(
   );
 
   txs[0] = txs[0].prepend(getTipInstruction(userSigner, 150_000));
-  
+
   const feeEstimates =
     priorityFeeSetting !== PriorityFeeSetting.None
       ? await Promise.all(
@@ -367,13 +344,13 @@ export async function sendJitoBundledTransactions(
         ? simulationResults.map((x) => x.unitsConsumed! * 1.15)
         : undefined
     );
-    // consoleLog(
-    //   builtTxs.map((x) =>
-    //     x.message.compiledInstructions.map((y) =>
-    //       x.message.staticAccountKeys[y.programIdIndex].toString()
-    //     )
-    //   )
-    // );
+    consoleLog(
+      builtTxs.map((x) =>
+        x.message.compiledInstructions.map((y) =>
+          x.message.staticAccountKeys[y.programIdIndex].toString()
+        )
+      )
+    );
 
     const serializedTxs = builtTxs.map((x) => x.serialize());
     if (serializedTxs.find((x) => x.length > 1232)) {

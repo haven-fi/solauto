@@ -599,9 +599,7 @@ export async function getTransactionChores(
   return [choresBefore, choresAfter];
 }
 
-export async function requiresRefreshBeforeRebalance(
-  client: SolautoClient,
-) {
+export async function requiresRefreshBeforeRebalance(client: SolautoClient) {
   const neverRefreshedBefore =
     client.solautoPositionData &&
     client.solautoPositionData.state.supply.amountCanBeUsed.baseUnit ===
@@ -693,7 +691,11 @@ export async function buildSolautoRebalanceTransaction(
   );
   client.log("Rebalance values: ", values);
 
-  const flRequirements = await getFlashLoanRequirements(client, values, attemptNum);
+  const flRequirements = await getFlashLoanRequirements(
+    client,
+    values,
+    attemptNum
+  );
   const swapDetails = await getJupSwapRebalanceDetails(
     client,
     values,
@@ -701,12 +703,8 @@ export async function buildSolautoRebalanceTransaction(
     targetLiqUtilizationRateBps,
     attemptNum
   );
-  const {
-    jupQuote,
-    lookupTableAddresses,
-    setupInstructions,
-    swapIx,
-  } = await getJupSwapTransaction(client.signer, swapDetails, attemptNum);
+  const { jupQuote, lookupTableAddresses, setupInstructions, swapIx } =
+    await getJupSwapTransaction(client.signer, swapDetails, attemptNum);
 
   const flashLoan = flRequirements
     ? getFlashLoanDetails(client, flRequirements, values, jupQuote)
@@ -858,7 +856,14 @@ export function getErrorInfo(
   const computeIxs = simulationSuccessful ? 2 : 1; // sub ixs to account for computeUnitLimit and computeUnitPrice that get added
 
   try {
-    if (typeof error === "object" && (error as any)["InstructionError"]) {
+    if (error instanceof BundleSimulationError) {
+      errTxIdx = error.details.transactionIdx;
+      errIxIdx = error.details.instructionIdx - computeIxs;
+      errCode = error.details.errorCode;
+    } else if (
+      typeof error === "object" &&
+      (error as any)["InstructionError"]
+    ) {
       const err = (error as any)["InstructionError"];
 
       errIxIdx = err[0] - computeIxs;
@@ -867,10 +872,6 @@ export function getErrorInfo(
           ? err[1]["Custom"]
           : undefined;
       errName = errCode === undefined ? (err[1] as string) : undefined;
-    } else if (error instanceof BundleSimulationError) {
-      errTxIdx = error.details.transactionIdx;
-      errIxIdx = error.details.instructionIdx - computeIxs;
-      errCode = error.details.errorCode;
     }
 
     consoleLog(

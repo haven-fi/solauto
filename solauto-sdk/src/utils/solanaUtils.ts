@@ -36,6 +36,7 @@ import { getTokenAccount } from "./accountUtils";
 import {
   arraysAreEqual,
   consoleLog,
+  customRpcCall,
   retryWithExponentialBackoff,
 } from "./generalUtils";
 import {
@@ -45,7 +46,6 @@ import {
 import { PriorityFeeSetting, TransactionRunType } from "../types";
 import { createDynamicSolautoProgram } from "./solauto";
 import { SOLAUTO_PROD_PROGRAM } from "../constants";
-import axios from "axios";
 
 export function buildHeliusApiUrl(heliusApiKey: string) {
   return `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`;
@@ -292,17 +292,10 @@ export async function getQnComputeUnitPriceEstimate(
   programId: PublicKey,
   blockheight: number = 50
 ): Promise<any> {
-  return (
-    await axios.post(umi.rpc.getEndpoint(), {
-      method: "qn_estimatePriorityFees",
-      jsonrpc: "2.0",
-      id: 1,
-      params: {
-        last_n_blocks: blockheight,
-        account: programId.toString(),
-      },
-    })
-  ).data;
+  return await customRpcCall(umi, "qn_estimatePriorityFees", {
+    last_n_blocks: blockheight,
+    account: programId.toString(),
+  });
 }
 
 export async function getComputeUnitPriceEstimate(
@@ -321,7 +314,7 @@ export async function getComputeUnitPriceEstimate(
 
   let feeEstimate: number | undefined;
   try {
-    const resp = await umi.rpc.call("getPriorityFeeEstimate", [
+    const resp = await customRpcCall(umi, "getPriorityFeeEstimate", [
       {
         transaction: !useAccounts
           ? bs58.encode(web3Transaction.serialize())
@@ -335,7 +328,7 @@ export async function getComputeUnitPriceEstimate(
     feeEstimate = Math.round((resp as any).priorityFeeEstimate as number);
   } catch (e) {
     try {
-      const resp = await umi.rpc.call("getPriorityFeeEstimate", [
+      const resp = await customRpcCall(umi, "getPriorityFeeEstimate", [
         {
           accountKeys,
           options: {
@@ -408,7 +401,10 @@ export async function sendSingleOptimizedTransaction(
   consoleLog("Sending single optimized transaction...");
   consoleLog("Instructions: ", tx.getInstructions().length);
   consoleLog("Serialized transaction size: ", tx.getTransactionSize(umi));
-  consoleLog("Programs: ", tx.getInstructions().map(x => x.programId));
+  consoleLog(
+    "Programs: ",
+    tx.getInstructions().map((x) => x.programId)
+  );
 
   const accounts = tx
     .getInstructions()

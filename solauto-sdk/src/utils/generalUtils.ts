@@ -1,6 +1,7 @@
 import { PublicKey } from "@solana/web3.js";
 import { MaybeRpcAccount, publicKey, Umi } from "@metaplex-foundation/umi";
 import { TOKEN_INFO, TokenInfo } from "../constants";
+import axios from "axios";
 
 export function consoleLog(...args: any[]): void {
   if ((globalThis as any).LOCAL_TEST) {
@@ -141,4 +142,29 @@ export function toEnumValue<E extends object>(
   }
 
   return undefined;
+}
+
+export async function customRpcCall(umi: Umi, method: string, params?: any) {
+  const data = (
+    await axios.post(
+      umi.rpc.getEndpoint(),
+      {
+        jsonrpc: "2.0",
+        id: 1,
+        method,
+        params,
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    )
+  ).data;
+
+  if ("result" in data) {
+    return data.result;
+  } else {
+    return data;
+  }
 }

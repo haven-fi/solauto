@@ -177,8 +177,11 @@ class TransactionSet {
     );
   }
 
-  async refetchAll(attemptNum: number) {
+  async reset() {
     await this.txHandler.resetLiveTxUpdates();
+  }
+
+  async refetchAll(attemptNum: number) {
     for (const item of this.items) {
       await item.refetch(attemptNum);
     }
@@ -768,11 +771,13 @@ export class TransactionsManager {
   ): Promise<TransactionSet[] | undefined> {
     if (currentIndex !== undefined) {
       const itemSet = itemSets[currentIndex];
+      await itemSet.reset();
       await itemSet.refetchAll(attemptNum);
     } else {
-      for (const itemSet of itemSets) {
-        await itemSet.refetchAll(attemptNum);
-      }
+      await Promise.all(itemSets.map((itemSet) => itemSet.reset()));
+      await Promise.all(
+        itemSets.map((itemSet) => itemSet.refetchAll(attemptNum))
+      );
     }
 
     const newItemSets = await this.assembleTransactionSets(
