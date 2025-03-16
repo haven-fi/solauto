@@ -236,7 +236,7 @@ async function sendJitoBundle(
     throw new Error(resp.error);
   }
 
-  const bundleId = resp.result as string;
+  const bundleId = resp as string;
   consoleLog("Bundle ID:", bundleId);
   return bundleId ? await pollBundleStatus(umi, bundleId) : [];
 }
