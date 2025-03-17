@@ -681,7 +681,6 @@ export class ContextUpdates {
     this.activeDca = undefined;
     this.dcaInBalance = undefined;
     this.cancellingDca = undefined;
-    this.jupSwap = undefined;
   }
 
   positionUpdates(): boolean {

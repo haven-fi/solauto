@@ -20,15 +20,16 @@ where
 }
 
 #[inline(always)]
-pub fn to_base_unit<T: std::fmt::Display, U: std::fmt::Display, V>(value: T, decimals: U) -> V
+pub fn to_base_unit<T, U, V>(value: T, decimals: U) -> V
 where
     T: ToPrimitive,
     U: Into<u32>,
     V: FromPrimitive,
 {
     let factor = (10u64).pow(decimals.into()) as f64;
-    let base_units = value.to_f64().unwrap_or(0.0).mul(factor);
-    V::from_f64(base_units).unwrap()
+    let base_units = value.to_f64().unwrap_or(0.0) * factor;
+    let adjusted = if base_units < 0.0 { 0.0 } else { base_units };
+    V::from_f64(adjusted).unwrap_or_else(|| V::from_f64(0.0).unwrap())
 }
 
 #[inline(always)]

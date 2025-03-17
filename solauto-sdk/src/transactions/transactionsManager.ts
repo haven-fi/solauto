@@ -546,14 +546,10 @@ export class TransactionsManager {
     this.statuses = [];
     this.lookupTables.reset();
 
-    const itemSets = await retryWithExponentialBackoff(async (attemptNum) => {
-      if (!items[0].initialized) {
-        for (const item of items) {
+    const itemSets = await retryWithExponentialBackoff(async () => {
+      for (const item of items) {
+        if (!item.initialized) {
           await item.initialize();
-        }
-      } else if (attemptNum > 0) {
-        for (const item of items) {
-          await item.refetch(attemptNum);
         }
       }
       this.txHandler.log("Transaction items:", items.length);
