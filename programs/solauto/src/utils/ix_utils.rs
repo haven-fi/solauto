@@ -117,13 +117,8 @@ fn pick_ix_data(req: PickIxDataReq) -> Result<PickIxDataResp, SanitizeError> {
 pub fn get_marginfi_flash_loan_amount<'a>(
     ixs_sysvar: &'a AccountInfo<'a>,
     ix_idx: Option<usize>,
-    args: &RebalanceSettings,
     expected_destination_tas: Option<&[&Pubkey]>,
 ) -> Result<u64, ProgramError> {
-    if ix_idx.is_none() {
-        // TODO: note to self when we validate debt adjustment again this value will cause issues for some rebalances
-        return Ok(args.target_amount_base_unit);
-    }
     
     let data = pick_ix_data(PickIxDataReq {
         ixs_sysvar,
