@@ -1,18 +1,22 @@
-use borsh::{BorshDeserialize, BorshSerialize};
-use bytemuck::{Pod, Zeroable};
-use num_traits::{FromPrimitive, ToPrimitive};
-use shank::{ShankAccount, ShankType};
-use solana_program::{msg, pubkey::Pubkey};
-use std::{
-    cmp::min,
-    ops::{Add, Div, Mul, Sub},
-};
+use borsh::{ BorshDeserialize, BorshSerialize };
+use bytemuck::{ Pod, Zeroable };
+use num_traits::{ FromPrimitive, ToPrimitive };
+use shank::{ ShankAccount, ShankType };
+use solana_program::{ msg, pubkey::Pubkey };
+use std::{ cmp::min, ops::{ Add, Div, Mul, Sub } };
 
 use crate::{
     constants::USD_DECIMALS,
-    types::shared::{PodBool, PositionType, RebalanceDirection, TokenType},
+    types::shared::{ PodBool, PositionType, RebalanceDirection, TokenType },
     utils::math_utils::{
-        from_base_unit, from_bps, get_liq_utilization_rate_bps, net_worth_base_amount, to_base_unit,
+        base_unit_to_usd_value,
+        from_base_unit,
+        from_bps,
+        from_rounded_usd_value,
+        get_liq_utilization_rate_bps,
+        net_worth_base_amount,
+        to_base_unit,
+        to_rounded_usd_value,
     },
 };
 
@@ -27,9 +31,7 @@ pub struct AutomationSettingsInp {
 }
 
 #[repr(C, align(8))]
-#[derive(
-    ShankType, BorshSerialize, BorshDeserialize, Clone, Debug, Default, Copy, Pod, Zeroable,
-)]
+#[derive(ShankType, BorshSerialize, BorshDeserialize, Clone, Debug, Default, Copy, Pod, Zeroable)]
 pub struct AutomationSettings {
     /// The target number of periods
     pub target_periods: u16,
@@ -63,24 +65,21 @@ impl AutomationSettings {
         if self.periods_passed == 0 {
             curr_unix_timestamp >= self.unix_start_date
         } else {
-            curr_unix_timestamp
-                >= self
-                    .unix_start_date
-                    .add(self.interval_seconds.mul(self.periods_passed as u64))
+            curr_unix_timestamp >=
+                self.unix_start_date.add(self.interval_seconds.mul(self.periods_passed as u64))
         }
     }
     pub fn updated_amount_from_automation<T: ToPrimitive + FromPrimitive>(
         &self,
         curr_amt: T,
         target_amt: T,
-        curr_unix_timestamp: u64,
+        curr_unix_timestamp: u64
     ) -> T {
         let curr_amt_f64 = curr_amt.to_f64().unwrap();
         let target_amt_f64 = target_amt.to_f64().unwrap();
         let current_rate_diff = curr_amt_f64 - target_amt_f64;
         let progress_pct = (1.0).div(
-            self.target_periods
-                .sub(self.new_periods_passed(curr_unix_timestamp) - 1) as f64,
+            self.target_periods.sub(self.new_periods_passed(curr_unix_timestamp) - 1) as f64
         );
         let new_amt = curr_amt_f64 - current_rate_diff * progress_pct;
 
@@ -90,10 +89,12 @@ impl AutomationSettings {
     pub fn new_periods_passed(&self, curr_unix_timestamp: u64) -> u16 {
         min(
             self.target_periods,
-            (((curr_unix_timestamp.saturating_sub(self.unix_start_date) as f64)
-                / (self.interval_seconds as f64))
-                .floor() as u16)
-                + 1,
+            (
+                (
+                    (curr_unix_timestamp.saturating_sub(self.unix_start_date) as f64) /
+                    (self.interval_seconds as f64)
+                ).floor() as u16
+            ) + 1
         )
     }
 }
@@ -109,12 +110,11 @@ pub struct TokenAmount {
 impl TokenAmount {
     #[inline(always)]
     pub fn usd_value(&self) -> f64 {
-        from_base_unit::<u64, u8, f64>(self.base_amount_usd_value, USD_DECIMALS)
+        from_rounded_usd_value(self.base_amount_usd_value)
     }
     pub fn update_usd_value(&mut self, market_price: f64, token_decimals: u8) {
-        self.base_amount_usd_value = to_base_unit::<f64, u8, u64>(
-            from_base_unit::<u64, u8, f64>(self.base_unit, token_decimals).mul(market_price),
-            USD_DECIMALS,
+        self.base_amount_usd_value = to_rounded_usd_value(
+            base_unit_to_usd_value(self.base_unit, token_decimals, market_price)
         );
     }
 }
@@ -138,13 +138,11 @@ pub struct PositionTokenState {
 impl PositionTokenState {
     #[inline(always)]
     pub fn market_price(&self) -> f64 {
-        from_base_unit::<u64, u8, f64>(self.base_amount_market_price_usd, USD_DECIMALS)
+        from_rounded_usd_value(self.base_amount_market_price_usd)
     }
     fn update_usd_values(&mut self) {
-        self.amount_used
-            .update_usd_value(self.market_price(), self.decimals);
-        self.amount_can_be_used
-            .update_usd_value(self.market_price(), self.decimals);
+        self.amount_used.update_usd_value(self.market_price(), self.decimals);
+        self.amount_can_be_used.update_usd_value(self.market_price(), self.decimals);
     }
     pub fn update_usage(&mut self, base_unit_amount_update: i64) {
         if base_unit_amount_update.is_positive() {
@@ -156,22 +154,22 @@ impl PositionTokenState {
 
             self.amount_used.base_unit += (base_unit_amount_update as u64) + addition;
 
-            self.amount_can_be_used.base_unit = self
-                .amount_can_be_used
-                .base_unit
-                .saturating_sub(base_unit_amount_update as u64);
+            self.amount_can_be_used.base_unit = self.amount_can_be_used.base_unit.saturating_sub(
+                base_unit_amount_update as u64
+            );
         } else {
-            self.amount_used.base_unit = self
-                .amount_used
-                .base_unit
-                .saturating_sub((base_unit_amount_update * -1) as u64);
+            self.amount_used.base_unit = self.amount_used.base_unit.saturating_sub(
+                (base_unit_amount_update * -1) as u64
+            );
         }
         self.update_usd_values();
     }
     pub fn update_market_price(&mut self, market_price: f64) {
         msg!("New {} price: {}", self.mint, market_price);
-        self.base_amount_market_price_usd =
-            to_base_unit::<f64, u8, u64>(market_price, USD_DECIMALS);
+        self.base_amount_market_price_usd = to_base_unit::<f64, u8, u64>(
+            market_price,
+            USD_DECIMALS
+        );
         self.update_usd_values();
     }
 }
@@ -184,9 +182,7 @@ pub struct DCASettingsInp {
 }
 
 #[repr(C, align(8))]
-#[derive(
-    ShankType, BorshSerialize, BorshDeserialize, Clone, Debug, Default, Copy, Pod, Zeroable,
-)]
+#[derive(ShankType, BorshSerialize, BorshDeserialize, Clone, Debug, Default, Copy, Pod, Zeroable)]
 pub struct DCASettings {
     pub automation: AutomationSettings,
     // Gradually add more to the position during the DCA period. If this is 0, then a DCA-out is assumed.
@@ -225,9 +221,7 @@ pub struct SolautoSettingsParametersInp {
 }
 
 #[repr(C, align(8))]
-#[derive(
-    ShankType, BorshSerialize, BorshDeserialize, Clone, Debug, Default, Copy, Pod, Zeroable,
-)]
+#[derive(ShankType, BorshSerialize, BorshDeserialize, Clone, Debug, Default, Copy, Pod, Zeroable)]
 pub struct SolautoSettingsParameters {
     /// At which liquidation utilization rate to boost leverage to
     pub boost_to_bps: u16,
@@ -293,6 +287,35 @@ pub struct PositionData {
 
 #[repr(u8)]
 #[derive(ShankType, BorshDeserialize, BorshSerialize, Clone, Debug, Default, PartialEq, Copy)]
+pub enum TokenBalanceChangeType {
+    #[default]
+    None,
+    PreSwapDeposit,
+    PostSwapDeposit,
+    PostRebalanceWithdrawSupply,
+    PostRebalanceWithdrawDebt,
+}
+
+unsafe impl Zeroable for TokenBalanceChangeType {}
+unsafe impl Pod for TokenBalanceChangeType {}
+
+#[repr(C, align(8))]
+#[derive(ShankType, BorshSerialize, Clone, Debug, Default, Copy, Pod, Zeroable)]
+pub struct TokenBalanceChange {
+    pub change_type: TokenBalanceChangeType,
+    _padding1: [u8; 7],
+    // Denominated in 9 decimal places
+    pub amount_usd: u64,
+}
+
+impl TokenBalanceChange {
+    pub fn requires_one(&self) -> bool {
+        self.change_type != TokenBalanceChangeType::None
+    }
+}
+
+#[repr(u8)]
+#[derive(ShankType, BorshDeserialize, BorshSerialize, Clone, Debug, Default, PartialEq, Copy)]
 pub enum SolautoRebalanceType {
     #[default]
     None,
@@ -313,7 +336,9 @@ pub struct RebalanceData {
     pub rebalance_direction: RebalanceDirection,
     _padding2: [u8; 7],
     pub flash_loan_amount: u64,
-    _padding: [u8; 32],
+    pub debt_adjustment_usd: u64,
+    pub token_balance_change: TokenBalanceChange,
+    _padding: [u8; 8],
 }
 
 impl RebalanceData {
@@ -345,10 +370,12 @@ impl SolautoPosition {
         authority: Pubkey,
         position_type: PositionType,
         position: PositionData,
-        state: PositionState,
+        state: PositionState
     ) -> Self {
-        let (_, bump) =
-            Pubkey::find_program_address(&[&[position_id], authority.as_ref()], &crate::ID);
+        let (_, bump) = Pubkey::find_program_address(
+            &[&[position_id], authority.as_ref()],
+            &crate::ID
+        );
         Self {
             bump: [bump],
             position_id: [position_id],
@@ -383,18 +410,19 @@ impl SolautoPosition {
         self.state.liq_utilization_rate_bps = get_liq_utilization_rate_bps(
             supply_usd,
             debt_usd,
-            from_bps(self.state.liq_threshold_bps),
+            from_bps(self.state.liq_threshold_bps)
         );
 
         self.state.net_worth.base_unit = net_worth_base_amount(
             supply_usd,
             debt_usd,
             self.state.supply.market_price(),
-            self.state.supply.decimals,
+            self.state.supply.decimals
         );
-        self.state
-            .net_worth
-            .update_usd_value(self.state.supply.market_price(), self.state.supply.decimals);
+        self.state.net_worth.update_usd_value(
+            self.state.supply.market_price(),
+            self.state.supply.decimals
+        );
         msg!(
             "New liquidation utilization rate: {}, (${}, ${})",
             self.state.liq_utilization_rate_bps,
@@ -430,12 +458,9 @@ mod tests {
             Pubkey::default(),
             PositionType::default(),
             PositionData::default(),
-            PositionState::default(),
+            PositionState::default()
         );
-        println!(
-            "Solauto position size: {}",
-            std::mem::size_of_val(&solauto_position)
-        );
+        println!("Solauto position size: {}", std::mem::size_of_val(&solauto_position));
         assert!(std::mem::size_of_val(&solauto_position) == SolautoPosition::LEN);
     }
 

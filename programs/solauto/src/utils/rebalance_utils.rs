@@ -144,6 +144,7 @@ pub fn get_rebalance_step(
     if !has_rebalance_data {
         let ix_indices = validate_rebalance_instructions(std_accounts, args.rebalance_type)?;
 
+        // TODO: this needs fixing
         if args.rebalance_type == SolautoRebalanceType::FLRebalanceThenSwap || args.rebalance_type == SolautoRebalanceType::FLSwapThenRebalance {
             std_accounts
                     .solauto_position
@@ -157,7 +158,7 @@ pub fn get_rebalance_step(
                     None, // &[&swap_source_ta],
                 )?
             } else {
-                args.target_amount_base_unit.unwrap()
+                args.target_amount_base_unit
             };
         }
     }
@@ -386,14 +387,12 @@ pub fn get_rebalance_values(
         lp_fee_bps
     );
 
-    if args.target_amount_base_unit.is_some() {
-        validate_debt_adjustment(
-            solauto_position,
-            args.target_amount_base_unit.unwrap(),
-            debt_adjustment_usd,
-            None,
-        )?;
-    }
+    validate_debt_adjustment(
+        solauto_position,
+        args.target_amount_base_unit,
+        debt_adjustment_usd,
+        None,
+    )?;
 
     Ok((debt_adjustment_usd, amount_to_dca_in))
 }

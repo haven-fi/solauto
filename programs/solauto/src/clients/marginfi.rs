@@ -33,7 +33,7 @@ use crate::{
         },
     },
     utils::{
-        math_utils::{self, i80f48_to_f64},
+        math_utils,
         solana_utils::*,
         solauto_utils::*,
         validation_utils::*,
@@ -423,7 +423,7 @@ impl<'a> MarginfiClient<'a> {
                     .checked_div(I80F48!(1000000000000000000))
                     .unwrap();
 
-                Ok(i80f48_to_f64(price))
+                Ok(math_utils::i80f48_to_f64(price))
             }
         }
     }

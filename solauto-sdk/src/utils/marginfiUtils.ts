@@ -243,6 +243,7 @@ async function getTokenUsage(
   let amountUsed = 0;
   let amountCanBeUsed = BigInt(0);
   let marketPrice = 0;
+  let originationFee = 0;
 
   if (bank !== null) {
     [marketPrice] = await fetchTokenPrices([toWeb3JsPublicKey(bank.mint)]);
@@ -250,6 +251,7 @@ async function getTokenUsage(
     const shareValue = isAsset ? assetShareValue : liabilityShareValue;
     amountUsed = shares * shareValue + Number(amountUsedAdjustment ?? 0);
     amountCanBeUsed = getBankLiquidityAvailableBaseUnit(bank, isAsset);
+    originationFee = bytesToI80F48(bank?.config.interestRateConfig.protocolOriginationFee.value);
   }
 
   return {
@@ -275,8 +277,8 @@ async function getTokenUsage(
         : BigInt(0),
     },
     baseAmountMarketPriceUsd: toBaseUnit(marketPrice, USD_DECIMALS),
-    flashLoanFeeBps: 0,
-    borrowFeeBps: 0,
+    flashLoanFeeBps: toBps(originationFee),
+    borrowFeeBps: toBps(originationFee),
     padding1: [],
     padding2: [],
     padding: new Uint8Array([]),

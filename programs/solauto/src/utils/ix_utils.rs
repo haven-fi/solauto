@@ -122,7 +122,7 @@ pub fn get_marginfi_flash_loan_amount<'a>(
 ) -> Result<u64, ProgramError> {
     if ix_idx.is_none() {
         // TODO: note to self when we validate debt adjustment again this value will cause issues for some rebalances
-        return Ok(args.target_amount_base_unit.unwrap());
+        return Ok(args.target_amount_base_unit);
     }
     
     let data = pick_ix_data(PickIxDataReq {
