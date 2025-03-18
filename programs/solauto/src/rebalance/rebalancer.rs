@@ -1,10 +1,7 @@
-use std::ops::Div;
-
 use solana_program::{ entrypoint::ProgramResult, msg, program_error::ProgramError, pubkey::Pubkey };
 use spl_token::state::Account as TokenAccount;
 
 use crate::{
-    constants::USD_DECIMALS,
     state::solauto_position::{
         PositionTokenState,
         RebalanceData,
@@ -14,26 +11,17 @@ use crate::{
     },
     types::{
         instruction::RebalanceSettings,
-        shared::{ SolautoError, TokenBalanceAmount, TokenType },
-        solauto::{ SolautoCpiAction, ToLendingPlatformAction },
+        shared::{ RebalanceDirection, SolautoError, TokenBalanceAmount },
+        solana::BareSplTokenTransferArgs,
+        solauto::{ FromLendingPlatformAction, SolautoCpiAction, ToLendingPlatformAction },
     },
     utils::{
-        math_utils::{
-            from_base_unit,
-            from_rounded_usd_value,
-            to_base_unit,
-            to_rounded_usd_value,
-            usd_value_to_base_unit,
-        },
+        math_utils::{ from_rounded_usd_value, to_rounded_usd_value, usd_value_to_base_unit },
         solauto_utils::SolautoFeesBps,
     },
 };
 
-use super::rebalance_utils_v2::{
-    eligible_for_rebalance,
-    get_rebalance_values,
-    rebalance_from_liquidity_source,
-};
+use super::rebalance_utils_v2::{ eligible_for_rebalance, get_rebalance_values };
 
 pub struct TokenAccountData<'a> {
     pk: Pubkey,
@@ -61,9 +49,8 @@ impl<'a> StandardRebalancer<'a> {
         &self.solauto_position.data
     }
 
-    fn validate_rebalance_data(&self) -> ProgramResult {
-        // TODO: validate debt adjustment usd with calculations
-        Ok(())
+    fn rebalance_data(&self) -> &RebalanceData {
+        &self.solauto_position.data.rebalance
     }
 
     fn set_rebalance_data(&mut self) -> ProgramResult {
@@ -98,12 +85,68 @@ impl<'a> StandardRebalancer<'a> {
         self.validate_rebalance_data()
     }
 
-    fn rebalance_data(&self) -> &RebalanceData {
-        &self.solauto_position.data.rebalance
+    fn validate_rebalance_data(&self) -> ProgramResult {
+        // TODO: validate debt adjustment usd with calculations
+        Ok(())
     }
 
     fn get_base_unit_amount(&self, usd_value: f64, token: PositionTokenState) -> u64 {
         usd_value_to_base_unit(usd_value, token.decimals, token.market_price())
+    }
+
+    fn get_pre_swap_action(&self) -> (Option<SolautoCpiAction>, u64) {
+        if !self.rebalance_data().token_balance_change.requires_one() {
+            return (None, 0);
+        }
+
+        let token_balance_change = self.rebalance_data().token_balance_change;
+        let mut base_unit_amount = 0;
+
+        let action = match token_balance_change.change_type {
+            TokenBalanceChangeType::None => None,
+            TokenBalanceChangeType::PreSwapDeposit =>
+                Some(
+                    SolautoCpiAction::Deposit(ToLendingPlatformAction {
+                        amount: TokenBalanceAmount::Some(
+                            self.get_base_unit_amount(
+                                from_rounded_usd_value(token_balance_change.amount_usd),
+                                self.position_data().state.supply
+                            )
+                        ),
+                    })
+                ),
+            TokenBalanceChangeType::PostSwapDeposit => {
+                base_unit_amount = self.get_base_unit_amount(
+                    from_rounded_usd_value(token_balance_change.amount_usd),
+                    self.position_data().state.debt
+                );
+                Some(
+                    SolautoCpiAction::SplTokenTransfer(BareSplTokenTransferArgs {
+                        amount: base_unit_amount,
+                        from_wallet: self.solauto_position.pk,
+                        from_wallet_ta: self.solauto_position.debt_ta.pk,
+                        to_wallet_ta: self.intermediary_ta,
+                    })
+                )
+            }
+            TokenBalanceChangeType::PostRebalanceWithdrawSupply => None,
+            TokenBalanceChangeType::PostRebalanceWithdrawDebt => {
+                base_unit_amount = self.get_base_unit_amount(
+                    from_rounded_usd_value(token_balance_change.amount_usd),
+                    self.position_data().state.supply
+                );
+                Some(
+                    SolautoCpiAction::SplTokenTransfer(BareSplTokenTransferArgs {
+                        amount: base_unit_amount,
+                        from_wallet: self.solauto_position.pk,
+                        from_wallet_ta: self.solauto_position.supply_ta.pk,
+                        to_wallet_ta: self.intermediary_ta,
+                    })
+                )
+            }
+        };
+
+        (action, base_unit_amount)
     }
 
     pub fn begin_rebalance(&mut self) -> Result<Vec<SolautoCpiAction>, ProgramError> {
@@ -111,49 +154,29 @@ impl<'a> StandardRebalancer<'a> {
 
         let mut actions = Vec::<SolautoCpiAction>::new();
 
-        let mut additional_amount_to_swap = 0;
-
-        if self.rebalance_data().token_balance_change.requires_one() {
-            let token_balance_change = self.rebalance_data().token_balance_change;
-            let supply_source = rebalance_from_liquidity_source(
-                &self.rebalance_data().rebalance_direction,
-                self.rebalance_args
-            );
-
-            let action = match token_balance_change.change_type {
-                TokenBalanceChangeType::PreSwapDeposit =>
-                    Some(
-                        SolautoCpiAction::Deposit(ToLendingPlatformAction {
-                            amount: TokenBalanceAmount::Some(
-                                self.get_base_unit_amount(
-                                    from_rounded_usd_value(token_balance_change.amount_usd),
-                                    self.position_data().state.supply
-                                )
-                            ),
-                        })
-                    ),
-                TokenBalanceChangeType::PostSwapDeposit => {
-                    // additional_amount_to_swap =
-                    // TODO
-                    None
-                }
-                TokenBalanceChangeType::PostRebalanceWithdrawSupply => None,
-                TokenBalanceChangeType::PostRebalanceWithdrawDebt => {
-                    // additional_amount_to_swap =
-                    // TODO
-                    None
-                }
-                TokenBalanceChangeType::None => None,
-            };
-
-            if action.is_some() {
-                actions.push(action.unwrap());
-            }
+        let (pre_swap_action, additional_amount_to_swap) = self.get_pre_swap_action();
+        if pre_swap_action.is_some() {
+            actions.push(pre_swap_action.unwrap());
         }
 
         let base_unit_amount =
             self.rebalance_args.swap_amount_base_unit - additional_amount_to_swap;
-        // TODO actual borrow / withdraw
+
+        if self.rebalance_data().rebalance_direction == RebalanceDirection::Boost {
+            actions.push(
+                SolautoCpiAction::Borrow(FromLendingPlatformAction {
+                    amount: TokenBalanceAmount::Some(base_unit_amount),
+                    to_wallet_ta: self.intermediary_ta,
+                })
+            );
+        } else {
+            actions.push(
+                SolautoCpiAction::Withdraw(FromLendingPlatformAction {
+                    amount: TokenBalanceAmount::Some(base_unit_amount),
+                    to_wallet_ta: self.intermediary_ta,
+                })
+            );
+        }
 
         Ok(actions)
     }
