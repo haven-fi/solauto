@@ -1,5 +1,3 @@
-use std::ops::{Div, Mul};
-
 use marginfi_sdk::{
     generated::accounts::{Bank, MarginfiAccount},
     MARGINFI_ID,
@@ -17,7 +15,7 @@ use spl_associated_token_account::{get_associated_token_address, ID as ata_progr
 use spl_token::ID as token_program_id;
 
 use crate::{
-    constants::{MAX_BASIS_POINTS, MIN_BOOST_GAP_BPS, MIN_REPAY_GAP_BPS, SOLAUTO_MANAGER},
+    constants::{MIN_BOOST_GAP_BPS, MIN_REPAY_GAP_BPS, SOLAUTO_MANAGER},
     state::{
         referral_state::ReferralState,
         solauto_position::{
@@ -32,7 +30,7 @@ use crate::{
 
 use super::{
     math_utils::{
-        from_base_unit, get_max_boost_to_bps, get_max_repay_from_bps, get_max_repay_to_bps,
+        get_max_boost_to_bps, get_max_repay_from_bps, get_max_repay_to_bps,
     },
     solauto_utils::safe_unpack_token_account,
 };

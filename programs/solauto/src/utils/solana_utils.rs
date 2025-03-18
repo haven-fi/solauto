@@ -121,11 +121,6 @@ pub fn system_transfer<'a>(
 pub fn spl_token_transfer<'a, 'b>(
     token_program: &'a AccountInfo<'a>,
     args: SplTokenTransferArgs<'a, 'b>
-    // source: &'a AccountInfo<'a>,
-    // authority: &'a AccountInfo<'a>,
-    // recipient: &'a AccountInfo<'a>,
-    // amount: u64,
-    // authority_seeds: Option<&Vec<&[u8]>>,
 ) -> ProgramResult {
     invoke_instruction(
         &spl_instruction::transfer(
