@@ -44,6 +44,14 @@ impl PodBool {
 }
 
 #[repr(u8)]
+#[derive(ShankType, BorshDeserialize, BorshSerialize, Clone, Debug, Default, PartialEq, Copy)]
+pub enum SwapType {
+    #[default]
+    ExactIn,
+    ExactOut,
+}
+
+#[repr(u8)]
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, Default, PartialEq, Copy)]
 pub enum PositionType {
     #[default]
@@ -86,21 +94,22 @@ unsafe impl Zeroable for RebalanceDirection {}
 unsafe impl Pod for RebalanceDirection {}
 
 #[derive(Debug)]
-pub struct RefreshedTokenData {
+pub struct RefreshedTokenState {
     pub mint: Pubkey,
     pub decimals: u8,
     pub amount_used: u64,
     pub amount_can_be_used: u64,
     pub market_price: f64,
     pub borrow_fee_bps: Option<u16>,
+    pub flash_loan_fee_bps: Option<u16>,
 }
 
 #[derive(Debug)]
 pub struct RefreshStateProps {
     pub max_ltv: f64,
     pub liq_threshold: f64,
-    pub supply: RefreshedTokenData,
-    pub debt: RefreshedTokenData,
+    pub supply: RefreshedTokenState,
+    pub debt: RefreshedTokenState,
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, PartialEq)]

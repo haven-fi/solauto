@@ -1,8 +1,4 @@
 use borsh::{BorshDeserialize, BorshSerialize};
-use jupiter_sdk::generated::instructions::{
-    ExactOutRouteInstructionArgs, RouteWithTokenLedgerInstructionArgs,
-    SharedAccountsExactOutRouteInstructionArgs, SharedAccountsRouteWithTokenLedgerInstructionArgs,
-};
 use marginfi_sdk::generated::instructions::LendingAccountBorrowInstructionArgs;
 use solana_program::{
     account_info::AccountInfo,
@@ -118,149 +114,6 @@ fn pick_ix_data(req: PickIxDataReq) -> Result<PickIxDataResp, SanitizeError> {
     })
 }
 
-/// Validates the jup swap:
-/// - The swap does NOT have a platform fee
-/// - The destination token account is one of the expected destination token accounts
-///
-/// Returns the slippage_fee_bps
-pub fn validate_jup_instruction<'a>(
-    ixs_sysvar: &'a AccountInfo<'a>,
-    ix_idx: usize,
-    expected_destination_tas: &[&Pubkey],
-) -> Result<(Pubkey, u16), ProgramError> {
-    let resp = pick_ix_data(PickIxDataReq {
-        ixs_sysvar,
-        ix_idx,
-        data_start_idx: Some(0),
-        data_len: Some(8), // Only pick the data discriminator
-        account_indices: None,
-    })
-    .expect("Should pick data");
-
-    let discriminator =
-        u64::from_le_bytes(resp.data.try_into().expect("Slice with incorrect length"));
-
-    let route_with_token_ledger = get_anchor_ix_discriminator("route_with_token_ledger");
-    let shared_accounts_route_with_token_ledger =
-        get_anchor_ix_discriminator("shared_accounts_route_with_token_ledger");
-    let exact_out_route = get_anchor_ix_discriminator("exact_out_route");
-    let shared_accounts_exact_out_route =
-        get_anchor_ix_discriminator("shared_accounts_exact_out_route");
-
-    let result: Result<(u16, u8, Pubkey, Pubkey), ProgramError> =
-        if discriminator == route_with_token_ledger {
-            let resp = pick_ix_data(PickIxDataReq {
-                ixs_sysvar,
-                ix_idx,
-                data_start_idx: Some(8), // Skip data discriminator
-                data_len: None,
-                account_indices: Some(vec![2, 4]),
-            })
-            .expect("Should pick data");
-
-            let args = Box::new(RouteWithTokenLedgerInstructionArgs::deserialize(
-                &mut resp.data.as_slice(),
-            )?);
-
-            let return_data = (
-                args.slippage_bps,
-                args.platform_fee_bps,
-                resp.accounts[0],
-                resp.accounts[1],
-            );
-            drop(args);
-            Ok(return_data)
-        } else if discriminator == shared_accounts_route_with_token_ledger {
-            let resp = pick_ix_data(PickIxDataReq {
-                ixs_sysvar,
-                ix_idx,
-                data_start_idx: Some(8), // Skip data discriminator
-                data_len: None,
-                account_indices: Some(vec![3, 6]),
-            })
-            .expect("Should pick data");
-
-            let args = Box::new(
-                SharedAccountsRouteWithTokenLedgerInstructionArgs::deserialize(
-                    &mut resp.data.as_slice(),
-                )?,
-            );
-
-            let return_data = (
-                args.slippage_bps,
-                args.platform_fee_bps,
-                resp.accounts[0],
-                resp.accounts[1],
-            );
-            drop(args);
-            Ok(return_data)
-        } else if discriminator == exact_out_route {
-            let resp = pick_ix_data(PickIxDataReq {
-                ixs_sysvar,
-                ix_idx,
-                data_start_idx: Some(8), // Skip data discriminator
-                data_len: None,
-                account_indices: Some(vec![2, 4]),
-            })
-            .expect("Should pick data");
-
-            let args = Box::new(ExactOutRouteInstructionArgs::deserialize(
-                &mut resp.data.as_slice(),
-            )?);
-
-            let return_data = (
-                args.slippage_bps,
-                args.platform_fee_bps,
-                resp.accounts[0],
-                resp.accounts[1],
-            );
-            drop(args);
-            Ok(return_data)
-        } else if discriminator == shared_accounts_exact_out_route {
-            let resp = pick_ix_data(PickIxDataReq {
-                ixs_sysvar,
-                ix_idx,
-                data_start_idx: Some(8), // Skip data discriminator
-                data_len: None,
-                account_indices: Some(vec![3, 6]),
-            })
-            .expect("Should pick data");
-
-            let args = Box::new(SharedAccountsExactOutRouteInstructionArgs::deserialize(
-                &mut resp.data.as_slice(),
-            )?);
-
-            let return_data = (
-                args.slippage_bps,
-                args.platform_fee_bps,
-                resp.accounts[0],
-                resp.accounts[1],
-            );
-            drop(args);
-            Ok(return_data)
-        } else {
-            msg!("Unsupported JUP instruction");
-            Err(SolautoError::IncorrectInstructions.into())
-        };
-
-    let (slippage_fee_bps, platform_fee, source_ta, destination_ta) = result.unwrap();
-
-    if platform_fee > 0 {
-        msg!("Cannot include a platform fee in a token swap");
-        return Err(SolautoError::IncorrectInstructions.into());
-    }
-
-    if !expected_destination_tas
-        .iter()
-        .any(|x| x == &&destination_ta)
-    {
-        msg!("Moving funds into an incorrect token account");
-        return Err(SolautoError::IncorrectInstructions.into());
-    }
-
-    Ok((source_ta, slippage_fee_bps))
-}
-
 pub fn get_marginfi_flash_loan_amount<'a>(
     ixs_sysvar: &'a AccountInfo<'a>,
     ix_idx: Option<usize>,
@@ -269,7 +122,7 @@ pub fn get_marginfi_flash_loan_amount<'a>(
 ) -> Result<u64, ProgramError> {
     if ix_idx.is_none() {
         // TODO: note to self when we validate debt adjustment again this value will cause issues for some rebalances
-        return Ok(args.target_in_amount_base_unit.unwrap());
+        return Ok(args.target_amount_base_unit.unwrap());
     }
     
     let data = pick_ix_data(PickIxDataReq {

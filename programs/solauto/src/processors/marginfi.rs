@@ -54,7 +54,7 @@ pub fn process_marginfi_open_position_instruction<'a>(
     )?;
     if !solauto_position.data.self_managed.val {
         let current_timestamp = Clock::get()?.unix_timestamp as u64;
-        validation_utils::validate_position_settings(&solauto_position.data, current_timestamp)?;
+        validation_utils::validate_position_settings(&solauto_position.data)?;
         validation_utils::validate_dca_settings(
             &solauto_position.data.position,
             current_timestamp,
@@ -228,10 +228,6 @@ pub fn process_marginfi_rebalance<'a>(
     let rebalance_step = get_rebalance_step(
         &mut std_accounts,
         &args,
-        vec![
-            ctx.accounts.position_supply_ta.key,
-            ctx.accounts.position_debt_ta.key,
-        ],
     )?;
 
     rebalance::marginfi_rebalance(ctx, std_accounts, rebalance_step, args)

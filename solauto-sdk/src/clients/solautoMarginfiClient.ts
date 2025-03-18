@@ -40,6 +40,7 @@ import {
   MARGINFI_PROGRAM_ID,
   MarginfiAccount,
   lendingAccountBorrow,
+  lendingAccountCloseBalance,
   lendingAccountDeposit,
   lendingAccountEndFlashloan,
   lendingAccountRepay,
@@ -61,7 +62,7 @@ import {
   getMarginfiMaxLtvAndLiqThreshold,
   marginfiAccountEmpty,
 } from "../utils/marginfiUtils";
-import { fromBaseUnit, toBps } from "../utils/numberUtils";
+import { bytesToI80F48, fromBaseUnit, toBps } from "../utils/numberUtils";
 import { QuoteResponse } from "@jup-ag/api";
 import { consoleLog, safeGetPrice, splTokenTransferUmiIx } from "../utils";
 
@@ -584,7 +585,10 @@ export class SolautoMarginfiClient extends SolautoClient {
         return transactionBuilder().add(
           splTokenTransferUmiIx(
             this.signer,
-            getTokenAccount(toWeb3JsPublicKey(this.signer.publicKey), this.debtMint),
+            getTokenAccount(
+              toWeb3JsPublicKey(this.signer.publicKey),
+              this.debtMint
+            ),
             destinationTokenAccount,
             toWeb3JsPublicKey(this.signer.publicKey),
             flashLoanDetails.baseUnitAmount
@@ -683,6 +687,15 @@ export class SolautoMarginfiClient extends SolautoClient {
       );
     }
 
+    const banksRequiringBalanceClose = Array.from(
+      new Set([
+        accounts.data.bank,
+        ...(this.intermediaryMarginfiAccount?.lendingAccount.balances ?? [])
+          .filter((x) => x.active && bytesToI80F48(x.liabilityShares.value) > 0)
+          .map((x) => x.bankPk.toString()),
+      ])
+    );
+
     return transactionBuilder()
       .add(
         lendingAccountRepay(this.umi, {
@@ -702,11 +715,30 @@ export class SolautoMarginfiClient extends SolautoClient {
         })
       )
       .add(
+        banksRequiringBalanceClose.map((x) =>
+          this.closeBalance(
+            this.intermediaryMarginfiAccountPk,
+            new PublicKey(x)
+          )
+        )
+      )
+      .add(
         lendingAccountEndFlashloan(this.umi, {
           marginfiAccount: publicKey(this.intermediaryMarginfiAccountPk),
           signer: this.signer,
         }).addRemainingAccounts(remainingAccounts)
       );
+  }
+
+  closeBalance(marginfiAccount: PublicKey, bank: PublicKey) {
+    return transactionBuilder().add(
+      lendingAccountCloseBalance(this.umi, {
+        signer: this.signer,
+        marginfiAccount: publicKey(marginfiAccount),
+        bank: publicKey(bank),
+        marginfiGroup: publicKey(this.marginfiGroup),
+      })
+    );
   }
 
   async getFreshPositionState(): Promise<PositionState | undefined> {

@@ -15,7 +15,6 @@ import { getTokenAccount } from "./accountUtils";
 import {
   consoleLog,
   retryWithExponentialBackoff,
-  tokenInfo,
 } from "./generalUtils";
 
 const jupApi = createJupiterApiClient();

@@ -22,7 +22,7 @@ use crate::{
         instruction::UpdatePositionData,
         shared::{
             DeserializedAccount, LendingPlatform, PositionType, RebalanceDirection, SolautoError,
-        },
+        }, solana::SplTokenTransferArgs,
     },
 };
 
@@ -231,11 +231,13 @@ pub fn initiate_dca_in_if_necessary<'a, 'b>(
 
     spl_token_transfer(
         token_program,
-        signer_dca_ta.unwrap(),
-        signer,
-        position_debt_ta.unwrap(),
-        position.dca.dca_in_base_unit,
-        None,
+        SplTokenTransferArgs {
+            source: signer_dca_ta.unwrap(),
+            authority: signer,
+            recipient: position_debt_ta.unwrap(),
+            amount: position.dca.dca_in_base_unit,
+            authority_seeds: None,
+        }
     )?;
 
     Ok(())
@@ -277,11 +279,13 @@ pub fn cancel_dca_in<'a, 'b>(
 
         spl_token_transfer(
             token_program,
-            position_dca_ta.unwrap(),
-            solauto_position.account_info,
-            signer_dca_ta.unwrap(),
-            dca_ta_current_balance,
-            Some(&solauto_position.data.seeds_with_bump()),
+            SplTokenTransferArgs {
+                source: position_dca_ta.unwrap(),
+                authority: solauto_position.account_info,
+                recipient: signer_dca_ta.unwrap(),
+                amount: dca_ta_current_balance,
+                authority_seeds: Some(&solauto_position.data.seeds_with_bump()),
+            }
         )?;
     }
 

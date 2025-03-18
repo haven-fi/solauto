@@ -119,7 +119,6 @@ pub fn validate_instruction(
 
 pub fn validate_position_settings(
     solauto_position: &SolautoPosition,
-    current_unix_timestamp: u64,
 ) -> ProgramResult {
     let invalid_params = |error_msg| {
         msg!(error_msg);
@@ -139,9 +138,6 @@ pub fn validate_position_settings(
             format!("Exceeds the maximum boost-to of {}", max_boost_to).as_str(),
         );
     }
-    if data.setting_params.repay_to_bps < data.setting_params.target_boost_to_bps {
-        return invalid_params("repay_to_bps value must be greater than target_boost_to_bps value");
-    }
 
     if data.setting_params.repay_gap < MIN_REPAY_GAP_BPS {
         return invalid_params(
@@ -151,16 +147,6 @@ pub fn validate_position_settings(
     if data.setting_params.boost_gap < MIN_BOOST_GAP_BPS {
         return invalid_params(
             format!("boost_gap must be {} or greater", MIN_BOOST_GAP_BPS).as_str(),
-        );
-    }
-
-    if data.setting_params.automation.is_active() {
-        validate_automation_settings(&data.setting_params.automation, current_unix_timestamp)?;
-    }
-
-    if data.setting_params.target_boost_to_bps > MAX_BASIS_POINTS {
-        return invalid_params(
-            format!("target_boost_to_bps must be less than {}", MAX_BASIS_POINTS).as_str(),
         );
     }
 
@@ -546,7 +532,7 @@ mod tests {
             position_data,
             position_state,
         );
-        let result = validate_position_settings(&solauto_position, 0);
+        let result = validate_position_settings(&solauto_position);
         assert!(result.is_err());
     }
 

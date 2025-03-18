@@ -9,7 +9,7 @@ use marginfi_sdk::generated::{
 use pyth_sdk_solana::state::SolanaPriceAccount;
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 use solana_program::{
-    account_info::AccountInfo, clock::Clock, entrypoint::ProgramResult, rent::Rent, msg,
+    account_info::AccountInfo, clock::Clock, entrypoint::ProgramResult, msg,
     program_error::ProgramError, pubkey::Pubkey, sysvar::Sysvar,
 };
 use std::{
@@ -28,7 +28,7 @@ use crate::{
         },
         lending_protocol::{LendingProtocolClient, LendingProtocolTokenAccounts},
         shared::{
-            DeserializedAccount, RefreshStateProps, RefreshedTokenData, SolautoError,
+            DeserializedAccount, RefreshStateProps, RefreshedTokenState, SolautoError,
             TokenBalanceAmount,
         },
     },
@@ -199,7 +199,7 @@ impl<'a> MarginfiClient<'a> {
         supply_bank: &'a AccountInfo<'a>,
         price_oracle: &'a AccountInfo<'a>,
         mut max_ltv: f64,
-    ) -> Result<(RefreshedTokenData, f64), ProgramError> {
+    ) -> Result<(RefreshedTokenState, f64), ProgramError> {
         let bank = DeserializedAccount::<Bank>::zerocopy(Some(supply_bank))?.unwrap();
 
         let asset_share_value = I80F48::from_le_bytes(bank.data.asset_share_value.value);
@@ -231,14 +231,19 @@ impl<'a> MarginfiClient<'a> {
             max_ltv = max_ltv * discount_factor;
         }
 
+        let borrow_fee_bps = (math_utils::i80f48_to_f64(
+            I80F48::from_le_bytes(bank.data.config.interest_rate_config.protocol_origination_fee.value)
+        ).mul(10_000.0)).round() as u16;
+
         Ok((
-            RefreshedTokenData {
+            RefreshedTokenState {
                 mint: bank.data.mint,
                 decimals: bank.data.mint_decimals,
                 amount_used: base_unit_account_deposits,
                 amount_can_be_used: math_utils::i80f48_to_u64(base_unit_deposit_room_available),
                 market_price,
-                borrow_fee_bps: None,
+                borrow_fee_bps: Some(borrow_fee_bps),
+                flash_loan_fee_bps: Some(borrow_fee_bps),
             },
             max_ltv,
         ))
@@ -248,7 +253,7 @@ impl<'a> MarginfiClient<'a> {
         account_balances: &[Balance],
         debt_bank: &'a AccountInfo<'a>,
         price_oracle: &'a AccountInfo<'a>,
-    ) -> Result<RefreshedTokenData, ProgramError> {
+    ) -> Result<RefreshedTokenState, ProgramError> {
         let bank = DeserializedAccount::<Bank>::zerocopy(Some(debt_bank))?.unwrap();
 
         let liability_share_value = I80F48::from_le_bytes(bank.data.liability_share_value.value);
@@ -276,13 +281,18 @@ impl<'a> MarginfiClient<'a> {
             math_utils::i80f48_to_u64(base_unit_supply_available),
         );
 
-        Ok(RefreshedTokenData {
+        let borrow_fee_bps = (math_utils::i80f48_to_f64(
+            I80F48::from_le_bytes(bank.data.config.interest_rate_config.protocol_origination_fee.value)
+        ).mul(10_000.0)).round() as u16;
+
+        Ok(RefreshedTokenState {
             mint: bank.data.mint,
             decimals: bank.data.mint_decimals,
             amount_used: base_unit_account_debt,
             amount_can_be_used,
             market_price,
-            borrow_fee_bps: None,
+            borrow_fee_bps: Some(borrow_fee_bps),
+            flash_loan_fee_bps: Some(borrow_fee_bps),
         })
     }
 

@@ -5,7 +5,6 @@ use solana_program::{
     instruction::{get_stack_height, TRANSACTION_LEVEL_STACK_HEIGHT},
     msg,
     program_error::ProgramError,
-    pubkey::Pubkey,
     sysvar::instructions::load_current_index_checked,
 };
 use std::{cmp::max, ops::Mul};
@@ -60,38 +59,17 @@ pub fn validate_rebalance_instructions(
         ],
         current_ix_idx,
     );
-    let marginfi_start_fl = ix_utils::InstructionChecker::from_anchor(
-        ixs_sysvar,
-        MARGINFI_ID,
-        vec!["lending_account_start_flashloan"],
-        current_ix_idx,
-    );
     let marginfi_borrow = ix_utils::InstructionChecker::from_anchor(
         ixs_sysvar,
         MARGINFI_ID,
         vec!["lending_account_borrow"],
         current_ix_idx,
     );
-    let marginfi_end_fl = ix_utils::InstructionChecker::from_anchor(
-        ixs_sysvar,
-        MARGINFI_ID,
-        vec!["lending_account_end_flashloan"],
-        current_ix_idx,
-    );
-    let marginfi_repay = ix_utils::InstructionChecker::from_anchor(
-        ixs_sysvar,
-        MARGINFI_ID,
-        vec!["lending_account_repay"],
-        current_ix_idx,
-    );
 
     let next_ix = 1;
     let ix_2_after = 2;
-    let ix_3_after = 3;
-    let ix_4_after = 4;
     let prev_ix = -1;
     let ix_2_before = -2;
-    let ix_3_before = -3;
 
     if (rebalance_type == SolautoRebalanceType::Regular
         || rebalance_type == SolautoRebalanceType::None)
@@ -105,12 +83,8 @@ pub fn validate_rebalance_instructions(
         })
     } else if (rebalance_type == SolautoRebalanceType::DoubleRebalanceWithFL
         || rebalance_type == SolautoRebalanceType::None)
-        // && marginfi_start_fl.matches(ix_2_before)
-        // && marginfi_borrow.matches(prev_ix)
         && jup_swap.matches(next_ix)
         && solauto_rebalance.matches(ix_2_after)
-        // && marginfi_repay.matches(ix_3_after)
-        // && marginfi_end_fl.matches(ix_4_after)
     {
         std_accounts.solauto_position.data.rebalance.rebalance_type =
             SolautoRebalanceType::DoubleRebalanceWithFL;
@@ -126,11 +100,7 @@ pub fn validate_rebalance_instructions(
         })
     } else if (rebalance_type == SolautoRebalanceType::FLSwapThenRebalance
         || rebalance_type == SolautoRebalanceType::None)
-        // && marginfi_start_fl.matches(ix_3_before)
-        // && marginfi_borrow.matches(ix_2_before)
         && jup_swap.matches(prev_ix)
-        // && marginfi_repay.matches(next_ix)
-        // && marginfi_end_fl.matches(ix_2_after)
     {
         std_accounts.solauto_position.data.rebalance.rebalance_type =
             SolautoRebalanceType::FLSwapThenRebalance;
@@ -146,11 +116,7 @@ pub fn validate_rebalance_instructions(
         })
     } else if (rebalance_type == SolautoRebalanceType::FLRebalanceThenSwap
         || rebalance_type == SolautoRebalanceType::None)
-        // && marginfi_start_fl.matches(ix_2_before)
-        // && marginfi_borrow.matches(prev_ix)
         && jup_swap.matches(next_ix)
-        // && marginfi_repay.matches(ix_2_after)
-        // && marginfi_end_fl.matches(ix_3_after)
     {
         std_accounts.solauto_position.data.rebalance.rebalance_type =
             SolautoRebalanceType::FLRebalanceThenSwap;
@@ -173,18 +139,10 @@ pub fn validate_rebalance_instructions(
 pub fn get_rebalance_step(
     std_accounts: &mut Box<SolautoStandardAccounts>,
     args: &RebalanceSettings,
-    position_tas: Vec<&Pubkey>,
 ) -> Result<RebalanceStep, ProgramError> {
     let has_rebalance_data = std_accounts.solauto_position.data.rebalance.active();
     if !has_rebalance_data {
         let ix_indices = validate_rebalance_instructions(std_accounts, args.rebalance_type)?;
-
-        // Deserializing jup swap ix to pull slippage bps causes OOM issues, will return to this in the future if there is a solution.
-        // let (swap_source_ta, price_slippage_bps) = ix_utils::validate_jup_instruction(
-        //     std_accounts.ixs_sysvar.unwrap(),
-        //     ix_indices.jup_swap,
-        //     position_tas.as_slice(),
-        // )?;
 
         if args.rebalance_type == SolautoRebalanceType::FLRebalanceThenSwap || args.rebalance_type == SolautoRebalanceType::FLSwapThenRebalance {
             std_accounts
@@ -199,7 +157,7 @@ pub fn get_rebalance_step(
                     None, // &[&swap_source_ta],
                 )?
             } else {
-                args.target_in_amount_base_unit.unwrap()
+                args.target_amount_base_unit.unwrap()
             };
         }
     }
@@ -382,6 +340,7 @@ pub fn get_rebalance_values(
     solauto_position: &mut SolautoPosition,
     args: &RebalanceSettings,
     solauto_fees_bps: &solauto_utils::SolautoFeesBps,
+    lp_fee_bps: u16,
     current_unix_timestamp: u64,
 ) -> Result<(f64, Option<u64>), ProgramError> {
     let (target_liq_utilization_rate_bps, amount_to_dca_in, dca_token_type) =
@@ -424,12 +383,13 @@ pub fn get_rebalance_values(
         solauto_position.state.debt.amount_used.usd_value(),
         target_liq_utilization_rate_bps,
         fees_bps.total,
+        lp_fee_bps
     );
 
-    if args.target_in_amount_base_unit.is_some() {
+    if args.target_amount_base_unit.is_some() {
         validate_debt_adjustment(
             solauto_position,
-            args.target_in_amount_base_unit.unwrap(),
+            args.target_amount_base_unit.unwrap(),
             debt_adjustment_usd,
             None,
         )?;
@@ -446,10 +406,10 @@ mod tests {
 
     use crate::{
         state::solauto_position::{
-            AutomationSettingsInp, DCASettings, DCASettingsInp, PositionState, PositionTokenUsage,
+            AutomationSettingsInp, DCASettings, DCASettingsInp, PositionState, PositionTokenState,
             RebalanceData, SolautoSettingsParameters,
         },
-        types::shared::{PositionType, TokenType},
+        types::shared::{PositionType, SwapType, TokenType},
         utils::math_utils,
     };
 
@@ -457,6 +417,7 @@ mod tests {
 
     const BOOST_TO_BPS: u16 = 5000;
     const REPAY_TO_BPS: u16 = 7500;
+    const LP_BORROW_FEE_BPS: u16 = 50;
 
     fn assert_bps_within_margin_of_error(result_bps: u16, expected_bps: u16) {
         println!("{}, {}", result_bps, expected_bps);
@@ -522,8 +483,8 @@ mod tests {
         market_price: f64,
         decimals: u8,
         amount_used_usd: f64,
-    ) -> PositionTokenUsage {
-        let mut token_usage = PositionTokenUsage::default();
+    ) -> PositionTokenState {
+        let mut token_usage = PositionTokenState::default();
         token_usage.decimals = decimals;
         token_usage.amount_used.base_unit =
             to_base_unit::<f64, u8, u64>(amount_used_usd.div(market_price), decimals);
@@ -561,6 +522,7 @@ mod tests {
             &mut solauto_position,
             rebalance_args.as_ref().unwrap(),
             &solauto_fees,
+            LP_BORROW_FEE_BPS,
             current_timestamp.map_or_else(|| 0, |timestamp| timestamp),
         )?;
 
@@ -629,6 +591,7 @@ mod tests {
             solauto_position.state.debt.amount_used.usd_value(),
             expected_liq_utilization_rate_bps,
             adjustment_fee_bps,
+            50,
         );
         println!("{}, {}", debt_adjustment_usd, expected_debt_adjustment_usd);
         assert!(debt_adjustment_usd == expected_debt_adjustment_usd);
@@ -708,7 +671,8 @@ mod tests {
             Some(RebalanceSettings {
                 rebalance_type: SolautoRebalanceType::Regular,
                 target_liq_utilization_rate_bps: Some(target_liq_utilization_rate_bps),
-                target_in_amount_base_unit: None,
+                target_amount_base_unit: None,
+                swap_type: SwapType::ExactIn
             }),
         )
         .unwrap();

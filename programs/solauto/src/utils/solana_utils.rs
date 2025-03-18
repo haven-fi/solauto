@@ -14,7 +14,7 @@ use spl_associated_token_account::{
 };
 use spl_token::instruction as spl_instruction;
 
-use crate::types::shared::SolautoError;
+use crate::types::{shared::SolautoError, solana::SplTokenTransferArgs};
 
 pub fn account_has_data(account: &AccountInfo) -> bool {
     !account.data.borrow().is_empty()
@@ -118,25 +118,26 @@ pub fn system_transfer<'a>(
     )
 }
 
-pub fn spl_token_transfer<'a>(
+pub fn spl_token_transfer<'a, 'b>(
     token_program: &'a AccountInfo<'a>,
-    source: &'a AccountInfo<'a>,
-    authority: &'a AccountInfo<'a>,
-    recipient: &'a AccountInfo<'a>,
-    amount: u64,
-    authority_seeds: Option<&Vec<&[u8]>>,
+    args: SplTokenTransferArgs<'a, 'b>
+    // source: &'a AccountInfo<'a>,
+    // authority: &'a AccountInfo<'a>,
+    // recipient: &'a AccountInfo<'a>,
+    // amount: u64,
+    // authority_seeds: Option<&Vec<&[u8]>>,
 ) -> ProgramResult {
     invoke_instruction(
         &spl_instruction::transfer(
             token_program.key,
-            source.key,
-            recipient.key,
-            authority.key,
+            args.source.key,
+            args.recipient.key,
+            args.authority.key,
             &[],
-            amount,
+            args.amount,
         )?,
-        &[source.clone(), recipient.clone(), authority.clone()],
-        authority_seeds,
+        &[args.source.clone(), args.recipient.clone(), args.authority.clone()],
+        args.authority_seeds,
     )
 }
 

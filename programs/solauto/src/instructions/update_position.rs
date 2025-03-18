@@ -27,7 +27,7 @@ pub fn update_position<'a>(
     }
 
     let current_timestamp = Clock::get()?.unix_timestamp as u64;
-    validation_utils::validate_position_settings(&solauto_position.data, current_timestamp)?;
+    validation_utils::validate_position_settings(&solauto_position.data)?;
     validation_utils::validate_dca_settings(&solauto_position.data.position, current_timestamp)?;
 
     ix_utils::update_data(&mut solauto_position)

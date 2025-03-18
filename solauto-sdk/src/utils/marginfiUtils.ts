@@ -591,8 +591,8 @@ export function marginfiAccountEmpty(marginfiAccount: MarginfiAccount) {
     marginfiAccount.lendingAccount.balances.find(
       (x) =>
         x.bankPk.toString() !== PublicKey.default.toString() &&
-        (Math.round(bytesToI80F48(x.assetShares.value)) != 0 ||
-          Math.round(bytesToI80F48(x.liabilityShares.value)) != 0)
+        (bytesToI80F48(x.assetShares.value) > 0.000001 ||
+          bytesToI80F48(x.liabilityShares.value) > 0.000001)
     ) === undefined
   );
 }

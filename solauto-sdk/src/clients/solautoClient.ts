@@ -204,6 +204,7 @@ export abstract class SolautoClient extends ReferralStateManager {
         // All other live position updates can be derived by getting a fresh position state, so we don't need to do anything else form contextUpdates
       }
     }
+    console.log("Resetting context updates...");
     this.contextUpdates.reset();
   }
 

@@ -121,22 +121,21 @@ impl TokenAmount {
 
 #[repr(C, align(8))]
 #[derive(ShankType, BorshSerialize, Clone, Debug, Default, Copy, Pod, Zeroable)]
-pub struct PositionTokenUsage {
+pub struct PositionTokenState {
     pub mint: Pubkey,
     pub decimals: u8,
-    _padding1: [u8; 7],
+    _padding1: [u8; 3],
+    pub flash_loan_fee_bps: u16,
+    pub borrow_fee_bps: u16,
     pub amount_used: TokenAmount,
     pub amount_can_be_used: TokenAmount,
     /// Denominated by 9 decimal places
     base_amount_market_price_usd: u64,
-    // TODO: Flash loan fees are currently not considered in debt adjustment calculations
-    pub flash_loan_fee_bps: u16,
-    pub borrow_fee_bps: u16,
-    _padding2: [u8; 4],
+    _padding2: [u8; 8],
     _padding: [u8; 32],
 }
 
-impl PositionTokenUsage {
+impl PositionTokenState {
     #[inline(always)]
     pub fn market_price(&self) -> f64 {
         from_base_unit::<u64, u8, f64>(self.base_amount_market_price_usd, USD_DECIMALS)
@@ -238,35 +237,17 @@ pub struct SolautoSettingsParameters {
     pub repay_to_bps: u16,
     /// repay_gap basis points above repay_to_bps is the liquidation utilization rate at which to begin a rebalance
     pub repay_gap: u16,
-    /// If slowly adjusting the boost_to_bps with automation, this must be set
-    pub target_boost_to_bps: u16,
-    _padding1: [u8; 6],
-    /// Data required if providing a target_boost_to_bps
-    pub automation: AutomationSettings,
-    _padding: [u8; 32],
+    _padding: [u32; 24],
 }
 
 impl SolautoSettingsParameters {
     pub fn from(args: SolautoSettingsParametersInp) -> Self {
-        let target_boost_to_bps = if args.target_boost_to_bps.is_some() {
-            args.target_boost_to_bps.unwrap()
-        } else {
-            0
-        };
-        let automation = if args.automation.is_some() {
-            AutomationSettings::from(args.automation.unwrap())
-        } else {
-            AutomationSettings::default()
-        };
         Self {
             boost_to_bps: args.boost_to_bps,
             boost_gap: args.boost_gap,
             repay_to_bps: args.repay_to_bps,
             repay_gap: args.repay_gap,
-            target_boost_to_bps,
-            automation,
-            _padding1: [0; 6],
-            _padding: [0; 32],
+            _padding: [0; 24],
         }
     }
     #[inline(always)]
@@ -287,8 +268,8 @@ pub struct PositionState {
     /// Denominated by 9 decimal places
     pub net_worth: TokenAmount,
 
-    pub supply: PositionTokenUsage,
-    pub debt: PositionTokenUsage,
+    pub supply: PositionTokenState,
+    pub debt: PositionTokenState,
 
     pub max_ltv_bps: u16,
     pub liq_threshold_bps: u16,

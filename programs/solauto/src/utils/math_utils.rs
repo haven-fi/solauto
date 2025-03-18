@@ -95,7 +95,8 @@ pub fn net_worth_base_amount(
 /// * `total_supply_usd` - Total USD value of supplied asset
 /// * `total_debt_usd` - Total USD value of debt asset
 /// * `target_liq_utilization_rate_bps` - Target utilization rate
-/// * `adjustment_fee_bps` - Adjustment fee. On boosts this would be the Solauto fee. If deleveraging this would be None
+/// * `solauto_fee_bps` - Solauto fee taken
+/// * `lp_fee_bps` - Lending platform fee taken
 ///
 /// # Returns
 /// The USD value of the debt adjustment. Positive if debt needs to increase, negative if debt needs to decrease. This amount is inclusive of the adjustment fee
@@ -105,13 +106,10 @@ pub fn get_std_debt_adjustment_usd(
     total_supply_usd: f64,
     total_debt_usd: f64,
     target_liq_utilization_rate_bps: u16,
-    adjustment_fee_bps: u16,
+    solauto_fee_bps: u16,
+    lp_fee_bps: u16
 ) -> f64 {
-    let adjustment_fee = if adjustment_fee_bps > 0 {
-        from_bps(adjustment_fee_bps)
-    } else {
-        0.0
-    };
+    let adjustment_fee = from_bps(solauto_fee_bps) + from_bps(lp_fee_bps); // TODO: this needs to be fixed
 
     let target_liq_utilization_rate = from_bps(target_liq_utilization_rate_bps);
 
@@ -179,6 +177,7 @@ mod tests {
             debt_usd,
             to_bps(target_liq_utilization_rate),
             0,
+            0
         );
 
         supply_usd += debt_adjustment;

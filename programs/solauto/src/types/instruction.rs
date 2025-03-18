@@ -214,7 +214,8 @@ pub struct RebalanceSettings {
     /// Target liq utilization rate. Only used/allowed if signed by the position authority.
     pub target_liq_utilization_rate_bps: Option<u16>,
     /// The amount to use in the token swap. Gets validated by the program.
-    pub target_in_amount_base_unit: Option<u64>,
+    pub target_amount_base_unit: Option<u64>,
+    pub swap_type: SwapType,
 }
 
 pub struct SolautoStandardAccounts<'a> {
