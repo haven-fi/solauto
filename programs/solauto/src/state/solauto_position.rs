@@ -304,8 +304,7 @@ unsafe impl Pod for TokenBalanceChangeType {}
 pub struct TokenBalanceChange {
     pub change_type: TokenBalanceChangeType,
     _padding1: [u8; 7],
-    // Denominated in 9 decimal places
-    pub amount_usd: u64,
+    pub base_unit_amount: u64,
 }
 
 impl TokenBalanceChange {

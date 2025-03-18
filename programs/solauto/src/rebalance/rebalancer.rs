@@ -100,29 +100,21 @@ impl<'a> StandardRebalancer<'a> {
         }
 
         let token_balance_change = self.rebalance_data().token_balance_change;
-        let mut base_unit_amount = 0;
+        let mut amount = 0;
 
         let action = match token_balance_change.change_type {
             TokenBalanceChangeType::None => None,
             TokenBalanceChangeType::PreSwapDeposit =>
                 Some(
                     SolautoCpiAction::Deposit(ToLendingPlatformAction {
-                        amount: TokenBalanceAmount::Some(
-                            self.get_base_unit_amount(
-                                from_rounded_usd_value(token_balance_change.amount_usd),
-                                self.position_data().state.supply
-                            )
-                        ),
+                        amount: TokenBalanceAmount::Some(amount),
                     })
                 ),
             TokenBalanceChangeType::PostSwapDeposit => {
-                base_unit_amount = self.get_base_unit_amount(
-                    from_rounded_usd_value(token_balance_change.amount_usd),
-                    self.position_data().state.debt
-                );
+                amount = token_balance_change.base_unit_amount;
                 Some(
                     SolautoCpiAction::SplTokenTransfer(BareSplTokenTransferArgs {
-                        amount: base_unit_amount,
+                        amount,
                         from_wallet: self.solauto_position.pk,
                         from_wallet_ta: self.solauto_position.debt_ta.pk,
                         to_wallet_ta: self.intermediary_ta,
@@ -131,13 +123,10 @@ impl<'a> StandardRebalancer<'a> {
             }
             TokenBalanceChangeType::PostRebalanceWithdrawSupply => None,
             TokenBalanceChangeType::PostRebalanceWithdrawDebt => {
-                base_unit_amount = self.get_base_unit_amount(
-                    from_rounded_usd_value(token_balance_change.amount_usd),
-                    self.position_data().state.supply
-                );
+                amount = token_balance_change.base_unit_amount;
                 Some(
                     SolautoCpiAction::SplTokenTransfer(BareSplTokenTransferArgs {
-                        amount: base_unit_amount,
+                        amount,
                         from_wallet: self.solauto_position.pk,
                         from_wallet_ta: self.solauto_position.supply_ta.pk,
                         to_wallet_ta: self.intermediary_ta,
@@ -146,7 +135,7 @@ impl<'a> StandardRebalancer<'a> {
             }
         };
 
-        (action, base_unit_amount)
+        (action, amount)
     }
 
     pub fn begin_rebalance(&mut self) -> Result<Vec<SolautoCpiAction>, ProgramError> {
