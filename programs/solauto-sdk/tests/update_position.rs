@@ -36,7 +36,6 @@ mod update_position {
             ).await
             .unwrap();
 
-
         data.open_position(
             Some(data.general.default_setting_params.clone()),
             None
@@ -60,8 +59,6 @@ mod update_position {
             boost_gap: 1000,
             repay_to_bps: 7500,
             repay_gap: 500,
-            automation: Some(dca_out_automation.clone()),
-            target_boost_to_bps: Some(0),
         };
         let new_dca = DCASettingsInp {
             automation: dca_out_automation,
@@ -75,7 +72,6 @@ mod update_position {
         let solauto_position = data.general.deserialize_account_data::<SolautoPosition>(
             data.general.solauto_position
         ).await;
-        assert!(solauto_position.position.setting_params.automation.target_periods == new_settings.automation.as_ref().unwrap().target_periods);
         assert!(solauto_position.position.dca.dca_in_base_unit == new_dca.dca_in_base_unit);
     }
 

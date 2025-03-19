@@ -5,15 +5,15 @@
 //! [https://github.com/metaplex-foundation/kinobi]
 //!
 
+use crate::generated::types::SolautoRebalanceType;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct SolautoSettingsParameters {
-    pub boost_to_bps: u16,
-    pub boost_gap: u16,
-    pub repay_to_bps: u16,
-    pub repay_gap: u16,
-    pub padding: [u32; 24],
+pub struct RebalanceInstructionData {
+    pub rebalance_type: SolautoRebalanceType,
+    pub padding1: [u8; 7],
+    pub flash_loan_amount: u64,
+    pub padding: [u32; 4],
 }

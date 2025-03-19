@@ -6,36 +6,16 @@
  * @see https://github.com/metaplex-foundation/kinobi
  */
 
-import { Option, OptionOrNullable } from '@metaplex-foundation/umi';
-import {
-  Serializer,
-  option,
-  struct,
-  u16,
-} from '@metaplex-foundation/umi/serializers';
-import {
-  AutomationSettingsInp,
-  AutomationSettingsInpArgs,
-  getAutomationSettingsInpSerializer,
-} from '.';
+import { Serializer, struct, u16 } from '@metaplex-foundation/umi/serializers';
 
 export type SolautoSettingsParametersInp = {
   boostToBps: number;
   boostGap: number;
   repayToBps: number;
   repayGap: number;
-  targetBoostToBps: Option<number>;
-  automation: Option<AutomationSettingsInp>;
 };
 
-export type SolautoSettingsParametersInpArgs = {
-  boostToBps: number;
-  boostGap: number;
-  repayToBps: number;
-  repayGap: number;
-  targetBoostToBps: OptionOrNullable<number>;
-  automation: OptionOrNullable<AutomationSettingsInpArgs>;
-};
+export type SolautoSettingsParametersInpArgs = SolautoSettingsParametersInp;
 
 export function getSolautoSettingsParametersInpSerializer(): Serializer<
   SolautoSettingsParametersInpArgs,
@@ -47,8 +27,6 @@ export function getSolautoSettingsParametersInpSerializer(): Serializer<
       ['boostGap', u16()],
       ['repayToBps', u16()],
       ['repayGap', u16()],
-      ['targetBoostToBps', option(u16())],
-      ['automation', option(getAutomationSettingsInpSerializer())],
     ],
     { description: 'SolautoSettingsParametersInp' }
   ) as Serializer<

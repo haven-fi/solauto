@@ -16,10 +16,7 @@ use solana_program::{
 use super::solana_utils::invoke_instruction;
 use crate::{
     state::solauto_position::SolautoPosition,
-    types::{
-        shared::DeserializedAccount,
-        errors::SolautoError
-    },
+    types::{errors::SolautoError, shared::DeserializedAccount},
 };
 
 pub fn update_data<T: BorshSerialize>(account: &mut DeserializedAccount<T>) -> ProgramResult {
@@ -119,14 +116,14 @@ pub fn get_marginfi_flash_loan_amount<'a>(
     ix_idx: Option<usize>,
     expected_destination_tas: Option<&[&Pubkey]>,
 ) -> Result<u64, ProgramError> {
-    
     let data = pick_ix_data(PickIxDataReq {
         ixs_sysvar,
         ix_idx: ix_idx.unwrap(),
         data_start_idx: Some(8),
         data_len: Some(8),
         account_indices: Some(vec![4]),
-    }).expect("Should retrieve flash loan amount");
+    })
+    .expect("Should retrieve flash loan amount");
 
     let args = LendingAccountBorrowInstructionArgs::deserialize(&mut data.data.as_slice())?;
 

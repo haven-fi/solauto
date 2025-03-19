@@ -13,11 +13,7 @@ use solana_sdk::{
     system_instruction,
     transaction::Transaction,
 };
-use solauto::{
-    constants::SOLAUTO_FEES_WALLET,
-    instructions::protocol_interaction,
-    state::referral_state::ReferralState,
-};
+use solauto::{ constants::SOLAUTO_FEES_WALLET, state::referral_state::ReferralState };
 use solauto_sdk::{
     generated::{
         instructions::{
@@ -209,8 +205,6 @@ impl<'a> GeneralTestData<'a> {
                 boost_gap: 500,
                 repay_to_bps: 7500,
                 repay_gap: 500,
-                automation: None,
-                target_boost_to_bps: None,
             },
         }
     }
@@ -373,7 +367,7 @@ impl<'a> GeneralTestData<'a> {
             .referral_state(self.signer_referral_state)
             .referral_fees_dest_ta(self.signer_referral_dest_ta)
             .referral_fees_dest_mint(self.referral_fees_dest_mint.pubkey())
-            .referral_authority(Some(self.ctx.payer.pubkey()))
+            .referral_authority(self.ctx.payer.pubkey())
             .fees_destination_ta(
                 Some(
                     get_associated_token_address(

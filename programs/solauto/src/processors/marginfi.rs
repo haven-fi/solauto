@@ -9,6 +9,7 @@ use crate::{
     instructions::{open_position, protocol_interaction, rebalance, refresh},
     state::{referral_state::ReferralState, solauto_position::SolautoPosition},
     types::{
+        errors::SolautoError,
         instruction::{
             accounts::{
                 MarginfiOpenPositionAccounts, MarginfiProtocolInteractionAccounts,
@@ -17,7 +18,6 @@ use crate::{
             MarginfiOpenPositionData, RebalanceSettings, SolautoAction, SolautoStandardAccounts,
         },
         shared::{DeserializedAccount, LendingPlatform},
-        errors::SolautoError
     },
     utils::*,
 };
@@ -226,10 +226,7 @@ pub fn process_marginfi_rebalance<'a>(
         return Err(SolautoError::IncorrectAccounts.into());
     }
 
-    let rebalance_step = get_rebalance_step(
-        &mut std_accounts,
-        &args,
-    )?;
+    let rebalance_step = get_rebalance_step(&mut std_accounts, &args)?;
 
     rebalance::marginfi_rebalance(ctx, std_accounts, rebalance_step, args)
 }

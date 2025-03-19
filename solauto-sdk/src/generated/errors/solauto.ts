@@ -15,7 +15,7 @@ type ProgramErrorConstructor = new (
 const codeToErrorMap: Map<number, ProgramErrorConstructor> = new Map();
 const nameToErrorMap: Map<string, ProgramErrorConstructor> = new Map();
 
-/** IncorrectAccounts: Missing or incorrect accounts provided for the given instruction */
+/** IncorrectAccounts: Missing or incorrect accounts provided for the given instructions */
 export class IncorrectAccountsError extends ProgramError {
   override readonly name: string = 'IncorrectAccounts';
 
@@ -23,7 +23,7 @@ export class IncorrectAccountsError extends ProgramError {
 
   constructor(program: Program, cause?: Error) {
     super(
-      'Missing or incorrect accounts provided for the given instruction',
+      'Missing or incorrect accounts provided for the given instructions',
       program,
       cause
     );
@@ -142,6 +142,23 @@ export class IncorrectDebtAdjustmentError extends ProgramError {
 }
 codeToErrorMap.set(0x8, IncorrectDebtAdjustmentError);
 nameToErrorMap.set('IncorrectDebtAdjustment', IncorrectDebtAdjustmentError);
+
+/** InvalidRebalanceMade: Invalid rebalance was made. Target supply USD and target debt USD was not met */
+export class InvalidRebalanceMadeError extends ProgramError {
+  override readonly name: string = 'InvalidRebalanceMade';
+
+  readonly code: number = 0x9; // 9
+
+  constructor(program: Program, cause?: Error) {
+    super(
+      'Invalid rebalance was made. Target supply USD and target debt USD was not met',
+      program,
+      cause
+    );
+  }
+}
+codeToErrorMap.set(0x9, InvalidRebalanceMadeError);
+nameToErrorMap.set('InvalidRebalanceMade', InvalidRebalanceMadeError);
 
 /**
  * Attempts to resolve a custom program error from the provided error code.

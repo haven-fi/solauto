@@ -88,7 +88,7 @@ export function getSolautoPositionAccountDataSerializer(): Serializer<
       ['position', getPositionDataSerializer()],
       ['state', getPositionStateSerializer()],
       ['rebalance', getRebalanceDataSerializer()],
-      ['padding', array(u32(), { size: 32 })],
+      ['padding', array(u32(), { size: 24 })],
     ],
     { description: 'SolautoPositionAccountData' }
   ) as Serializer<SolautoPositionAccountDataArgs, SolautoPositionAccountData>;
@@ -188,7 +188,7 @@ export function getSolautoPositionGpaBuilder(
       position: [40, getPositionDataSerializer()],
       state: [360, getPositionStateSerializer()],
       rebalance: [648, getRebalanceDataSerializer()],
-      padding: [704, array(u32(), { size: 32 })],
+      padding: [736, array(u32(), { size: 24 })],
     })
     .deserializeUsing<SolautoPosition>((account) =>
       deserializeSolautoPosition(account)

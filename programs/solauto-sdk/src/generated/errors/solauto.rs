@@ -10,8 +10,8 @@ use thiserror::Error;
 
 #[derive(Clone, Debug, Eq, Error, FromPrimitive, PartialEq)]
 pub enum SolautoError {
-    /// 0 (0x0) - Missing or incorrect accounts provided for the given instruction
-    #[error("Missing or incorrect accounts provided for the given instruction")]
+    /// 0 (0x0) - Missing or incorrect accounts provided for the given instructions
+    #[error("Missing or incorrect accounts provided for the given instructions")]
     IncorrectAccounts,
     /// 1 (0x1) - Failed to deserialize account data
     #[error("Failed to deserialize account data")]
@@ -37,6 +37,9 @@ pub enum SolautoError {
     /// 8 (0x8) - Incorrect swap amount provided. Likely due to high price volatility
     #[error("Incorrect swap amount provided. Likely due to high price volatility")]
     IncorrectDebtAdjustment,
+    /// 9 (0x9) - Invalid rebalance was made. Target supply USD and target debt USD was not met
+    #[error("Invalid rebalance was made. Target supply USD and target debt USD was not met")]
+    InvalidRebalanceMade,
 }
 
 impl solana_program::program_error::PrintProgramError for SolautoError {

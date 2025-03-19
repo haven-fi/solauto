@@ -1,12 +1,12 @@
 use borsh::BorshDeserialize;
-use shank::{ ShankContext, ShankInstruction, ShankType };
-use solana_program::{ account_info::AccountInfo, pubkey::Pubkey };
+use shank::{ShankContext, ShankInstruction, ShankType};
+use solana_program::{account_info::AccountInfo, pubkey::Pubkey};
 
 use crate::{
     state::{
-        referral_state::ReferralState,
-        solauto_position::{ SolautoPosition, SolautoSettingsParametersInp },
         automation::DCASettingsInp,
+        referral_state::ReferralState,
+        solauto_position::{SolautoPosition, SolautoSettingsParametersInp},
     },
     types::shared::SolautoRebalanceType,
 };
@@ -47,7 +47,7 @@ pub enum Instruction {
     #[account(name = "referral_state")]
     #[account(mut, name = "referral_fees_dest_ta")]
     #[account(name = "referral_fees_dest_mint")]
-    #[account(mut, optional, name = "referral_authority")]
+    #[account(mut, name = "referral_authority")]
     #[account(mut, optional, name = "fees_destination_ta")]
     ClaimReferralFees,
 

@@ -6,39 +6,24 @@
  * @see https://github.com/metaplex-foundation/kinobi
  */
 
+import { Serializer, struct } from '@metaplex-foundation/umi/serializers';
 import {
-  Serializer,
-  array,
-  bytes,
-  struct,
-  u64,
-  u8,
-} from '@metaplex-foundation/umi/serializers';
-import {
-  RebalanceDirection,
-  RebalanceDirectionArgs,
-  SolautoRebalanceType,
-  SolautoRebalanceTypeArgs,
-  getRebalanceDirectionSerializer,
-  getSolautoRebalanceTypeSerializer,
+  RebalanceInstructionData,
+  RebalanceInstructionDataArgs,
+  RebalanceStateValues,
+  RebalanceStateValuesArgs,
+  getRebalanceInstructionDataSerializer,
+  getRebalanceStateValuesSerializer,
 } from '.';
 
 export type RebalanceData = {
-  rebalanceType: SolautoRebalanceType;
-  padding1: Array<number>;
-  rebalanceDirection: RebalanceDirection;
-  padding2: Array<number>;
-  flashLoanAmount: bigint;
-  padding: Uint8Array;
+  ixs: RebalanceInstructionData;
+  values: RebalanceStateValues;
 };
 
 export type RebalanceDataArgs = {
-  rebalanceType: SolautoRebalanceTypeArgs;
-  padding1: Array<number>;
-  rebalanceDirection: RebalanceDirectionArgs;
-  padding2: Array<number>;
-  flashLoanAmount: number | bigint;
-  padding: Uint8Array;
+  ixs: RebalanceInstructionDataArgs;
+  values: RebalanceStateValuesArgs;
 };
 
 export function getRebalanceDataSerializer(): Serializer<
@@ -47,12 +32,8 @@ export function getRebalanceDataSerializer(): Serializer<
 > {
   return struct<RebalanceData>(
     [
-      ['rebalanceType', getSolautoRebalanceTypeSerializer()],
-      ['padding1', array(u8(), { size: 7 })],
-      ['rebalanceDirection', getRebalanceDirectionSerializer()],
-      ['padding2', array(u8(), { size: 7 })],
-      ['flashLoanAmount', u64()],
-      ['padding', bytes({ size: 32 })],
+      ['ixs', getRebalanceInstructionDataSerializer()],
+      ['values', getRebalanceStateValuesSerializer()],
     ],
     { description: 'RebalanceData' }
   ) as Serializer<RebalanceDataArgs, RebalanceData>;

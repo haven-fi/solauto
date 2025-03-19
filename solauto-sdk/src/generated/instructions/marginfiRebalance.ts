@@ -70,13 +70,13 @@ export type MarginfiRebalanceInstructionData = {
   discriminator: number;
   rebalanceType: SolautoRebalanceType;
   targetLiqUtilizationRateBps: Option<number>;
-  targetInAmountBaseUnit: Option<bigint>;
+  swapInAmountBaseUnit: bigint;
 };
 
 export type MarginfiRebalanceInstructionDataArgs = {
   rebalanceType: SolautoRebalanceTypeArgs;
   targetLiqUtilizationRateBps: OptionOrNullable<number>;
-  targetInAmountBaseUnit: OptionOrNullable<number | bigint>;
+  swapInAmountBaseUnit: number | bigint;
 };
 
 export function getMarginfiRebalanceInstructionDataSerializer(): Serializer<
@@ -93,7 +93,7 @@ export function getMarginfiRebalanceInstructionDataSerializer(): Serializer<
         ['discriminator', u8()],
         ['rebalanceType', getSolautoRebalanceTypeSerializer()],
         ['targetLiqUtilizationRateBps', option(u16())],
-        ['targetInAmountBaseUnit', option(u64())],
+        ['swapInAmountBaseUnit', u64()],
       ],
       { description: 'MarginfiRebalanceInstructionData' }
     ),

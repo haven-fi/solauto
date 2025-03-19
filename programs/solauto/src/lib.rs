@@ -2,12 +2,12 @@ pub mod clients;
 pub mod constants;
 pub mod entrypoint;
 pub mod instructions;
+pub mod macros;
 pub mod processors;
+pub mod rebalance;
 pub mod state;
 pub mod types;
 pub mod utils;
-pub mod rebalance;
-pub mod macros;
 
 use solana_security_txt::security_txt;
 security_txt! {

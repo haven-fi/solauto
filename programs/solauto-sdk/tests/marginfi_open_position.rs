@@ -37,8 +37,6 @@ mod open_position {
             boost_gap: 500,
             repay_to_bps: 7500,
             repay_gap: 500,
-            automation: None,
-            target_boost_to_bps: None,
         };
         data.open_position(Some(setting_params.clone()), None).await.unwrap();
 

@@ -9,38 +9,20 @@
 import {
   Serializer,
   array,
-  bytes,
   struct,
   u16,
-  u8,
+  u32,
 } from '@metaplex-foundation/umi/serializers';
-import {
-  AutomationSettings,
-  AutomationSettingsArgs,
-  getAutomationSettingsSerializer,
-} from '.';
 
 export type SolautoSettingsParameters = {
   boostToBps: number;
   boostGap: number;
   repayToBps: number;
   repayGap: number;
-  targetBoostToBps: number;
-  padding1: Array<number>;
-  automation: AutomationSettings;
-  padding: Uint8Array;
+  padding: Array<number>;
 };
 
-export type SolautoSettingsParametersArgs = {
-  boostToBps: number;
-  boostGap: number;
-  repayToBps: number;
-  repayGap: number;
-  targetBoostToBps: number;
-  padding1: Array<number>;
-  automation: AutomationSettingsArgs;
-  padding: Uint8Array;
-};
+export type SolautoSettingsParametersArgs = SolautoSettingsParameters;
 
 export function getSolautoSettingsParametersSerializer(): Serializer<
   SolautoSettingsParametersArgs,
@@ -52,10 +34,7 @@ export function getSolautoSettingsParametersSerializer(): Serializer<
       ['boostGap', u16()],
       ['repayToBps', u16()],
       ['repayGap', u16()],
-      ['targetBoostToBps', u16()],
-      ['padding1', array(u8(), { size: 6 })],
-      ['automation', getAutomationSettingsSerializer()],
-      ['padding', bytes({ size: 32 })],
+      ['padding', array(u32(), { size: 24 })],
     ],
     { description: 'SolautoSettingsParameters' }
   ) as Serializer<SolautoSettingsParametersArgs, SolautoSettingsParameters>;

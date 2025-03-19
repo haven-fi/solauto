@@ -291,7 +291,7 @@ impl MarginfiRebalanceInstructionData {
 pub struct MarginfiRebalanceInstructionArgs {
     pub rebalance_type: SolautoRebalanceType,
     pub target_liq_utilization_rate_bps: Option<u16>,
-    pub target_in_amount_base_unit: Option<u64>,
+    pub swap_in_amount_base_unit: u64,
 }
 
 /// Instruction builder for `MarginfiRebalance`.
@@ -352,7 +352,7 @@ pub struct MarginfiRebalanceBuilder {
     debt_vault_authority: Option<solana_program::pubkey::Pubkey>,
     rebalance_type: Option<SolautoRebalanceType>,
     target_liq_utilization_rate_bps: Option<u16>,
-    target_in_amount_base_unit: Option<u64>,
+    swap_in_amount_base_unit: Option<u64>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
 
@@ -567,10 +567,9 @@ impl MarginfiRebalanceBuilder {
         self.target_liq_utilization_rate_bps = Some(target_liq_utilization_rate_bps);
         self
     }
-    /// `[optional argument]`
     #[inline(always)]
-    pub fn target_in_amount_base_unit(&mut self, target_in_amount_base_unit: u64) -> &mut Self {
-        self.target_in_amount_base_unit = Some(target_in_amount_base_unit);
+    pub fn swap_in_amount_base_unit(&mut self, swap_in_amount_base_unit: u64) -> &mut Self {
+        self.swap_in_amount_base_unit = Some(swap_in_amount_base_unit);
         self
     }
     /// Add an aditional account to the instruction.
@@ -634,7 +633,10 @@ impl MarginfiRebalanceBuilder {
                 .clone()
                 .expect("rebalance_type is not set"),
             target_liq_utilization_rate_bps: self.target_liq_utilization_rate_bps.clone(),
-            target_in_amount_base_unit: self.target_in_amount_base_unit.clone(),
+            swap_in_amount_base_unit: self
+                .swap_in_amount_base_unit
+                .clone()
+                .expect("swap_in_amount_base_unit is not set"),
         };
 
         accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
@@ -1151,7 +1153,7 @@ impl<'a, 'b> MarginfiRebalanceCpiBuilder<'a, 'b> {
             debt_vault_authority: None,
             rebalance_type: None,
             target_liq_utilization_rate_bps: None,
-            target_in_amount_base_unit: None,
+            swap_in_amount_base_unit: None,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
@@ -1382,10 +1384,9 @@ impl<'a, 'b> MarginfiRebalanceCpiBuilder<'a, 'b> {
         self.instruction.target_liq_utilization_rate_bps = Some(target_liq_utilization_rate_bps);
         self
     }
-    /// `[optional argument]`
     #[inline(always)]
-    pub fn target_in_amount_base_unit(&mut self, target_in_amount_base_unit: u64) -> &mut Self {
-        self.instruction.target_in_amount_base_unit = Some(target_in_amount_base_unit);
+    pub fn swap_in_amount_base_unit(&mut self, swap_in_amount_base_unit: u64) -> &mut Self {
+        self.instruction.swap_in_amount_base_unit = Some(swap_in_amount_base_unit);
         self
     }
     /// Add an additional account to the instruction.
@@ -1439,7 +1440,11 @@ impl<'a, 'b> MarginfiRebalanceCpiBuilder<'a, 'b> {
                 .instruction
                 .target_liq_utilization_rate_bps
                 .clone(),
-            target_in_amount_base_unit: self.instruction.target_in_amount_base_unit.clone(),
+            swap_in_amount_base_unit: self
+                .instruction
+                .swap_in_amount_base_unit
+                .clone()
+                .expect("swap_in_amount_base_unit is not set"),
         };
         let instruction = MarginfiRebalanceCpi {
             __program: self.instruction.__program,
@@ -1561,7 +1566,7 @@ struct MarginfiRebalanceCpiBuilderInstruction<'a, 'b> {
     debt_vault_authority: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     rebalance_type: Option<SolautoRebalanceType>,
     target_liq_utilization_rate_bps: Option<u16>,
-    target_in_amount_base_unit: Option<u64>,
+    swap_in_amount_base_unit: Option<u64>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(
         &'b solana_program::account_info::AccountInfo<'a>,

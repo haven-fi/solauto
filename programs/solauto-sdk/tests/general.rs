@@ -7,7 +7,6 @@ mod general {
     use solana_sdk::{
         instruction::InstructionError,
         program_pack::Pack,
-        pubkey::Pubkey,
         rent::Rent,
         signature::Keypair,
         signer::Signer,

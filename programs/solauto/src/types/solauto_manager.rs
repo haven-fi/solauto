@@ -1,18 +1,15 @@
 use math_utils::to_bps;
 use solana_program::{
-    account_info::AccountInfo,
-    clock::Clock,
-    entrypoint::ProgramResult,
-    msg,
+    account_info::AccountInfo, clock::Clock, entrypoint::ProgramResult, msg,
     program_error::ProgramError,
 };
 
 use super::{
-    instruction::{ RebalanceSettings, SolautoAction, SolautoStandardAccounts },
-    lending_protocol::{ LendingProtocolClient, LendingProtocolTokenAccounts },
-    shared::{ RefreshStateProps, RefreshedTokenState, TokenBalanceAmount, TokenType },
+    instruction::{RebalanceSettings, SolautoAction, SolautoStandardAccounts},
+    lending_protocol::{LendingProtocolClient, LendingProtocolTokenAccounts},
+    shared::{RefreshStateProps, RefreshedTokenState, TokenBalanceAmount, TokenType},
 };
-use crate::{ state::solauto_position::SolautoPosition, utils::* };
+use crate::{state::solauto_position::SolautoPosition, utils::*};
 
 pub struct SolautoManagerAccounts<'a> {
     pub supply: LendingProtocolTokenAccounts<'a>,
@@ -25,7 +22,7 @@ impl<'a> SolautoManagerAccounts<'a> {
         supply: LendingProtocolTokenAccounts<'a>,
         debt: LendingProtocolTokenAccounts<'a>,
         intermediary_ta: Option<&'a AccountInfo<'a>>,
-        solauto_fees: Option<solauto_utils::SolautoFeesBps>
+        solauto_fees: Option<solauto_utils::SolautoFeesBps>,
     ) -> Result<Self, ProgramError> {
         Ok(Self {
             supply,
@@ -48,7 +45,7 @@ impl<'a> SolautoManager<'a> {
         client: Box<dyn LendingProtocolClient<'a> + 'a>,
         accounts: SolautoManagerAccounts<'a>,
         std_accounts: Box<SolautoStandardAccounts<'a>>,
-        solauto_fees_bps: Option<solauto_utils::SolautoFeesBps>
+        solauto_fees_bps: Option<solauto_utils::SolautoFeesBps>,
     ) -> Result<Self, ProgramError> {
         client.validate(&std_accounts)?;
         Ok(Self {
@@ -73,14 +70,15 @@ impl<'a> SolautoManager<'a> {
     fn borrow(&mut self, base_unit_amount: u64, destination: &'a AccountInfo<'a>) -> ProgramResult {
         msg!("Borrowing {}", base_unit_amount);
         self.update_usage(base_unit_amount as i64, TokenType::Debt);
-        self.client.borrow(base_unit_amount, destination, &self.std_accounts)?;
+        self.client
+            .borrow(base_unit_amount, destination, &self.std_accounts)?;
         Ok(())
     }
 
     fn withdraw(
         &mut self,
         amount: TokenBalanceAmount,
-        destination: &'a AccountInfo<'a>
+        destination: &'a AccountInfo<'a>,
     ) -> ProgramResult {
         let base_unit_amount = match amount {
             TokenBalanceAmount::All => self.position_data().state.supply.amount_used.base_unit,
@@ -89,7 +87,8 @@ impl<'a> SolautoManager<'a> {
 
         msg!("Withdrawing {}", base_unit_amount);
         self.update_usage((base_unit_amount as i64) * -1, TokenType::Supply);
-        self.client.withdraw(amount, destination, &self.std_accounts)?;
+        self.client
+            .withdraw(amount, destination, &self.std_accounts)?;
         Ok(())
     }
 
@@ -108,7 +107,10 @@ impl<'a> SolautoManager<'a> {
     fn update_usage(&mut self, base_unit_amount: i64, token_type: TokenType) {
         let position_data = self.position_data();
         if !position_data.self_managed.val || position_data.rebalance.active() {
-            self.std_accounts.solauto_position.data.update_usage(token_type, base_unit_amount);
+            self.std_accounts
+                .solauto_position
+                .data
+                .update_usage(token_type, base_unit_amount);
         }
     }
 
@@ -118,7 +120,10 @@ impl<'a> SolautoManager<'a> {
                 self.deposit(base_unit_amount)?;
             }
             SolautoAction::Borrow(base_unit_amount) => {
-                self.borrow(base_unit_amount, self.accounts.debt.position_ta.as_ref().unwrap())?;
+                self.borrow(
+                    base_unit_amount,
+                    self.accounts.debt.position_ta.as_ref().unwrap(),
+                )?;
             }
             SolautoAction::Repay(amount) => {
                 self.repay(amount)?;
@@ -142,7 +147,7 @@ impl<'a> SolautoManager<'a> {
 
     fn update_token_state(
         token_state: &mut crate::state::solauto_position::PositionTokenState,
-        token_data: &RefreshedTokenState
+        token_data: &RefreshedTokenState,
     ) {
         token_state.decimals = token_data.decimals;
         token_state.amount_used.base_unit = token_data.amount_used;
@@ -155,7 +160,7 @@ impl<'a> SolautoManager<'a> {
     pub fn refresh_position(
         solauto_position: &mut SolautoPosition,
         updated_data: RefreshStateProps,
-        clock: Clock
+        clock: Clock,
     ) -> ProgramResult {
         // Update mint addresses if self-managed
         if solauto_position.self_managed.val {
@@ -173,11 +178,11 @@ impl<'a> SolautoManager<'a> {
             solauto_position.state.supply.amount_used.usd_value(),
             solauto_position.state.debt.amount_used.usd_value(),
             solauto_position.state.supply.market_price(),
-            solauto_position.state.supply.decimals
+            solauto_position.state.supply.decimals,
         );
         solauto_position.state.net_worth.update_usd_value(
             updated_data.supply.market_price,
-            solauto_position.state.supply.decimals
+            solauto_position.state.supply.decimals,
         );
 
         solauto_position.refresh_state();

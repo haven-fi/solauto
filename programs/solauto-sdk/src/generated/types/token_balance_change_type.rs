@@ -7,13 +7,16 @@
 
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
+use num_derive::FromPrimitive;
 
-#[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
+#[derive(
+    BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq, PartialOrd, Hash, FromPrimitive,
+)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct SolautoSettingsParameters {
-    pub boost_to_bps: u16,
-    pub boost_gap: u16,
-    pub repay_to_bps: u16,
-    pub repay_gap: u16,
-    pub padding: [u32; 24],
+pub enum TokenBalanceChangeType {
+    None,
+    PreSwapDeposit,
+    PostSwapDeposit,
+    PostRebalanceWithdrawSupplyToken,
+    PostRebalanceWithdrawDebtToken,
 }

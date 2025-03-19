@@ -22,23 +22,15 @@ use switchboard_v2::AggregatorAccountData;
 use crate::{
     state::solauto_position::SolautoPosition,
     types::{
+        errors::SolautoError,
         instruction::{
             accounts::{Context, MarginfiOpenPositionAccounts},
             SolautoStandardAccounts,
         },
         lending_protocol::{LendingProtocolClient, LendingProtocolTokenAccounts},
-        shared::{
-            DeserializedAccount, RefreshStateProps, RefreshedTokenState,
-            TokenBalanceAmount,
-        },
-        errors::SolautoError
+        shared::{DeserializedAccount, RefreshStateProps, RefreshedTokenState, TokenBalanceAmount},
     },
-    utils::{
-        math_utils,
-        solana_utils::*,
-        solauto_utils::*,
-        validation_utils::*,
-    },
+    utils::{math_utils, solana_utils::*, solauto_utils::*, validation_utils::*},
 };
 
 pub struct MarginfiBankAccounts<'a> {
@@ -232,9 +224,15 @@ impl<'a> MarginfiClient<'a> {
             max_ltv = max_ltv * discount_factor;
         }
 
-        let borrow_fee_bps = (math_utils::i80f48_to_f64(
-            I80F48::from_le_bytes(bank.data.config.interest_rate_config.protocol_origination_fee.value)
-        ).mul(10_000.0)).round() as u16;
+        let borrow_fee_bps = (math_utils::i80f48_to_f64(I80F48::from_le_bytes(
+            bank.data
+                .config
+                .interest_rate_config
+                .protocol_origination_fee
+                .value,
+        ))
+        .mul(10_000.0))
+        .round() as u16;
 
         Ok((
             RefreshedTokenState {
@@ -282,9 +280,15 @@ impl<'a> MarginfiClient<'a> {
             math_utils::i80f48_to_u64(base_unit_supply_available),
         );
 
-        let borrow_fee_bps = (math_utils::i80f48_to_f64(
-            I80F48::from_le_bytes(bank.data.config.interest_rate_config.protocol_origination_fee.value)
-        ).mul(10_000.0)).round() as u16;
+        let borrow_fee_bps = (math_utils::i80f48_to_f64(I80F48::from_le_bytes(
+            bank.data
+                .config
+                .interest_rate_config
+                .protocol_origination_fee
+                .value,
+        ))
+        .mul(10_000.0))
+        .round() as u16;
 
         Ok(RefreshedTokenState {
             mint: bank.data.mint,

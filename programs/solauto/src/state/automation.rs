@@ -1,8 +1,11 @@
-use borsh::{ BorshDeserialize, BorshSerialize };
-use bytemuck::{ Pod, Zeroable };
-use num_traits::{ FromPrimitive, ToPrimitive };
+use borsh::{BorshDeserialize, BorshSerialize};
+use bytemuck::{Pod, Zeroable};
+use num_traits::{FromPrimitive, ToPrimitive};
 use shank::ShankType;
-use std::{ cmp::min, ops::{ Add, Div, Mul, Sub } };
+use std::{
+    cmp::min,
+    ops::{Add, Div, Mul, Sub},
+};
 
 use crate::types::shared::TokenType;
 
@@ -15,7 +18,9 @@ pub struct AutomationSettingsInp {
 }
 
 #[repr(C, align(8))]
-#[derive(ShankType, BorshSerialize, BorshDeserialize, Clone, Debug, Default, Copy, Pod, Zeroable)]
+#[derive(
+    ShankType, BorshSerialize, BorshDeserialize, Clone, Debug, Default, Copy, Pod, Zeroable,
+)]
 pub struct AutomationSettings {
     /// The target number of periods
     pub target_periods: u16,
@@ -49,21 +54,24 @@ impl AutomationSettings {
         if self.periods_passed == 0 {
             curr_unix_timestamp >= self.unix_start_date
         } else {
-            curr_unix_timestamp >=
-                self.unix_start_date.add(self.interval_seconds.mul(self.periods_passed as u64))
+            curr_unix_timestamp
+                >= self
+                    .unix_start_date
+                    .add(self.interval_seconds.mul(self.periods_passed as u64))
         }
     }
     pub fn updated_amount_from_automation<T: ToPrimitive + FromPrimitive>(
         &self,
         curr_amt: T,
         target_amt: T,
-        curr_unix_timestamp: u64
+        curr_unix_timestamp: u64,
     ) -> T {
         let curr_amt_f64 = curr_amt.to_f64().unwrap();
         let target_amt_f64 = target_amt.to_f64().unwrap();
         let current_rate_diff = curr_amt_f64 - target_amt_f64;
         let progress_pct = (1.0).div(
-            self.target_periods.sub(self.new_periods_passed(curr_unix_timestamp) - 1) as f64
+            self.target_periods
+                .sub(self.new_periods_passed(curr_unix_timestamp) - 1) as f64,
         );
         let new_amt = curr_amt_f64 - current_rate_diff * progress_pct;
 
@@ -73,12 +81,10 @@ impl AutomationSettings {
     pub fn new_periods_passed(&self, curr_unix_timestamp: u64) -> u16 {
         min(
             self.target_periods,
-            (
-                (
-                    (curr_unix_timestamp.saturating_sub(self.unix_start_date) as f64) /
-                    (self.interval_seconds as f64)
-                ).floor() as u16
-            ) + 1
+            (((curr_unix_timestamp.saturating_sub(self.unix_start_date) as f64)
+                / (self.interval_seconds as f64))
+                .floor() as u16)
+                + 1,
         )
     }
 }
@@ -91,7 +97,9 @@ pub struct DCASettingsInp {
 }
 
 #[repr(C, align(8))]
-#[derive(ShankType, BorshSerialize, BorshDeserialize, Clone, Debug, Default, Copy, Pod, Zeroable)]
+#[derive(
+    ShankType, BorshSerialize, BorshDeserialize, Clone, Debug, Default, Copy, Pod, Zeroable,
+)]
 pub struct DCASettings {
     pub automation: AutomationSettings,
     // Gradually add more to the position during the DCA period. If this is 0, then a DCA-out is assumed.

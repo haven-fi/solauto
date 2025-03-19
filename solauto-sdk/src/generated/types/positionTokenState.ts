@@ -19,49 +19,49 @@ import {
 } from '@metaplex-foundation/umi/serializers';
 import { TokenAmount, TokenAmountArgs, getTokenAmountSerializer } from '.';
 
-export type PositionTokenUsage = {
+export type PositionTokenState = {
   mint: PublicKey;
   decimals: number;
   padding1: Array<number>;
+  flashLoanFeeBps: number;
+  borrowFeeBps: number;
   amountUsed: TokenAmount;
   amountCanBeUsed: TokenAmount;
   baseAmountMarketPriceUsd: bigint;
-  flashLoanFeeBps: number;
-  borrowFeeBps: number;
   padding2: Array<number>;
   padding: Uint8Array;
 };
 
-export type PositionTokenUsageArgs = {
+export type PositionTokenStateArgs = {
   mint: PublicKey;
   decimals: number;
   padding1: Array<number>;
+  flashLoanFeeBps: number;
+  borrowFeeBps: number;
   amountUsed: TokenAmountArgs;
   amountCanBeUsed: TokenAmountArgs;
   baseAmountMarketPriceUsd: number | bigint;
-  flashLoanFeeBps: number;
-  borrowFeeBps: number;
   padding2: Array<number>;
   padding: Uint8Array;
 };
 
-export function getPositionTokenUsageSerializer(): Serializer<
-  PositionTokenUsageArgs,
-  PositionTokenUsage
+export function getPositionTokenStateSerializer(): Serializer<
+  PositionTokenStateArgs,
+  PositionTokenState
 > {
-  return struct<PositionTokenUsage>(
+  return struct<PositionTokenState>(
     [
       ['mint', publicKeySerializer()],
       ['decimals', u8()],
-      ['padding1', array(u8(), { size: 7 })],
+      ['padding1', array(u8(), { size: 3 })],
+      ['flashLoanFeeBps', u16()],
+      ['borrowFeeBps', u16()],
       ['amountUsed', getTokenAmountSerializer()],
       ['amountCanBeUsed', getTokenAmountSerializer()],
       ['baseAmountMarketPriceUsd', u64()],
-      ['flashLoanFeeBps', u16()],
-      ['borrowFeeBps', u16()],
-      ['padding2', array(u8(), { size: 4 })],
+      ['padding2', array(u8(), { size: 8 })],
       ['padding', bytes({ size: 32 })],
     ],
-    { description: 'PositionTokenUsage' }
-  ) as Serializer<PositionTokenUsageArgs, PositionTokenUsage>;
+    { description: 'PositionTokenState' }
+  ) as Serializer<PositionTokenStateArgs, PositionTokenState>;
 }

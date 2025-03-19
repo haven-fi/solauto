@@ -120,7 +120,7 @@ pub fn system_transfer<'a>(
 
 pub fn spl_token_transfer<'a, 'b>(
     token_program: &'a AccountInfo<'a>,
-    args: SplTokenTransferArgs<'a, 'b>
+    args: SplTokenTransferArgs<'a, 'b>,
 ) -> ProgramResult {
     invoke_instruction(
         &spl_instruction::transfer(
@@ -131,7 +131,11 @@ pub fn spl_token_transfer<'a, 'b>(
             &[],
             args.amount,
         )?,
-        &[args.source.clone(), args.recipient.clone(), args.authority.clone()],
+        &[
+            args.source.clone(),
+            args.recipient.clone(),
+            args.authority.clone(),
+        ],
         args.authority_seeds,
     )
 }

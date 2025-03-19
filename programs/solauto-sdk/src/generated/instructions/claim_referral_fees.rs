@@ -28,7 +28,7 @@ pub struct ClaimReferralFees {
 
     pub referral_fees_dest_mint: solana_program::pubkey::Pubkey,
 
-    pub referral_authority: Option<solana_program::pubkey::Pubkey>,
+    pub referral_authority: solana_program::pubkey::Pubkey,
 
     pub fees_destination_ta: Option<solana_program::pubkey::Pubkey>,
 }
@@ -85,17 +85,10 @@ impl ClaimReferralFees {
             self.referral_fees_dest_mint,
             false,
         ));
-        if let Some(referral_authority) = self.referral_authority {
-            accounts.push(solana_program::instruction::AccountMeta::new(
-                referral_authority,
-                false,
-            ));
-        } else {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::SOLAUTO_ID,
-                false,
-            ));
-        }
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            self.referral_authority,
+            false,
+        ));
         if let Some(fees_destination_ta) = self.fees_destination_ta {
             accounts.push(solana_program::instruction::AccountMeta::new(
                 fees_destination_ta,
@@ -144,7 +137,7 @@ impl ClaimReferralFeesInstructionData {
 ///   6. `[]` referral_state
 ///   7. `[writable]` referral_fees_dest_ta
 ///   8. `[]` referral_fees_dest_mint
-///   9. `[writable, optional]` referral_authority
+///   9. `[writable]` referral_authority
 ///   10. `[writable, optional]` fees_destination_ta
 #[derive(Default)]
 pub struct ClaimReferralFeesBuilder {
@@ -225,13 +218,12 @@ impl ClaimReferralFeesBuilder {
         self.referral_fees_dest_mint = Some(referral_fees_dest_mint);
         self
     }
-    /// `[optional account]`
     #[inline(always)]
     pub fn referral_authority(
         &mut self,
-        referral_authority: Option<solana_program::pubkey::Pubkey>,
+        referral_authority: solana_program::pubkey::Pubkey,
     ) -> &mut Self {
-        self.referral_authority = referral_authority;
+        self.referral_authority = Some(referral_authority);
         self
     }
     /// `[optional account]`
@@ -285,7 +277,9 @@ impl ClaimReferralFeesBuilder {
             referral_fees_dest_mint: self
                 .referral_fees_dest_mint
                 .expect("referral_fees_dest_mint is not set"),
-            referral_authority: self.referral_authority,
+            referral_authority: self
+                .referral_authority
+                .expect("referral_authority is not set"),
             fees_destination_ta: self.fees_destination_ta,
         };
 
@@ -313,7 +307,7 @@ pub struct ClaimReferralFeesCpiAccounts<'a, 'b> {
 
     pub referral_fees_dest_mint: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub referral_authority: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    pub referral_authority: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub fees_destination_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 }
@@ -341,7 +335,7 @@ pub struct ClaimReferralFeesCpi<'a, 'b> {
 
     pub referral_fees_dest_mint: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub referral_authority: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    pub referral_authority: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub fees_destination_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 }
@@ -443,17 +437,10 @@ impl<'a, 'b> ClaimReferralFeesCpi<'a, 'b> {
             *self.referral_fees_dest_mint.key,
             false,
         ));
-        if let Some(referral_authority) = self.referral_authority {
-            accounts.push(solana_program::instruction::AccountMeta::new(
-                *referral_authority.key,
-                false,
-            ));
-        } else {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::SOLAUTO_ID,
-                false,
-            ));
-        }
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            *self.referral_authority.key,
+            false,
+        ));
         if let Some(fees_destination_ta) = self.fees_destination_ta {
             accounts.push(solana_program::instruction::AccountMeta::new(
                 *fees_destination_ta.key,
@@ -494,9 +481,7 @@ impl<'a, 'b> ClaimReferralFeesCpi<'a, 'b> {
         account_infos.push(self.referral_state.clone());
         account_infos.push(self.referral_fees_dest_ta.clone());
         account_infos.push(self.referral_fees_dest_mint.clone());
-        if let Some(referral_authority) = self.referral_authority {
-            account_infos.push(referral_authority.clone());
-        }
+        account_infos.push(self.referral_authority.clone());
         if let Some(fees_destination_ta) = self.fees_destination_ta {
             account_infos.push(fees_destination_ta.clone());
         }
@@ -525,7 +510,7 @@ impl<'a, 'b> ClaimReferralFeesCpi<'a, 'b> {
 ///   6. `[]` referral_state
 ///   7. `[writable]` referral_fees_dest_ta
 ///   8. `[]` referral_fees_dest_mint
-///   9. `[writable, optional]` referral_authority
+///   9. `[writable]` referral_authority
 ///   10. `[writable, optional]` fees_destination_ta
 pub struct ClaimReferralFeesCpiBuilder<'a, 'b> {
     instruction: Box<ClaimReferralFeesCpiBuilderInstruction<'a, 'b>>,
@@ -620,13 +605,12 @@ impl<'a, 'b> ClaimReferralFeesCpiBuilder<'a, 'b> {
         self.instruction.referral_fees_dest_mint = Some(referral_fees_dest_mint);
         self
     }
-    /// `[optional account]`
     #[inline(always)]
     pub fn referral_authority(
         &mut self,
-        referral_authority: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+        referral_authority: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
-        self.instruction.referral_authority = referral_authority;
+        self.instruction.referral_authority = Some(referral_authority);
         self
     }
     /// `[optional account]`
@@ -718,7 +702,10 @@ impl<'a, 'b> ClaimReferralFeesCpiBuilder<'a, 'b> {
                 .referral_fees_dest_mint
                 .expect("referral_fees_dest_mint is not set"),
 
-            referral_authority: self.instruction.referral_authority,
+            referral_authority: self
+                .instruction
+                .referral_authority
+                .expect("referral_authority is not set"),
 
             fees_destination_ta: self.instruction.fees_destination_ta,
         };

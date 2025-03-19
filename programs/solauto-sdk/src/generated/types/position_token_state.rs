@@ -19,12 +19,12 @@ pub struct PositionTokenState {
     )]
     pub mint: Pubkey,
     pub decimals: u8,
-    pub padding1: [u8; 7],
+    pub padding1: [u8; 3],
+    pub flash_loan_fee_bps: u16,
+    pub borrow_fee_bps: u16,
     pub amount_used: TokenAmount,
     pub amount_can_be_used: TokenAmount,
     pub base_amount_market_price_usd: u64,
-    pub flash_loan_fee_bps: u16,
-    pub borrow_fee_bps: u16,
-    pub padding2: [u8; 4],
+    pub padding2: [u8; 8],
     pub padding: [u8; 32],
 }

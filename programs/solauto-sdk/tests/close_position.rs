@@ -106,9 +106,7 @@ mod close_position {
             &temp_account.pubkey(),
             &data.general.supply_mint.pubkey()
         );
-        data.general
-            .create_ata(temp_account.pubkey(), &data.general.supply_mint).await
-            .unwrap();
+        data.general.create_ata(temp_account.pubkey(), &data.general.supply_mint).await.unwrap();
 
         // Fake position supply token account
         let err = data.general
@@ -129,19 +127,12 @@ mod close_position {
             &temp_account.pubkey(),
             &data.general.debt_mint.pubkey()
         );
-        data.general
-            .create_ata(temp_account.pubkey(), &data.general.debt_mint).await
-            .unwrap();
+        data.general.create_ata(temp_account.pubkey(), &data.general.debt_mint).await.unwrap();
 
         // Fake position debt token account
         let err = data.general
             .execute_instructions(
-                vec![
-                    data.general
-                        .close_position_ix()
-                        .position_debt_ta(fake_debt_ta)
-                        .instruction()
-                ],
+                vec![data.general.close_position_ix().position_debt_ta(fake_debt_ta).instruction()],
                 None
             ).await
             .unwrap_err();
