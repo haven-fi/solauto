@@ -21,7 +21,12 @@ use crate::{
         solauto::{ FromLendingPlatformAction, SolautoCpiAction, ToLendingPlatformAction },
     },
     utils::{
-        math_utils::{ from_bps, to_rounded_usd_value, usd_value_to_base_unit },
+        math_utils::{
+            from_bps,
+            from_rounded_usd_value,
+            to_rounded_usd_value,
+            usd_value_to_base_unit,
+        },
         solauto_utils::SolautoFeesBps,
     },
 };
@@ -104,8 +109,35 @@ impl<'a> Rebalancer<'a> {
         Ok(())
     }
 
-    fn get_base_unit_amount(&self, usd_value: f64, token: PositionTokenState) -> u64 {
-        usd_value_to_base_unit(usd_value, token.decimals, token.market_price())
+    fn pull_additional_amount(
+        &self,
+        rounded_usd_value: u64,
+        token_usage: PositionTokenState,
+        max: Option<u64>
+    ) -> u64 {
+        let base_unit_amount = usd_value_to_base_unit(
+            from_rounded_usd_value(rounded_usd_value),
+            token_usage.decimals,
+            token_usage.market_price()
+        );
+
+        if max.is_some() {
+            min(base_unit_amount, max.unwrap())
+        } else {
+            base_unit_amount
+        }
+    }
+
+    fn get_dynamic_balance(&self) -> u64 {
+        let balance = if self.is_boost() {
+            self.solauto_position.supply_ta.data.amount
+        } else {
+            self.solauto_position.debt_ta.data.amount
+        };
+
+        // Subtract current balances that are attributed to DCA / limit order in
+
+        balance
     }
 
     fn transfer_to_authority_if_needed(&mut self, base_unit_amount: u64) {
@@ -181,15 +213,24 @@ impl<'a> Rebalancer<'a> {
         let mut amount = 0;
 
         let action = match token_balance_change.change_type {
-            TokenBalanceChangeType::None => None,
             TokenBalanceChangeType::PreSwapDeposit =>
                 Some(
                     SolautoCpiAction::Deposit(ToLendingPlatformAction {
-                        amount: TokenBalanceAmount::Some(amount),
+                        amount: TokenBalanceAmount::Some(
+                            self.pull_additional_amount(
+                                token_balance_change.amount_usd,
+                                self.position_data().state.supply,
+                                Some(self.solauto_position.supply_ta.data.amount)
+                            )
+                        ),
                     })
                 ),
             TokenBalanceChangeType::PostSwapDeposit => {
-                amount = token_balance_change.base_unit_amount;
+                amount = self.pull_additional_amount(
+                    token_balance_change.amount_usd,
+                    self.position_data().state.debt,
+                    Some(self.solauto_position.debt_ta.data.amount)
+                );
                 Some(
                     SolautoCpiAction::SplTokenTransfer(BareSplTokenTransferArgs {
                         amount,
@@ -199,9 +240,12 @@ impl<'a> Rebalancer<'a> {
                     })
                 )
             }
-            TokenBalanceChangeType::PostRebalanceWithdrawSupply => None,
-            TokenBalanceChangeType::PostRebalanceWithdrawDebt => {
-                amount = token_balance_change.base_unit_amount;
+            TokenBalanceChangeType::PostRebalanceWithdrawDebtToken => {
+                amount = self.pull_additional_amount(
+                    token_balance_change.amount_usd,
+                    self.position_data().state.supply,
+                    Some(self.solauto_position.supply_ta.data.amount)
+                );
                 Some(
                     SolautoCpiAction::SplTokenTransfer(BareSplTokenTransferArgs {
                         amount,
@@ -211,6 +255,7 @@ impl<'a> Rebalancer<'a> {
                     })
                 )
             }
+            _ => None,
         };
 
         if action.is_some() {
@@ -218,18 +263,6 @@ impl<'a> Rebalancer<'a> {
         }
 
         amount
-    }
-
-    pub fn begin_rebalance(&mut self) -> ProgramResult {
-        self.set_rebalance_data()?;
-
-        let amount_to_swap = self.rebalance_args.swap_amount_base_unit;
-        let additional_amount_to_swap = self.get_additional_amount_before_swap();
-        let base_unit_amount = amount_to_swap - additional_amount_to_swap;
-
-        self.pull_liquidity_from_lp(base_unit_amount, self.intermediary_ta);
-
-        Ok(())
     }
 
     fn get_additional_amount_after_swap(&mut self) -> u64 {
@@ -241,11 +274,12 @@ impl<'a> Rebalancer<'a> {
         let mut amount = 0;
 
         let action = match token_balance_change.change_type {
-            TokenBalanceChangeType::None => None,
-            TokenBalanceChangeType::PreSwapDeposit => None,
-            TokenBalanceChangeType::PostSwapDeposit => None,
-            TokenBalanceChangeType::PostRebalanceWithdrawSupply => {
-                amount = token_balance_change.base_unit_amount;
+            TokenBalanceChangeType::PostRebalanceWithdrawSupplyToken => {
+                amount = self.pull_additional_amount(
+                    token_balance_change.amount_usd,
+                    self.position_data().state.supply,
+                    None
+                );
                 Some(
                     SolautoCpiAction::SplTokenTransfer(BareSplTokenTransferArgs {
                         amount,
@@ -255,8 +289,12 @@ impl<'a> Rebalancer<'a> {
                     })
                 )
             }
-            TokenBalanceChangeType::PostRebalanceWithdrawDebt => {
-                amount = token_balance_change.base_unit_amount;
+            TokenBalanceChangeType::PostRebalanceWithdrawDebtToken => {
+                amount = self.pull_additional_amount(
+                    token_balance_change.amount_usd,
+                    self.position_data().state.debt,
+                    None
+                );
                 Some(
                     SolautoCpiAction::SplTokenTransfer(BareSplTokenTransferArgs {
                         amount,
@@ -266,6 +304,7 @@ impl<'a> Rebalancer<'a> {
                     })
                 )
             }
+            _ => None,
         };
 
         if action.is_some() {
@@ -335,7 +374,7 @@ impl<'a> Rebalancer<'a> {
         Ok(available_balance - solauto_fees - referrer_fees)
     }
 
-    fn repay_flash_loan(&mut self) {
+    fn repay_flash_loan_if_necessary(&mut self) {
         if
             matches!(
                 self.rebalance_data().rebalance_type,
@@ -365,32 +404,40 @@ impl<'a> Rebalancer<'a> {
         }
     }
 
-    fn get_balance_after_swap(&self) -> u64 {
-        let balance = if self.is_boost() {
-            self.solauto_position.supply_ta.data.amount
-        } else {
-            self.solauto_position.debt_ta.data.amount
-        };
-
-        // Subtract current balances that are attributed to DCA / limit order in
-
-        balance
+    fn finish_rebalance(&mut self, dynamic_balance: u64) -> ProgramResult {
+        let amount_to_put_in_lp = self.payout_fees(dynamic_balance)?;
+        self.put_liquidity_in_lp(amount_to_put_in_lp);
+        self.repay_flash_loan_if_necessary();
+        self.solauto_position.data.rebalance = RebalanceData::default();
+        Ok(())
     }
 
-    pub fn finish_rebalance(&mut self) -> ProgramResult {
+    pub fn first_rebalance_step(&mut self) -> ProgramResult {
         self.set_rebalance_data()?;
 
-        let balance_after_swap = self.get_balance_after_swap();
-        let additional_amount_to_swap = self.get_additional_amount_after_swap();
-        let base_unit_amount = balance_after_swap - additional_amount_to_swap;
+        let amount_to_swap = self.rebalance_args.swap_amount_base_unit;
+        let additional_amount_to_swap = self.get_additional_amount_before_swap();
 
-        let balance_after_fees = self.payout_fees(base_unit_amount)?;
+        if self.rebalance_data().rebalance_type == SolautoRebalanceType::FLRebalanceThenSwap {
+            self.finish_rebalance(self.get_dynamic_balance())?;
+        } else {
+            let amount_to_pull_from_lp = amount_to_swap - additional_amount_to_swap;
+            self.pull_liquidity_from_lp(amount_to_pull_from_lp, self.intermediary_ta);
+        }
 
-        self.put_liquidity_in_lp(balance_after_fees);
+        Ok(())
+    }
 
-        self.repay_flash_loan();
+    pub fn final_rebalance_step(&mut self) -> ProgramResult {
+        self.set_rebalance_data()?;
 
-        self.solauto_position.data.rebalance = RebalanceData::default();
+        let additional_amount_after_swap = self.get_additional_amount_after_swap();
+
+        if self.rebalance_data().rebalance_type != SolautoRebalanceType::FLRebalanceThenSwap {
+            let dynamic_balance = self.get_dynamic_balance();
+            self.finish_rebalance(dynamic_balance - additional_amount_after_swap)?;
+        }
+
         Ok(())
     }
 }

@@ -35,13 +35,12 @@ pub fn eligible_for_rebalance(solauto_position: &Box<SolautoPosition>) -> bool {
 
 fn get_target_ltv_bps(
     solauto_position: &Box<SolautoPosition>,
-    rebalance_args: &RebalanceSettings
+    rebalance_args: &RebalanceSettings,
+    token_balance_change: &Option<TokenBalanceChange>
 ) -> Result<u16, ProgramError> {
     if rebalance_args.target_liq_utilization_rate_bps.is_some() {
         return Ok(rebalance_args.target_liq_utilization_rate_bps.unwrap());
     }
-
-    // TODO: DCA, limit orders, take profit, stop loss, etc.
 
     if
         solauto_position.state.liq_utilization_rate_bps <=
@@ -53,29 +52,34 @@ fn get_target_ltv_bps(
         solauto_position.position.setting_params.repay_from_bps()
     {
         Ok(solauto_position.position.setting_params.repay_to_bps)
+    } else if token_balance_change.is_some() {
+        // TODO: DCA, limit orders, take profit, stop loss, etc.
+        Ok(solauto_position.state.liq_utilization_rate_bps)
     } else {
         msg!("Invalid rebalance condition");
         Err(SolautoError::InvalidRebalanceCondition.into())
     }
 }
 
+fn get_token_balance_change() -> Option<TokenBalanceChange> {
+    None
+}
+
 pub struct AdjustedUsdBalances {
     pub supply_usd: f64,
     pub debt_usd: f64,
-    pub token_balance_change: Option<TokenBalanceChange>,
 }
 
 fn get_adjusted_usd_balances(
     solauto_position: &Box<SolautoPosition>,
-    rebalance_direction: &RebalanceDirection
+    token_balance_change: &Option<TokenBalanceChange>
 ) -> AdjustedUsdBalances {
     let supply_usd = solauto_position.state.supply.amount_used.usd_value();
     let debt_usd = solauto_position.state.debt.amount_used.usd_value();
 
     // TODO: DCA, limit orders, take profit, stop loss, etc.
-    let token_balance_change: Option<TokenBalanceChange> = None;
 
-    return AdjustedUsdBalances { supply_usd, debt_usd, token_balance_change };
+    return AdjustedUsdBalances { supply_usd, debt_usd };
 }
 
 fn get_rebalance_direction(
@@ -128,10 +132,17 @@ pub fn get_rebalance_values(
     rebalance_args: &RebalanceSettings,
     solauto_fees_bps: &SolautoFeesBps
 ) -> Result<RebalanceValues, ProgramError> {
-    let target_ltv_bps = get_target_ltv_bps(solauto_position, rebalance_args)?;
+    let token_balance_change = get_token_balance_change();
+    let target_ltv_bps = get_target_ltv_bps(
+        solauto_position,
+        rebalance_args,
+        &token_balance_change
+    )?;
     let rebalance_direction = get_rebalance_direction(solauto_position, target_ltv_bps);
-    let AdjustedUsdBalances { supply_usd, debt_usd, token_balance_change } =
-        get_adjusted_usd_balances(solauto_position, &rebalance_direction);
+    let AdjustedUsdBalances { supply_usd, debt_usd } = get_adjusted_usd_balances(
+        solauto_position,
+        &token_balance_change
+    );
     let lp_fee_bps = get_lp_fee_bps(solauto_position, rebalance_args, &rebalance_direction);
 
     // TODO: get debt adjustment

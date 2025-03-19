@@ -292,8 +292,8 @@ pub enum TokenBalanceChangeType {
     None,
     PreSwapDeposit,
     PostSwapDeposit,
-    PostRebalanceWithdrawSupply,
-    PostRebalanceWithdrawDebt,
+    PostRebalanceWithdrawSupplyToken,
+    PostRebalanceWithdrawDebtToken,
 }
 
 unsafe impl Zeroable for TokenBalanceChangeType {}
@@ -304,7 +304,8 @@ unsafe impl Pod for TokenBalanceChangeType {}
 pub struct TokenBalanceChange {
     pub change_type: TokenBalanceChangeType,
     _padding1: [u8; 7],
-    pub base_unit_amount: u64,
+    // Denominated in 9 decimal places
+    pub amount_usd: u64,
 }
 
 impl TokenBalanceChange {
