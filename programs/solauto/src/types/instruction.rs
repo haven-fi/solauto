@@ -1,12 +1,14 @@
 use borsh::BorshDeserialize;
-use shank::{ShankContext, ShankInstruction, ShankType};
-use solana_program::{account_info::AccountInfo, pubkey::Pubkey};
+use shank::{ ShankContext, ShankInstruction, ShankType };
+use solana_program::{ account_info::AccountInfo, pubkey::Pubkey };
 
-use crate::state::{
-    referral_state::ReferralState,
-    solauto_position::{
-        DCASettingsInp, SolautoPosition, SolautoRebalanceType, SolautoSettingsParametersInp,
+use crate::{
+    state::{
+        referral_state::ReferralState,
+        solauto_position::{ SolautoPosition, SolautoSettingsParametersInp },
+        automation::DCASettingsInp,
     },
+    types::shared::SolautoRebalanceType,
 };
 
 use super::shared::*;
@@ -213,9 +215,8 @@ pub struct RebalanceSettings {
     pub rebalance_type: SolautoRebalanceType,
     /// Target liq utilization rate. Only used/allowed if signed by the position authority.
     pub target_liq_utilization_rate_bps: Option<u16>,
-    /// The amount to use in the token swap. Gets validated by the program.
-    pub swap_amount_base_unit: u64,
-    pub swap_type: SwapType,
+    /// The in-amount to use in the token swap. Gets validated by the program.
+    pub swap_in_amount_base_unit: u64,
 }
 
 pub struct SolautoStandardAccounts<'a> {

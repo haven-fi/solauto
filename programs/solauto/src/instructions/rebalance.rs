@@ -12,7 +12,7 @@ use solana_program::{
 
 use crate::{
     clients::marginfi::MarginfiClient,
-    state::solauto_position::{ SolautoPosition, SolautoRebalanceType },
+    state::solauto_position::SolautoPosition,
     types::{
         instruction::{
             accounts::{ Context, MarginfiRebalanceAccounts },
@@ -20,7 +20,8 @@ use crate::{
             SolautoStandardAccounts,
         },
         lending_protocol::{ LendingProtocolClient, LendingProtocolTokenAccounts },
-        shared::{ DeserializedAccount, RebalanceStep, SolautoError },
+        shared::{ DeserializedAccount, RebalanceStep, SolautoRebalanceType },
+        errors::SolautoError,
         solauto_manager::{ SolautoManager, SolautoManagerAccounts },
     },
     utils::{ ix_utils, solauto_utils },
@@ -70,9 +71,10 @@ pub fn marginfi_rebalance<'a>(
         None
     )?;
 
-    let rebalance_type = std_accounts.solauto_position.data.rebalance.rebalance_type;
+    // TODO: clean up rebalance step stuff, and the way the rebalance type is set is very hidden, should make it more obvious
+    let rebalance_type = std_accounts.solauto_position.data.rebalance.ixs.rebalance_type;
     if
-        rebalance_step == RebalanceStep::Initial ||
+        rebalance_step == RebalanceStep::First ||
         rebalance_type == SolautoRebalanceType::FLSwapThenRebalance ||
         rebalance_type == SolautoRebalanceType::FLRebalanceThenSwap
     {
@@ -170,7 +172,7 @@ fn rebalance<'a>(
         std_accounts,
         Some(fees_bps)
     )?;
-    if rebalance_step == RebalanceStep::Initial {
+    if rebalance_step == RebalanceStep::First {
         solauto_manager.begin_rebalance(&args)?;
     } else {
         solauto_manager.finish_rebalance(&args)?;

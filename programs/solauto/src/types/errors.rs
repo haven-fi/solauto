@@ -1,0 +1,32 @@
+use solana_program::program_error::ProgramError;
+use thiserror::Error;
+
+#[derive(Error, Debug)]
+pub enum SolautoError {
+    #[error("Missing or incorrect accounts provided for the given instructions")]
+    IncorrectAccounts,
+    #[error("Failed to deserialize account data")]
+    FailedAccountDeserialization,
+    #[error("Invalid position settings provided")]
+    InvalidPositionSettings,
+    #[error("Invalid DCA configuration provided")]
+    InvalidDCASettings,
+    #[error("Invalid automation settings provided")]
+    InvalidAutomationData,
+    #[error("Invalid position condition to rebalance")]
+    InvalidRebalanceCondition,
+    #[error("Unable to invoke instruction through a CPI")]
+    InstructionIsCPI,
+    #[error("Incorrect set of instructions in the transaction")]
+    IncorrectInstructions,
+    #[error("Incorrect swap amount provided. Likely due to high price volatility")]
+    IncorrectDebtAdjustment,
+    #[error("Invalid rebalance was made. Target supply USD and target debt USD was not met")]
+    InvalidRebalanceMade,
+}
+
+impl From<SolautoError> for ProgramError {
+    fn from(e: SolautoError) -> Self {
+        ProgramError::Custom(e as u32)
+    }
+}

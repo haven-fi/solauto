@@ -28,9 +28,10 @@ use crate::{
         },
         lending_protocol::{LendingProtocolClient, LendingProtocolTokenAccounts},
         shared::{
-            DeserializedAccount, RefreshStateProps, RefreshedTokenState, SolautoError,
+            DeserializedAccount, RefreshStateProps, RefreshedTokenState,
             TokenBalanceAmount,
         },
+        errors::SolautoError
     },
     utils::{
         math_utils,

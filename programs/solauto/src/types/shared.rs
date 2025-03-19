@@ -1,4 +1,4 @@
-use borsh::{BorshDeserialize, BorshSerialize};
+use borsh::{ BorshDeserialize, BorshSerialize };
 use bytemuck::AnyBitPattern;
 use bytemuck::Pod;
 use bytemuck::Zeroable;
@@ -8,25 +8,54 @@ use solana_program::pubkey::Pubkey;
 use solana_program::{
     account_info::AccountInfo,
     program_error::ProgramError,
-    program_pack::{IsInitialized, Pack},
+    program_pack::{ IsInitialized, Pack },
 };
 use std::fmt;
-use thiserror::Error;
 
-#[repr(u8)]
-#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, PartialEq, Copy)]
-pub enum LendingPlatform {
+use crate::create_enum;
+use super::errors::SolautoError;
+
+create_enum!(LendingPlatform {
     Marginfi,
-}
+});
 
-unsafe impl Zeroable for LendingPlatform {}
-unsafe impl Pod for LendingPlatform {}
+create_enum!(PositionType {
+    Leverage,
+    SafeLoan,
+});
 
-impl Default for LendingPlatform {
-    fn default() -> Self {
-        LendingPlatform::Marginfi
+create_enum!(TokenType {
+    Supply,
+    Debt,
+});
+
+impl fmt::Display for TokenType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            TokenType::Supply => write!(f, "supply"),
+            TokenType::Debt => write!(f, "debt"),
+        }
     }
 }
+
+create_enum!(RebalanceDirection {
+    None,
+    Boost,
+    Repay,
+});
+
+create_enum!(RebalanceStep {
+    First,
+    Final,
+});
+
+create_enum!(SolautoRebalanceType {
+    None,
+    Regular,
+    DoubleRebalanceWithFL,
+    FLSwapThenRebalance,
+    FLRebalanceThenSwap,
+});
 
 #[repr(C)]
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, PartialEq, Copy)]
@@ -42,56 +71,6 @@ impl PodBool {
         Self { val }
     }
 }
-
-#[repr(u8)]
-#[derive(ShankType, BorshDeserialize, BorshSerialize, Clone, Debug, Default, PartialEq, Copy)]
-pub enum SwapType {
-    #[default]
-    ExactIn,
-    ExactOut,
-}
-
-#[repr(u8)]
-#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, Default, PartialEq, Copy)]
-pub enum PositionType {
-    #[default]
-    Leverage,
-    SafeLoan,
-}
-
-unsafe impl Zeroable for PositionType {}
-unsafe impl Pod for PositionType {}
-
-#[repr(u8)]
-#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, Default, PartialEq, Copy)]
-pub enum TokenType {
-    #[default]
-    Supply,
-    Debt,
-}
-
-unsafe impl Zeroable for TokenType {}
-unsafe impl Pod for TokenType {}
-
-impl fmt::Display for TokenType {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            TokenType::Supply => write!(f, "supply"),
-            TokenType::Debt => write!(f, "debt"),
-        }
-    }
-}
-
-#[repr(u8)]
-#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, Default, PartialEq, Copy)]
-pub enum RebalanceDirection {
-    #[default]
-    Boost,
-    Repay,
-}
-
-unsafe impl Zeroable for RebalanceDirection {}
-unsafe impl Pod for RebalanceDirection {}
 
 #[derive(Debug)]
 pub struct RefreshedTokenState {
@@ -118,12 +97,6 @@ pub enum TokenBalanceAmount {
     All,
 }
 
-#[derive(Debug, PartialEq)]
-pub enum RebalanceStep {
-    Initial,
-    Final,
-}
-
 #[derive(Clone)]
 pub struct DeserializedAccount<'a, T> {
     pub account_info: &'a AccountInfo<'a>,
@@ -133,10 +106,13 @@ pub struct DeserializedAccount<'a, T> {
 impl<'a, T: AnyBitPattern> DeserializedAccount<'a, T> {
     pub fn zerocopy(account: Option<&'a AccountInfo<'a>>) -> Result<Option<Self>, ProgramError> {
         match account {
-            Some(account_info) => Ok(Some(Self {
-                account_info,
-                data: Box::new(*bytemuck::from_bytes::<T>(&account_info.data.borrow())),
-            })),
+            Some(account_info) =>
+                Ok(
+                    Some(Self {
+                        account_info,
+                        data: Box::new(*bytemuck::from_bytes::<T>(&account_info.data.borrow())),
+                    })
+                ),
             None => Ok(None),
         }
     }
@@ -150,40 +126,14 @@ impl<'a, T: Pack + IsInitialized> DeserializedAccount<'a, T> {
                     msg!("Failed to deserialize account data");
                     SolautoError::FailedAccountDeserialization
                 })?;
-                Ok(Some(Self {
-                    account_info,
-                    data: Box::new(deserialized_data),
-                }))
+                Ok(
+                    Some(Self {
+                        account_info,
+                        data: Box::new(deserialized_data),
+                    })
+                )
             }
             None => Ok(None),
         }
-    }
-}
-
-#[derive(Error, Debug)]
-pub enum SolautoError {
-    #[error("Missing or incorrect accounts provided for the given instruction")]
-    IncorrectAccounts,
-    #[error("Failed to deserialize account data")]
-    FailedAccountDeserialization,
-    #[error("Invalid position settings provided")]
-    InvalidPositionSettings,
-    #[error("Invalid DCA configuration provided")]
-    InvalidDCASettings,
-    #[error("Invalid automation settings provided")]
-    InvalidAutomationData,
-    #[error("Invalid position condition to rebalance")]
-    InvalidRebalanceCondition,
-    #[error("Unable to invoke instruction through a CPI")]
-    InstructionIsCPI,
-    #[error("Incorrect set of instructions in the transaction")]
-    IncorrectInstructions,
-    #[error("Incorrect swap amount provided. Likely due to high price volatility")]
-    IncorrectDebtAdjustment,
-}
-
-impl From<SolautoError> for ProgramError {
-    fn from(e: SolautoError) -> Self {
-        ProgramError::Custom(e as u32)
     }
 }

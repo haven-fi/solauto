@@ -1,9 +1,7 @@
 use solana_program::{
     account_info::AccountInfo,
-    clock::Clock,
     entrypoint::ProgramResult,
     msg,
-    sysvar::Sysvar,
 };
 
 use crate::{
@@ -14,7 +12,8 @@ use crate::{
             accounts::{ CancelDCAAccounts, ClosePositionAccounts, UpdatePositionAccounts },
             UpdatePositionData,
         },
-        shared::{ DeserializedAccount, SolautoError },
+        shared::DeserializedAccount,
+        errors::SolautoError
     },
     utils::{ ix_utils, solauto_utils, validation_utils },
 };

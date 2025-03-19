@@ -1,33 +1,28 @@
 use std::{ cmp::min, ops::{ Add, Mul } };
 
-use solana_program::{ entrypoint::ProgramResult, msg, program_error::ProgramError, pubkey::Pubkey };
-use spl_associated_token_account::get_associated_token_address;
+use solana_program::{ entrypoint::ProgramResult, program_error::ProgramError, pubkey::Pubkey };
 use spl_token::state::Account as TokenAccount;
 
 use crate::{
+    check,
     constants::SOLAUTO_FEES_WALLET,
     state::solauto_position::{
         PositionTokenState,
         RebalanceData,
         SolautoPosition,
-        SolautoRebalanceType,
-        TokenBalanceChange,
         TokenBalanceChangeType,
     },
     types::{
+        errors::SolautoError,
         instruction::RebalanceSettings,
-        shared::{ RebalanceDirection, SolautoError, TokenBalanceAmount },
+        shared::{ RebalanceDirection, TokenBalanceAmount, SolautoRebalanceType },
         solana::BareSplTokenTransferArgs,
         solauto::{ FromLendingPlatformAction, SolautoCpiAction, ToLendingPlatformAction },
     },
     utils::{
-        math_utils::{
-            from_bps,
-            from_rounded_usd_value,
-            to_rounded_usd_value,
-            usd_value_to_base_unit,
-        },
+        math_utils::{ from_bps, from_rounded_usd_value, usd_value_to_base_unit },
         solauto_utils::SolautoFeesBps,
+        validation_utils::correct_token_account,
     },
 };
 
@@ -69,43 +64,28 @@ impl<'a> Rebalancer<'a> {
     }
 
     fn is_boost(&self) -> bool {
-        self.rebalance_data().rebalance_direction == RebalanceDirection::Boost
+        self.rebalance_data().values.rebalance_direction == RebalanceDirection::Boost
     }
 
     fn set_rebalance_data(&mut self) -> ProgramResult {
-        if self.solauto_position.data.rebalance.debt_adjustment_usd != 0 {
+        if
+            self.solauto_position.data.rebalance.values.rebalance_direction !=
+            RebalanceDirection::None
+        {
             return Ok(());
         }
 
-        if !eligible_for_rebalance(&self.solauto_position.data) {
-            msg!("Invalid rebalance condition");
-            return Err(SolautoError::InvalidRebalanceCondition.into());
-        }
+        check!(
+            eligible_for_rebalance(&self.solauto_position.data),
+            SolautoError::InvalidRebalanceCondition
+        );
 
-        let rebalance_values = get_rebalance_values(
+        self.solauto_position.data.rebalance.values = get_rebalance_values(
             &self.solauto_position.data,
             self.rebalance_args,
             self.solauto_fees_bps
         )?;
 
-        self.solauto_position.data.rebalance.debt_adjustment_usd = to_rounded_usd_value(
-            rebalance_values.debt_adjustment_usd
-        );
-        self.solauto_position.data.rebalance.rebalance_direction =
-            rebalance_values.rebalance_direction;
-        self.solauto_position.data.rebalance.token_balance_change = if
-            rebalance_values.token_balance_change.is_some()
-        {
-            rebalance_values.token_balance_change.unwrap()
-        } else {
-            TokenBalanceChange::default()
-        };
-
-        self.validate_rebalance_data()
-    }
-
-    fn validate_rebalance_data(&self) -> ProgramResult {
-        // TODO: validate debt adjustment usd with calculations
         Ok(())
     }
 
@@ -205,11 +185,11 @@ impl<'a> Rebalancer<'a> {
     }
 
     fn get_additional_amount_before_swap(&mut self) -> u64 {
-        if !self.rebalance_data().token_balance_change.requires_one() {
+        if !self.rebalance_data().values.token_balance_change.requires_one() {
             return 0;
         }
 
-        let token_balance_change = self.rebalance_data().token_balance_change;
+        let token_balance_change = self.rebalance_data().values.token_balance_change;
         let mut amount = 0;
 
         let action = match token_balance_change.change_type {
@@ -266,11 +246,11 @@ impl<'a> Rebalancer<'a> {
     }
 
     fn get_additional_amount_after_swap(&mut self) -> u64 {
-        if !self.rebalance_data().token_balance_change.requires_one() {
+        if !self.rebalance_data().values.token_balance_change.requires_one() {
             return 0;
         }
 
-        let token_balance_change = self.rebalance_data().token_balance_change;
+        let token_balance_change = self.rebalance_data().values.token_balance_change;
         let mut amount = 0;
 
         let action = match token_balance_change.change_type {
@@ -323,10 +303,10 @@ impl<'a> Rebalancer<'a> {
         destination_wallet: Pubkey,
         destination_ta: Pubkey
     ) -> Result<u64, ProgramError> {
-        if destination_ta != get_associated_token_address(&destination_wallet, &token_mint) {
-            msg!("Incorrect fee token account provided");
-            return Err(SolautoError::IncorrectAccounts.into());
-        }
+        check!(
+            correct_token_account(&destination_ta, &destination_wallet, &token_mint),
+            SolautoError::IncorrectAccounts
+        );
 
         let fee_amount = (available_balance as f64).mul(from_bps(fee_pct_bps)) as u64;
         self.actions.push(
@@ -342,7 +322,7 @@ impl<'a> Rebalancer<'a> {
     }
 
     fn payout_fees(&mut self, available_balance: u64) -> Result<u64, ProgramError> {
-        let rebalance_direction = &self.rebalance_data().rebalance_direction;
+        let rebalance_direction = &self.rebalance_data().values.rebalance_direction;
         let (token_mint, position_ta) = if self.is_boost() {
             (self.position_data().state.supply.mint, self.solauto_position.supply_ta.pk)
         } else {
@@ -377,18 +357,14 @@ impl<'a> Rebalancer<'a> {
     fn repay_flash_loan_if_necessary(&mut self) {
         if
             matches!(
-                self.rebalance_data().rebalance_type,
+                self.rebalance_data().ixs.rebalance_type,
                 SolautoRebalanceType::DoubleRebalanceWithFL |
                     SolautoRebalanceType::FLRebalanceThenSwap |
                     SolautoRebalanceType::FLSwapThenRebalance
             )
         {
-            let fl_repay_amount = if
-                self.rebalance_data().rebalance_type == SolautoRebalanceType::FLRebalanceThenSwap
-            {
-                self.rebalance_args.swap_amount_base_unit
-            } else {
-                let flash_loan_amount = self.rebalance_data().flash_loan_amount;
+            let flash_loan_amount = self.rebalance_data().ixs.flash_loan_amount;
+            let fl_repay_amount = if flash_loan_amount > 0 {
                 let flash_loan_fee_bps = if self.is_boost() {
                     self.position_data().state.debt.flash_loan_fee_bps
                 } else {
@@ -398,16 +374,46 @@ impl<'a> Rebalancer<'a> {
                 flash_loan_amount.add(
                     (flash_loan_amount as f64).mul(from_bps(flash_loan_fee_bps)).ceil() as u64
                 )
+            } else {
+                self.rebalance_args.swap_in_amount_base_unit
             };
 
             self.pull_liquidity_from_lp(fl_repay_amount, self.intermediary_ta);
         }
     }
 
+    fn value_match_with_threshold(&self, value: f64, target_value: f64) -> bool {
+        // TODO
+        true
+    }
+
+    fn validate_rebalance_result(&self) -> ProgramResult {
+        let curr_supply_usd = self.position_data().state.supply.amount_used.usd_value();
+        let curr_debt_usd = self.position_data().state.debt.amount_used.usd_value();
+
+        let target_supply_usd = from_rounded_usd_value(
+            self.rebalance_data().values.target_supply_usd
+        );
+        let target_debt_usd = from_rounded_usd_value(self.rebalance_data().values.target_debt_usd);
+
+        check!(
+            self.value_match_with_threshold(curr_supply_usd, target_supply_usd),
+            SolautoError::InvalidRebalanceMade
+        );
+
+        check!(
+            self.value_match_with_threshold(curr_debt_usd, target_debt_usd),
+            SolautoError::InvalidRebalanceMade
+        );
+
+        Ok(())
+    }
+
     fn finish_rebalance(&mut self, dynamic_balance: u64) -> ProgramResult {
         let amount_to_put_in_lp = self.payout_fees(dynamic_balance)?;
         self.put_liquidity_in_lp(amount_to_put_in_lp);
         self.repay_flash_loan_if_necessary();
+        self.validate_rebalance_result()?;
         self.solauto_position.data.rebalance = RebalanceData::default();
         Ok(())
     }
@@ -415,10 +421,10 @@ impl<'a> Rebalancer<'a> {
     pub fn first_rebalance_step(&mut self) -> ProgramResult {
         self.set_rebalance_data()?;
 
-        let amount_to_swap = self.rebalance_args.swap_amount_base_unit;
+        let amount_to_swap = self.rebalance_args.swap_in_amount_base_unit;
         let additional_amount_to_swap = self.get_additional_amount_before_swap();
 
-        if self.rebalance_data().rebalance_type == SolautoRebalanceType::FLRebalanceThenSwap {
+        if self.rebalance_data().ixs.rebalance_type == SolautoRebalanceType::FLRebalanceThenSwap {
             self.finish_rebalance(self.get_dynamic_balance())?;
         } else {
             let amount_to_pull_from_lp = amount_to_swap - additional_amount_to_swap;
@@ -433,7 +439,7 @@ impl<'a> Rebalancer<'a> {
 
         let additional_amount_after_swap = self.get_additional_amount_after_swap();
 
-        if self.rebalance_data().rebalance_type != SolautoRebalanceType::FLRebalanceThenSwap {
+        if self.rebalance_data().ixs.rebalance_type != SolautoRebalanceType::FLRebalanceThenSwap {
             let dynamic_balance = self.get_dynamic_balance();
             self.finish_rebalance(dynamic_balance - additional_amount_after_swap)?;
         }

@@ -4,3 +4,5 @@ pub mod shared;
 pub mod solauto_manager;
 pub mod solana;
 pub mod solauto;
+pub mod errors;
+

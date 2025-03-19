@@ -1,28 +1,18 @@
 use solana_program::{ msg, program_error::ProgramError };
 
 use crate::{
-    state::solauto_position::{ SolautoPosition, SolautoRebalanceType, TokenBalanceChange },
+    state::solauto_position::{
+        RebalanceStateValues,
+        SolautoPosition,
+        TokenBalanceChange,
+    },
     types::{
         instruction::RebalanceSettings,
-        shared::{ RebalanceDirection, SolautoError, SwapType, TokenType },
+        shared::{RebalanceDirection, SolautoRebalanceType},
+        errors::SolautoError
     },
     utils::solauto_utils::SolautoFeesBps,
 };
-
-// TODO: do we need this?
-pub fn rebalance_from_liquidity_source(
-    rebalance_direction: &RebalanceDirection,
-    rebalance_args: &RebalanceSettings
-) -> TokenType {
-    if
-        rebalance_direction == &RebalanceDirection::Repay &&
-        rebalance_args.swap_type == SwapType::ExactIn
-    {
-        TokenType::Supply
-    } else {
-        TokenType::Debt
-    }
-}
 
 pub fn eligible_for_rebalance(solauto_position: &Box<SolautoPosition>) -> bool {
     // TODO: DCA, limit orders, take profit, stop loss, etc.
@@ -33,7 +23,7 @@ pub fn eligible_for_rebalance(solauto_position: &Box<SolautoPosition>) -> bool {
             solauto_position.position.setting_params.repay_from_bps()
 }
 
-fn get_target_ltv_bps(
+fn get_target_liq_utilization_rate_bps(
     solauto_position: &Box<SolautoPosition>,
     rebalance_args: &RebalanceSettings,
     token_balance_change: &Option<TokenBalanceChange>
@@ -121,25 +111,22 @@ fn get_lp_fee_bps(
     }
 }
 
-pub struct RebalanceValues {
-    pub debt_adjustment_usd: f64,
-    pub rebalance_direction: RebalanceDirection,
-    pub token_balance_change: Option<TokenBalanceChange>,
-}
-
 pub fn get_rebalance_values(
     solauto_position: &Box<SolautoPosition>,
     rebalance_args: &RebalanceSettings,
     solauto_fees_bps: &SolautoFeesBps
-) -> Result<RebalanceValues, ProgramError> {
+) -> Result<RebalanceStateValues, ProgramError> {
     let token_balance_change = get_token_balance_change();
-    let target_ltv_bps = get_target_ltv_bps(
+    let target_liq_utilization_rate_bps = get_target_liq_utilization_rate_bps(
         solauto_position,
         rebalance_args,
         &token_balance_change
     )?;
-    let rebalance_direction = get_rebalance_direction(solauto_position, target_ltv_bps);
-    let AdjustedUsdBalances { supply_usd, debt_usd } = get_adjusted_usd_balances(
+    let rebalance_direction = get_rebalance_direction(
+        solauto_position,
+        target_liq_utilization_rate_bps
+    );
+    let AdjustedUsdBalances { mut supply_usd, mut debt_usd } = get_adjusted_usd_balances(
         solauto_position,
         &token_balance_change
     );
@@ -148,5 +135,14 @@ pub fn get_rebalance_values(
     // TODO: get debt adjustment
     let debt_adjustment_usd = 0.0;
 
-    return Ok(RebalanceValues { debt_adjustment_usd, rebalance_direction, token_balance_change });
+    // TODO add debt adjustment to supply_usd and debt_usd
+
+    return Ok(
+        RebalanceStateValues::from(
+            rebalance_direction,
+            supply_usd,
+            debt_usd,
+            token_balance_change
+        )
+    );
 }

@@ -7,6 +7,7 @@ pub mod state;
 pub mod types;
 pub mod utils;
 pub mod rebalance;
+pub mod macros;
 
 use solana_security_txt::security_txt;
 security_txt! {

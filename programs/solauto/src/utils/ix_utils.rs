@@ -17,8 +17,8 @@ use super::solana_utils::invoke_instruction;
 use crate::{
     state::solauto_position::SolautoPosition,
     types::{
-        instruction::RebalanceSettings,
-        shared::{DeserializedAccount, SolautoError},
+        shared::DeserializedAccount,
+        errors::SolautoError
     },
 };
 

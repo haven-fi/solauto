@@ -1,16 +1,22 @@
 use borsh::{ BorshDeserialize, BorshSerialize };
 use bytemuck::{ Pod, Zeroable };
-use num_traits::{ FromPrimitive, ToPrimitive };
 use shank::{ ShankAccount, ShankType };
 use solana_program::{ msg, pubkey::Pubkey };
-use std::{ cmp::min, ops::{ Add, Div, Mul, Sub } };
+use std::ops::{ Add, Mul };
 
 use crate::{
     constants::USD_DECIMALS,
-    types::shared::{ PodBool, PositionType, RebalanceDirection, TokenType },
+    create_enum,
+    types::shared::{
+        PodBool,
+        PositionType,
+        RebalanceDirection,
+        SolautoRebalanceType,
+        TokenType,
+        LendingPlatform,
+    },
     utils::math_utils::{
         base_unit_to_usd_value,
-        from_base_unit,
         from_bps,
         from_rounded_usd_value,
         get_liq_utilization_rate_bps,
@@ -20,84 +26,7 @@ use crate::{
     },
 };
 
-use crate::types::shared::LendingPlatform;
-
-#[derive(BorshDeserialize, Clone, Debug, Copy, Default)]
-pub struct AutomationSettingsInp {
-    pub target_periods: u16,
-    pub periods_passed: u16,
-    pub unix_start_date: u64,
-    pub interval_seconds: u64,
-}
-
-#[repr(C, align(8))]
-#[derive(ShankType, BorshSerialize, BorshDeserialize, Clone, Debug, Default, Copy, Pod, Zeroable)]
-pub struct AutomationSettings {
-    /// The target number of periods
-    pub target_periods: u16,
-    /// How many periods have already passed
-    pub periods_passed: u16,
-    _padding1: [u8; 4],
-    /// The unix timestamp (in seconds) start date of DCA
-    pub unix_start_date: u64,
-    /// The interval in seconds between each DCA
-    pub interval_seconds: u64,
-    _padding: [u8; 32],
-}
-
-impl AutomationSettings {
-    pub fn from(args: AutomationSettingsInp) -> Self {
-        Self {
-            target_periods: args.target_periods,
-            periods_passed: args.periods_passed,
-            unix_start_date: args.unix_start_date,
-            interval_seconds: args.interval_seconds,
-            _padding1: [0; 4],
-            _padding: [0; 32],
-        }
-    }
-    #[inline(always)]
-    pub fn is_active(&self) -> bool {
-        self.target_periods > 0
-    }
-    #[inline(always)]
-    pub fn eligible_for_next_period(&self, curr_unix_timestamp: u64) -> bool {
-        if self.periods_passed == 0 {
-            curr_unix_timestamp >= self.unix_start_date
-        } else {
-            curr_unix_timestamp >=
-                self.unix_start_date.add(self.interval_seconds.mul(self.periods_passed as u64))
-        }
-    }
-    pub fn updated_amount_from_automation<T: ToPrimitive + FromPrimitive>(
-        &self,
-        curr_amt: T,
-        target_amt: T,
-        curr_unix_timestamp: u64
-    ) -> T {
-        let curr_amt_f64 = curr_amt.to_f64().unwrap();
-        let target_amt_f64 = target_amt.to_f64().unwrap();
-        let current_rate_diff = curr_amt_f64 - target_amt_f64;
-        let progress_pct = (1.0).div(
-            self.target_periods.sub(self.new_periods_passed(curr_unix_timestamp) - 1) as f64
-        );
-        let new_amt = curr_amt_f64 - current_rate_diff * progress_pct;
-
-        T::from_f64(new_amt).unwrap()
-    }
-    #[inline(always)]
-    pub fn new_periods_passed(&self, curr_unix_timestamp: u64) -> u16 {
-        min(
-            self.target_periods,
-            (
-                (
-                    (curr_unix_timestamp.saturating_sub(self.unix_start_date) as f64) /
-                    (self.interval_seconds as f64)
-                ).floor() as u16
-            ) + 1
-        )
-    }
-}
+use super::automation::DCASettings;
 
 #[repr(C, align(8))]
 #[derive(ShankType, BorshSerialize, Clone, Debug, Default, Copy, Pod, Zeroable)]
@@ -175,49 +104,11 @@ impl PositionTokenState {
 }
 
 #[derive(BorshDeserialize, Clone, Debug, Copy, Default)]
-pub struct DCASettingsInp {
-    pub automation: AutomationSettingsInp,
-    pub dca_in_base_unit: u64,
-    pub token_type: TokenType,
-}
-
-#[repr(C, align(8))]
-#[derive(ShankType, BorshSerialize, BorshDeserialize, Clone, Debug, Default, Copy, Pod, Zeroable)]
-pub struct DCASettings {
-    pub automation: AutomationSettings,
-    // Gradually add more to the position during the DCA period. If this is 0, then a DCA-out is assumed.
-    pub dca_in_base_unit: u64,
-    pub token_type: TokenType,
-    _padding: [u8; 31],
-}
-
-impl DCASettings {
-    pub fn from(args: DCASettingsInp) -> Self {
-        Self {
-            automation: AutomationSettings::from(args.automation),
-            dca_in_base_unit: args.dca_in_base_unit,
-            token_type: args.token_type,
-            _padding: [0; 31],
-        }
-    }
-    #[inline(always)]
-    pub fn dca_in(&self) -> bool {
-        self.dca_in_base_unit > 0
-    }
-    #[inline(always)]
-    pub fn is_active(&self) -> bool {
-        self.automation.is_active()
-    }
-}
-
-#[derive(BorshDeserialize, Clone, Debug, Copy, Default)]
 pub struct SolautoSettingsParametersInp {
     pub boost_to_bps: u16,
     pub boost_gap: u16,
     pub repay_to_bps: u16,
     pub repay_gap: u16,
-    pub target_boost_to_bps: Option<u16>,
-    pub automation: Option<AutomationSettingsInp>,
 }
 
 #[repr(C, align(8))]
@@ -285,19 +176,13 @@ pub struct PositionData {
     _padding: [u32; 4],
 }
 
-#[repr(u8)]
-#[derive(ShankType, BorshDeserialize, BorshSerialize, Clone, Debug, Default, PartialEq, Copy)]
-pub enum TokenBalanceChangeType {
-    #[default]
+create_enum!(TokenBalanceChangeType {
     None,
     PreSwapDeposit,
     PostSwapDeposit,
     PostRebalanceWithdrawSupplyToken,
     PostRebalanceWithdrawDebtToken,
-}
-
-unsafe impl Zeroable for TokenBalanceChangeType {}
-unsafe impl Pod for TokenBalanceChangeType {}
+});
 
 #[repr(C, align(8))]
 #[derive(ShankType, BorshSerialize, Clone, Debug, Default, Copy, Pod, Zeroable)]
@@ -314,37 +199,62 @@ impl TokenBalanceChange {
     }
 }
 
-#[repr(u8)]
-#[derive(ShankType, BorshDeserialize, BorshSerialize, Clone, Debug, Default, PartialEq, Copy)]
-pub enum SolautoRebalanceType {
-    #[default]
-    None,
-    Regular,
-    DoubleRebalanceWithFL,
-    FLSwapThenRebalance,
-    FLRebalanceThenSwap,
+#[repr(C, align(8))]
+#[derive(ShankType, BorshSerialize, Clone, Debug, Default, Copy, Pod, Zeroable)]
+pub struct RebalanceStateValues {
+    pub rebalance_direction: RebalanceDirection,
+    _padding1: [u8; 7],
+    // Denominated in 9 decimal places
+    pub target_supply_usd: u64,
+    // Denominated in 9 decimal places
+    pub target_debt_usd: u64,
+    pub token_balance_change: TokenBalanceChange,
+    _padding: [u32; 4],
 }
 
-unsafe impl Zeroable for SolautoRebalanceType {}
-unsafe impl Pod for SolautoRebalanceType {}
+impl RebalanceStateValues {
+    pub fn from(
+        rebalance_direction: RebalanceDirection,
+        target_supply_usd: f64,
+        target_debt_usd: f64,
+        token_balance_change: Option<TokenBalanceChange>
+    ) -> Self {
+        let tb_change = if token_balance_change.is_some() {
+            token_balance_change.unwrap()
+        } else {
+            TokenBalanceChange::default()
+        };
+        Self {
+            rebalance_direction,
+            _padding1: [0; 7],
+            target_supply_usd: to_rounded_usd_value(target_supply_usd),
+            target_debt_usd: to_rounded_usd_value(target_debt_usd),
+            token_balance_change: tb_change,
+            _padding: [0; 4],
+        }
+    }
+}
+
+#[repr(C, align(8))]
+#[derive(ShankType, BorshSerialize, Clone, Debug, Default, Copy, Pod, Zeroable)]
+pub struct RebalanceInstructionData {
+    pub rebalance_type: SolautoRebalanceType,
+    _padding1: [u8; 7],
+    pub flash_loan_amount: u64,
+    _padding: [u32; 4],
+}
 
 #[repr(C, align(8))]
 #[derive(ShankType, BorshSerialize, Clone, Debug, Default, Copy, Pod, Zeroable)]
 pub struct RebalanceData {
-    pub rebalance_type: SolautoRebalanceType,
-    _padding1: [u8; 7],
-    pub rebalance_direction: RebalanceDirection,
-    _padding2: [u8; 7],
-    pub flash_loan_amount: u64,
-    pub debt_adjustment_usd: u64,
-    pub token_balance_change: TokenBalanceChange,
-    _padding: [u8; 8],
+    pub ixs: RebalanceInstructionData,
+    pub values: RebalanceStateValues,
 }
 
 impl RebalanceData {
     #[inline(always)]
     pub fn active(&self) -> bool {
-        self.rebalance_type != SolautoRebalanceType::None
+        self.ixs.rebalance_type != SolautoRebalanceType::None
     }
 }
 
@@ -360,7 +270,7 @@ pub struct SolautoPosition {
     pub position: PositionData,
     pub state: PositionState,
     pub rebalance: RebalanceData,
-    _padding: [u32; 32],
+    _padding: [u32; 24],
 }
 
 impl SolautoPosition {
@@ -386,7 +296,7 @@ impl SolautoPosition {
             position,
             state,
             rebalance: RebalanceData::default(),
-            _padding: [0; 32],
+            _padding: [0; 24],
         }
     }
     #[inline(always)]
@@ -462,53 +372,5 @@ mod tests {
         );
         println!("Solauto position size: {}", std::mem::size_of_val(&solauto_position));
         assert!(std::mem::size_of_val(&solauto_position) == SolautoPosition::LEN);
-    }
-
-    #[test]
-    fn validate_period_eligibility() {
-        let automation = AutomationSettings::from(AutomationSettingsInp {
-            target_periods: 4,
-            periods_passed: 3,
-            unix_start_date: 0,
-            interval_seconds: 5,
-        });
-
-        assert!(automation.eligible_for_next_period(2 * 5 + 4) == false);
-        assert!(automation.eligible_for_next_period(3 * 5) == true);
-    }
-
-    #[test]
-    fn validate_new_periods_passed() {
-        let automation = AutomationSettings::from(AutomationSettingsInp {
-            target_periods: 4,
-            periods_passed: 0,
-            unix_start_date: 0,
-            interval_seconds: 5,
-        });
-
-        assert!(automation.new_periods_passed(0) == 1);
-        assert!(automation.new_periods_passed(4 * 5) == 4);
-        assert!(automation.new_periods_passed(5 * 5) == 4);
-    }
-
-    #[test]
-    fn validate_updated_automation_value() {
-        let mut automation = AutomationSettings::from(AutomationSettingsInp {
-            target_periods: 4,
-            periods_passed: 0,
-            unix_start_date: 0,
-            interval_seconds: 5,
-        });
-
-        assert!(automation.updated_amount_from_automation(10.0, 0.0, 0) == 7.5);
-
-        automation.periods_passed = 1;
-        assert!(automation.updated_amount_from_automation(7.5, 0.0, 5) == 5.0);
-
-        automation.periods_passed = 2;
-        assert!(automation.updated_amount_from_automation(5.0, 0.0, 10) == 2.5);
-
-        automation.periods_passed = 3;
-        assert!(automation.updated_amount_from_automation(2.5, 0.0, 15) == 0.0);
     }
 }
