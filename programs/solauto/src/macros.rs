@@ -36,9 +36,8 @@ macro_rules! check {
 macro_rules! create_enum {
     ($name:ident { $($variant:ident),* $(,)? }) => {
         #[repr(u8)]
-        #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, Default, PartialEq, Copy)]
+        #[derive(borsh::BorshDeserialize, borsh::BorshSerialize, Clone, Debug, shank::ShankType, Default, PartialEq, Copy)]
         pub enum $name {
-            // Mark the first variant as the default.
             #[default]
             $(
                 $variant,
