@@ -1,14 +1,10 @@
-use rebalance_utils::get_rebalance_step;
 use solana_program::{
     account_info::AccountInfo, clock::Clock, entrypoint::ProgramResult, msg,
     program_error::ProgramError, sysvar::Sysvar,
 };
 
 use crate::{
-    clients::marginfi::MarginfiClient,
-    instructions::{open_position, protocol_interaction, rebalance, refresh},
-    state::{referral_state::ReferralState, solauto_position::SolautoPosition},
-    types::{
+    clients::marginfi::MarginfiClient, instructions::{open_position, protocol_interaction, rebalance, refresh}, rebalance::utils::set_rebalance_ixs_data, state::{referral_state::ReferralState, solauto_position::SolautoPosition}, types::{
         errors::SolautoError,
         instruction::{
             accounts::{
@@ -18,8 +14,7 @@ use crate::{
             MarginfiOpenPositionData, RebalanceSettings, SolautoAction, SolautoStandardAccounts,
         },
         shared::{DeserializedAccount, LendingPlatform},
-    },
-    utils::*,
+    }, utils::*
 };
 
 pub fn process_marginfi_open_position_instruction<'a>(
@@ -226,7 +221,7 @@ pub fn process_marginfi_rebalance<'a>(
         return Err(SolautoError::IncorrectAccounts.into());
     }
 
-    let rebalance_step = get_rebalance_step(&mut std_accounts, &args)?;
+    let rebalance_step = set_rebalance_ixs_data(&mut std_accounts, &args)?;
 
     rebalance::marginfi_rebalance(ctx, std_accounts, rebalance_step, args)
 }

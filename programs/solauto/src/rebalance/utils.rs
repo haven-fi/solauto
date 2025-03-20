@@ -1,11 +1,16 @@
 use solana_program::{ msg, program_error::ProgramError };
 
 use crate::{
-    state::solauto_position::{ RebalanceInstructionData, RebalanceStateValues, SolautoPosition, TokenBalanceChange },
+    state::solauto_position::{
+        RebalanceInstructionData,
+        RebalanceStateValues,
+        SolautoPosition,
+        TokenBalanceChange,
+    },
     types::{
         errors::SolautoError,
         instruction::{ RebalanceSettings, SolautoStandardAccounts },
-        shared::{ PodBool, RebalanceDirection, RebalanceStep, SolautoRebalanceType },
+        shared::{ RebalanceDirection, RebalanceStep, SolautoRebalanceType },
     },
     utils::{
         ix_utils::{
@@ -17,38 +22,30 @@ use crate::{
     },
 };
 
-pub struct RebalanceInfo {
-    ixs: RebalanceInstructionData,
-    rebalance_step: RebalanceStep
-}
-
 pub fn set_rebalance_ixs_data(
     std_accounts: &mut Box<SolautoStandardAccounts>,
     args: &RebalanceSettings
 ) -> Result<RebalanceStep, ProgramError> {
     let has_rebalance_data = std_accounts.solauto_position.data.rebalance.active();
-    
-    if !has_rebalance_data {
-        let mut flash_loan_amount = 0;
 
+    if !has_rebalance_data {
         validate_rebalance_instructions(std_accounts, args.rebalance_type)?;
 
         let fl_borrow_ix_idx = get_flash_borrow_ix_idx(std_accounts, args.rebalance_type)?;
-        if fl_borrow_ix_idx.is_some() {
-            flash_loan_amount = get_marginfi_flash_loan_amount(
+        let flash_loan_amount = if fl_borrow_ix_idx.is_some() {
+            get_marginfi_flash_loan_amount(
                 std_accounts.ixs_sysvar.unwrap(),
                 fl_borrow_ix_idx,
                 None // &[&swap_source_ta],
-            )?;
-        }
+            )?
+        } else {
+            0
+        };
 
-        // std_accounts.solauto_position.data.rebalance.ixs = RebalanceInstructionData {
-        //     rebalance_type: args.rebalance_type,
-        //     flash_loan_amount,
-        //     active: PodBool::new(true)
-            
-        // }
-        // TODO: still need to set rebalance ixs data
+        std_accounts.solauto_position.data.rebalance.ixs = RebalanceInstructionData::from(
+            args.rebalance_type,
+            flash_loan_amount
+        );
     }
 
     let rebalance_step = if
@@ -65,7 +62,7 @@ pub fn set_rebalance_ixs_data(
         RebalanceStep::Final
     };
 
-    Ok(RebalanceInfo{ rebalance_step,  })
+    Ok(rebalance_step)
 }
 
 pub fn eligible_for_rebalance(solauto_position: &Box<SolautoPosition>) -> bool {
