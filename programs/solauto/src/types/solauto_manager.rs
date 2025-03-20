@@ -146,12 +146,11 @@ impl<'a> SolautoManager<'a> {
             self.std_accounts.referred_by_ta,
         ];
 
-        let account = accounts
+        accounts
             .iter()
             .find(|acc| acc.is_some() && acc.unwrap().key == &pk)
-            .unwrap();
-        check!(account.is_some(), SolautoError::IncorrectAccounts);
-        account.unwrap()
+            .unwrap()
+            .unwrap()
     }
 
     fn get_rebalancer(&mut self, rebalance_args: RebalanceSettings) -> Rebalancer {
