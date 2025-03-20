@@ -57,9 +57,9 @@ pub fn set_rebalance_ixs_data(
                 SolautoRebalanceType::FLRebalanceThenSwap
         )
     {
-        RebalanceStep::First
+        RebalanceStep::PreSwap
     } else {
-        RebalanceStep::Final
+        RebalanceStep::PostSwap
     };
 
     Ok(rebalance_step)

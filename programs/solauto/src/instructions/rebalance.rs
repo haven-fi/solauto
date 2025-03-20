@@ -73,9 +73,8 @@ pub fn marginfi_rebalance<'a>(
 
     let rebalance_type = std_accounts.solauto_position.data.rebalance.ixs.rebalance_type;
     if
-        rebalance_step == RebalanceStep::First ||
-        rebalance_type == SolautoRebalanceType::FLSwapThenRebalance ||
-        rebalance_type == SolautoRebalanceType::FLRebalanceThenSwap
+        rebalance_step == RebalanceStep::PreSwap ||
+        rebalance_type == SolautoRebalanceType::FLSwapThenRebalance
     {
         if needs_refresh(&std_accounts.solauto_position, &args)? {
             refresh::marginfi_refresh_accounts(

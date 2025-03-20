@@ -66,8 +66,8 @@ unsafe impl Pod for RebalanceDirection {}
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, Default, PartialEq, Copy)]
 pub enum RebalanceStep {
     #[default]
-    First,
-    Final,
+    PreSwap,
+    PostSwap,
 }
 unsafe impl Zeroable for RebalanceStep {}
 unsafe impl Pod for RebalanceStep {}
