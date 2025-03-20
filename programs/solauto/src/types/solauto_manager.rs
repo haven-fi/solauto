@@ -22,8 +22,10 @@ use super::{
     solauto::SolautoCpiAction,
 };
 use crate::{
+    check,
     rebalance::rebalancer::{ Rebalancer, RebalancerData, SolautoPositionData, TokenAccountData },
     state::solauto_position::SolautoPosition,
+    types::errors::SolautoError,
     utils::{ solana_utils::spl_token_transfer, solauto_utils::safe_unpack_token_account, * },
 };
 
@@ -144,11 +146,12 @@ impl<'a> SolautoManager<'a> {
             self.std_accounts.referred_by_ta,
         ];
 
-        accounts
+        let account = accounts
             .iter()
             .find(|acc| acc.is_some() && acc.unwrap().key == &pk)
-            .unwrap()
-            .unwrap()
+            .unwrap();
+        check!(account.is_some(), SolautoError::IncorrectAccounts);
+        account.unwrap()
     }
 
     fn get_rebalancer(&mut self, rebalance_args: RebalanceSettings) -> Rebalancer {
