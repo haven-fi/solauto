@@ -1,2 +1,2 @@
-pub mod rebalance_utils_v2;
+pub mod utils;
 pub mod rebalancer;

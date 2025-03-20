@@ -238,8 +238,9 @@ impl RebalanceStateValues {
 #[repr(C, align(8))]
 #[derive(ShankType, BorshSerialize, Clone, Debug, Default, Copy, Pod, Zeroable)]
 pub struct RebalanceInstructionData {
+    pub active: PodBool,
     pub rebalance_type: SolautoRebalanceType,
-    _padding1: [u8; 7],
+    _padding1: [u8; 6],
     pub flash_loan_amount: u64,
     _padding: [u32; 4],
 }
@@ -254,7 +255,7 @@ pub struct RebalanceData {
 impl RebalanceData {
     #[inline(always)]
     pub fn active(&self) -> bool {
-        self.ixs.rebalance_type != SolautoRebalanceType::None
+        self.ixs.active.val
     }
 }
 

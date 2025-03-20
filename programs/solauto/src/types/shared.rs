@@ -1,4 +1,4 @@
-use borsh::{BorshDeserialize, BorshSerialize};
+use borsh::{ BorshDeserialize, BorshSerialize };
 use bytemuck::AnyBitPattern;
 use bytemuck::Pod;
 use bytemuck::Zeroable;
@@ -8,7 +8,7 @@ use solana_program::pubkey::Pubkey;
 use solana_program::{
     account_info::AccountInfo,
     program_error::ProgramError,
-    program_pack::{IsInitialized, Pack},
+    program_pack::{ IsInitialized, Pack },
 };
 use std::fmt;
 
@@ -76,7 +76,6 @@ unsafe impl Pod for RebalanceStep {}
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, Default, PartialEq, Copy)]
 pub enum SolautoRebalanceType {
     #[default]
-    None,
     Regular,
     DoubleRebalanceWithFL,
     FLSwapThenRebalance,
@@ -86,7 +85,7 @@ unsafe impl Zeroable for SolautoRebalanceType {}
 unsafe impl Pod for SolautoRebalanceType {}
 
 #[repr(C)]
-#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, PartialEq, Copy)]
+#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, Default, PartialEq, Copy)]
 pub struct PodBool {
     pub val: bool,
 }
@@ -134,10 +133,13 @@ pub struct DeserializedAccount<'a, T> {
 impl<'a, T: AnyBitPattern> DeserializedAccount<'a, T> {
     pub fn zerocopy(account: Option<&'a AccountInfo<'a>>) -> Result<Option<Self>, ProgramError> {
         match account {
-            Some(account_info) => Ok(Some(Self {
-                account_info,
-                data: Box::new(*bytemuck::from_bytes::<T>(&account_info.data.borrow())),
-            })),
+            Some(account_info) =>
+                Ok(
+                    Some(Self {
+                        account_info,
+                        data: Box::new(*bytemuck::from_bytes::<T>(&account_info.data.borrow())),
+                    })
+                ),
             None => Ok(None),
         }
     }
@@ -151,10 +153,12 @@ impl<'a, T: Pack + IsInitialized> DeserializedAccount<'a, T> {
                     msg!("Failed to deserialize account data");
                     SolautoError::FailedAccountDeserialization
                 })?;
-                Ok(Some(Self {
-                    account_info,
-                    data: Box::new(deserialized_data),
-                }))
+                Ok(
+                    Some(Self {
+                        account_info,
+                        data: Box::new(deserialized_data),
+                    })
+                )
             }
             None => Ok(None),
         }

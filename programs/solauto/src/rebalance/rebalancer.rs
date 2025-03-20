@@ -26,7 +26,7 @@ use crate::{
     },
 };
 
-use super::rebalance_utils_v2::{eligible_for_rebalance, get_rebalance_values};
+use super::utils::{eligible_for_rebalance, get_rebalance_values};
 
 pub struct TokenAccountData<'a> {
     pk: Pubkey,
