@@ -22,10 +22,8 @@ use super::{
     solauto::SolautoCpiAction,
 };
 use crate::{
-    check,
     rebalance::rebalancer::{ Rebalancer, RebalancerData, SolautoPositionData, TokenAccountData },
     state::solauto_position::SolautoPosition,
-    types::errors::SolautoError,
     utils::{ solana_utils::spl_token_transfer, solauto_utils::safe_unpack_token_account, * },
 };
 
