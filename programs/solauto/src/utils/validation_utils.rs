@@ -1,3 +1,5 @@
+use std::ops::Div;
+
 use marginfi_sdk::{ generated::accounts::{ Bank, MarginfiAccount }, MARGINFI_ID };
 use solana_program::{
     account_info::AccountInfo,
@@ -445,6 +447,10 @@ pub fn validate_no_active_balances<'a>(
 
 pub fn correct_token_account(token_account: &Pubkey, wallet: &Pubkey, mint: &Pubkey) -> bool {
     token_account == &get_associated_token_address(wallet, mint)
+}
+
+pub fn value_match_with_threshold(value: f64, target_value: f64) -> bool {
+    (value - target_value).abs().div(target_value) < 0.05
 }
 
 #[cfg(test)]

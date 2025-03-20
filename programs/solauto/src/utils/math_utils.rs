@@ -116,7 +116,7 @@ pub fn net_worth_base_amount(
 /// # Returns
 /// The USD value of the debt adjustment. Positive if debt needs to increase, negative if debt needs to decrease. This amount is inclusive of the adjustment fee
 ///
-pub fn get_std_debt_adjustment_usd(
+pub fn get_debt_adjustment_usd(
     liq_threshold: f64,
     total_supply_usd: f64,
     total_debt_usd: f64,
@@ -186,7 +186,7 @@ mod tests {
         let debt_weight = 1.100000023841858;
         let liq_threshold = supply_weight.div(debt_weight); // ~0.81
 
-        let debt_adjustment = get_std_debt_adjustment_usd(
+        let debt_adjustment = get_debt_adjustment_usd(
             liq_threshold,
             supply_usd,
             debt_usd,

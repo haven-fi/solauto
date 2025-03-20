@@ -15,13 +15,19 @@ use crate::{
     types::{
         errors::SolautoError,
         instruction::RebalanceSettings,
-        shared::{ RebalanceDirection, RebalanceStep, SolautoRebalanceType, TokenBalanceAmount, BareSplTokenTransferArgs },
+        shared::{
+            BareSplTokenTransferArgs,
+            RebalanceDirection,
+            RebalanceStep,
+            SolautoRebalanceType,
+            TokenBalanceAmount,
+        },
         solauto::{ FromLendingPlatformAction, SolautoCpiAction },
     },
     utils::{
         math_utils::{ from_bps, from_rounded_usd_value, usd_value_to_base_unit },
         solauto_utils::SolautoFeesBps,
-        validation_utils::correct_token_account,
+        validation_utils::{ correct_token_account, value_match_with_threshold },
     },
 };
 
@@ -398,11 +404,6 @@ impl<'a> Rebalancer<'a> {
         }
     }
 
-    fn value_match_with_threshold(&self, value: f64, target_value: f64) -> bool {
-        // TODO
-        true
-    }
-
     fn validate_rebalance_result(&self) -> ProgramResult {
         let curr_supply_usd = self.position_data().state.supply.amount_used.usd_value();
         let curr_debt_usd = self.position_data().state.debt.amount_used.usd_value();
@@ -413,12 +414,11 @@ impl<'a> Rebalancer<'a> {
         let target_debt_usd = from_rounded_usd_value(self.rebalance_data().values.target_debt_usd);
 
         check!(
-            self.value_match_with_threshold(curr_supply_usd, target_supply_usd),
+            value_match_with_threshold(curr_supply_usd, target_supply_usd),
             SolautoError::InvalidRebalanceMade
         );
-
         check!(
-            self.value_match_with_threshold(curr_debt_usd, target_debt_usd),
+            value_match_with_threshold(curr_debt_usd, target_debt_usd),
             SolautoError::InvalidRebalanceMade
         );
 
