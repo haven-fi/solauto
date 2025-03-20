@@ -8,6 +8,7 @@ pub struct SplTokenTransferArgs<'a, 'b> {
     pub authority_seeds: Option<&'b Vec<&'b [u8]>>,
 }
 
+#[derive(Clone)]
 pub struct BareSplTokenTransferArgs {
     pub from_wallet: Pubkey,
     pub from_wallet_ta: Pubkey,

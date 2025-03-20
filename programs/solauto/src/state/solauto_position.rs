@@ -268,9 +268,11 @@ pub struct RebalanceData {
 }
 
 impl RebalanceData {
-    #[inline(always)]
     pub fn active(&self) -> bool {
         self.ixs.active.val
+    }
+    pub fn values_set(&self) -> bool {
+        self.values.rebalance_direction != RebalanceDirection::None
     }
 }
 

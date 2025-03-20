@@ -2,19 +2,17 @@ use solana_program::pubkey::Pubkey;
 
 use super::{shared::TokenBalanceAmount, solana::BareSplTokenTransferArgs};
 
-pub struct ToLendingPlatformAction {
-    pub amount: TokenBalanceAmount,
-}
-
+#[derive(Clone)]
 pub struct FromLendingPlatformAction {
     pub amount: TokenBalanceAmount,
     pub to_wallet_ta: Pubkey,
 }
 
+#[derive(Clone)]
 pub enum SolautoCpiAction {
-    Deposit(ToLendingPlatformAction),
+    Deposit(u64),
     Borrow(FromLendingPlatformAction),
-    Repay(ToLendingPlatformAction),
+    Repay(TokenBalanceAmount),
     Withdraw(FromLendingPlatformAction),
     SplTokenTransfer(BareSplTokenTransferArgs),
 }
