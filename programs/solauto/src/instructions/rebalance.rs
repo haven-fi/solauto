@@ -60,7 +60,6 @@ pub fn marginfi_rebalance<'a>(
     let solauto_manager_accounts =
         SolautoManagerAccounts::from(supply_tas, debt_tas, ctx.accounts.intermediary_ta, None)?;
 
-    // TODO: clean up rebalance step stuff, and the way the rebalance type is set is very hidden, should make it more obvious
     let rebalance_type = std_accounts
         .solauto_position
         .data
