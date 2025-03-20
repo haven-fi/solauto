@@ -84,21 +84,6 @@ pub enum SolautoRebalanceType {
 unsafe impl Zeroable for SolautoRebalanceType {}
 unsafe impl Pod for SolautoRebalanceType {}
 
-#[repr(C)]
-#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, Default, PartialEq, Copy)]
-pub struct PodBool {
-    pub val: bool,
-}
-
-unsafe impl Zeroable for PodBool {}
-unsafe impl Pod for PodBool {}
-
-impl PodBool {
-    pub fn new(val: bool) -> Self {
-        Self { val }
-    }
-}
-
 #[derive(Debug)]
 pub struct RefreshedTokenState {
     pub mint: Pubkey,
@@ -123,6 +108,38 @@ pub enum TokenBalanceAmount {
     Some(u64),
     All,
 }
+
+pub struct SplTokenTransferArgs<'a, 'b> {
+    pub source: &'a AccountInfo<'a>,
+    pub authority: &'a AccountInfo<'a>,
+    pub recipient: &'a AccountInfo<'a>,
+    pub amount: u64,
+    pub authority_seeds: Option<&'b Vec<&'b [u8]>>,
+}
+
+#[derive(Clone)]
+pub struct BareSplTokenTransferArgs {
+    pub from_wallet: Pubkey,
+    pub from_wallet_ta: Pubkey,
+    pub to_wallet_ta: Pubkey,
+    pub amount: u64,
+}
+
+#[repr(C)]
+#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, Default, PartialEq, Copy)]
+pub struct PodBool {
+    pub val: bool,
+}
+
+unsafe impl Zeroable for PodBool {}
+unsafe impl Pod for PodBool {}
+
+impl PodBool {
+    pub fn new(val: bool) -> Self {
+        Self { val }
+    }
+}
+
 
 #[derive(Clone)]
 pub struct DeserializedAccount<'a, T> {

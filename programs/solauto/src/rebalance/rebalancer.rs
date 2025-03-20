@@ -15,8 +15,7 @@ use crate::{
     types::{
         errors::SolautoError,
         instruction::RebalanceSettings,
-        shared::{ RebalanceDirection, RebalanceStep, SolautoRebalanceType, TokenBalanceAmount },
-        solana::BareSplTokenTransferArgs,
+        shared::{ RebalanceDirection, RebalanceStep, SolautoRebalanceType, TokenBalanceAmount, BareSplTokenTransferArgs },
         solauto::{ FromLendingPlatformAction, SolautoCpiAction },
     },
     utils::{
@@ -161,7 +160,7 @@ impl<'a> Rebalancer<'a> {
         if self.is_boost() {
             self.actions.push(
                 SolautoCpiAction::Borrow(FromLendingPlatformAction {
-                    amount: TokenBalanceAmount::Some(base_unit_amount),
+                    amount: base_unit_amount,
                     to_wallet_ta: destination_ta,
                 })
             );

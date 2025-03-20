@@ -14,7 +14,7 @@ use spl_associated_token_account::{
 };
 use spl_token::instruction as spl_instruction;
 
-use crate::types::{errors::SolautoError, solana::SplTokenTransferArgs};
+use crate::types::{errors::SolautoError, shared::SplTokenTransferArgs};
 
 pub fn account_has_data(account: &AccountInfo) -> bool {
     !account.data.borrow().is_empty()

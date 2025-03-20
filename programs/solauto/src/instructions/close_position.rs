@@ -5,8 +5,7 @@ use crate::{
     state::solauto_position::SolautoPosition,
     types::{
         instruction::accounts::{ClosePositionAccounts, Context},
-        shared::DeserializedAccount,
-        solana::SplTokenTransferArgs,
+        shared::{DeserializedAccount, SplTokenTransferArgs},
     },
     utils::{solana_utils, solauto_utils},
 };

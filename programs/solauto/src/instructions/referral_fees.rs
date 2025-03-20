@@ -6,8 +6,7 @@ use crate::{
     state::referral_state::ReferralState,
     types::{
         instruction::accounts::{ClaimReferralFeesAccounts, Context, ConvertReferralFeesAccounts},
-        shared::DeserializedAccount,
-        solana::SplTokenTransferArgs,
+        shared::{DeserializedAccount, SplTokenTransferArgs},
     },
     utils::solana_utils,
 };

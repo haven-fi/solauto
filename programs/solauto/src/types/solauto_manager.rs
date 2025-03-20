@@ -5,6 +5,7 @@ use solana_program::{
     entrypoint::ProgramResult,
     msg,
     program_error::ProgramError,
+    pubkey::Pubkey,
 };
 
 use super::{
@@ -14,6 +15,7 @@ use super::{
         RebalanceStep,
         RefreshStateProps,
         RefreshedTokenState,
+        SplTokenTransferArgs,
         TokenBalanceAmount,
         TokenType,
     },
@@ -22,7 +24,7 @@ use super::{
 use crate::{
     rebalance::rebalancer::{ Rebalancer, RebalancerData, SolautoPositionData, TokenAccountData },
     state::solauto_position::SolautoPosition,
-    utils::{ solauto_utils::safe_unpack_token_account, * },
+    utils::{ solana_utils::spl_token_transfer, solauto_utils::safe_unpack_token_account, * },
 };
 
 pub struct SolautoManagerAccounts<'a> {
@@ -130,6 +132,25 @@ impl<'a> SolautoManager<'a> {
         }
     }
 
+    fn pk_to_account_info(&self, pk: Pubkey) -> &'a AccountInfo<'a> {
+        let accounts = [
+            Some(self.std_accounts.solauto_position.account_info),
+            self.accounts.supply.position_ta,
+            self.accounts.supply.authority_ta,
+            self.accounts.debt.position_ta,
+            self.accounts.debt.authority_ta,
+            self.accounts.intermediary_ta,
+            self.std_accounts.solauto_fees_ta,
+            self.std_accounts.referred_by_ta,
+        ];
+
+        accounts
+            .iter()
+            .find(|acc| acc.is_some() && acc.unwrap().key == &pk)
+            .unwrap()
+            .unwrap()
+    }
+
     fn get_rebalancer(&mut self, rebalance_args: RebalanceSettings) -> Rebalancer {
         let position_supply_ta = self.get_token_account_data(self.accounts.supply.position_ta);
         let position_debt_ta = self.get_token_account_data(self.accounts.debt.position_ta);
@@ -155,10 +176,32 @@ impl<'a> SolautoManager<'a> {
     }
 
     fn execute_cpi_actions(&mut self, actions: Vec<SolautoCpiAction>) -> ProgramResult {
+        let sm = self;
+
         for action in actions {
             match action {
-                // TODO
-                _ => {}
+                SolautoCpiAction::Deposit(amount) => sm.deposit(amount)?,
+                SolautoCpiAction::Withdraw(data) =>
+                    sm.withdraw(data.amount, sm.pk_to_account_info(data.to_wallet_ta))?,
+                SolautoCpiAction::Borrow(data) =>
+                    sm.borrow(data.amount, sm.pk_to_account_info(data.to_wallet_ta))?,
+                SolautoCpiAction::Repay(amount) => sm.repay(amount)?,
+                SolautoCpiAction::SplTokenTransfer(data) => {
+                    let seeds = if
+                        &data.from_wallet == sm.std_accounts.solauto_position.account_info.key
+                    {
+                        Some(sm.std_accounts.solauto_position.data.seeds_with_bump())
+                    } else {
+                        None
+                    };
+                    spl_token_transfer(sm.std_accounts.token_program, SplTokenTransferArgs {
+                        amount: data.amount,
+                        source: sm.pk_to_account_info(data.from_wallet_ta),
+                        authority: sm.pk_to_account_info(data.from_wallet),
+                        recipient: sm.pk_to_account_info(data.to_wallet_ta),
+                        authority_seeds: seeds.as_ref(),
+                    })?;
+                }
             }
         }
         Ok(())
