@@ -11,8 +11,7 @@ import {
   zip,
 } from "./generalUtils";
 import * as OnDemand from "@switchboard-xyz/on-demand";
-import { getJupPriceData, getJupQuote } from "./jupiterUtils";
-import { QuoteGetSwapModeEnum } from "@jup-ag/api";
+import { getJupPriceData } from "./jupiterUtils";
 
 export async function fetchTokenPrices(mints: PublicKey[]): Promise<number[]> {
   const currentTime = currentUnixSeconds();
@@ -26,6 +25,7 @@ export async function fetchTokenPrices(mints: PublicKey[]): Promise<number[]> {
     return mints.map((mint) => PRICES[mint.toString()].price);
   }
 
+  console.log("HELLLO")
   const pythMints = mints.filter((x) => x.toString() in PYTH_PRICE_FEED_IDS);
   const switchboardMints = mints.filter(
     (x) => x.toString() in SWITCHBOARD_PRICE_FEED_IDS
@@ -99,35 +99,57 @@ export async function getPythPrices(mints: PublicKey[]) {
   return prices;
 }
 
+function getSortedPriceData(
+  prices: Record<string, number>,
+  mints: PublicKey[]
+) {
+  const sortedPrices: { [key: string]: any } = {};
+
+  for (const mint of mints) {
+    const key = mint.toString();
+    if (prices.hasOwnProperty(key)) {
+      sortedPrices[key] = prices[key];
+    }
+  }
+
+  return sortedPrices;
+}
+
 export async function getSwitchboardPrices(
   mints: PublicKey[]
 ): Promise<number[]> {
   if (mints.length === 0) {
     return [];
   }
-
   const { CrossbarClient } = OnDemand;
   const crossbar = CrossbarClient.default();
 
-  let prices: number[] = [];
+  let prices: Record<string, number> = {};
   try {
     prices = await retryWithExponentialBackoff(
       async () => {
-        const res = await crossbar.simulateSolanaFeeds(
+        const resp = await crossbar.simulateSolanaFeeds(
           "mainnet",
           mints.map((x) => SWITCHBOARD_PRICE_FEED_IDS[x.toString()])
         );
 
-        const p = res.flatMap((x) => x.results[0]);
+        const prices = resp.flatMap((x) => x.results[0]);
         if (
-          p.filter((x) => !x || isNaN(Number(x)) || Number(x) < 0).length > 0
+          prices.filter((x) => !x || isNaN(Number(x)) || Number(x) <= 0)
+            .length > 0
         ) {
           throw new Error("Unable to fetch Switchboard prices");
         }
 
-        return p.map((x) =>
-          typeof x === "string" ? parseFloat(x) : Number(x)
-        );
+        const finalMap: Record<string, number> = {};
+        for (const item of resp) {
+          for (const [k, v] of Object.entries(SWITCHBOARD_PRICE_FEED_IDS)) {
+            if (item.feed === v) {
+              finalMap[k] = Number(item.results[0]);
+            }
+          }
+        }
+        return finalMap;
       },
       2,
       350
@@ -136,23 +158,19 @@ export async function getSwitchboardPrices(
     consoleLog("Failed to fetch Switchboard prices after multiple retries");
   }
 
-  if (prices.length === 0) {
-    prices = Array(mints.length).fill(0);
-  }
-
-  const missingPrices = zip(mints, prices).filter(
-    (x) => !x[1] || isNaN(Number(x[1]))
-  );
+  const missingMints = mints.filter((x) => !prices[x.toString()]);
   const jupPrices = zip(
-    missingPrices.map((x) => x[0]),
-    await getJupTokenPrices(missingPrices.map((x) => x[0]))
+    missingMints,
+    await getJupTokenPrices(missingMints.map((x) => new PublicKey(x)))
+  ).reduce(
+    (acc, [key, value]) => {
+      acc[key.toString()] = value;
+      return acc;
+    },
+    {} as Record<string, number>
   );
 
-  prices = prices.map((x, i) =>
-    x ? x : jupPrices.find((y) => y[0].toString() === mints[i].toString())![1]
-  );
-
-  return prices;
+  return Object.values(getSortedPriceData({ ...prices, ...jupPrices }, mints));
 }
 
 export async function getJupTokenPrices(
@@ -163,17 +181,12 @@ export async function getJupTokenPrices(
     return [];
   }
 
-  const data = await getJupPriceData(mints, mayIncludeSpamTokens);
+  const data = getSortedPriceData(
+    await getJupPriceData(mints, mayIncludeSpamTokens),
+    mints
+  );
 
-  const sortedData: { [key: string]: any } = {};
-  for (const mint of mints) {
-    const key = mint.toString();
-    if (data.hasOwnProperty(key)) {
-      sortedData[key] = data[key];
-    }
-  }
-
-  return Object.values(sortedData).map((x) =>
+  return Object.values(data).map((x) =>
     x !== null && typeof x === "object" && "price" in x
       ? parseFloat(x.price as string)
       : 0

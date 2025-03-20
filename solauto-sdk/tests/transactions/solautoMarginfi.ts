@@ -34,10 +34,10 @@ import {
 } from "../../src/transactions/transactionsManager";
 import { PublicKey } from "@solana/web3.js";
 import {
+  ALL_SUPPORTED_TOKENS,
   DEFAULT_MARGINFI_GROUP,
   MARGINFI_ACCOUNTS,
-  POPCAT,
-  RETARDIO,
+  PRICES,
   SOLAUTO_PROD_PROGRAM,
   SOLAUTO_TEST_PROGRAM,
   USDC,
@@ -45,6 +45,7 @@ import {
 } from "../../src/constants";
 import {
   buildHeliusApiUrl,
+  buildIronforgeApiUrl,
   fetchTokenPrices,
   getAllPositionsByAuthority,
   getBankLiquidityAvailableBaseUnit,
@@ -56,117 +57,6 @@ import {
   safeGetPrice,
 } from "../../src/utils";
 import { PriorityFeeSetting } from "../../src/types";
-import {
-  buildIronforgeApiUrl,
-  fromBaseUnit,
-  tokenInfo,
-  USD_DECIMALS,
-} from "../../dist";
-import {
-  lendingPoolAccrueBankInterest,
-  safeFetchAllBank,
-  safeFetchBank,
-  safeFetchMarginfiAccount,
-} from "../../src/marginfi-sdk";
-import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
-
-async function test(
-  umi: Umi,
-  sp: PublicKey | undefined,
-  supplyMint: PublicKey,
-  sb: PublicKey,
-  supplyMintDecimals: number,
-  debtMint: PublicKey,
-  db: PublicKey,
-  debtMintDecimals: number
-) {
-  const solautoPosition = sp
-    ? await fetchSolautoPosition(umi, publicKey(sp))
-    : undefined;
-
-  const mfiAccount = solautoPosition
-    ? await safeFetchMarginfiAccount(
-        umi,
-        solautoPosition.position.protocolUserAccount
-      )
-    : undefined;
-
-  const supplyBank = await safeFetchBank(umi, publicKey(sb));
-  const debtBank = await safeFetchBank(umi, publicKey(db));
-
-  await fetchTokenPrices([supplyMint, debtMint]);
-
-  console.log(supplyBank);
-  console.log(debtBank);
-
-  if (mfiAccount) {
-    console.log(mfiAccount.lendingAccount.balances);
-    console.log(
-      fromBaseUnit(
-        BigInt(
-          Math.round(
-            bytesToI80F48(
-              mfiAccount.lendingAccount.balances[0].assetShares.value
-            ) * bytesToI80F48(supplyBank.assetShareValue.value)
-          )
-        ),
-        supplyMintDecimals
-      ) * safeGetPrice(supplyMint)
-    );
-  }
-
-  // const imfiAccount = await safeFetchMarginfiAccount(
-  //   umi,
-  //   publicKey("E8oukAkTMW4YsAPymMzWQHWb8egmGq9yjDtmMi6gfY18")
-  // );
-
-  // console.log(
-  //   bytesToI80F48(
-  //     imfiAccount.lendingAccount.balances[0].liabilityShares.value
-  //   ) * bytesToI80F48(supplyBank.liabilityShareValue.value),
-  //   bytesToI80F48(imfiAccount.lendingAccount.balances[0].assetShares.value) *
-  //     bytesToI80F48(supplyBank.assetShareValue.value)
-  // );
-  // console.log(
-  //   bytesToI80F48(
-  //     imfiAccount.lendingAccount.balances[1].liabilityShares.value
-  //   ) * bytesToI80F48(debtBank.liabilityShareValue.value),
-  //   bytesToI80F48(imfiAccount.lendingAccount.balances[1].assetShares.value) *
-  //     bytesToI80F48(debtBank.assetShareValue.value)
-  // );
-
-  console.log(
-    bytesToI80F48(
-      supplyBank.config.interestRateConfig.protocolOriginationFee.value
-    )
-  );
-  console.log(
-    bytesToI80F48(
-      debtBank.config.interestRateConfig.protocolOriginationFee.value
-    )
-  );
-
-  console.log(
-    bytesToI80F48(supplyBank.totalAssetShares.value),
-    bytesToI80F48(supplyBank.totalLiabilityShares.value),
-    bytesToI80F48(supplyBank.totalAssetShares.value) -
-      bytesToI80F48(supplyBank.totalLiabilityShares.value),
-    fromBaseUnit(
-      getBankLiquidityAvailableBaseUnit(supplyBank, false),
-      supplyMintDecimals
-    ) * safeGetPrice(supplyMint)
-  );
-  console.log(
-    bytesToI80F48(debtBank.totalAssetShares.value),
-    bytesToI80F48(debtBank.totalLiabilityShares.value),
-    bytesToI80F48(debtBank.totalAssetShares.value) -
-      bytesToI80F48(debtBank.totalLiabilityShares.value),
-    fromBaseUnit(
-      getBankLiquidityAvailableBaseUnit(debtBank, false),
-      debtMintDecimals
-    ) * safeGetPrice(debtMint)
-  );
-}
 
 describe("Solauto Marginfi tests", async () => {
   const signer = setupTest();
@@ -199,28 +89,6 @@ describe("Solauto Marginfi tests", async () => {
       // supplyMint: new PublicKey(""),
       // debtMint: new PublicKey(USDC),
     });
-
-    // await test(
-    //   client.umi,
-    //   // new PublicKey("E8oukAkTMW4YsAPymMzWQHWb8egmGq9yjDtmMi6gfY18"),
-    //   undefined,
-    //   new PublicKey(RETARDIO),
-    //   new PublicKey("3J5rKmCi7JXG6qmiobFJyAidVTnnNAMGj4jomfBxKGRM"),
-    //   6,
-    //   new PublicKey(USDC),
-    //   new PublicKey("6cgYhBFWCc5sNHxkvSRhd5H9AdAHR41zKwuF37HmLry5"),
-    //   6
-    // );
-    await test(
-      client.umi,
-      new PublicKey("EcdfYZCtaePaDWVy9Cz6eiS5QbLbhThau1fHLhQTEZqs"),
-      new PublicKey(USDC),
-      new PublicKey("EXrnNVfLagt3j4hCHSD9WqK75o6dkZBtjpnrSrSC78MA"),
-      6,
-      new PublicKey(POPCAT),
-      new PublicKey("845oEvt1oduoBj5zQxTr21cWWaUVnRjGerJuW3yMo2nn"),
-      9
-    );
 
     // const mfiAccount = await safeFetchMarginfiAccount(
     //   client.umi,
@@ -257,8 +125,6 @@ describe("Solauto Marginfi tests", async () => {
       boostGap: 50,
       repayToBps: client.solautoPositionSettings().repayToBps - 150,
       repayGap: 50,
-      automation: none(),
-      targetBoostToBps: none(),
     };
 
     // if (client.solautoPositionData === null) {
@@ -310,30 +176,6 @@ describe("Solauto Marginfi tests", async () => {
     //     "rebalance"
     //   )
     // );
-
-    // const imfiAccount = await safeFetchMarginfiAccount(
-    //   client.umi,
-    //   // publicKey(client.intermediaryMarginfiAccountPk)
-    //   publicKey("E8oukAkTMW4YsAPymMzWQHWb8egmGq9yjDtmMi6gfY18")
-    // );
-
-    // console.log(
-    //   imfiAccount.lendingAccount.balances.map((x) => [
-    //     x.bankPk.toString(),
-    //     x.liabilityShares.value,
-    //     bytesToI80F48(x.liabilityShares.value),
-    //   ])
-    // );
-
-    // console.log(marginfiAccountEmpty(imfiAccount));
-
-    const bank = await safeFetchBank(
-      client.umi,
-      publicKey("Dj3PndQ3j1vuga5ApiFWWAfQ4h3wBtgS2SeLZBT2LD4g")
-    );
-
-    console.log(bytesToI80F48(bank.config.interestRateConfig.protocolOriginationFee.value));
-    return;
 
     // transactionItems.push(
     //   new TransactionItem(async () => ({
