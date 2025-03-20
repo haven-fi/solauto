@@ -15,7 +15,7 @@ use crate::{
     types::{
         errors::SolautoError,
         instruction::RebalanceSettings,
-        shared::{ RebalanceDirection, SolautoRebalanceType, TokenBalanceAmount },
+        shared::{ RebalanceDirection, RebalanceStep, SolautoRebalanceType, TokenBalanceAmount },
         solana::BareSplTokenTransferArgs,
         solauto::{ FromLendingPlatformAction, SolautoCpiAction },
     },
@@ -435,7 +435,7 @@ impl<'a> Rebalancer<'a> {
         Ok(())
     }
 
-    pub fn first_rebalance_step(&mut self) -> ProgramResult {
+    fn first_rebalance_step(&mut self) -> ProgramResult {
         self.set_rebalance_data()?;
 
         let amount_to_swap = self.data.rebalance_args.swap_in_amount_base_unit;
@@ -451,7 +451,7 @@ impl<'a> Rebalancer<'a> {
         Ok(())
     }
 
-    pub fn final_rebalance_step(&mut self) -> ProgramResult {
+    fn final_rebalance_step(&mut self) -> ProgramResult {
         self.set_rebalance_data()?;
 
         let additional_amount_after_swap = self.get_additional_amount_after_swap();
@@ -462,5 +462,12 @@ impl<'a> Rebalancer<'a> {
         }
 
         Ok(())
+    }
+
+    pub fn rebalance(&mut self, rebalance_step: RebalanceStep) -> ProgramResult {
+        match rebalance_step {
+            RebalanceStep::First => self.first_rebalance_step(),
+            RebalanceStep::Final => self.final_rebalance_step(),
+        }
     }
 }

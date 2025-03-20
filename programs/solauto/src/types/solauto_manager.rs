@@ -10,7 +10,13 @@ use solana_program::{
 use super::{
     instruction::{ RebalanceSettings, SolautoAction, SolautoStandardAccounts },
     lending_protocol::{ LendingProtocolClient, LendingProtocolTokenAccounts },
-    shared::{ RefreshStateProps, RefreshedTokenState, TokenBalanceAmount, TokenType },
+    shared::{
+        RebalanceStep,
+        RefreshStateProps,
+        RefreshedTokenState,
+        TokenBalanceAmount,
+        TokenType,
+    },
     solauto::SolautoCpiAction,
 };
 use crate::{
@@ -222,19 +228,14 @@ impl<'a> SolautoManager<'a> {
         Ok(())
     }
 
-    pub fn first_rebalance_step(&mut self, rebalance_args: RebalanceSettings) -> ProgramResult {
+    pub fn rebalance(
+        &mut self,
+        rebalance_args: RebalanceSettings,
+        rebalance_step: RebalanceStep
+    ) -> ProgramResult {
         let rebalance_actions = {
             let mut rebalancer = self.get_rebalancer(rebalance_args);
-            rebalancer.first_rebalance_step()?;
-            rebalancer.actions().clone()
-        };
-        self.execute_cpi_actions(rebalance_actions)
-    }
-
-    pub fn final_rebalance_step(&mut self, rebalance_args: RebalanceSettings) -> ProgramResult {
-        let rebalance_actions = {
-            let mut rebalancer = self.get_rebalancer(rebalance_args);
-            rebalancer.final_rebalance_step()?;
+            rebalancer.rebalance(rebalance_step)?;
             rebalancer.actions().clone()
         };
         self.execute_cpi_actions(rebalance_actions)
