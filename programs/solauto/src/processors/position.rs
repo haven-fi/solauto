@@ -25,7 +25,7 @@ pub fn process_update_position_instruction<'a>(
             .unwrap();
 
     validation_utils::validate_instruction(ctx.accounts.signer, &solauto_position, true, true)?;
-    validation_utils::validate_sysvar_accounts(
+    validation_utils::validate_standard_programs(
         Some(ctx.accounts.system_program),
         Some(ctx.accounts.token_program),
         None,
@@ -53,7 +53,7 @@ pub fn process_close_position_instruction<'a>(accounts: &'a [AccountInfo<'a>]) -
             .unwrap();
 
     validation_utils::validate_instruction(ctx.accounts.signer, &solauto_position, true, true)?;
-    validation_utils::validate_sysvar_accounts(
+    validation_utils::validate_standard_programs(
         Some(ctx.accounts.system_program),
         Some(ctx.accounts.token_program),
         Some(ctx.accounts.ata_program),
@@ -91,7 +91,7 @@ pub fn process_cancel_dca<'a>(accounts: &'a [AccountInfo<'a>]) -> ProgramResult 
             .unwrap();
 
     validation_utils::validate_instruction(ctx.accounts.signer, &solauto_position, true, true)?;
-    validation_utils::validate_sysvar_accounts(
+    validation_utils::validate_standard_programs(
         Some(ctx.accounts.system_program),
         Some(ctx.accounts.token_program),
         Some(ctx.accounts.ata_program),

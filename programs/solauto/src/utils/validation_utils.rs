@@ -47,7 +47,7 @@ pub fn generic_instruction_validation(
         solauto_managed_only_ix,
     )?;
     validate_lending_program_account(accounts.lending_protocol, lending_platform)?;
-    validate_sysvar_accounts(
+    validate_standard_programs(
         Some(accounts.system_program),
         Some(accounts.token_program),
         accounts.ata_program,
@@ -228,7 +228,7 @@ pub fn validate_lending_program_account(
     Ok(())
 }
 
-pub fn validate_sysvar_accounts(
+pub fn validate_standard_programs(
     system_program: Option<&AccountInfo>,
     token_program: Option<&AccountInfo>,
     ata_program: Option<&AccountInfo>,
