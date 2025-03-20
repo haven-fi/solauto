@@ -25,6 +25,7 @@ export async function fetchTokenPrices(mints: PublicKey[]): Promise<number[]> {
     return mints.map((mint) => PRICES[mint.toString()].price);
   }
 
+  console.log("HELLLO")
   const pythMints = mints.filter((x) => x.toString() in PYTH_PRICE_FEED_IDS);
   const switchboardMints = mints.filter(
     (x) => x.toString() in SWITCHBOARD_PRICE_FEED_IDS

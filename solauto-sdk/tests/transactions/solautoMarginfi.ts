@@ -25,8 +25,10 @@ import {
 } from "../../src/transactions/transactionsManager";
 import { PublicKey } from "@solana/web3.js";
 import {
+  ALL_SUPPORTED_TOKENS,
   DEFAULT_MARGINFI_GROUP,
   MARGINFI_ACCOUNTS,
+  PRICES,
   SOLAUTO_PROD_PROGRAM,
   SOLAUTO_TEST_PROGRAM,
   USDC,
@@ -34,6 +36,8 @@ import {
 } from "../../src/constants";
 import {
   buildHeliusApiUrl,
+  buildIronforgeApiUrl,
+  fetchTokenPrices,
   getAllPositionsByAuthority,
   getQnComputeUnitPriceEstimate,
   getSolautoManagedPositions,
@@ -41,7 +45,6 @@ import {
   retryWithExponentialBackoff,
 } from "../../src/utils";
 import { PriorityFeeSetting } from "../../src/types";
-import { buildIronforgeApiUrl, fromBaseUnit, tokenInfo, USD_DECIMALS } from "../../dist";
 
 describe("Solauto Marginfi tests", async () => {
   // const signer = setupTest();
