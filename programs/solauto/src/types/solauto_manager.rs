@@ -222,7 +222,7 @@ impl<'a> SolautoManager<'a> {
         Ok(())
     }
 
-    pub fn begin_rebalance(&mut self, rebalance_args: RebalanceSettings) -> ProgramResult {
+    pub fn first_rebalance_step(&mut self, rebalance_args: RebalanceSettings) -> ProgramResult {
         let rebalance_actions = {
             let mut rebalancer = self.get_rebalancer(rebalance_args);
             rebalancer.first_rebalance_step()?;
@@ -231,7 +231,7 @@ impl<'a> SolautoManager<'a> {
         self.execute_cpi_actions(rebalance_actions)
     }
 
-    pub fn finish_rebalance(&mut self, rebalance_args: RebalanceSettings) -> ProgramResult {
+    pub fn final_rebalance_step(&mut self, rebalance_args: RebalanceSettings) -> ProgramResult {
         let rebalance_actions = {
             let mut rebalancer = self.get_rebalancer(rebalance_args);
             rebalancer.final_rebalance_step()?;

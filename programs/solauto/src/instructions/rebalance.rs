@@ -167,9 +167,9 @@ fn rebalance<'a>(
         Some(fees_bps)
     )?;
     if rebalance_step == RebalanceStep::First {
-        solauto_manager.begin_rebalance(args)?;
+        solauto_manager.first_rebalance_step(args)?;
     } else {
-        solauto_manager.finish_rebalance(args)?;
+        solauto_manager.final_rebalance_step(args)?;
     }
 
     ix_utils::update_data(&mut solauto_manager.std_accounts.solauto_position)
