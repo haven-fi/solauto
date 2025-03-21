@@ -11,7 +11,7 @@ use crate::{
         errors::SolautoError,
         instruction::{ RebalanceSettings, SolautoStandardAccounts },
         shared::{ RebalanceDirection, RebalanceStep, SolautoRebalanceType },
-        solauto::{PositionValues, RebalanceFees},
+        solauto::{ PositionValues, RebalanceFees },
     },
     utils::{
         ix_utils::{
@@ -19,7 +19,7 @@ use crate::{
             get_marginfi_flash_loan_amount,
             validate_rebalance_instructions,
         },
-        math_utils::{ from_bps, get_debt_adjustment_usd },
+        math_utils::{ from_bps, get_debt_adjustment },
         solauto_utils::SolautoFeesBps,
     },
 };
@@ -156,7 +156,7 @@ pub fn get_rebalance_values(
         lp_flash_loan: rebalance_args.flash_loan_fee_bps.unwrap_or(0),
     };
 
-    let debt_adjustment = get_debt_adjustment_usd(
+    let debt_adjustment = get_debt_adjustment(
         from_bps(solauto_position.state.max_ltv_bps),
         from_bps(solauto_position.state.liq_threshold_bps),
         &position,

@@ -130,7 +130,7 @@ pub fn calc_fee_amount(value: u64, fee_pct_bps: u16) -> u64 {
     (value as f64).mul(from_bps(fee_pct_bps)) as u64
 }
 
-fn apply_debt_adjustment(
+fn apply_debt_adjustment_usd(
     debt_adjustment_usd: f64,
     pos: &PositionValues,
     fees: &RebalanceFees,
@@ -180,7 +180,7 @@ fn apply_debt_adjustment(
 /// # Returns
 /// A `DebtAdjustment` struct. `debt_adjustment_usd` is positive if debt needs to increase, negative if debt needs to decrease.
 ///
-pub fn get_debt_adjustment_usd(
+pub fn get_debt_adjustment(
     max_ltv: f64,
     liq_threshold: f64,
     pos: &PositionValues,
@@ -196,7 +196,7 @@ pub fn get_debt_adjustment_usd(
     let lp_borrow_fee = from_bps(fees.lp_borrow);
     let lp_fl_fee = from_bps(fees.lp_flash_loan);
 
-    let get_debt_adjustment = |supply: f64, debt: f64, as_flash_loan: bool| {
+    let get_debt_adjustment_usd = |supply: f64, debt: f64, as_flash_loan: bool| {
         let actualized_fee = if as_flash_loan {
             (1.0).sub(solauto_fee) * (1.0).sub(lp_fl_fee)
         } else {
@@ -214,19 +214,29 @@ pub fn get_debt_adjustment_usd(
     };
 
     let mut as_flash_loan = false;
-    let mut debt_adjustment_usd = get_debt_adjustment(pos.supply_usd, pos.debt_usd, as_flash_loan);
+    let mut debt_adjustment_usd = get_debt_adjustment_usd(
+        pos.supply_usd,
+        pos.debt_usd,
+        as_flash_loan
+    );
 
-    let new_pos = apply_debt_adjustment(debt_adjustment_usd, pos, fees, false, false);
+    let new_pos = apply_debt_adjustment_usd(debt_adjustment_usd, pos, fees, false, false);
 
     if
         get_liq_utilization_rate_bps(new_pos.supply_usd, new_pos.debt_usd, liq_threshold) >
         get_max_boost_to_bps(to_bps(max_ltv), to_bps(liq_threshold))
     {
         as_flash_loan = true;
-        debt_adjustment_usd = get_debt_adjustment(pos.supply_usd, pos.debt_usd, as_flash_loan);
+        debt_adjustment_usd = get_debt_adjustment_usd(pos.supply_usd, pos.debt_usd, as_flash_loan);
     }
 
-    let final_position = apply_debt_adjustment(debt_adjustment_usd, pos, fees, as_flash_loan, true);
+    let final_position = apply_debt_adjustment_usd(
+        debt_adjustment_usd,
+        pos,
+        fees,
+        as_flash_loan,
+        true
+    );
 
     DebtAdjustment { debt_adjustment_usd, as_flash_loan, end_result: final_position }
 }
@@ -289,7 +299,7 @@ mod tests {
             lp_borrow: 50,
             lp_flash_loan: 50,
         };
-        let debt_adjustment = get_debt_adjustment_usd(
+        let debt_adjustment = get_debt_adjustment(
             max_ltv,
             liq_threshold,
             &position,
