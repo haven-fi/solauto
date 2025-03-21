@@ -52,8 +52,7 @@ impl TokenAmount {
 pub struct PositionTokenState {
     pub mint: Pubkey,
     pub decimals: u8,
-    _padding1: [u8; 3],
-    pub flash_loan_fee_bps: u16,
+    _padding1: [u8; 5],
     pub borrow_fee_bps: u16,
     pub amount_used: TokenAmount,
     pub amount_can_be_used: TokenAmount,

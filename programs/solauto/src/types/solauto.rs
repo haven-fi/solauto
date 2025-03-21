@@ -16,3 +16,21 @@ pub enum SolautoCpiAction {
     Withdraw(FromLendingPlatformAction<TokenBalanceAmount>),
     SplTokenTransfer(BareSplTokenTransferArgs),
 }
+
+#[derive(Copy, Clone)]
+pub struct PositionValues {
+    pub supply_usd: f64,
+    pub debt_usd: f64,
+}
+
+pub struct RebalanceFees {
+    pub solauto: u16,
+    pub lp_borrow: u16,
+    pub lp_flash_loan: u16,
+}
+
+pub struct DebtAdjustment {
+    pub debt_adjustment_usd: f64,
+    pub as_flash_loan: bool,
+    pub end_result: PositionValues,
+}

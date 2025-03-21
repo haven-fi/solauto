@@ -387,12 +387,7 @@ impl<'a> Rebalancer<'a> {
         {
             let flash_loan_amount = self.rebalance_data().ixs.flash_loan_amount;
             let fl_repay_amount = if flash_loan_amount > 0 {
-                let flash_loan_fee_bps = if self.is_boost() {
-                    self.position_data().state.debt.flash_loan_fee_bps
-                } else {
-                    self.position_data().state.supply.flash_loan_fee_bps
-                };
-
+                let flash_loan_fee_bps = self.data.rebalance_args.flash_loan_fee_bps.unwrap_or(0);
                 flash_loan_amount.add(
                     (flash_loan_amount as f64).mul(from_bps(flash_loan_fee_bps)).ceil() as u64
                 )

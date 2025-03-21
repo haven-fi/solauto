@@ -2,7 +2,10 @@ use fixed::types::I80F48;
 use num_traits::{ FromPrimitive, ToPrimitive };
 use std::{ cmp::min, ops::{ Add, Div, Mul, Sub } };
 
-use crate::constants::{ MAX_BASIS_POINTS, MIN_REPAY_GAP_BPS, USD_DECIMALS };
+use crate::{
+    constants::{ MAX_BASIS_POINTS, MIN_REPAY_GAP_BPS, USD_DECIMALS },
+    types::solauto::{ DebtAdjustment, PositionValues, RebalanceFees },
+};
 
 #[inline(always)]
 pub fn from_base_unit<T, U, V>(base_units: T, decimals: U) -> V
@@ -127,19 +130,6 @@ pub fn calc_fee_amount(value: u64, fee_pct_bps: u16) -> u64 {
     (value as f64).mul(from_bps(fee_pct_bps)) as u64
 }
 
-#[derive(Copy, Clone)]
-pub struct PositionValues {
-    pub supply_usd: f64,
-    pub debt_usd: f64,
-}
-
-// TODO: pass in lp_fl_fee in instruction data?
-pub struct RebalanceFees {
-    pub solauto: u16,
-    pub lp_borrow: u16,
-    pub lp_flash_loan: u16,
-}
-
 fn apply_debt_adjustment(
     debt_adjustment_usd: f64,
     pos: &PositionValues,
@@ -175,12 +165,6 @@ fn apply_debt_adjustment(
     }
 
     new_pos
-}
-
-pub struct DebtAdjustment {
-    pub debt_adjustment_usd: f64,
-    pub as_flash_loan: bool,
-    pub end_result: PositionValues,
 }
 
 /// Calculates the debt adjustment in USD in order to reach the target_liq_utilization_rate

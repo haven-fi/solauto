@@ -216,7 +216,6 @@ impl<'a> SolautoManager<'a> {
         token_state.amount_can_be_used.base_unit = token_data.amount_can_be_used;
         token_state.update_market_price(token_data.market_price);
         token_state.borrow_fee_bps = token_data.borrow_fee_bps.unwrap_or(0);
-        token_state.flash_loan_fee_bps = token_data.flash_loan_fee_bps.unwrap_or(0);
     }
 
     pub fn refresh_position(

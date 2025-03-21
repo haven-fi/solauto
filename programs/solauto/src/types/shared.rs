@@ -92,7 +92,6 @@ pub struct RefreshedTokenState {
     pub amount_can_be_used: u64,
     pub market_price: f64,
     pub borrow_fee_bps: Option<u16>,
-    pub flash_loan_fee_bps: Option<u16>,
 }
 
 #[derive(Debug)]

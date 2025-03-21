@@ -217,6 +217,7 @@ pub struct RebalanceSettings {
     pub target_liq_utilization_rate_bps: Option<u16>,
     /// The in-amount to use in the token swap. Gets validated by the program.
     pub swap_in_amount_base_unit: u64,
+    pub flash_loan_fee_bps: Option<u16>
 }
 
 pub struct SolautoStandardAccounts<'a> {
