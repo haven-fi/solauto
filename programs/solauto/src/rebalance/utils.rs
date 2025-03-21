@@ -11,7 +11,7 @@ use crate::{
         errors::SolautoError,
         instruction::{ RebalanceSettings, SolautoStandardAccounts },
         shared::{ RebalanceDirection, RebalanceStep, SolautoRebalanceType },
-        solauto::{ PositionValues, RebalanceFees },
+        solauto::{ PositionValues, RebalanceFeesBps },
     },
     utils::{
         ix_utils::{
@@ -150,7 +150,7 @@ pub fn get_rebalance_values(
         target_liq_utilization_rate_bps
     );
     let position = get_adjusted_position_values(solauto_position, &token_balance_change);
-    let fees = RebalanceFees {
+    let fees = RebalanceFeesBps {
         solauto: solauto_fees_bps.fetch_fees(&rebalance_direction).total,
         lp_borrow: solauto_position.state.debt.borrow_fee_bps,
         lp_flash_loan: rebalance_args.flash_loan_fee_bps.unwrap_or(0),

@@ -4,7 +4,7 @@ use std::{ cmp::min, ops::{ Add, Div, Mul, Sub } };
 
 use crate::{
     constants::{ MAX_BASIS_POINTS, MIN_REPAY_GAP_BPS, USD_DECIMALS },
-    types::solauto::{ DebtAdjustment, PositionValues, RebalanceFees },
+    types::solauto::{ DebtAdjustment, PositionValues, RebalanceFeesBps },
 };
 
 #[inline(always)]
@@ -133,7 +133,7 @@ pub fn calc_fee_amount(value: u64, fee_pct_bps: u16) -> u64 {
 fn apply_debt_adjustment_usd(
     debt_adjustment_usd: f64,
     pos: &PositionValues,
-    fees: &RebalanceFees,
+    fees: &RebalanceFeesBps,
     as_flash_loan: bool,
     full_rebalance: bool
 ) -> PositionValues {
@@ -184,7 +184,7 @@ pub fn get_debt_adjustment(
     max_ltv: f64,
     liq_threshold: f64,
     pos: &PositionValues,
-    fees: &RebalanceFees,
+    fees: &RebalanceFeesBps,
     target_liq_utilization_rate_bps: u16
 ) -> DebtAdjustment {
     let is_boost =
@@ -294,7 +294,7 @@ mod tests {
 
         let target_liq_utilization_rate_bps = to_bps(target_liq_utilization_rate);
         let position = PositionValues { supply_usd, debt_usd };
-        let fees = RebalanceFees {
+        let fees = RebalanceFeesBps {
             solauto: 50,
             lp_borrow: 50,
             lp_flash_loan: 50,

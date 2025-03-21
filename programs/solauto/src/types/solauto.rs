@@ -23,7 +23,7 @@ pub struct PositionValues {
     pub debt_usd: f64,
 }
 
-pub struct RebalanceFees {
+pub struct RebalanceFeesBps {
     pub solauto: u16,
     pub lp_borrow: u16,
     pub lp_flash_loan: u16,
