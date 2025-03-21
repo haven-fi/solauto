@@ -157,7 +157,6 @@ pub fn get_rebalance_values(
     };
 
     let debt_adjustment = get_debt_adjustment(
-        from_bps(solauto_position.state.max_ltv_bps),
         from_bps(solauto_position.state.liq_threshold_bps),
         &position,
         &fees,

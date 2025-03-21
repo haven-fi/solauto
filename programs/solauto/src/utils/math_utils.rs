@@ -133,32 +133,18 @@ pub fn calc_fee_amount(value: u64, fee_pct_bps: u16) -> u64 {
 fn apply_debt_adjustment_usd(
     debt_adjustment_usd: f64,
     pos: &PositionValues,
-    fees: &RebalanceFeesBps,
-    as_flash_loan: bool,
-    full_rebalance: bool
+    fees: &RebalanceFeesBps
 ) -> PositionValues {
     let mut new_pos = pos.clone();
 
     let is_boost = debt_adjustment_usd > 0.0;
-    let actualized_fee = if as_flash_loan {
-        from_bps(fees.solauto) + from_bps(fees.lp_flash_loan)
-    } else {
-        from_bps(fees.solauto)
-    };
+    let actualized_fee = from_bps(fees.solauto) + from_bps(fees.lp_flash_loan);
     let debt_adjustment_minus_fees = debt_adjustment_usd.sub(
         debt_adjustment_usd.mul(actualized_fee)
     );
 
-    if full_rebalance || !is_boost {
-        new_pos.supply_usd += if is_boost {
-            debt_adjustment_minus_fees
-        } else {
-            debt_adjustment_usd
-        };
-    }
-    if full_rebalance || is_boost {
-        new_pos.debt_usd += if is_boost { debt_adjustment_usd } else { debt_adjustment_minus_fees };
-    }
+    new_pos.supply_usd += if is_boost { debt_adjustment_minus_fees } else { debt_adjustment_usd };
+    new_pos.debt_usd += if is_boost { debt_adjustment_usd } else { debt_adjustment_minus_fees };
 
     if is_boost {
         new_pos.debt_usd += debt_adjustment_usd.mul(from_bps(fees.lp_borrow));
@@ -167,21 +153,7 @@ fn apply_debt_adjustment_usd(
     new_pos
 }
 
-/// Calculates the debt adjustment in USD in order to reach the target_liq_utilization_rate
-///
-/// # Parameters
-/// * `liq_threshold` - The liquidation threshold of the supplied asset
-/// * `supply_usd` - Total USD value of supplied asset
-/// * `total_debt_usd` - Total USD value of debt asset
-/// * `target_liq_utilization_rate_bps` - Target utilization rate
-/// * `solauto_fee_bps` - Solauto fee taken
-/// * `lp_fee_bps` - Lending platform fee taken
-///
-/// # Returns
-/// A `DebtAdjustment` struct. `debt_adjustment_usd` is positive if debt needs to increase, negative if debt needs to decrease.
-///
 pub fn get_debt_adjustment(
-    max_ltv: f64,
     liq_threshold: f64,
     pos: &PositionValues,
     fees: &RebalanceFeesBps,
@@ -192,53 +164,21 @@ pub fn get_debt_adjustment(
         target_liq_utilization_rate_bps;
 
     let target_utilization_rate = from_bps(target_liq_utilization_rate_bps);
-    let solauto_fee = from_bps(fees.solauto);
+    let actualized_fee =
+        (1.0).sub(from_bps(fees.solauto)) * (1.0).sub(from_bps(fees.lp_flash_loan));
     let lp_borrow_fee = from_bps(fees.lp_borrow);
-    let lp_fl_fee = from_bps(fees.lp_flash_loan);
 
-    let get_debt_adjustment_usd = |supply: f64, debt: f64, as_flash_loan: bool| {
-        let actualized_fee = if as_flash_loan {
-            (1.0).sub(solauto_fee) * (1.0).sub(lp_fl_fee)
-        } else {
-            (1.0).sub(solauto_fee)
-        };
-
-        if is_boost {
-            (target_utilization_rate * liq_threshold * supply - debt) /
-                ((1.0).add(lp_borrow_fee) -
-                    target_utilization_rate * actualized_fee * liq_threshold)
-        } else {
-            (target_utilization_rate * liq_threshold * supply - debt) /
-                (actualized_fee - target_utilization_rate * liq_threshold)
-        }
+    let debt_adjustment_usd = if is_boost {
+        (target_utilization_rate * liq_threshold * pos.supply_usd - pos.debt_usd) /
+            ((1.0).add(lp_borrow_fee) - target_utilization_rate * actualized_fee * liq_threshold)
+    } else {
+        (target_utilization_rate * liq_threshold * pos.supply_usd - pos.debt_usd) /
+            (actualized_fee - target_utilization_rate * liq_threshold)
     };
 
-    let mut as_flash_loan = false;
-    let mut debt_adjustment_usd = get_debt_adjustment_usd(
-        pos.supply_usd,
-        pos.debt_usd,
-        as_flash_loan
-    );
+    let new_pos = apply_debt_adjustment_usd(debt_adjustment_usd, pos, fees);
 
-    let new_pos = apply_debt_adjustment_usd(debt_adjustment_usd, pos, fees, false, false);
-
-    if
-        get_liq_utilization_rate_bps(new_pos.supply_usd, new_pos.debt_usd, liq_threshold) >
-        get_max_boost_to_bps(to_bps(max_ltv), to_bps(liq_threshold))
-    {
-        as_flash_loan = true;
-        debt_adjustment_usd = get_debt_adjustment_usd(pos.supply_usd, pos.debt_usd, as_flash_loan);
-    }
-
-    let final_position = apply_debt_adjustment_usd(
-        debt_adjustment_usd,
-        pos,
-        fees,
-        as_flash_loan,
-        true
-    );
-
-    DebtAdjustment { debt_adjustment_usd, as_flash_loan, end_result: final_position }
+    DebtAdjustment { debt_adjustment_usd, end_result: new_pos }
 }
 
 #[cfg(test)]
@@ -285,7 +225,6 @@ mod tests {
         target_liq_utilization_rate: f64
     ) {
         let AssetWeights { maint_asset_weight, maint_debt_weight, .. } = weights;
-        let max_ltv = weights.max_ltv();
         let liq_threshold = weights.liq_threshold();
 
         let is_boost =
@@ -300,7 +239,6 @@ mod tests {
             lp_flash_loan: 50,
         };
         let debt_adjustment = get_debt_adjustment(
-            max_ltv,
             liq_threshold,
             &position,
             &fees,
@@ -326,9 +264,8 @@ mod tests {
         );
 
         println!(
-            "Boost: {}. Flash loan: {}. {}, {}, {}",
+            "Boost: {}. {}, {}, {}",
             is_boost,
-            debt_adjustment.as_flash_loan,
             target_liq_utilization_rate,
             from_bps(new_liq_utilization_rate_bps),
             marginfi_liq_utilization_rate

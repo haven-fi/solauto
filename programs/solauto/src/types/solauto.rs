@@ -31,6 +31,5 @@ pub struct RebalanceFeesBps {
 
 pub struct DebtAdjustment {
     pub debt_adjustment_usd: f64,
-    pub as_flash_loan: bool,
     pub end_result: PositionValues,
 }
