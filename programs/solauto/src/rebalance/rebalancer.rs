@@ -25,7 +25,7 @@ use crate::{
         solauto::{ FromLendingPlatformAction, SolautoCpiAction },
     },
     utils::{
-        math_utils::{ from_bps, from_rounded_usd_value, usd_value_to_base_unit },
+        math_utils::{ calc_fee_amount, from_bps, from_rounded_usd_value, usd_value_to_base_unit },
         solauto_utils::SolautoFeesBps,
         validation_utils::{ correct_token_account, value_match_with_threshold },
     },
@@ -323,7 +323,7 @@ impl<'a> Rebalancer<'a> {
             SolautoError::IncorrectAccounts
         );
 
-        let fee_amount = (available_balance as f64).mul(from_bps(fee_pct_bps)) as u64;
+        let fee_amount = calc_fee_amount(available_balance, fee_pct_bps);
         self.actions.push(
             SolautoCpiAction::SplTokenTransfer(BareSplTokenTransferArgs {
                 from_wallet: self.data.solauto_position.pk,
