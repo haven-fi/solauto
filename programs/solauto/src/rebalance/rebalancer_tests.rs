@@ -3,13 +3,17 @@ use spl_associated_token_account::get_associated_token_address;
 
 use crate::{
     state::solauto_position::{ PositionData, PositionState, SolautoPosition },
-    types::{ instruction::RebalanceSettings, shared::PositionType, solauto::PositionValues },
-    utils::solauto_utils::SolautoFeesBps,
+    types::{
+        instruction::RebalanceSettings,
+        shared::{ PositionType, RefreshedTokenState },
+        solauto::PositionValues,
+    },
+    utils::{ math_utils::to_base_unit, solauto_utils::{ update_token_state, SolautoFeesBps } },
 };
 
 use super::rebalancer::{ Rebalancer, RebalancerData, SolautoPositionData, TokenAccountData };
 
-const TEST_TOKEN_DECIMALS: u64 = 9;
+const TEST_TOKEN_DECIMALS: u8 = 9;
 
 pub struct FakeRebalance {
     position_authority: Pubkey,
@@ -26,6 +30,30 @@ fn create_rebalancer(
     rebalance_args: RebalanceSettings
 ) -> (SolautoPosition, Rebalancer) {
     let mut state = PositionState::default();
+
+    update_token_state(
+        &mut state.supply,
+        &(RefreshedTokenState {
+            amount_used: to_base_unit(data.pos.supply_usd / 100.0, TEST_TOKEN_DECIMALS),
+            amount_can_be_used: 0,
+            mint: data.supply_mint,
+            decimals: TEST_TOKEN_DECIMALS,
+            market_price: 100.0,
+            borrow_fee_bps: Some(50),
+        })
+    );
+    update_token_state(
+        &mut state.supply,
+        &(RefreshedTokenState {
+            amount_used: to_base_unit::<f64, u8, u64>(data.pos.debt_usd, TEST_TOKEN_DECIMALS),
+            amount_can_be_used: 0,
+            mint: data.debt_mint,
+            decimals: TEST_TOKEN_DECIMALS,
+            market_price: 1.0,
+            borrow_fee_bps: Some(50),
+        })
+    );
+
     let position = SolautoPosition::new(
         1,
         data.position_authority,
@@ -64,7 +92,7 @@ fn create_rebalancer(
             data.pos.supply_usd - data.pos.debt_usd
         ),
         referred_by_state: None,
-        referred_by_ta: None
+        referred_by_ta: None,
     });
 
     (position, rebalancer)

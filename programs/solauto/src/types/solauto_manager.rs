@@ -14,7 +14,6 @@ use super::{
     shared::{
         RebalanceStep,
         RefreshStateProps,
-        RefreshedTokenState,
         SplTokenTransferArgs,
         TokenBalanceAmount,
         TokenType,
@@ -24,7 +23,11 @@ use super::{
 use crate::{
     rebalance::rebalancer::{ Rebalancer, RebalancerData, SolautoPositionData, TokenAccountData },
     state::solauto_position::SolautoPosition,
-    utils::{ solana_utils::spl_token_transfer, solauto_utils::safe_unpack_token_account, * },
+    utils::{
+        solana_utils::spl_token_transfer,
+        solauto_utils::{ safe_unpack_token_account, update_token_state },
+        *,
+    },
 };
 
 pub struct SolautoManagerAccounts<'a> {
@@ -206,17 +209,6 @@ impl<'a> SolautoManager<'a> {
         Ok(())
     }
 
-    fn update_token_state(
-        token_state: &mut crate::state::solauto_position::PositionTokenState,
-        token_data: &RefreshedTokenState
-    ) {
-        token_state.decimals = token_data.decimals;
-        token_state.amount_used.base_unit = token_data.amount_used;
-        token_state.amount_can_be_used.base_unit = token_data.amount_can_be_used;
-        token_state.update_market_price(token_data.market_price);
-        token_state.borrow_fee_bps = token_data.borrow_fee_bps.unwrap_or(0);
-    }
-
     pub fn refresh_position(
         solauto_position: &mut SolautoPosition,
         updated_data: RefreshStateProps,
@@ -231,8 +223,8 @@ impl<'a> SolautoManager<'a> {
         solauto_position.state.max_ltv_bps = to_bps(updated_data.max_ltv);
         solauto_position.state.liq_threshold_bps = to_bps(updated_data.liq_threshold);
 
-        Self::update_token_state(&mut solauto_position.state.supply, &updated_data.supply);
-        Self::update_token_state(&mut solauto_position.state.debt, &updated_data.debt);
+        update_token_state(&mut solauto_position.state.supply, &updated_data.supply);
+        update_token_state(&mut solauto_position.state.debt, &updated_data.debt);
 
         solauto_position.state.net_worth.base_unit = math_utils::net_worth_base_amount(
             solauto_position.state.supply.amount_used.usd_value(),

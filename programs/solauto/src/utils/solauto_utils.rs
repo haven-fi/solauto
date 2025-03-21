@@ -24,6 +24,7 @@ use crate::{
         solauto_position::{
             PositionData,
             PositionState,
+            PositionTokenState,
             SolautoPosition,
             SolautoSettingsParameters,
         },
@@ -36,6 +37,7 @@ use crate::{
             LendingPlatform,
             PositionType,
             RebalanceDirection,
+            RefreshedTokenState,
             SplTokenTransferArgs,
         },
     },
@@ -305,6 +307,14 @@ pub fn cancel_dca_in<'a, 'b>(
 
     solauto_position.data.position.dca = DCASettings::default();
     Ok(())
+}
+
+pub fn update_token_state(token_state: &mut PositionTokenState, token_data: &RefreshedTokenState) {
+    token_state.decimals = token_data.decimals;
+    token_state.amount_used.base_unit = token_data.amount_used;
+    token_state.amount_can_be_used.base_unit = token_data.amount_can_be_used;
+    token_state.update_market_price(token_data.market_price);
+    token_state.borrow_fee_bps = token_data.borrow_fee_bps.unwrap_or(0);
 }
 
 pub struct FeePayout {
