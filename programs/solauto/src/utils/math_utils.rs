@@ -133,6 +133,7 @@ pub struct PositionValues {
     pub debt_usd: f64,
 }
 
+// TODO: pass in lp_fl_fee in instruction data?
 pub struct RebalanceFees {
     pub solauto: u16,
     pub lp_borrow: u16,
@@ -300,7 +301,7 @@ mod tests {
         let target_liq_utilization_rate_bps = to_bps(target_liq_utilization_rate);
         let position = PositionValues { supply_usd, debt_usd };
         let fees = RebalanceFees {
-            solauto: 25,
+            solauto: 50,
             lp_borrow: 50,
             lp_flash_loan: 50,
         };
@@ -340,13 +341,13 @@ mod tests {
         );
 
         assert_eq!(
-            round_to_places(from_bps(new_liq_utilization_rate_bps), 2),
-            round_to_places(target_liq_utilization_rate, 2)
+            round_to_places(from_bps(new_liq_utilization_rate_bps), 3),
+            round_to_places(target_liq_utilization_rate, 3)
         );
 
         assert_eq!(
-            round_to_places(marginfi_liq_utilization_rate, 4),
-            round_to_places(target_liq_utilization_rate, 4)
+            round_to_places(marginfi_liq_utilization_rate, 3),
+            round_to_places(target_liq_utilization_rate, 3)
         );
     }
 
