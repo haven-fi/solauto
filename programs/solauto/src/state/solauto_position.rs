@@ -317,6 +317,14 @@ impl SolautoPosition {
         }
     }
     #[inline(always)]
+    pub fn pubkey(&self) -> Pubkey {
+        let (pubkey, _) = Pubkey::find_program_address(
+            self.seeds().as_ref(),
+            &crate::ID
+        );
+        pubkey
+    }
+    #[inline(always)]
     pub fn position_id(&self) -> u8 {
         self.position_id[0]
     }

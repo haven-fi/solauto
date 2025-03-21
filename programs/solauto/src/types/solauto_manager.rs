@@ -128,7 +128,7 @@ impl<'a> SolautoManager<'a> {
     fn get_token_account_data(&self, account: Option<&'a AccountInfo<'a>>) -> TokenAccountData {
         TokenAccountData {
             pk: *account.unwrap().key,
-            data: safe_unpack_token_account(account).unwrap().unwrap().data,
+            balance: safe_unpack_token_account(account).unwrap().unwrap().data.amount,
         }
     }
 
@@ -158,7 +158,6 @@ impl<'a> SolautoManager<'a> {
         Rebalancer::new(RebalancerData {
             rebalance_args,
             solauto_position: SolautoPositionData {
-                pk: *self.std_accounts.solauto_position.account_info.key,
                 data: &mut self.std_accounts.solauto_position.data,
                 supply_ta: position_supply_ta,
                 debt_ta: position_debt_ta,

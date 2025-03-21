@@ -35,11 +35,10 @@ use super::utils::{ eligible_for_rebalance, get_rebalance_values };
 
 pub struct TokenAccountData {
     pub pk: Pubkey,
-    pub data: Box<TokenAccount>,
+    pub balance: u64,
 }
 
 pub struct SolautoPositionData<'a> {
-    pub pk: Pubkey,
     pub data: &'a mut Box<SolautoPosition>,
     pub supply_ta: TokenAccountData,
     pub debt_ta: TokenAccountData,
@@ -134,9 +133,9 @@ impl<'a> Rebalancer<'a> {
 
     fn get_dynamic_balance(&self) -> u64 {
         let balance = if self.is_boost() {
-            self.position_supply_ta().data.amount
+            self.position_supply_ta().balance
         } else {
-            self.position_debt_ta().data.amount
+            self.position_debt_ta().balance
         };
 
         // Subtract current balances that are attributed to DCA / limit order in
@@ -153,7 +152,7 @@ impl<'a> Rebalancer<'a> {
             };
             self.actions.push(
                 SolautoCpiAction::SplTokenTransfer(BareSplTokenTransferArgs {
-                    from_wallet: self.data.solauto_position.pk,
+                    from_wallet: self.data.solauto_position.data.pubkey(),
                     from_wallet_ta: solauto_position_ta,
                     to_wallet_ta: authority_ta,
                     amount: base_unit_amount,
@@ -215,7 +214,7 @@ impl<'a> Rebalancer<'a> {
                         self.pull_additional_amount(
                             token_balance_change.amount_usd,
                             self.position_data().state.supply,
-                            Some(self.data.solauto_position.supply_ta.data.amount)
+                            Some(self.data.solauto_position.supply_ta.balance)
                         )
                     )
                 )
@@ -224,12 +223,12 @@ impl<'a> Rebalancer<'a> {
                 amount = self.pull_additional_amount(
                     token_balance_change.amount_usd,
                     self.position_data().state.debt,
-                    Some(self.data.solauto_position.debt_ta.data.amount)
+                    Some(self.data.solauto_position.debt_ta.balance)
                 );
                 Some(
                     SolautoCpiAction::SplTokenTransfer(BareSplTokenTransferArgs {
                         amount,
-                        from_wallet: self.data.solauto_position.pk,
+                        from_wallet: self.data.solauto_position.data.pubkey(),
                         from_wallet_ta: self.position_debt_ta().pk,
                         to_wallet_ta: self.data.intermediary_ta,
                     })
@@ -239,12 +238,12 @@ impl<'a> Rebalancer<'a> {
                 amount = self.pull_additional_amount(
                     token_balance_change.amount_usd,
                     self.position_data().state.supply,
-                    Some(self.position_supply_ta().data.amount)
+                    Some(self.position_supply_ta().balance)
                 );
                 Some(
                     SolautoCpiAction::SplTokenTransfer(BareSplTokenTransferArgs {
                         amount,
-                        from_wallet: self.data.solauto_position.pk,
+                        from_wallet: self.data.solauto_position.data.pubkey(),
                         from_wallet_ta: self.position_supply_ta().pk,
                         to_wallet_ta: self.data.intermediary_ta,
                     })
@@ -278,7 +277,7 @@ impl<'a> Rebalancer<'a> {
                 Some(
                     SolautoCpiAction::SplTokenTransfer(BareSplTokenTransferArgs {
                         amount,
-                        from_wallet: self.data.solauto_position.pk,
+                        from_wallet: self.data.solauto_position.data.pubkey(),
                         from_wallet_ta: self.position_supply_ta().pk,
                         to_wallet_ta: self.data.authority_supply_ta, // TODO: what if this is native mint
                     })
@@ -293,7 +292,7 @@ impl<'a> Rebalancer<'a> {
                 Some(
                     SolautoCpiAction::SplTokenTransfer(BareSplTokenTransferArgs {
                         amount,
-                        from_wallet: self.data.solauto_position.pk,
+                        from_wallet: self.data.solauto_position.data.pubkey(),
                         from_wallet_ta: self.position_debt_ta().pk,
                         to_wallet_ta: self.data.authority_debt_ta, // TODO: what if this is native mint
                     })
@@ -326,7 +325,7 @@ impl<'a> Rebalancer<'a> {
         let fee_amount = calc_fee_amount(available_balance, fee_pct_bps);
         self.actions.push(
             SolautoCpiAction::SplTokenTransfer(BareSplTokenTransferArgs {
-                from_wallet: self.data.solauto_position.pk,
+                from_wallet: self.data.solauto_position.data.pubkey(),
                 from_wallet_ta: position_ta,
                 to_wallet_ta: self.data.solauto_fees_ta,
                 amount: fee_amount,
@@ -420,11 +419,7 @@ impl<'a> Rebalancer<'a> {
         check!(
             value_match_with_threshold(curr_debt_usd, target_debt_usd, 0.1),
             SolautoError::InvalidRebalanceMade,
-            format!(
-                "Debt expected vs. actual: {}, {}",
-                target_debt_usd,
-                curr_debt_usd
-            ).as_str()
+            format!("Debt expected vs. actual: {}, {}", target_debt_usd, curr_debt_usd).as_str()
         );
 
         Ok(())
