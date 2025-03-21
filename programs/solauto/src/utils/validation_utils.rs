@@ -449,8 +449,8 @@ pub fn correct_token_account(token_account: &Pubkey, wallet: &Pubkey, mint: &Pub
     token_account == &get_associated_token_address(wallet, mint)
 }
 
-pub fn value_match_with_threshold(value: f64, target_value: f64) -> bool {
-    (value - target_value).abs().div(target_value) < 0.05
+pub fn value_match_with_threshold(value: f64, target_value: f64, threshold: f64) -> bool {
+    (value - target_value).abs().div(target_value) < threshold
 }
 
 #[cfg(test)]

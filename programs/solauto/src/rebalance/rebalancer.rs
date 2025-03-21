@@ -409,12 +409,22 @@ impl<'a> Rebalancer<'a> {
         let target_debt_usd = from_rounded_usd_value(self.rebalance_data().values.target_debt_usd);
 
         check!(
-            value_match_with_threshold(curr_supply_usd, target_supply_usd),
-            SolautoError::InvalidRebalanceMade
+            value_match_with_threshold(curr_supply_usd, target_supply_usd, 0.1),
+            SolautoError::InvalidRebalanceMade,
+            format!(
+                "Supply expected vs. actual: {}, {}",
+                target_supply_usd,
+                curr_supply_usd
+            ).as_str()
         );
         check!(
-            value_match_with_threshold(curr_debt_usd, target_debt_usd),
-            SolautoError::InvalidRebalanceMade
+            value_match_with_threshold(curr_debt_usd, target_debt_usd, 0.1),
+            SolautoError::InvalidRebalanceMade,
+            format!(
+                "Debt expected vs. actual: {}, {}",
+                target_debt_usd,
+                curr_debt_usd
+            ).as_str()
         );
 
         Ok(())
