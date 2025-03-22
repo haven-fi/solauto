@@ -322,6 +322,7 @@ pub struct FeePayout {
     pub referrer: u16,
     pub total: u16,
 }
+#[derive(Clone, Copy)]
 pub struct SolautoFeesBps {
     has_been_referred: bool,
     target_liq_utilization_rate_bps: Option<u16>,

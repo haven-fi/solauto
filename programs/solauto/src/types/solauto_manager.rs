@@ -168,7 +168,7 @@ impl<'a> SolautoManager<'a> {
             authority_supply_ta: *self.accounts.supply.authority_ta.unwrap().key,
             authority_debt_ta: *self.accounts.debt.authority_ta.unwrap().key,
             intermediary_ta: *self.accounts.intermediary_ta.unwrap().key,
-            solauto_fees_bps: self.solauto_fees_bps.as_ref().unwrap(),
+            solauto_fees_bps: self.solauto_fees_bps.unwrap().clone(),
             solauto_fees_ta: *self.std_accounts.solauto_fees_ta.unwrap().key,
             referred_by_state: self.std_accounts.authority_referral_state
                 .as_ref()

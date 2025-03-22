@@ -50,7 +50,7 @@ pub struct RebalancerData<'a> {
     pub intermediary_ta: Pubkey,
     pub authority_supply_ta: Pubkey,
     pub authority_debt_ta: Pubkey,
-    pub solauto_fees_bps: &'a SolautoFeesBps,
+    pub solauto_fees_bps: SolautoFeesBps,
     pub solauto_fees_ta: Pubkey,
     pub referred_by_state: Option<Pubkey>,
     pub referred_by_ta: Option<Pubkey>,
@@ -106,7 +106,7 @@ impl<'a> Rebalancer<'a> {
         self.data.solauto_position.data.rebalance.values = get_rebalance_values(
             self.position_data(),
             &self.data.rebalance_args,
-            self.data.solauto_fees_bps
+            &self.data.solauto_fees_bps
         )?;
 
         Ok(())
