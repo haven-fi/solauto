@@ -12,7 +12,7 @@
     "generate": "pnpm generate:idl && pnpm generate:clients",
     "generate:idl": "shank idl --crate-root programs/solauto --out-dir idls --out-filename solauto.json -p AutoyKBRaHSBHy9RsmXCZMy6nNFAg5FYijrvZyQcNLV",
     "generate:clients": "node ./generateClients.cjs && pnpm format:rust",
-    "test:rs:unit": "cargo test --package solauto -- --nocapture",
+    "test:rs:unit": "cargo test --package solauto",
     "test:rs:solana": "cd programs/solauto-sdk && cargo test-sbf",
     "test:rs:all": "pnpm test:rs:unit && pnpm test:rs:solana",
     "test:ts:unit": "cd solauto-sdk && pnpm test:unit",

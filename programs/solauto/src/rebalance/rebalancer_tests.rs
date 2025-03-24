@@ -60,12 +60,9 @@ fn create_position<'a>(pos: &FakePosition<'a>) -> Box<SolautoPosition> {
         })
     );
     update_token_state(
-        &mut state.supply,
+        &mut state.debt,
         &(RefreshedTokenState {
-            amount_used: to_base_unit::<f64, u8, u64>(
-                pos.values.debt_usd / DEBT_PRICE,
-                TEST_TOKEN_DECIMALS
-            ),
+            amount_used: to_base_unit(pos.values.debt_usd / DEBT_PRICE, TEST_TOKEN_DECIMALS),
             amount_can_be_used: 0,
             mint: Pubkey::new_unique(),
             decimals: TEST_TOKEN_DECIMALS,
@@ -248,17 +245,21 @@ fn perform_swap<'a>(rebalancer: &mut Rebalancer<'a>, rebalance_direction: &Rebal
 
     rebalancer.data.intermediary_ta.balance = 0;
 
-    let output_amount = to_base_unit(
-        swap_usd_value.div(output_price),
-        TEST_TOKEN_DECIMALS
-    );
+    let output_amount = to_base_unit(swap_usd_value.div(output_price), TEST_TOKEN_DECIMALS);
 
     if rebalance_direction == &RebalanceDirection::Boost {
-        credit_token_account(rebalancer, rebalancer.data.solauto_position.supply_ta.pk, output_amount);
+        credit_token_account(
+            rebalancer,
+            rebalancer.data.solauto_position.supply_ta.pk,
+            output_amount
+        );
     } else {
-        credit_token_account(rebalancer, rebalancer.data.solauto_position.debt_ta.pk, output_amount);
+        credit_token_account(
+            rebalancer,
+            rebalancer.data.solauto_position.debt_ta.pk,
+            output_amount
+        );
     }
-
 }
 
 mod tests {
@@ -275,7 +276,7 @@ mod tests {
     fn test_standard_rebalance_boost() {
         let (max_ltv_bps, liq_threshold_bps) = (6400, 8181);
         let pos_values = PositionValues { supply_usd: 100.0, debt_usd: 25.0 };
-        let rebalance_to = 3500;
+        let rebalance_to = 3800;
         let mut position = create_position(
             &(FakePosition {
                 values: &pos_values,
@@ -319,6 +320,9 @@ mod tests {
                 flash_loan_fee_bps: None,
             }
         );
+
+        println!("{}", rebalancer.data.solauto_position.data.state.supply.amount_used.usd_value());
+        println!("{}", rebalancer.data.solauto_position.data.state.debt.amount_used.usd_value());
 
         let res = rebalancer.rebalance(RebalanceStep::PreSwap);
         assert!(res.is_ok());
