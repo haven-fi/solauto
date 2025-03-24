@@ -129,10 +129,10 @@ impl<'a> SolautoManager<'a> {
     }
 
     fn get_token_account_data(&self, account: Option<&'a AccountInfo<'a>>) -> TokenAccountData {
-        TokenAccountData {
-            pk: *account.unwrap().key,
-            balance: safe_unpack_token_account(account).unwrap().unwrap().data.amount,
-        }
+        TokenAccountData::from(
+            *account.unwrap().key,
+            safe_unpack_token_account(account).unwrap().unwrap().data.amount
+        )
     }
 
     fn pk_to_account_info(&self, pk: Pubkey) -> &'a AccountInfo<'a> {
@@ -165,9 +165,15 @@ impl<'a> SolautoManager<'a> {
                 supply_ta: position_supply_ta,
                 debt_ta: position_debt_ta,
             },
-            authority_supply_ta: *self.accounts.supply.authority_ta.unwrap().key,
-            authority_debt_ta: *self.accounts.debt.authority_ta.unwrap().key,
-            intermediary_ta: *self.accounts.intermediary_ta.unwrap().key,
+            authority_supply_ta: TokenAccountData::without_balance(
+                *self.accounts.supply.authority_ta.unwrap().key
+            ),
+            authority_debt_ta: TokenAccountData::without_balance(
+                *self.accounts.debt.authority_ta.unwrap().key
+            ),
+            intermediary_ta: TokenAccountData::without_balance(
+                *self.accounts.intermediary_ta.unwrap().key
+            ),
             solauto_fees_bps: self.solauto_fees_bps.unwrap().clone(),
             solauto_fees_ta: *self.std_accounts.solauto_fees_ta.unwrap().key,
             referred_by_state: self.std_accounts.authority_referral_state

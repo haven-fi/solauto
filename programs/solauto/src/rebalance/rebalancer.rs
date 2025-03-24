@@ -37,6 +37,14 @@ pub struct TokenAccountData {
     pub pk: Pubkey,
     pub balance: u64,
 }
+impl TokenAccountData {
+    pub fn from(pk: Pubkey, balance: u64) -> Self {
+        Self { pk, balance }
+    }
+    pub fn without_balance(pk: Pubkey) -> Self {
+        Self { pk, balance: 0 }
+    }
+}
 
 pub struct SolautoPositionData<'a> {
     pub data: &'a mut Box<SolautoPosition>,
@@ -47,9 +55,9 @@ pub struct SolautoPositionData<'a> {
 pub struct RebalancerData<'a> {
     pub rebalance_args: RebalanceSettings,
     pub solauto_position: SolautoPositionData<'a>,
-    pub intermediary_ta: Pubkey,
-    pub authority_supply_ta: Pubkey,
-    pub authority_debt_ta: Pubkey,
+    pub intermediary_ta: TokenAccountData,
+    pub authority_supply_ta: TokenAccountData,
+    pub authority_debt_ta: TokenAccountData,
     pub solauto_fees_bps: SolautoFeesBps,
     pub solauto_fees_ta: Pubkey,
     pub referred_by_state: Option<Pubkey>,
@@ -71,6 +79,10 @@ impl<'a> Rebalancer<'a> {
 
     pub fn actions(&self) -> &Vec<SolautoCpiAction> {
         &self.actions
+    }
+
+    pub fn reset_actions(&mut self) {
+        self.actions = Vec::new();
     }
 
     fn position_data(&self) -> &Box<SolautoPosition> {
@@ -146,15 +158,15 @@ impl<'a> Rebalancer<'a> {
     fn transfer_to_authority_if_needed(&mut self, base_unit_amount: u64) {
         if self.position_data().self_managed.val {
             let (solauto_position_ta, authority_ta) = if self.is_boost() {
-                (self.position_supply_ta().pk, self.data.authority_supply_ta)
+                (self.position_supply_ta().pk, &self.data.authority_supply_ta)
             } else {
-                (self.position_debt_ta().pk, self.data.authority_debt_ta)
+                (self.position_debt_ta().pk, &self.data.authority_debt_ta)
             };
             self.actions.push(
                 SolautoCpiAction::SplTokenTransfer(BareSplTokenTransferArgs {
                     from_wallet: self.data.solauto_position.data.pubkey(),
                     from_wallet_ta: solauto_position_ta,
-                    to_wallet_ta: authority_ta,
+                    to_wallet_ta: authority_ta.pk,
                     amount: base_unit_amount,
                 })
             );
@@ -230,7 +242,7 @@ impl<'a> Rebalancer<'a> {
                         amount,
                         from_wallet: self.data.solauto_position.data.pubkey(),
                         from_wallet_ta: self.position_debt_ta().pk,
-                        to_wallet_ta: self.data.intermediary_ta,
+                        to_wallet_ta: self.data.intermediary_ta.pk,
                     })
                 )
             }
@@ -245,7 +257,7 @@ impl<'a> Rebalancer<'a> {
                         amount,
                         from_wallet: self.data.solauto_position.data.pubkey(),
                         from_wallet_ta: self.position_supply_ta().pk,
-                        to_wallet_ta: self.data.intermediary_ta,
+                        to_wallet_ta: self.data.intermediary_ta.pk,
                     })
                 )
             }
@@ -279,7 +291,7 @@ impl<'a> Rebalancer<'a> {
                         amount,
                         from_wallet: self.data.solauto_position.data.pubkey(),
                         from_wallet_ta: self.position_supply_ta().pk,
-                        to_wallet_ta: self.data.authority_supply_ta, // TODO: what if this is native mint
+                        to_wallet_ta: self.data.authority_supply_ta.pk, // TODO: what if this is native mint
                     })
                 )
             }
@@ -294,7 +306,7 @@ impl<'a> Rebalancer<'a> {
                         amount,
                         from_wallet: self.data.solauto_position.data.pubkey(),
                         from_wallet_ta: self.position_debt_ta().pk,
-                        to_wallet_ta: self.data.authority_debt_ta, // TODO: what if this is native mint
+                        to_wallet_ta: self.data.authority_debt_ta.pk, // TODO: what if this is native mint
                     })
                 )
             }
@@ -394,7 +406,7 @@ impl<'a> Rebalancer<'a> {
                 self.data.rebalance_args.swap_in_amount_base_unit
             };
 
-            self.pull_liquidity_from_lp(fl_repay_amount, self.data.intermediary_ta);
+            self.pull_liquidity_from_lp(fl_repay_amount, self.data.intermediary_ta.pk);
         }
     }
 
@@ -444,7 +456,7 @@ impl<'a> Rebalancer<'a> {
             self.finish_rebalance(self.get_dynamic_balance())?;
         } else {
             let amount_to_pull_from_lp = amount_to_swap - additional_amount_to_swap;
-            self.pull_liquidity_from_lp(amount_to_pull_from_lp, self.data.intermediary_ta);
+            self.pull_liquidity_from_lp(amount_to_pull_from_lp, self.data.intermediary_ta.pk);
         }
 
         Ok(())

@@ -1,4 +1,4 @@
-use std::ops::Div;
+use std::ops::{ Div, Mul };
 
 use solana_program::pubkey::Pubkey;
 use spl_associated_token_account::get_associated_token_address;
@@ -14,18 +14,11 @@ use crate::{
     },
     types::{
         instruction::RebalanceSettings,
-        shared::{ PositionType, RebalanceDirection, RebalanceStep, RefreshedTokenState, SolautoRebalanceType },
-        solauto::{ PositionValues, RebalanceFeesBps },
+        shared::{ PositionType, RebalanceDirection, RefreshedTokenState, TokenBalanceAmount },
+        solauto::{ PositionValues, SolautoCpiAction },
     },
     utils::{
-        math_utils::{
-            from_bps,
-            get_debt_adjustment,
-            get_liq_utilization_rate_bps,
-            get_max_boost_to_bps,
-            get_max_repay_to_bps,
-            to_base_unit,
-        },
+        math_utils::{ from_base_unit, from_bps, get_liq_utilization_rate_bps, to_base_unit },
         solauto_utils::{ update_token_state, SolautoFeesBps },
     },
 };
@@ -144,86 +137,198 @@ fn create_rebalancer<'a>(
                 pk: position_debt_ta,
             },
         },
-        authority_supply_ta: position_authority_supply_ta,
-        authority_debt_ta: position_authority_debt_ta,
+        authority_supply_ta: TokenAccountData::without_balance(position_authority_supply_ta),
+        authority_debt_ta: TokenAccountData::without_balance(position_authority_debt_ta),
         solauto_fees_bps: solauto_fees,
         referred_by_state: None,
         referred_by_ta: None,
-        intermediary_ta: Pubkey::default(),
+        intermediary_ta: TokenAccountData::without_balance(Pubkey::new_unique()),
         solauto_fees_ta,
     });
 
     rebalancer
 }
 
-#[test]
-fn test_standard_rebalance_boost() {
-    let (max_ltv_bps, liq_threshold_bps) = (6400, 8181);
-    let pos_values = PositionValues { supply_usd: 100.0, debt_usd: 25.0 };
-    let rebalance_to = 3500;
-    let mut position = create_position(
-        &(FakePosition {
-            values: &pos_values,
-            settings: SolautoSettingsParametersInp {
-                boost_gap: 50,
-                boost_to_bps: rebalance_to,
-                repay_gap: 50,
-                repay_to_bps: get_max_repay_to_bps(max_ltv_bps, liq_threshold_bps),
-            },
-            max_ltv_bps: Some(max_ltv_bps),
-            liq_threshold_bps: Some(liq_threshold_bps),
-        })
-    );
-
-    let debt_adjustment = get_debt_adjustment(
-        from_bps(liq_threshold_bps),
-        &pos_values,
-        &(RebalanceFeesBps {
-            solauto: SOLAUTO_FEE_BPS,
-            lp_borrow: BORROW_FEE_BPS,
-            lp_flash_loan: 0,
-        }),
-        rebalance_to
-    );
-
-    let mut rebalancer = create_rebalancer(
-        FakeRebalance {
-            pos: &mut position,
-            position_supply_ta_balance: None,
-            position_debt_ta_balance: None,
-            rebalance_direction: RebalanceDirection::Boost,
-        },
-        RebalanceSettings {
-            rebalance_type: SolautoRebalanceType::Regular,
-            target_liq_utilization_rate_bps: None,
-            swap_in_amount_base_unit: to_base_unit::<f64, u8, u64>(
-                debt_adjustment.debt_adjustment_usd.div(DEBT_PRICE),
-                TEST_TOKEN_DECIMALS
-            ),
-            flash_loan_fee_bps: None,
+fn credit_token_account<'a>(rebalancer: &mut Rebalancer<'a>, ta_pk: Pubkey, base_unit_amount: i64) {
+    let credit_ta = |ta: &mut TokenAccountData| {
+        if base_unit_amount > 0 {
+            ta.balance += base_unit_amount as u64;
+        } else {
+            ta.balance = ta.balance.saturating_sub((base_unit_amount * -1) as u64);
         }
-    );
+    };
 
-    rebalancer.rebalance(RebalanceStep::PreSwap).unwrap();
-    rebalancer.rebalance(RebalanceStep::PostSwap).unwrap();
-
-    println!("Actions: {}", rebalancer.actions().len());
+    if ta_pk == rebalancer.data.solauto_position.supply_ta.pk {
+        credit_ta(&mut rebalancer.data.solauto_position.supply_ta);
+    } else if ta_pk == rebalancer.data.solauto_position.debt_ta.pk {
+        credit_ta(&mut rebalancer.data.solauto_position.debt_ta);
+    } else if ta_pk == rebalancer.data.intermediary_ta.pk {
+        credit_ta(&mut rebalancer.data.intermediary_ta);
+    } else if ta_pk == rebalancer.data.authority_supply_ta.pk {
+        credit_ta(&mut rebalancer.data.authority_supply_ta);
+    } else if ta_pk == rebalancer.data.authority_debt_ta.pk {
+        credit_ta(&mut rebalancer.data.authority_debt_ta);
+    }
 }
 
-#[test]
-fn test_standard_rebalance_repay() {}
+fn apply_actions<'a>(rebalancer: &mut Rebalancer<'a>) {
+    println!("Actions: {}", rebalancer.actions().len());
 
-#[test]
-fn test_double_rebalance_fl_boost() {}
+    for action in rebalancer.actions().clone() {
+        match action {
+            SolautoCpiAction::Deposit(amount) => {
+                rebalancer.data.solauto_position.data.state.supply.update_usage(amount as i64);
+                credit_token_account(
+                    rebalancer,
+                    rebalancer.data.solauto_position.supply_ta.pk,
+                    (amount as i64) * -1
+                );
+            }
+            SolautoCpiAction::Withdraw(data) => {
+                let base_unit_amount = if let TokenBalanceAmount::Some(amount) = data.amount {
+                    amount
+                } else {
+                    rebalancer.data.solauto_position.data.state.supply.amount_used.base_unit
+                };
+                rebalancer.data.solauto_position.data.state.supply.update_usage(
+                    (base_unit_amount as i64) * -1
+                );
+                credit_token_account(rebalancer, data.to_wallet_ta, base_unit_amount as i64);
+            }
+            SolautoCpiAction::Borrow(data) => {
+                rebalancer.data.solauto_position.data.state.debt.update_usage(data.amount as i64);
+                credit_token_account(rebalancer, data.to_wallet_ta, data.amount as i64);
+            }
+            SolautoCpiAction::Repay(data) => {
+                let base_unit_amount = if let TokenBalanceAmount::Some(amount) = data {
+                    amount
+                } else {
+                    rebalancer.data.solauto_position.data.state.debt.amount_used.base_unit
+                };
+                rebalancer.data.solauto_position.data.state.debt.update_usage(
+                    (base_unit_amount as i64) * -1
+                );
+                credit_token_account(
+                    rebalancer,
+                    rebalancer.data.solauto_position.debt_ta.pk,
+                    (base_unit_amount as i64) * -1
+                );
+            }
+            SolautoCpiAction::SplTokenTransfer(args) => {
+                credit_token_account(rebalancer, args.from_wallet_ta, (args.amount as i64) * -1);
+                credit_token_account(rebalancer, args.to_wallet_ta, args.amount as i64);
+            }
+        }
+    }
 
-#[test]
-fn test_double_rebalance_fl_repay() {}
+    rebalancer.reset_actions();
+}
 
-#[test]
-fn test_swap_then_rebalance_boost() {}
+fn perform_swap<'a>(rebalancer: &mut Rebalancer<'a>, rebalance_direction: &RebalanceDirection) {
+    let (input_price, output_price) = if rebalance_direction == &RebalanceDirection::Boost {
+        (DEBT_PRICE, SUPPLY_PRICE)
+    } else {
+        (SUPPLY_PRICE, DEBT_PRICE)
+    };
 
-#[test]
-fn test_swap_then_rebalance_repay() {}
+    let swap_usd_value = from_base_unit::<u64, u8, f64>(
+        rebalancer.data.intermediary_ta.balance,
+        TEST_TOKEN_DECIMALS
+    ).mul(input_price);
 
-#[test]
-fn test_target_liq_utilization_rate_rebalance() {}
+    rebalancer.data.intermediary_ta.balance = to_base_unit(
+        swap_usd_value.div(output_price),
+        TEST_TOKEN_DECIMALS
+    );
+}
+
+mod tests {
+    use std::ops::Div;
+
+    use crate::{
+        types::{ shared::{ RebalanceStep, SolautoRebalanceType }, solauto::RebalanceFeesBps },
+        utils::math_utils::{ get_debt_adjustment, get_max_repay_to_bps },
+    };
+
+    use super::*;
+
+    #[test]
+    fn test_standard_rebalance_boost() {
+        let (max_ltv_bps, liq_threshold_bps) = (6400, 8181);
+        let pos_values = PositionValues { supply_usd: 100.0, debt_usd: 25.0 };
+        let rebalance_to = 3500;
+        let mut position = create_position(
+            &(FakePosition {
+                values: &pos_values,
+                settings: SolautoSettingsParametersInp {
+                    boost_gap: 50,
+                    boost_to_bps: rebalance_to,
+                    repay_gap: 50,
+                    repay_to_bps: get_max_repay_to_bps(max_ltv_bps, liq_threshold_bps),
+                },
+                max_ltv_bps: Some(max_ltv_bps),
+                liq_threshold_bps: Some(liq_threshold_bps),
+            })
+        );
+
+        let debt_adjustment = get_debt_adjustment(
+            from_bps(liq_threshold_bps),
+            &pos_values,
+            &(RebalanceFeesBps {
+                solauto: SOLAUTO_FEE_BPS,
+                lp_borrow: BORROW_FEE_BPS,
+                lp_flash_loan: 0,
+            }),
+            rebalance_to
+        );
+
+        let rebalance_direction = RebalanceDirection::Boost;
+        let rebalancer = &mut create_rebalancer(
+            FakeRebalance {
+                pos: &mut position,
+                position_supply_ta_balance: None,
+                position_debt_ta_balance: None,
+                rebalance_direction: rebalance_direction.clone(),
+            },
+            RebalanceSettings {
+                rebalance_type: SolautoRebalanceType::Regular,
+                target_liq_utilization_rate_bps: None,
+                swap_in_amount_base_unit: to_base_unit::<f64, u8, u64>(
+                    debt_adjustment.debt_adjustment_usd.div(DEBT_PRICE),
+                    TEST_TOKEN_DECIMALS
+                ),
+                flash_loan_fee_bps: None,
+            }
+        );
+
+        let res = rebalancer.rebalance(RebalanceStep::PreSwap);
+        assert!(res.is_ok());
+        apply_actions(rebalancer);
+
+        perform_swap(rebalancer, &rebalance_direction);
+
+        let res = rebalancer.rebalance(RebalanceStep::PostSwap);
+        assert!(res.is_ok());
+        apply_actions(rebalancer);
+
+        // TODO:
+    }
+
+    #[test]
+    fn test_standard_rebalance_repay() {}
+
+    #[test]
+    fn test_double_rebalance_fl_boost() {}
+
+    #[test]
+    fn test_double_rebalance_fl_repay() {}
+
+    #[test]
+    fn test_swap_then_rebalance_boost() {}
+
+    #[test]
+    fn test_swap_then_rebalance_repay() {}
+
+    #[test]
+    fn test_target_liq_utilization_rate_rebalance() {}
+}
