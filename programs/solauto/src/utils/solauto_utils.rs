@@ -317,18 +317,40 @@ pub fn update_token_state(token_state: &mut PositionTokenState, token_data: &Ref
     token_state.borrow_fee_bps = token_data.borrow_fee_bps.unwrap_or(0);
 }
 
+pub fn safe_unpack_token_account<'a>(
+    account: Option<&'a AccountInfo<'a>>
+) -> Result<Option<DeserializedAccount<'a, TokenAccount>>, ProgramError> {
+    if account.is_some() && account_has_data(account.unwrap()) {
+        DeserializedAccount::<TokenAccount>
+            ::unpack(account)
+            .map_err(|_| ProgramError::InvalidAccountData)
+    } else {
+        Ok(None)
+    }
+}
+
 pub struct FeePayout {
     pub solauto: u16,
     pub referrer: u16,
     pub total: u16,
 }
+
 #[derive(Clone, Copy)]
 pub struct SolautoFeesBps {
     has_been_referred: bool,
     target_liq_utilization_rate_bps: Option<u16>,
     position_net_worth_usd: f64,
+    mock_fee_bps: Option<u16>
 }
 impl SolautoFeesBps {
+    pub fn from_mock(total_fees_bps: u16) -> Self {
+        Self {
+            mock_fee_bps: Some(total_fees_bps),
+            has_been_referred: false,
+            target_liq_utilization_rate_bps: None,
+            position_net_worth_usd: 0.0
+        }
+    }
     pub fn from(
         has_been_referred: bool,
         target_liq_utilization_rate_bps: Option<u16>,
@@ -338,9 +360,19 @@ impl SolautoFeesBps {
             has_been_referred,
             target_liq_utilization_rate_bps,
             position_net_worth_usd,
+            mock_fee_bps: None
         }
     }
     pub fn fetch_fees(&self, rebalance_direction: &RebalanceDirection) -> FeePayout {
+        if self.mock_fee_bps.is_some() {
+            let fee_bps = self.mock_fee_bps.unwrap();
+            return FeePayout {
+                total: fee_bps,
+                solauto: (fee_bps as f64).mul(0.85).floor() as u16,
+                referrer: (fee_bps as f64).mul(0.15).floor() as u16,
+            };
+        }
+
         let min_size: f64 = 10000.0; // Minimum position size
         let max_size: f64 = 250000.0; // Maximum position size
         let max_fee_bps: f64 = 50.0; // Fee in basis points for min_size (0.5%)
@@ -377,8 +409,9 @@ impl SolautoFeesBps {
 
         let mut referrer_fee = 0.0;
         if self.has_been_referred {
-            fee_bps = fee_bps * 0.9;
-            referrer_fee = fee_bps.mul(0.15).floor();
+            let referrer_pct = 0.15;
+            fee_bps = fee_bps * (1.0 - referrer_pct);
+            referrer_fee = fee_bps.mul(referrer_pct).floor();
         }
 
         FeePayout {
@@ -386,17 +419,5 @@ impl SolautoFeesBps {
             referrer: referrer_fee as u16,
             total: fee_bps as u16,
         }
-    }
-}
-
-pub fn safe_unpack_token_account<'a>(
-    account: Option<&'a AccountInfo<'a>>
-) -> Result<Option<DeserializedAccount<'a, TokenAccount>>, ProgramError> {
-    if account.is_some() && account_has_data(account.unwrap()) {
-        DeserializedAccount::<TokenAccount>
-            ::unpack(account)
-            .map_err(|_| ProgramError::InvalidAccountData)
-    } else {
-        Ok(None)
     }
 }

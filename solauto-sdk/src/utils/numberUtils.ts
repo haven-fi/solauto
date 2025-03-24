@@ -198,8 +198,9 @@ export function getSolautoFeesBps(
 
   let referrer = 0;
   if (isReferred) {
-    feeBps *= 0.9;
-    referrer = Math.floor(feeBps * 0.15);
+    const referrerPct = 0.15;
+    feeBps *= 1.0 - referrerPct;
+    referrer = Math.floor(feeBps * referrerPct);
   }
 
   return {

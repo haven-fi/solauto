@@ -1,3 +1,5 @@
+use std::ops::Div;
+
 use solana_program::pubkey::Pubkey;
 use spl_associated_token_account::get_associated_token_address;
 
@@ -12,11 +14,18 @@ use crate::{
     },
     types::{
         instruction::RebalanceSettings,
-        shared::{ PositionType, RebalanceDirection, RefreshedTokenState },
-        solauto::PositionValues,
+        shared::{ PositionType, RebalanceDirection, RebalanceStep, RefreshedTokenState, SolautoRebalanceType },
+        solauto::{ PositionValues, RebalanceFeesBps },
     },
     utils::{
-        math_utils::{ from_bps, get_liq_utilization_rate_bps, to_base_unit },
+        math_utils::{
+            from_bps,
+            get_debt_adjustment,
+            get_liq_utilization_rate_bps,
+            get_max_boost_to_bps,
+            get_max_repay_to_bps,
+            to_base_unit,
+        },
         solauto_utils::{ update_token_state, SolautoFeesBps },
     },
 };
@@ -24,19 +33,22 @@ use crate::{
 use super::rebalancer::{ Rebalancer, RebalancerData, SolautoPositionData, TokenAccountData };
 
 const TEST_TOKEN_DECIMALS: u8 = 9;
+const SOLAUTO_FEE_BPS: u16 = 50;
+const BORROW_FEE_BPS: u16 = 50;
+const SUPPLY_PRICE: f64 = 100.0;
+const DEBT_PRICE: f64 = 1.0;
 
-pub struct FakePosition {
-    position_authority: Pubkey,
-    values: PositionValues,
-    supply_mint: Pubkey,
-    debt_mint: Pubkey,
+pub struct FakePosition<'a> {
+    values: &'a PositionValues,
     settings: SolautoSettingsParametersInp,
+    max_ltv_bps: Option<u16>,
+    liq_threshold_bps: Option<u16>,
 }
 
-fn create_position(pos: &FakePosition) -> SolautoPosition {
+fn create_position<'a>(pos: &FakePosition<'a>) -> Box<SolautoPosition> {
     let mut state = PositionState::default();
-    state.max_ltv_bps = 6400;
-    state.liq_threshold_bps = 8181;
+    state.max_ltv_bps = pos.max_ltv_bps.unwrap_or(6400);
+    state.liq_threshold_bps = pos.liq_threshold_bps.unwrap_or(8181);
     state.liq_utilization_rate_bps = get_liq_utilization_rate_bps(
         pos.values.supply_usd,
         pos.values.debt_usd,
@@ -46,22 +58,25 @@ fn create_position(pos: &FakePosition) -> SolautoPosition {
     update_token_state(
         &mut state.supply,
         &(RefreshedTokenState {
-            amount_used: to_base_unit(pos.values.supply_usd / 100.0, TEST_TOKEN_DECIMALS),
+            amount_used: to_base_unit(pos.values.supply_usd / SUPPLY_PRICE, TEST_TOKEN_DECIMALS),
             amount_can_be_used: 0,
-            mint: pos.supply_mint,
+            mint: Pubkey::new_unique(),
             decimals: TEST_TOKEN_DECIMALS,
-            market_price: 100.0,
-            borrow_fee_bps: Some(50),
+            market_price: SUPPLY_PRICE,
+            borrow_fee_bps: Some(BORROW_FEE_BPS),
         })
     );
     update_token_state(
         &mut state.supply,
         &(RefreshedTokenState {
-            amount_used: to_base_unit::<f64, u8, u64>(pos.values.debt_usd, TEST_TOKEN_DECIMALS),
+            amount_used: to_base_unit::<f64, u8, u64>(
+                pos.values.debt_usd / DEBT_PRICE,
+                TEST_TOKEN_DECIMALS
+            ),
             amount_can_be_used: 0,
-            mint: pos.debt_mint,
+            mint: Pubkey::new_unique(),
             decimals: TEST_TOKEN_DECIMALS,
-            market_price: 1.0,
+            market_price: DEBT_PRICE,
             borrow_fee_bps: Some(50),
         })
     );
@@ -71,20 +86,19 @@ fn create_position(pos: &FakePosition) -> SolautoPosition {
 
     let position = SolautoPosition::new(
         1,
-        pos.position_authority,
+        Pubkey::new_unique(),
         PositionType::Leverage,
         position_data,
         state
     );
 
-    position
+    Box::new(position)
 }
 
 pub struct FakeRebalance<'a> {
     pos: &'a mut Box<SolautoPosition>,
     position_supply_ta_balance: Option<u64>,
     position_debt_ta_balance: Option<u64>,
-    target_liq_utilization_rate_bps: Option<u16>,
     rebalance_direction: RebalanceDirection,
 }
 
@@ -96,7 +110,10 @@ fn create_rebalancer<'a>(
         &data.pos.pubkey(),
         &data.pos.state.supply.mint
     );
-    let position_debt_ta = get_associated_token_address(&data.pos.pubkey(), &data.pos.state.debt.mint);
+    let position_debt_ta = get_associated_token_address(
+        &data.pos.pubkey(),
+        &data.pos.state.debt.mint
+    );
     let position_authority_supply_ta = get_associated_token_address(
         &data.pos.authority,
         &data.pos.state.supply.mint
@@ -112,11 +129,7 @@ fn create_rebalancer<'a>(
         data.pos.state.debt.mint
     };
     let solauto_fees_ta = get_associated_token_address(&SOLAUTO_FEES_WALLET, &fees_mint);
-    let solauto_fees = SolautoFeesBps::from(
-        false,
-        data.target_liq_utilization_rate_bps,
-        100.0
-    );
+    let solauto_fees = SolautoFeesBps::from_mock(SOLAUTO_FEE_BPS);
 
     let rebalancer = Rebalancer::new(RebalancerData {
         rebalance_args,
@@ -142,3 +155,75 @@ fn create_rebalancer<'a>(
 
     rebalancer
 }
+
+#[test]
+fn test_standard_rebalance_boost() {
+    let (max_ltv_bps, liq_threshold_bps) = (6400, 8181);
+    let pos_values = PositionValues { supply_usd: 100.0, debt_usd: 25.0 };
+    let rebalance_to = 3500;
+    let mut position = create_position(
+        &(FakePosition {
+            values: &pos_values,
+            settings: SolautoSettingsParametersInp {
+                boost_gap: 50,
+                boost_to_bps: rebalance_to,
+                repay_gap: 50,
+                repay_to_bps: get_max_repay_to_bps(max_ltv_bps, liq_threshold_bps),
+            },
+            max_ltv_bps: Some(max_ltv_bps),
+            liq_threshold_bps: Some(liq_threshold_bps),
+        })
+    );
+
+    let debt_adjustment = get_debt_adjustment(
+        from_bps(liq_threshold_bps),
+        &pos_values,
+        &(RebalanceFeesBps {
+            solauto: SOLAUTO_FEE_BPS,
+            lp_borrow: BORROW_FEE_BPS,
+            lp_flash_loan: 0,
+        }),
+        rebalance_to
+    );
+
+    let mut rebalancer = create_rebalancer(
+        FakeRebalance {
+            pos: &mut position,
+            position_supply_ta_balance: None,
+            position_debt_ta_balance: None,
+            rebalance_direction: RebalanceDirection::Boost,
+        },
+        RebalanceSettings {
+            rebalance_type: SolautoRebalanceType::Regular,
+            target_liq_utilization_rate_bps: None,
+            swap_in_amount_base_unit: to_base_unit::<f64, u8, u64>(
+                debt_adjustment.debt_adjustment_usd.div(DEBT_PRICE),
+                TEST_TOKEN_DECIMALS
+            ),
+            flash_loan_fee_bps: None,
+        }
+    );
+
+    rebalancer.rebalance(RebalanceStep::PreSwap).unwrap();
+    rebalancer.rebalance(RebalanceStep::PostSwap).unwrap();
+
+    println!("Actions: {}", rebalancer.actions().len());
+}
+
+#[test]
+fn test_standard_rebalance_repay() {}
+
+#[test]
+fn test_double_rebalance_fl_boost() {}
+
+#[test]
+fn test_double_rebalance_fl_repay() {}
+
+#[test]
+fn test_swap_then_rebalance_boost() {}
+
+#[test]
+fn test_swap_then_rebalance_repay() {}
+
+#[test]
+fn test_target_liq_utilization_rate_rebalance() {}

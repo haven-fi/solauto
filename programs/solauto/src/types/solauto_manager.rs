@@ -25,7 +25,7 @@ use crate::{
     state::solauto_position::SolautoPosition,
     utils::{
         solana_utils::spl_token_transfer,
-        solauto_utils::{ safe_unpack_token_account, update_token_state },
+        solauto_utils::{ safe_unpack_token_account, update_token_state, SolautoFeesBps },
         *,
     },
 };
@@ -34,14 +34,14 @@ pub struct SolautoManagerAccounts<'a> {
     pub supply: LendingProtocolTokenAccounts<'a>,
     pub debt: LendingProtocolTokenAccounts<'a>,
     pub intermediary_ta: Option<&'a AccountInfo<'a>>,
-    pub solauto_fees: Option<solauto_utils::SolautoFeesBps>,
+    pub solauto_fees: Option<SolautoFeesBps>,
 }
 impl<'a> SolautoManagerAccounts<'a> {
     pub fn from(
         supply: LendingProtocolTokenAccounts<'a>,
         debt: LendingProtocolTokenAccounts<'a>,
         intermediary_ta: Option<&'a AccountInfo<'a>>,
-        solauto_fees: Option<solauto_utils::SolautoFeesBps>
+        solauto_fees: Option<SolautoFeesBps>
     ) -> Result<Self, ProgramError> {
         Ok(Self {
             supply,
