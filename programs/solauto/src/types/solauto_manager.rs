@@ -272,11 +272,20 @@ impl<'a> SolautoManager<'a> {
         rebalance_args: RebalanceSettings,
         rebalance_step: RebalanceStep
     ) -> ProgramResult {
-        let rebalance_actions = {
-            let mut rebalancer = self.get_rebalancer(rebalance_args);
-            rebalancer.rebalance(rebalance_step)?;
-            rebalancer.actions().clone()
+        let (actions, finished) = {
+            let mut rebalancer = self.get_rebalancer(rebalance_args.clone());
+            let rebalance_result = rebalancer.rebalance(rebalance_step)?;
+            let actions = rebalancer.actions().clone();
+            (actions, rebalance_result.finished)
         };
-        self.execute_cpi_actions(rebalance_actions)
+
+        self.execute_cpi_actions(actions)?;
+
+        if finished {
+            let mut rebalancer = self.get_rebalancer(rebalance_args);
+            rebalancer.validate_and_finalize_rebalance()?;
+        }
+
+        Ok(())
     }
 }

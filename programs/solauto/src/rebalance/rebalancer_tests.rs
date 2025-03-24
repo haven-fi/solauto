@@ -151,6 +151,7 @@ fn create_rebalancer<'a>(
 
 fn credit_token_account<'a>(rebalancer: &mut Rebalancer<'a>, ta_pk: Pubkey, base_unit_amount: i64) {
     let credit_ta = |ta: &mut TokenAccountData| {
+        println!("Crediting token account with {}", base_unit_amount);
         if base_unit_amount > 0 {
             ta.balance += base_unit_amount as u64;
         } else {
@@ -168,6 +169,8 @@ fn credit_token_account<'a>(rebalancer: &mut Rebalancer<'a>, ta_pk: Pubkey, base
         credit_ta(&mut rebalancer.data.authority_supply_ta);
     } else if ta_pk == rebalancer.data.authority_debt_ta.pk {
         credit_ta(&mut rebalancer.data.authority_debt_ta);
+    } else {
+        println!("Couldn't find token account");
     }
 }
 
@@ -177,6 +180,7 @@ fn apply_actions<'a>(rebalancer: &mut Rebalancer<'a>) {
     for action in rebalancer.actions().clone() {
         match action {
             SolautoCpiAction::Deposit(amount) => {
+                println!("Deposit {}", amount);
                 rebalancer.data.solauto_position.data.state.supply.update_usage(amount as i64);
                 credit_token_account(
                     rebalancer,
@@ -190,12 +194,14 @@ fn apply_actions<'a>(rebalancer: &mut Rebalancer<'a>) {
                 } else {
                     rebalancer.data.solauto_position.data.state.supply.amount_used.base_unit
                 };
+                println!("Withdraw {}", base_unit_amount);
                 rebalancer.data.solauto_position.data.state.supply.update_usage(
                     (base_unit_amount as i64) * -1
                 );
                 credit_token_account(rebalancer, data.to_wallet_ta, base_unit_amount as i64);
             }
             SolautoCpiAction::Borrow(data) => {
+                println!("Borrow {}", data.amount);
                 rebalancer.data.solauto_position.data.state.debt.update_usage(data.amount as i64);
                 credit_token_account(rebalancer, data.to_wallet_ta, data.amount as i64);
             }
@@ -205,6 +211,7 @@ fn apply_actions<'a>(rebalancer: &mut Rebalancer<'a>) {
                 } else {
                     rebalancer.data.solauto_position.data.state.debt.amount_used.base_unit
                 };
+                println!("Repay {}", base_unit_amount);
                 rebalancer.data.solauto_position.data.state.debt.update_usage(
                     (base_unit_amount as i64) * -1
                 );
@@ -215,6 +222,7 @@ fn apply_actions<'a>(rebalancer: &mut Rebalancer<'a>) {
                 );
             }
             SolautoCpiAction::SplTokenTransfer(args) => {
+                println!("Transfer {}", args.amount);
                 credit_token_account(rebalancer, args.from_wallet_ta, (args.amount as i64) * -1);
                 credit_token_account(rebalancer, args.to_wallet_ta, args.amount as i64);
             }
@@ -235,6 +243,8 @@ fn perform_swap<'a>(rebalancer: &mut Rebalancer<'a>, rebalance_direction: &Rebal
         rebalancer.data.intermediary_ta.balance,
         TEST_TOKEN_DECIMALS
     ).mul(input_price);
+
+    println!("Swapping ${}", swap_usd_value);
 
     rebalancer.data.intermediary_ta.balance = to_base_unit(
         swap_usd_value.div(output_price),
@@ -311,7 +321,7 @@ mod tests {
         assert!(res.is_ok());
         apply_actions(rebalancer);
 
-        // TODO:
+        assert!(rebalancer.validate_and_finalize_rebalance().is_ok());
     }
 
     #[test]

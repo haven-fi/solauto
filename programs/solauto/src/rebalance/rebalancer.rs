@@ -64,6 +64,10 @@ pub struct RebalancerData<'a> {
     pub referred_by_ta: Option<Pubkey>,
 }
 
+pub struct RebalanceResult {
+    pub finished: bool
+}
+
 pub struct Rebalancer<'a> {
     actions: Vec<SolautoCpiAction>,
     pub data: RebalancerData<'a>,
@@ -410,7 +414,7 @@ impl<'a> Rebalancer<'a> {
         }
     }
 
-    fn validate_rebalance_result(&self) -> ProgramResult {
+    pub fn validate_and_finalize_rebalance(&mut self) -> ProgramResult {
         let curr_supply_usd = self.position_data().state.supply.amount_used.usd_value();
         let curr_debt_usd = self.position_data().state.debt.amount_used.usd_value();
 
@@ -434,6 +438,7 @@ impl<'a> Rebalancer<'a> {
             format!("Debt expected vs. actual: {}, {}", target_debt_usd, curr_debt_usd).as_str()
         );
 
+        self.data.solauto_position.data.rebalance = RebalanceData::default();
         Ok(())
     }
 
@@ -441,12 +446,10 @@ impl<'a> Rebalancer<'a> {
         let amount_to_put_in_lp = self.payout_fees(dynamic_balance)?;
         self.put_liquidity_in_lp(amount_to_put_in_lp);
         self.repay_flash_loan_if_necessary();
-        self.validate_rebalance_result()?;
-        self.data.solauto_position.data.rebalance = RebalanceData::default();
         Ok(())
     }
 
-    fn pre_swap_rebalance(&mut self) -> ProgramResult {
+    fn pre_swap_rebalance(&mut self) -> Result<RebalanceResult, ProgramError> {
         self.set_rebalance_data()?;
 
         let amount_to_swap = self.data.rebalance_args.swap_in_amount_base_unit;
@@ -454,15 +457,15 @@ impl<'a> Rebalancer<'a> {
 
         if self.rebalance_data().ixs.rebalance_type == SolautoRebalanceType::FLRebalanceThenSwap {
             self.finish_rebalance(self.get_dynamic_balance())?;
+            Ok(RebalanceResult { finished: true })
         } else {
             let amount_to_pull_from_lp = amount_to_swap - additional_amount_to_swap;
             self.pull_liquidity_from_lp(amount_to_pull_from_lp, self.data.intermediary_ta.pk);
+            Ok(RebalanceResult { finished: false })
         }
-
-        Ok(())
     }
 
-    fn post_swap_rebalance(&mut self) -> ProgramResult {
+    fn post_swap_rebalance(&mut self) -> Result<RebalanceResult, ProgramError> {
         self.set_rebalance_data()?;
 
         let additional_amount_after_swap = self.get_additional_amount_after_swap();
@@ -471,11 +474,11 @@ impl<'a> Rebalancer<'a> {
             let dynamic_balance = self.get_dynamic_balance();
             self.finish_rebalance(dynamic_balance - additional_amount_after_swap)?;
         }
-
-        Ok(())
+        
+        Ok(RebalanceResult { finished: true })
     }
 
-    pub fn rebalance(&mut self, rebalance_step: RebalanceStep) -> ProgramResult {
+    pub fn rebalance(&mut self, rebalance_step: RebalanceStep) -> Result<RebalanceResult, ProgramError> {
         match rebalance_step {
             RebalanceStep::PreSwap => self.pre_swap_rebalance(),
             RebalanceStep::PostSwap => self.post_swap_rebalance(),
