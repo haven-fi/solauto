@@ -29,6 +29,8 @@ export const MIN_REPAY_GAP_BPS = 50;
 export const MIN_BOOST_GAP_BPS = 50;
 export const MIN_USD_SUPPORTED_POSITION = 1000;
 
+export const REFERRER_PERCENTAGE = 0.15;
+
 export const PRICES: { [key: string]: { price: number; time: number } } = {};
 
 export const JITO_BLOCK_ENGINE = "https://mainnet.block-engine.jito.wtf";

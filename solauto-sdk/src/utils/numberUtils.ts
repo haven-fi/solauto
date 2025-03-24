@@ -1,4 +1,4 @@
-import { BASIS_POINTS, MIN_REPAY_GAP_BPS, USD_DECIMALS } from "../constants";
+import { BASIS_POINTS, MIN_REPAY_GAP_BPS, REFERRER_PERCENTAGE, USD_DECIMALS } from "../constants";
 import { PositionState, RebalanceDirection } from "../generated";
 
 export function calcNetWorthUsd(state?: PositionState) {
@@ -198,9 +198,8 @@ export function getSolautoFeesBps(
 
   let referrer = 0;
   if (isReferred) {
-    const referrerPct = 0.15;
-    feeBps *= 1.0 - referrerPct;
-    referrer = Math.floor(feeBps * referrerPct);
+    feeBps *= 1.0 - REFERRER_PERCENTAGE;
+    referrer = Math.floor(feeBps * REFERRER_PERCENTAGE);
   }
 
   return {

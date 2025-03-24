@@ -17,7 +17,7 @@ use super::{
     solana_utils::{ account_has_data, init_account, init_ata_if_needed, spl_token_transfer },
 };
 use crate::{
-    constants::WSOL_MINT,
+    constants::{REFERRER_PERCENTAGE, WSOL_MINT},
     state::{
         automation::DCASettings,
         referral_state::ReferralState,
@@ -409,9 +409,8 @@ impl SolautoFeesBps {
 
         let mut referrer_fee = 0.0;
         if self.has_been_referred {
-            let referrer_pct = 0.15;
-            fee_bps = fee_bps * (1.0 - referrer_pct);
-            referrer_fee = fee_bps.mul(referrer_pct).floor();
+            fee_bps = fee_bps * (1.0 - REFERRER_PERCENTAGE);
+            referrer_fee = fee_bps.mul(REFERRER_PERCENTAGE).floor();
         }
 
         FeePayout {

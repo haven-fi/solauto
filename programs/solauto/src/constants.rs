@@ -25,3 +25,5 @@ pub const MIN_REPAY_GAP_BPS: u16 = 50;
 pub const MIN_BOOST_GAP_BPS: u16 = 50;
 
 pub const MAX_BASIS_POINTS: u16 = 10000;
+
+pub const REFERRER_PERCENTAGE: f64 = 0.15;

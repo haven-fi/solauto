@@ -30,6 +30,8 @@ const SOLAUTO_FEE_BPS: u16 = 50;
 const BORROW_FEE_BPS: u16 = 50;
 const SUPPLY_PRICE: f64 = 100.0;
 const DEBT_PRICE: f64 = 1.0;
+const MAX_LTV_BPS: u16 = 6400;
+const LIQ_THRESHOLD_BPS: u16 = 8181;
 
 pub struct FakePosition<'a> {
     values: &'a PositionValues,
@@ -274,25 +276,25 @@ mod tests {
 
     #[test]
     fn test_standard_rebalance_boost() {
-        let (max_ltv_bps, liq_threshold_bps) = (6400, 8181);
         let pos_values = PositionValues { supply_usd: 100.0, debt_usd: 25.0 };
         let rebalance_to = 3800;
+
+        let settings = SolautoSettingsParametersInp {
+            boost_gap: 50,
+            boost_to_bps: rebalance_to,
+            repay_gap: 50,
+            repay_to_bps: get_max_repay_to_bps(MAX_LTV_BPS, LIQ_THRESHOLD_BPS),
+        };
         let mut position = create_position(
             &(FakePosition {
                 values: &pos_values,
-                settings: SolautoSettingsParametersInp {
-                    boost_gap: 50,
-                    boost_to_bps: rebalance_to,
-                    repay_gap: 50,
-                    repay_to_bps: get_max_repay_to_bps(max_ltv_bps, liq_threshold_bps),
-                },
-                max_ltv_bps: Some(max_ltv_bps),
-                liq_threshold_bps: Some(liq_threshold_bps),
+                settings,
+                max_ltv_bps: Some(MAX_LTV_BPS),
+                liq_threshold_bps: Some(LIQ_THRESHOLD_BPS),
             })
         );
-
         let debt_adjustment = get_debt_adjustment(
-            from_bps(liq_threshold_bps),
+            from_bps(LIQ_THRESHOLD_BPS),
             &pos_values,
             &(RebalanceFeesBps {
                 solauto: SOLAUTO_FEE_BPS,
@@ -301,7 +303,15 @@ mod tests {
             }),
             rebalance_to
         );
-
+        let rebalance_args = RebalanceSettings {
+            rebalance_type: SolautoRebalanceType::Regular,
+            target_liq_utilization_rate_bps: None,
+            swap_in_amount_base_unit: to_base_unit::<f64, u8, u64>(
+                debt_adjustment.debt_adjustment_usd.div(DEBT_PRICE),
+                TEST_TOKEN_DECIMALS
+            ),
+            flash_loan_fee_bps: None,
+        };
         let rebalance_direction = RebalanceDirection::Boost;
         let rebalancer = &mut create_rebalancer(
             FakeRebalance {
@@ -310,15 +320,7 @@ mod tests {
                 position_debt_ta_balance: None,
                 rebalance_direction: rebalance_direction.clone(),
             },
-            RebalanceSettings {
-                rebalance_type: SolautoRebalanceType::Regular,
-                target_liq_utilization_rate_bps: None,
-                swap_in_amount_base_unit: to_base_unit::<f64, u8, u64>(
-                    debt_adjustment.debt_adjustment_usd.div(DEBT_PRICE),
-                    TEST_TOKEN_DECIMALS
-                ),
-                flash_loan_fee_bps: None,
-            }
+            rebalance_args
         );
 
         let res = rebalancer.rebalance(RebalanceStep::PreSwap);
@@ -348,6 +350,12 @@ mod tests {
 
     #[test]
     fn test_swap_then_rebalance_repay() {}
+
+    #[test]
+    fn test_rebalance_then_swap_boost() {}
+
+    #[test]
+    fn test_rebalance_then_swap_repay() {}
 
     #[test]
     fn test_target_liq_utilization_rate_rebalance() {}
