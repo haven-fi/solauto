@@ -18,7 +18,7 @@ use crate::{
         solauto::{ PositionValues, SolautoCpiAction },
     },
     utils::{
-        math_utils::{ from_base_unit, from_bps, get_liq_utilization_rate_bps, to_base_unit },
+        math_utils::{ from_base_unit, from_bps, from_rounded_usd_value, get_liq_utilization_rate_bps, to_base_unit },
         solauto_utils::{ update_token_state, SolautoFeesBps },
     },
 };
@@ -269,6 +269,18 @@ fn perform_swap<'a>(rebalancer: &mut Rebalancer<'a>, rebalance_direction: &Rebal
     }
 }
 
+fn validate_rebalance<'a>(rebalancer: &mut Rebalancer<'a>) {
+    assert_eq!(
+        rebalancer.data.solauto_position.data.state.supply.amount_used.usd_value(),
+        from_rounded_usd_value(rebalancer.data.solauto_position.data.rebalance.values.target_supply_usd)
+    );
+    assert_eq!(
+        rebalancer.data.solauto_position.data.state.debt.amount_used.usd_value(),
+        from_rounded_usd_value(rebalancer.data.solauto_position.data.rebalance.values.target_debt_usd)
+    );
+    assert!(rebalancer.validate_and_finalize_rebalance().is_ok());
+}
+
 mod tests {
     use std::ops::Div;
 
@@ -338,7 +350,7 @@ mod tests {
         assert!(res.is_ok());
         apply_actions(rebalancer);
 
-        assert!(rebalancer.validate_and_finalize_rebalance().is_ok());
+        validate_rebalance(rebalancer);
     }
 
     #[test]
@@ -400,7 +412,7 @@ mod tests {
         assert!(res.is_ok());
         apply_actions(rebalancer);
 
-        assert!(rebalancer.validate_and_finalize_rebalance().is_ok());
+        validate_rebalance(rebalancer);
     }
 
     #[test]
