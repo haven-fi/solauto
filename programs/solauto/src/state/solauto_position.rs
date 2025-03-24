@@ -93,7 +93,7 @@ impl PositionTokenState {
     }
     pub fn update_market_price(&mut self, market_price: f64) {
         msg!("New {} price: {}", self.mint, market_price);
-        self.base_amount_market_price_usd = to_base_unit::<f64, u8, u64>(
+        self.base_amount_market_price_usd = to_base_unit(
             market_price,
             USD_DECIMALS
         );

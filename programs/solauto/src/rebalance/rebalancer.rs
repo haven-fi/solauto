@@ -472,6 +472,7 @@ impl<'a> Rebalancer<'a> {
 
         if self.rebalance_data().ixs.rebalance_type != SolautoRebalanceType::FLRebalanceThenSwap {
             let dynamic_balance = self.get_dynamic_balance();
+            println!("dynamic balance {}", dynamic_balance);
             self.finish_rebalance(dynamic_balance - additional_amount_after_swap)?;
         }
         

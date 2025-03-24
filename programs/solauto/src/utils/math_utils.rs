@@ -28,12 +28,12 @@ pub fn to_base_unit<T, U, V>(value: T, decimals: U) -> V
 
 #[inline(always)]
 pub fn to_rounded_usd_value(usd_value: f64) -> u64 {
-    to_base_unit::<f64, u8, u64>(usd_value, USD_DECIMALS)
+    to_base_unit(usd_value, USD_DECIMALS)
 }
 
 #[inline(always)]
 pub fn from_rounded_usd_value(usd_value: u64) -> f64 {
-    from_base_unit::<u64, u8, f64>(usd_value, USD_DECIMALS)
+    from_base_unit(usd_value, USD_DECIMALS)
 }
 
 #[inline(always)]
@@ -43,7 +43,7 @@ pub fn base_unit_to_usd_value(base_unit: u64, decimals: u8, market_price: f64) -
 
 #[inline(always)]
 pub fn usd_value_to_base_unit(usd_value: f64, decimals: u8, market_price: f64) -> u64 {
-    to_base_unit::<f64, u8, u64>(usd_value.abs().div(market_price), decimals)
+    to_base_unit(usd_value.abs().div(market_price), decimals)
 }
 
 #[inline(always)]
@@ -77,7 +77,7 @@ pub fn get_liq_utilization_rate_bps(supply_usd: f64, debt_usd: f64, liq_threshol
 
 #[inline(always)]
 pub fn net_worth_usd_base_amount(supply_usd: f64, debt_usd: f64) -> u64 {
-    to_base_unit::<f64, u8, u64>(supply_usd - debt_usd, USD_DECIMALS)
+    to_base_unit(supply_usd - debt_usd, USD_DECIMALS)
 }
 
 #[inline(always)]
@@ -91,7 +91,7 @@ pub fn net_worth_base_amount(
         net_worth_usd_base_amount(supply_usd, debt_usd),
         USD_DECIMALS
     ).div(supply_market_price as f64);
-    to_base_unit::<f64, u8, u64>(supply_net_worth, supply_decimals)
+    to_base_unit(supply_net_worth, supply_decimals)
 }
 
 #[inline(always)]

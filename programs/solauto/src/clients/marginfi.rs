@@ -377,7 +377,7 @@ impl<'a> MarginfiClient<'a> {
                         price_result.expo.unsigned_abs()
                     )
                 } else {
-                    math_utils::to_base_unit::<i64, u32, f64>(
+                    math_utils::to_base_unit(
                         price_result.price,
                         price_result.expo.unsigned_abs()
                     )
@@ -400,12 +400,12 @@ impl<'a> MarginfiClient<'a> {
                 let price = if price_result.exponent == 0 {
                     price_result.price as f64
                 } else if price_result.exponent < 0 {
-                    math_utils::from_base_unit::<i64, u32, f64>(
+                    math_utils::from_base_unit(
                         price_result.price,
                         price_result.exponent.unsigned_abs()
                     )
                 } else {
-                    math_utils::to_base_unit::<i64, u32, f64>(
+                    math_utils::to_base_unit(
                         price_result.price,
                         price_result.exponent.unsigned_abs()
                     )
