@@ -33,8 +33,8 @@ use crate::{
 use super::rebalancer::{ Rebalancer, RebalancerData, SolautoPositionData, TokenAccountData };
 
 const TEST_TOKEN_DECIMALS: u8 = 9;
-const SOLAUTO_FEE_BPS: u16 = 50;
-const BORROW_FEE_BPS: u16 = 350;
+const SOLAUTO_FEE_BPS: u16 = 350;
+const BORROW_FEE_BPS: u16 = 500;
 const SUPPLY_PRICE: f64 = 100.0;
 const DEBT_PRICE: f64 = 1.0;
 const MAX_LTV_BPS: u16 = 6400;
@@ -70,7 +70,7 @@ fn create_position<'a>(pos: &FakePosition<'a>) -> Box<SolautoPosition> {
             mint: supply_mint,
             decimals: TEST_TOKEN_DECIMALS,
             market_price: SUPPLY_PRICE,
-            borrow_fee_bps: Some(BORROW_FEE_BPS),
+            borrow_fee_bps: None,
         })
     );
     update_token_state(
@@ -233,7 +233,7 @@ fn apply_actions<'a>(rebalancer: &mut Rebalancer<'a>) {
                 );
             }
             SolautoCpiAction::SplTokenTransfer(args) => {
-                println!("Transfer {}", args.amount);
+                println!("Transfer from {}", args.amount);
                 credit_token_account(rebalancer, args.from_wallet_ta, (args.amount as i64) * -1);
                 credit_token_account(rebalancer, args.to_wallet_ta, args.amount as i64);
             }
@@ -279,18 +279,6 @@ fn perform_swap<'a>(rebalancer: &mut Rebalancer<'a>, rebalance_direction: &Rebal
 fn validate_rebalance<'a>(rebalancer: &mut Rebalancer<'a>) {
     assert_eq!(
         round_to_decimals(
-            rebalancer.data.solauto_position.data.state.supply.amount_used.usd_value(),
-            4
-        ),
-        round_to_decimals(
-            from_rounded_usd_value(
-                rebalancer.data.solauto_position.data.rebalance.values.target_supply_usd
-            ),
-            4
-        )
-    );
-    assert_eq!(
-        round_to_decimals(
             rebalancer.data.solauto_position.data.state.debt.amount_used.usd_value(),
             4
         ),
@@ -299,8 +287,23 @@ fn validate_rebalance<'a>(rebalancer: &mut Rebalancer<'a>) {
                 rebalancer.data.solauto_position.data.rebalance.values.target_debt_usd
             ),
             4
-        )
+        ),
+        "Incorrect debt usd"
     );
+    assert_eq!(
+        round_to_decimals(
+            rebalancer.data.solauto_position.data.state.supply.amount_used.usd_value(),
+            4
+        ),
+        round_to_decimals(
+            from_rounded_usd_value(
+                rebalancer.data.solauto_position.data.rebalance.values.target_supply_usd
+            ),
+            4
+        ),
+        "Incorrect supply usd"
+    );
+
     assert!(rebalancer.validate_and_finalize_rebalance().is_ok());
 }
 
@@ -363,7 +366,6 @@ mod tests {
             rebalance_args
         );
 
-        println!("debt adjustment usd {}", debt_adjustment.debt_adjustment_usd);
         let res = rebalancer.rebalance(RebalanceStep::PreSwap);
         assert!(res.is_ok());
         apply_actions(rebalancer);

@@ -236,15 +236,6 @@ impl<'a> MarginfiClient<'a> {
             max_ltv = max_ltv * discount_factor;
         }
 
-        let borrow_fee_bps = math_utils
-            ::i80f48_to_f64(
-                I80F48::from_le_bytes(
-                    bank.data.config.interest_rate_config.protocol_origination_fee.value
-                )
-            )
-            .mul(10_000.0)
-            .round() as u16;
-
         Ok((
             RefreshedTokenState {
                 mint: bank.data.mint,
@@ -252,7 +243,7 @@ impl<'a> MarginfiClient<'a> {
                 amount_used: base_unit_account_deposits,
                 amount_can_be_used: math_utils::i80f48_to_u64(base_unit_deposit_room_available),
                 market_price,
-                borrow_fee_bps: Some(borrow_fee_bps),
+                borrow_fee_bps: None,
             },
             max_ltv,
         ))
