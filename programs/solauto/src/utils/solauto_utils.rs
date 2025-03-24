@@ -343,10 +343,10 @@ pub struct SolautoFeesBps {
     mock_fee_bps: Option<u16>
 }
 impl SolautoFeesBps {
-    pub fn from_mock(total_fees_bps: u16) -> Self {
+    pub fn from_mock(total_fees_bps: u16, has_been_referred: bool) -> Self {
         Self {
             mock_fee_bps: Some(total_fees_bps),
-            has_been_referred: false,
+            has_been_referred: has_been_referred,
             target_liq_utilization_rate_bps: None,
             position_net_worth_usd: 0.0
         }
@@ -366,10 +366,15 @@ impl SolautoFeesBps {
     pub fn fetch_fees(&self, rebalance_direction: &RebalanceDirection) -> FeePayout {
         if self.mock_fee_bps.is_some() {
             let fee_bps = self.mock_fee_bps.unwrap();
+            let (solauto_fee, referrer_fee) = if self.has_been_referred {
+                ((fee_bps as f64).mul(0.85).floor() as u16, (fee_bps as f64).mul(0.15).floor() as u16)
+            } else {
+                (fee_bps, 0)
+            };
             return FeePayout {
                 total: fee_bps,
-                solauto: (fee_bps as f64).mul(0.85).floor() as u16,
-                referrer: (fee_bps as f64).mul(0.15).floor() as u16,
+                solauto: solauto_fee,
+                referrer: referrer_fee,
             };
         }
 

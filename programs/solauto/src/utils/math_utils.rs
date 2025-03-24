@@ -130,6 +130,11 @@ pub fn calc_fee_amount(value: u64, fee_pct_bps: u16) -> u64 {
     (value as f64).mul(from_bps(fee_pct_bps)) as u64
 }
 
+pub fn round_to_decimals(value: f64, decimals: u32) -> f64 {
+    let multiplier = (10_f64).powi(decimals as i32);
+    (value * multiplier).round() / multiplier
+}
+
 fn apply_debt_adjustment_usd(
     debt_adjustment_usd: f64,
     pos: &PositionValues,
@@ -143,6 +148,8 @@ fn apply_debt_adjustment_usd(
         debt_adjustment_usd.mul(actualized_fee)
     );
 
+    println!("debt adjustment usd {}", debt_adjustment_usd);
+    println!("Debt adjustment minus fees {}", debt_adjustment_minus_fees);
     new_pos.supply_usd += if is_boost { debt_adjustment_minus_fees } else { debt_adjustment_usd };
     new_pos.debt_usd += if is_boost { debt_adjustment_usd } else { debt_adjustment_minus_fees };
 
@@ -213,11 +220,6 @@ mod tests {
         }
     }
 
-    fn round_to_places(value: f64, places: u32) -> f64 {
-        let multiplier = (10_f64).powi(places as i32);
-        (value * multiplier).round() / multiplier
-    }
-
     fn test_debt_adjustment_calculation(
         weights: &AssetWeights,
         supply_usd: f64,
@@ -272,13 +274,13 @@ mod tests {
         );
 
         assert_eq!(
-            round_to_places(from_bps(new_liq_utilization_rate_bps), 3),
-            round_to_places(target_liq_utilization_rate, 3)
+            round_to_decimals(from_bps(new_liq_utilization_rate_bps), 3),
+            round_to_decimals(target_liq_utilization_rate, 3)
         );
 
         assert_eq!(
-            round_to_places(marginfi_liq_utilization_rate, 3),
-            round_to_places(target_liq_utilization_rate, 3)
+            round_to_decimals(marginfi_liq_utilization_rate, 3),
+            round_to_decimals(target_liq_utilization_rate, 3)
         );
     }
 

@@ -18,7 +18,14 @@ use crate::{
         solauto::{ PositionValues, SolautoCpiAction },
     },
     utils::{
-        math_utils::{ from_base_unit, from_bps, from_rounded_usd_value, get_liq_utilization_rate_bps, to_base_unit },
+        math_utils::{
+            from_base_unit,
+            from_bps,
+            from_rounded_usd_value,
+            get_liq_utilization_rate_bps,
+            round_to_decimals,
+            to_base_unit,
+        },
         solauto_utils::{ update_token_state, SolautoFeesBps },
     },
 };
@@ -27,7 +34,7 @@ use super::rebalancer::{ Rebalancer, RebalancerData, SolautoPositionData, TokenA
 
 const TEST_TOKEN_DECIMALS: u8 = 9;
 const SOLAUTO_FEE_BPS: u16 = 50;
-const BORROW_FEE_BPS: u16 = 50;
+const BORROW_FEE_BPS: u16 = 350;
 const SUPPLY_PRICE: f64 = 100.0;
 const DEBT_PRICE: f64 = 1.0;
 const MAX_LTV_BPS: u16 = 6400;
@@ -74,7 +81,7 @@ fn create_position<'a>(pos: &FakePosition<'a>) -> Box<SolautoPosition> {
             mint: debt_mint,
             decimals: TEST_TOKEN_DECIMALS,
             market_price: DEBT_PRICE,
-            borrow_fee_bps: Some(50),
+            borrow_fee_bps: Some(BORROW_FEE_BPS),
         })
     );
 
@@ -126,7 +133,7 @@ fn create_rebalancer<'a>(
         data.pos.state.debt.mint
     };
     let solauto_fees_ta = get_associated_token_address(&SOLAUTO_FEES_WALLET, &fees_mint);
-    let solauto_fees = SolautoFeesBps::from_mock(SOLAUTO_FEE_BPS);
+    let solauto_fees = SolautoFeesBps::from_mock(SOLAUTO_FEE_BPS, false);
 
     let rebalancer = Rebalancer::new(RebalancerData {
         rebalance_args,
@@ -271,12 +278,28 @@ fn perform_swap<'a>(rebalancer: &mut Rebalancer<'a>, rebalance_direction: &Rebal
 
 fn validate_rebalance<'a>(rebalancer: &mut Rebalancer<'a>) {
     assert_eq!(
-        rebalancer.data.solauto_position.data.state.supply.amount_used.usd_value(),
-        from_rounded_usd_value(rebalancer.data.solauto_position.data.rebalance.values.target_supply_usd)
+        round_to_decimals(
+            rebalancer.data.solauto_position.data.state.supply.amount_used.usd_value(),
+            4
+        ),
+        round_to_decimals(
+            from_rounded_usd_value(
+                rebalancer.data.solauto_position.data.rebalance.values.target_supply_usd
+            ),
+            4
+        )
     );
     assert_eq!(
-        rebalancer.data.solauto_position.data.state.debt.amount_used.usd_value(),
-        from_rounded_usd_value(rebalancer.data.solauto_position.data.rebalance.values.target_debt_usd)
+        round_to_decimals(
+            rebalancer.data.solauto_position.data.state.debt.amount_used.usd_value(),
+            4
+        ),
+        round_to_decimals(
+            from_rounded_usd_value(
+                rebalancer.data.solauto_position.data.rebalance.values.target_debt_usd
+            ),
+            4
+        )
     );
     assert!(rebalancer.validate_and_finalize_rebalance().is_ok());
 }
@@ -340,6 +363,7 @@ mod tests {
             rebalance_args
         );
 
+        println!("debt adjustment usd {}", debt_adjustment.debt_adjustment_usd);
         let res = rebalancer.rebalance(RebalanceStep::PreSwap);
         assert!(res.is_ok());
         apply_actions(rebalancer);

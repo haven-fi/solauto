@@ -1,7 +1,6 @@
 use std::{ cmp::min, ops::{ Add, Mul } };
 
 use solana_program::{ entrypoint::ProgramResult, program_error::ProgramError, pubkey::Pubkey };
-use spl_token::state::Account as TokenAccount;
 
 use crate::{
     check,
