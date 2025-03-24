@@ -321,9 +321,6 @@ mod tests {
             }
         );
 
-        println!("{}", rebalancer.data.solauto_position.data.state.supply.amount_used.usd_value());
-        println!("{}", rebalancer.data.solauto_position.data.state.debt.amount_used.usd_value());
-
         let res = rebalancer.rebalance(RebalanceStep::PreSwap);
         assert!(res.is_ok());
         apply_actions(rebalancer);
