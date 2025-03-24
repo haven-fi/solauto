@@ -246,10 +246,19 @@ fn perform_swap<'a>(rebalancer: &mut Rebalancer<'a>, rebalance_direction: &Rebal
 
     println!("Swapping ${}", swap_usd_value);
 
-    rebalancer.data.intermediary_ta.balance = to_base_unit(
+    rebalancer.data.intermediary_ta.balance = 0;
+
+    let output_amount = to_base_unit(
         swap_usd_value.div(output_price),
         TEST_TOKEN_DECIMALS
     );
+
+    if rebalance_direction == &RebalanceDirection::Boost {
+        credit_token_account(rebalancer, rebalancer.data.solauto_position.supply_ta.pk, output_amount);
+    } else {
+        credit_token_account(rebalancer, rebalancer.data.solauto_position.debt_ta.pk, output_amount);
+    }
+
 }
 
 mod tests {
