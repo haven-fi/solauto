@@ -19,6 +19,7 @@ use crate::{
             PositionType,
             RebalanceDirection,
             RefreshedTokenState,
+            SwapType,
             TokenBalanceAmount,
         },
         solauto::{ PositionValues, SolautoCpiAction },
@@ -39,9 +40,9 @@ use crate::{
 use super::rebalancer::{ Rebalancer, RebalancerData, SolautoPositionData, TokenAccountData };
 
 const TEST_TOKEN_DECIMALS: u8 = 9;
-const SOLAUTO_FEE_BPS: u16 = 0;
+const SOLAUTO_FEE_BPS: u16 = 50;
 const BORROW_FEE_BPS: u16 = 50;
-const FLASH_LOAN_FEE_BPS: u16 = 350;
+const FLASH_LOAN_FEE_BPS: u16 = 50;
 const SUPPLY_PRICE: f64 = 100.0;
 const DEBT_PRICE: f64 = 1.0;
 const MAX_LTV_BPS: u16 = 6400;
@@ -121,6 +122,7 @@ fn create_rebalancer<'a>(
     data.pos.rebalance.ixs.rebalance_type = rebalance_args.rebalance_type;
     data.pos.rebalance.ixs.flash_loan_amount = flash_loan_amount.unwrap_or(0);
     data.pos.rebalance.ixs.active = PodBool::new(true);
+    data.pos.rebalance.ixs.swap_type = rebalance_args.swap_type.unwrap_or(SwapType::default());
 
     let position_supply_ta = get_associated_token_address(
         &data.pos.pubkey(),
@@ -255,7 +257,11 @@ fn apply_actions<'a>(rebalancer: &mut Rebalancer<'a>) {
     rebalancer.reset_actions();
 }
 
-fn perform_swap<'a>(rebalancer: &mut Rebalancer<'a>, rebalance_direction: &RebalanceDirection) {
+fn perform_swap<'a>(
+    rebalancer: &mut Rebalancer<'a>,
+    rebalance_direction: &RebalanceDirection,
+    to_solauto_position_ta: bool
+) -> u64 {
     let (input_price, output_price) = if rebalance_direction == &RebalanceDirection::Boost {
         (DEBT_PRICE, SUPPLY_PRICE)
     } else {
@@ -271,21 +277,28 @@ fn perform_swap<'a>(rebalancer: &mut Rebalancer<'a>, rebalance_direction: &Rebal
 
     rebalancer.data.intermediary_ta.balance = 0;
 
-    let output_amount = to_base_unit(swap_usd_value.div(output_price), TEST_TOKEN_DECIMALS);
+    let output_amount = to_base_unit::<f64, u8, u64>(
+        swap_usd_value.div(output_price),
+        TEST_TOKEN_DECIMALS
+    );
 
-    if rebalance_direction == &RebalanceDirection::Boost {
-        credit_token_account(
-            rebalancer,
-            rebalancer.data.solauto_position.supply_ta.pk,
-            output_amount
-        );
-    } else {
-        credit_token_account(
-            rebalancer,
-            rebalancer.data.solauto_position.debt_ta.pk,
-            output_amount
-        );
+    if to_solauto_position_ta {
+        if rebalance_direction == &RebalanceDirection::Boost {
+            credit_token_account(
+                rebalancer,
+                rebalancer.data.solauto_position.supply_ta.pk,
+                output_amount as i64
+            );
+        } else {
+            credit_token_account(
+                rebalancer,
+                rebalancer.data.solauto_position.debt_ta.pk,
+                output_amount as i64
+            );
+        }
     }
+
+    output_amount
 }
 
 fn validate_rebalance<'a>(rebalancer: &mut Rebalancer<'a>) {
@@ -323,7 +336,10 @@ mod tests {
     use std::ops::{ Add, Div };
 
     use crate::{
-        types::{ shared::{ RebalanceStep, SolautoRebalanceType }, solauto::RebalanceFeesBps },
+        types::{
+            shared::{ RebalanceStep, SolautoRebalanceType, SwapType },
+            solauto::RebalanceFeesBps,
+        },
         utils::math_utils::{ get_debt_adjustment, get_max_boost_to_bps, get_max_repay_to_bps },
     };
 
@@ -367,6 +383,7 @@ mod tests {
                 TEST_TOKEN_DECIMALS
             ),
             flash_loan_fee_bps: None,
+            swap_type: Some(SwapType::ExactIn),
         };
         let rebalancer = &mut create_rebalancer(
             FakeRebalance {
@@ -383,7 +400,7 @@ mod tests {
         assert!(res.is_ok());
         apply_actions(rebalancer);
 
-        perform_swap(rebalancer, &rebalance_direction);
+        perform_swap(rebalancer, &rebalance_direction, true);
 
         let res = rebalancer.rebalance(RebalanceStep::PostSwap);
         assert!(res.is_ok());
@@ -430,6 +447,7 @@ mod tests {
                 TEST_TOKEN_DECIMALS
             ),
             flash_loan_fee_bps: None,
+            swap_type: Some(SwapType::ExactIn),
         };
         let rebalancer = &mut create_rebalancer(
             FakeRebalance {
@@ -446,7 +464,7 @@ mod tests {
         assert!(res.is_ok());
         apply_actions(rebalancer);
 
-        perform_swap(rebalancer, &rebalance_direction);
+        perform_swap(rebalancer, &rebalance_direction, true);
 
         let res = rebalancer.rebalance(RebalanceStep::PostSwap);
         assert!(res.is_ok());
@@ -503,6 +521,7 @@ mod tests {
             target_liq_utilization_rate_bps: None,
             swap_in_amount_base_unit: flash_borrow,
             flash_loan_fee_bps: Some(FLASH_LOAN_FEE_BPS),
+            swap_type: Some(SwapType::ExactIn),
         };
         let rebalancer = &mut create_rebalancer(
             FakeRebalance {
@@ -517,7 +536,7 @@ mod tests {
 
         credit_token_account(rebalancer, rebalancer.data.intermediary_ta.pk, flash_borrow as i64);
 
-        perform_swap(rebalancer, &rebalance_direction);
+        perform_swap(rebalancer, &rebalance_direction, true);
 
         let res = rebalancer.rebalance(RebalanceStep::PostSwap);
         assert!(res.is_ok());
@@ -567,6 +586,7 @@ mod tests {
             target_liq_utilization_rate_bps: Some(rebalance_to),
             swap_in_amount_base_unit: flash_borrow,
             flash_loan_fee_bps: Some(FLASH_LOAN_FEE_BPS),
+            swap_type: Some(SwapType::ExactIn),
         };
         let rebalancer = &mut create_rebalancer(
             FakeRebalance {
@@ -581,7 +601,7 @@ mod tests {
 
         credit_token_account(rebalancer, rebalancer.data.intermediary_ta.pk, flash_borrow as i64);
 
-        perform_swap(rebalancer, &rebalance_direction);
+        perform_swap(rebalancer, &rebalance_direction, true);
 
         let res = rebalancer.rebalance(RebalanceStep::PostSwap);
         assert!(res.is_ok());
@@ -590,11 +610,82 @@ mod tests {
         validate_rebalance(rebalancer);
     }
 
-    #[test]
-    fn test_rebalance_then_swap_boost() {}
+    // TODO: double rebalance with flash loan exact out swap will not work currently. What needs to change?
 
     #[test]
-    fn test_rebalance_then_swap_repay() {}
+    fn test_rebalance_then_swap_repay() {
+        let pos_values = PositionValues { supply_usd: 100.0, debt_usd: 70.0 };
+        let rebalance_to = 1000;
+        let rebalance_direction = RebalanceDirection::Repay;
+
+        let settings = SolautoSettingsParametersInp {
+            boost_gap: 50,
+            boost_to_bps: rebalance_to,
+            repay_gap: 50,
+            repay_to_bps: rebalance_to,
+        };
+        let mut position = create_position(
+            &(FakePosition {
+                values: &pos_values,
+                settings,
+                max_ltv_bps: Some(MAX_LTV_BPS),
+                liq_threshold_bps: Some(LIQ_THRESHOLD_BPS),
+            })
+        );
+
+        let debt_adjustment = get_debt_adjustment(
+            from_bps(LIQ_THRESHOLD_BPS),
+            &pos_values,
+            &(RebalanceFeesBps {
+                solauto: SOLAUTO_FEE_BPS,
+                lp_borrow: BORROW_FEE_BPS,
+                lp_flash_loan: 0,
+            }),
+            rebalance_to
+        );
+
+        println!("{}", debt_adjustment.debt_adjustment_usd.abs());
+        let rebalance_args = RebalanceSettings {
+            rebalance_type: SolautoRebalanceType::FLRebalanceThenSwap,
+            target_liq_utilization_rate_bps: None,
+            swap_in_amount_base_unit: to_base_unit(
+                debt_adjustment.debt_adjustment_usd.abs().div(SUPPLY_PRICE),
+                TEST_TOKEN_DECIMALS
+            ),
+            flash_loan_fee_bps: None,
+            swap_type: Some(SwapType::ExactOut),
+        };
+        let rebalancer = &mut create_rebalancer(
+            FakeRebalance {
+                pos: &mut position,
+                position_supply_ta_balance: None,
+                position_debt_ta_balance: None,
+                rebalance_direction: rebalance_direction.clone(),
+            },
+            rebalance_args,
+            None
+        );
+
+        let flash_borrow = to_base_unit(
+            debt_adjustment.debt_adjustment_usd.abs().div(DEBT_PRICE),
+            TEST_TOKEN_DECIMALS
+        );
+        credit_token_account(rebalancer, rebalancer.data.solauto_position.debt_ta.pk, flash_borrow);
+
+        let res = rebalancer.rebalance(RebalanceStep::PreSwap);
+        assert!(res.is_ok());
+        apply_actions(rebalancer);
+
+        validate_rebalance(rebalancer);
+
+        let swap_output_amount = perform_swap(rebalancer, &rebalance_direction, false);
+
+        assert_eq!(
+            round_to_decimals(from_base_unit(swap_output_amount, TEST_TOKEN_DECIMALS), 4),
+            round_to_decimals(from_base_unit(flash_borrow as u64, TEST_TOKEN_DECIMALS), 4),
+            "Flash loan repayment (left) doesn't match expected (right)"
+        );
+    }
 
     #[test]
     fn test_target_liq_utilization_rate_rebalance() {
@@ -634,6 +725,7 @@ mod tests {
                 TEST_TOKEN_DECIMALS
             ),
             flash_loan_fee_bps: None,
+            swap_type: Some(SwapType::ExactIn),
         };
         let rebalancer = &mut create_rebalancer(
             FakeRebalance {
@@ -650,7 +742,7 @@ mod tests {
         assert!(res.is_ok());
         apply_actions(rebalancer);
 
-        perform_swap(rebalancer, &rebalance_direction);
+        perform_swap(rebalancer, &rebalance_direction, true);
 
         let res = rebalancer.rebalance(RebalanceStep::PostSwap);
         assert!(res.is_ok());

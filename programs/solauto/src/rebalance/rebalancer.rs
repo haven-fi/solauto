@@ -1,4 +1,4 @@
-use std::{ cmp::min, ops::{ Add, Div, Mul, Sub } };
+use std::{ cmp::min, ops::{ Add, Mul } };
 
 use solana_program::{ entrypoint::ProgramResult, program_error::ProgramError, pubkey::Pubkey };
 
@@ -19,6 +19,7 @@ use crate::{
             RebalanceDirection,
             RebalanceStep,
             SolautoRebalanceType,
+            SwapType,
             TokenBalanceAmount,
         },
         solauto::{ FromLendingPlatformAction, SolautoCpiAction },
@@ -146,16 +147,13 @@ impl<'a> Rebalancer<'a> {
         }
     }
 
-    fn get_dynamic_balance(&self) -> u64 {
-        let balance = if self.is_boost() {
-            self.position_supply_ta().balance
-        } else {
-            self.position_debt_ta().balance
-        };
+    fn get_dynamic_balance(&self) -> (u64, &TokenAccountData) {
+        let ta = if self.is_boost() { self.position_supply_ta() } else { self.position_debt_ta() };
 
+        let balance = ta.balance;
         // Subtract current balances that are attributed to DCA / limit order in
 
-        balance
+        (balance, ta)
     }
 
     fn transfer_to_authority_if_needed(&mut self, base_unit_amount: u64) {
@@ -390,7 +388,7 @@ impl<'a> Rebalancer<'a> {
         Ok(available_balance - solauto_fees - referrer_fees)
     }
 
-    fn repay_flash_loan_if_necessary(&mut self) {
+    fn repay_flash_loan_if_necessary(&mut self) -> ProgramResult {
         if
             matches!(
                 self.rebalance_data().ixs.rebalance_type,
@@ -400,17 +398,21 @@ impl<'a> Rebalancer<'a> {
             )
         {
             let flash_loan_amount = self.rebalance_data().ixs.flash_loan_amount;
-            let fl_repay_amount = if flash_loan_amount > 0 {
+
+            let fl_repay_amount = if self.rebalance_data().ixs.swap_type == SwapType::ExactOut {
+                self.data.rebalance_args.swap_in_amount_base_unit
+            } else {
+                check!(flash_loan_amount != 0, SolautoError::IncorrectInstructions);
                 let flash_loan_fee_bps = self.data.rebalance_args.flash_loan_fee_bps.unwrap_or(0);
                 flash_loan_amount.add(
                     (flash_loan_amount as f64).mul(from_bps(flash_loan_fee_bps)).ceil() as u64
                 )
-            } else {
-                self.data.rebalance_args.swap_in_amount_base_unit
             };
 
             self.pull_liquidity_from_lp(fl_repay_amount, self.data.intermediary_ta.pk);
         }
+
+        Ok(())
     }
 
     pub fn validate_and_finalize_rebalance(&mut self) -> ProgramResult {
@@ -444,7 +446,7 @@ impl<'a> Rebalancer<'a> {
     fn finish_rebalance(&mut self, dynamic_balance: u64) -> ProgramResult {
         let amount_to_put_in_lp = self.payout_fees(dynamic_balance)?;
         self.put_liquidity_in_lp(amount_to_put_in_lp);
-        self.repay_flash_loan_if_necessary();
+        self.repay_flash_loan_if_necessary()?;
         Ok(())
     }
 
@@ -454,8 +456,10 @@ impl<'a> Rebalancer<'a> {
         let amount_to_swap = self.data.rebalance_args.swap_in_amount_base_unit;
         let additional_amount_to_swap = self.get_additional_amount_before_swap();
 
-        if self.rebalance_data().ixs.rebalance_type == SolautoRebalanceType::FLRebalanceThenSwap {
-            self.finish_rebalance(self.get_dynamic_balance())?;
+        if self.rebalance_data().ixs.swap_type == SwapType::ExactOut {
+            let (dynamic_balance, _) = self.get_dynamic_balance();
+            println!("dynamic balance {}", dynamic_balance);
+            self.finish_rebalance(dynamic_balance)?;
             Ok(RebalanceResult { finished: true })
         } else {
             let amount_to_pull_from_lp = amount_to_swap - additional_amount_to_swap;
@@ -468,11 +472,20 @@ impl<'a> Rebalancer<'a> {
         self.set_rebalance_data()?;
 
         let additional_amount_after_swap = self.get_additional_amount_after_swap();
+        let (dynamic_balance, balance_ta) = self.get_dynamic_balance();
+        let balance_leftover = dynamic_balance - additional_amount_after_swap;
 
-        if self.rebalance_data().ixs.rebalance_type != SolautoRebalanceType::FLRebalanceThenSwap {
-            let dynamic_balance = self.get_dynamic_balance();
-            println!("dynamic balance {}", dynamic_balance);
-            self.finish_rebalance(dynamic_balance - additional_amount_after_swap)?;
+        if self.rebalance_data().ixs.swap_type == SwapType::ExactOut {
+            self.actions.push(
+                SolautoCpiAction::SplTokenTransfer(BareSplTokenTransferArgs {
+                    from_wallet: self.data.solauto_position.data.pubkey(),
+                    from_wallet_ta: balance_ta.pk,
+                    to_wallet_ta: self.data.intermediary_ta.pk,
+                    amount: balance_leftover,
+                })
+            );
+        } else {
+            self.finish_rebalance(balance_leftover)?;
         }
 
         Ok(RebalanceResult { finished: true })

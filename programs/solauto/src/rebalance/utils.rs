@@ -10,7 +10,7 @@ use crate::{
     types::{
         errors::SolautoError,
         instruction::{ RebalanceSettings, SolautoStandardAccounts },
-        shared::{ RebalanceDirection, RebalanceStep, SolautoRebalanceType },
+        shared::{ RebalanceDirection, RebalanceStep, SolautoRebalanceType, SwapType },
         solauto::{ PositionValues, RebalanceFeesBps },
     },
     utils::{
@@ -46,7 +46,8 @@ pub fn set_rebalance_ixs_data(
 
         std_accounts.solauto_position.data.rebalance.ixs = RebalanceInstructionData::from(
             args.rebalance_type,
-            flash_loan_amount
+            flash_loan_amount,
+            args.swap_type.unwrap_or(SwapType::default())
         );
     }
 

@@ -7,12 +7,7 @@ use std::ops::{ Add, Mul };
 use crate::{
     constants::USD_DECIMALS,
     types::shared::{
-        LendingPlatform,
-        PodBool,
-        PositionType,
-        RebalanceDirection,
-        SolautoRebalanceType,
-        TokenType,
+        LendingPlatform, PodBool, PositionType, RebalanceDirection, SolautoRebalanceType, SwapType, TokenType
     },
     utils::math_utils::{
         base_unit_to_usd_value,
@@ -243,16 +238,18 @@ impl RebalanceStateValues {
 pub struct RebalanceInstructionData {
     pub active: PodBool,
     pub rebalance_type: SolautoRebalanceType,
-    _padding1: [u8; 6],
+    pub swap_type: SwapType,
+    _padding1: [u8; 5],
     pub flash_loan_amount: u64,
     _padding: [u32; 4],
 }
 impl RebalanceInstructionData {
-    pub fn from(rebalance_type: SolautoRebalanceType, flash_loan_amount: u64) -> Self {
+    pub fn from(rebalance_type: SolautoRebalanceType, flash_loan_amount: u64, swap_type: SwapType) -> Self {
         Self {
             active: PodBool::new(true),
             rebalance_type,
-            _padding1: [0; 6],
+            swap_type,
+            _padding1: [0; 5],
             flash_loan_amount,
             _padding: [0; 4],
         }

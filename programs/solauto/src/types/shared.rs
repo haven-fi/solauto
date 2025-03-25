@@ -84,6 +84,16 @@ pub enum SolautoRebalanceType {
 unsafe impl Zeroable for SolautoRebalanceType {}
 unsafe impl Pod for SolautoRebalanceType {}
 
+#[repr(u8)]
+#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, Default, PartialEq, Copy)]
+pub enum SwapType {
+    #[default]
+    ExactIn,
+    ExactOut,
+}
+unsafe impl Zeroable for SwapType {}
+unsafe impl Pod for SwapType {}
+
 #[derive(Debug)]
 pub struct RefreshedTokenState {
     pub mint: Pubkey,

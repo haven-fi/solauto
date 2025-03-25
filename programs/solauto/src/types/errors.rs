@@ -17,7 +17,7 @@ pub enum SolautoError {
     InvalidRebalanceCondition,
     #[error("Unable to invoke instruction through a CPI")]
     InstructionIsCPI,
-    #[error("Incorrect set of instructions in the transaction")]
+    #[error("Incorrect set of instructions or instruction data in the transaction")]
     IncorrectInstructions,
     #[error("Incorrect swap amount provided. Likely due to high price volatility")]
     IncorrectDebtAdjustment,
