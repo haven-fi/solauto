@@ -450,6 +450,10 @@ pub fn correct_token_account(token_account: &Pubkey, wallet: &Pubkey, mint: &Pub
 }
 
 pub fn value_match_with_threshold(value: f64, target_value: f64, threshold: f64) -> bool {
+    if target_value == 0.0 {
+        return value == 0.0;
+    }
+
     (value - target_value).abs().div(target_value) < threshold
 }
 

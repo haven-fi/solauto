@@ -527,7 +527,68 @@ mod tests {
     }
 
     #[test]
-    fn test_swap_then_rebalance_repay() {}
+    fn test_swap_then_rebalance_repay() {
+        let pos_values = PositionValues { supply_usd: 100.0, debt_usd: 70.0 };
+        let rebalance_to = 1000;
+        let rebalance_direction = RebalanceDirection::Repay;
+
+        let settings = SolautoSettingsParametersInp {
+            boost_gap: 50,
+            boost_to_bps: 3000,
+            repay_gap: 50,
+            repay_to_bps: get_max_repay_to_bps(MAX_LTV_BPS, LIQ_THRESHOLD_BPS),
+        };
+        let mut position = create_position(
+            &(FakePosition {
+                values: &pos_values,
+                settings,
+                max_ltv_bps: Some(MAX_LTV_BPS),
+                liq_threshold_bps: Some(LIQ_THRESHOLD_BPS),
+            })
+        );
+
+        let debt_adjustment = get_debt_adjustment(
+            from_bps(LIQ_THRESHOLD_BPS),
+            &pos_values,
+            &(RebalanceFeesBps {
+                solauto: SOLAUTO_FEE_BPS,
+                lp_borrow: BORROW_FEE_BPS,
+                lp_flash_loan: FLASH_LOAN_FEE_BPS,
+            }),
+            rebalance_to
+        );
+        let flash_borrow = to_base_unit(
+            debt_adjustment.debt_adjustment_usd.abs().div(SUPPLY_PRICE),
+            TEST_TOKEN_DECIMALS
+        );
+
+        let rebalance_args = RebalanceSettings {
+            rebalance_type: SolautoRebalanceType::FLSwapThenRebalance,
+            target_liq_utilization_rate_bps: Some(rebalance_to),
+            swap_in_amount_base_unit: flash_borrow,
+            flash_loan_fee_bps: Some(FLASH_LOAN_FEE_BPS),
+        };
+        let rebalancer = &mut create_rebalancer(
+            FakeRebalance {
+                pos: &mut position,
+                position_supply_ta_balance: None,
+                position_debt_ta_balance: None,
+                rebalance_direction: rebalance_direction.clone(),
+            },
+            rebalance_args,
+            Some(flash_borrow)
+        );
+
+        credit_token_account(rebalancer, rebalancer.data.intermediary_ta.pk, flash_borrow as i64);
+
+        perform_swap(rebalancer, &rebalance_direction);
+
+        let res = rebalancer.rebalance(RebalanceStep::PostSwap);
+        assert!(res.is_ok());
+        apply_actions(rebalancer);
+
+        validate_rebalance(rebalancer);
+    }
 
     #[test]
     fn test_rebalance_then_swap_boost() {}
