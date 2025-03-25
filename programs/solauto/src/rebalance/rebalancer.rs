@@ -27,7 +27,7 @@ use crate::{
     utils::{
         math_utils::{ calc_fee_amount, from_bps, from_rounded_usd_value, usd_value_to_base_unit },
         solauto_utils::SolautoFeesBps,
-        validation_utils::{ correct_token_account, value_match_with_threshold },
+        validation_utils::{ correct_token_account, value_gte_with_threshold, value_lte_with_threshold, value_match_with_threshold },
     },
 };
 
@@ -425,7 +425,7 @@ impl<'a> Rebalancer<'a> {
         let target_debt_usd = from_rounded_usd_value(self.rebalance_data().values.target_debt_usd);
 
         check!(
-            value_match_with_threshold(curr_supply_usd, target_supply_usd, 0.1),
+            value_gte_with_threshold(curr_supply_usd, target_supply_usd, 0.1),
             SolautoError::InvalidRebalanceMade,
             format!(
                 "Supply expected vs. actual: {}, {}",
@@ -434,7 +434,7 @@ impl<'a> Rebalancer<'a> {
             ).as_str()
         );
         check!(
-            value_match_with_threshold(curr_debt_usd, target_debt_usd, 0.1),
+            value_lte_with_threshold(curr_debt_usd, target_debt_usd, 0.1),
             SolautoError::InvalidRebalanceMade,
             format!("Debt expected vs. actual: {}, {}", target_debt_usd, curr_debt_usd).as_str()
         );
