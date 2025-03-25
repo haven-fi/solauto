@@ -128,7 +128,7 @@ impl<'a> Rebalancer<'a> {
         Ok(())
     }
 
-    fn pull_additional_amount(
+    fn calc_additional_amount(
         &self,
         rounded_usd_value: u64,
         token_usage: PositionTokenState,
@@ -224,7 +224,7 @@ impl<'a> Rebalancer<'a> {
             TokenBalanceChangeType::PreSwapDeposit => {
                 Some(
                     SolautoCpiAction::Deposit(
-                        self.pull_additional_amount(
+                        self.calc_additional_amount(
                             token_balance_change.amount_usd,
                             self.position_data().state.supply,
                             Some(self.data.solauto_position.supply_ta.balance)
@@ -233,7 +233,7 @@ impl<'a> Rebalancer<'a> {
                 )
             }
             TokenBalanceChangeType::PostSwapDeposit => {
-                amount = self.pull_additional_amount(
+                amount = self.calc_additional_amount(
                     token_balance_change.amount_usd,
                     self.position_data().state.debt,
                     Some(self.data.solauto_position.debt_ta.balance)
@@ -248,7 +248,7 @@ impl<'a> Rebalancer<'a> {
                 )
             }
             TokenBalanceChangeType::PostRebalanceWithdrawDebtToken => {
-                amount = self.pull_additional_amount(
+                amount = self.calc_additional_amount(
                     token_balance_change.amount_usd,
                     self.position_data().state.supply,
                     Some(self.position_supply_ta().balance)
@@ -282,7 +282,7 @@ impl<'a> Rebalancer<'a> {
 
         let action = match token_balance_change.change_type {
             TokenBalanceChangeType::PostRebalanceWithdrawSupplyToken => {
-                amount = self.pull_additional_amount(
+                amount = self.calc_additional_amount(
                     token_balance_change.amount_usd,
                     self.position_data().state.supply,
                     None
@@ -297,7 +297,7 @@ impl<'a> Rebalancer<'a> {
                 )
             }
             TokenBalanceChangeType::PostRebalanceWithdrawDebtToken => {
-                amount = self.pull_additional_amount(
+                amount = self.calc_additional_amount(
                     token_balance_change.amount_usd,
                     self.position_data().state.debt,
                     None
