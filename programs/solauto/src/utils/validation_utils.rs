@@ -453,7 +453,6 @@ pub fn value_lte_with_threshold(value: f64, target_value: f64, threshold: f64) -
     if target_value == 0.0 {
         return value == 0.0;
     }
-
     value < target_value || (value - target_value).abs().div(target_value) < threshold
 }
 
@@ -461,7 +460,6 @@ pub fn value_gte_with_threshold(value: f64, target_value: f64, threshold: f64) -
     if target_value == 0.0 {
         return value == 0.0;
     }
-
     value > target_value || (value - target_value).abs().div(target_value) < threshold
 }
 
@@ -469,7 +467,6 @@ pub fn value_match_with_threshold(value: f64, target_value: f64, threshold: f64)
     if target_value == 0.0 {
         return value == 0.0;
     }
-
     (value - target_value).abs().div(target_value) < threshold
 }
 
