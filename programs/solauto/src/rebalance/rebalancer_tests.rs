@@ -14,7 +14,13 @@ use crate::{
     },
     types::{
         instruction::RebalanceSettings,
-        shared::{ PositionType, RebalanceDirection, RefreshedTokenState, TokenBalanceAmount },
+        shared::{
+            PodBool,
+            PositionType,
+            RebalanceDirection,
+            RefreshedTokenState,
+            TokenBalanceAmount,
+        },
         solauto::{ PositionValues, SolautoCpiAction },
     },
     utils::{
@@ -33,8 +39,9 @@ use crate::{
 use super::rebalancer::{ Rebalancer, RebalancerData, SolautoPositionData, TokenAccountData };
 
 const TEST_TOKEN_DECIMALS: u8 = 9;
-const SOLAUTO_FEE_BPS: u16 = 350;
-const BORROW_FEE_BPS: u16 = 500;
+const SOLAUTO_FEE_BPS: u16 = 0;
+const BORROW_FEE_BPS: u16 = 50;
+const FLASH_LOAN_FEE_BPS: u16 = 350;
 const SUPPLY_PRICE: f64 = 100.0;
 const DEBT_PRICE: f64 = 1.0;
 const MAX_LTV_BPS: u16 = 6400;
@@ -108,8 +115,13 @@ pub struct FakeRebalance<'a> {
 
 fn create_rebalancer<'a>(
     data: FakeRebalance<'a>,
-    rebalance_args: RebalanceSettings
+    rebalance_args: RebalanceSettings,
+    flash_loan_amount: Option<u64>
 ) -> Rebalancer<'a> {
+    data.pos.rebalance.ixs.rebalance_type = rebalance_args.rebalance_type;
+    data.pos.rebalance.ixs.flash_loan_amount = flash_loan_amount.unwrap_or(0);
+    data.pos.rebalance.ixs.active = PodBool::new(true);
+
     let position_supply_ta = get_associated_token_address(
         &data.pos.pubkey(),
         &data.pos.state.supply.mint
@@ -279,40 +291,40 @@ fn perform_swap<'a>(rebalancer: &mut Rebalancer<'a>, rebalance_direction: &Rebal
 fn validate_rebalance<'a>(rebalancer: &mut Rebalancer<'a>) {
     assert_eq!(
         round_to_decimals(
-            rebalancer.data.solauto_position.data.state.debt.amount_used.usd_value(),
-            4
-        ),
-        round_to_decimals(
             from_rounded_usd_value(
                 rebalancer.data.solauto_position.data.rebalance.values.target_debt_usd
             ),
             4
         ),
-        "Incorrect debt usd"
-    );
-    assert_eq!(
         round_to_decimals(
-            rebalancer.data.solauto_position.data.state.supply.amount_used.usd_value(),
+            rebalancer.data.solauto_position.data.state.debt.amount_used.usd_value(),
             4
         ),
+        "Incorrect debt usd. Expected (left) vs. actual (right)"
+    );
+    assert_eq!(
         round_to_decimals(
             from_rounded_usd_value(
                 rebalancer.data.solauto_position.data.rebalance.values.target_supply_usd
             ),
             4
         ),
-        "Incorrect supply usd"
+        round_to_decimals(
+            rebalancer.data.solauto_position.data.state.supply.amount_used.usd_value(),
+            4
+        ),
+        "Incorrect supply usd. Expected (left) vs. actual (right)"
     );
 
     assert!(rebalancer.validate_and_finalize_rebalance().is_ok());
 }
 
 mod tests {
-    use std::ops::Div;
+    use std::ops::{ Add, Div };
 
     use crate::{
         types::{ shared::{ RebalanceStep, SolautoRebalanceType }, solauto::RebalanceFeesBps },
-        utils::math_utils::{ get_debt_adjustment, get_max_repay_to_bps },
+        utils::math_utils::{ get_debt_adjustment, get_max_boost_to_bps, get_max_repay_to_bps },
     };
 
     use super::*;
@@ -363,7 +375,8 @@ mod tests {
                 position_debt_ta_balance: None,
                 rebalance_direction: rebalance_direction.clone(),
             },
-            rebalance_args
+            rebalance_args,
+            None
         );
 
         let res = rebalancer.rebalance(RebalanceStep::PreSwap);
@@ -425,7 +438,8 @@ mod tests {
                 position_debt_ta_balance: None,
                 rebalance_direction: rebalance_direction.clone(),
             },
-            rebalance_args
+            rebalance_args,
+            None
         );
 
         let res = rebalancer.rebalance(RebalanceStep::PreSwap);
@@ -441,14 +455,76 @@ mod tests {
         validate_rebalance(rebalancer);
     }
 
-    #[test]
-    fn test_double_rebalance_fl_boost() {}
+    // TODO: when token balance changes pre-swap are needed
+    // #[test]
+    // fn test_double_rebalance_fl_boost() {}
+
+    // #[test]
+    // fn test_double_rebalance_fl_repay() {}
 
     #[test]
-    fn test_double_rebalance_fl_repay() {}
+    fn test_swap_then_rebalance_boost() {
+        let pos_values = PositionValues { supply_usd: 100.0, debt_usd: 0.0 };
+        let rebalance_to = get_max_boost_to_bps(MAX_LTV_BPS, LIQ_THRESHOLD_BPS);
+        let rebalance_direction = RebalanceDirection::Boost;
 
-    #[test]
-    fn test_swap_then_rebalance_boost() {}
+        let settings = SolautoSettingsParametersInp {
+            boost_gap: 50,
+            boost_to_bps: rebalance_to,
+            repay_gap: 50,
+            repay_to_bps: rebalance_to,
+        };
+        let mut position = create_position(
+            &(FakePosition {
+                values: &pos_values,
+                settings,
+                max_ltv_bps: Some(MAX_LTV_BPS),
+                liq_threshold_bps: Some(LIQ_THRESHOLD_BPS),
+            })
+        );
+
+        let debt_adjustment = get_debt_adjustment(
+            from_bps(LIQ_THRESHOLD_BPS),
+            &pos_values,
+            &(RebalanceFeesBps {
+                solauto: SOLAUTO_FEE_BPS,
+                lp_borrow: BORROW_FEE_BPS,
+                lp_flash_loan: FLASH_LOAN_FEE_BPS,
+            }),
+            rebalance_to
+        );
+        let flash_borrow = to_base_unit(
+            debt_adjustment.debt_adjustment_usd.abs().div(DEBT_PRICE),
+            TEST_TOKEN_DECIMALS
+        );
+
+        let rebalance_args = RebalanceSettings {
+            rebalance_type: SolautoRebalanceType::FLSwapThenRebalance,
+            target_liq_utilization_rate_bps: None,
+            swap_in_amount_base_unit: flash_borrow,
+            flash_loan_fee_bps: Some(FLASH_LOAN_FEE_BPS),
+        };
+        let rebalancer = &mut create_rebalancer(
+            FakeRebalance {
+                pos: &mut position,
+                position_supply_ta_balance: None,
+                position_debt_ta_balance: None,
+                rebalance_direction: rebalance_direction.clone(),
+            },
+            rebalance_args,
+            Some(flash_borrow)
+        );
+
+        credit_token_account(rebalancer, rebalancer.data.intermediary_ta.pk, flash_borrow as i64);
+
+        perform_swap(rebalancer, &rebalance_direction);
+
+        let res = rebalancer.rebalance(RebalanceStep::PostSwap);
+        assert!(res.is_ok());
+        apply_actions(rebalancer);
+
+        validate_rebalance(rebalancer);
+    }
 
     #[test]
     fn test_swap_then_rebalance_repay() {}
@@ -460,5 +536,65 @@ mod tests {
     fn test_rebalance_then_swap_repay() {}
 
     #[test]
-    fn test_target_liq_utilization_rate_rebalance() {}
+    fn test_target_liq_utilization_rate_rebalance() {
+        let pos_values = PositionValues { supply_usd: 100.0, debt_usd: 25.0 };
+        let rebalance_to = 3500;
+        let rebalance_direction = RebalanceDirection::Boost;
+
+        let settings = SolautoSettingsParametersInp {
+            boost_gap: 50,
+            boost_to_bps: rebalance_to + 300,
+            repay_gap: 50,
+            repay_to_bps: get_max_repay_to_bps(MAX_LTV_BPS, LIQ_THRESHOLD_BPS),
+        };
+        let mut position = create_position(
+            &(FakePosition {
+                values: &pos_values,
+                settings,
+                max_ltv_bps: Some(MAX_LTV_BPS),
+                liq_threshold_bps: Some(LIQ_THRESHOLD_BPS),
+            })
+        );
+        let debt_adjustment = get_debt_adjustment(
+            from_bps(LIQ_THRESHOLD_BPS),
+            &pos_values,
+            &(RebalanceFeesBps {
+                solauto: SOLAUTO_FEE_BPS,
+                lp_borrow: BORROW_FEE_BPS,
+                lp_flash_loan: 0,
+            }),
+            rebalance_to
+        );
+        let rebalance_args = RebalanceSettings {
+            rebalance_type: SolautoRebalanceType::Regular,
+            target_liq_utilization_rate_bps: Some(rebalance_to),
+            swap_in_amount_base_unit: to_base_unit(
+                debt_adjustment.debt_adjustment_usd.div(DEBT_PRICE),
+                TEST_TOKEN_DECIMALS
+            ),
+            flash_loan_fee_bps: None,
+        };
+        let rebalancer = &mut create_rebalancer(
+            FakeRebalance {
+                pos: &mut position,
+                position_supply_ta_balance: None,
+                position_debt_ta_balance: None,
+                rebalance_direction: rebalance_direction.clone(),
+            },
+            rebalance_args,
+            None
+        );
+
+        let res = rebalancer.rebalance(RebalanceStep::PreSwap);
+        assert!(res.is_ok());
+        apply_actions(rebalancer);
+
+        perform_swap(rebalancer, &rebalance_direction);
+
+        let res = rebalancer.rebalance(RebalanceStep::PostSwap);
+        assert!(res.is_ok());
+        apply_actions(rebalancer);
+
+        validate_rebalance(rebalancer);
+    }
 }

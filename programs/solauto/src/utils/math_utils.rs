@@ -141,20 +141,22 @@ fn apply_debt_adjustment_usd(
     fees: &RebalanceFeesBps
 ) -> PositionValues {
     let mut new_pos = pos.clone();
-
     let is_boost = debt_adjustment_usd > 0.0;
-    let actualized_fee = from_bps(fees.solauto) + from_bps(fees.lp_flash_loan);
-    let debt_adjustment_minus_fees = debt_adjustment_usd.sub(
-        debt_adjustment_usd.mul(actualized_fee)
-    );
 
-    println!("debt adjustment usd {}", debt_adjustment_usd);
-    println!("Debt adjustment minus fees {}", debt_adjustment_minus_fees);
-    new_pos.supply_usd += if is_boost { debt_adjustment_minus_fees } else { debt_adjustment_usd };
-    new_pos.debt_usd += if is_boost { debt_adjustment_usd } else { debt_adjustment_minus_fees };
+    let da_minus_solauto_fees = debt_adjustment_usd.sub(
+        debt_adjustment_usd.mul(from_bps(fees.solauto))
+    );
+    let da_with_flash_loan = debt_adjustment_usd.mul(1.0 + from_bps(fees.lp_flash_loan));
 
     if is_boost {
-        new_pos.debt_usd += debt_adjustment_usd.mul(from_bps(fees.lp_borrow));
+        new_pos.supply_usd += da_minus_solauto_fees;
+        new_pos.debt_usd += da_with_flash_loan.mul_add(
+            from_bps(fees.lp_borrow),
+            da_with_flash_loan
+        );
+    } else {
+        new_pos.supply_usd += da_with_flash_loan;
+        new_pos.debt_usd += da_minus_solauto_fees;
     }
 
     new_pos
@@ -171,16 +173,17 @@ pub fn get_debt_adjustment(
         target_liq_utilization_rate_bps;
 
     let target_utilization_rate = from_bps(target_liq_utilization_rate_bps);
-    let actualized_fee =
-        (1.0).sub(from_bps(fees.solauto)) * (1.0).sub(from_bps(fees.lp_flash_loan));
+    let actualized_fee = (1.0).sub(from_bps(fees.solauto));
+    let fl_fee = from_bps(fees.lp_flash_loan);
     let lp_borrow_fee = from_bps(fees.lp_borrow);
 
     let debt_adjustment_usd = if is_boost {
         (target_utilization_rate * liq_threshold * pos.supply_usd - pos.debt_usd) /
-            ((1.0).add(lp_borrow_fee) - target_utilization_rate * actualized_fee * liq_threshold)
+            ((1.0).add(lp_borrow_fee).add(fl_fee) -
+                target_utilization_rate * actualized_fee * liq_threshold)
     } else {
         (target_utilization_rate * liq_threshold * pos.supply_usd - pos.debt_usd) /
-            (actualized_fee - target_utilization_rate * liq_threshold)
+            (actualized_fee - target_utilization_rate * liq_threshold * (1.0).add(fl_fee))
     };
 
     let new_pos = apply_debt_adjustment_usd(debt_adjustment_usd, pos, fees);
@@ -277,7 +280,6 @@ mod tests {
             round_to_decimals(from_bps(new_liq_utilization_rate_bps), 3),
             round_to_decimals(target_liq_utilization_rate, 3)
         );
-
         assert_eq!(
             round_to_decimals(marginfi_liq_utilization_rate, 3),
             round_to_decimals(target_liq_utilization_rate, 3)

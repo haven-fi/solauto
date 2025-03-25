@@ -1,4 +1,4 @@
-use std::{ cmp::min, ops::{ Add, Mul } };
+use std::{ cmp::min, ops::{ Add, Div, Mul, Sub } };
 
 use solana_program::{ entrypoint::ProgramResult, program_error::ProgramError, pubkey::Pubkey };
 
@@ -64,7 +64,7 @@ pub struct RebalancerData<'a> {
 }
 
 pub struct RebalanceResult {
-    pub finished: bool
+    pub finished: bool,
 }
 
 pub struct Rebalancer<'a> {
@@ -471,13 +471,17 @@ impl<'a> Rebalancer<'a> {
 
         if self.rebalance_data().ixs.rebalance_type != SolautoRebalanceType::FLRebalanceThenSwap {
             let dynamic_balance = self.get_dynamic_balance();
+            println!("dynamic balance {}", dynamic_balance);
             self.finish_rebalance(dynamic_balance - additional_amount_after_swap)?;
         }
-        
+
         Ok(RebalanceResult { finished: true })
     }
 
-    pub fn rebalance(&mut self, rebalance_step: RebalanceStep) -> Result<RebalanceResult, ProgramError> {
+    pub fn rebalance(
+        &mut self,
+        rebalance_step: RebalanceStep
+    ) -> Result<RebalanceResult, ProgramError> {
         match rebalance_step {
             RebalanceStep::PreSwap => self.pre_swap_rebalance(),
             RebalanceStep::PostSwap => self.post_swap_rebalance(),
