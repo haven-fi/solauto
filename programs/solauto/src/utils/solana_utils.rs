@@ -2,16 +2,13 @@ use solana_program::{
     account_info::AccountInfo,
     entrypoint::ProgramResult,
     instruction::Instruction,
-    msg,
     program::{invoke, invoke_signed},
     pubkey::Pubkey,
     rent::Rent,
     system_instruction,
     sysvar::Sysvar,
 };
-use spl_associated_token_account::{
-    get_associated_token_address, instruction::create_associated_token_account,
-};
+use spl_associated_token_account::instruction::create_associated_token_account;
 use spl_token::instruction as spl_instruction;
 
 use crate::{

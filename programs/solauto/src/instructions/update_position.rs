@@ -1,4 +1,4 @@
-use solana_program::{clock::Clock, entrypoint::ProgramResult, msg, sysvar::Sysvar};
+use solana_program::{clock::Clock, entrypoint::ProgramResult, sysvar::Sysvar};
 
 use crate::{
     check,

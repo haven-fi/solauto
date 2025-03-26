@@ -164,7 +164,7 @@ fn rebalance<'a>(
         SolautoError::IncorrectAccounts
     );
     check!(
-        args.flash_loan_fee_bps.unwrap_or(0) < 150,
+        args.flash_loan_fee_bps.unwrap_or(0) <= 150,
         SolautoError::IncorrectInstructions
     );
 
