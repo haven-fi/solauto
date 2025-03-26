@@ -74,10 +74,7 @@ pub fn validate_instruction(
     authority_signer_only_ix: bool,
     solauto_managed_only_ix: bool
 ) -> ProgramResult {
-    if !signer.is_signer {
-        msg!("Signer account is not a signer");
-        return Err(ProgramError::MissingRequiredSignature.into());
-    }
+    check!(&signer.is_signer, ProgramError::MissingRequiredSignature);
 
     let position_authority = solauto_position.data.authority;
     let authority_signed = || {

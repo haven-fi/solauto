@@ -26,7 +26,7 @@ use crate::{
         },
         shared::DeserializedAccount,
     },
-    utils::{ ix_utils, solauto_utils, validation_utils::{ self, correct_token_account } },
+    utils::{ ix_utils, solauto_utils, validation_utils },
 };
 
 pub fn process_update_referral_states<'a>(
@@ -36,14 +36,10 @@ pub fn process_update_referral_states<'a>(
     msg!("Instruction: Update referral states");
     let ctx = UpdateReferralStatesAccounts::context(accounts)?;
 
-    if !ctx.accounts.signer.is_signer {
-        msg!("Missing required referral signer");
-        return Err(ProgramError::MissingRequiredSignature.into());
-    }
-
+    check!(ctx.accounts.signer.is_signer, ProgramError::MissingRequiredSignature);
     check!(
         ctx.accounts.referred_by_authority.is_none() ||
-            ctx.accounts.referred_by_authority.unwrap().key == ctx.accounts.signer.key,
+            ctx.accounts.referred_by_authority.unwrap().key != ctx.accounts.signer.key,
         SolautoError::IncorrectAccounts
     );
 
@@ -161,7 +157,7 @@ pub fn process_claim_referral_fees<'a>(accounts: &'a [AccountInfo<'a>]) -> Progr
         SolautoError::IncorrectAccounts
     );
     check!(
-        correct_token_account(
+        validation_utils::correct_token_account(
             ctx.accounts.referral_fees_dest_ta.key,
             ctx.accounts.referral_state.key,
             &referral_state.data.dest_fees_mint
@@ -173,15 +169,15 @@ pub fn process_claim_referral_fees<'a>(accounts: &'a [AccountInfo<'a>]) -> Progr
         SolautoError::IncorrectAccounts
     );
 
-    check!(
-        referral_state.data.dest_fees_mint == WSOL_MINT ||
-            ctx.accounts.fees_destination_ta.is_some(),
+    error_if!(
+        referral_state.data.dest_fees_mint != WSOL_MINT &&
+            ctx.accounts.fees_destination_ta.is_none(),
         SolautoError::IncorrectAccounts
     );
 
     if ctx.accounts.fees_destination_ta.is_some() {
         check!(
-            correct_token_account(
+            validation_utils::correct_token_account(
                 ctx.accounts.fees_destination_ta.unwrap().key,
                 &referral_state.data.authority,
                 &referral_state.data.dest_fees_mint
