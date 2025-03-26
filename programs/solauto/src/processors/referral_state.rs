@@ -168,7 +168,6 @@ pub fn process_claim_referral_fees<'a>(accounts: &'a [AccountInfo<'a>]) -> Progr
         ctx.accounts.referral_fees_dest_mint.key == &referral_state.data.dest_fees_mint,
         SolautoError::IncorrectAccounts
     );
-
     error_if!(
         referral_state.data.dest_fees_mint != WSOL_MINT &&
             ctx.accounts.fees_destination_ta.is_none(),
