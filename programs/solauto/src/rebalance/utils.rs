@@ -86,19 +86,19 @@ fn get_target_liq_utilization_rate_bps(
         solauto_position.state.liq_utilization_rate_bps <=
         solauto_position.position.setting_params.boost_from_bps()
     {
-        Ok(solauto_position.position.setting_params.boost_to_bps)
+        return Ok(solauto_position.position.setting_params.boost_to_bps);
     } else if
         solauto_position.state.liq_utilization_rate_bps >=
         solauto_position.position.setting_params.repay_from_bps()
     {
-        Ok(solauto_position.position.setting_params.repay_to_bps)
+        return Ok(solauto_position.position.setting_params.repay_to_bps);
     } else if token_balance_change.is_some() {
         // TODO: DCA, limit orders, take profit, stop loss, etc.
-        Ok(solauto_position.state.liq_utilization_rate_bps)
-    } else {
-        msg!("Invalid rebalance condition");
-        Err(SolautoError::InvalidRebalanceCondition.into())
+        return Ok(solauto_position.state.liq_utilization_rate_bps);
     }
+
+    msg!("Invalid rebalance condition");
+    Err(SolautoError::InvalidRebalanceCondition.into())
 }
 
 fn get_token_balance_change() -> Option<TokenBalanceChange> {

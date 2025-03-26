@@ -31,3 +31,19 @@ macro_rules! check {
         }
     };
 }
+
+#[macro_export]
+macro_rules! error_if {
+    ($cond:expr, $err:expr) => {
+        if ($cond) {
+            let error_code = $err;
+            solana_program::msg!(
+                "Error \"{}\" thrown at {}:{}",
+                error_code,
+                file!(),
+                line!()
+            );
+            return Err(error_code.into());
+        }
+    };
+}

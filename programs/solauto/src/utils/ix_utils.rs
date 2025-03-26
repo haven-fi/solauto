@@ -18,6 +18,7 @@ use solana_program::{
 use super::solana_utils::invoke_instruction;
 use crate::{
     check,
+    error_if,
     state::solauto_position::SolautoPosition,
     types::{
         errors::SolautoError,
@@ -227,10 +228,7 @@ pub fn validate_rebalance_instructions(
     let ixs_sysvar = std_accounts.ixs_sysvar.unwrap();
 
     let current_ix_idx = load_current_index_checked(ixs_sysvar)?;
-    if get_stack_height() > TRANSACTION_LEVEL_STACK_HEIGHT {
-        msg!("Instruction is CPI");
-        return Err(SolautoError::InstructionIsCPI.into());
-    }
+    error_if!(get_stack_height() > TRANSACTION_LEVEL_STACK_HEIGHT, SolautoError::InstructionIsCPI);
 
     let solauto_rebalance = InstructionChecker::from(
         ixs_sysvar,

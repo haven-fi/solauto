@@ -16,6 +16,7 @@ use spl_token::ID as token_program_id;
 use crate::{
     check,
     constants::{ MIN_BOOST_GAP_BPS, MIN_REPAY_GAP_BPS, SOLAUTO_MANAGER },
+    error_if,
     state::{
         automation::AutomationSettings,
         referral_state::ReferralState,
@@ -99,15 +100,15 @@ pub fn validate_instruction(
         return Err(ProgramError::MissingRequiredSignature.into());
     }
 
-    if solauto_managed_only_ix && solauto_position.data.self_managed.val {
-        msg!("Cannot perform the desired instruction on a self-managed position");
-        return Err(SolautoError::IncorrectAccounts.into());
-    }
+    error_if!(
+        solauto_managed_only_ix && solauto_position.data.self_managed.val,
+        SolautoError::IncorrectAccounts
+    );
 
-    if solauto_position.data.self_managed.val && signer.key == &SOLAUTO_MANAGER {
-        msg!("Solauto manager cannot sign an instruction on a self-managed position");
-        return Err(SolautoError::IncorrectAccounts.into());
-    }
+    error_if!(
+        solauto_position.data.self_managed.val && signer.key == &SOLAUTO_MANAGER,
+        SolautoError::IncorrectAccounts
+    );
 
     Ok(())
 }
@@ -261,20 +262,20 @@ pub fn validate_referral_accounts<'a>(
         authority_referral_state.data.seeds_with_bump().as_slice(),
         &crate::ID
     )?;
-    if
+    error_if!(
         &authority_referral_state.data.authority != referral_state_authority ||
-        &referral_state_pda != authority_referral_state.account_info.key
-    {
-        msg!("Invalid referral state account given for the provided authority");
-        return Err(SolautoError::IncorrectAccounts.into());
-    }
+            &referral_state_pda != authority_referral_state.account_info.key,
+        SolautoError::IncorrectAccounts
+    );
 
     let authority_referred_by_state = &authority_referral_state.data.referred_by_state;
 
-    if validate_ta && authority_referred_by_state != &Pubkey::default() && referred_by_ta.is_none() {
-        msg!("Did not provide a referred_by_ta when the authority been referred");
-        return Err(SolautoError::IncorrectAccounts.into());
-    }
+    error_if!(
+        validate_ta &&
+            authority_referred_by_state != &Pubkey::default() &&
+            referred_by_ta.is_none(),
+        SolautoError::IncorrectAccounts
+    );
     // The referred_by_ta is further validated at payout before transfer
 
     Ok(())
@@ -304,13 +305,11 @@ pub fn validate_lending_program_accounts_with_position<'a>(
     let supply_mint = &solauto_position.data.state.supply.mint;
     let debt_mint = &solauto_position.data.state.debt.mint;
 
-    if
+    error_if!(
         !solauto_position.data.self_managed.val &&
-        protocol_user_account.key != &solauto_position.data.position.protocol_user_account
-    {
-        msg!("Incorrect protocol-owned account");
-        return Err(SolautoError::IncorrectAccounts.into());
-    }
+            protocol_user_account.key != &solauto_position.data.position.protocol_user_account,
+        SolautoError::IncorrectAccounts
+    );
 
     match lending_platform {
         LendingPlatform::Marginfi => {
@@ -362,14 +361,12 @@ pub fn validate_token_account<'a>(
         mint_key
     );
 
-    if
+    error_if!(
         source_ta.is_some() &&
-        source_ta.unwrap().key != &associated_position_ta &&
-        source_ta.unwrap().key != &associated_authority_ta
-    {
-        msg!("Incorrect token account {}", source_ta.unwrap().key);
-        return Err(SolautoError::IncorrectAccounts.into());
-    }
+            source_ta.unwrap().key != &associated_position_ta &&
+            source_ta.unwrap().key != &associated_authority_ta,
+        SolautoError::IncorrectAccounts
+    );
 
     Ok(())
 }
@@ -404,13 +401,11 @@ pub fn validate_referral_signer(
     check!(&signer.is_signer, ProgramError::MissingRequiredSignature);
     check!(&referral_state_pda == referral_state.account_info.key, SolautoError::IncorrectAccounts);
 
-    if
+    error_if!(
         signer.key != &referral_state.data.authority &&
-        (!allow_solauto_manager || signer.key != &SOLAUTO_MANAGER)
-    {
-        msg!("Instruction has not been signed by the right account");
-        return Err(SolautoError::IncorrectAccounts.into());
-    }
+            (!allow_solauto_manager || signer.key != &SOLAUTO_MANAGER),
+        SolautoError::IncorrectAccounts
+    );
 
     Ok(())
 }
@@ -423,18 +418,15 @@ pub fn validate_no_active_balances<'a>(
         let marginfi_account = DeserializedAccount::<MarginfiAccount>
             ::zerocopy(Some(protocol_account))?
             .unwrap();
-        if
+
+        check!(
             marginfi_account.data.lending_account.balances
                 .iter()
                 .filter(|balance| balance.active == 1)
                 .collect::<Vec<_>>()
-                .len() > 0
-        {
-            msg!(
-                "Marginfi account has active balances. Ensure all debt is repaid and supply tokens are withdrawn before closing position"
-            );
-            return Err(SolautoError::IncorrectAccounts.into());
-        }
+                .len() == 0,
+            SolautoError::IncorrectAccounts
+        );
 
         Ok(())
     } else {
