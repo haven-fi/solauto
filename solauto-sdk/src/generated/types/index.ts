@@ -25,6 +25,7 @@ export * from './solautoAction';
 export * from './solautoRebalanceType';
 export * from './solautoSettingsParameters';
 export * from './solautoSettingsParametersInp';
+export * from './swapType';
 export * from './tokenAmount';
 export * from './tokenBalanceAmount';
 export * from './tokenBalanceChange';

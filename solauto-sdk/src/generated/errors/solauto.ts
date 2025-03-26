@@ -113,14 +113,18 @@ export class InstructionIsCPIError extends ProgramError {
 codeToErrorMap.set(0x6, InstructionIsCPIError);
 nameToErrorMap.set('InstructionIsCPI', InstructionIsCPIError);
 
-/** IncorrectInstructions: Incorrect set of instructions in the transaction */
+/** IncorrectInstructions: Incorrect set of instructions or instruction data in the transaction */
 export class IncorrectInstructionsError extends ProgramError {
   override readonly name: string = 'IncorrectInstructions';
 
   readonly code: number = 0x7; // 7
 
   constructor(program: Program, cause?: Error) {
-    super('Incorrect set of instructions in the transaction', program, cause);
+    super(
+      'Incorrect set of instructions or instruction data in the transaction',
+      program,
+      cause
+    );
   }
 }
 codeToErrorMap.set(0x7, IncorrectInstructionsError);
@@ -159,6 +163,26 @@ export class InvalidRebalanceMadeError extends ProgramError {
 }
 codeToErrorMap.set(0x9, InvalidRebalanceMadeError);
 nameToErrorMap.set('InvalidRebalanceMade', InvalidRebalanceMadeError);
+
+/** NonAuthorityProvidedTargetLTV: Cannot provide a target liquidation utilization rate if the instruction is not signed by the position authority */
+export class NonAuthorityProvidedTargetLTVError extends ProgramError {
+  override readonly name: string = 'NonAuthorityProvidedTargetLTV';
+
+  readonly code: number = 0xa; // 10
+
+  constructor(program: Program, cause?: Error) {
+    super(
+      'Cannot provide a target liquidation utilization rate if the instruction is not signed by the position authority',
+      program,
+      cause
+    );
+  }
+}
+codeToErrorMap.set(0xa, NonAuthorityProvidedTargetLTVError);
+nameToErrorMap.set(
+  'NonAuthorityProvidedTargetLTV',
+  NonAuthorityProvidedTargetLTVError
+);
 
 /**
  * Attempts to resolve a custom program error from the provided error code.

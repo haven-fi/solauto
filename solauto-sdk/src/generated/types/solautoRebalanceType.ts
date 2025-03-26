@@ -9,7 +9,6 @@
 import { Serializer, scalarEnum } from '@metaplex-foundation/umi/serializers';
 
 export enum SolautoRebalanceType {
-  None,
   Regular,
   DoubleRebalanceWithFL,
   FLSwapThenRebalance,

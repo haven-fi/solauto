@@ -1,44 +1,46 @@
-use borsh::{ BorshDeserialize, BorshSerialize };
+use borsh::{BorshDeserialize, BorshSerialize};
 use jupiter_sdk::JUPITER_ID;
-use marginfi_sdk::{ generated::instructions::LendingAccountBorrowInstructionArgs, MARGINFI_ID };
+use marginfi_sdk::{generated::instructions::LendingAccountBorrowInstructionArgs, MARGINFI_ID};
 use solana_program::{
     account_info::AccountInfo,
     entrypoint::ProgramResult,
     hash::hash,
-    instruction::{ get_stack_height, Instruction, TRANSACTION_LEVEL_STACK_HEIGHT },
+    instruction::{get_stack_height, Instruction, TRANSACTION_LEVEL_STACK_HEIGHT},
     msg,
     program::invoke,
     program_error::ProgramError,
     pubkey::Pubkey,
     sanitize::SanitizeError,
-    serialize_utils::{ read_pubkey, read_slice, read_u16 },
+    serialize_utils::{read_pubkey, read_slice, read_u16},
     sysvar::instructions::load_current_index_checked,
 };
 
 use super::solana_utils::invoke_instruction;
 use crate::{
-    check,
-    error_if,
+    check, error_if,
     state::solauto_position::SolautoPosition,
     types::{
         errors::SolautoError,
-        instruction::{ SolautoStandardAccounts, SOLAUTO_REBALANCE_IX_DISCRIMINATORS },
-        shared::{ DeserializedAccount, SolautoRebalanceType },
+        instruction::{SolautoStandardAccounts, SOLAUTO_REBALANCE_IX_DISCRIMINATORS},
+        shared::{DeserializedAccount, SolautoRebalanceType},
     },
 };
 
 pub fn update_data<T: BorshSerialize>(account: &mut DeserializedAccount<T>) -> ProgramResult {
-    account.data.serialize(&mut &mut account.account_info.data.borrow_mut()[..]).map_err(|err| {
-        msg!("{}", err);
-        err
-    })?;
+    account
+        .data
+        .serialize(&mut &mut account.account_info.data.borrow_mut()[..])
+        .map_err(|err| {
+            msg!("{}", err);
+            err
+        })?;
     Ok(())
 }
 
 pub fn solauto_invoke_instruction(
     instruction: Instruction,
     account_infos: &[AccountInfo],
-    solauto_position: &DeserializedAccount<SolautoPosition>
+    solauto_position: &DeserializedAccount<SolautoPosition>,
 ) -> ProgramResult {
     if solauto_position.data.self_managed.val {
         invoke(&instruction, account_infos)
@@ -46,7 +48,7 @@ pub fn solauto_invoke_instruction(
         invoke_instruction(
             &instruction,
             account_infos,
-            Some(&solauto_position.data.seeds_with_bump())
+            Some(&solauto_position.data.seeds_with_bump()),
         )
     }
 }
@@ -66,9 +68,19 @@ pub struct PickIxDataResp {
 }
 
 fn pick_ix_data(req: PickIxDataReq) -> Result<PickIxDataResp, SanitizeError> {
-    let PickIxDataReq { ixs_sysvar, ix_idx, data_start_idx, data_len, account_indices } = req;
+    let PickIxDataReq {
+        ixs_sysvar,
+        ix_idx,
+        data_start_idx,
+        data_len,
+        account_indices,
+    } = req;
 
-    let data = Box::new(ixs_sysvar.try_borrow_data().expect("Should retrieve IXS sysvar data"));
+    let data = Box::new(
+        ixs_sysvar
+            .try_borrow_data()
+            .expect("Should retrieve IXS sysvar data"),
+    );
 
     // First byte indicates the number of instructions
     let mut current = 2 + ix_idx * 2;
@@ -108,7 +120,7 @@ fn pick_ix_data(req: PickIxDataReq) -> Result<PickIxDataResp, SanitizeError> {
 
 pub fn get_marginfi_flash_loan_amount<'a>(
     ixs_sysvar: &'a AccountInfo<'a>,
-    ix_idx: Option<usize>
+    ix_idx: Option<usize>,
 ) -> Result<u64, ProgramError> {
     let data = pick_ix_data(PickIxDataReq {
         ixs_sysvar,
@@ -116,7 +128,8 @@ pub fn get_marginfi_flash_loan_amount<'a>(
         data_start_idx: Some(8),
         data_len: Some(8),
         account_indices: Some(vec![4]),
-    }).expect("Should retrieve flash loan amount");
+    })
+    .expect("Should retrieve flash loan amount");
 
     let args = LendingAccountBorrowInstructionArgs::deserialize(&mut data.data.as_slice())?;
 
@@ -143,7 +156,7 @@ impl<'a> InstructionChecker<'a> {
         ixs_sysvar: &'a AccountInfo<'a>,
         program_id: Pubkey,
         ix_discriminators: Option<Vec<u8>>,
-        curr_ix_idx: u16
+        curr_ix_idx: u16,
     ) -> Self {
         Self {
             anchor_program: false,
@@ -158,7 +171,7 @@ impl<'a> InstructionChecker<'a> {
         ixs_sysvar: &'a AccountInfo<'a>,
         program_id: Pubkey,
         ix_names: Vec<&str>,
-        curr_ix_idx: u16
+        curr_ix_idx: u16,
     ) -> Self {
         let mut ix_discriminators: Vec<u64> = Vec::with_capacity(ix_names.len());
         for name in ix_names.iter() {
@@ -177,12 +190,14 @@ impl<'a> InstructionChecker<'a> {
         if program_id == self.program_id {
             if self.anchor_program {
                 let discriminator = u64::from_le_bytes(
-                    discriminator_data[0..8].try_into().expect("Should be 8 bytes")
+                    discriminator_data[0..8]
+                        .try_into()
+                        .expect("Should be 8 bytes"),
                 );
 
-                if
-                    self.anchor_ix_discriminators.is_none() ||
-                    self.anchor_ix_discriminators
+                if self.anchor_ix_discriminators.is_none()
+                    || self
+                        .anchor_ix_discriminators
                         .as_ref()
                         .unwrap()
                         .iter()
@@ -192,10 +207,10 @@ impl<'a> InstructionChecker<'a> {
                 }
             }
 
-            if
-                !self.anchor_program &&
-                (self.ix_discriminators.is_none() ||
-                    self.ix_discriminators
+            if !self.anchor_program
+                && (self.ix_discriminators.is_none()
+                    || self
+                        .ix_discriminators
                         .as_ref()
                         .unwrap()
                         .iter()
@@ -215,7 +230,8 @@ impl<'a> InstructionChecker<'a> {
             data_start_idx: Some(0),
             data_len: Some(discriminator_len),
             account_indices: None,
-        }).expect("Should work");
+        })
+        .expect("Should work");
 
         return self.ix_matches(data.program_id, &data.data);
     }
@@ -223,18 +239,21 @@ impl<'a> InstructionChecker<'a> {
 
 pub fn validate_rebalance_instructions(
     std_accounts: &Box<SolautoStandardAccounts>,
-    rebalance_type: SolautoRebalanceType
+    rebalance_type: SolautoRebalanceType,
 ) -> ProgramResult {
     let ixs_sysvar = std_accounts.ixs_sysvar.unwrap();
 
     let current_ix_idx = load_current_index_checked(ixs_sysvar)?;
-    error_if!(get_stack_height() > TRANSACTION_LEVEL_STACK_HEIGHT, SolautoError::InstructionIsCPI);
+    error_if!(
+        get_stack_height() > TRANSACTION_LEVEL_STACK_HEIGHT,
+        SolautoError::InstructionIsCPI
+    );
 
     let solauto_rebalance = InstructionChecker::from(
         ixs_sysvar,
         crate::ID,
         Some(SOLAUTO_REBALANCE_IX_DISCRIMINATORS.to_vec()),
-        current_ix_idx
+        current_ix_idx,
     );
     let jup_swap = InstructionChecker::from_anchor(
         ixs_sysvar,
@@ -245,9 +264,9 @@ pub fn validate_rebalance_instructions(
             "route_with_token_ledger",
             "shared_accounts_route_with_token_ledger",
             "exact_out_route",
-            "shared_accounts_exact_out_route"
+            "shared_accounts_exact_out_route",
         ],
-        current_ix_idx
+        current_ix_idx,
     );
 
     let next_ix = 1;
@@ -255,10 +274,12 @@ pub fn validate_rebalance_instructions(
     let prev_ix = -1;
 
     let valid_ixs = match rebalance_type {
-        SolautoRebalanceType::Regular =>
-            jup_swap.matches(next_ix) && solauto_rebalance.matches(ix_2_after),
-        SolautoRebalanceType::DoubleRebalanceWithFL =>
-            jup_swap.matches(next_ix) && solauto_rebalance.matches(ix_2_after),
+        SolautoRebalanceType::Regular => {
+            jup_swap.matches(next_ix) && solauto_rebalance.matches(ix_2_after)
+        }
+        SolautoRebalanceType::DoubleRebalanceWithFL => {
+            jup_swap.matches(next_ix) && solauto_rebalance.matches(ix_2_after)
+        }
         SolautoRebalanceType::FLSwapThenRebalance => jup_swap.matches(prev_ix),
         SolautoRebalanceType::FLRebalanceThenSwap => jup_swap.matches(next_ix),
     };
@@ -270,7 +291,7 @@ pub fn validate_rebalance_instructions(
 
 pub fn get_flash_borrow_ix_idx(
     std_accounts: &Box<SolautoStandardAccounts>,
-    rebalance_type: SolautoRebalanceType
+    rebalance_type: SolautoRebalanceType,
 ) -> Result<Option<usize>, ProgramError> {
     let ixs_sysvar = std_accounts.ixs_sysvar.unwrap();
     let current_ix_idx = load_current_index_checked(ixs_sysvar)?;
@@ -282,7 +303,7 @@ pub fn get_flash_borrow_ix_idx(
         ixs_sysvar,
         MARGINFI_ID,
         vec!["lending_account_borrow"],
-        current_ix_idx
+        current_ix_idx,
     );
 
     let borrow_ix_idx = match rebalance_type {

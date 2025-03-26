@@ -5,15 +5,19 @@
 //! [https://github.com/metaplex-foundation/kinobi]
 //!
 
+use crate::generated::types::PodBool;
 use crate::generated::types::SolautoRebalanceType;
+use crate::generated::types::SwapType;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct RebalanceInstructionData {
+    pub active: PodBool,
     pub rebalance_type: SolautoRebalanceType,
-    pub padding1: [u8; 7],
+    pub swap_type: SwapType,
+    pub padding1: [u8; 5],
     pub flash_loan_amount: u64,
     pub padding: [u32; 4],
 }

@@ -1,6 +1,6 @@
 use solana_program::pubkey::Pubkey;
 
-use super::shared::{ TokenBalanceAmount, BareSplTokenTransferArgs };
+use super::shared::{BareSplTokenTransferArgs, TokenBalanceAmount};
 
 #[derive(Clone)]
 pub struct FromLendingPlatformAction<T> {

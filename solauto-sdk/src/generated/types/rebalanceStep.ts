@@ -9,8 +9,8 @@
 import { Serializer, scalarEnum } from '@metaplex-foundation/umi/serializers';
 
 export enum RebalanceStep {
-  First,
-  Final,
+  PreSwap,
+  PostSwap,
 }
 
 export type RebalanceStepArgs = RebalanceStep;

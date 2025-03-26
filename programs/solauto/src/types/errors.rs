@@ -24,7 +24,7 @@ pub enum SolautoError {
     #[error("Invalid rebalance was made. Target supply USD and target debt USD was not met")]
     InvalidRebalanceMade,
     #[error("Cannot provide a target liquidation utilization rate if the instruction is not signed by the position authority")]
-    NonAuthorityProvidedTargetLTV
+    NonAuthorityProvidedTargetLTV,
 }
 
 impl From<SolautoError> for ProgramError {

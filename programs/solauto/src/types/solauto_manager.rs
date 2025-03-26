@@ -1,31 +1,23 @@
 use math_utils::to_bps;
 use solana_program::{
-    account_info::AccountInfo,
-    clock::Clock,
-    entrypoint::ProgramResult,
-    msg,
-    program_error::ProgramError,
-    pubkey::Pubkey,
+    account_info::AccountInfo, clock::Clock, entrypoint::ProgramResult, msg,
+    program_error::ProgramError, pubkey::Pubkey,
 };
 
 use super::{
-    instruction::{ RebalanceSettings, SolautoAction, SolautoStandardAccounts },
-    lending_protocol::{ LendingProtocolClient, LendingProtocolTokenAccounts },
+    instruction::{RebalanceSettings, SolautoAction, SolautoStandardAccounts},
+    lending_protocol::{LendingProtocolClient, LendingProtocolTokenAccounts},
     shared::{
-        RebalanceStep,
-        RefreshStateProps,
-        SplTokenTransferArgs,
-        TokenBalanceAmount,
-        TokenType,
+        RebalanceStep, RefreshStateProps, SplTokenTransferArgs, TokenBalanceAmount, TokenType,
     },
     solauto::SolautoCpiAction,
 };
 use crate::{
-    rebalance::rebalancer::{ Rebalancer, RebalancerData, SolautoPositionData, TokenAccountData },
+    rebalance::rebalancer::{Rebalancer, RebalancerData, SolautoPositionData, TokenAccountData},
     state::solauto_position::SolautoPosition,
     utils::{
         solana_utils::spl_token_transfer,
-        solauto_utils::{ safe_unpack_token_account, update_token_state, SolautoFeesBps },
+        solauto_utils::{safe_unpack_token_account, update_token_state, SolautoFeesBps},
         *,
     },
 };
@@ -41,7 +33,7 @@ impl<'a> SolautoManagerAccounts<'a> {
         supply: LendingProtocolTokenAccounts<'a>,
         debt: LendingProtocolTokenAccounts<'a>,
         intermediary_ta: Option<&'a AccountInfo<'a>>,
-        solauto_fees: Option<SolautoFeesBps>
+        solauto_fees: Option<SolautoFeesBps>,
     ) -> Result<Self, ProgramError> {
         Ok(Self {
             supply,
@@ -64,7 +56,7 @@ impl<'a> SolautoManager<'a> {
         client: Box<dyn LendingProtocolClient<'a> + 'a>,
         accounts: SolautoManagerAccounts<'a>,
         std_accounts: Box<SolautoStandardAccounts<'a>>,
-        solauto_fees_bps: Option<solauto_utils::SolautoFeesBps>
+        solauto_fees_bps: Option<solauto_utils::SolautoFeesBps>,
     ) -> Result<Self, ProgramError> {
         client.validate(&std_accounts)?;
         Ok(Self {
@@ -89,14 +81,15 @@ impl<'a> SolautoManager<'a> {
     fn borrow(&mut self, base_unit_amount: u64, destination: &'a AccountInfo<'a>) -> ProgramResult {
         msg!("Borrowing {}", base_unit_amount);
         self.update_usage(base_unit_amount as i64, TokenType::Debt);
-        self.client.borrow(base_unit_amount, destination, &self.std_accounts)?;
+        self.client
+            .borrow(base_unit_amount, destination, &self.std_accounts)?;
         Ok(())
     }
 
     fn withdraw(
         &mut self,
         amount: TokenBalanceAmount,
-        destination: &'a AccountInfo<'a>
+        destination: &'a AccountInfo<'a>,
     ) -> ProgramResult {
         let base_unit_amount = match amount {
             TokenBalanceAmount::All => self.position_data().state.supply.amount_used.base_unit,
@@ -105,7 +98,8 @@ impl<'a> SolautoManager<'a> {
 
         msg!("Withdrawing {}", base_unit_amount);
         self.update_usage((base_unit_amount as i64) * -1, TokenType::Supply);
-        self.client.withdraw(amount, destination, &self.std_accounts)?;
+        self.client
+            .withdraw(amount, destination, &self.std_accounts)?;
         Ok(())
     }
 
@@ -124,14 +118,21 @@ impl<'a> SolautoManager<'a> {
     fn update_usage(&mut self, base_unit_amount: i64, token_type: TokenType) {
         let position_data = self.position_data();
         if !position_data.self_managed.val || position_data.rebalance.active() {
-            self.std_accounts.solauto_position.data.update_usage(token_type, base_unit_amount);
+            self.std_accounts
+                .solauto_position
+                .data
+                .update_usage(token_type, base_unit_amount);
         }
     }
 
     fn get_token_account_data(&self, account: Option<&'a AccountInfo<'a>>) -> TokenAccountData {
         TokenAccountData::from(
             *account.unwrap().key,
-            safe_unpack_token_account(account).unwrap().unwrap().data.amount
+            safe_unpack_token_account(account)
+                .unwrap()
+                .unwrap()
+                .data
+                .amount,
         )
     }
 
@@ -166,20 +167,25 @@ impl<'a> SolautoManager<'a> {
                 debt_ta: position_debt_ta,
             },
             authority_supply_ta: TokenAccountData::without_balance(
-                *self.accounts.supply.authority_ta.unwrap().key
+                *self.accounts.supply.authority_ta.unwrap().key,
             ),
             authority_debt_ta: TokenAccountData::without_balance(
-                *self.accounts.debt.authority_ta.unwrap().key
+                *self.accounts.debt.authority_ta.unwrap().key,
             ),
             intermediary_ta: TokenAccountData::without_balance(
-                *self.accounts.intermediary_ta.unwrap().key
+                *self.accounts.intermediary_ta.unwrap().key,
             ),
             solauto_fees_bps: self.solauto_fees_bps.unwrap().clone(),
             solauto_fees_ta: *self.std_accounts.solauto_fees_ta.unwrap().key,
-            referred_by_state: self.std_accounts.authority_referral_state
+            referred_by_state: self
+                .std_accounts
+                .authority_referral_state
                 .as_ref()
                 .map_or(None, |acc| Some(acc.data.referred_by_state.clone())),
-            referred_by_ta: self.std_accounts.referred_by_ta.map_or(None, |acc| Some(*acc.key)),
+            referred_by_ta: self
+                .std_accounts
+                .referred_by_ta
+                .map_or(None, |acc| Some(*acc.key)),
         })
     }
 
@@ -189,26 +195,30 @@ impl<'a> SolautoManager<'a> {
         for action in actions {
             match action {
                 SolautoCpiAction::Deposit(amount) => sm.deposit(amount)?,
-                SolautoCpiAction::Withdraw(data) =>
-                    sm.withdraw(data.amount, sm.pk_to_account_info(data.to_wallet_ta))?,
-                SolautoCpiAction::Borrow(data) =>
-                    sm.borrow(data.amount, sm.pk_to_account_info(data.to_wallet_ta))?,
+                SolautoCpiAction::Withdraw(data) => {
+                    sm.withdraw(data.amount, sm.pk_to_account_info(data.to_wallet_ta))?
+                }
+                SolautoCpiAction::Borrow(data) => {
+                    sm.borrow(data.amount, sm.pk_to_account_info(data.to_wallet_ta))?
+                }
                 SolautoCpiAction::Repay(amount) => sm.repay(amount)?,
                 SolautoCpiAction::SplTokenTransfer(data) => {
-                    let seeds = if
-                        &data.from_wallet == sm.std_accounts.solauto_position.account_info.key
-                    {
-                        Some(sm.std_accounts.solauto_position.data.seeds_with_bump())
-                    } else {
-                        None
-                    };
-                    spl_token_transfer(sm.std_accounts.token_program, SplTokenTransferArgs {
-                        amount: data.amount,
-                        source: sm.pk_to_account_info(data.from_wallet_ta),
-                        authority: sm.pk_to_account_info(data.from_wallet),
-                        recipient: sm.pk_to_account_info(data.to_wallet_ta),
-                        authority_seeds: seeds.as_ref(),
-                    })?;
+                    let seeds =
+                        if &data.from_wallet == sm.std_accounts.solauto_position.account_info.key {
+                            Some(sm.std_accounts.solauto_position.data.seeds_with_bump())
+                        } else {
+                            None
+                        };
+                    spl_token_transfer(
+                        sm.std_accounts.token_program,
+                        SplTokenTransferArgs {
+                            amount: data.amount,
+                            source: sm.pk_to_account_info(data.from_wallet_ta),
+                            authority: sm.pk_to_account_info(data.from_wallet),
+                            recipient: sm.pk_to_account_info(data.to_wallet_ta),
+                            authority_seeds: seeds.as_ref(),
+                        },
+                    )?;
                 }
             }
         }
@@ -218,7 +228,7 @@ impl<'a> SolautoManager<'a> {
     pub fn refresh_position(
         solauto_position: &mut SolautoPosition,
         updated_data: RefreshStateProps,
-        clock: Clock
+        clock: Clock,
     ) -> ProgramResult {
         // Update mint addresses if self-managed
         if solauto_position.self_managed.val {
@@ -236,11 +246,11 @@ impl<'a> SolautoManager<'a> {
             solauto_position.state.supply.amount_used.usd_value(),
             solauto_position.state.debt.amount_used.usd_value(),
             solauto_position.state.supply.market_price(),
-            solauto_position.state.supply.decimals
+            solauto_position.state.supply.decimals,
         );
         solauto_position.state.net_worth.update_usd_value(
             updated_data.supply.market_price,
-            solauto_position.state.supply.decimals
+            solauto_position.state.supply.decimals,
         );
 
         solauto_position.refresh_state();
@@ -255,7 +265,10 @@ impl<'a> SolautoManager<'a> {
                 self.deposit(base_unit_amount)?;
             }
             SolautoAction::Borrow(base_unit_amount) => {
-                self.borrow(base_unit_amount, self.accounts.debt.position_ta.as_ref().unwrap())?;
+                self.borrow(
+                    base_unit_amount,
+                    self.accounts.debt.position_ta.as_ref().unwrap(),
+                )?;
             }
             SolautoAction::Repay(amount) => {
                 self.repay(amount)?;
@@ -270,7 +283,7 @@ impl<'a> SolautoManager<'a> {
     pub fn rebalance(
         &mut self,
         rebalance_args: RebalanceSettings,
-        rebalance_step: RebalanceStep
+        rebalance_step: RebalanceStep,
     ) -> ProgramResult {
         let (actions, finished) = {
             let mut rebalancer = self.get_rebalancer(rebalance_args.clone());

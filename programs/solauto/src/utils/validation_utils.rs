@@ -1,6 +1,9 @@
 use std::ops::Div;
 
-use marginfi_sdk::{ generated::accounts::{ Bank, MarginfiAccount }, MARGINFI_ID };
+use marginfi_sdk::{
+    generated::accounts::{Bank, MarginfiAccount},
+    MARGINFI_ID,
+};
 use solana_program::{
     account_info::AccountInfo,
     entrypoint::ProgramResult,
@@ -8,29 +11,29 @@ use solana_program::{
     program_error::ProgramError,
     pubkey::Pubkey,
     system_program::ID as system_program_id,
-    sysvar::{ instructions::ID as ixs_sysvar_id, rent::ID as rent_program_id },
+    sysvar::{instructions::ID as ixs_sysvar_id, rent::ID as rent_program_id},
 };
-use spl_associated_token_account::{ get_associated_token_address, ID as ata_program_id };
+use spl_associated_token_account::{get_associated_token_address, ID as ata_program_id};
 use spl_token::ID as token_program_id;
 
 use crate::{
     check,
-    constants::{ MIN_BOOST_GAP_BPS, MIN_REPAY_GAP_BPS, SOLAUTO_MANAGER },
+    constants::{MIN_BOOST_GAP_BPS, MIN_REPAY_GAP_BPS, SOLAUTO_MANAGER},
     error_if,
     state::{
         automation::AutomationSettings,
         referral_state::ReferralState,
-        solauto_position::{ PositionData, SolautoPosition },
+        solauto_position::{PositionData, SolautoPosition},
     },
     types::{
         errors::SolautoError,
         instruction::SolautoStandardAccounts,
-        shared::{ DeserializedAccount, LendingPlatform, TokenType },
+        shared::{DeserializedAccount, LendingPlatform, TokenType},
     },
 };
 
 use super::{
-    math_utils::{ get_max_boost_to_bps, get_max_repay_from_bps, get_max_repay_to_bps },
+    math_utils::{get_max_boost_to_bps, get_max_repay_from_bps, get_max_repay_to_bps},
     solauto_utils::safe_unpack_token_account,
 };
 
@@ -38,13 +41,13 @@ pub fn generic_instruction_validation(
     accounts: &Box<SolautoStandardAccounts>,
     lending_platform: LendingPlatform,
     authority_signer_only_ix: bool,
-    solauto_managed_only_ix: bool
+    solauto_managed_only_ix: bool,
 ) -> ProgramResult {
     validate_instruction(
         accounts.signer,
         &accounts.solauto_position,
         authority_signer_only_ix,
-        solauto_managed_only_ix
+        solauto_managed_only_ix,
     )?;
     validate_lending_program_account(accounts.lending_protocol, lending_platform)?;
     validate_standard_programs(
@@ -52,7 +55,7 @@ pub fn generic_instruction_validation(
         Some(accounts.token_program),
         accounts.ata_program,
         accounts.rent,
-        accounts.ixs_sysvar
+        accounts.ixs_sysvar,
     )?;
 
     if accounts.authority_referral_state.is_some() {
@@ -60,7 +63,7 @@ pub fn generic_instruction_validation(
             &accounts.solauto_position.data.authority,
             accounts.authority_referral_state.as_ref().unwrap(),
             accounts.referred_by_ta,
-            true
+            true,
         )?;
     }
 
@@ -72,7 +75,7 @@ pub fn validate_instruction(
     signer: &AccountInfo,
     solauto_position: &DeserializedAccount<SolautoPosition>,
     authority_signer_only_ix: bool,
-    solauto_managed_only_ix: bool
+    solauto_managed_only_ix: bool,
 ) -> ProgramResult {
     check!(&signer.is_signer, ProgramError::MissingRequiredSignature);
 
@@ -80,8 +83,9 @@ pub fn validate_instruction(
     let authority_signed = || {
         let expected_solauto_position_address = Pubkey::create_program_address(
             solauto_position.data.seeds_with_bump().as_slice(),
-            &crate::ID
-        ).expect("Ok");
+            &crate::ID,
+        )
+        .expect("Ok");
         let expected_address_matches =
             solauto_position.account_info.key == &expected_solauto_position_address;
         return signer.key == &position_authority && expected_address_matches;
@@ -122,26 +126,28 @@ pub fn validate_position_settings(solauto_position: &SolautoPosition) -> Program
     }
     let max_boost_to = get_max_boost_to_bps(
         solauto_position.state.max_ltv_bps,
-        solauto_position.state.liq_threshold_bps
+        solauto_position.state.liq_threshold_bps,
     );
     if data.setting_params.boost_to_bps > max_boost_to {
-        return invalid_params(format!("Exceeds the maximum boost-to of {}", max_boost_to).as_str());
+        return invalid_params(
+            format!("Exceeds the maximum boost-to of {}", max_boost_to).as_str(),
+        );
     }
 
     if data.setting_params.repay_gap < MIN_REPAY_GAP_BPS {
         return invalid_params(
-            format!("repay_gap must be {} or greater", MIN_REPAY_GAP_BPS).as_str()
+            format!("repay_gap must be {} or greater", MIN_REPAY_GAP_BPS).as_str(),
         );
     }
     if data.setting_params.boost_gap < MIN_BOOST_GAP_BPS {
         return invalid_params(
-            format!("boost_gap must be {} or greater", MIN_BOOST_GAP_BPS).as_str()
+            format!("boost_gap must be {} or greater", MIN_BOOST_GAP_BPS).as_str(),
         );
     }
 
     let max_repay_to_bps = get_max_repay_to_bps(
         solauto_position.state.max_ltv_bps,
-        solauto_position.state.liq_threshold_bps
+        solauto_position.state.liq_threshold_bps,
     );
     if data.setting_params.repay_to_bps > max_repay_to_bps {
         return invalid_params(
@@ -150,11 +156,15 @@ pub fn validate_position_settings(solauto_position: &SolautoPosition) -> Program
     }
     let max_repay_from_bps = get_max_repay_from_bps(
         solauto_position.state.max_ltv_bps,
-        solauto_position.state.liq_threshold_bps
+        solauto_position.state.liq_threshold_bps,
     );
     if data.setting_params.repay_from_bps() > max_repay_from_bps {
         return invalid_params(
-            format!("repay_to_bps + repay_gap must be equal-to or below {}", max_repay_from_bps).as_str()
+            format!(
+                "repay_to_bps + repay_gap must be equal-to or below {}",
+                max_repay_from_bps
+            )
+            .as_str(),
         );
     }
 
@@ -163,7 +173,7 @@ pub fn validate_position_settings(solauto_position: &SolautoPosition) -> Program
 
 pub fn validate_dca_settings(
     position: &PositionData,
-    current_unix_timestamp: u64
+    current_unix_timestamp: u64,
 ) -> ProgramResult {
     if position.dca.is_active() {
         return Ok(());
@@ -174,7 +184,7 @@ pub fn validate_dca_settings(
 
 pub fn validate_automation_settings(
     automation: &AutomationSettings,
-    current_unix_timestamp: u64
+    current_unix_timestamp: u64,
 ) -> ProgramResult {
     let invalid_params = |error_msg| {
         msg!(error_msg);
@@ -189,9 +199,8 @@ pub fn validate_automation_settings(
         return invalid_params("Interval period must be between 10 minutes and 1 month");
     }
 
-    if
-        current_unix_timestamp < automation.unix_start_date ||
-        current_unix_timestamp > automation.unix_start_date + automation.interval_seconds
+    if current_unix_timestamp < automation.unix_start_date
+        || current_unix_timestamp > automation.unix_start_date + automation.interval_seconds
     {
         return invalid_params("Provided an invalid unix start date");
     }
@@ -205,7 +214,7 @@ pub fn validate_automation_settings(
 
 pub fn validate_lending_program_account(
     program: &AccountInfo,
-    lending_platform: LendingPlatform
+    lending_platform: LendingPlatform,
 ) -> ProgramResult {
     match lending_platform {
         LendingPlatform::Marginfi => {
@@ -224,7 +233,7 @@ pub fn validate_standard_programs(
     token_program: Option<&AccountInfo>,
     ata_program: Option<&AccountInfo>,
     rent: Option<&AccountInfo>,
-    ixs_sysvar: Option<&AccountInfo>
+    ixs_sysvar: Option<&AccountInfo>,
 ) -> ProgramResult {
     check!(
         system_program.is_none() || system_program.unwrap().key == &system_program_id,
@@ -253,24 +262,24 @@ pub fn validate_referral_accounts<'a>(
     referral_state_authority: &Pubkey,
     authority_referral_state: &DeserializedAccount<'a, ReferralState>,
     referred_by_ta: Option<&'a AccountInfo<'a>>,
-    validate_ta: bool
+    validate_ta: bool,
 ) -> ProgramResult {
     let referral_state_pda = Pubkey::create_program_address(
         authority_referral_state.data.seeds_with_bump().as_slice(),
-        &crate::ID
+        &crate::ID,
     )?;
     error_if!(
-        &authority_referral_state.data.authority != referral_state_authority ||
-            &referral_state_pda != authority_referral_state.account_info.key,
+        &authority_referral_state.data.authority != referral_state_authority
+            || &referral_state_pda != authority_referral_state.account_info.key,
         SolautoError::IncorrectAccounts
     );
 
     let authority_referred_by_state = &authority_referral_state.data.referred_by_state;
 
     error_if!(
-        validate_ta &&
-            authority_referred_by_state != &Pubkey::default() &&
-            referred_by_ta.is_none(),
+        validate_ta
+            && authority_referred_by_state != &Pubkey::default()
+            && referred_by_ta.is_none(),
         SolautoError::IncorrectAccounts
     );
     // The referred_by_ta is further validated at payout before transfer
@@ -280,7 +289,7 @@ pub fn validate_referral_accounts<'a>(
 
 pub fn validate_marginfi_bank<'a>(
     marginfi_bank: &'a AccountInfo<'a>,
-    mint: &Pubkey
+    mint: &Pubkey,
 ) -> ProgramResult {
     if mint == &Pubkey::default() {
         return Ok(());
@@ -297,14 +306,14 @@ pub fn validate_lending_program_accounts_with_position<'a>(
     solauto_position: &DeserializedAccount<SolautoPosition>,
     protocol_user_account: &'a AccountInfo<'a>,
     protocol_supply_account: &'a AccountInfo<'a>,
-    protocol_debt_account: &'a AccountInfo<'a>
+    protocol_debt_account: &'a AccountInfo<'a>,
 ) -> ProgramResult {
     let supply_mint = &solauto_position.data.state.supply.mint;
     let debt_mint = &solauto_position.data.state.debt.mint;
 
     error_if!(
-        !solauto_position.data.self_managed.val &&
-            protocol_user_account.key != &solauto_position.data.position.protocol_user_account,
+        !solauto_position.data.self_managed.val
+            && protocol_user_account.key != &solauto_position.data.position.protocol_user_account,
         SolautoError::IncorrectAccounts
     );
 
@@ -321,10 +330,20 @@ pub fn validate_lending_program_accounts_with_position<'a>(
 pub fn validate_token_accounts<'a, 'b>(
     solauto_position: &'b DeserializedAccount<'a, SolautoPosition>,
     source_supply_ta: Option<&'a AccountInfo<'a>>,
-    source_debt_ta: Option<&'a AccountInfo<'a>>
+    source_debt_ta: Option<&'a AccountInfo<'a>>,
 ) -> ProgramResult {
-    validate_token_account(solauto_position, source_supply_ta, Some(TokenType::Supply), None)?;
-    validate_token_account(solauto_position, source_debt_ta, Some(TokenType::Debt), None)?;
+    validate_token_account(
+        solauto_position,
+        source_supply_ta,
+        Some(TokenType::Supply),
+        None,
+    )?;
+    validate_token_account(
+        solauto_position,
+        source_debt_ta,
+        Some(TokenType::Debt),
+        None,
+    )?;
     Ok(())
 }
 
@@ -332,7 +351,7 @@ pub fn validate_token_account<'a>(
     solauto_position: &DeserializedAccount<'a, SolautoPosition>,
     source_ta: Option<&'a AccountInfo<'a>>,
     token_type: Option<TokenType>,
-    token_mint: Option<&Pubkey>
+    token_mint: Option<&Pubkey>,
 ) -> ProgramResult {
     if solauto_position.data.self_managed.val && token_mint.is_none() {
         return Ok(());
@@ -349,19 +368,15 @@ pub fn validate_token_account<'a>(
         mint_key
     };
 
-    let associated_position_ta = get_associated_token_address(
-        &solauto_position.account_info.key,
-        mint_key
-    );
-    let associated_authority_ta = get_associated_token_address(
-        &solauto_position.data.authority,
-        mint_key
-    );
+    let associated_position_ta =
+        get_associated_token_address(&solauto_position.account_info.key, mint_key);
+    let associated_authority_ta =
+        get_associated_token_address(&solauto_position.data.authority, mint_key);
 
     error_if!(
-        source_ta.is_some() &&
-            source_ta.unwrap().key != &associated_position_ta &&
-            source_ta.unwrap().key != &associated_authority_ta,
+        source_ta.is_some()
+            && source_ta.unwrap().key != &associated_position_ta
+            && source_ta.unwrap().key != &associated_authority_ta,
         SolautoError::IncorrectAccounts
     );
 
@@ -371,7 +386,7 @@ pub fn validate_token_account<'a>(
 pub fn token_account_owned_by<'a>(
     token_account: &'a AccountInfo<'a>,
     expected_owner: &Pubkey,
-    token_mint: Option<&Pubkey>
+    token_mint: Option<&Pubkey>,
 ) -> Result<bool, ProgramError> {
     if token_mint.is_some() {
         return Ok(
@@ -379,28 +394,29 @@ pub fn token_account_owned_by<'a>(
         );
     } else {
         let token_account_data = safe_unpack_token_account(Some(token_account))?.unwrap();
-        return Ok(
-            token_account_data.account_info.owner == &token_program_id &&
-                &token_account_data.data.owner == expected_owner
-        );
+        return Ok(token_account_data.account_info.owner == &token_program_id
+            && &token_account_data.data.owner == expected_owner);
     }
 }
 
 pub fn validate_referral_signer(
     referral_state: &DeserializedAccount<ReferralState>,
     signer: &AccountInfo,
-    allow_solauto_manager: bool
+    allow_solauto_manager: bool,
 ) -> ProgramResult {
     let referral_state_pda = Pubkey::create_program_address(
         referral_state.data.seeds_with_bump().as_slice(),
-        &crate::ID
+        &crate::ID,
     )?;
     check!(&signer.is_signer, ProgramError::MissingRequiredSignature);
-    check!(&referral_state_pda == referral_state.account_info.key, SolautoError::IncorrectAccounts);
+    check!(
+        &referral_state_pda == referral_state.account_info.key,
+        SolautoError::IncorrectAccounts
+    );
 
     error_if!(
-        signer.key != &referral_state.data.authority &&
-            (!allow_solauto_manager || signer.key != &SOLAUTO_MANAGER),
+        signer.key != &referral_state.data.authority
+            && (!allow_solauto_manager || signer.key != &SOLAUTO_MANAGER),
         SolautoError::IncorrectAccounts
     );
 
@@ -409,19 +425,22 @@ pub fn validate_referral_signer(
 
 pub fn validate_no_active_balances<'a>(
     protocol_account: &'a AccountInfo<'a>,
-    lending_platform: LendingPlatform
+    lending_platform: LendingPlatform,
 ) -> ProgramResult {
     if lending_platform == LendingPlatform::Marginfi {
-        let marginfi_account = DeserializedAccount::<MarginfiAccount>
-            ::zerocopy(Some(protocol_account))?
-            .unwrap();
+        let marginfi_account =
+            DeserializedAccount::<MarginfiAccount>::zerocopy(Some(protocol_account))?.unwrap();
 
         check!(
-            marginfi_account.data.lending_account.balances
+            marginfi_account
+                .data
+                .lending_account
+                .balances
                 .iter()
                 .filter(|balance| balance.active == 1)
                 .collect::<Vec<_>>()
-                .len() == 0,
+                .len()
+                == 0,
             SolautoError::IncorrectAccounts
         );
 
@@ -461,11 +480,9 @@ pub fn value_match_with_threshold(value: f64, target_value: f64, threshold: f64)
 mod tests {
     use crate::{
         state::{
-            automation::{ AutomationSettings, AutomationSettingsInp },
+            automation::{AutomationSettings, AutomationSettingsInp},
             solauto_position::{
-                PositionState,
-                SolautoSettingsParameters,
-                SolautoSettingsParametersInp,
+                PositionState, SolautoSettingsParameters, SolautoSettingsParametersInp,
             },
         },
         types::shared::PositionType,
@@ -487,7 +504,7 @@ mod tests {
             Pubkey::default(),
             PositionType::default(),
             position_data,
-            position_state
+            position_state,
         );
         let result = validate_position_settings(&solauto_position);
         assert!(result.is_err());
@@ -507,14 +524,14 @@ mod tests {
                 boost_gap: MIN_BOOST_GAP_BPS - 10,
                 ..default_settings_args
             }),
-            default_liq_threshold_bps
+            default_liq_threshold_bps,
         );
         test_position_settings(
             SolautoSettingsParameters::from(SolautoSettingsParametersInp {
                 repay_gap: MIN_REPAY_GAP_BPS - 10,
                 ..default_settings_args
             }),
-            default_liq_threshold_bps
+            default_liq_threshold_bps,
         );
         test_position_settings(
             SolautoSettingsParameters::from(SolautoSettingsParametersInp {
@@ -522,7 +539,7 @@ mod tests {
                 repay_gap: 600,
                 ..default_settings_args
             }),
-            default_liq_threshold_bps
+            default_liq_threshold_bps,
         );
         test_position_settings(
             SolautoSettingsParameters::from(SolautoSettingsParametersInp {
@@ -530,7 +547,7 @@ mod tests {
                 boost_gap: 1000,
                 ..default_settings_args
             }),
-            default_liq_threshold_bps
+            default_liq_threshold_bps,
         );
         test_position_settings(
             SolautoSettingsParameters::from(SolautoSettingsParametersInp {
@@ -538,7 +555,7 @@ mod tests {
                 repay_to_bps: 4000,
                 ..default_settings_args
             }),
-            default_liq_threshold_bps
+            default_liq_threshold_bps,
         );
         test_position_settings(
             SolautoSettingsParameters::from(SolautoSettingsParametersInp {
@@ -546,14 +563,14 @@ mod tests {
                 repay_gap: 500,
                 ..default_settings_args
             }),
-            default_liq_threshold_bps
+            default_liq_threshold_bps,
         );
         test_position_settings(
             SolautoSettingsParameters::from(SolautoSettingsParametersInp {
                 repay_to_bps: 9900,
                 ..default_settings_args
             }),
-            default_liq_threshold_bps
+            default_liq_threshold_bps,
         );
     }
 
@@ -575,25 +592,25 @@ mod tests {
         test_automation_settings(
             current_timestamp,
             AutomationSettings::from(AutomationSettingsInp {
-                unix_start_date: current_timestamp +
-                default_automation_settings_args.interval_seconds +
-                100,
+                unix_start_date: current_timestamp
+                    + default_automation_settings_args.interval_seconds
+                    + 100,
                 ..default_automation_settings_args
-            })
+            }),
         );
         test_automation_settings(
             current_timestamp,
             AutomationSettings::from(AutomationSettingsInp {
                 interval_seconds: 60,
                 ..default_automation_settings_args.clone()
-            })
+            }),
         );
         test_automation_settings(
             current_timestamp,
             AutomationSettings::from(AutomationSettingsInp {
                 interval_seconds: 60 * 60 * 24 * 60,
                 ..default_automation_settings_args.clone()
-            })
+            }),
         );
     }
 }

@@ -15,20 +15,30 @@ import {
   u8,
 } from '@metaplex-foundation/umi/serializers';
 import {
+  PodBool,
+  PodBoolArgs,
   SolautoRebalanceType,
   SolautoRebalanceTypeArgs,
+  SwapType,
+  SwapTypeArgs,
+  getPodBoolSerializer,
   getSolautoRebalanceTypeSerializer,
+  getSwapTypeSerializer,
 } from '.';
 
 export type RebalanceInstructionData = {
+  active: PodBool;
   rebalanceType: SolautoRebalanceType;
+  swapType: SwapType;
   padding1: Array<number>;
   flashLoanAmount: bigint;
   padding: Array<number>;
 };
 
 export type RebalanceInstructionDataArgs = {
+  active: PodBoolArgs;
   rebalanceType: SolautoRebalanceTypeArgs;
+  swapType: SwapTypeArgs;
   padding1: Array<number>;
   flashLoanAmount: number | bigint;
   padding: Array<number>;
@@ -40,8 +50,10 @@ export function getRebalanceInstructionDataSerializer(): Serializer<
 > {
   return struct<RebalanceInstructionData>(
     [
+      ['active', getPodBoolSerializer()],
       ['rebalanceType', getSolautoRebalanceTypeSerializer()],
-      ['padding1', array(u8(), { size: 7 })],
+      ['swapType', getSwapTypeSerializer()],
+      ['padding1', array(u8(), { size: 5 })],
       ['flashLoanAmount', u64()],
       ['padding', array(u32(), { size: 4 })],
     ],

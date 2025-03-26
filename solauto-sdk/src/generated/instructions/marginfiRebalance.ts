@@ -33,7 +33,10 @@ import {
 import {
   SolautoRebalanceType,
   SolautoRebalanceTypeArgs,
+  SwapType,
+  SwapTypeArgs,
   getSolautoRebalanceTypeSerializer,
+  getSwapTypeSerializer,
 } from '../types';
 
 // Accounts.
@@ -71,12 +74,16 @@ export type MarginfiRebalanceInstructionData = {
   rebalanceType: SolautoRebalanceType;
   targetLiqUtilizationRateBps: Option<number>;
   swapInAmountBaseUnit: bigint;
+  flashLoanFeeBps: Option<number>;
+  swapType: Option<SwapType>;
 };
 
 export type MarginfiRebalanceInstructionDataArgs = {
   rebalanceType: SolautoRebalanceTypeArgs;
   targetLiqUtilizationRateBps: OptionOrNullable<number>;
   swapInAmountBaseUnit: number | bigint;
+  flashLoanFeeBps: OptionOrNullable<number>;
+  swapType: OptionOrNullable<SwapTypeArgs>;
 };
 
 export function getMarginfiRebalanceInstructionDataSerializer(): Serializer<
@@ -94,6 +101,8 @@ export function getMarginfiRebalanceInstructionDataSerializer(): Serializer<
         ['rebalanceType', getSolautoRebalanceTypeSerializer()],
         ['targetLiqUtilizationRateBps', option(u16())],
         ['swapInAmountBaseUnit', u64()],
+        ['flashLoanFeeBps', option(u16())],
+        ['swapType', option(getSwapTypeSerializer())],
       ],
       { description: 'MarginfiRebalanceInstructionData' }
     ),

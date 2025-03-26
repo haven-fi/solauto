@@ -1,22 +1,18 @@
-use borsh::{ BorshDeserialize, BorshSerialize };
-use bytemuck::{ Pod, Zeroable };
-use shank::{ ShankAccount, ShankType };
-use solana_program::{ msg, pubkey::Pubkey };
-use std::ops::{ Add, Mul };
+use borsh::{BorshDeserialize, BorshSerialize};
+use bytemuck::{Pod, Zeroable};
+use shank::{ShankAccount, ShankType};
+use solana_program::{msg, pubkey::Pubkey};
+use std::ops::{Add, Mul};
 
 use crate::{
     constants::USD_DECIMALS,
     types::shared::{
-        LendingPlatform, PodBool, PositionType, RebalanceDirection, SolautoRebalanceType, SwapType, TokenType
+        LendingPlatform, PodBool, PositionType, RebalanceDirection, SolautoRebalanceType, SwapType,
+        TokenType,
     },
     utils::math_utils::{
-        base_unit_to_usd_value,
-        from_bps,
-        from_rounded_usd_value,
-        get_liq_utilization_rate_bps,
-        net_worth_base_amount,
-        to_base_unit,
-        to_rounded_usd_value,
+        base_unit_to_usd_value, from_bps, from_rounded_usd_value, get_liq_utilization_rate_bps,
+        net_worth_base_amount, to_base_unit, to_rounded_usd_value,
     },
 };
 
@@ -36,9 +32,11 @@ impl TokenAmount {
         from_rounded_usd_value(self.base_amount_usd_value)
     }
     pub fn update_usd_value(&mut self, market_price: f64, token_decimals: u8) {
-        self.base_amount_usd_value = to_rounded_usd_value(
-            base_unit_to_usd_value(self.base_unit, token_decimals, market_price)
-        );
+        self.base_amount_usd_value = to_rounded_usd_value(base_unit_to_usd_value(
+            self.base_unit,
+            token_decimals,
+            market_price,
+        ));
     }
 }
 
@@ -63,8 +61,10 @@ impl PositionTokenState {
         from_rounded_usd_value(self.base_amount_market_price_usd)
     }
     fn update_usd_values(&mut self) {
-        self.amount_used.update_usd_value(self.market_price(), self.decimals);
-        self.amount_can_be_used.update_usd_value(self.market_price(), self.decimals);
+        self.amount_used
+            .update_usd_value(self.market_price(), self.decimals);
+        self.amount_can_be_used
+            .update_usd_value(self.market_price(), self.decimals);
     }
     pub fn update_usage(&mut self, base_unit_amount_update: i64) {
         if base_unit_amount_update.is_positive() {
@@ -76,22 +76,21 @@ impl PositionTokenState {
 
             self.amount_used.base_unit += (base_unit_amount_update as u64) + addition;
 
-            self.amount_can_be_used.base_unit = self.amount_can_be_used.base_unit.saturating_sub(
-                base_unit_amount_update as u64
-            );
+            self.amount_can_be_used.base_unit = self
+                .amount_can_be_used
+                .base_unit
+                .saturating_sub(base_unit_amount_update as u64);
         } else {
-            self.amount_used.base_unit = self.amount_used.base_unit.saturating_sub(
-                (base_unit_amount_update * -1) as u64
-            );
+            self.amount_used.base_unit = self
+                .amount_used
+                .base_unit
+                .saturating_sub((base_unit_amount_update * -1) as u64);
         }
         self.update_usd_values();
     }
     pub fn update_market_price(&mut self, market_price: f64) {
         msg!("New {} price: {}", self.mint, market_price);
-        self.base_amount_market_price_usd = to_base_unit(
-            market_price,
-            USD_DECIMALS
-        );
+        self.base_amount_market_price_usd = to_base_unit(market_price, USD_DECIMALS);
         self.update_usd_values();
     }
 }
@@ -105,7 +104,9 @@ pub struct SolautoSettingsParametersInp {
 }
 
 #[repr(C, align(8))]
-#[derive(ShankType, BorshSerialize, BorshDeserialize, Clone, Debug, Default, Copy, Pod, Zeroable)]
+#[derive(
+    ShankType, BorshSerialize, BorshDeserialize, Clone, Debug, Default, Copy, Pod, Zeroable,
+)]
 pub struct SolautoSettingsParameters {
     /// At which liquidation utilization rate to boost leverage to
     pub boost_to_bps: u16,
@@ -215,7 +216,7 @@ impl RebalanceStateValues {
         rebalance_direction: RebalanceDirection,
         target_supply_usd: f64,
         target_debt_usd: f64,
-        token_balance_change: Option<TokenBalanceChange>
+        token_balance_change: Option<TokenBalanceChange>,
     ) -> Self {
         let tb_change = if token_balance_change.is_some() {
             token_balance_change.unwrap()
@@ -244,7 +245,11 @@ pub struct RebalanceInstructionData {
     _padding: [u32; 4],
 }
 impl RebalanceInstructionData {
-    pub fn from(rebalance_type: SolautoRebalanceType, flash_loan_amount: u64, swap_type: SwapType) -> Self {
+    pub fn from(
+        rebalance_type: SolautoRebalanceType,
+        flash_loan_amount: u64,
+        swap_type: SwapType,
+    ) -> Self {
         Self {
             active: PodBool::new(true),
             rebalance_type,
@@ -294,12 +299,10 @@ impl SolautoPosition {
         authority: Pubkey,
         position_type: PositionType,
         position: PositionData,
-        state: PositionState
+        state: PositionState,
     ) -> Self {
-        let (_, bump) = Pubkey::find_program_address(
-            &[&[position_id], authority.as_ref()],
-            &crate::ID
-        );
+        let (_, bump) =
+            Pubkey::find_program_address(&[&[position_id], authority.as_ref()], &crate::ID);
         Self {
             bump: [bump],
             position_id: [position_id],
@@ -315,10 +318,7 @@ impl SolautoPosition {
     }
     #[inline(always)]
     pub fn pubkey(&self) -> Pubkey {
-        let (pubkey, _) = Pubkey::find_program_address(
-            self.seeds().as_ref(),
-            &crate::ID
-        );
+        let (pubkey, _) = Pubkey::find_program_address(self.seeds().as_ref(), &crate::ID);
         pubkey
     }
     #[inline(always)]
@@ -342,19 +342,18 @@ impl SolautoPosition {
         self.state.liq_utilization_rate_bps = get_liq_utilization_rate_bps(
             supply_usd,
             debt_usd,
-            from_bps(self.state.liq_threshold_bps)
+            from_bps(self.state.liq_threshold_bps),
         );
 
         self.state.net_worth.base_unit = net_worth_base_amount(
             supply_usd,
             debt_usd,
             self.state.supply.market_price(),
-            self.state.supply.decimals
+            self.state.supply.decimals,
         );
-        self.state.net_worth.update_usd_value(
-            self.state.supply.market_price(),
-            self.state.supply.decimals
-        );
+        self.state
+            .net_worth
+            .update_usd_value(self.state.supply.market_price(), self.state.supply.decimals);
         msg!(
             "New liquidation utilization rate: {}, (${}, ${})",
             self.state.liq_utilization_rate_bps,
@@ -390,9 +389,12 @@ mod tests {
             Pubkey::default(),
             PositionType::default(),
             PositionData::default(),
-            PositionState::default()
+            PositionState::default(),
         );
-        println!("Solauto position size: {}", std::mem::size_of_val(&solauto_position));
+        println!(
+            "Solauto position size: {}",
+            std::mem::size_of_val(&solauto_position)
+        );
         assert!(std::mem::size_of_val(&solauto_position) == SolautoPosition::LEN);
     }
 }

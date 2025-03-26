@@ -13,9 +13,7 @@ use num_derive::FromPrimitive;
     BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq, PartialOrd, Hash, FromPrimitive,
 )]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub enum SolautoRebalanceType {
-    Regular,
-    DoubleRebalanceWithFL,
-    FLSwapThenRebalance,
-    FLRebalanceThenSwap,
+pub enum SwapType {
+    ExactIn,
+    ExactOut,
 }

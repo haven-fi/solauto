@@ -1076,13 +1076,9 @@
             "type": {
               "array": [
                 "u8",
-                3
+                5
               ]
             }
-          },
-          {
-            "name": "flashLoanFeeBps",
-            "type": "u16"
           },
           {
             "name": "borrowFeeBps",
@@ -1386,9 +1382,21 @@
         "kind": "struct",
         "fields": [
           {
+            "name": "active",
+            "type": {
+              "defined": "PodBool"
+            }
+          },
+          {
             "name": "rebalanceType",
             "type": {
               "defined": "SolautoRebalanceType"
+            }
+          },
+          {
+            "name": "swapType",
+            "type": {
+              "defined": "SwapType"
             }
           },
           {
@@ -1396,7 +1404,7 @@
             "type": {
               "array": [
                 "u8",
-                7
+                5
               ]
             }
           },
@@ -1530,6 +1538,20 @@
           {
             "name": "swapInAmountBaseUnit",
             "type": "u64"
+          },
+          {
+            "name": "flashLoanFeeBps",
+            "type": {
+              "option": "u16"
+            }
+          },
+          {
+            "name": "swapType",
+            "type": {
+              "option": {
+                "defined": "SwapType"
+              }
+            }
           }
         ]
       }
@@ -1667,10 +1689,10 @@
         "kind": "enum",
         "variants": [
           {
-            "name": "First"
+            "name": "PreSwap"
           },
           {
-            "name": "Final"
+            "name": "PostSwap"
           }
         ]
       }
@@ -1680,9 +1702,6 @@
       "type": {
         "kind": "enum",
         "variants": [
-          {
-            "name": "None"
-          },
           {
             "name": "Regular"
           },
@@ -1694,6 +1713,20 @@
           },
           {
             "name": "FLRebalanceThenSwap"
+          }
+        ]
+      }
+    },
+    {
+      "name": "SwapType",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "ExactIn"
+          },
+          {
+            "name": "ExactOut"
           }
         ]
       }
@@ -1755,7 +1788,7 @@
     {
       "code": 7,
       "name": "IncorrectInstructions",
-      "msg": "Incorrect set of instructions in the transaction"
+      "msg": "Incorrect set of instructions or instruction data in the transaction"
     },
     {
       "code": 8,
@@ -1766,6 +1799,11 @@
       "code": 9,
       "name": "InvalidRebalanceMade",
       "msg": "Invalid rebalance was made. Target supply USD and target debt USD was not met"
+    },
+    {
+      "code": 10,
+      "name": "NonAuthorityProvidedTargetLTV",
+      "msg": "Cannot provide a target liquidation utilization rate if the instruction is not signed by the position authority"
     }
   ],
   "metadata": {

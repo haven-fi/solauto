@@ -23,7 +23,6 @@ export type PositionTokenState = {
   mint: PublicKey;
   decimals: number;
   padding1: Array<number>;
-  flashLoanFeeBps: number;
   borrowFeeBps: number;
   amountUsed: TokenAmount;
   amountCanBeUsed: TokenAmount;
@@ -36,7 +35,6 @@ export type PositionTokenStateArgs = {
   mint: PublicKey;
   decimals: number;
   padding1: Array<number>;
-  flashLoanFeeBps: number;
   borrowFeeBps: number;
   amountUsed: TokenAmountArgs;
   amountCanBeUsed: TokenAmountArgs;
@@ -53,8 +51,7 @@ export function getPositionTokenStateSerializer(): Serializer<
     [
       ['mint', publicKeySerializer()],
       ['decimals', u8()],
-      ['padding1', array(u8(), { size: 3 })],
-      ['flashLoanFeeBps', u16()],
+      ['padding1', array(u8(), { size: 5 })],
       ['borrowFeeBps', u16()],
       ['amountUsed', getTokenAmountSerializer()],
       ['amountCanBeUsed', getTokenAmountSerializer()],

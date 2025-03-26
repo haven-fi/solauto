@@ -31,8 +31,8 @@ pub enum SolautoError {
     /// 6 (0x6) - Unable to invoke instruction through a CPI
     #[error("Unable to invoke instruction through a CPI")]
     InstructionIsCPI,
-    /// 7 (0x7) - Incorrect set of instructions in the transaction
-    #[error("Incorrect set of instructions in the transaction")]
+    /// 7 (0x7) - Incorrect set of instructions or instruction data in the transaction
+    #[error("Incorrect set of instructions or instruction data in the transaction")]
     IncorrectInstructions,
     /// 8 (0x8) - Incorrect swap amount provided. Likely due to high price volatility
     #[error("Incorrect swap amount provided. Likely due to high price volatility")]
@@ -40,6 +40,9 @@ pub enum SolautoError {
     /// 9 (0x9) - Invalid rebalance was made. Target supply USD and target debt USD was not met
     #[error("Invalid rebalance was made. Target supply USD and target debt USD was not met")]
     InvalidRebalanceMade,
+    /// 10 (0xA) - Cannot provide a target liquidation utilization rate if the instruction is not signed by the position authority
+    #[error("Cannot provide a target liquidation utilization rate if the instruction is not signed by the position authority")]
+    NonAuthorityProvidedTargetLTV,
 }
 
 impl solana_program::program_error::PrintProgramError for SolautoError {

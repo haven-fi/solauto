@@ -6,6 +6,7 @@
 //!
 
 use crate::generated::types::SolautoRebalanceType;
+use crate::generated::types::SwapType;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 
@@ -292,6 +293,8 @@ pub struct MarginfiRebalanceInstructionArgs {
     pub rebalance_type: SolautoRebalanceType,
     pub target_liq_utilization_rate_bps: Option<u16>,
     pub swap_in_amount_base_unit: u64,
+    pub flash_loan_fee_bps: Option<u16>,
+    pub swap_type: Option<SwapType>,
 }
 
 /// Instruction builder for `MarginfiRebalance`.
@@ -353,6 +356,8 @@ pub struct MarginfiRebalanceBuilder {
     rebalance_type: Option<SolautoRebalanceType>,
     target_liq_utilization_rate_bps: Option<u16>,
     swap_in_amount_base_unit: Option<u64>,
+    flash_loan_fee_bps: Option<u16>,
+    swap_type: Option<SwapType>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
 
@@ -572,6 +577,18 @@ impl MarginfiRebalanceBuilder {
         self.swap_in_amount_base_unit = Some(swap_in_amount_base_unit);
         self
     }
+    /// `[optional argument]`
+    #[inline(always)]
+    pub fn flash_loan_fee_bps(&mut self, flash_loan_fee_bps: u16) -> &mut Self {
+        self.flash_loan_fee_bps = Some(flash_loan_fee_bps);
+        self
+    }
+    /// `[optional argument]`
+    #[inline(always)]
+    pub fn swap_type(&mut self, swap_type: SwapType) -> &mut Self {
+        self.swap_type = Some(swap_type);
+        self
+    }
     /// Add an aditional account to the instruction.
     #[inline(always)]
     pub fn add_remaining_account(
@@ -637,6 +654,8 @@ impl MarginfiRebalanceBuilder {
                 .swap_in_amount_base_unit
                 .clone()
                 .expect("swap_in_amount_base_unit is not set"),
+            flash_loan_fee_bps: self.flash_loan_fee_bps.clone(),
+            swap_type: self.swap_type.clone(),
         };
 
         accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
@@ -1154,6 +1173,8 @@ impl<'a, 'b> MarginfiRebalanceCpiBuilder<'a, 'b> {
             rebalance_type: None,
             target_liq_utilization_rate_bps: None,
             swap_in_amount_base_unit: None,
+            flash_loan_fee_bps: None,
+            swap_type: None,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
@@ -1389,6 +1410,18 @@ impl<'a, 'b> MarginfiRebalanceCpiBuilder<'a, 'b> {
         self.instruction.swap_in_amount_base_unit = Some(swap_in_amount_base_unit);
         self
     }
+    /// `[optional argument]`
+    #[inline(always)]
+    pub fn flash_loan_fee_bps(&mut self, flash_loan_fee_bps: u16) -> &mut Self {
+        self.instruction.flash_loan_fee_bps = Some(flash_loan_fee_bps);
+        self
+    }
+    /// `[optional argument]`
+    #[inline(always)]
+    pub fn swap_type(&mut self, swap_type: SwapType) -> &mut Self {
+        self.instruction.swap_type = Some(swap_type);
+        self
+    }
     /// Add an additional account to the instruction.
     #[inline(always)]
     pub fn add_remaining_account(
@@ -1445,6 +1478,8 @@ impl<'a, 'b> MarginfiRebalanceCpiBuilder<'a, 'b> {
                 .swap_in_amount_base_unit
                 .clone()
                 .expect("swap_in_amount_base_unit is not set"),
+            flash_loan_fee_bps: self.instruction.flash_loan_fee_bps.clone(),
+            swap_type: self.instruction.swap_type.clone(),
         };
         let instruction = MarginfiRebalanceCpi {
             __program: self.instruction.__program,
@@ -1567,6 +1602,8 @@ struct MarginfiRebalanceCpiBuilderInstruction<'a, 'b> {
     rebalance_type: Option<SolautoRebalanceType>,
     target_liq_utilization_rate_bps: Option<u16>,
     swap_in_amount_base_unit: Option<u64>,
+    flash_loan_fee_bps: Option<u16>,
+    swap_type: Option<SwapType>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(
         &'b solana_program::account_info::AccountInfo<'a>,

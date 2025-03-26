@@ -2,10 +2,10 @@ use jupiter_sdk::JUPITER_ID;
 use solana_program::{
     account_info::AccountInfo,
     entrypoint::ProgramResult,
-    instruction::{ get_stack_height, TRANSACTION_LEVEL_STACK_HEIGHT },
+    instruction::{get_stack_height, TRANSACTION_LEVEL_STACK_HEIGHT},
     msg,
     program_error::ProgramError,
-    sysvar::instructions::{ load_current_index_checked, load_instruction_at_checked },
+    sysvar::instructions::{load_current_index_checked, load_instruction_at_checked},
 };
 
 use crate::{
@@ -18,28 +18,30 @@ use crate::{
         errors::SolautoError,
         instruction::{
             accounts::{
-                ClaimReferralFeesAccounts,
-                ConvertReferralFeesAccounts,
+                ClaimReferralFeesAccounts, ConvertReferralFeesAccounts,
                 UpdateReferralStatesAccounts,
             },
             UpdateReferralStatesArgs,
         },
         shared::DeserializedAccount,
     },
-    utils::{ ix_utils, solauto_utils, validation_utils },
+    utils::{ix_utils, solauto_utils, validation_utils},
 };
 
 pub fn process_update_referral_states<'a>(
     accounts: &'a [AccountInfo<'a>],
-    args: UpdateReferralStatesArgs
+    args: UpdateReferralStatesArgs,
 ) -> ProgramResult {
     msg!("Instruction: Update referral states");
     let ctx = UpdateReferralStatesAccounts::context(accounts)?;
 
-    check!(ctx.accounts.signer.is_signer, ProgramError::MissingRequiredSignature);
     check!(
-        ctx.accounts.referred_by_authority.is_none() ||
-            ctx.accounts.referred_by_authority.unwrap().key != ctx.accounts.signer.key,
+        ctx.accounts.signer.is_signer,
+        ProgramError::MissingRequiredSignature
+    );
+    check!(
+        ctx.accounts.referred_by_authority.is_none()
+            || ctx.accounts.referred_by_authority.unwrap().key != ctx.accounts.signer.key,
         SolautoError::IncorrectAccounts
     );
 
@@ -48,7 +50,7 @@ pub fn process_update_referral_states<'a>(
         None,
         None,
         Some(ctx.accounts.rent),
-        None
+        None,
     )?;
 
     let mut authority_referral_state = solauto_utils::create_or_update_referral_state(
@@ -58,7 +60,7 @@ pub fn process_update_referral_states<'a>(
         ctx.accounts.signer_referral_state,
         args.referral_fees_dest_mint,
         ctx.accounts.referred_by_state,
-        args.address_lookup_table
+        args.address_lookup_table,
     )?;
     ix_utils::update_data(&mut authority_referral_state)?;
 
@@ -70,7 +72,7 @@ pub fn process_update_referral_states<'a>(
             ctx.accounts.referred_by_state.unwrap(),
             None,
             None,
-            None
+            None,
         )?;
         ix_utils::update_data(&mut referred_by_state)?;
     }
@@ -79,16 +81,15 @@ pub fn process_update_referral_states<'a>(
         &ctx.accounts.signer.key,
         &authority_referral_state,
         None,
-        false
+        false,
     )
 }
 
 pub fn process_convert_referral_fees<'a>(accounts: &'a [AccountInfo<'a>]) -> ProgramResult {
     msg!("Instruction: Convert referral fees");
     let ctx = ConvertReferralFeesAccounts::context(accounts)?;
-    let referral_state = DeserializedAccount::<ReferralState>
-        ::zerocopy(Some(ctx.accounts.referral_state))?
-        .unwrap();
+    let referral_state =
+        DeserializedAccount::<ReferralState>::zerocopy(Some(ctx.accounts.referral_state))?.unwrap();
 
     validation_utils::validate_referral_signer(&referral_state, ctx.accounts.signer, true)?;
     validation_utils::validate_standard_programs(
@@ -96,7 +97,7 @@ pub fn process_convert_referral_fees<'a>(accounts: &'a [AccountInfo<'a>]) -> Pro
         Some(ctx.accounts.token_program),
         Some(ctx.accounts.ata_program),
         Some(ctx.accounts.rent),
-        Some(ctx.accounts.ixs_sysvar)
+        Some(ctx.accounts.ixs_sysvar),
     )?;
 
     check!(
@@ -127,7 +128,7 @@ pub fn process_convert_referral_fees<'a>(accounts: &'a [AccountInfo<'a>]) -> Pro
         ctx.accounts.ixs_sysvar,
         JUPITER_ID,
         vec!["route", "shared_accounts_route"],
-        current_ix_idx
+        current_ix_idx,
     );
 
     check!(jup_swap.matches(1), SolautoError::IncorrectInstructions);
@@ -139,9 +140,8 @@ pub fn process_claim_referral_fees<'a>(accounts: &'a [AccountInfo<'a>]) -> Progr
     msg!("Instruction: Claim referral fees");
     let ctx = ClaimReferralFeesAccounts::context(accounts)?;
 
-    let referral_state = DeserializedAccount::<ReferralState>
-        ::zerocopy(Some(ctx.accounts.referral_state))?
-        .unwrap();
+    let referral_state =
+        DeserializedAccount::<ReferralState>::zerocopy(Some(ctx.accounts.referral_state))?.unwrap();
 
     validation_utils::validate_referral_signer(&referral_state, ctx.accounts.signer, true)?;
     validation_utils::validate_standard_programs(
@@ -149,7 +149,7 @@ pub fn process_claim_referral_fees<'a>(accounts: &'a [AccountInfo<'a>]) -> Progr
         Some(ctx.accounts.token_program),
         None,
         Some(ctx.accounts.rent),
-        None
+        None,
     )?;
 
     check!(
@@ -169,8 +169,8 @@ pub fn process_claim_referral_fees<'a>(accounts: &'a [AccountInfo<'a>]) -> Progr
         SolautoError::IncorrectAccounts
     );
     error_if!(
-        referral_state.data.dest_fees_mint != WSOL_MINT &&
-            ctx.accounts.fees_destination_ta.is_none(),
+        referral_state.data.dest_fees_mint != WSOL_MINT
+            && ctx.accounts.fees_destination_ta.is_none(),
         SolautoError::IncorrectAccounts
     );
 
