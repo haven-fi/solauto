@@ -48,13 +48,17 @@ fn update_dca<'a, 'b>(
     solauto_position.data.position.dca = DCASettings::from(new_data.dca.as_ref().unwrap().clone());
 
     if new_dca.dca_in_base_unit > 0 {
-        check!(
-            (new_dca.token_type == TokenType::Debt &&
-                solauto_position.data.state.debt.mint == *ctx.accounts.dca_mint.unwrap().key) ||
-                (new_dca.token_type == TokenType::Supply &&
-                    solauto_position.data.state.supply.mint != *ctx.accounts.dca_mint.unwrap().key),
-            SolautoError::IncorrectAccounts
-        );
+        if new_dca.token_type == TokenType::Debt {
+            check!(
+                solauto_position.data.state.debt.mint == *ctx.accounts.dca_mint.unwrap().key,
+                SolautoError::IncorrectAccounts
+            );
+        } else {
+            check!(
+                solauto_position.data.state.supply.mint == *ctx.accounts.dca_mint.unwrap().key,
+                SolautoError::IncorrectAccounts
+            );
+        }
 
         solana_utils::init_ata_if_needed(
             ctx.accounts.token_program,
