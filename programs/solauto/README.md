@@ -103,7 +103,7 @@ If a rebalance is increasing leverage, Solauto will borrow extra debt, move it t
 
 If a rebalance is decreasing leverage, Solauto will withdraw some supply, move it to a token account, swap it to the debt token, and then repay debt using that balance.
 
-A rebalance will consist of multiple instructions that must exist together in the same transaction. A rebalance will be one of the 3 available sets, depending on the posiiton's state and what must be done.
+A rebalance will consist of multiple instructions that must exist together in the same transaction. A rebalance will be one of the 4 available sets, depending on the posiiton's state and what must be done.
 
 1. Regular
 
@@ -119,11 +119,18 @@ A rebalance will consist of multiple instructions that must exist together in th
 - Rebalance
 - flash repay
 
-3. Single rebalance with flash loan
+3. Flash loan swap then rebalance
 
 - Flash borrow
 - Jup swap
 - Rebalance
+- Flash repay
+
+3. Flash loan rebalance then swap
+
+- Flash borrow
+- Rebalance
+- Jup swap
 - Flash repay
 
 Depending on the rebalance set type, and the current position's state, the rebalance instruction will behave differently. 

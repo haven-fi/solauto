@@ -17,7 +17,8 @@ use super::{
     solana_utils::{ account_has_data, init_account, init_ata_if_needed, spl_token_transfer },
 };
 use crate::{
-    constants::{REFERRER_PERCENTAGE, WSOL_MINT},
+    check,
+    constants::{ REFERRER_PERCENTAGE, WSOL_MINT },
     state::{
         automation::DCASettings,
         referral_state::ReferralState,
@@ -41,6 +42,7 @@ use crate::{
             SplTokenTransferArgs,
         },
     },
+    utils::validation_utils::correct_token_account,
 };
 
 pub fn get_owner<'a, 'b>(
@@ -64,10 +66,7 @@ pub fn create_new_solauto_position<'a>(
     max_ltv: f64,
     liq_threshold: f64
 ) -> Result<DeserializedAccount<'a, SolautoPosition>, ProgramError> {
-    if account_has_data(solauto_position) {
-        msg!("Cannot open new position on an existing Solauto position");
-        return Err(SolautoError::IncorrectAccounts.into());
-    }
+    check!(!account_has_data(solauto_position), SolautoError::IncorrectAccounts);
 
     let data = if update_position_data.setting_params.is_some() {
         if update_position_data.position_id == 0 {
@@ -198,10 +197,7 @@ pub fn create_or_update_referral_state<'a>(
         referral_state_account.data.seeds_with_bump().as_slice(),
         &crate::ID
     )?;
-    if referral_state.key != &expected_referral_state_address {
-        msg!("Invalid referral position account given for the provided authority");
-        return Err(SolautoError::IncorrectAccounts.into());
-    }
+    check!(referral_state.key == &expected_referral_state_address, SolautoError::IncorrectAccounts);
 
     Ok(referral_state_account)
 }
@@ -226,21 +222,16 @@ pub fn initiate_dca_in_if_necessary<'a, 'b>(
         return Ok(());
     }
 
-    if position_debt_ta.is_none() || signer_dca_ta.is_none() {
-        msg!("Missing required accounts in order to initiate DCA-in");
-        return Err(SolautoError::IncorrectAccounts.into());
-    }
+    check!(position_debt_ta.is_some() && signer_dca_ta.is_some(), SolautoError::IncorrectAccounts);
 
-    if
-        position_debt_ta.unwrap().key !=
-        &get_associated_token_address(
+    check!(
+        correct_token_account(
+            position_debt_ta.unwrap().key,
             solauto_position.account_info.key,
             &solauto_position.data.state.debt.mint
-        )
-    {
-        msg!("Incorrect position token account provided");
-        return Err(SolautoError::IncorrectAccounts.into());
-    }
+        ),
+        SolautoError::IncorrectAccounts
+    );
 
     let signer_token_account = TokenAccount::unpack(&signer_dca_ta.unwrap().data.borrow())?;
     let balance = signer_token_account.amount;
@@ -273,12 +264,10 @@ pub fn cancel_dca_in<'a, 'b>(
     let active_dca = &solauto_position.data.position.dca;
 
     if active_dca.dca_in() {
-        if dca_mint.is_none() || position_dca_ta.is_none() || signer_dca_ta.is_none() {
-            msg!(
-                "Requires dca_mint, position_dca_ta & signer_dca_ta in order to cancel the active DCA-in"
-            );
-            return Err(SolautoError::IncorrectAccounts.into());
-        }
+        check!(
+            dca_mint.is_some() && position_dca_ta.is_some() && signer_dca_ta.is_some(),
+            SolautoError::IncorrectAccounts
+        );
 
         let dca_ta_current_balance = TokenAccount::unpack(
             &position_dca_ta.unwrap().data.borrow()
@@ -340,7 +329,7 @@ pub struct SolautoFeesBps {
     has_been_referred: bool,
     target_liq_utilization_rate_bps: Option<u16>,
     position_net_worth_usd: f64,
-    mock_fee_bps: Option<u16>
+    mock_fee_bps: Option<u16>,
 }
 impl SolautoFeesBps {
     pub fn from_mock(total_fees_bps: u16, has_been_referred: bool) -> Self {
@@ -348,7 +337,7 @@ impl SolautoFeesBps {
             mock_fee_bps: Some(total_fees_bps),
             has_been_referred: has_been_referred,
             target_liq_utilization_rate_bps: None,
-            position_net_worth_usd: 0.0
+            position_net_worth_usd: 0.0,
         }
     }
     pub fn from(
@@ -360,14 +349,17 @@ impl SolautoFeesBps {
             has_been_referred,
             target_liq_utilization_rate_bps,
             position_net_worth_usd,
-            mock_fee_bps: None
+            mock_fee_bps: None,
         }
     }
     pub fn fetch_fees(&self, rebalance_direction: &RebalanceDirection) -> FeePayout {
         if self.mock_fee_bps.is_some() {
             let fee_bps = self.mock_fee_bps.unwrap();
             let (solauto_fee, referrer_fee) = if self.has_been_referred {
-                ((fee_bps as f64).mul(0.85).floor() as u16, (fee_bps as f64).mul(0.15).floor() as u16)
+                (
+                    (fee_bps as f64).mul(0.85).floor() as u16,
+                    (fee_bps as f64).mul(0.15).floor() as u16,
+                )
             } else {
                 (fee_bps, 0)
             };

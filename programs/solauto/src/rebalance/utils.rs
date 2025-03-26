@@ -35,11 +35,7 @@ pub fn set_rebalance_ixs_data(
 
         let fl_borrow_ix_idx = get_flash_borrow_ix_idx(std_accounts, args.rebalance_type)?;
         let flash_loan_amount = if fl_borrow_ix_idx.is_some() {
-            get_marginfi_flash_loan_amount(
-                std_accounts.ixs_sysvar.unwrap(),
-                fl_borrow_ix_idx,
-                None // &[&swap_source_ta],
-            )?
+            get_marginfi_flash_loan_amount(std_accounts.ixs_sysvar.unwrap(), fl_borrow_ix_idx)?
         } else {
             0
         };

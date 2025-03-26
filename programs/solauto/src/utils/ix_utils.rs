@@ -107,8 +107,7 @@ fn pick_ix_data(req: PickIxDataReq) -> Result<PickIxDataResp, SanitizeError> {
 
 pub fn get_marginfi_flash_loan_amount<'a>(
     ixs_sysvar: &'a AccountInfo<'a>,
-    ix_idx: Option<usize>,
-    expected_destination_tas: Option<&[&Pubkey]>
+    ix_idx: Option<usize>
 ) -> Result<u64, ProgramError> {
     let data = pick_ix_data(PickIxDataReq {
         ixs_sysvar,
@@ -119,17 +118,6 @@ pub fn get_marginfi_flash_loan_amount<'a>(
     }).expect("Should retrieve flash loan amount");
 
     let args = LendingAccountBorrowInstructionArgs::deserialize(&mut data.data.as_slice())?;
-
-    if
-        expected_destination_tas.is_some() &&
-        !expected_destination_tas
-            .unwrap()
-            .iter()
-            .any(|x| x == &&data.accounts[0])
-    {
-        msg!("Moving funds into an incorrect token account");
-        return Err(SolautoError::IncorrectInstructions.into());
-    }
 
     return Ok(args.amount);
 }

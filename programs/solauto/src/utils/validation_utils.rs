@@ -228,26 +228,26 @@ pub fn validate_standard_programs(
     rent: Option<&AccountInfo>,
     ixs_sysvar: Option<&AccountInfo>
 ) -> ProgramResult {
-    if system_program.is_some() && system_program.unwrap().key != &system_program_id {
-        msg!("Incorrect system program account provided");
-        return Err(SolautoError::IncorrectAccounts.into());
-    }
-    if token_program.is_some() && token_program.unwrap().key != &token_program_id {
-        msg!("Incorrect token program account provided");
-        return Err(SolautoError::IncorrectAccounts.into());
-    }
-    if ata_program.is_some() && ata_program.unwrap().key != &ata_program_id {
-        msg!("Incorrect ata program account provided");
-        return Err(SolautoError::IncorrectAccounts.into());
-    }
-    if rent.is_some() && rent.unwrap().key != &rent_program_id {
-        msg!("Incorrect rent program account provided");
-        return Err(SolautoError::IncorrectAccounts.into());
-    }
-    if ixs_sysvar.is_some() && ixs_sysvar.unwrap().key != &ixs_sysvar_id {
-        msg!("Incorrect ixs sysvar program account provided");
-        return Err(SolautoError::IncorrectAccounts.into());
-    }
+    check!(
+        system_program.is_none() || system_program.unwrap().key == &system_program_id,
+        SolautoError::IncorrectAccounts
+    );
+    check!(
+        token_program.is_none() || token_program.unwrap().key == &token_program_id,
+        SolautoError::IncorrectAccounts
+    );
+    check!(
+        ata_program.is_none() || ata_program.unwrap().key == &ata_program_id,
+        SolautoError::IncorrectAccounts
+    );
+    check!(
+        rent.is_none() || rent.unwrap().key == &rent_program_id,
+        SolautoError::IncorrectAccounts
+    );
+    check!(
+        ixs_sysvar.is_none() || ixs_sysvar.unwrap().key == &ixs_sysvar_id,
+        SolautoError::IncorrectAccounts
+    );
     Ok(())
 }
 
@@ -289,10 +289,8 @@ pub fn validate_marginfi_bank<'a>(
     }
 
     let bank = DeserializedAccount::<Bank>::zerocopy(Some(marginfi_bank))?.unwrap();
-    if &bank.data.mint != mint {
-        msg!("Provided incorrect bank account");
-        return Err(SolautoError::IncorrectAccounts.into());
-    }
+    check!(&bank.data.mint == mint, SolautoError::IncorrectAccounts);
+
     Ok(())
 }
 

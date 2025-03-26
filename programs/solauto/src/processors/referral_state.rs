@@ -40,13 +40,11 @@ pub fn process_update_referral_states<'a>(
         return Err(ProgramError::MissingRequiredSignature.into());
     }
 
-    if
-        ctx.accounts.referred_by_authority.is_some() &&
-        ctx.accounts.referred_by_authority.unwrap().key == ctx.accounts.signer.key
-    {
-        msg!("Cannot set the referred by as the same as the referral state authority");
-        return Err(SolautoError::IncorrectAccounts.into());
-    }
+    check!(
+        ctx.accounts.referred_by_authority.is_none() ||
+            ctx.accounts.referred_by_authority.unwrap().key == ctx.accounts.signer.key,
+        SolautoError::IncorrectAccounts
+    );
 
     validation_utils::validate_standard_programs(
         Some(ctx.accounts.system_program),
@@ -104,16 +102,14 @@ pub fn process_convert_referral_fees<'a>(accounts: &'a [AccountInfo<'a>]) -> Pro
         Some(ctx.accounts.ixs_sysvar)
     )?;
 
-    if
-        !validation_utils::token_account_owned_by(
+    check!(
+        validation_utils::token_account_owned_by(
             ctx.accounts.referral_fees_ta,
             ctx.accounts.referral_state.key,
             None
-        )?
-    {
-        msg!("Provided incorrect token account for the given referral state account");
-        return Err(SolautoError::IncorrectAccounts.into());
-    }
+        )?,
+        SolautoError::IncorrectAccounts
+    );
 
     let current_ix_idx = load_current_index_checked(ctx.accounts.ixs_sysvar)?;
     let current_ix = load_instruction_at_checked(current_ix_idx as usize, ctx.accounts.ixs_sysvar)?;
@@ -137,10 +133,7 @@ pub fn process_convert_referral_fees<'a>(accounts: &'a [AccountInfo<'a>]) -> Pro
         current_ix_idx
     );
 
-    if !jup_swap.matches(1) {
-        msg!("Missing Jup swap as next transaction");
-        return Err(SolautoError::IncorrectInstructions.into());
-    }
+    check!(jup_swap.matches(1), SolautoError::IncorrectInstructions);
 
     referral_fees::convert_referral_fees(ctx, referral_state)
 }
@@ -179,13 +172,11 @@ pub fn process_claim_referral_fees<'a>(accounts: &'a [AccountInfo<'a>]) -> Progr
         SolautoError::IncorrectAccounts
     );
 
-    if
-        referral_state.data.dest_fees_mint != WSOL_MINT &&
-        ctx.accounts.fees_destination_ta.is_none()
-    {
-        msg!("Missing fees destination token account when the token mint is not wSOL");
-        return Err(SolautoError::IncorrectAccounts.into());
-    }
+    check!(
+        referral_state.data.dest_fees_mint == WSOL_MINT ||
+            ctx.accounts.fees_destination_ta.is_some(),
+        SolautoError::IncorrectAccounts
+    );
 
     if ctx.accounts.fees_destination_ta.is_some() {
         check!(
