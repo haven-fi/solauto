@@ -163,6 +163,10 @@ fn rebalance<'a>(
         std_accounts.authority_referral_state.is_some(),
         SolautoError::IncorrectAccounts
     );
+    check!(
+        args.flash_loan_fee_bps.unwrap_or(0) < 150,
+        SolautoError::IncorrectInstructions
+    );
 
     let fees_bps = solauto_utils::SolautoFeesBps::from(
         std_accounts
