@@ -17,9 +17,10 @@ use crate::{
             validate_rebalance_instructions,
         },
         math_utils::{from_bps, from_rounded_usd_value, get_debt_adjustment},
-        solauto_utils::SolautoFeesBps,
     },
 };
+
+use super::solauto_fees::SolautoFeesBps;
 
 pub fn set_rebalance_ixs_data(
     std_accounts: &mut Box<SolautoStandardAccounts>,
@@ -159,7 +160,7 @@ pub fn get_rebalance_values(
     let fees = RebalanceFeesBps {
         solauto: solauto_fees_bps.fetch_fees(&rebalance_direction).total,
         lp_borrow: solauto_position.state.debt.borrow_fee_bps,
-        lp_flash_loan: rebalance_args.flash_loan_fee_bps.unwrap_or(0),
+        flash_loan: rebalance_args.flash_loan_fee_bps.unwrap_or(0),
     };
 
     let debt_adjustment = get_debt_adjustment(

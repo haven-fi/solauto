@@ -22,11 +22,11 @@ use crate::{
             from_base_unit, from_bps, from_rounded_usd_value, get_liq_utilization_rate_bps,
             round_to_decimals, to_base_unit,
         },
-        solauto_utils::{update_token_state, SolautoFeesBps},
+        solauto_utils::update_token_state,
     },
 };
 
-use super::rebalancer::{Rebalancer, RebalancerData, SolautoPositionData, TokenAccountData};
+use super::{rebalancer::{Rebalancer, RebalancerData, SolautoPositionData, TokenAccountData}, solauto_fees::SolautoFeesBps};
 
 const TEST_TOKEN_DECIMALS: u8 = 9;
 const SOLAUTO_FEE_BPS: u16 = 50;
@@ -414,7 +414,7 @@ mod tests {
             &(RebalanceFeesBps {
                 solauto: SOLAUTO_FEE_BPS,
                 lp_borrow: BORROW_FEE_BPS,
-                lp_flash_loan: 0,
+                flash_loan: 0,
             }),
             rebalance_to,
         );
@@ -481,7 +481,7 @@ mod tests {
             &(RebalanceFeesBps {
                 solauto: SOLAUTO_FEE_BPS,
                 lp_borrow: BORROW_FEE_BPS,
-                lp_flash_loan: 0,
+                flash_loan: 0,
             }),
             rebalance_to,
         );
@@ -556,7 +556,7 @@ mod tests {
             &(RebalanceFeesBps {
                 solauto: SOLAUTO_FEE_BPS,
                 lp_borrow: BORROW_FEE_BPS,
-                lp_flash_loan: FLASH_LOAN_FEE_BPS,
+                flash_loan: FLASH_LOAN_FEE_BPS,
             }),
             rebalance_to,
         );
@@ -628,7 +628,7 @@ mod tests {
             &(RebalanceFeesBps {
                 solauto: SOLAUTO_FEE_BPS,
                 lp_borrow: BORROW_FEE_BPS,
-                lp_flash_loan: FLASH_LOAN_FEE_BPS,
+                flash_loan: FLASH_LOAN_FEE_BPS,
             }),
             rebalance_to,
         );
@@ -702,7 +702,7 @@ mod tests {
             &(RebalanceFeesBps {
                 solauto: SOLAUTO_FEE_BPS,
                 lp_borrow: BORROW_FEE_BPS,
-                lp_flash_loan: 0,
+                flash_loan: 0,
             }),
             rebalance_to,
         );
@@ -783,7 +783,7 @@ mod tests {
             &(RebalanceFeesBps {
                 solauto: SOLAUTO_FEE_BPS,
                 lp_borrow: BORROW_FEE_BPS,
-                lp_flash_loan: 0,
+                flash_loan: 0,
             }),
             rebalance_to,
         );

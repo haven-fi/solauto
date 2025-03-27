@@ -160,7 +160,7 @@ fn apply_debt_adjustment_usd(
 
     let da_minus_solauto_fees =
         debt_adjustment_usd.sub(debt_adjustment_usd.mul(from_bps(fees.solauto)));
-    let da_with_flash_loan = debt_adjustment_usd.mul(1.0 + from_bps(fees.lp_flash_loan));
+    let da_with_flash_loan = debt_adjustment_usd.mul(1.0 + from_bps(fees.flash_loan));
 
     if is_boost {
         new_pos.supply_usd += da_minus_solauto_fees;
@@ -185,7 +185,7 @@ pub fn get_debt_adjustment(
 
     let target_utilization_rate = from_bps(target_liq_utilization_rate_bps);
     let actualized_fee = (1.0).sub(from_bps(fees.solauto));
-    let fl_fee = from_bps(fees.lp_flash_loan);
+    let fl_fee = from_bps(fees.flash_loan);
     let lp_borrow_fee = from_bps(fees.lp_borrow);
 
     let debt_adjustment_usd = if is_boost {
@@ -264,7 +264,7 @@ mod tests {
         let fees = RebalanceFeesBps {
             solauto: 50,
             lp_borrow: 50,
-            lp_flash_loan: 50,
+            flash_loan: 50,
         };
         let debt_adjustment = get_debt_adjustment(
             liq_threshold,

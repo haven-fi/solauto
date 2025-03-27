@@ -22,14 +22,13 @@ use crate::{
     },
     utils::{
         math_utils::{calc_fee_amount, from_bps, from_rounded_usd_value, usd_value_to_base_unit},
-        solauto_utils::SolautoFeesBps,
         validation_utils::{
             correct_token_account, value_gte_with_threshold, value_lte_with_threshold,
         },
     },
 };
 
-use super::utils::{eligible_for_rebalance, get_rebalance_values};
+use super::{solauto_fees::SolautoFeesBps, utils::{eligible_for_rebalance, get_rebalance_values}};
 
 pub struct TokenAccountData {
     pub pk: Pubkey,

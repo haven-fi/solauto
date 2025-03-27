@@ -1,24 +1,19 @@
-import { BASIS_POINTS, MIN_REPAY_GAP_BPS, REFERRER_PERCENTAGE, USD_DECIMALS } from "../constants";
-import { PositionState, RebalanceDirection } from "../generated";
+import { BASIS_POINTS, MIN_REPAY_GAP_BPS, USD_DECIMALS } from "../constants";
+import { PositionState } from "../generated";
 
 export function calcNetWorthUsd(state?: PositionState) {
-  return fromBaseUnit(
-    state?.netWorth.baseAmountUsdValue ?? BigInt(0),
-    USD_DECIMALS
-  );
+  return fromRoundedUsdValue(state?.netWorth.baseAmountUsdValue ?? BigInt(0));
 }
 
 export function calcSupplyUsd(state?: PositionState) {
-  return fromBaseUnit(
-    state?.supply.amountUsed.baseAmountUsdValue ?? BigInt(0),
-    USD_DECIMALS
+  return fromRoundedUsdValue(
+    state?.supply.amountUsed.baseAmountUsdValue ?? BigInt(0)
   );
 }
 
 export function calcDebtUsd(state?: PositionState) {
-  return fromBaseUnit(
-    state?.debt.amountUsed.baseAmountUsdValue ?? BigInt(0),
-    USD_DECIMALS
+  return fromRoundedUsdValue(
+    state?.debt.amountUsed.baseAmountUsdValue ?? BigInt(0)
   );
 }
 
@@ -44,17 +39,23 @@ export function calcTotalDebt(state?: PositionState) {
 }
 
 export function debtLiquidityUsdAvailable(state?: PositionState) {
-  return fromBaseUnit(
-    state?.debt.amountCanBeUsed.baseAmountUsdValue ?? BigInt(0),
-    USD_DECIMALS
+  return fromRoundedUsdValue(
+    state?.debt.amountCanBeUsed.baseAmountUsdValue ?? BigInt(0)
   );
 }
 
 export function supplyLiquidityUsdDepositable(state?: PositionState) {
-  return fromBaseUnit(
-    state?.supply.amountCanBeUsed.baseAmountUsdValue ?? BigInt(0),
-    USD_DECIMALS
+  return fromRoundedUsdValue(
+    state?.supply.amountCanBeUsed.baseAmountUsdValue ?? BigInt(0)
   );
+}
+
+export function fromRoundedUsdValue(number: bigint) {
+  return fromBaseUnit(number, USD_DECIMALS);
+}
+
+export function toRoundedUsdValue(number: number) {
+  return toBaseUnit(number, USD_DECIMALS);
 }
 
 export function getLiqUtilzationRateBps(
@@ -147,66 +148,6 @@ export function getDebtAdjustmentUsd(
     (targetLiqUtilizationRate * supplyUsd * liqThreshold - debtUsd) /
     (1 - targetLiqUtilizationRate * (1 - adjustmentFee) * liqThreshold);
   return debtAdjustmentUsd;
-}
-
-export function getSolautoFeesBps(
-  isReferred: boolean,
-  targetLiqUtilizationRateBps: number | undefined,
-  positionNetWorthUsd: number,
-  rebalanceDirection: RebalanceDirection
-): {
-  solauto: number;
-  referrer: number;
-  total: number;
-} {
-  const minSize = 10_000; // Minimum position size
-  const maxSize = 250_000; // Maximum position size
-  const maxFeeBps = 50; // Fee in basis points for minSize (0.5%)
-  const minFeeBps = 25; // Fee in basis points for maxSize (0.25%)
-  const k = 1.5;
-
-  if (
-    targetLiqUtilizationRateBps !== undefined &&
-    targetLiqUtilizationRateBps === 0
-  ) {
-    return {
-      solauto: 0,
-      referrer: 0,
-      total: 0,
-    };
-  }
-
-  let feeBps: number = 0;
-
-  if (
-    targetLiqUtilizationRateBps !== undefined ||
-    rebalanceDirection === RebalanceDirection.Repay
-  ) {
-    feeBps = 25;
-  } else if (positionNetWorthUsd <= minSize) {
-    feeBps = maxFeeBps;
-  } else if (positionNetWorthUsd >= maxSize) {
-    feeBps = minFeeBps;
-  } else {
-    const t =
-      (Math.log(positionNetWorthUsd) - Math.log(minSize)) /
-      (Math.log(maxSize) - Math.log(minSize));
-    feeBps = Math.round(
-      minFeeBps + (maxFeeBps - minFeeBps) * (1 - Math.pow(t, k))
-    );
-  }
-
-  let referrer = 0;
-  if (isReferred) {
-    feeBps *= 1.0 - REFERRER_PERCENTAGE;
-    referrer = Math.floor(feeBps * REFERRER_PERCENTAGE);
-  }
-
-  return {
-    solauto: feeBps - referrer,
-    referrer,
-    total: feeBps,
-  };
 }
 
 export function getMaxLiqUtilizationRateBps(

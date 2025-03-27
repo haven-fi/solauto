@@ -13,11 +13,11 @@ use super::{
     solauto::SolautoCpiAction,
 };
 use crate::{
-    rebalance::rebalancer::{Rebalancer, RebalancerData, SolautoPositionData, TokenAccountData},
+    rebalance::{rebalancer::{Rebalancer, RebalancerData, SolautoPositionData, TokenAccountData}, solauto_fees::SolautoFeesBps},
     state::solauto_position::SolautoPosition,
     utils::{
         solana_utils::spl_token_transfer,
-        solauto_utils::{safe_unpack_token_account, update_token_state, SolautoFeesBps},
+        solauto_utils::{safe_unpack_token_account, update_token_state},
         *,
     },
 };
@@ -48,7 +48,7 @@ pub struct SolautoManager<'a> {
     pub client: Box<dyn LendingProtocolClient<'a> + 'a>,
     pub accounts: SolautoManagerAccounts<'a>,
     pub std_accounts: Box<SolautoStandardAccounts<'a>>,
-    pub solauto_fees_bps: Option<solauto_utils::SolautoFeesBps>,
+    pub solauto_fees_bps: Option<SolautoFeesBps>,
 }
 
 impl<'a> SolautoManager<'a> {
@@ -56,7 +56,7 @@ impl<'a> SolautoManager<'a> {
         client: Box<dyn LendingProtocolClient<'a> + 'a>,
         accounts: SolautoManagerAccounts<'a>,
         std_accounts: Box<SolautoStandardAccounts<'a>>,
-        solauto_fees_bps: Option<solauto_utils::SolautoFeesBps>,
+        solauto_fees_bps: Option<SolautoFeesBps>,
     ) -> Result<Self, ProgramError> {
         client.validate(&std_accounts)?;
         Ok(Self {
