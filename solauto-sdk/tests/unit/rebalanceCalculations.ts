@@ -14,6 +14,8 @@ import {
   RebalanceDirection,
   SolautoRebalanceType,
   SolautoSettingsParameters,
+  SwapType,
+  TokenBalanceChangeType,
   TokenType,
 } from "../../src/generated";
 import {
@@ -26,11 +28,9 @@ import {
   getSolautoFeesBps,
   toBaseUnit,
 } from "../../src/utils/numberUtils";
-import { USD_DECIMALS } from "../../src/constants/generalAccounts";
 import {
   createFakePositionState,
   eligibleForNextAutomationPeriod,
-  getAdjustedSettingsFromAutomation,
   getUpdatedValueFromAutomation,
   positionStateWithLatestPrices,
 } from "../../src/utils/solauto/generalUtils";
@@ -148,6 +148,11 @@ async function getFakePosition(
     },
     authority: client.signer.publicKey,
     position: {
+      lendingPlatform: LendingPlatform.Marginfi,
+      protocolSupplyAccount: publicKey(PublicKey.default),
+      protocolDebtAccount: publicKey(PublicKey.default),
+      protocolUserAccount: publicKey(PublicKey.default),
+      settingParams: settings,
       dca: dca ?? {
         automation: {
           targetPeriods: 0,
@@ -161,22 +166,32 @@ async function getFakePosition(
         tokenType: TokenType.Debt,
         padding: [],
       },
-      lendingPlatform: LendingPlatform.Marginfi,
-      protocolSupplyAccount: publicKey(PublicKey.default),
-      protocolDebtAccount: publicKey(PublicKey.default),
-      protocolUserAccount: publicKey(PublicKey.default),
-      settingParams: settings,
       padding1: [],
       padding: [],
     },
     state: client.solautoPositionState!,
     rebalance: {
-      rebalanceType: SolautoRebalanceType.Regular,
-      rebalanceDirection: RebalanceDirection.Boost,
-      flashLoanAmount: BigInt(0),
-      padding1: [],
-      padding2: [],
-      padding: new Uint8Array([]),
+      ixs: {
+        active: { val: true },
+        rebalanceType: SolautoRebalanceType.Regular,
+        swapType: SwapType.ExactIn,
+        flashLoanAmount: BigInt(0),
+        padding: [],
+        padding1: [],
+      },
+      values: {
+        rebalanceDirection: RebalanceDirection.Boost,
+        targetSupplyUsd: BigInt(0),
+        targetDebtUsd: BigInt(0),
+        tokenBalanceChange: {
+          changeType: TokenBalanceChangeType.None,
+          amountUsd: BigInt(0),
+          padding1: [],
+        },
+        padding: [],
+        padding1: [],
+      },
+      padding: [],
     },
     positionType: PositionType.Leverage,
     padding1: [],
@@ -211,69 +226,11 @@ async function rebalanceFromFakePosition(
     settings
   );
 
-  const adjustedSettings = getAdjustedSettingsFromAutomation(
-    settings,
-    currentUnixSeconds()
-  );
   const expectedLiqUtilizationRateBps =
-    fakeLiqUtilizationRateBps <
-    adjustedSettings.boostToBps - adjustedSettings.boostGap
-      ? adjustedSettings.boostToBps
-      : adjustedSettings.repayToBps;
+    fakeLiqUtilizationRateBps < settings.boostToBps - settings.boostGap
+      ? settings.boostToBps
+      : settings.repayToBps;
   assertAccurateRebalance(client, expectedLiqUtilizationRateBps);
-}
-
-async function dcaRebalanceFromFakePosition(
-  supplyPrice: number,
-  debtPrice: number,
-  fakeLiqUtilizationRateBps: number,
-  settings: SolautoSettingsParameters,
-  dca: DCASettings
-) {
-  const client = await getFakePosition(
-    supplyPrice,
-    debtPrice,
-    fakeLiqUtilizationRateBps,
-    settings,
-    dca
-  );
-
-  const adjustedSettings = getAdjustedSettingsFromAutomation(
-    settings,
-    currentUnixSeconds()
-  );
-  const expectedLiqUtilizationRateBps =
-    dca.dcaInBaseUnit > BigInt(0)
-      ? Math.max(fakeLiqUtilizationRateBps, adjustedSettings.boostToBps)
-      : adjustedSettings.boostToBps;
-
-  const expectedDcaInAmount =
-    dca.dcaInBaseUnit > BigInt(0) &&
-    eligibleForNextAutomationPeriod(dca.automation, currentUnixSeconds())
-      ? dca.dcaInBaseUnit -
-        BigInt(
-          Math.round(
-            getUpdatedValueFromAutomation(
-              Number(dca.dcaInBaseUnit),
-              0,
-              dca.automation,
-              currentUnixSeconds()
-            )
-          )
-        )
-      : BigInt(0);
-  const expectedUsdToDcaIn =
-    fromBaseUnit(
-      BigInt(Math.round(Number(expectedDcaInAmount))),
-      client.solautoPositionState!.debt.decimals
-    ) * debtPrice;
-
-  assertAccurateRebalance(
-    client,
-    expectedLiqUtilizationRateBps,
-    undefined,
-    expectedUsdToDcaIn
-  );
 }
 
 describe("Rebalance tests", async () => {
@@ -292,17 +249,7 @@ describe("Rebalance tests", async () => {
       boostGap: 100,
       repayToBps: 7000,
       repayGap: 250,
-      automation: {
-        targetPeriods: 0,
-        periodsPassed: 0,
-        unixStartDate: BigInt(0),
-        intervalSeconds: BigInt(0),
-        padding1: [],
-        padding: new Uint8Array([]),
-      },
-      targetBoostToBps: 0,
-      padding1: [],
-      padding: new Uint8Array([]),
+      padding: [],
     });
 
     assertAccurateRebalance(client, 5000, 5000);
@@ -311,145 +258,14 @@ describe("Rebalance tests", async () => {
 
   it("Standard boost or repay", async () => {
     const settings: SolautoSettingsParameters = {
-      automation: {
-        targetPeriods: 0,
-        periodsPassed: 0,
-        unixStartDate: BigInt(0),
-        intervalSeconds: BigInt(0),
-        padding1: [],
-        padding: new Uint8Array([]),
-      },
-      targetBoostToBps: 0,
       boostGap: 1000,
       boostToBps: 4000,
       repayGap: 1000,
       repayToBps: 7500,
-      padding1: [],
-      padding: new Uint8Array([]),
+      padding: [],
     };
 
     await rebalanceFromFakePosition(supplyPrice, debtPrice, 1000, settings);
     await rebalanceFromFakePosition(supplyPrice, debtPrice, 9000, settings);
-  });
-
-  it("Rebalance with settings automation", async () => {
-    const settings: SolautoSettingsParameters = {
-      automation: {
-        targetPeriods: 2,
-        periodsPassed: 1,
-        intervalSeconds: BigInt(5),
-        unixStartDate: BigInt(currentUnixSeconds() - 5),
-        padding1: [],
-        padding: new Uint8Array([]),
-      },
-      targetBoostToBps: 5000,
-      boostGap: 1000,
-      boostToBps: 4000,
-      repayGap: 1000,
-      repayToBps: 7500,
-      padding1: [],
-      padding: new Uint8Array([]),
-    };
-    await rebalanceFromFakePosition(supplyPrice, debtPrice, 3500, settings);
-
-    settings.automation.targetPeriods = 5;
-    await rebalanceFromFakePosition(supplyPrice, debtPrice, 3100, settings);
-
-    settings.automation.periodsPassed = 0;
-    settings.automation.unixStartDate = BigInt(currentUnixSeconds());
-    await rebalanceFromFakePosition(supplyPrice, debtPrice, 3100, settings);
-  });
-
-  it("Rebalance DCA out", async () => {
-    const settings: SolautoSettingsParameters = {
-      automation: {
-        targetPeriods: 4,
-        periodsPassed: 0,
-        intervalSeconds: BigInt(5),
-        unixStartDate: BigInt(currentUnixSeconds()),
-        padding1: [],
-        padding: new Uint8Array([]),
-      },
-      targetBoostToBps: 0,
-      boostGap: 1000,
-      boostToBps: 4000,
-      repayGap: 1000,
-      repayToBps: 7500,
-      padding1: [],
-      padding: new Uint8Array([]),
-    };
-    const dca: DCASettings = {
-      automation: {
-        targetPeriods: 4,
-        periodsPassed: 0,
-        intervalSeconds: BigInt(5),
-        unixStartDate: BigInt(currentUnixSeconds()),
-        padding1: [],
-        padding: new Uint8Array([]),
-      },
-      dcaInBaseUnit: BigInt(0),
-      tokenType: TokenType.Debt,
-      padding: [],
-    };
-    await dcaRebalanceFromFakePosition(
-      supplyPrice,
-      debtPrice,
-      3500,
-      settings,
-      dca
-    );
-
-    settings.boostToBps = 1500;
-    settings.automation.periodsPassed = 3;
-    settings.automation.unixStartDate = BigInt(currentUnixSeconds() - 3 * 5);
-    dca.automation.periodsPassed = 3;
-    dca.automation.unixStartDate = BigInt(currentUnixSeconds() - 3 * 5);
-    await dcaRebalanceFromFakePosition(
-      supplyPrice,
-      debtPrice,
-      3500,
-      settings,
-      dca
-    );
-  });
-
-  it("Rebalance DCA in", async () => {
-    const settings: SolautoSettingsParameters = {
-      automation: {
-        targetPeriods: 3,
-        periodsPassed: 0,
-        intervalSeconds: BigInt(5),
-        unixStartDate: BigInt(currentUnixSeconds()),
-        padding1: [],
-        padding: new Uint8Array([]),
-      },
-      targetBoostToBps: 5000,
-      boostGap: 1000,
-      boostToBps: 4000,
-      repayGap: 1000,
-      repayToBps: 7500,
-      padding1: [],
-      padding: new Uint8Array([]),
-    };
-    const dca: DCASettings = {
-      automation: {
-        targetPeriods: 4,
-        periodsPassed: 0,
-        intervalSeconds: BigInt(5),
-        unixStartDate: BigInt(currentUnixSeconds()),
-        padding1: [],
-        padding: new Uint8Array([]),
-      },
-      dcaInBaseUnit: toBaseUnit(debtPrice * 300, 6),
-      tokenType: TokenType.Debt,
-      padding: [],
-    };
-    await dcaRebalanceFromFakePosition(
-      supplyPrice,
-      debtPrice,
-      3500,
-      settings,
-      dca
-    );
   });
 });

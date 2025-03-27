@@ -910,7 +910,7 @@
             "type": {
               "array": [
                 "u32",
-                24
+                20
               ]
             }
           }
@@ -1439,6 +1439,15 @@
             "name": "values",
             "type": {
               "defined": "RebalanceStateValues"
+            }
+          },
+          {
+            "name": "padding",
+            "type": {
+              "array": [
+                "u32",
+                4
+              ]
             }
           }
         ]

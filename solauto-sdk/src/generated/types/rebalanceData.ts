@@ -6,7 +6,12 @@
  * @see https://github.com/metaplex-foundation/kinobi
  */
 
-import { Serializer, struct } from '@metaplex-foundation/umi/serializers';
+import {
+  Serializer,
+  array,
+  struct,
+  u32,
+} from '@metaplex-foundation/umi/serializers';
 import {
   RebalanceInstructionData,
   RebalanceInstructionDataArgs,
@@ -19,11 +24,13 @@ import {
 export type RebalanceData = {
   ixs: RebalanceInstructionData;
   values: RebalanceStateValues;
+  padding: Array<number>;
 };
 
 export type RebalanceDataArgs = {
   ixs: RebalanceInstructionDataArgs;
   values: RebalanceStateValuesArgs;
+  padding: Array<number>;
 };
 
 export function getRebalanceDataSerializer(): Serializer<
@@ -34,6 +41,7 @@ export function getRebalanceDataSerializer(): Serializer<
     [
       ['ixs', getRebalanceInstructionDataSerializer()],
       ['values', getRebalanceStateValuesSerializer()],
+      ['padding', array(u32(), { size: 4 })],
     ],
     { description: 'RebalanceData' }
   ) as Serializer<RebalanceDataArgs, RebalanceData>;

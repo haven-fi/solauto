@@ -29,6 +29,7 @@ import {
   SolautoRebalanceType,
   SolautoRebalanceTypeArgs,
   SolautoSettingsParametersInpArgs,
+  SwapType,
   marginfiOpenPosition,
   marginfiProtocolInteraction,
   marginfiRebalance,
@@ -571,7 +572,9 @@ export class SolautoMarginfiClient extends SolautoClient {
         : undefined,
       rebalanceType,
       targetLiqUtilizationRateBps: targetLiqUtilizationRateBps ?? null,
-      targetInAmountBaseUnit: parseInt(jupQuote.inAmount),
+      swapInAmountBaseUnit: parseInt(jupQuote.inAmount),
+      swapType: jupQuote.swapMode === "ExactOut" ? SwapType.ExactOut : null,
+      flashLoanFeeBps: 0, // TODO
     });
   }
 

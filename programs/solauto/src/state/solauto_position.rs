@@ -266,6 +266,7 @@ impl RebalanceInstructionData {
 pub struct RebalanceData {
     pub ixs: RebalanceInstructionData,
     pub values: RebalanceStateValues,
+    _padding: [u32; 4],
 }
 
 impl RebalanceData {
@@ -289,7 +290,7 @@ pub struct SolautoPosition {
     pub position: PositionData,
     pub state: PositionState,
     pub rebalance: RebalanceData,
-    _padding: [u32; 24],
+    _padding: [u32; 20],
 }
 
 impl SolautoPosition {
@@ -313,7 +314,7 @@ impl SolautoPosition {
             position,
             state,
             rebalance: RebalanceData::default(),
-            _padding: [0; 24],
+            _padding: [0; 20],
         }
     }
     #[inline(always)]

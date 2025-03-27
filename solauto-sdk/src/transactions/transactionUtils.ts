@@ -19,6 +19,7 @@ import {
   RebalanceDirection,
   SolautoAction,
   SolautoRebalanceType,
+  SwapType,
   TokenType,
   convertReferralFees,
   createSolautoProgram,
@@ -421,9 +422,11 @@ function getRebalanceInstructions(
       try {
         const serializer = getMarginfiRebalanceInstructionDataSerializer();
         const discriminator = serializer.serialize({
-          targetInAmountBaseUnit: 0,
-          rebalanceType: SolautoRebalanceType.None,
+          swapInAmountBaseUnit: 0,
+          rebalanceType: SolautoRebalanceType.Regular,
+          swapType: SwapType.ExactIn,
           targetLiqUtilizationRateBps: 0,
+          flashLoanFeeBps: null,
         })[0];
         const [data, _] = serializer.deserialize(x.data);
         if (data.discriminator === discriminator) {

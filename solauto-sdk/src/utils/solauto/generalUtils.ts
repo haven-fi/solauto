@@ -112,27 +112,6 @@ export function getUpdatedValueFromAutomation(
   return newValue;
 }
 
-export function getAdjustedSettingsFromAutomation(
-  settings: SolautoSettingsParameters,
-  currentUnixTime: number
-): SolautoSettingsParameters {
-  const boostToBps =
-    settings.automation.targetPeriods > 0 &&
-    eligibleForNextAutomationPeriod(settings.automation, currentUnixTime)
-      ? getUpdatedValueFromAutomation(
-          settings.boostToBps,
-          settings.targetBoostToBps,
-          settings.automation,
-          currentUnixTime
-        )
-      : settings.boostToBps;
-
-  return {
-    ...settings,
-    boostToBps,
-  };
-}
-
 export function sufficientLiquidityToBoost(
   positionState: PositionState,
   positionSettings: SolautoSettingsParameters | undefined,
@@ -194,16 +173,7 @@ export function eligibleForRebalance(
     return undefined;
   }
 
-  const boostToBps =
-    eligibleForRefresh(positionState, positionSettings, currentUnixTime) &&
-    positionSettings.automation.targetPeriods > 0
-      ? getUpdatedValueFromAutomation(
-          positionSettings.boostToBps,
-          positionSettings.targetBoostToBps,
-          positionSettings.automation,
-          currentUnixTime
-        )
-      : positionSettings.boostToBps;
+  const boostToBps = positionSettings.boostToBps;
   const repayFrom = positionSettings.repayToBps + positionSettings.repayGap;
   const boostFrom = boostToBps - positionSettings.boostGap;
 
@@ -226,22 +196,10 @@ export function eligibleForRebalance(
   return undefined;
 }
 
-export function eligibleForRefresh(
-  positionState: PositionState,
-  positionSettings: SolautoSettingsParameters,
-  currentUnixTime: number
-): boolean {
-  if (positionSettings.automation.targetPeriods > 0) {
-    return eligibleForNextAutomationPeriod(
-      positionSettings.automation,
-      currentUnixTime
-    );
-  } else {
-    return (
-      currentUnixSeconds() - Number(positionState.lastUpdated) >
-      60 * 60 * 24 * 7
-    );
-  }
+export function eligibleForRefresh(positionState: PositionState): boolean {
+  return (
+    currentUnixSeconds() - Number(positionState.lastUpdated) > 60 * 60 * 24 * 7
+  );
 }
 
 export async function getSolautoManagedPositions(
@@ -549,7 +507,6 @@ export function createFakePositionState(
       baseAmountMarketPriceUsd: toBaseUnit(supply.price ?? 0, USD_DECIMALS),
       borrowFeeBps: 0,
       decimals: supplyDecimals,
-      flashLoanFeeBps: 0,
       mint: publicKey(supply.mint),
       padding1: [],
       padding2: [],
@@ -570,7 +527,6 @@ export function createFakePositionState(
       baseAmountMarketPriceUsd: toBaseUnit(debt.price ?? 0, USD_DECIMALS),
       borrowFeeBps: 0,
       decimals: debtDecimals,
-      flashLoanFeeBps: 0,
       mint: publicKey(debt.mint),
       padding1: [],
       padding2: [],
@@ -595,33 +551,11 @@ export function createSolautoSettings(
   settings: SolautoSettingsParametersInpArgs
 ): SolautoSettingsParameters {
   return {
-    automation:
-      isOption(settings.automation) && isSome(settings.automation)
-        ? {
-            ...settings.automation.value,
-            intervalSeconds: BigInt(settings.automation.value.intervalSeconds),
-            unixStartDate: BigInt(settings.automation.value.unixStartDate),
-            padding: new Uint8Array([]),
-            padding1: [],
-          }
-        : {
-            targetPeriods: 0,
-            periodsPassed: 0,
-            intervalSeconds: BigInt(0),
-            unixStartDate: BigInt(0),
-            padding: new Uint8Array([]),
-            padding1: [],
-          },
-    targetBoostToBps:
-      isOption(settings.targetBoostToBps) && isSome(settings.targetBoostToBps)
-        ? settings.targetBoostToBps.value
-        : 0,
     boostGap: settings.boostGap,
     boostToBps: settings.boostToBps,
     repayGap: settings.repayGap,
     repayToBps: settings.repayToBps,
-    padding: new Uint8Array([]),
-    padding1: [],
+    padding: [],
   };
 }
 
@@ -632,7 +566,7 @@ type ContextAdjustment =
   | { type: "dca"; value: DCASettingsInpArgs }
   | { type: "dcaInBalance"; value: { amount: bigint; tokenType: TokenType } }
   | { type: "cancellingDca"; value: TokenType }
-  | { type: "jupSwap", value: QuoteResponse };
+  | { type: "jupSwap"; value: QuoteResponse };
 
 export class ContextUpdates {
   public supplyAdjustment = BigInt(0);

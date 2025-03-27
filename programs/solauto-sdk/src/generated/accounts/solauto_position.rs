@@ -30,7 +30,7 @@ pub struct SolautoPosition {
     pub position: PositionData,
     pub state: PositionState,
     pub rebalance: RebalanceData,
-    pub padding: [u32; 24],
+    pub padding: [u32; 20],
 }
 
 impl SolautoPosition {

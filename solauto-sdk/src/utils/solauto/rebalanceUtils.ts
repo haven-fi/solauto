@@ -3,14 +3,13 @@ import { SolautoClient } from "../../clients/solautoClient";
 import {
   DCASettings,
   PositionState,
-  PositionTokenUsage,
+  PositionTokenState,
   RebalanceDirection,
   SolautoSettingsParameters,
   TokenType,
 } from "../../generated";
 import {
   eligibleForNextAutomationPeriod,
-  getAdjustedSettingsFromAutomation,
   getUpdatedValueFromAutomation,
 } from "./generalUtils";
 import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
@@ -57,15 +56,10 @@ function getStandardTargetLiqUtilizationRateBps(
   state: PositionState,
   settings: SolautoSettingsParameters
 ): number {
-  const adjustedSettings = getAdjustedSettingsFromAutomation(
-    settings,
-    currentUnixSeconds()
-  );
-
-  if (state.liqUtilizationRateBps < adjustedSettings.boostToBps) {
-    return adjustedSettings.boostToBps;
+  if (state.liqUtilizationRateBps < settings.boostToBps) {
+    return settings.boostToBps;
   } else if (state.liqUtilizationRateBps > settings.repayToBps) {
-    return adjustedSettings.repayToBps;
+    return settings.repayToBps;
   } else {
     throw new Error("Invalid rebalance condition");
   }
@@ -74,22 +68,13 @@ function getStandardTargetLiqUtilizationRateBps(
 function targetLiqUtilizationRateBpsFromDCA(
   state: PositionState,
   settings: SolautoSettingsParameters,
-  dca: DCASettings,
-  currentUnixTime: number
+  dca: DCASettings
 ) {
-  const adjustedSettings = getAdjustedSettingsFromAutomation(
-    settings,
-    currentUnixTime
-  );
-
   let targetRateBps = 0;
   if (dca.dcaInBaseUnit > BigInt(0)) {
-    targetRateBps = Math.max(
-      state.liqUtilizationRateBps,
-      adjustedSettings.boostToBps
-    );
+    targetRateBps = Math.max(state.liqUtilizationRateBps, settings.boostToBps);
   } else {
-    targetRateBps = adjustedSettings.boostToBps;
+    targetRateBps = settings.boostToBps;
   }
   return targetRateBps;
 }
@@ -104,15 +89,7 @@ function isDcaRebalance(
     return false;
   }
 
-  const adjustedSettings = getAdjustedSettingsFromAutomation(
-    settings,
-    currentUnixTime
-  );
-
-  if (
-    state.liqUtilizationRateBps >
-    adjustedSettings.repayToBps + adjustedSettings.repayGap
-  ) {
+  if (state.liqUtilizationRateBps > settings.repayToBps + settings.repayGap) {
     return false;
   }
 
@@ -146,8 +123,7 @@ function getTargetRateAndDcaAmount(
     const targetLiqUtilizationRateBps = targetLiqUtilizationRateBpsFromDCA(
       state,
       settings,
-      dca!,
-      currentUnixTime
+      dca!
     );
     const amountToDcaIn = getAdditionalAmountToDcaIn(dca!);
 
@@ -376,9 +352,7 @@ export async function getFlashLoanRequirements(
         values.rebalanceDirection === RebalanceDirection.Boost ||
         !sufficientSignerSupplyLiquidity;
     } else {
-      throw new Error(
-        `Insufficient liquidity to perform the transaction`
-      );
+      throw new Error(`Insufficient liquidity to perform the transaction`);
     }
   }
 
@@ -407,7 +381,7 @@ export function getFlashLoanDetails(
   values: RebalanceValues,
   jupQuote: QuoteResponse
 ): FlashLoanDetails | undefined {
-  let flashLoanToken: PositionTokenUsage | undefined = undefined;
+  let flashLoanToken: PositionTokenState | undefined = undefined;
 
   const inAmount = BigInt(parseInt(jupQuote.inAmount));
   const outAmount = BigInt(parseInt(jupQuote.outAmount));

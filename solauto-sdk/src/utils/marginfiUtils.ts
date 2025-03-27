@@ -24,7 +24,7 @@ import {
   MARGINFI_ACCOUNTS,
 } from "../constants/marginfiAccounts";
 import { MarginfiAssetAccounts } from "../types/accounts";
-import { PositionState, PositionTokenUsage } from "../generated";
+import { PositionState, PositionTokenState } from "../generated";
 import { USD_DECIMALS } from "../constants/generalAccounts";
 import { ContextUpdates } from "./solauto/generalUtils";
 import { ALL_SUPPORTED_TOKENS, TOKEN_INFO } from "../constants";
@@ -239,7 +239,7 @@ async function getTokenUsage(
   isAsset: boolean,
   shares: number,
   amountUsedAdjustment?: bigint
-): Promise<PositionTokenUsage> {
+): Promise<PositionTokenState> {
   let amountUsed = 0;
   let amountCanBeUsed = BigInt(0);
   let marketPrice = 0;
@@ -251,7 +251,9 @@ async function getTokenUsage(
     const shareValue = isAsset ? assetShareValue : liabilityShareValue;
     amountUsed = shares * shareValue + Number(amountUsedAdjustment ?? 0);
     amountCanBeUsed = getBankLiquidityAvailableBaseUnit(bank, isAsset);
-    originationFee = bytesToI80F48(bank?.config.interestRateConfig.protocolOriginationFee.value);
+    originationFee = bytesToI80F48(
+      bank?.config.interestRateConfig.protocolOriginationFee.value
+    );
   }
 
   return {
@@ -277,8 +279,7 @@ async function getTokenUsage(
         : BigInt(0),
     },
     baseAmountMarketPriceUsd: toBaseUnit(marketPrice, USD_DECIMALS),
-    flashLoanFeeBps: toBps(originationFee),
-    borrowFeeBps: toBps(originationFee),
+    borrowFeeBps: isAsset ? 0 : toBps(originationFee),
     padding1: [],
     padding2: [],
     padding: new Uint8Array([]),
@@ -349,8 +350,8 @@ export async function getMarginfiAccountPositionState(
           )
         : null;
 
-  let supplyUsage: PositionTokenUsage | undefined = undefined;
-  let debtUsage: PositionTokenUsage | undefined = undefined;
+  let supplyUsage: PositionTokenState | undefined = undefined;
+  let debtUsage: PositionTokenState | undefined = undefined;
 
   if (
     marginfiAccount !== null &&

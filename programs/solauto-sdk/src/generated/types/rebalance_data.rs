@@ -15,4 +15,5 @@ use borsh::BorshSerialize;
 pub struct RebalanceData {
     pub ixs: RebalanceInstructionData,
     pub values: RebalanceStateValues,
+    pub padding: [u32; 4],
 }
