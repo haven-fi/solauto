@@ -28,7 +28,10 @@ use crate::{
     },
 };
 
-use super::{solauto_fees::SolautoFeesBps, utils::{eligible_for_rebalance, get_rebalance_values}};
+use super::{
+    solauto_fees::SolautoFeesBps,
+    utils::{eligible_for_rebalance, get_rebalance_values},
+};
 
 pub struct TokenAccountData {
     pub pk: Pubkey,

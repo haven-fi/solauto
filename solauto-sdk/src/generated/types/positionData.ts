@@ -33,7 +33,7 @@ export type PositionData = {
   protocolUserAccount: PublicKey;
   protocolSupplyAccount: PublicKey;
   protocolDebtAccount: PublicKey;
-  settingParams: SolautoSettingsParameters;
+  settings: SolautoSettingsParameters;
   dca: DCASettings;
   padding: Array<number>;
 };
@@ -44,7 +44,7 @@ export type PositionDataArgs = {
   protocolUserAccount: PublicKey;
   protocolSupplyAccount: PublicKey;
   protocolDebtAccount: PublicKey;
-  settingParams: SolautoSettingsParametersArgs;
+  settings: SolautoSettingsParametersArgs;
   dca: DCASettingsArgs;
   padding: Array<number>;
 };
@@ -60,7 +60,7 @@ export function getPositionDataSerializer(): Serializer<
       ['protocolUserAccount', publicKeySerializer()],
       ['protocolSupplyAccount', publicKeySerializer()],
       ['protocolDebtAccount', publicKeySerializer()],
-      ['settingParams', getSolautoSettingsParametersSerializer()],
+      ['settings', getSolautoSettingsParametersSerializer()],
       ['dca', getDCASettingsSerializer()],
       ['padding', array(u32(), { size: 4 })],
     ],

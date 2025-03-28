@@ -3,9 +3,9 @@ import { RebalanceDirection } from "../generated";
 
 export class SolautoFeesBps {
   constructor(
-    public isReferred: boolean,
-    public targetLiqUtilizationRateBps: number | undefined,
-    public positionNetWorthUsd: number
+    private isReferred: boolean,
+    private targetLiqUtilizationRateBps: number | undefined,
+    private positionNetWorthUsd: number
   ) {}
 
   public getSolautoFeesBps(rebalanceDirection: RebalanceDirection) {

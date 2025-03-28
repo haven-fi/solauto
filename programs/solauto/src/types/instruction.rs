@@ -193,7 +193,7 @@ pub struct UpdatePositionData {
     /// ID of the Solauto position
     pub position_id: u8,
     /// Setting parameters for the position
-    pub setting_params: Option<SolautoSettingsParametersInp>,
+    pub settings: Option<SolautoSettingsParametersInp>,
     /// New DCA data to initiate on the position
     pub dca: Option<DCASettingsInp>,
 }

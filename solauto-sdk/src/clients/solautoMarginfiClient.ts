@@ -288,16 +288,16 @@ export class SolautoMarginfiClient extends SolautoClient {
   }
 
   openPosition(
-    settingParams?: SolautoSettingsParametersInpArgs,
+    settings?: SolautoSettingsParametersInpArgs,
     dca?: DCASettingsInpArgs
   ): TransactionBuilder {
     return super
-      .openPosition(settingParams, dca)
-      .add(this.marginfiOpenPositionIx(settingParams, dca));
+      .openPosition(settings, dca)
+      .add(this.marginfiOpenPositionIx(settings, dca));
   }
 
   private marginfiOpenPositionIx(
-    settingParams?: SolautoSettingsParametersInpArgs,
+    settings?: SolautoSettingsParametersInpArgs,
     dca?: DCASettingsInpArgs,
     positionType?: PositionType
   ): TransactionBuilder {
@@ -332,7 +332,7 @@ export class SolautoMarginfiClient extends SolautoClient {
       positionType: positionType ?? PositionType.Leverage,
       positionData: {
         positionId: this.positionId!,
-        settingParams: settingParams ?? null,
+        settings: settings ?? null,
         dca: dca ?? null,
       },
       marginfiAccountSeedIdx: !this.selfManaged
@@ -767,43 +767,8 @@ export class SolautoMarginfiClient extends SolautoClient {
     if (resp) {
       this.supplyBank = resp?.supplyBank;
       this.debtBank = resp?.debtBank;
-      const freshState = resp.state;
-
-      this.log("Fresh state", freshState);
-      const supplyPrice = safeGetPrice(freshState?.supply.mint)!;
-      const debtPrice = safeGetPrice(freshState?.debt.mint)!;
-      this.log("Supply price: ", supplyPrice);
-      this.log("Debt price: ", debtPrice);
-      this.log("Liq threshold bps:", freshState.liqThresholdBps);
-      this.log("Liq utilization rate bps:", freshState.liqUtilizationRateBps);
-      this.log(
-        "Supply USD:",
-        fromBaseUnit(
-          freshState.supply.amountUsed.baseUnit,
-          freshState.supply.decimals
-        ) * supplyPrice
-      );
-      this.log(
-        "Debt USD:",
-        fromBaseUnit(
-          freshState.debt.amountUsed.baseUnit,
-          freshState.debt.decimals
-        ) * debtPrice
-      );
     }
 
     return resp?.state;
-  }
-
-  supplyLiquidityAvailable(): bigint {
-    return getBankLiquidityAvailableBaseUnit(this.supplyBank, false);
-  }
-
-  supplyLiquidityDepositable(): bigint {
-    return getBankLiquidityAvailableBaseUnit(this.supplyBank, true);
-  }
-
-  debtLiquidityAvailable(): bigint {
-    return getBankLiquidityAvailableBaseUnit(this.debtBank, false);
   }
 }

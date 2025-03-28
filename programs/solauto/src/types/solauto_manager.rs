@@ -13,7 +13,10 @@ use super::{
     solauto::SolautoCpiAction,
 };
 use crate::{
-    rebalance::{rebalancer::{Rebalancer, RebalancerData, SolautoPositionData, TokenAccountData}, solauto_fees::SolautoFeesBps},
+    rebalance::{
+        rebalancer::{Rebalancer, RebalancerData, SolautoPositionData, TokenAccountData},
+        solauto_fees::SolautoFeesBps,
+    },
     state::solauto_position::SolautoPosition,
     utils::{
         solana_utils::spl_token_transfer,

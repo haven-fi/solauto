@@ -1,61 +1,17 @@
 import { describe, it } from "mocha";
-import {
-  none,
-  publicKey,
-  some,
-  transactionBuilder,
-  Umi,
-  UmiError,
-} from "@metaplex-foundation/umi";
 import { setupTest } from "../shared";
 import { SolautoMarginfiClient } from "../../src/clients/solautoMarginfiClient";
-import {
-  fetchSolautoPosition,
-  PositionType,
-  safeFetchAllSolautoPosition,
-  safeFetchSolautoPosition,
-  solautoAction,
-  SolautoSettingsParametersInpArgs,
-} from "../../src/generated";
-import { buildSolautoRebalanceTransaction } from "../../src/transactions/transactionUtils";
-import {
-  bytesToI80F48,
-  getLiqUtilzationRateBps,
-  getMaxLiqUtilizationRateBps,
-  maxBoostToBps,
-  maxRepayFromBps,
-  maxRepayToBps,
-  toBaseUnit,
-} from "../../src/utils/numberUtils";
+import { SolautoSettingsParametersInpArgs } from "../../src/generated";
 import { NATIVE_MINT } from "@solana/spl-token";
 import {
   TransactionItem,
   TransactionsManager,
 } from "../../src/transactions/transactionsManager";
-import { PublicKey } from "@solana/web3.js";
 import {
-  ALL_SUPPORTED_TOKENS,
-  DEFAULT_MARGINFI_GROUP,
-  MARGINFI_ACCOUNTS,
-  PRICES,
   SOLAUTO_PROD_PROGRAM,
   SOLAUTO_TEST_PROGRAM,
-  USDC,
-  USDT,
 } from "../../src/constants";
-import {
-  buildHeliusApiUrl,
-  buildIronforgeApiUrl,
-  fetchTokenPrices,
-  getAllPositionsByAuthority,
-  getBankLiquidityAvailableBaseUnit,
-  getQnComputeUnitPriceEstimate,
-  getSolautoManagedPositions,
-  getSolautoPositionAccount,
-  marginfiAccountEmpty,
-  retryWithExponentialBackoff,
-  safeGetPrice,
-} from "../../src/utils";
+import { buildIronforgeApiUrl } from "../../src/utils";
 import { PriorityFeeSetting } from "../../src/types";
 
 describe("Solauto Marginfi tests", async () => {
@@ -105,7 +61,7 @@ describe("Solauto Marginfi tests", async () => {
     // );
 
     const transactionItems: TransactionItem[] = [];
-    // const settingParams: SolautoSettingsParametersInpArgs = {
+    // const settings: SolautoSettingsParametersInpArgs = {
     //   boostToBps: maxBoostToBps(
     //     client.solautoPositionState?.maxLtvBps ?? 0,
     //     client.solautoPositionState?.liqThresholdBps ?? 0
@@ -120,7 +76,7 @@ describe("Solauto Marginfi tests", async () => {
     //   targetBoostToBps: none(),
     // };
 
-    const settingParams: SolautoSettingsParametersInpArgs = {
+    const settings: SolautoSettingsParametersInpArgs = {
       boostToBps: client.solautoPositionSettings().boostToBps - 150,
       boostGap: 50,
       repayToBps: client.solautoPositionSettings().repayToBps - 150,
@@ -131,7 +87,7 @@ describe("Solauto Marginfi tests", async () => {
     //   transactionItems.push(
     //     new TransactionItem(async () => {
     //       return {
-    //         tx: client.openPosition(settingParams),
+    //         tx: client.openPosition(settings),
     //       };
     //     }, "open position")
     //   );
@@ -159,8 +115,8 @@ describe("Solauto Marginfi tests", async () => {
     //     async () => ({
     //       tx: client.updatePositionIx({
     //         positionId: client.positionId,
-    //         settingParams: some({
-    //           ...settingParams,
+    //         settings: some({
+    //           ...settings,
     //         }),
     //         dca: null,
     //       }),

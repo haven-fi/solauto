@@ -32,7 +32,7 @@ pub struct PositionData {
         serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
     )]
     pub protocol_debt_account: Pubkey,
-    pub setting_params: SolautoSettingsParameters,
+    pub settings: SolautoSettingsParameters,
     pub dca: DCASettings,
     pub padding: [u32; 4],
 }

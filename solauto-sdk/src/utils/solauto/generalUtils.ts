@@ -13,6 +13,7 @@ import {
   LendingPlatform,
   PositionState,
   PositionType,
+  SolautoPosition,
   SolautoSettingsParameters,
   SolautoSettingsParametersInpArgs,
   TokenType,
@@ -21,9 +22,11 @@ import {
   getSolautoErrorFromName,
   getSolautoPositionAccountDataSerializer,
   getSolautoPositionSize,
+  safeFetchSolautoPosition,
 } from "../../generated";
 import { consoleLog, currentUnixSeconds } from "../generalUtils";
 import {
+  calcSupplyUsd,
   calcTotalDebt,
   calcTotalSupply,
   debtLiquidityUsdAvailable,
@@ -33,7 +36,10 @@ import {
   toBaseUnit,
 } from "../numberUtils";
 import { getReferralState } from "../accountUtils";
-import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
+import {
+  fromWeb3JsPublicKey,
+  toWeb3JsPublicKey,
+} from "@metaplex-foundation/umi-web3js-adapters";
 import {
   ALL_SUPPORTED_TOKENS,
   TOKEN_INFO,
@@ -47,6 +53,11 @@ import { RebalanceAction, SolautoPositionDetails } from "../../types/solauto";
 import { fetchTokenPrices } from "../priceUtils";
 import { getRebalanceValues } from "./rebalanceUtils";
 import { QuoteResponse } from "@jup-ag/api";
+import {
+  createSolautoSettings,
+  SolautoPositionEx,
+} from "../../solautoPosition";
+import { MarginfiSolautoPositionEx } from "../../solautoPosition/marginfiSolautoPositionEx";
 
 export function createDynamicSolautoProgram(programId: PublicKey): Program {
   return {
@@ -110,96 +121,6 @@ export function getUpdatedValueFromAutomation(
     );
   const newValue = currValue - currRateDiff * progressPct;
   return newValue;
-}
-
-export function sufficientLiquidityToBoost(
-  positionState: PositionState,
-  positionSettings: SolautoSettingsParameters | undefined,
-  positionDca: DCASettings | undefined,
-  supplyMintPrice: number,
-  debtMintPrice: number
-) {
-  const limitsUpToDate =
-    positionState.supply.amountCanBeUsed.baseUnit > BigInt(0) ||
-    positionState.debt.amountCanBeUsed.baseUnit > BigInt(0);
-
-  if (limitsUpToDate) {
-    const values = getRebalanceValues(
-      positionState!,
-      positionSettings,
-      positionDca,
-      currentUnixSeconds(),
-      supplyMintPrice,
-      debtMintPrice
-    );
-
-    const debtAvailable = debtLiquidityUsdAvailable(positionState);
-    const supplyDepositable = supplyLiquidityUsdDepositable(positionState);
-    const sufficientLiquidity =
-      debtAvailable * 0.95 > values.debtAdjustmentUsd &&
-      supplyDepositable * 0.95 > values.debtAdjustmentUsd;
-
-    if (!sufficientLiquidity) {
-      consoleLog("Insufficient liquidity to further boost");
-    }
-    return sufficientLiquidity;
-  }
-
-  return true;
-}
-
-export function eligibleForRebalance(
-  positionState: PositionState,
-  positionSettings: SolautoSettingsParameters | undefined,
-  positionDca: DCASettings | undefined,
-  currentUnixTime: number,
-  supplyMintPrice: number,
-  debtMintPrice: number,
-  bpsDistanceThreshold = 0
-): RebalanceAction | undefined {
-  if (!positionSettings) {
-    return undefined;
-  }
-
-  if (
-    positionDca &&
-    positionDca.automation.targetPeriods > 0 &&
-    eligibleForNextAutomationPeriod(positionDca.automation, currentUnixTime)
-  ) {
-    return "dca";
-  }
-
-  if (positionState.supply.amountUsed.baseUnit === BigInt(0)) {
-    return undefined;
-  }
-
-  const boostToBps = positionSettings.boostToBps;
-  const repayFrom = positionSettings.repayToBps + positionSettings.repayGap;
-  const boostFrom = boostToBps - positionSettings.boostGap;
-
-  if (positionState.liqUtilizationRateBps - boostFrom <= bpsDistanceThreshold) {
-    const sufficientLiquidity = sufficientLiquidityToBoost(
-      positionState,
-      positionSettings,
-      positionDca,
-      supplyMintPrice,
-      debtMintPrice
-    );
-    return sufficientLiquidity ? "boost" : undefined;
-  } else if (
-    repayFrom - positionState.liqUtilizationRateBps <=
-    bpsDistanceThreshold
-  ) {
-    return "repay";
-  }
-
-  return undefined;
-}
-
-export function eligibleForRefresh(positionState: PositionState): boolean {
-  return (
-    currentUnixSeconds() - Number(positionState.lastUpdated) > 60 * 60 * 24 * 7
-  );
 }
 
 export async function getSolautoManagedPositions(
@@ -464,98 +385,6 @@ export async function positionStateWithLatestPrices(
         baseAmountUsdValue: toBaseUnit(debtUsd, USD_DECIMALS),
       },
     },
-  };
-}
-
-interface AssetProps {
-  mint: PublicKey;
-  price?: number;
-  amountUsed?: number;
-  amountCanBeUsed?: number;
-}
-
-export function createFakePositionState(
-  supply: AssetProps,
-  debt: AssetProps,
-  maxLtvBps: number,
-  liqThresholdBps: number
-): PositionState {
-  const supplyDecimals = TOKEN_INFO[supply.mint.toString()].decimals;
-  const debtDecimals = TOKEN_INFO[debt.mint.toString()].decimals;
-
-  const supplyUsd = (supply.amountUsed ?? 0) * (supply.price ?? 0);
-  const debtUsd = (debt.amountUsed ?? 0) * (debt.price ?? 0);
-
-  return {
-    liqUtilizationRateBps: getLiqUtilzationRateBps(
-      supplyUsd,
-      debtUsd,
-      liqThresholdBps
-    ),
-    supply: {
-      amountUsed: {
-        baseUnit: toBaseUnit(supply.amountUsed ?? 0, supplyDecimals),
-        baseAmountUsdValue: toBaseUnit(supplyUsd, USD_DECIMALS),
-      },
-      amountCanBeUsed: {
-        baseUnit: toBaseUnit(supply.amountCanBeUsed ?? 0, supplyDecimals),
-        baseAmountUsdValue: toBaseUnit(
-          (supply.amountCanBeUsed ?? 0) * (supply.price ?? 0),
-          USD_DECIMALS
-        ),
-      },
-      baseAmountMarketPriceUsd: toBaseUnit(supply.price ?? 0, USD_DECIMALS),
-      borrowFeeBps: 0,
-      decimals: supplyDecimals,
-      mint: publicKey(supply.mint),
-      padding1: [],
-      padding2: [],
-      padding: new Uint8Array([]),
-    },
-    debt: {
-      amountUsed: {
-        baseUnit: toBaseUnit(debt.amountUsed ?? 0, debtDecimals),
-        baseAmountUsdValue: toBaseUnit(debtUsd, USD_DECIMALS),
-      },
-      amountCanBeUsed: {
-        baseUnit: toBaseUnit(debt.amountCanBeUsed ?? 0, debtDecimals),
-        baseAmountUsdValue: toBaseUnit(
-          (debt.amountCanBeUsed ?? 0) * (debt.price ?? 0),
-          USD_DECIMALS
-        ),
-      },
-      baseAmountMarketPriceUsd: toBaseUnit(debt.price ?? 0, USD_DECIMALS),
-      borrowFeeBps: 0,
-      decimals: debtDecimals,
-      mint: publicKey(debt.mint),
-      padding1: [],
-      padding2: [],
-      padding: new Uint8Array([]),
-    },
-    netWorth: {
-      baseUnit: supply.price
-        ? toBaseUnit((supplyUsd - debtUsd) / supply.price, supplyDecimals)
-        : BigInt(0),
-      baseAmountUsdValue: toBaseUnit(supplyUsd - debtUsd, USD_DECIMALS),
-    },
-    maxLtvBps,
-    liqThresholdBps,
-    lastUpdated: BigInt(currentUnixSeconds()),
-    padding1: [],
-    padding2: [],
-    padding: [],
-  };
-}
-
-export function createSolautoSettings(
-  settings: SolautoSettingsParametersInpArgs
-): SolautoSettingsParameters {
-  return {
-    boostGap: settings.boostGap,
-    boostToBps: settings.boostToBps,
-    repayGap: settings.repayGap,
-    repayToBps: settings.repayToBps,
-    padding: [],
   };
 }
 

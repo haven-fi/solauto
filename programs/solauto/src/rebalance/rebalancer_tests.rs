@@ -26,7 +26,10 @@ use crate::{
     },
 };
 
-use super::{rebalancer::{Rebalancer, RebalancerData, SolautoPositionData, TokenAccountData}, solauto_fees::SolautoFeesBps};
+use super::{
+    rebalancer::{Rebalancer, RebalancerData, SolautoPositionData, TokenAccountData},
+    solauto_fees::SolautoFeesBps,
+};
 
 const TEST_TOKEN_DECIMALS: u8 = 9;
 const SOLAUTO_FEE_BPS: u16 = 50;
@@ -83,7 +86,7 @@ fn create_position<'a>(pos: &FakePosition<'a>) -> Box<SolautoPosition> {
     );
 
     let mut position_data = PositionData::default();
-    position_data.setting_params = SolautoSettingsParameters::from(pos.settings);
+    position_data.settings = SolautoSettingsParameters::from(pos.settings);
 
     let position = SolautoPosition::new(
         1,

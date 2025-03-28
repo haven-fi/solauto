@@ -23,8 +23,8 @@ use crate::{
         errors::SolautoError,
         instruction::UpdatePositionData,
         shared::{
-            DeserializedAccount, LendingPlatform, PositionType,
-            RefreshedTokenState, SplTokenTransferArgs,
+            DeserializedAccount, LendingPlatform, PositionType, RefreshedTokenState,
+            SplTokenTransferArgs,
         },
     },
     utils::validation_utils::correct_token_account,
@@ -60,7 +60,7 @@ pub fn create_new_solauto_position<'a>(
         SolautoError::IncorrectAccounts
     );
 
-    let data = if update_position_data.setting_params.is_some() {
+    let data = if update_position_data.settings.is_some() {
         if update_position_data.position_id == 0 {
             msg!("Position ID 0 is reserved for self-managed positions");
             return Err(ProgramError::InvalidInstructionData.into());
@@ -79,8 +79,8 @@ pub fn create_new_solauto_position<'a>(
 
         let mut position_data = PositionData::default();
         position_data.lending_platform = lending_platform;
-        position_data.setting_params =
-            SolautoSettingsParameters::from(*update_position_data.setting_params.as_ref().unwrap());
+        position_data.settings =
+            SolautoSettingsParameters::from(*update_position_data.settings.as_ref().unwrap());
         position_data.protocol_user_account = *protocol_user_account.key;
         position_data.protocol_supply_account = *protocol_supply_account.key;
         position_data.protocol_debt_account = *protocol_debt_account.key;

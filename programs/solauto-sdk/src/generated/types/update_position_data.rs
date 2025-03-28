@@ -14,6 +14,6 @@ use borsh::BorshSerialize;
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct UpdatePositionData {
     pub position_id: u8,
-    pub setting_params: Option<SolautoSettingsParametersInp>,
+    pub settings: Option<SolautoSettingsParametersInp>,
     pub dca: Option<DCASettingsInp>,
 }

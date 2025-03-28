@@ -159,7 +159,7 @@ export abstract class SolautoClient extends ReferralStateManager {
     this.log("Position state: ", this.solautoPositionState);
     this.log(
       "Position settings: ",
-      this.solautoPositionData?.position?.settingParams
+      this.solautoPositionData?.position?.settings
     );
     this.log(
       "Position DCA: ",
@@ -194,11 +194,10 @@ export abstract class SolautoClient extends ReferralStateManager {
         );
       } else {
         if (this.contextUpdates.activeDca) {
-          this.solautoPositionData.position.dca =
-            this.contextUpdates.activeDca;
+          this.solautoPositionData.position.dca = this.contextUpdates.activeDca;
         }
         if (this.contextUpdates.settings) {
-          this.solautoPositionData.position.settingParams =
+          this.solautoPositionData.position.settings =
             this.contextUpdates.settings;
         }
         // All other live position updates can be derived by getting a fresh position state, so we don't need to do anything else form contextUpdates
@@ -359,14 +358,13 @@ export abstract class SolautoClient extends ReferralStateManager {
   solautoPositionSettings(): SolautoSettingsParameters | undefined {
     return (
       this.contextUpdates.settings ??
-      this.solautoPositionData?.position.settingParams
+      this.solautoPositionData?.position.settings
     );
   }
 
   solautoPositionActiveDca(): DCASettings | undefined {
     return (
-      this.contextUpdates.activeDca ??
-      this.solautoPositionData?.position.dca
+      this.contextUpdates.activeDca ?? this.solautoPositionData?.position.dca
     );
   }
 
@@ -378,7 +376,7 @@ export abstract class SolautoClient extends ReferralStateManager {
   }
 
   openPosition(
-    settingParams?: SolautoSettingsParametersInpArgs,
+    settings?: SolautoSettingsParametersInpArgs,
     dca?: DCASettingsInpArgs
   ): TransactionBuilder {
     if (dca && dca.dcaInBaseUnit > 0) {
@@ -390,10 +388,10 @@ export abstract class SolautoClient extends ReferralStateManager {
         },
       });
     }
-    if (settingParams) {
+    if (settings) {
       this.contextUpdates.new({
         type: "settings",
-        value: settingParams,
+        value: settings,
       });
     }
     if (dca) {
@@ -436,10 +434,10 @@ export abstract class SolautoClient extends ReferralStateManager {
       }
     }
 
-    if (isOption(args.settingParams) && isSome(args.settingParams)) {
+    if (isOption(args.settings) && isSome(args.settings)) {
       this.contextUpdates.new({
         type: "settings",
-        value: args.settingParams.value,
+        value: args.settings.value,
       });
     }
 

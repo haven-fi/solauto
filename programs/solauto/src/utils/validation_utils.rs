@@ -121,25 +121,25 @@ pub fn validate_position_settings(solauto_position: &SolautoPosition) -> Program
     };
 
     let data = &solauto_position.position;
-    if data.setting_params.repay_to_bps < data.setting_params.boost_to_bps {
+    if data.settings.repay_to_bps < data.settings.boost_to_bps {
         return invalid_params("repay_to_bps value must be greater than boost_to_bps value");
     }
     let max_boost_to = get_max_boost_to_bps(
         solauto_position.state.max_ltv_bps,
         solauto_position.state.liq_threshold_bps,
     );
-    if data.setting_params.boost_to_bps > max_boost_to {
+    if data.settings.boost_to_bps > max_boost_to {
         return invalid_params(
             format!("Exceeds the maximum boost-to of {}", max_boost_to).as_str(),
         );
     }
 
-    if data.setting_params.repay_gap < MIN_REPAY_GAP_BPS {
+    if data.settings.repay_gap < MIN_REPAY_GAP_BPS {
         return invalid_params(
             format!("repay_gap must be {} or greater", MIN_REPAY_GAP_BPS).as_str(),
         );
     }
-    if data.setting_params.boost_gap < MIN_BOOST_GAP_BPS {
+    if data.settings.boost_gap < MIN_BOOST_GAP_BPS {
         return invalid_params(
             format!("boost_gap must be {} or greater", MIN_BOOST_GAP_BPS).as_str(),
         );
@@ -149,7 +149,7 @@ pub fn validate_position_settings(solauto_position: &SolautoPosition) -> Program
         solauto_position.state.max_ltv_bps,
         solauto_position.state.liq_threshold_bps,
     );
-    if data.setting_params.repay_to_bps > max_repay_to_bps {
+    if data.settings.repay_to_bps > max_repay_to_bps {
         return invalid_params(
             format!("For the given max_ltv and liq_threshold of the supplied asset, repay_to_bps must be lower or equal to {} in order to bring the utilization rate to an allowed position", max_repay_to_bps).as_str()
         );
@@ -158,7 +158,7 @@ pub fn validate_position_settings(solauto_position: &SolautoPosition) -> Program
         solauto_position.state.max_ltv_bps,
         solauto_position.state.liq_threshold_bps,
     );
-    if data.setting_params.repay_from_bps() > max_repay_from_bps {
+    if data.settings.repay_to_bps + data.settings.repay_gap > max_repay_from_bps {
         return invalid_params(
             format!(
                 "repay_to_bps + repay_gap must be equal-to or below {}",
@@ -493,7 +493,7 @@ mod tests {
     fn test_position_settings(settings: SolautoSettingsParameters, liq_threshold_bps: u16) {
         let mut position_data = PositionData::default();
         position_data.lending_platform = LendingPlatform::Marginfi;
-        position_data.setting_params = settings;
+        position_data.settings = settings;
 
         let mut position_state = PositionState::default();
         position_state.max_ltv_bps = 6500;

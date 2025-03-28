@@ -26,9 +26,9 @@ pub fn update_position<'a>(
         update_dca(&ctx, &mut solauto_position, &new_data)?;
     }
 
-    if new_data.setting_params.is_some() {
-        solauto_position.data.position.setting_params =
-            SolautoSettingsParameters::from(new_data.setting_params.unwrap());
+    if new_data.settings.is_some() {
+        solauto_position.data.position.settings =
+            SolautoSettingsParameters::from(new_data.settings.unwrap());
     }
 
     let current_timestamp = Clock::get()?.unix_timestamp as u64;

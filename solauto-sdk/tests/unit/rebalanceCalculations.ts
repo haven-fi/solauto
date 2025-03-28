@@ -152,7 +152,7 @@ async function getFakePosition(
       protocolSupplyAccount: publicKey(PublicKey.default),
       protocolDebtAccount: publicKey(PublicKey.default),
       protocolUserAccount: publicKey(PublicKey.default),
-      settingParams: settings,
+      settings: settings,
       dca: dca ?? {
         automation: {
           targetPeriods: 0,

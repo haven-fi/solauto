@@ -1,19 +1,18 @@
 import {
   RebalanceDirection,
   SolautoPosition,
-  SolautoSettingsParameters,
   TokenBalanceChange,
   TokenBalanceChangeType,
-} from "../generated";
+} from "../../generated";
+import { SolautoPositionEx } from "../../solautoPosition";
 import {
   calcDebtUsd,
   calcSupplyUsd,
   fromBps,
-  fromRoundedUsdValue,
   getLiqUtilzationRateBps,
   toBps,
-} from "../utils";
-import { SolautoFeesBps } from "./solautoFees";
+} from "../../utils";
+import { SolautoFeesBps } from "../solautoFees";
 
 export interface PositionValues {
   supplyUsd: number;
@@ -117,7 +116,7 @@ function getTokenBalanceChange(): TokenBalanceChange | undefined {
 }
 
 function getTargetLiqUtilizationRateBps(
-  solautoPosition: SolautoPosition,
+  solautoPosition: SolautoPositionEx,
   targetLiqUtilizationRateBps: number | undefined,
   tokenBalanceChange: TokenBalanceChange | undefined
 ): number {
@@ -125,27 +124,27 @@ function getTargetLiqUtilizationRateBps(
     return targetLiqUtilizationRateBps;
   }
 
-  const currentRate = solautoPosition.state.liqUtilizationRateBps;
-  const settings = solautoPosition.position.settingParams;
+  const currentRate = solautoPosition.data.state.liqUtilizationRateBps;
 
-  if (currentRate <= settings.boostToBps - settings.boostGap) {
-    return settings.boostToBps;
-  } else if (currentRate >= settings.repayToBps + settings.repayGap) {
-    return settings.repayToBps;
-  } else if (tokenBalanceChange !== null) {
-    // TODO: DCA, limit orders, take profit, stop loss, etc.
-    return currentRate;
+  if (currentRate <= solautoPosition.boostFromBps()) {
+    return solautoPosition.data.position.settings.boostToBps;
+  } else if (currentRate >= solautoPosition.repayFromBps()) {
+    return solautoPosition.data.position.settings.repayToBps;
   }
+  // TODO: DCA, limit orders, take profit, stop loss, etc.
+  //   else if (tokenBalanceChange !== null) {
+  //     return currentRate;
+  //   }
 
   throw new Error("Invalid rebalance condition");
 }
 
 function getAdjustedPositionValues(
-  solautoPosition: SolautoPosition,
+  solautoPosition: SolautoPositionEx,
   tokenBalanceChange: TokenBalanceChange | undefined
 ): PositionValues {
-  let supplyUsd = calcSupplyUsd(solautoPosition.state);
-  const debtUsd = calcDebtUsd(solautoPosition.state);
+  let supplyUsd = solautoPosition.supplyUsd();
+  const debtUsd = solautoPosition.debtUsd();
 
   if (tokenBalanceChange) {
     const tb = tokenBalanceChange;
@@ -170,10 +169,10 @@ function getAdjustedPositionValues(
 }
 
 function getRebalanceDirection(
-  solautoPosition: SolautoPosition,
+  solautoPosition: SolautoPositionEx,
   targetLtvBps: number
 ): RebalanceDirection {
-  return solautoPosition.state.liqUtilizationRateBps < targetLtvBps
+  return solautoPosition.data.state.liqUtilizationRateBps < targetLtvBps
     ? RebalanceDirection.Boost
     : RebalanceDirection.Repay;
 }
@@ -184,7 +183,7 @@ export interface RebalanceValues extends DebtAdjustment {
 }
 
 export function getRebalanceValues(
-  solautoPosition: SolautoPosition,
+  solautoPosition: SolautoPositionEx,
   solautoFeeBps: SolautoFeesBps,
   flFeeBps: number,
   targetLiqUtilizationRateBps?: number
@@ -206,12 +205,12 @@ export function getRebalanceValues(
 
   const fees: RebalanceFeesBps = {
     solauto: solautoFeeBps.getSolautoFeesBps(rebalanceDirection).total,
-    lpBorrow: solautoPosition.state.debt.borrowFeeBps,
+    lpBorrow: solautoPosition.data.state.debt.borrowFeeBps,
     flashLoan: flFeeBps,
   };
 
   const debtAdjustment = getDebtAdjustment(
-    fromBps(solautoPosition.state.liqThresholdBps),
+    fromBps(solautoPosition.data.state.liqThresholdBps),
     position,
     fees,
     targetRate

@@ -157,7 +157,7 @@ async function main(filterWhitelist: boolean) {
 
     const actionToTake = eligibleForRebalance(
       latestState,
-      pos.position.settingParams,
+      pos.position.settings,
       pos.position.dca,
       currentUnixSeconds(),
       safeGetPrice(latestState.supply.mint)!,
@@ -166,8 +166,7 @@ async function main(filterWhitelist: boolean) {
     );
 
     const repayFrom =
-      pos.position.settingParams.repayToBps +
-      pos.position.settingParams.repayGap;
+      pos.position.settings.repayToBps + pos.position.settings.repayGap;
     const unhealthy = actionToTake === "repay";
     const healthText = unhealthy
       ? `(Unhealthy: ${latestState.liqUtilizationRateBps - repayFrom}bps)`

@@ -2,7 +2,10 @@ use borsh::{BorshDeserialize, BorshSerialize};
 use bytemuck::{Pod, Zeroable};
 use shank::{ShankAccount, ShankType};
 use solana_program::{msg, pubkey::Pubkey};
-use std::ops::{Add, Mul};
+use std::{
+    cmp::min,
+    ops::{Add, Mul},
+};
 
 use crate::{
     constants::USD_DECIMALS,
@@ -12,7 +15,8 @@ use crate::{
     },
     utils::math_utils::{
         base_unit_to_usd_value, from_bps, from_rounded_usd_value, get_liq_utilization_rate_bps,
-        net_worth_base_amount, to_base_unit, to_rounded_usd_value,
+        get_max_boost_to_bps, get_max_repay_to_bps, net_worth_base_amount, to_base_unit,
+        to_rounded_usd_value,
     },
 };
 
@@ -129,14 +133,6 @@ impl SolautoSettingsParameters {
             _padding: [0; 24],
         }
     }
-    #[inline(always)]
-    pub fn boost_from_bps(&self) -> u16 {
-        self.boost_to_bps.saturating_sub(self.boost_gap)
-    }
-    #[inline(always)]
-    pub fn repay_from_bps(&self) -> u16 {
-        self.repay_to_bps.add(self.repay_gap)
-    }
 }
 
 #[repr(C, align(8))]
@@ -165,7 +161,7 @@ pub struct PositionData {
     pub protocol_user_account: Pubkey,
     pub protocol_supply_account: Pubkey,
     pub protocol_debt_account: Pubkey,
-    pub setting_params: SolautoSettingsParameters,
+    pub settings: SolautoSettingsParameters,
     pub dca: DCASettings,
     _padding: [u32; 4],
 }
@@ -295,6 +291,7 @@ pub struct SolautoPosition {
 
 impl SolautoPosition {
     pub const LEN: usize = 832;
+
     pub fn new(
         position_id: u8,
         authority: Pubkey,
@@ -317,25 +314,30 @@ impl SolautoPosition {
             _padding: [0; 20],
         }
     }
+
     #[inline(always)]
     pub fn pubkey(&self) -> Pubkey {
         let (pubkey, _) = Pubkey::find_program_address(self.seeds().as_ref(), &crate::ID);
         pubkey
     }
+
     #[inline(always)]
     pub fn position_id(&self) -> u8 {
         self.position_id[0]
     }
+
     #[inline(always)]
     pub fn seeds<'a>(&'a self) -> Vec<&'a [u8]> {
         vec![&self.position_id, self.authority.as_ref()]
     }
+
     #[inline(always)]
     pub fn seeds_with_bump<'a>(&'a self) -> Vec<&'a [u8]> {
         let mut seeds = self.seeds();
         seeds.push(&self.bump);
         seeds
     }
+
     pub fn refresh_state(&mut self) {
         let supply_usd = self.state.supply.amount_used.usd_value();
         let debt_usd = self.state.debt.amount_used.usd_value();
@@ -362,6 +364,7 @@ impl SolautoPosition {
             debt_usd
         );
     }
+
     pub fn update_usage(&mut self, token_type: TokenType, base_unit_amount_update: i64) {
         if token_type == TokenType::Supply {
             self.state.supply.update_usage(base_unit_amount_update);
@@ -377,6 +380,33 @@ impl SolautoPosition {
         } else {
             msg!("Supply USD < debt USD");
         }
+    }
+
+    #[inline(always)]
+    pub fn boost_to_bps(&self) -> u16 {
+        min(
+            self.position.settings.boost_to_bps,
+            get_max_boost_to_bps(self.state.max_ltv_bps, self.state.liq_threshold_bps),
+        )
+    }
+
+    #[inline(always)]
+    pub fn boost_from_bps(&self) -> u16 {
+        self.boost_to_bps()
+            .saturating_sub(self.position.settings.boost_gap)
+    }
+
+    #[inline(always)]
+    pub fn repay_to_bps(&self) -> u16 {
+        min(
+            self.position.settings.repay_to_bps,
+            get_max_repay_to_bps(self.state.max_ltv_bps, self.state.liq_threshold_bps),
+        )
+    }
+
+    #[inline(always)]
+    pub fn repay_from_bps(&self) -> u16 {
+        self.position.settings.repay_to_bps + self.position.settings.repay_gap
     }
 }
 

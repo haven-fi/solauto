@@ -7,7 +7,11 @@ use solana_program::{
 };
 
 use crate::{
-    check, clients::marginfi::MarginfiClient, rebalance::solauto_fees::SolautoFeesBps, state::solauto_position::SolautoPosition, types::{
+    check,
+    clients::marginfi::MarginfiClient,
+    rebalance::solauto_fees::SolautoFeesBps,
+    state::solauto_position::SolautoPosition,
+    types::{
         errors::SolautoError,
         instruction::{
             accounts::{Context, MarginfiRebalanceAccounts},
@@ -16,7 +20,8 @@ use crate::{
         lending_protocol::{LendingProtocolClient, LendingProtocolTokenAccounts},
         shared::{DeserializedAccount, RebalanceStep, SolautoRebalanceType},
         solauto_manager::{SolautoManager, SolautoManagerAccounts},
-    }, utils::ix_utils
+    },
+    utils::ix_utils,
 };
 
 use super::refresh;

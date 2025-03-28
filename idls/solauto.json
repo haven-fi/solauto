@@ -1280,7 +1280,7 @@
             "type": "publicKey"
           },
           {
-            "name": "settingParams",
+            "name": "settings",
             "type": {
               "defined": "SolautoSettingsParameters"
             }
@@ -1509,7 +1509,7 @@
             "type": "u8"
           },
           {
-            "name": "settingParams",
+            "name": "settings",
             "type": {
               "option": {
                 "defined": "SolautoSettingsParametersInp"
