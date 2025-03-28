@@ -293,6 +293,26 @@ interface BankSelection {
 
 type BanksCache = { [group: string]: { [mint: string]: Bank } };
 
+async function getBank(
+  umi: Umi,
+  data: BankSelection,
+  marginfiGroup?: PublicKey
+) {
+  return data?.banksCache && data.mint && marginfiGroup
+    ? data.banksCache[marginfiGroup!.toString()][data?.mint?.toString()]
+    : data?.mint && data?.mint !== PublicKey.default
+      ? await safeFetchBank(
+          umi,
+          publicKey(
+            MARGINFI_ACCOUNTS[marginfiGroup?.toString() ?? ""][
+              data?.mint.toString()
+            ].bank
+          ),
+          { commitment: "confirmed" }
+        )
+      : null;
+}
+
 export async function getMarginfiAccountPositionState(
   umi: Umi,
   protocolAccount: { pk: PublicKey; data?: MarginfiAccount },
@@ -321,34 +341,8 @@ export async function getMarginfiAccountPositionState(
     marginfiGroup = toWeb3JsPublicKey(marginfiAccount.group);
   }
 
-  let supplyBank: Bank | null =
-    supply?.banksCache && supply.mint && marginfiGroup
-      ? supply.banksCache[marginfiGroup!.toString()][supply?.mint?.toString()]
-      : supply?.mint && supply?.mint !== PublicKey.default
-        ? await safeFetchBank(
-            umi,
-            publicKey(
-              MARGINFI_ACCOUNTS[marginfiGroup?.toString() ?? ""][
-                supply?.mint.toString()
-              ].bank
-            ),
-            { commitment: "confirmed" }
-          )
-        : null;
-  let debtBank: Bank | null =
-    debt?.banksCache && debt.mint && marginfiGroup
-      ? debt.banksCache[marginfiGroup!.toString()][debt?.mint?.toString()]
-      : debt?.mint && debt?.mint !== PublicKey.default
-        ? await safeFetchBank(
-            umi,
-            publicKey(
-              MARGINFI_ACCOUNTS[marginfiGroup?.toString() ?? ""][
-                debt?.mint.toString()
-              ].bank
-            ),
-            { commitment: "confirmed" }
-          )
-        : null;
+  let supplyBank: Bank | null = await getBank(umi, supply, marginfiGroup);
+  let debtBank: Bank | null = await getBank(umi, debt, marginfiGroup);
 
   let supplyUsage: PositionTokenState | undefined = undefined;
   let debtUsage: PositionTokenState | undefined = undefined;

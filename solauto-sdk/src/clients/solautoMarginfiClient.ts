@@ -94,9 +94,6 @@ export class SolautoMarginfiClient extends SolautoClient {
   public intermediaryMarginfiAccountPk!: PublicKey;
   public intermediaryMarginfiAccount?: MarginfiAccount;
 
-  private supplyBank: Bank | null = null;
-  private debtBank: Bank | null = null;
-
   async initialize(args: SolautoMarginfiClientArgs) {
     await super.initialize(args);
 
@@ -250,32 +247,6 @@ export class SolautoMarginfiClient extends SolautoClient {
         ? [this.intermediaryMarginfiAccountPk]
         : []),
     ];
-  }
-
-  async maxLtvAndLiqThresholdBps(): Promise<[number, number]> {
-    const result = await super.maxLtvAndLiqThresholdBps();
-    if (result[0] && result[1]) {
-      return result;
-    } else if (
-      this.supplyMint.equals(PublicKey.default) ||
-      this.debtMint.equals(PublicKey.default)
-    ) {
-      return [0, 0];
-    } else {
-      const [maxLtv, liqThreshold] = await getMarginfiMaxLtvAndLiqThreshold(
-        this.umi,
-        this.marginfiGroup,
-        {
-          mint: this.supplyMint,
-        },
-        {
-          mint: this.debtMint,
-        }
-      );
-      this.maxLtvBps = toBps(maxLtv);
-      this.liqThresholdBps = toBps(liqThreshold);
-      return [this.maxLtvBps, this.liqThresholdBps];
-    }
   }
 
   marginfiAccountInitialize(marginfiAccount: Signer): TransactionBuilder {
@@ -742,33 +713,5 @@ export class SolautoMarginfiClient extends SolautoClient {
         marginfiGroup: publicKey(this.marginfiGroup),
       })
     );
-  }
-
-  async getFreshPositionState(): Promise<PositionState | undefined> {
-    const state = await super.getFreshPositionState();
-    if (state) {
-      return state;
-    }
-
-    const useDesignatedMint =
-      !this.selfManaged &&
-      (this.solautoPositionData === null ||
-        !toWeb3JsPublicKey(this.signer.publicKey).equals(this.authority));
-
-    const resp = await getMarginfiAccountPositionState(
-      this.umi,
-      { pk: this.marginfiAccountPk },
-      this.marginfiGroup,
-      useDesignatedMint ? { mint: this.supplyMint } : undefined,
-      useDesignatedMint ? { mint: this.debtMint } : undefined,
-      this.contextUpdates
-    );
-
-    if (resp) {
-      this.supplyBank = resp?.supplyBank;
-      this.debtBank = resp?.debtBank;
-    }
-
-    return resp?.state;
   }
 }

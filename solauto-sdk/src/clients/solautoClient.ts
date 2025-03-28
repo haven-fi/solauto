@@ -368,13 +368,6 @@ export abstract class SolautoClient extends ReferralStateManager {
     );
   }
 
-  async maxLtvAndLiqThresholdBps(): Promise<[number, number]> {
-    if (this.maxLtvBps !== undefined && this.liqThresholdBps !== undefined) {
-      return [this.maxLtvBps, this.liqThresholdBps];
-    }
-    return [0, 0];
-  }
-
   openPosition(
     settings?: SolautoSettingsParametersInpArgs,
     dca?: DCASettingsInpArgs
@@ -607,22 +600,4 @@ export abstract class SolautoClient extends ReferralStateManager {
     flashLoan?: FlashLoanDetails,
     targetLiqUtilizationRateBps?: number
   ): TransactionBuilder;
-
-  async getFreshPositionState(): Promise<PositionState | undefined> {
-    if (
-      Boolean(this.solautoPositionData) &&
-      Boolean(this.solautoPositionState) &&
-      Number(this.solautoPositionState!.lastUpdated) >
-        currentUnixSeconds() - MIN_POSITION_STATE_FRESHNESS_SECS &&
-      !this.contextUpdates.positionUpdates()
-    ) {
-      return this.solautoPositionState;
-    }
-
-    return undefined;
-  }
-
-  abstract supplyLiquidityAvailable(): bigint;
-  abstract supplyLiquidityDepositable(): bigint;
-  abstract debtLiquidityAvailable(): bigint;
 }

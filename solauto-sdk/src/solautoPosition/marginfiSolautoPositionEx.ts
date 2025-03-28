@@ -3,7 +3,12 @@ import { SolautoPositionEx } from "./solautoPositionEx";
 import { Bank, fetchMarginfiAccount, MarginfiAccount } from "../marginfi-sdk";
 import { publicKey } from "@metaplex-foundation/umi";
 import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
-import { getBankLiquidityAvailableBaseUnit } from "../utils";
+import {
+  ContextUpdates,
+  getBankLiquidityAvailableBaseUnit,
+  getMarginfiAccountPositionState,
+} from "../utils";
+import { SolautoPosition } from "../generated";
 
 export class MarginfiSolautoPositionEx extends SolautoPositionEx {
   private marginfiAccountData: MarginfiAccount | null = null;
@@ -31,5 +36,35 @@ export class MarginfiSolautoPositionEx extends SolautoPositionEx {
 
   debtLiquidityAvailable(): bigint {
     return getBankLiquidityAvailableBaseUnit(this.debtBank, false);
+  }
+
+  async getFreshPositionState(
+    contextUpdates?: ContextUpdates
+  ): Promise<SolautoPosition | undefined> {
+    const state = await super.getFreshPositionState();
+    if (state) {
+      return state;
+    }
+
+    // const useDesignatedMint =
+    //   !this.selfManaged &&
+    //   (this.solautoPositionData === null ||
+    //     !toWeb3JsPublicKey(this.signer.publicKey).equals(this.authority));
+
+    const resp = await getMarginfiAccountPositionState(
+      this.umi,
+      { pk: toWeb3JsPublicKey(this.data.position.protocolUserAccount) },
+      await this.lendingPool(),
+      { mint: toWeb3JsPublicKey(this.data.state.supply.mint) },
+      { mint: toWeb3JsPublicKey(this.data.state.debt.mint) },
+      contextUpdates
+    );
+
+    if (resp) {
+      this.supplyBank = resp?.supplyBank;
+      this.debtBank = resp?.debtBank;
+    }
+
+    return resp?.state;
   }
 }

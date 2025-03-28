@@ -5,6 +5,7 @@ import {
   calcDebtUsd,
   calcSupplyUsd,
   consoleLog,
+  ContextUpdates,
   currentUnixSeconds,
   debtLiquidityUsdAvailable,
   maxBoostToBps,
@@ -13,6 +14,7 @@ import {
 } from "../utils";
 import { RebalanceAction } from "../types";
 import { getDebtAdjustment, getRebalanceValues } from "../rebalance";
+import { MIN_POSITION_STATE_FRESHNESS_SECS } from "../constants";
 
 export abstract class SolautoPositionEx {
   constructor(
@@ -121,5 +123,19 @@ export abstract class SolautoPositionEx {
       currentUnixSeconds() - Number(this.data.state.lastUpdated) >
       60 * 60 * 24 * 7
     );
+  }
+
+  async getFreshPositionState(
+    contextUpdates?: ContextUpdates
+  ): Promise<SolautoPosition | undefined> {
+    if (
+      Number(this.data.state.lastUpdated) >
+        currentUnixSeconds() - MIN_POSITION_STATE_FRESHNESS_SECS &&
+      !contextUpdates?.positionUpdates()
+    ) {
+      return this.data;
+    }
+
+    return undefined;
   }
 }
