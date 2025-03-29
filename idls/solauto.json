@@ -257,7 +257,7 @@
           "isSigner": false
         },
         {
-          "name": "protocolAccount",
+          "name": "lpUserAccount",
           "isMut": true,
           "isSigner": false
         },

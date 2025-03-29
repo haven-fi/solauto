@@ -429,7 +429,7 @@ impl<'a> GeneralTestData<'a> {
             .signer_supply_ta(self.signer_supply_ta)
             .position_debt_ta(self.position_debt_ta)
             .signer_debt_ta(self.signer_debt_ta)
-            .protocol_account(self.solauto_position);
+            .lp_user_account(self.solauto_position);
         builder
     }
 

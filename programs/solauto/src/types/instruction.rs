@@ -67,7 +67,7 @@ pub enum Instruction {
     #[account(name = "token_program")]
     #[account(name = "ata_program")]
     #[account(mut, name = "solauto_position")]
-    #[account(mut, name = "protocol_account")]
+    #[account(mut, name = "lp_user_account")]
     #[account(mut, name = "position_supply_ta")]
     #[account(mut, name = "signer_supply_ta")]
     #[account(mut, name = "position_debt_ta")]

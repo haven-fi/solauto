@@ -76,7 +76,7 @@ pub fn process_close_position_instruction<'a>(accounts: &'a [AccountInfo<'a>]) -
 
     if !cfg!(feature = "local") {
         validation_utils::validate_no_active_balances(
-            ctx.accounts.protocol_account,
+            ctx.accounts.lp_user_account,
             solauto_position.data.position.lending_platform,
         )?;
     }

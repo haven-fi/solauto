@@ -42,7 +42,7 @@ export async function getOrCreatePositionEx(
     fromWeb3JsPublicKey(publicKey)
   );
 
-  const fakeState = createFakePositionState(
+  const placeholderState = createFakePositionState(
     {
       mint: customArgs?.supplyMint ?? PublicKey.default,
     },
@@ -61,7 +61,7 @@ export async function getOrCreatePositionEx(
         umi,
         publicKey,
         data: data ?? {
-          state: fakeState!,
+          state: placeholderState!,
         },
         customArgs,
         contextUpdates,

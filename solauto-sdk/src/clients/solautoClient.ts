@@ -175,8 +175,6 @@ export abstract class SolautoClient extends ReferralStateManager {
     this.contextUpdates.reset();
   }
 
-  abstract protocolAccount(): PublicKey;
-
   defaultLookupTables(): string[] {
     return [
       SOLAUTO_LUT,
@@ -414,7 +412,7 @@ export abstract class SolautoClient extends ReferralStateManager {
       positionSupplyTa: publicKey(this.positionSupplyTa),
       positionDebtTa: publicKey(this.positionDebtTa),
       signerDebtTa: publicKey(this.signerDebtTa),
-      protocolAccount: publicKey(this.protocolAccount()),
+      lpUserAccount: publicKey(this.solautoPosition.lpUserAccount!),
     });
   }
 

@@ -15,7 +15,6 @@ import { PublicKey, SYSVAR_INSTRUCTIONS_PUBKEY } from "@solana/web3.js";
 import { SolautoClient, SolautoClientArgs } from "./solautoClient";
 import { MarginfiAssetAccounts } from "../types/accounts";
 import {
-  DEFAULT_MARGINFI_GROUP,
   MARGINFI_ACCOUNTS,
   MARGINFI_ACCOUNTS_LOOKUP_TABLE,
 } from "../constants/marginfiAccounts";
@@ -36,7 +35,6 @@ import {
 } from "../generated";
 import { getTokenAccount } from "../utils/accountUtils";
 import {
-  Bank,
   MARGINFI_PROGRAM_ID,
   MarginfiAccount,
   lendingAccountBorrow,
@@ -48,7 +46,6 @@ import {
   lendingAccountWithdraw,
   marginfiAccountInitialize,
   safeFetchAllMarginfiAccount,
-  safeFetchMarginfiAccount,
 } from "../marginfi-sdk";
 import {
   FlashLoanDetails,
@@ -210,10 +207,6 @@ export class SolautoMarginfiClient extends SolautoClient {
     if (this.intermediaryMarginfiAccountSigner) {
       this.otherSigners.push(this.intermediaryMarginfiAccountSigner);
     }
-  }
-
-  protocolAccount(): PublicKey {
-    return this.marginfiAccountPk;
   }
 
   defaultLookupTables(): string[] {

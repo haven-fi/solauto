@@ -421,12 +421,12 @@ pub fn validate_referral_signer(
 }
 
 pub fn validate_no_active_balances<'a>(
-    protocol_account: &'a AccountInfo<'a>,
+    lp_user_account: &'a AccountInfo<'a>,
     lending_platform: LendingPlatform,
 ) -> ProgramResult {
     if lending_platform == LendingPlatform::Marginfi {
         let marginfi_account =
-            DeserializedAccount::<MarginfiAccount>::zerocopy(Some(protocol_account))?.unwrap();
+            DeserializedAccount::<MarginfiAccount>::zerocopy(Some(lp_user_account))?.unwrap();
 
         check!(
             marginfi_account
