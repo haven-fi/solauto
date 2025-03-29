@@ -135,7 +135,7 @@ fn needs_refresh(
     let current_timestamp = Clock::get()?.unix_timestamp as u64;
 
     // In case we did a refresh recently
-    if current_timestamp.sub(solauto_position.data.state.last_updated) <= 2 {
+    if current_timestamp.sub(solauto_position.data.state.last_refreshed) <= 2 {
         return Ok(false);
     }
 

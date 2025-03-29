@@ -1,5 +1,5 @@
 use solana_program::{
-    account_info::AccountInfo, clock::Clock, entrypoint::ProgramResult, msg,
+    account_info::AccountInfo, clock::Clock, entrypoint::ProgramResult,
     program_error::ProgramError, program_pack::Pack, pubkey::Pubkey, sysvar::Sysvar,
 };
 use spl_token::state::{Account as TokenAccount, Mint};
@@ -11,6 +11,7 @@ use super::{
 use crate::{
     check,
     constants::WSOL_MINT,
+    error_if,
     state::{
         automation::DCASettings,
         referral_state::ReferralState,
@@ -61,10 +62,10 @@ pub fn create_new_solauto_position<'a>(
     );
 
     let data = if update_position_data.settings.is_some() {
-        if update_position_data.position_id == 0 {
-            msg!("Position ID 0 is reserved for self-managed positions");
-            return Err(ProgramError::InvalidInstructionData.into());
-        }
+        check!(
+            update_position_data.position_id > 0,
+            SolautoError::IncorrectInstructions
+        );
 
         let supply = DeserializedAccount::<Mint>::unpack(Some(supply_mint))?.unwrap();
         let debt = DeserializedAccount::<Mint>::unpack(Some(debt_mint))?.unwrap();
@@ -75,7 +76,7 @@ pub fn create_new_solauto_position<'a>(
         state.debt.decimals = debt.data.decimals;
         state.max_ltv_bps = to_bps(max_ltv);
         state.liq_threshold_bps = to_bps(liq_threshold);
-        state.last_updated = Clock::get()?.unix_timestamp as u64;
+        state.last_refreshed = Clock::get()?.unix_timestamp as u64;
 
         let mut position_data = PositionData::default();
         position_data.lending_platform = lending_platform;
@@ -227,10 +228,10 @@ pub fn initiate_dca_in_if_necessary<'a, 'b>(
     let signer_token_account = TokenAccount::unpack(&signer_dca_ta.unwrap().data.borrow())?;
     let balance = signer_token_account.amount;
 
-    if position.dca.dca_in_base_unit > balance {
-        msg!("Provided greater DCA-in value than exists in the signer debt token account");
-        return Err(ProgramError::InvalidInstructionData.into());
-    }
+    check!(
+        position.dca.dca_in_base_unit <= balance,
+        SolautoError::IncorrectInstructions
+    );
 
     spl_token_transfer(
         token_program,

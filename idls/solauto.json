@@ -1232,7 +1232,7 @@
             }
           },
           {
-            "name": "lastUpdated",
+            "name": "lastRefreshed",
             "type": "u64"
           },
           {
@@ -1488,12 +1488,6 @@
             "name": "positionData",
             "type": {
               "defined": "UpdatePositionData"
-            }
-          },
-          {
-            "name": "marginfiAccountSeedIdx",
-            "type": {
-              "option": "u64"
             }
           }
         ]

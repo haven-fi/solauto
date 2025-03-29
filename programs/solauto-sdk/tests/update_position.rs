@@ -37,7 +37,7 @@ mod update_position {
             .unwrap();
 
         data.open_position(
-            Some(data.general.default_setting_params.clone()),
+            Some(data.general.default_settings.clone()),
             None
         ).await.unwrap();
 
@@ -85,12 +85,12 @@ mod update_position {
             .unwrap()
             .general.create_referral_state_accounts().await
             .unwrap();
-        data.open_position(Some(data.general.default_setting_params.clone()), None).await.unwrap();
+        data.open_position(Some(data.general.default_settings.clone()), None).await.unwrap();
 
         let tx = Transaction::new_signed_with_payer(
             &[
                 data.general
-                    .update_position_ix(Some(data.general.default_setting_params.clone()), None)
+                    .update_position_ix(Some(data.general.default_settings.clone()), None)
                     .signer(temp_account.pubkey())
                     .instruction(),
             ],
@@ -111,7 +111,7 @@ mod update_position {
             .general.create_referral_state_accounts().await
             .unwrap();
 
-        data.open_position(Some(data.general.default_setting_params.clone()), None).await.unwrap();
+        data.open_position(Some(data.general.default_settings.clone()), None).await.unwrap();
 
         let temp_wallet = Keypair::new().pubkey();
         let fake_debt_ta = get_associated_token_address(

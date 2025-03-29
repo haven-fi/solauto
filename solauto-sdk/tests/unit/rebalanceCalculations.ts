@@ -208,7 +208,7 @@ async function getFakePosition(
     },
   };
 
-  client.solautoPositionState!.lastUpdated = BigInt(currentUnixSeconds());
+  client.solautoPositionState!.lastRefreshed = BigInt(currentUnixSeconds());
 
   return client;
 }

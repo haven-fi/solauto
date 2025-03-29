@@ -62,10 +62,6 @@ pub fn process_marginfi_open_position_instruction<'a>(
             current_timestamp,
         )?;
     }
-    if solauto_position.data.self_managed.val && args.marginfi_account_seed_idx.is_some() {
-        msg!("Provided a Marginfi account seed index on a self-managed index");
-        return Err(ProgramError::InvalidInstructionData.into());
-    }
 
     if ctx.accounts.referred_by_supply_ta.is_some() {
         solana_utils::init_ata_if_needed(
@@ -110,11 +106,7 @@ pub fn process_marginfi_open_position_instruction<'a>(
         false,
     )?;
 
-    open_position::marginfi_open_position(
-        ctx,
-        std_accounts.solauto_position,
-        args.marginfi_account_seed_idx,
-    )
+    open_position::marginfi_open_position(ctx, std_accounts.solauto_position)
 }
 
 pub fn process_marginfi_refresh_data<'a>(accounts: &'a [AccountInfo<'a>]) -> ProgramResult {

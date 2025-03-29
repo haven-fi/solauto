@@ -484,7 +484,7 @@ export async function getMarginfiAccountPositionState(
       debt: debtUsage!,
       maxLtvBps: toBps(maxLtv),
       liqThresholdBps: toBps(liqThreshold),
-      lastUpdated: BigInt(currentUnixSeconds()),
+      lastRefreshed: BigInt(currentUnixSeconds()),
       padding1: [],
       padding2: [],
       padding: [],

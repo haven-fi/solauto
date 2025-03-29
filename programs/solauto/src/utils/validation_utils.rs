@@ -218,10 +218,7 @@ pub fn validate_lending_program_account(
 ) -> ProgramResult {
     match lending_platform {
         LendingPlatform::Marginfi => {
-            if *program.key != MARGINFI_ID {
-                msg!("Incorrect Marginfi program account");
-                return Err(ProgramError::IncorrectProgramId.into());
-            }
+            check!(*program.key == MARGINFI_ID, SolautoError::IncorrectAccounts);
         }
     }
     // We don't need to check more than this, as lending protocols have their own account checks and will fail during CPI if there is an issue with the provided accounts

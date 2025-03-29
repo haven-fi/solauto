@@ -401,7 +401,7 @@ export class ContextUpdates {
   public supplyAdjustment = BigInt(0);
   public debtAdjustment = BigInt(0);
   public settings: SolautoSettingsParameters | undefined = undefined;
-  public activeDca: DCASettings | undefined = undefined;
+  public dca: DCASettings | undefined = undefined;
   public dcaInBalance?: { amount: bigint; tokenType: TokenType } = undefined;
   public cancellingDca: TokenType | undefined = undefined;
   public jupSwap: QuoteResponse | undefined = undefined;
@@ -416,7 +416,7 @@ export class ContextUpdates {
       this.settings = createSolautoSettings(settings);
     } else if (update.type === "dca") {
       const dca = update.value;
-      this.activeDca = {
+      this.dca = {
         automation: {
           ...dca.automation,
           intervalSeconds: BigInt(dca.automation.intervalSeconds),
@@ -441,7 +441,7 @@ export class ContextUpdates {
     this.supplyAdjustment = BigInt(0);
     this.debtAdjustment = BigInt(0);
     this.settings = undefined;
-    this.activeDca = undefined;
+    this.dca = undefined;
     this.dcaInBalance = undefined;
     this.cancellingDca = undefined;
   }

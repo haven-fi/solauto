@@ -1,18 +1,11 @@
 import {
   RebalanceDirection,
-  SolautoPosition,
   TokenBalanceChange,
   TokenBalanceChangeType,
-} from "../../generated";
-import { SolautoPositionEx } from "../../solautoPosition";
-import {
-  calcDebtUsd,
-  calcSupplyUsd,
-  fromBps,
-  getLiqUtilzationRateBps,
-  toBps,
-} from "../../utils";
-import { SolautoFeesBps } from "../solautoFees";
+} from "../generated";
+import { SolautoPositionEx } from "../solautoPosition";
+import { fromBps, getLiqUtilzationRateBps, toBps } from "../utils";
+import { SolautoFeesBps } from "./solautoFees";
 
 export interface PositionValues {
   supplyUsd: number;
@@ -127,9 +120,9 @@ function getTargetLiqUtilizationRateBps(
   const currentRate = solautoPosition.data.state.liqUtilizationRateBps;
 
   if (currentRate <= solautoPosition.boostFromBps()) {
-    return solautoPosition.data.position.settings.boostToBps;
+    return solautoPosition.settings()!.boostToBps;
   } else if (currentRate >= solautoPosition.repayFromBps()) {
-    return solautoPosition.data.position.settings.repayToBps;
+    return solautoPosition.settings()!.repayToBps;
   }
   // TODO: DCA, limit orders, take profit, stop loss, etc.
   //   else if (tokenBalanceChange !== null) {

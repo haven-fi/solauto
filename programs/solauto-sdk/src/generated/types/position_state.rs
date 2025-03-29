@@ -21,6 +21,6 @@ pub struct PositionState {
     pub max_ltv_bps: u16,
     pub liq_threshold_bps: u16,
     pub padding2: [u8; 4],
-    pub last_updated: u64,
+    pub last_refreshed: u64,
     pub padding: [u32; 2],
 }

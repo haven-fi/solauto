@@ -48,7 +48,7 @@ mod general {
         );
         data.general.ctx.banks_client.process_transaction(tx).await.unwrap();
 
-        data.open_position(Some(data.general.default_setting_params.clone()), None).await.unwrap();
+        data.open_position(Some(data.general.default_settings.clone()), None).await.unwrap();
     }
 
     #[tokio::test]
@@ -78,7 +78,7 @@ mod general {
         );
         data.general.ctx.banks_client.process_transaction(tx).await.unwrap();
 
-        data.open_position(Some(data.general.default_setting_params.clone()), None).await.unwrap();
+        data.open_position(Some(data.general.default_settings.clone()), None).await.unwrap();
 
         let account = data.general.ctx.banks_client.get_account(data.general.position_supply_ta).await.unwrap();
         assert!(account.is_some());
@@ -97,7 +97,7 @@ mod general {
             .general.create_referral_state_accounts().await
             .unwrap();
 
-        data.open_position(Some(data.general.default_setting_params.clone()), None).await.unwrap();
+        data.open_position(Some(data.general.default_settings.clone()), None).await.unwrap();
         let solauto_position = data.general.solauto_position.clone();
 
         let mut data = MarginfiTestData::new(&args).await;
@@ -110,7 +110,7 @@ mod general {
             .execute_instructions(
                 vec![
                     data
-                        .open_position_ix(Some(data.general.default_setting_params.clone()), None)
+                        .open_position_ix(Some(data.general.default_settings.clone()), None)
                         // Pass incorrect solauto position for the given signer
                         .solauto_position(solauto_position)
                         .instruction(),
@@ -151,7 +151,7 @@ mod general {
             token_type: TokenType::Debt
         };
         data.open_position(
-            Some(data.general.default_setting_params.clone()),
+            Some(data.general.default_settings.clone()),
             Some(active_dca.clone())
         ).await.unwrap();
 
@@ -202,7 +202,7 @@ mod general {
             token_type: TokenType::Debt
         };
         data.open_position(
-            Some(data.general.default_setting_params.clone()),
+            Some(data.general.default_settings.clone()),
             Some(active_dca.clone())
         ).await.unwrap();
 

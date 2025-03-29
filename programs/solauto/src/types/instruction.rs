@@ -184,8 +184,6 @@ pub struct UpdateReferralStatesArgs {
 pub struct MarginfiOpenPositionData {
     pub position_type: PositionType,
     pub position_data: UpdatePositionData,
-    /// Marginfi account seed index if the position is Solauto-managed
-    pub marginfi_account_seed_idx: Option<u64>,
 }
 
 #[derive(BorshDeserialize, Clone, Debug)]

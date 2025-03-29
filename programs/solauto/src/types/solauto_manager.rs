@@ -257,7 +257,7 @@ impl<'a> SolautoManager<'a> {
         );
 
         solauto_position.refresh_state();
-        solauto_position.state.last_updated = clock.unix_timestamp as u64;
+        solauto_position.state.last_refreshed = clock.unix_timestamp as u64;
 
         Ok(())
     }

@@ -1,5 +1,12 @@
 import { PublicKey } from "@solana/web3.js";
-import { SolautoPosition } from "../generated";
+import {
+  DCASettings,
+  fetchSolautoPosition,
+  LendingPlatform,
+  PositionState,
+  SolautoPosition,
+  SolautoSettingsParameters,
+} from "../generated";
 import { Umi } from "@metaplex-foundation/umi";
 import {
   calcDebtUsd,
@@ -13,39 +20,104 @@ import {
   supplyLiquidityUsdDepositable,
 } from "../utils";
 import { RebalanceAction } from "../types";
-import { getDebtAdjustment, getRebalanceValues } from "../rebalance";
+import { getDebtAdjustment } from "../rebalance";
 import { MIN_POSITION_STATE_FRESHNESS_SECS } from "../constants";
+import {
+  fromWeb3JsPublicKey,
+  toWeb3JsPublicKey,
+} from "@metaplex-foundation/umi-web3js-adapters";
+
+export interface PositionCustomArgs {
+  lendingPlatform: LendingPlatform;
+  supplyMint: PublicKey;
+  debtMint: PublicKey;
+  lendingPool?: PublicKey;
+  lpUserAccount?: PublicKey;
+}
+
+interface SolautoPositionExData extends Partial<SolautoPosition> {
+  state: PositionState;
+}
+
+interface PositionExArgs {
+  umi: Umi;
+  publicKey: PublicKey;
+  data: SolautoPositionExData;
+  contextUpdates?: ContextUpdates;
+  customArgs?: PositionCustomArgs;
+}
 
 export abstract class SolautoPositionEx {
-  constructor(
-    public data: SolautoPosition,
-    public umi: Umi
-  ) {}
+  public umi!: Umi;
+  public publicKey!: PublicKey;
+  public data!: SolautoPositionExData;
+  protected contextUpdates?: ContextUpdates;
+
+  public supplyMint!: PublicKey;
+  public debtMint!: PublicKey;
+  protected lp?: PublicKey = undefined;
+  public lpUserAccount?: PublicKey = undefined;
+
+  constructor(args: PositionExArgs) {
+    this.umi = args.umi;
+    this.publicKey = args.publicKey;
+    this.contextUpdates = args.contextUpdates;
+
+    this.supplyMint =
+      args.customArgs?.supplyMint ??
+      toWeb3JsPublicKey(args.data!.state.supply.mint);
+    this.debtMint =
+      args.customArgs?.debtMint ??
+      toWeb3JsPublicKey(args.data!.state.debt.mint);
+    this.lp = args.customArgs?.lendingPool;
+    this.lpUserAccount =
+      args.customArgs?.lpUserAccount ??
+      (args.data.position
+        ? toWeb3JsPublicKey(args.data.position!.protocolUserAccount)
+        : undefined);
+
+    this.data = args.data;
+  }
 
   abstract lendingPool(): Promise<PublicKey>;
 
+  public exists() {
+    return this.data.position !== undefined;
+  }
+
+  public settings(): SolautoSettingsParameters | undefined {
+    return this.contextUpdates?.settings ?? this.data?.position?.settings;
+  }
+
+  public dca(): DCASettings | undefined {
+    return this.contextUpdates?.dca ?? this.data?.position?.dca;
+  }
+
+  public state(): PositionState {
+    return this.data.state;
+  }
+
   public boostToBps() {
     return Math.min(
-      this.data.position.settings.boostToBps,
-      maxBoostToBps(this.data.state.maxLtvBps, this.data.state.liqThresholdBps)
+      this.settings()?.boostToBps ?? 0,
+      maxBoostToBps(this.state().maxLtvBps, this.state().liqThresholdBps)
     );
   }
 
   public boostFromBps() {
-    return this.boostToBps() - this.data.position.settings.boostGap;
+    return this.boostToBps() - (this.settings()?.boostGap ?? 0);
   }
 
   public repayToBps() {
     return Math.min(
-      this.data.position.settings.repayToBps,
-      maxRepayToBps(this.data.state.maxLtvBps, this.data.state.liqThresholdBps)
+      this.settings()?.repayToBps ?? 0,
+      maxRepayToBps(this.state().maxLtvBps, this.state().liqThresholdBps)
     );
   }
 
   public repayFromBps() {
     return (
-      this.data.position.settings.repayToBps +
-      this.data.position.settings.repayGap
+      (this.settings()?.repayToBps ?? 0) + (this.settings()?.repayGap ?? 0)
     );
   }
 
@@ -54,19 +126,19 @@ export abstract class SolautoPositionEx {
   abstract debtLiquidityAvailable(): bigint;
 
   public supplyUsd() {
-    return calcSupplyUsd(this.data.state);
+    return calcSupplyUsd(this.state());
   }
 
   public debtUsd() {
-    return calcDebtUsd(this.data.state);
+    return calcDebtUsd(this.state());
   }
 
   public supplyLiquidityUsdDepositable() {
-    return supplyLiquidityUsdDepositable(this.data.state);
+    return supplyLiquidityUsdDepositable(this.state());
   }
 
   public debtLiquidityUsdAvailable() {
-    return debtLiquidityUsdAvailable(this.data.state);
+    return debtLiquidityUsdAvailable(this.state());
   }
 
   public sufficientLiquidityToBoost() {
@@ -76,7 +148,7 @@ export abstract class SolautoPositionEx {
 
     if (limitsUpToDate) {
       const { debtAdjustmentUsd } = getDebtAdjustment(
-        this.data.state.liqThresholdBps,
+        this.state().liqThresholdBps,
         { supplyUsd: this.supplyUsd(), debtUsd: this.debtUsd() },
         { solauto: 50, lpBorrow: 50, flashLoan: 50 }, // TODO: add better fix here instead of magic numbers
         this.boostToBps()
@@ -98,18 +170,18 @@ export abstract class SolautoPositionEx {
   public eligibleForRebalance(
     bpsDistanceThreshold = 0
   ): RebalanceAction | undefined {
-    if (!this.data.position.settings || !calcSupplyUsd(this.data.state)) {
+    if (!this.settings() || !calcSupplyUsd(this.state())) {
       return undefined;
     }
 
     if (
-      this.data.state.liqUtilizationRateBps - this.boostFromBps() <=
+      this.state().liqUtilizationRateBps - this.boostFromBps() <=
       bpsDistanceThreshold
     ) {
       const sufficientLiquidity = this.sufficientLiquidityToBoost();
       return sufficientLiquidity ? "boost" : undefined;
     } else if (
-      this.repayFromBps() - this.data.state.liqUtilizationRateBps <=
+      this.repayFromBps() - this.state().liqUtilizationRateBps <=
       bpsDistanceThreshold
     ) {
       return "repay";
@@ -120,22 +192,28 @@ export abstract class SolautoPositionEx {
 
   public eligibleForRefresh(): boolean {
     return (
-      currentUnixSeconds() - Number(this.data.state.lastUpdated) >
+      currentUnixSeconds() - Number(this.state().lastRefreshed) >
       60 * 60 * 24 * 7
     );
   }
 
-  async getFreshPositionState(
-    contextUpdates?: ContextUpdates
-  ): Promise<SolautoPosition | undefined> {
+  protected canRefreshPositionState() {
     if (
-      Number(this.data.state.lastUpdated) >
+      Number(this.state().lastRefreshed) >
         currentUnixSeconds() - MIN_POSITION_STATE_FRESHNESS_SECS &&
-      !contextUpdates?.positionUpdates()
+      !this.contextUpdates?.positionUpdates()
     ) {
-      return this.data;
+      return false;
     }
+    return true;
+  }
 
-    return undefined;
+  abstract refreshPositionState(): Promise<void>;
+
+  async refetchPositionData() {
+    this.data = await fetchSolautoPosition(
+      this.umi,
+      fromWeb3JsPublicKey(this.publicKey)
+    );
   }
 }

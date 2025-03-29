@@ -32,13 +32,13 @@ mod open_position {
             .general.create_referral_state_accounts().await
             .unwrap();
 
-        let setting_params = SolautoSettingsParametersInp {
+        let settings = SolautoSettingsParametersInp {
             boost_to_bps: 5000,
             boost_gap: 500,
             repay_to_bps: 7500,
             repay_gap: 500,
         };
-        data.open_position(Some(setting_params.clone()), None).await.unwrap();
+        data.open_position(Some(settings.clone()), None).await.unwrap();
 
         let solauto_position = data.general.deserialize_account_data::<SolautoPosition>(
             data.general.solauto_position
@@ -48,7 +48,7 @@ mod open_position {
         assert!(solauto_position.authority == data.general.ctx.payer.pubkey());
 
         let position = &solauto_position.position;
-        assert!(position.setting_params.boost_to_bps == setting_params.boost_to_bps);
+        assert!(position.settings.boost_to_bps == settings.boost_to_bps);
         assert!(position.lending_platform == LendingPlatform::Marginfi);
         assert!(solauto_position.state.supply.mint == data.general.supply_mint.pubkey());
         assert!(solauto_position.state.debt.mint == data.general.debt_mint.pubkey());
@@ -84,7 +84,7 @@ mod open_position {
             token_type: TokenType::Debt
         };
         data.open_position(
-            Some(data.general.default_setting_params.clone()),
+            Some(data.general.default_settings.clone()),
             Some(active_dca.clone())
         ).await.unwrap();
 
@@ -115,7 +115,7 @@ mod open_position {
         let tx = Transaction::new_signed_with_payer(
             &[
                 data
-                    .open_position_ix(Some(data.general.default_setting_params.clone()), None)
+                    .open_position_ix(Some(data.general.default_settings.clone()), None)
                     .signer(temp_account.pubkey())
                     .instruction(),
             ],
@@ -138,7 +138,7 @@ mod open_position {
             .unwrap();
 
         let mut open_position_ix = data.open_position_ix(
-            Some(data.general.default_setting_params.clone()),
+            Some(data.general.default_settings.clone()),
             None
         );
 

@@ -33,7 +33,7 @@ export type PositionState = {
   maxLtvBps: number;
   liqThresholdBps: number;
   padding2: Array<number>;
-  lastUpdated: bigint;
+  lastRefreshed: bigint;
   padding: Array<number>;
 };
 
@@ -46,7 +46,7 @@ export type PositionStateArgs = {
   maxLtvBps: number;
   liqThresholdBps: number;
   padding2: Array<number>;
-  lastUpdated: number | bigint;
+  lastRefreshed: number | bigint;
   padding: Array<number>;
 };
 
@@ -64,7 +64,7 @@ export function getPositionStateSerializer(): Serializer<
       ['maxLtvBps', u16()],
       ['liqThresholdBps', u16()],
       ['padding2', array(u8(), { size: 4 })],
-      ['lastUpdated', u64()],
+      ['lastRefreshed', u64()],
       ['padding', array(u32(), { size: 2 })],
     ],
     { description: 'PositionState' }

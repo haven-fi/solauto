@@ -22,7 +22,7 @@ mod marginfi_protocol_interaction {
             .general.create_referral_state_accounts().await
             .unwrap();
 
-        data.open_position(Some(data.general.default_setting_params.clone()), None).await.unwrap();
+        data.open_position(Some(data.general.default_settings.clone()), None).await.unwrap();
 
         let tx = Transaction::new_signed_with_payer(
             &[

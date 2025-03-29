@@ -53,7 +53,6 @@ impl<'a> MarginfiClient<'a> {
     pub fn initialize<'c>(
         ctx: &'c Context<'a, MarginfiOpenPositionAccounts<'a>>,
         solauto_position: &'c DeserializedAccount<'a, SolautoPosition>,
-        marignfi_acc_seed_idx: Option<u64>,
     ) -> ProgramResult {
         if account_has_data(ctx.accounts.marginfi_account) {
             return Ok(());
@@ -71,10 +70,9 @@ impl<'a> MarginfiClient<'a> {
             },
         );
         if marginfi_account_owner.key == solauto_position.account_info.key {
-            let seed_idx_bytes = marignfi_acc_seed_idx.unwrap().to_le_bytes();
             let mut marginfi_account_seeds = vec![
                 solauto_position.account_info.key.as_ref(),
-                seed_idx_bytes.as_ref(),
+                ctx.accounts.marginfi_group.key.as_ref(),
             ];
             let (_, bump) =
                 Pubkey::find_program_address(marginfi_account_seeds.as_slice(), &crate::ID);

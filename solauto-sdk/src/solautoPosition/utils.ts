@@ -7,10 +7,11 @@ import {
   SolautoSettingsParametersInpArgs,
 } from "../generated";
 import { PublicKey } from "@solana/web3.js";
-import { SolautoPositionEx } from "./solautoPositionEx";
+import { PositionCustomArgs, SolautoPositionEx } from "./solautoPositionEx";
 import { fromWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 import { MarginfiSolautoPositionEx } from "./marginfiSolautoPositionEx";
 import {
+  ContextUpdates,
   currentUnixSeconds,
   getLiqUtilzationRateBps,
   toBaseUnit,
@@ -30,24 +31,42 @@ export function createSolautoSettings(
   };
 }
 
-export async function fetchPositionEx(
+export async function getOrCreatePositionEx(
   umi: Umi,
-  publicKey: PublicKey
-): Promise<SolautoPositionEx | undefined> {
-  const res = await safeFetchSolautoPosition(
+  publicKey: PublicKey,
+  contextUpdates?: ContextUpdates,
+  customArgs?: PositionCustomArgs
+): Promise<SolautoPositionEx> {
+  const data = await safeFetchSolautoPosition(
     umi,
     fromWeb3JsPublicKey(publicKey)
   );
-  if (res) {
-    switch (res.position.lendingPlatform) {
-      case LendingPlatform.Marginfi:
-        return new MarginfiSolautoPositionEx(res, umi);
-      default:
-        // TODO: PK
-        return undefined;
-    }
-  } else {
-    return undefined;
+
+  const fakeState = createFakePositionState(
+    {
+      mint: customArgs?.supplyMint ?? PublicKey.default,
+    },
+    { mint: customArgs?.debtMint ?? PublicKey.default },
+    0,
+    0
+  );
+
+  const lendingPlatform = data
+    ? data.position.lendingPlatform
+    : customArgs!.lendingPlatform;
+
+  switch (lendingPlatform) {
+    case LendingPlatform.Marginfi:
+      return new MarginfiSolautoPositionEx({
+        umi,
+        publicKey,
+        data: data ?? {
+          state: fakeState!,
+        },
+        contextUpdates,
+        customArgs,
+      });
+    // TODO: PK
   }
 }
 
@@ -122,7 +141,7 @@ export function createFakePositionState(
     },
     maxLtvBps,
     liqThresholdBps,
-    lastUpdated: BigInt(currentUnixSeconds()),
+    lastRefreshed: BigInt(currentUnixSeconds()),
     padding1: [],
     padding2: [],
     padding: [],
