@@ -93,14 +93,13 @@ export abstract class SolautoClient extends ReferralStateManager {
     this.solautoPosition = await getOrCreatePositionEx(
       this.umi,
       positionPk,
-      this.contextUpdates,
       {
         supplyMint: args.supplyMint ?? PublicKey.default,
         debtMint: args.debtMint ?? PublicKey.default,
-        lendingPool: args.lendingPool ?? PublicKey.default,
         lpUserAccount: args.lpUserAccount,
         lendingPlatform: this.lendingPlatform!,
-      }
+      },
+      this.contextUpdates
     );
 
     this.positionSupplyTa = getTokenAccount(

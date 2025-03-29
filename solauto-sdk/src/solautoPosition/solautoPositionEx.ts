@@ -43,8 +43,8 @@ interface PositionExArgs {
   umi: Umi;
   publicKey: PublicKey;
   data: SolautoPositionExData;
-  contextUpdates?: ContextUpdates;
   customArgs?: PositionCustomArgs;
+  contextUpdates?: ContextUpdates;
 }
 
 export abstract class SolautoPositionEx {
@@ -191,6 +191,8 @@ export abstract class SolautoPositionEx {
   }
 
   public eligibleForRefresh(): boolean {
+    if (this.data.selfManaged) return false;
+
     return (
       currentUnixSeconds() - Number(this.state().lastRefreshed) >
       60 * 60 * 24 * 7

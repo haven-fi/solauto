@@ -34,8 +34,8 @@ export function createSolautoSettings(
 export async function getOrCreatePositionEx(
   umi: Umi,
   publicKey: PublicKey,
-  contextUpdates?: ContextUpdates,
-  customArgs?: PositionCustomArgs
+  customArgs?: PositionCustomArgs,
+  contextUpdates?: ContextUpdates
 ): Promise<SolautoPositionEx> {
   const data = await safeFetchSolautoPosition(
     umi,
@@ -63,8 +63,8 @@ export async function getOrCreatePositionEx(
         data: data ?? {
           state: fakeState!,
         },
-        contextUpdates,
         customArgs,
+        contextUpdates,
       });
     // TODO: PK
   }
