@@ -105,6 +105,10 @@ export class ReferralStateManager extends TxHandler {
         : undefined;
   }
 
+  isReferred(): boolean {
+    return Boolean(this.referredByState);
+  }
+
   updateReferralStatesIx(
     destFeesMint?: PublicKey,
     lookupTable?: PublicKey

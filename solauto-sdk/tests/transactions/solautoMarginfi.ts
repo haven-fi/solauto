@@ -18,7 +18,7 @@ describe("Solauto Marginfi tests", async () => {
   const signer = setupTest();
   // const signer = setupTest("solauto-manager");
 
-  const payForTransactions = true;
+  const payForTransactions = false;
   const testProgram = true;
   const positionId = 1;
 
@@ -76,12 +76,12 @@ describe("Solauto Marginfi tests", async () => {
     //   targetBoostToBps: none(),
     // };
 
-    const settings: SolautoSettingsParametersInpArgs = {
-      boostToBps: client.solautoPositionSettings().boostToBps - 150,
-      boostGap: 50,
-      repayToBps: client.solautoPositionSettings().repayToBps - 150,
-      repayGap: 50,
-    };
+    // const settings: SolautoSettingsParametersInpArgs = {
+    //   boostToBps: client.solautoPositionSettings().boostToBps - 150,
+    //   boostGap: 50,
+    //   repayToBps: client.solautoPositionSettings().repayToBps - 150,
+    //   repayGap: 50,
+    // };
 
     // if (client.solautoPositionData === null) {
     //   transactionItems.push(

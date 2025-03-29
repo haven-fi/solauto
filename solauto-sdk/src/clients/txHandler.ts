@@ -1,28 +1,42 @@
 import { Signer, Umi } from "@metaplex-foundation/umi";
 import { Connection, PublicKey } from "@solana/web3.js";
-import {
-  consoleLog,
-  getSolanaRpcConnection,
-} from "../utils";
+import { consoleLog, getSolanaRpcConnection } from "../utils";
 import { SOLAUTO_PROD_PROGRAM } from "../constants";
 
+export interface TxHandlerProps {
+  rpcUrl: string;
+  showLogs?: boolean;
+  programId?: PublicKey;
+}
+
 export abstract class TxHandler {
+  public rpcUrl!: string;
+  public showLogs = false;
+  public programId = SOLAUTO_PROD_PROGRAM;
+
   public connection!: Connection;
   public umi!: Umi;
   public signer!: Signer;
   public otherSigners: Signer[] = [];
 
-  constructor(
-    public rpcUrl: string,
-    localTest?: boolean,
-    public programId: PublicKey = SOLAUTO_PROD_PROGRAM
-  ) {
-    const [connection, umi] = getSolanaRpcConnection(this.rpcUrl, this.programId);
+  constructor(props: TxHandlerProps) {
+    this.rpcUrl = props.rpcUrl;
+    if (props.showLogs !== undefined) {
+      this.showLogs = props.showLogs;
+    }
+    if (props.programId !== undefined) {
+      this.programId = props.programId;
+    }
+
+    const [connection, umi] = getSolanaRpcConnection(
+      this.rpcUrl,
+      this.programId
+    );
     this.connection = connection;
     this.umi = umi;
 
-    if (!(globalThis as any).LOCAL_TEST && localTest) {
-      (globalThis as any).LOCAL_TEST = Boolean(localTest);
+    if (!(globalThis as any).SHOW_LOGS && this.showLogs) {
+      (globalThis as any).SHOW_LOGS = Boolean(this.showLogs);
     }
   }
 

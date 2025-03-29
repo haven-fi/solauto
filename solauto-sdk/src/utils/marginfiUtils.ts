@@ -315,7 +315,7 @@ async function getBank(
 
 export async function getMarginfiAccountPositionState(
   umi: Umi,
-  protocolAccount: { pk: PublicKey; data?: MarginfiAccount },
+  protocolAccount: { pk: PublicKey; data?: MarginfiAccount | null },
   marginfiGroup?: PublicKey,
   supply?: BankSelection,
   debt?: BankSelection,

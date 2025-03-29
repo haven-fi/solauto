@@ -20,7 +20,7 @@ export const SOLAUTO_TEST_PROGRAM = new PublicKey(
   "TesTjfQ6TbXv96Tv6fqr95XTZ1LYPxtkafmShN9PjBp"
 );
 
-(globalThis as any).LOCAL_TEST = false;
+(globalThis as any).SHOW_LOGS = false;
 
 export const BASIS_POINTS = 10000;
 
@@ -62,11 +62,4 @@ export const STANDARD_LUT_ACCOUNTS = [
 ].map((x) => x.toString());
 
 // TODO:
-export const BROKEN_TOKENS = [
-  JUP,
-  JLP,
-  WETH,
-  HNT,
-  JTO,
-  PYTH
-]
+export const BROKEN_TOKENS = [JUP, JLP, WETH, HNT, JTO, PYTH];

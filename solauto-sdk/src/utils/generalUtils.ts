@@ -4,7 +4,7 @@ import { TOKEN_INFO, TokenInfo } from "../constants";
 import axios from "axios";
 
 export function consoleLog(...args: any[]): void {
-  if ((globalThis as any).LOCAL_TEST) {
+  if ((globalThis as any).SHOW_LOGS) {
     console.log(...args);
   }
 }

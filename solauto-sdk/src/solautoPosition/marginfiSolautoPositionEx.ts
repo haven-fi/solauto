@@ -71,9 +71,9 @@ export class MarginfiSolautoPositionEx extends SolautoPositionEx {
     );
 
     if (resp) {
-      this.supplyBank = resp?.supplyBank;
-      this.debtBank = resp?.debtBank;
-      this.data.state = resp?.state;
+      this.supplyBank = resp.supplyBank;
+      this.debtBank = resp.debtBank;
+      this.data.state = resp.state;
     }
   }
 }

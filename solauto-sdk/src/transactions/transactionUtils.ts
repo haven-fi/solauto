@@ -75,7 +75,7 @@ import {
 } from "../jupiter-sdk";
 import { PRICES } from "../constants";
 import { TransactionItemInputs } from "../types";
-import { safeGetPrice } from "../utils";
+import { isMarginfiClient, safeGetPrice } from "../utils";
 import { BundleSimulationError } from "../types/transactions";
 
 interface wSolTokenUsage {
@@ -92,8 +92,8 @@ function getWSolUsage(
   },
   cancellingDcaIn?: TokenType
 ): wSolTokenUsage | undefined {
-  const supplyIsWsol = client.supplyMint.equals(NATIVE_MINT);
-  const debtIsWsol = client.debtMint.equals(NATIVE_MINT);
+  const supplyIsWsol = client.solautoPosition.supplyMint().equals(NATIVE_MINT);
+  const debtIsWsol = client.solautoPosition.debtMint().equals(NATIVE_MINT);
   if (!supplyIsWsol && !debtIsWsol) {
     return undefined;
   }
@@ -157,22 +157,19 @@ async function transactionChoresBefore(
   }
 
   if (client.selfManaged) {
-    if (client.solautoPositionData === null) {
-      chores = chores.add(client.openPosition());
-    } else if (
-      client.lendingPlatform === LendingPlatform.Marginfi &&
-      !(await getSolanaAccountCreated(
-        client.umi,
-        (client as SolautoMarginfiClient).marginfiAccountPk
-      ))
+    if (
+      isMarginfiClient(client) &&
+      !(await getSolanaAccountCreated(client.umi, client.marginfiAccountPk))
     ) {
       chores = chores.add(
-        (client as SolautoMarginfiClient).marginfiAccountInitialize(
-          (client as SolautoMarginfiClient).marginfiAccount as Signer
-        )
+        client.marginfiAccountInitialize(client.marginfiAccount as Signer)
       );
     }
     // TODO: PF
+
+    if (!client.solautoPosition.exists()) {
+      chores = chores.add(client.openPosition());
+    }
   }
 
   const wSolUsage = getWSolUsage(
@@ -251,8 +248,8 @@ async function transactionChoresBefore(
           client.signer,
           toWeb3JsPublicKey(client.signer.publicKey),
           isSolautoAction("Withdraw", solautoAction)
-            ? client.supplyMint
-            : client.debtMint
+            ? client.solautoPosition.supplyMint()
+            : client.solautoPosition.debtMint()
         )
       );
       accountsGettingCreated.push(tokenAccount.toString());
@@ -282,10 +279,8 @@ export async function rebalanceChoresBefore(
   const checkReferralDebtTa =
     client.referredByDebtTa() && usesAccount(client.referredByDebtTa()!);
   const checkIntermediaryMfiAccount =
-    client.lendingPlatform === LendingPlatform.Marginfi &&
-    usesAccount(
-      (client as SolautoMarginfiClient).intermediaryMarginfiAccountPk
-    );
+    isMarginfiClient(client) &&
+    usesAccount(client.intermediaryMarginfiAccountPk);
   const checkSignerSupplyTa = usesAccount(client.signerSupplyTa);
   const checkSignerDebtTa = usesAccount(client.signerDebtTa);
 
@@ -296,7 +291,7 @@ export async function rebalanceChoresBefore(
     ...[checkReferralDebtTa ? client.referredByDebtTa() : PublicKey.default],
     ...[
       checkIntermediaryMfiAccount
-        ? (client as SolautoMarginfiClient).intermediaryMarginfiAccountPk
+        ? client.intermediaryMarginfiAccountPk
         : PublicKey.default,
     ],
     ...[checkSignerSupplyTa ? client.signerSupplyTa : PublicKey.default],
@@ -321,7 +316,7 @@ export async function rebalanceChoresBefore(
       createAssociatedTokenAccountUmiIx(
         client.signer,
         client.referredByState!,
-        client.supplyMint
+        client.solautoPosition.supplyMint()
       )
     );
   }
@@ -332,7 +327,7 @@ export async function rebalanceChoresBefore(
       createAssociatedTokenAccountUmiIx(
         client.signer,
         client.referredByState!,
-        client.debtMint
+        client.solautoPosition.debtMint()
       )
     );
   }
@@ -343,8 +338,8 @@ export async function rebalanceChoresBefore(
   ) {
     client.log("Creating intermediary marginfi account");
     chores = chores.add(
-      (client as SolautoMarginfiClient).marginfiAccountInitialize(
-        (client as SolautoMarginfiClient).intermediaryMarginfiAccountSigner!
+      client.marginfiAccountInitialize(
+        client.intermediaryMarginfiAccountSigner!
       )
     );
   }
@@ -359,7 +354,7 @@ export async function rebalanceChoresBefore(
       createAssociatedTokenAccountUmiIx(
         client.signer,
         toWeb3JsPublicKey(client.signer.publicKey),
-        client.supplyMint
+        client.solautoPosition.supplyMint()
       )
     );
     accountsGettingCreated.push(signerSupplyTa.publicKey.toString());
@@ -375,7 +370,7 @@ export async function rebalanceChoresBefore(
       createAssociatedTokenAccountUmiIx(
         client.signer,
         toWeb3JsPublicKey(client.signer.publicKey),
-        client.debtMint
+        client.solautoPosition.debtMint()
       )
     );
     accountsGettingCreated.push(signerDebtTa.publicKey.toString());
@@ -753,7 +748,7 @@ export async function buildSolautoRebalanceTransaction(
 
     const flashBorrowDest = getTokenAccount(
       rebalanceThenSwap
-        ? client.solautoPosition
+        ? client.solautoPosition.publicKey
         : toWeb3JsPublicKey(client.signer.publicKey),
       rebalanceThenSwap ? swapDetails.outputMint : swapDetails.inputMint
     );

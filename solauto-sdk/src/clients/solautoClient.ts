@@ -54,7 +54,7 @@ export interface SolautoClientArgs extends ReferralStateManagerArgs {
 }
 
 export abstract class SolautoClient extends ReferralStateManager {
-  public lendingPlatform?: LendingPlatform;
+  public lendingPlatform!: LendingPlatform;
 
   public authority!: PublicKey;
 
@@ -102,7 +102,7 @@ export abstract class SolautoClient extends ReferralStateManager {
         supplyMint: args.supplyMint,
         debtMint: args.debtMint,
         lpUserAccount: args.lpUserAccount,
-        lendingPlatform: this.lendingPlatform!,
+        lendingPlatform: this.lendingPlatform,
       },
       this.contextUpdates
     );

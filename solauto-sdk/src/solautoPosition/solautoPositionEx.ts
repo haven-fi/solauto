@@ -10,14 +10,23 @@ import {
 import { Umi } from "@metaplex-foundation/umi";
 import {
   calcDebtUsd,
+  calcNetWorth,
+  calcNetWorthUsd,
   calcSupplyUsd,
+  calcTotalDebt,
+  calcTotalSupply,
   consoleLog,
   ContextUpdates,
   currentUnixSeconds,
   debtLiquidityUsdAvailable,
+  fetchTokenPrices,
+  fromBaseUnit,
+  getLiqUtilzationRateBps,
   maxBoostToBps,
   maxRepayToBps,
   supplyLiquidityUsdDepositable,
+  toBaseUnit,
+  toRoundedUsdValue,
 } from "../utils";
 import { RebalanceAction } from "../types";
 import { getDebtAdjustment } from "../rebalance";
@@ -125,8 +134,24 @@ export abstract class SolautoPositionEx {
   abstract supplyLiquidityAvailable(): bigint;
   abstract debtLiquidityAvailable(): bigint;
 
+  public netWorth() {
+    return calcNetWorth(this.state());
+  }
+
+  public netWorthUsd() {
+    return calcNetWorthUsd(this.state());
+  }
+
+  public totalSupply() {
+    return calcTotalSupply(this.state());
+  }
+
   public supplyUsd() {
     return calcSupplyUsd(this.state());
+  }
+
+  public totalDebt() {
+    return calcTotalDebt(this.state());
   }
 
   public debtUsd() {
@@ -211,6 +236,69 @@ export abstract class SolautoPositionEx {
   }
 
   abstract refreshPositionState(): Promise<void>;
+
+  public async updateWithLatestPrices(
+    state: PositionState,
+    supplyPrice?: number,
+    debtPrice?: number
+  ) {
+    if (!supplyPrice || !debtPrice) {
+      [supplyPrice, debtPrice] = await fetchTokenPrices([
+        toWeb3JsPublicKey(state.supply.mint),
+        toWeb3JsPublicKey(state.debt.mint),
+      ]);
+    }
+
+    const supplyUsd = this.totalSupply() * supplyPrice;
+    const debtUsd = this.totalDebt() * debtPrice;
+    this.data.state = {
+      ...state,
+      liqUtilizationRateBps: getLiqUtilzationRateBps(
+        supplyUsd,
+        debtUsd,
+        state.liqThresholdBps
+      ),
+      netWorth: {
+        baseUnit: toBaseUnit(
+          (supplyUsd - debtUsd) / supplyPrice,
+          state.supply.decimals
+        ),
+        baseAmountUsdValue: toRoundedUsdValue(supplyUsd - debtUsd),
+      },
+      supply: {
+        ...state.supply,
+        amountCanBeUsed: {
+          ...state.supply.amountCanBeUsed,
+          baseAmountUsdValue: toRoundedUsdValue(
+            fromBaseUnit(
+              state.supply.amountCanBeUsed.baseUnit,
+              state.supply.decimals
+            ) * supplyPrice
+          ),
+        },
+        amountUsed: {
+          ...state.supply.amountUsed,
+          baseAmountUsdValue: toRoundedUsdValue(supplyUsd),
+        },
+      },
+      debt: {
+        ...state.debt,
+        amountCanBeUsed: {
+          ...state.debt.amountCanBeUsed,
+          baseAmountUsdValue: toRoundedUsdValue(
+            fromBaseUnit(
+              state.debt.amountCanBeUsed.baseUnit,
+              state.debt.decimals
+            ) * debtPrice
+          ),
+        },
+        amountUsed: {
+          ...state.debt.amountUsed,
+          baseAmountUsdValue: toRoundedUsdValue(debtUsd),
+        },
+      },
+    };
+  }
 
   async refetchPositionData() {
     this.data = await fetchSolautoPosition(

@@ -25,11 +25,9 @@ import {
   fromBaseUnit,
   fromBps,
   getLiqUtilzationRateBps,
-  getSolautoFeesBps,
   toBaseUnit,
 } from "../../src/utils/numberUtils";
 import {
-  createFakePositionState,
   eligibleForNextAutomationPeriod,
   getUpdatedValueFromAutomation,
   positionStateWithLatestPrices,
@@ -208,7 +206,8 @@ async function getFakePosition(
     },
   };
 
-  client.solautoPositionState!.lastRefreshed = BigInt(currentUnixSeconds());
+  client.solautoPosition.data.state.lastRefreshed =
+    BigInt(currentUnixSeconds());
 
   return client;
 }

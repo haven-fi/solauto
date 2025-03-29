@@ -66,6 +66,8 @@ export interface SolautoMarginfiClientArgs extends SolautoClientArgs {
 }
 
 export class SolautoMarginfiClient extends SolautoClient {
+  public lendingPlatform = LendingPlatform.Marginfi;
+
   private initializedFor?: PublicKey;
 
   public marginfiProgram!: PublicKey;
@@ -86,8 +88,6 @@ export class SolautoMarginfiClient extends SolautoClient {
   public intermediaryMarginfiAccount?: MarginfiAccount;
 
   async initialize(args: SolautoMarginfiClientArgs) {
-    this.lendingPlatform = LendingPlatform.Marginfi;
-
     await super.initialize(args);
 
     this.marginfiGroup = await this.solautoPosition.lendingPool();

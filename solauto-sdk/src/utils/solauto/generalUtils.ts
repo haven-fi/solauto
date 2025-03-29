@@ -1,19 +1,11 @@
 import { PublicKey } from "@solana/web3.js";
-import {
-  isOption,
-  isSome,
-  Program,
-  publicKey,
-  Umi,
-} from "@metaplex-foundation/umi";
+import { Program, publicKey, Umi } from "@metaplex-foundation/umi";
 import {
   AutomationSettings,
   DCASettings,
   DCASettingsInpArgs,
   LendingPlatform,
-  PositionState,
   PositionType,
-  SolautoPosition,
   SolautoSettingsParameters,
   SolautoSettingsParametersInpArgs,
   TokenType,
@@ -22,42 +14,22 @@ import {
   getSolautoErrorFromName,
   getSolautoPositionAccountDataSerializer,
   getSolautoPositionSize,
-  safeFetchSolautoPosition,
 } from "../../generated";
-import { consoleLog, currentUnixSeconds } from "../generalUtils";
-import {
-  calcSupplyUsd,
-  calcTotalDebt,
-  calcTotalSupply,
-  debtLiquidityUsdAvailable,
-  fromBaseUnit,
-  getLiqUtilzationRateBps,
-  supplyLiquidityUsdDepositable,
-  toBaseUnit,
-} from "../numberUtils";
 import { getReferralState } from "../accountUtils";
-import {
-  fromWeb3JsPublicKey,
-  toWeb3JsPublicKey,
-} from "@metaplex-foundation/umi-web3js-adapters";
-import {
-  ALL_SUPPORTED_TOKENS,
-  TOKEN_INFO,
-  USD_DECIMALS,
-} from "../../constants";
+import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
+import { ALL_SUPPORTED_TOKENS } from "../../constants";
 import {
   findMarginfiAccounts,
   getAllMarginfiAccountsByAuthority,
 } from "../marginfiUtils";
-import { RebalanceAction, SolautoPositionDetails } from "../../types/solauto";
-import { fetchTokenPrices } from "../priceUtils";
-import { getRebalanceValues } from "./rebalanceUtils";
+import { SolautoPositionDetails } from "../../types/solauto";
 import { QuoteResponse } from "@jup-ag/api";
+import { createSolautoSettings } from "../../solautoPosition";
 import {
-  createSolautoSettings,
-  SolautoPositionEx,
-} from "../../solautoPosition";
-import { MarginfiSolautoPositionEx } from "../../solautoPosition/marginfiSolautoPositionEx";
+  SolautoClient,
+  SolautoMarginfiClient,
+  TxHandlerProps,
+} from "../../clients";
 
 export function createDynamicSolautoProgram(programId: PublicKey): Program {
   return {
@@ -323,70 +295,23 @@ export async function getAllPositionsByAuthority(
   return solautoCompatiblePositions.flat();
 }
 
-export async function positionStateWithLatestPrices(
-  state: PositionState,
-  supplyPrice?: number,
-  debtPrice?: number
-): Promise<PositionState> {
-  if (!supplyPrice || !debtPrice) {
-    [supplyPrice, debtPrice] = await fetchTokenPrices([
-      toWeb3JsPublicKey(state.supply.mint),
-      toWeb3JsPublicKey(state.debt.mint),
-    ]);
+export function getClient(
+  lendingPlatform: LendingPlatform,
+  txHandlerProps: TxHandlerProps
+) {
+  if (lendingPlatform === LendingPlatform.Marginfi) {
+    return new SolautoMarginfiClient(txHandlerProps);
+  } else {
+    // TODO: PF
   }
-
-  const supplyUsd = calcTotalSupply(state) * supplyPrice;
-  const debtUsd = calcTotalDebt(state) * debtPrice;
-  return {
-    ...state,
-    liqUtilizationRateBps: getLiqUtilzationRateBps(
-      supplyUsd,
-      debtUsd,
-      state.liqThresholdBps
-    ),
-    netWorth: {
-      baseUnit: toBaseUnit(
-        (supplyUsd - debtUsd) / supplyPrice,
-        state.supply.decimals
-      ),
-      baseAmountUsdValue: toBaseUnit(supplyUsd - debtUsd, USD_DECIMALS),
-    },
-    supply: {
-      ...state.supply,
-      amountCanBeUsed: {
-        ...state.supply.amountCanBeUsed,
-        baseAmountUsdValue: toBaseUnit(
-          fromBaseUnit(
-            state.supply.amountCanBeUsed.baseUnit,
-            state.supply.decimals
-          ) * supplyPrice,
-          USD_DECIMALS
-        ),
-      },
-      amountUsed: {
-        ...state.supply.amountUsed,
-        baseAmountUsdValue: toBaseUnit(supplyUsd, USD_DECIMALS),
-      },
-    },
-    debt: {
-      ...state.debt,
-      amountCanBeUsed: {
-        ...state.debt.amountCanBeUsed,
-        baseAmountUsdValue: toBaseUnit(
-          fromBaseUnit(
-            state.debt.amountCanBeUsed.baseUnit,
-            state.debt.decimals
-          ) * debtPrice,
-          USD_DECIMALS
-        ),
-      },
-      amountUsed: {
-        ...state.debt.amountUsed,
-        baseAmountUsdValue: toBaseUnit(debtUsd, USD_DECIMALS),
-      },
-    },
-  };
 }
+
+export function isMarginfiClient(
+  client: SolautoClient
+): client is SolautoMarginfiClient {
+  return client.lendingPlatform == LendingPlatform.Marginfi;
+}
+// TODO: PF
 
 type ContextAdjustment =
   | { type: "supply"; value: bigint }
