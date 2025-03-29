@@ -62,11 +62,9 @@ export abstract class SolautoClient extends ReferralStateManager {
   public selfManaged!: boolean;
   public solautoPosition!: SolautoPositionEx;
 
-  public supplyMint!: PublicKey;
   public positionSupplyTa!: PublicKey;
   public signerSupplyTa!: PublicKey;
 
-  public debtMint!: PublicKey;
   public positionDebtTa!: PublicKey;
   public signerDebtTa!: PublicKey;
 
@@ -85,6 +83,13 @@ export abstract class SolautoClient extends ReferralStateManager {
 
     this.positionId = args.positionId ?? 0;
     this.selfManaged = this.positionId === 0;
+    if (
+      this.selfManaged &&
+      (!args.supplyMint || !args.debtMint || !args.lpUserAccount)
+    ) {
+      throw new Error("Self managed position is missing arguments");
+    }
+
     const positionPk = getSolautoPositionAccount(
       this.authority,
       this.positionId,
@@ -94,8 +99,8 @@ export abstract class SolautoClient extends ReferralStateManager {
       this.umi,
       positionPk,
       {
-        supplyMint: args.supplyMint ?? PublicKey.default,
-        debtMint: args.debtMint ?? PublicKey.default,
+        supplyMint: args.supplyMint,
+        debtMint: args.debtMint,
         lpUserAccount: args.lpUserAccount,
         lendingPlatform: this.lendingPlatform!,
       },
@@ -104,29 +109,29 @@ export abstract class SolautoClient extends ReferralStateManager {
 
     this.positionSupplyTa = getTokenAccount(
       this.solautoPosition.publicKey,
-      this.supplyMint
+      this.solautoPosition.supplyMint()
     );
     this.signerSupplyTa = getTokenAccount(
       toWeb3JsPublicKey(this.signer.publicKey),
-      this.supplyMint
+      this.solautoPosition.supplyMint()
     );
 
     this.positionDebtTa = getTokenAccount(
       this.solautoPosition.publicKey,
-      this.debtMint
+      this.solautoPosition.debtMint()
     );
     this.signerDebtTa = getTokenAccount(
       toWeb3JsPublicKey(this.signer.publicKey),
-      this.debtMint
+      this.solautoPosition.debtMint()
     );
 
     this.solautoFeesSupplyTa = getTokenAccount(
       SOLAUTO_FEES_WALLET,
-      this.supplyMint
+      this.solautoPosition.supplyMint()
     );
     this.solautoFeesDebtTa = getTokenAccount(
       SOLAUTO_FEES_WALLET,
-      this.debtMint
+      this.solautoPosition.debtMint()
     );
 
     this.authorityLutAddress =
@@ -144,14 +149,20 @@ export abstract class SolautoClient extends ReferralStateManager {
 
   referredBySupplyTa(): PublicKey | undefined {
     if (this.referredByState !== undefined) {
-      return getTokenAccount(this.referredByState, this.supplyMint);
+      return getTokenAccount(
+        this.referredByState,
+        this.solautoPosition.supplyMint()
+      );
     }
     return undefined;
   }
 
   referredByDebtTa(): PublicKey | undefined {
     if (this.referredByState !== undefined) {
-      return getTokenAccount(this.referredByState, this.debtMint);
+      return getTokenAccount(
+        this.referredByState,
+        this.solautoPosition.debtMint()
+      );
     }
     return undefined;
   }
@@ -297,7 +308,7 @@ export abstract class SolautoClient extends ReferralStateManager {
         const data = await this.connection.getTokenAccountBalance(
           getTokenAccount(
             toWeb3JsPublicKey(this.signer.publicKey),
-            this.supplyMint
+            this.solautoPosition.supplyMint()
           ),
           "confirmed"
         );
@@ -307,7 +318,7 @@ export abstract class SolautoClient extends ReferralStateManager {
         const data = await this.connection.getTokenAccountBalance(
           getTokenAccount(
             toWeb3JsPublicKey(this.signer.publicKey),
-            this.debtMint
+            this.solautoPosition.debtMint()
           ),
           "confirmed"
         );
@@ -356,11 +367,11 @@ export abstract class SolautoClient extends ReferralStateManager {
     let signerDcaTa: UmiPublicKey | undefined = undefined;
     if (isOption(args.dca) && isSome(args.dca)) {
       if (args.dca.value.tokenType === TokenType.Supply) {
-        dcaMint = publicKey(this.supplyMint);
+        dcaMint = publicKey(this.solautoPosition.supplyMint());
         positionDcaTa = publicKey(this.positionSupplyTa);
         signerDcaTa = publicKey(this.signerSupplyTa);
       } else {
-        dcaMint = publicKey(this.debtMint);
+        dcaMint = publicKey(this.solautoPosition.debtMint());
         positionDcaTa = publicKey(this.positionDebtTa);
         signerDcaTa = publicKey(this.signerDebtTa);
       }
@@ -424,11 +435,11 @@ export abstract class SolautoClient extends ReferralStateManager {
     const currDca = this.solautoPosition.dca()!;
     if (currDca.dcaInBaseUnit > 0) {
       if (currDca.tokenType === TokenType.Supply) {
-        dcaMint = publicKey(this.supplyMint);
+        dcaMint = publicKey(this.solautoPosition.supplyMint());
         positionDcaTa = publicKey(this.positionSupplyTa);
         signerDcaTa = publicKey(this.signerSupplyTa);
       } else {
-        dcaMint = publicKey(this.debtMint);
+        dcaMint = publicKey(this.solautoPosition.debtMint());
         positionDcaTa = publicKey(this.positionDebtTa);
         signerDcaTa = publicKey(this.signerDebtTa);
       }

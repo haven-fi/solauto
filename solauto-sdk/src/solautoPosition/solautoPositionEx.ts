@@ -29,8 +29,8 @@ import {
 
 export interface PositionCustomArgs {
   lendingPlatform: LendingPlatform;
-  supplyMint: PublicKey;
-  debtMint: PublicKey;
+  supplyMint?: PublicKey;
+  debtMint?: PublicKey;
   lendingPool?: PublicKey;
   lpUserAccount?: PublicKey;
 }
@@ -53,8 +53,6 @@ export abstract class SolautoPositionEx {
   public data!: SolautoPositionExData;
   protected contextUpdates?: ContextUpdates;
 
-  public supplyMint!: PublicKey;
-  public debtMint!: PublicKey;
   protected lp?: PublicKey = undefined;
   public lpUserAccount?: PublicKey = undefined;
 
@@ -63,12 +61,6 @@ export abstract class SolautoPositionEx {
     this.publicKey = args.publicKey;
     this.contextUpdates = args.contextUpdates;
 
-    this.supplyMint =
-      args.customArgs?.supplyMint ??
-      toWeb3JsPublicKey(args.data!.state.supply.mint);
-    this.debtMint =
-      args.customArgs?.debtMint ??
-      toWeb3JsPublicKey(args.data!.state.debt.mint);
     this.lp = args.customArgs?.lendingPool;
     this.lpUserAccount =
       args.customArgs?.lpUserAccount ??
@@ -95,6 +87,14 @@ export abstract class SolautoPositionEx {
 
   public state(): PositionState {
     return this.data.state;
+  }
+
+  public supplyMint(): PublicKey {
+    return toWeb3JsPublicKey(this.state().supply.mint);
+  }
+
+  public debtMint(): PublicKey {
+    return toWeb3JsPublicKey(this.state().debt.mint);
   }
 
   public boostToBps() {
@@ -143,8 +143,8 @@ export abstract class SolautoPositionEx {
 
   public sufficientLiquidityToBoost() {
     const limitsUpToDate =
-      this.debtLiquidityUsdAvailable() > 0 ||
-      this.supplyLiquidityUsdDepositable() > 0;
+      this.debtLiquidityUsdAvailable() !== 0 ||
+      this.supplyLiquidityUsdDepositable() !== 0;
 
     if (limitsUpToDate) {
       const { debtAdjustmentUsd } = getDebtAdjustment(

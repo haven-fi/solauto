@@ -61,8 +61,12 @@ export class MarginfiSolautoPositionEx extends SolautoPositionEx {
       this.umi,
       { pk: this.lpUserAccount ?? PublicKey.default },
       await this.lendingPool(),
-      useDesignatedMint ? { mint: this.supplyMint } : undefined,
-      useDesignatedMint ? { mint: this.debtMint } : undefined,
+      useDesignatedMint
+        ? { mint: toWeb3JsPublicKey(this.state().supply.mint) }
+        : undefined,
+      useDesignatedMint
+        ? { mint: toWeb3JsPublicKey(this.state().debt.mint) }
+        : undefined,
       this.contextUpdates
     );
 

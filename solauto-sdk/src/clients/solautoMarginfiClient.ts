@@ -135,11 +135,11 @@ export class SolautoMarginfiClient extends SolautoClient {
 
     this.marginfiSupplyAccounts =
       MARGINFI_ACCOUNTS[this.marginfiGroup.toString()][
-        this.supplyMint.toString()
+        this.solautoPosition.supplyMint().toString()
       ]!;
     this.marginfiDebtAccounts =
       MARGINFI_ACCOUNTS[this.marginfiGroup.toString()][
-        this.debtMint.toString()
+        this.solautoPosition.debtMint().toString()
       ]!;
 
     // TODO: Don't dynamically pull oracle from bank until Marginfi sorts out their price oracle issues.
@@ -267,10 +267,10 @@ export class SolautoMarginfiClient extends SolautoClient {
         "publicKey" in this.marginfiAccount
           ? (this.marginfiAccount as Signer)
           : publicKey(this.marginfiAccount),
-      supplyMint: publicKey(this.supplyMint),
+      supplyMint: publicKey(this.solautoPosition.supplyMint()),
       supplyBank: publicKey(this.marginfiSupplyAccounts.bank),
       positionSupplyTa: publicKey(this.positionSupplyTa),
-      debtMint: publicKey(this.debtMint),
+      debtMint: publicKey(this.solautoPosition.debtMint()),
       debtBank: publicKey(this.marginfiDebtAccounts.bank),
       positionDebtTa: publicKey(this.positionDebtTa),
       signerDebtTa: signerDebtTa,
@@ -441,10 +441,10 @@ export class SolautoMarginfiClient extends SolautoClient {
     targetLiqUtilizationRateBps?: number
   ): TransactionBuilder {
     const inputIsSupply = new PublicKey(jupQuote.inputMint).equals(
-      this.supplyMint
+      this.solautoPosition.supplyMint()
     );
     const outputIsSupply = new PublicKey(jupQuote.outputMint).equals(
-      this.supplyMint
+      this.solautoPosition.supplyMint()
     );
     const needSupplyAccounts =
       (inputIsSupply && rebalanceStep === "A") ||
@@ -492,7 +492,9 @@ export class SolautoMarginfiClient extends SolautoClient {
       supplyPriceOracle: publicKey(this.supplyPriceOracle),
       positionSupplyTa: publicKey(this.positionSupplyTa),
       authoritySupplyTa: this.selfManaged
-        ? publicKey(getTokenAccount(this.authority, this.supplyMint))
+        ? publicKey(
+            getTokenAccount(this.authority, this.solautoPosition.supplyMint())
+          )
         : undefined,
       vaultSupplyTa: needSupplyAccounts
         ? publicKey(this.marginfiSupplyAccounts.liquidityVault)
@@ -504,7 +506,9 @@ export class SolautoMarginfiClient extends SolautoClient {
       debtPriceOracle: publicKey(this.debtPriceOracle),
       positionDebtTa: publicKey(this.positionDebtTa),
       authorityDebtTa: this.selfManaged
-        ? publicKey(getTokenAccount(this.authority, this.debtMint))
+        ? publicKey(
+            getTokenAccount(this.authority, this.solautoPosition.debtMint())
+          )
         : undefined,
       vaultDebtTa: needDebtAccounts
         ? publicKey(this.marginfiDebtAccounts.liquidityVault)
@@ -532,7 +536,7 @@ export class SolautoMarginfiClient extends SolautoClient {
             this.signer,
             getTokenAccount(
               toWeb3JsPublicKey(this.signer.publicKey),
-              this.debtMint
+              flashLoanDetails.mint
             ),
             destinationTokenAccount,
             toWeb3JsPublicKey(this.signer.publicKey),
@@ -544,7 +548,7 @@ export class SolautoMarginfiClient extends SolautoClient {
       }
     }
 
-    const bank = flashLoanDetails.mint.equals(this.supplyMint)
+    const bank = flashLoanDetails.mint.equals(this.solautoPosition.supplyMint())
       ? this.marginfiSupplyAccounts
       : this.marginfiDebtAccounts;
     return transactionBuilder()
