@@ -31,7 +31,6 @@ import {
   getTokenAccount,
   rpcAccountCreated,
   safeGetPrice,
-  splTokenTransferUmiIx,
   tokenInfo,
 } from "../utils";
 import { TokenType } from "../generated";

@@ -240,10 +240,6 @@ export abstract class SolautoClient extends ReferralStateManager {
       }
     | undefined
   > {
-    if (this.selfManaged) {
-      return undefined;
-    }
-
     const existingLutAccounts = await this.fetchExistingAuthorityLutAccounts();
     if (
       this.lutAccountsToAdd().every((element) =>
