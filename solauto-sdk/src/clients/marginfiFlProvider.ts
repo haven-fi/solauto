@@ -1,24 +1,53 @@
-import { publicKey } from "@metaplex-foundation/umi";
+import {
+  AccountMeta,
+  createSignerFromKeypair,
+  publicKey,
+  Signer,
+  transactionBuilder,
+  TransactionBuilder,
+} from "@metaplex-foundation/umi";
 import { MARGINFI_ACCOUNTS } from "../constants";
-import { Bank, MarginfiAccount, safeFetchAllBank } from "../marginfi-sdk";
+import {
+  Bank,
+  lendingAccountBorrow,
+  lendingAccountCloseBalance,
+  lendingAccountEndFlashloan,
+  lendingAccountRepay,
+  lendingAccountStartFlashloan,
+  MarginfiAccount,
+  safeFetchAllBank,
+} from "../marginfi-sdk";
 import { FlProviderBase } from "./flProviderBase";
-import { PublicKey } from "@solana/web3.js";
+import { PublicKey, SYSVAR_INSTRUCTIONS_PUBKEY } from "@solana/web3.js";
 import {
   bytesToI80F48,
+  consoleLog,
   fetchTokenPrices,
+  findMarginfiAccounts,
   fromBaseUnit,
   getBankLiquidityAvailableBaseUnit,
   getEmptyMarginfiAccountsByAuthority,
+  getTokenAccount,
   safeGetPrice,
+  splTokenTransferUmiIx,
   tokenInfo,
 } from "../utils";
 import { TokenType } from "../generated";
 import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
+import { FlashLoanDetails } from "../types";
+
+interface IMFIAccount {
+  signer?: Signer;
+  accountPk: PublicKey;
+  accountData?: MarginfiAccount;
+}
 
 export class MarginfiFlProvider extends FlProviderBase {
   private supplyBankLiquiditySource!: Bank;
   private debtBankLiquiditySource!: Bank;
   private existingMarginfiAccounts!: MarginfiAccount[];
+
+  private iMfiAccounts: Map<TokenType, IMFIAccount> = new Map();
 
   async initialize() {
     await super.initialize();
@@ -27,9 +56,11 @@ export class MarginfiFlProvider extends FlProviderBase {
       this.umi,
       toWeb3JsPublicKey(this.signer.publicKey)
     );
+    this.setIntermediaryAccount(TokenType.Supply);
+    this.setIntermediaryAccount(TokenType.Debt);
   }
 
-  async setAvailableBanks() {
+  private async setAvailableBanks() {
     const availableBanks: string[] = [];
     const checkIfUsable = (group: string, mint: PublicKey) => {
       if (Object.keys(MARGINFI_ACCOUNTS[group]).includes(mint.toString())) {
@@ -72,8 +103,38 @@ export class MarginfiFlProvider extends FlProviderBase {
     this.debtBankLiquiditySource = debtBanks[0][1];
   }
 
-  private liquidityBank(liquiditySource: TokenType): Bank {
-    if (liquiditySource === TokenType.Supply) {
+  private setIntermediaryAccount(source: TokenType) {
+    const compatibleMarginfiAccounts = this.existingMarginfiAccounts.filter(
+      (x) => x.group.toString() == this.liquidityBank(source).group
+    );
+
+    const signer =
+      compatibleMarginfiAccounts.length > 0
+        ? undefined
+        : createSignerFromKeypair(this.umi, this.umi.eddsa.generateKeypair());
+    const accountPk =
+      compatibleMarginfiAccounts.length > 0
+        ? toWeb3JsPublicKey(compatibleMarginfiAccounts[0].publicKey)
+        : toWeb3JsPublicKey(signer!.publicKey);
+    const accountData =
+      compatibleMarginfiAccounts.length > 0
+        ? compatibleMarginfiAccounts[0]
+        : undefined;
+
+    if (signer) {
+      this.otherSigners.push(signer);
+    }
+
+    consoleLog("Intermediary MF account:", accountPk.toString());
+    this.iMfiAccounts.set(source, {
+      signer,
+      accountPk,
+      accountData,
+    });
+  }
+
+  private liquidityBank(source: TokenType): Bank {
+    if (source === TokenType.Supply) {
       return this.supplyBankLiquiditySource;
     } else {
       return this.debtBankLiquiditySource;
@@ -88,6 +149,191 @@ export class MarginfiFlProvider extends FlProviderBase {
     return bytesToI80F48(
       this.liquidityBank(source).config.interestRateConfig
         .protocolOriginationFee.value
+    );
+  }
+
+  flashBorrow(
+    flashLoan: FlashLoanDetails,
+    destinationTokenAccount: PublicKey
+  ): TransactionBuilder {
+    if (flashLoan.signerFlashLoan) {
+      if (
+        !destinationTokenAccount.equals(
+          getTokenAccount(
+            toWeb3JsPublicKey(this.signer.publicKey),
+            flashLoan.mint
+          )
+        )
+      ) {
+        return transactionBuilder().add(
+          splTokenTransferUmiIx(
+            this.signer,
+            getTokenAccount(
+              toWeb3JsPublicKey(this.signer.publicKey),
+              flashLoan.mint
+            ),
+            destinationTokenAccount,
+            toWeb3JsPublicKey(this.signer.publicKey),
+            flashLoan.baseUnitAmount
+          )
+        );
+      } else {
+        return transactionBuilder();
+      }
+    }
+
+    const bank = this.liquidityBank(flashLoan.liquiditySource);
+    const associatedBankAccs = findMarginfiAccounts(
+      toWeb3JsPublicKey(bank.publicKey)
+    );
+    const iMfiAccount = this.iMfiAccounts.get(flashLoan.liquiditySource)!;
+
+    return transactionBuilder()
+      .add(
+        lendingAccountStartFlashloan(this.umi, {
+          endIndex: 0, // We set this after building the transaction
+          ixsSysvar: publicKey(SYSVAR_INSTRUCTIONS_PUBKEY),
+          marginfiAccount: publicKey(iMfiAccount.accountPk),
+          signer: this.signer,
+        })
+      )
+      .add(
+        lendingAccountBorrow(this.umi, {
+          amount: flashLoan.baseUnitAmount,
+          bank: publicKey(bank),
+          bankLiquidityVault: publicKey(associatedBankAccs.liquidityVault),
+          bankLiquidityVaultAuthority: publicKey(
+            associatedBankAccs.vaultAuthority
+          ),
+          destinationTokenAccount: publicKey(destinationTokenAccount),
+          marginfiAccount: publicKey(iMfiAccount.accountPk),
+          marginfiGroup: this.liquidityBank(flashLoan.liquiditySource).group,
+          signer: this.signer,
+        })
+      );
+  }
+
+  flashRepay(flashLoan: FlashLoanDetails): TransactionBuilder {
+    if (flashLoan.signerFlashLoan) {
+      return transactionBuilder();
+    }
+
+    const bank = this.liquidityBank(flashLoan.liquiditySource);
+    const associatedBankAccs = findMarginfiAccounts(
+      toWeb3JsPublicKey(bank.publicKey)
+    );
+    const marginfiGroup = toWeb3JsPublicKey(
+      this.liquidityBank(flashLoan.liquiditySource).group
+    );
+    const iMfiAccount = this.iMfiAccounts.get(flashLoan.liquiditySource)!;
+
+    const remainingAccounts: AccountMeta[] = [];
+    let includedFlashLoanToken = false;
+
+    if (iMfiAccount?.accountData) {
+      iMfiAccount.accountData.lendingAccount.balances.forEach(async (x) => {
+        if (x.active) {
+          if (x.bankPk.toString() === bank.publicKey.toString()) {
+            includedFlashLoanToken = true;
+          }
+
+          // TODO: Don't dynamically pull from bank until Marginfi sorts out their price oracle issues.
+          // const bankData = await safeFetchBank(this.umi, publicKey(accounts.data.bank));
+          // const priceOracle = bankData!.config.oracleKeys[0];
+          const priceOracle = publicKey(
+            findMarginfiAccounts(toWeb3JsPublicKey(x.bankPk)).priceOracle
+          );
+
+          remainingAccounts.push(
+            ...[
+              {
+                pubkey: x.bankPk,
+                isSigner: false,
+                isWritable: false,
+              },
+              {
+                pubkey: priceOracle,
+                isSigner: false,
+                isWritable: false,
+              },
+            ]
+          );
+        }
+      });
+    }
+    if (!iMfiAccount.accountData || !includedFlashLoanToken) {
+      remainingAccounts.push(
+        ...[
+          {
+            pubkey: bank.publicKey,
+            isSigner: false,
+            isWritable: false,
+          },
+          {
+            pubkey: publicKey(associatedBankAccs.priceOracle),
+            isSigner: false,
+            isWritable: false,
+          },
+        ]
+      );
+    }
+
+    const banksRequiringBalanceClose = Array.from(
+      new Set([
+        bank.publicKey.toString(),
+        ...(iMfiAccount.accountData?.lendingAccount.balances ?? [])
+          .filter((x) => x.active && bytesToI80F48(x.liabilityShares.value) > 0)
+          .map((x) => x.bankPk.toString()),
+      ])
+    );
+
+    return transactionBuilder()
+      .add(
+        lendingAccountRepay(this.umi, {
+          amount: flashLoan.baseUnitAmount,
+          repayAll: null,
+          bank: bank.publicKey,
+          bankLiquidityVault: publicKey(associatedBankAccs.liquidityVault),
+          marginfiAccount: publicKey(iMfiAccount.accountPk),
+          marginfiGroup: publicKey(marginfiGroup),
+          signer: this.signer,
+          signerTokenAccount: publicKey(
+            getTokenAccount(
+              toWeb3JsPublicKey(this.signer.publicKey),
+              flashLoan.mint
+            )
+          ),
+        })
+      )
+      .add(
+        banksRequiringBalanceClose.map((x) =>
+          this.closeBalance(
+            iMfiAccount.accountPk,
+            new PublicKey(x),
+            marginfiGroup
+          )
+        )
+      )
+      .add(
+        lendingAccountEndFlashloan(this.umi, {
+          marginfiAccount: publicKey(iMfiAccount.accountPk),
+          signer: this.signer,
+        }).addRemainingAccounts(remainingAccounts)
+      );
+  }
+
+  closeBalance(
+    marginfiAccount: PublicKey,
+    bank: PublicKey,
+    marginfiGroup: PublicKey
+  ) {
+    return transactionBuilder().add(
+      lendingAccountCloseBalance(this.umi, {
+        signer: this.signer,
+        marginfiAccount: publicKey(marginfiAccount),
+        bank: publicKey(bank),
+        marginfiGroup: publicKey(marginfiGroup),
+      })
     );
   }
 }

@@ -214,7 +214,7 @@ pub struct RebalanceSettings {
     /// Target liq utilization rate. Only used/allowed if signed by the position authority.
     pub target_liq_utilization_rate_bps: Option<u16>,
     /// The in-amount to use in the token swap. Gets validated by the program.
-    pub swap_in_amount_base_unit: u64,
+    pub swap_in_amount_base_unit: Option<u64>,
     pub flash_loan_fee_bps: Option<u16>,
     pub swap_type: Option<SwapType>,
 }

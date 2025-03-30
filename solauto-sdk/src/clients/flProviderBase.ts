@@ -1,15 +1,11 @@
 import { Signer, TransactionBuilder, Umi } from "@metaplex-foundation/umi";
 import { PublicKey } from "@solana/web3.js";
-import {
-  FlashLoanDetails,
-  fromBaseUnit,
-  safeGetPrice,
-  tokenInfo,
-} from "../utils";
+import { fromBaseUnit, safeGetPrice, tokenInfo } from "../utils";
 import { TokenType } from "../generated";
+import { FlashLoanDetails } from "../types";
 
 export abstract class FlProviderBase {
-  public otherSigners = [];
+  public otherSigners: Signer[] = [];
 
   constructor(
     protected umi: Umi,
@@ -40,8 +36,8 @@ export abstract class FlProviderBase {
 
   abstract flFeeBps(source: TokenType): number;
   abstract flashBorrow(
-    flashLoanDetails: FlashLoanDetails,
+    flashLoan: FlashLoanDetails,
     destinationTokenAccount: PublicKey
   ): TransactionBuilder;
-  abstract flashRepay(flashLoanDetails: FlashLoanDetails): TransactionBuilder;
+  abstract flashRepay(flashLoan: FlashLoanDetails): TransactionBuilder;
 }

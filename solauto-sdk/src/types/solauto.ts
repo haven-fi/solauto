@@ -1,5 +1,5 @@
 import { PublicKey } from "@solana/web3.js";
-import { LendingPlatform, PositionType } from "../generated";
+import { LendingPlatform, PositionType, TokenType } from "../generated";
 import { TransactionBuilder } from "@metaplex-foundation/umi";
 
 export interface SolautoPositionDetails {
@@ -22,7 +22,9 @@ export enum PriorityFeeSetting {
   VeryHigh = "VeryHigh",
 }
 
-export const priorityFeeSettingValues = Object.values(PriorityFeeSetting) as PriorityFeeSetting[];
+export const priorityFeeSettingValues = Object.values(
+  PriorityFeeSetting
+) as PriorityFeeSetting[];
 
 export type RebalanceAction = "boost" | "repay" | "dca";
 
@@ -32,4 +34,12 @@ export interface TransactionItemInputs {
   tx: TransactionBuilder;
   lookupTableAddresses?: string[];
   orderPrio?: number;
+}
+
+export interface FlashLoanDetails {
+  liquiditySource: TokenType;
+  signerFlashLoan: boolean;
+  baseUnitAmount: bigint;
+  mint: PublicKey;
+  flFeeBps?: number;
 }

@@ -1540,7 +1540,9 @@
           },
           {
             "name": "swapInAmountBaseUnit",
-            "type": "u64"
+            "type": {
+              "option": "u64"
+            }
           },
           {
             "name": "flashLoanFeeBps",

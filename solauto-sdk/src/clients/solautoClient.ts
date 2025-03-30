@@ -30,10 +30,6 @@ import {
   getWrappedInstruction,
   splTokenTransferUmiIx,
 } from "../utils/solanaUtils";
-import {
-  FlashLoanDetails,
-  RebalanceValues,
-} from "../utils/solauto/rebalanceUtils";
 import { SOLAUTO_LUT } from "../constants/solautoConstants";
 import { ContextUpdates } from "../utils/solauto/generalUtils";
 import {
@@ -42,6 +38,9 @@ import {
 } from "./referralStateManager";
 import { QuoteResponse } from "@jup-ag/api";
 import { getOrCreatePositionEx, SolautoPositionEx } from "../solautoPosition";
+import { RebalanceValues } from "../rebalance";
+import { MarginfiFlProvider } from "./marginfiFlProvider";
+import { FlashLoanDetails } from "../types";
 
 export interface SolautoClientArgs extends ReferralStateManagerArgs {
   new?: boolean;
@@ -72,6 +71,7 @@ export abstract class SolautoClient extends ReferralStateManager {
 
   public authorityLutAddress?: PublicKey;
 
+  public marginfiFlProvider!: MarginfiFlProvider;
   public contextUpdates: ContextUpdates = new ContextUpdates();
 
   private signerSupplyBalance: bigint | undefined;
@@ -140,6 +140,15 @@ export abstract class SolautoClient extends ReferralStateManager {
       )
         ? toWeb3JsPublicKey(this.referralStateData.lookupTable)
         : undefined;
+
+    this.marginfiFlProvider = new MarginfiFlProvider(
+      this.umi,
+      this.signer,
+      this.solautoPosition.supplyMint(),
+      this.solautoPosition.debtMint()
+    );
+    await this.marginfiFlProvider.initialize();
+    this.otherSigners.push(...this.marginfiFlProvider.otherSigners);
 
     this.log("Position state: ", this.solautoPosition.state());
     this.log("Position settings: ", this.solautoPosition.settings());
@@ -547,13 +556,6 @@ export abstract class SolautoClient extends ReferralStateManager {
 
     return tx;
   }
-
-  abstract flashBorrow(
-    flashLoanDetails: FlashLoanDetails,
-    destinationTokenAccount: PublicKey
-  ): TransactionBuilder;
-
-  abstract flashRepay(flashLoanDetails: FlashLoanDetails): TransactionBuilder;
 
   abstract rebalance(
     rebalanceStep: "A" | "B",

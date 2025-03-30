@@ -73,7 +73,7 @@ export type MarginfiRebalanceInstructionData = {
   discriminator: number;
   rebalanceType: SolautoRebalanceType;
   targetLiqUtilizationRateBps: Option<number>;
-  swapInAmountBaseUnit: bigint;
+  swapInAmountBaseUnit: Option<bigint>;
   flashLoanFeeBps: Option<number>;
   swapType: Option<SwapType>;
 };
@@ -81,7 +81,7 @@ export type MarginfiRebalanceInstructionData = {
 export type MarginfiRebalanceInstructionDataArgs = {
   rebalanceType: SolautoRebalanceTypeArgs;
   targetLiqUtilizationRateBps: OptionOrNullable<number>;
-  swapInAmountBaseUnit: number | bigint;
+  swapInAmountBaseUnit: OptionOrNullable<number | bigint>;
   flashLoanFeeBps: OptionOrNullable<number>;
   swapType: OptionOrNullable<SwapTypeArgs>;
 };
@@ -100,7 +100,7 @@ export function getMarginfiRebalanceInstructionDataSerializer(): Serializer<
         ['discriminator', u8()],
         ['rebalanceType', getSolautoRebalanceTypeSerializer()],
         ['targetLiqUtilizationRateBps', option(u16())],
-        ['swapInAmountBaseUnit', u64()],
+        ['swapInAmountBaseUnit', option(u64())],
         ['flashLoanFeeBps', option(u16())],
         ['swapType', option(getSwapTypeSerializer())],
       ],

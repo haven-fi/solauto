@@ -1,17 +1,9 @@
-import { PublicKey } from "@solana/web3.js";
 import { SolautoClient } from "../clients";
-import { TransactionItemInputs } from "../types";
+import { FlashLoanDetails, TransactionItemInputs } from "../types";
 import { maxBoostToBps } from "../utils";
 import { getRebalanceValues, RebalanceValues } from "./rebalanceValues";
 import { SolautoFeesBps } from "./solautoFees";
-import { SolautoRebalanceType, TokenType } from "../generated";
-
-interface FlashLoanDetails {
-  liquiditySource: TokenType;
-  signerFlashLoan: boolean;
-  baseUnitAmount: bigint;
-  mint: PublicKey;
-}
+import { SolautoRebalanceType } from "../generated";
 
 interface RebalanceDetails {
   values: RebalanceValues;

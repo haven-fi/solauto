@@ -37,27 +37,20 @@ import {
   MARGINFI_PROGRAM_ID,
   MarginfiAccount,
   lendingAccountBorrow,
-  lendingAccountCloseBalance,
   lendingAccountDeposit,
-  lendingAccountEndFlashloan,
   lendingAccountRepay,
-  lendingAccountStartFlashloan,
   lendingAccountWithdraw,
   marginfiAccountInitialize,
   safeFetchAllMarginfiAccount,
 } from "../marginfi-sdk";
 import {
-  FlashLoanDetails,
-  RebalanceValues,
-} from "../utils/solauto/rebalanceUtils";
-import {
-  findMarginfiAccounts,
   getAllMarginfiAccountsByAuthority,
   marginfiAccountEmpty,
 } from "../utils/marginfiUtils";
-import { bytesToI80F48 } from "../utils/numberUtils";
 import { QuoteResponse } from "@jup-ag/api";
-import { consoleLog, splTokenTransferUmiIx } from "../utils";
+import { consoleLog } from "../utils";
+import { RebalanceValues } from "../rebalance";
+import { FlashLoanDetails } from "../types";
 
 export interface SolautoMarginfiClientArgs extends SolautoClientArgs {
   marginfiAccount?: PublicKey | Signer;
@@ -153,59 +146,7 @@ export class SolautoMarginfiClient extends SolautoClient {
     );
     this.debtPriceOracle = new PublicKey(this.marginfiDebtAccounts.priceOracle);
 
-    if (
-      !this.initializedFor ||
-      !this.initializedFor.equals(toWeb3JsPublicKey(this.signer.publicKey))
-    ) {
-      await this.setIntermediaryMarginfiDetails();
-      this.initializedFor = toWeb3JsPublicKey(this.signer.publicKey);
-    }
-
     consoleLog("Marginfi account:", this.marginfiAccountPk.toString());
-    consoleLog(
-      "Intermediary MF account:",
-      this.intermediaryMarginfiAccountPk.toString()
-    );
-  }
-
-  async setIntermediaryMarginfiDetails() {
-    const existingMarginfiAccounts = (
-      await getAllMarginfiAccountsByAuthority(
-        this.umi,
-        toWeb3JsPublicKey(this.signer.publicKey),
-        this.marginfiGroup
-      )
-    )
-      .filter((x) => !x.marginfiAccount.equals(this.marginfiAccountPk))
-      .sort((a, b) =>
-        a.marginfiAccount.toString().localeCompare(b.marginfiAccount.toString())
-      );
-    const compatibleMarginfiAccounts =
-      existingMarginfiAccounts.length > 0
-        ? (
-            await safeFetchAllMarginfiAccount(
-              this.umi,
-              existingMarginfiAccounts.map((x) => publicKey(x.marginfiAccount))
-            )
-          ).filter((x) => marginfiAccountEmpty(x))
-        : [];
-
-    this.intermediaryMarginfiAccountSigner =
-      compatibleMarginfiAccounts.length > 0
-        ? undefined
-        : createSignerFromKeypair(this.umi, this.umi.eddsa.generateKeypair());
-    this.intermediaryMarginfiAccountPk =
-      compatibleMarginfiAccounts.length > 0
-        ? toWeb3JsPublicKey(compatibleMarginfiAccounts[0].publicKey)
-        : toWeb3JsPublicKey(this.intermediaryMarginfiAccountSigner!.publicKey);
-    this.intermediaryMarginfiAccount =
-      compatibleMarginfiAccounts.length > 0
-        ? compatibleMarginfiAccounts[0]
-        : undefined;
-
-    if (this.intermediaryMarginfiAccountSigner) {
-      this.otherSigners.push(this.intermediaryMarginfiAccountSigner);
-    }
   }
 
   defaultLookupTables(): string[] {
@@ -454,6 +395,8 @@ export class SolautoMarginfiClient extends SolautoClient {
       (!outputIsSupply && rebalanceStep === "B") ||
       (!inputIsSupply && flashLoan !== undefined && rebalanceStep == "B");
 
+    const isFirstRebalance = false; // TODO
+
     return marginfiRebalance(this.umi, {
       signer: this.signer,
       marginfiProgram: publicKey(MARGINFI_PROGRAM_ID),
@@ -475,7 +418,7 @@ export class SolautoMarginfiClient extends SolautoClient {
           )
         : undefined,
       positionAuthority:
-        rebalanceValues.rebalanceAction === "dca"
+        rebalanceValues.tokenBalanceChange !== undefined
           ? publicKey(this.authority)
           : undefined,
       solautoPosition: publicKey(this.solautoPosition.publicKey),
@@ -517,181 +460,15 @@ export class SolautoMarginfiClient extends SolautoClient {
         : undefined,
       rebalanceType,
       targetLiqUtilizationRateBps: targetLiqUtilizationRateBps ?? null,
-      swapInAmountBaseUnit: parseInt(jupQuote.inAmount),
-      swapType: jupQuote.swapMode === "ExactOut" ? SwapType.ExactOut : null,
-      flashLoanFeeBps: 0, // TODO
+      swapInAmountBaseUnit: isFirstRebalance
+        ? parseInt(jupQuote.inAmount)
+        : null,
+      swapType:
+        jupQuote.swapMode === "ExactOut" && isFirstRebalance
+          ? SwapType.ExactOut
+          : null,
+      flashLoanFeeBps:
+        flashLoan?.flFeeBps && isFirstRebalance ? flashLoan.flFeeBps : null,
     });
-  }
-
-  flashBorrow(
-    flashLoanDetails: FlashLoanDetails,
-    destinationTokenAccount: PublicKey
-  ): TransactionBuilder {
-    if (flashLoanDetails.signerFlashLoan) {
-      if (
-        !destinationTokenAccount.equals(
-          getTokenAccount(
-            toWeb3JsPublicKey(this.signer.publicKey),
-            flashLoanDetails.mint
-          )
-        )
-      ) {
-        return transactionBuilder().add(
-          splTokenTransferUmiIx(
-            this.signer,
-            getTokenAccount(
-              toWeb3JsPublicKey(this.signer.publicKey),
-              flashLoanDetails.mint
-            ),
-            destinationTokenAccount,
-            toWeb3JsPublicKey(this.signer.publicKey),
-            flashLoanDetails.baseUnitAmount
-          )
-        );
-      } else {
-        return transactionBuilder();
-      }
-    }
-
-    const bank = flashLoanDetails.mint.equals(this.solautoPosition.supplyMint())
-      ? this.marginfiSupplyAccounts
-      : this.marginfiDebtAccounts;
-    return transactionBuilder()
-      .add(
-        lendingAccountStartFlashloan(this.umi, {
-          endIndex: 0, // We set this after building the transaction
-          ixsSysvar: publicKey(SYSVAR_INSTRUCTIONS_PUBKEY),
-          marginfiAccount: publicKey(this.intermediaryMarginfiAccountPk),
-          signer: this.signer,
-        })
-      )
-      .add(
-        lendingAccountBorrow(this.umi, {
-          amount: flashLoanDetails.baseUnitAmount,
-          bank: publicKey(bank.bank),
-          bankLiquidityVault: publicKey(bank.liquidityVault),
-          bankLiquidityVaultAuthority: publicKey(bank.vaultAuthority),
-          destinationTokenAccount: publicKey(destinationTokenAccount),
-          marginfiAccount: publicKey(this.intermediaryMarginfiAccountPk),
-          marginfiGroup: publicKey(this.marginfiGroup),
-          signer: this.signer,
-        })
-      );
-  }
-
-  flashRepay(flashLoanDetails: FlashLoanDetails): TransactionBuilder {
-    if (flashLoanDetails.signerFlashLoan) {
-      return transactionBuilder();
-    }
-
-    const accounts = flashLoanDetails.useDebtLiquidity
-      ? { data: this.marginfiDebtAccounts, oracle: this.debtPriceOracle }
-      : { data: this.marginfiSupplyAccounts, oracle: this.supplyPriceOracle };
-
-    const remainingAccounts: AccountMeta[] = [];
-    let includedFlashLoanToken = false;
-
-    if (this.intermediaryMarginfiAccount) {
-      this.intermediaryMarginfiAccount.lendingAccount.balances.forEach(
-        async (x) => {
-          if (x.active) {
-            if (x.bankPk === accounts.data.bank) {
-              includedFlashLoanToken = true;
-            }
-
-            // TODO: Don't dynamically pull from bank until Marginfi sorts out their price oracle issues.
-            // const bankData = await safeFetchBank(this.umi, publicKey(accounts.data.bank));
-            // const priceOracle = bankData!.config.oracleKeys[0];
-            const priceOracle = publicKey(
-              findMarginfiAccounts(toWeb3JsPublicKey(x.bankPk)).priceOracle
-            );
-
-            remainingAccounts.push(
-              ...[
-                {
-                  pubkey: x.bankPk,
-                  isSigner: false,
-                  isWritable: false,
-                },
-                {
-                  pubkey: priceOracle,
-                  isSigner: false,
-                  isWritable: false,
-                },
-              ]
-            );
-          }
-        }
-      );
-    }
-    if (!this.intermediaryMarginfiAccount || !includedFlashLoanToken) {
-      remainingAccounts.push(
-        ...[
-          {
-            pubkey: fromWeb3JsPublicKey(new PublicKey(accounts.data.bank)),
-            isSigner: false,
-            isWritable: false,
-          },
-          {
-            pubkey: fromWeb3JsPublicKey(new PublicKey(accounts.oracle)),
-            isSigner: false,
-            isWritable: false,
-          },
-        ]
-      );
-    }
-
-    const banksRequiringBalanceClose = Array.from(
-      new Set([
-        accounts.data.bank,
-        ...(this.intermediaryMarginfiAccount?.lendingAccount.balances ?? [])
-          .filter((x) => x.active && bytesToI80F48(x.liabilityShares.value) > 0)
-          .map((x) => x.bankPk.toString()),
-      ])
-    );
-
-    return transactionBuilder()
-      .add(
-        lendingAccountRepay(this.umi, {
-          amount: flashLoanDetails.baseUnitAmount,
-          repayAll: null,
-          bank: publicKey(accounts.data.bank),
-          bankLiquidityVault: publicKey(accounts.data.liquidityVault),
-          marginfiAccount: publicKey(this.intermediaryMarginfiAccountPk),
-          marginfiGroup: publicKey(this.marginfiGroup),
-          signer: this.signer,
-          signerTokenAccount: publicKey(
-            getTokenAccount(
-              toWeb3JsPublicKey(this.signer.publicKey),
-              flashLoanDetails.mint
-            )
-          ),
-        })
-      )
-      .add(
-        banksRequiringBalanceClose.map((x) =>
-          this.closeBalance(
-            this.intermediaryMarginfiAccountPk,
-            new PublicKey(x)
-          )
-        )
-      )
-      .add(
-        lendingAccountEndFlashloan(this.umi, {
-          marginfiAccount: publicKey(this.intermediaryMarginfiAccountPk),
-          signer: this.signer,
-        }).addRemainingAccounts(remainingAccounts)
-      );
-  }
-
-  closeBalance(marginfiAccount: PublicKey, bank: PublicKey) {
-    return transactionBuilder().add(
-      lendingAccountCloseBalance(this.umi, {
-        signer: this.signer,
-        marginfiAccount: publicKey(marginfiAccount),
-        bank: publicKey(bank),
-        marginfiGroup: publicKey(this.marginfiGroup),
-      })
-    );
   }
 }

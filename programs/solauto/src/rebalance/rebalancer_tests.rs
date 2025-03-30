@@ -424,10 +424,10 @@ mod tests {
         let rebalance_args = RebalanceSettings {
             rebalance_type: SolautoRebalanceType::Regular,
             target_liq_utilization_rate_bps: None,
-            swap_in_amount_base_unit: to_base_unit(
+            swap_in_amount_base_unit: Some(to_base_unit(
                 debt_adjustment.debt_adjustment_usd.div(DEBT_PRICE),
                 TEST_TOKEN_DECIMALS,
-            ),
+            )),
             flash_loan_fee_bps: None,
             swap_type: Some(SwapType::ExactIn),
         };
@@ -491,10 +491,10 @@ mod tests {
         let rebalance_args = RebalanceSettings {
             rebalance_type: SolautoRebalanceType::Regular,
             target_liq_utilization_rate_bps: None,
-            swap_in_amount_base_unit: to_base_unit(
+            swap_in_amount_base_unit: Some(to_base_unit(
                 debt_adjustment.debt_adjustment_usd.abs().div(SUPPLY_PRICE),
                 TEST_TOKEN_DECIMALS,
-            ),
+            )),
             flash_loan_fee_bps: None,
             swap_type: Some(SwapType::ExactIn),
         };
@@ -571,7 +571,7 @@ mod tests {
         let rebalance_args = RebalanceSettings {
             rebalance_type: SolautoRebalanceType::FLSwapThenRebalance,
             target_liq_utilization_rate_bps: None,
-            swap_in_amount_base_unit: flash_borrow,
+            swap_in_amount_base_unit: Some(flash_borrow),
             flash_loan_fee_bps: Some(FLASH_LOAN_FEE_BPS),
             swap_type: Some(SwapType::ExactIn),
         };
@@ -643,7 +643,7 @@ mod tests {
         let rebalance_args = RebalanceSettings {
             rebalance_type: SolautoRebalanceType::FLSwapThenRebalance,
             target_liq_utilization_rate_bps: Some(rebalance_to),
-            swap_in_amount_base_unit: flash_borrow,
+            swap_in_amount_base_unit: Some(flash_borrow),
             flash_loan_fee_bps: Some(FLASH_LOAN_FEE_BPS),
             swap_type: Some(SwapType::ExactIn),
         };
@@ -714,10 +714,10 @@ mod tests {
         let rebalance_args = RebalanceSettings {
             rebalance_type: SolautoRebalanceType::FLRebalanceThenSwap,
             target_liq_utilization_rate_bps: None,
-            swap_in_amount_base_unit: to_base_unit(
+            swap_in_amount_base_unit: Some(to_base_unit(
                 debt_adjustment.debt_adjustment_usd.abs().div(SUPPLY_PRICE),
                 TEST_TOKEN_DECIMALS,
-            ),
+            )),
             flash_loan_fee_bps: None,
             swap_type: Some(SwapType::ExactOut),
         };
@@ -793,10 +793,10 @@ mod tests {
         let rebalance_args = RebalanceSettings {
             rebalance_type: SolautoRebalanceType::Regular,
             target_liq_utilization_rate_bps: Some(rebalance_to),
-            swap_in_amount_base_unit: to_base_unit(
+            swap_in_amount_base_unit: Some(to_base_unit(
                 debt_adjustment.debt_adjustment_usd.div(DEBT_PRICE),
                 TEST_TOKEN_DECIMALS,
-            ),
+            )),
             flash_loan_fee_bps: None,
             swap_type: Some(SwapType::ExactIn),
         };

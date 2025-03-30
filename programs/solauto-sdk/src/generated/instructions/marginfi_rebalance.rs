@@ -292,7 +292,7 @@ impl MarginfiRebalanceInstructionData {
 pub struct MarginfiRebalanceInstructionArgs {
     pub rebalance_type: SolautoRebalanceType,
     pub target_liq_utilization_rate_bps: Option<u16>,
-    pub swap_in_amount_base_unit: u64,
+    pub swap_in_amount_base_unit: Option<u64>,
     pub flash_loan_fee_bps: Option<u16>,
     pub swap_type: Option<SwapType>,
 }
@@ -572,6 +572,7 @@ impl MarginfiRebalanceBuilder {
         self.target_liq_utilization_rate_bps = Some(target_liq_utilization_rate_bps);
         self
     }
+    /// `[optional argument]`
     #[inline(always)]
     pub fn swap_in_amount_base_unit(&mut self, swap_in_amount_base_unit: u64) -> &mut Self {
         self.swap_in_amount_base_unit = Some(swap_in_amount_base_unit);
@@ -650,10 +651,7 @@ impl MarginfiRebalanceBuilder {
                 .clone()
                 .expect("rebalance_type is not set"),
             target_liq_utilization_rate_bps: self.target_liq_utilization_rate_bps.clone(),
-            swap_in_amount_base_unit: self
-                .swap_in_amount_base_unit
-                .clone()
-                .expect("swap_in_amount_base_unit is not set"),
+            swap_in_amount_base_unit: self.swap_in_amount_base_unit.clone(),
             flash_loan_fee_bps: self.flash_loan_fee_bps.clone(),
             swap_type: self.swap_type.clone(),
         };
@@ -1405,6 +1403,7 @@ impl<'a, 'b> MarginfiRebalanceCpiBuilder<'a, 'b> {
         self.instruction.target_liq_utilization_rate_bps = Some(target_liq_utilization_rate_bps);
         self
     }
+    /// `[optional argument]`
     #[inline(always)]
     pub fn swap_in_amount_base_unit(&mut self, swap_in_amount_base_unit: u64) -> &mut Self {
         self.instruction.swap_in_amount_base_unit = Some(swap_in_amount_base_unit);
@@ -1473,11 +1472,7 @@ impl<'a, 'b> MarginfiRebalanceCpiBuilder<'a, 'b> {
                 .instruction
                 .target_liq_utilization_rate_bps
                 .clone(),
-            swap_in_amount_base_unit: self
-                .instruction
-                .swap_in_amount_base_unit
-                .clone()
-                .expect("swap_in_amount_base_unit is not set"),
+            swap_in_amount_base_unit: self.instruction.swap_in_amount_base_unit.clone(),
             flash_loan_fee_bps: self.instruction.flash_loan_fee_bps.clone(),
             swap_type: self.instruction.swap_type.clone(),
         };

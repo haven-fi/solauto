@@ -422,7 +422,7 @@ impl<'a> Rebalancer<'a> {
             let flash_loan_amount = self.rebalance_data().ixs.flash_loan_amount;
 
             let fl_repay_amount = if self.rebalance_data().ixs.swap_type == SwapType::ExactOut {
-                self.data.rebalance_args.swap_in_amount_base_unit
+                self.data.rebalance_args.swap_in_amount_base_unit.unwrap()
             } else {
                 check!(flash_loan_amount != 0, SolautoError::IncorrectInstructions);
                 let flash_loan_fee_bps = self.data.rebalance_args.flash_loan_fee_bps.unwrap_or(0);
@@ -480,7 +480,7 @@ impl<'a> Rebalancer<'a> {
     fn pre_swap_rebalance(&mut self) -> Result<RebalanceResult, ProgramError> {
         self.set_rebalance_data()?;
 
-        let amount_to_swap = self.data.rebalance_args.swap_in_amount_base_unit;
+        let amount_to_swap = self.data.rebalance_args.swap_in_amount_base_unit.unwrap();
         let additional_amount_to_swap = self.get_additional_amount_before_swap();
 
         if self.rebalance_data().ixs.swap_type == SwapType::ExactOut {
