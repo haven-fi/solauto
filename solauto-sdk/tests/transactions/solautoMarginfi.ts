@@ -1,7 +1,6 @@
 import { describe, it } from "mocha";
 import { setupTest } from "../shared";
 import { SolautoMarginfiClient } from "../../src/clients/solautoMarginfiClient";
-import { SolautoSettingsParametersInpArgs } from "../../src/generated";
 import { NATIVE_MINT } from "@solana/spl-token";
 import {
   TransactionItem,
@@ -23,11 +22,11 @@ describe("Solauto Marginfi tests", async () => {
   const positionId = 1;
 
   it("open - deposit - borrow - rebalance to 0 - withdraw - close", async () => {
-    const client = new SolautoMarginfiClient(
-      buildIronforgeApiUrl(process.env.IRONFORGE_API_KEY!),
-      true,
-      testProgram ? SOLAUTO_TEST_PROGRAM : SOLAUTO_PROD_PROGRAM
-    );
+    const client = new SolautoMarginfiClient({
+      rpcUrl: buildIronforgeApiUrl(process.env.IRONFORGE_API_KEY!),
+      showLogs: true,
+      programId: testProgram ? SOLAUTO_TEST_PROGRAM : SOLAUTO_PROD_PROGRAM,
+    });
 
     const supply = NATIVE_MINT;
     const supplyDecimals = 6;

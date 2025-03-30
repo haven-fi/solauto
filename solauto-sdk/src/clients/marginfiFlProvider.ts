@@ -1,6 +1,6 @@
 import { publicKey } from "@metaplex-foundation/umi";
 import { MARGINFI_ACCOUNTS } from "../constants";
-import { Bank, safeFetchAllBank } from "../marginfi-sdk";
+import { Bank, MarginfiAccount, safeFetchAllBank } from "../marginfi-sdk";
 import { FlProviderBase } from "./flProviderBase";
 import { PublicKey } from "@solana/web3.js";
 import {
@@ -8,6 +8,7 @@ import {
   fetchTokenPrices,
   fromBaseUnit,
   getBankLiquidityAvailableBaseUnit,
+  getEmptyMarginfiAccountsByAuthority,
   safeGetPrice,
   tokenInfo,
 } from "../utils";
@@ -17,10 +18,15 @@ import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 export class MarginfiFlProvider extends FlProviderBase {
   private supplyBankLiquiditySource!: Bank;
   private debtBankLiquiditySource!: Bank;
+  private existingMarginfiAccounts!: MarginfiAccount[];
 
   async initialize() {
     await super.initialize();
     await this.setAvailableBanks();
+    this.existingMarginfiAccounts = await getEmptyMarginfiAccountsByAuthority(
+      this.umi,
+      toWeb3JsPublicKey(this.signer.publicKey)
+    );
   }
 
   async setAvailableBanks() {

@@ -39,7 +39,6 @@ export abstract class FlProviderBase {
   }
 
   abstract flFeeBps(source: TokenType): number;
-
   abstract flashBorrow(
     flashLoanDetails: FlashLoanDetails,
     destinationTokenAccount: PublicKey

@@ -19,8 +19,6 @@
     "@metaplex-foundation/umi-bundle-defaults": "^0.9.1",
     "@metaplex-foundation/umi-signer-wallet-adapters": "^0.9.1",
     "@metaplex-foundation/umi-web3js-adapters": "^0.9.1",
-    "@mrgnlabs/marginfi-client-v2": "^4.0.0",
-    "@mrgnlabs/mrgn-common": "^1.8.0",
     "@solana/spl-token": "^0.4.0",
     "@solana/web3.js": "=1.95.8",
     "@switchboard-xyz/on-demand": "=1.2.51",

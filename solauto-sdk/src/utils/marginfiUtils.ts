@@ -3,6 +3,7 @@ import { publicKey, Umi } from "@metaplex-foundation/umi";
 import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 import {
   Bank,
+  deserializeMarginfiAccount,
   getMarginfiAccountSize,
   MARGINFI_PROGRAM_ID,
   MarginfiAccount,
@@ -141,6 +142,40 @@ export async function getMarginfiMaxLtvAndLiqThreshold(
     debt.bank,
     supplyPrice
   );
+}
+
+export async function getEmptyMarginfiAccountsByAuthority(
+  umi: Umi,
+  authority: PublicKey
+) {
+  const marginfiAccounts = await umi.rpc.getProgramAccounts(
+    MARGINFI_PROGRAM_ID,
+    {
+      commitment: "confirmed",
+      filters: [
+        {
+          dataSize: getMarginfiAccountSize(),
+        },
+        {
+          memcmp: {
+            bytes: new Uint8Array(authority.toBuffer()),
+            offset: 8 + 32, // Anchor account discriminator + group pubkey
+          },
+        },
+        {
+          // First balance is not active
+          memcmp: {
+            bytes: new Uint8Array([0]),
+            offset: 8 + 32 + 32,
+          },
+        },
+      ],
+    }
+  );
+
+  return marginfiAccounts
+    .map((x) => deserializeMarginfiAccount(x))
+    .filter((x) => marginfiAccountEmpty(x));
 }
 
 export async function getAllMarginfiAccountsByAuthority(
