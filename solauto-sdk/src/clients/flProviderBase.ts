@@ -16,7 +16,7 @@ export abstract class FlProviderBase {
 
   async initialize() {}
 
-  lutAccountsToAdd() {
+  lutAccountsToAdd(): PublicKey[] {
     return [];
   }
 

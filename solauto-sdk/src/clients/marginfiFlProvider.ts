@@ -56,8 +56,15 @@ export class MarginfiFlProvider extends FlProviderBase {
       this.umi,
       toWeb3JsPublicKey(this.signer.publicKey)
     );
-    this.setIntermediaryAccount(TokenType.Supply);
-    this.setIntermediaryAccount(TokenType.Debt);
+    if (
+      this.liquidityBank(TokenType.Supply).group.toString() !==
+      this.liquidityBank(TokenType.Debt).group.toString()
+    ) {
+      this.setIntermediaryAccount([TokenType.Supply]);
+      this.setIntermediaryAccount([TokenType.Debt]);
+    } else {
+      this.setIntermediaryAccount([TokenType.Supply, TokenType.Debt]);
+    }
   }
 
   private async setAvailableBanks() {
@@ -103,9 +110,9 @@ export class MarginfiFlProvider extends FlProviderBase {
     this.debtBankLiquiditySource = debtBanks[0][1];
   }
 
-  private setIntermediaryAccount(source: TokenType) {
+  private setIntermediaryAccount(sources: TokenType[]) {
     const compatibleMarginfiAccounts = this.existingMarginfiAccounts.filter(
-      (x) => x.group.toString() == this.liquidityBank(source).group
+      (x) => x.group.toString() == this.liquidityBank(sources[0]).group
     );
 
     const signer =
@@ -126,11 +133,22 @@ export class MarginfiFlProvider extends FlProviderBase {
     }
 
     consoleLog("Intermediary MF account:", accountPk.toString());
-    this.iMfiAccounts.set(source, {
-      signer,
-      accountPk,
-      accountData,
-    });
+    for (const s of sources) {
+      this.iMfiAccounts.set(s, {
+        signer,
+        accountPk,
+        accountData,
+      });
+    }
+  }
+
+  public lutAccountsToAdd(): PublicKey[] {
+    return Array.from(
+      new Set([
+        this.iMfiAccounts.get(TokenType.Supply)!.accountPk.toString(),
+        this.iMfiAccounts.get(TokenType.Debt)!.accountPk.toString(),
+      ])
+    ).map((x) => new PublicKey(x));
   }
 
   private liquidityBank(source: TokenType): Bank {
