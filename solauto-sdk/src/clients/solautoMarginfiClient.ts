@@ -1,15 +1,10 @@
-import {
-  fromWeb3JsPublicKey,
-  toWeb3JsPublicKey,
-} from "@metaplex-foundation/umi-web3js-adapters";
+import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 import {
   Signer,
   TransactionBuilder,
   publicKey,
   PublicKey as UmiPublicKey,
-  transactionBuilder,
   createSignerFromKeypair,
-  AccountMeta,
 } from "@metaplex-foundation/umi";
 import { PublicKey, SYSVAR_INSTRUCTIONS_PUBKEY } from "@solana/web3.js";
 import { SolautoClient, SolautoClientArgs } from "./solautoClient";
@@ -35,7 +30,6 @@ import {
 import { getTokenAccount } from "../utils/accountUtils";
 import {
   MARGINFI_PROGRAM_ID,
-  MarginfiAccount,
   lendingAccountBorrow,
   lendingAccountDeposit,
   lendingAccountRepay,

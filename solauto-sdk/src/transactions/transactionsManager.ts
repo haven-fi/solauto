@@ -434,6 +434,7 @@ export class TransactionsManager {
       150,
       this.errorsToThrow
     );
+    await this.txHandler.refetchReferralState();
   }
 
   public async clientSend(

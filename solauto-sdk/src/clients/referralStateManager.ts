@@ -58,11 +58,7 @@ export class ReferralStateManager extends TxHandler {
         this.programId
       );
 
-    this.referralStateData = await safeFetchReferralState(
-      this.umi,
-      publicKey(this.referralState),
-      { commitment: "confirmed" }
-    );
+    await this.refetchReferralState();
     this.authority = this.referralStateData?.authority
       ? toWeb3JsPublicKey(this.referralStateData.authority)
       : (args.authority ?? toWeb3JsPublicKey(this.signer.publicKey));
@@ -81,6 +77,14 @@ export class ReferralStateManager extends TxHandler {
       )
       ? [SOLAUTO_LUT, this.referralStateData?.lookupTable.toString()]
       : [SOLAUTO_LUT];
+  }
+
+  async refetchReferralState() {
+    this.referralStateData = await safeFetchReferralState(
+      this.umi,
+      publicKey(this.referralState),
+      { commitment: "confirmed" }
+    );
   }
 
   setReferredBy(referredBy?: PublicKey) {

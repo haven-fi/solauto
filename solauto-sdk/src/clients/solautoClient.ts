@@ -41,8 +41,6 @@ import { getOrCreatePositionEx, SolautoPositionEx } from "../solautoPosition";
 import { RebalanceValues } from "../rebalance";
 import { MarginfiFlProvider } from "./marginfiFlProvider";
 import { FlashLoanDetails } from "../types";
-import { rpcAccountCreated } from "../utils";
-import { marginfiAccountInitialize } from "../marginfi-sdk";
 
 export interface SolautoClientArgs extends ReferralStateManagerArgs {
   new?: boolean;
@@ -267,7 +265,9 @@ export abstract class SolautoClient extends ReferralStateManager {
           recentSlot: await this.umi.rpc.getSlot({ commitment: "finalized" }),
         });
       this.authorityLutAddress = lookupTableAddress;
-      tx = tx.add(getWrappedInstruction(this.signer, createLookupTableInst));
+      tx = tx
+        .add(getWrappedInstruction(this.signer, createLookupTableInst))
+        .add(this.updateReferralStatesIx(undefined, this.authorityLutAddress));
     }
 
     const accountsToAdd: PublicKey[] = this.lutAccountsToAdd().filter(
