@@ -24,7 +24,6 @@ import {
   PositionType,
   RebalanceDirection,
   SolautoActionArgs,
-  SolautoRebalanceType,
   SolautoRebalanceTypeArgs,
   SolautoSettingsParametersInpArgs,
   SwapType,
@@ -525,12 +524,18 @@ export class SolautoMarginfiClient extends SolautoClient {
   }
 
   flashBorrow(
-    rebalanceType: SolautoRebalanceType,
     flashLoanDetails: FlashLoanDetails,
     destinationTokenAccount: PublicKey
   ): TransactionBuilder {
     if (flashLoanDetails.signerFlashLoan) {
-      if (rebalanceType === SolautoRebalanceType.FLRebalanceThenSwap) {
+      if (
+        !destinationTokenAccount.equals(
+          getTokenAccount(
+            toWeb3JsPublicKey(this.signer.publicKey),
+            flashLoanDetails.mint
+          )
+        )
+      ) {
         return transactionBuilder().add(
           splTokenTransferUmiIx(
             this.signer,

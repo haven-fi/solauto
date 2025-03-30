@@ -1,7 +1,23 @@
+import { PublicKey } from "@solana/web3.js";
 import { SolautoClient } from "../clients";
 import { TransactionItemInputs } from "../types";
-import { getRebalanceValues } from "./rebalanceValues";
+import { maxBoostToBps } from "../utils";
+import { getRebalanceValues, RebalanceValues } from "./rebalanceValues";
 import { SolautoFeesBps } from "./solautoFees";
+import { SolautoRebalanceType, TokenType } from "../generated";
+
+interface FlashLoanDetails {
+  liquiditySource: TokenType;
+  signerFlashLoan: boolean;
+  baseUnitAmount: bigint;
+  mint: PublicKey;
+}
+
+interface RebalanceDetails {
+  values: RebalanceValues;
+  flashLoan?: FlashLoanDetails;
+  rebalanceType: SolautoRebalanceType;
+}
 
 export class RebalanceTxBuilder {
   constructor(
@@ -19,7 +35,7 @@ export class RebalanceTxBuilder {
     );
   }
 
-  private rebalanceValues(flFee?: number) {
+  private getRebalanceValues(flFee?: number) {
     return getRebalanceValues(
       this.client.solautoPosition,
       new SolautoFeesBps(
@@ -32,14 +48,38 @@ export class RebalanceTxBuilder {
     );
   }
 
+  private signerShouldFlashLoan(values: RebalanceValues, attemptNum: number) {}
+
+  private getRebalanceDetails(attemptNum: number): RebalanceDetails {
+    let values = this.getRebalanceValues();
+
+    const maxBoostTo = maxBoostToBps(
+      this.client.solautoPosition.state().maxLtvBps,
+      this.client.solautoPosition.state().liqThresholdBps
+    );
+
+    if (values.intermediaryLiqUtilizationRateBps > maxBoostTo) {
+      const signerFlashLoan = this.signerShouldFlashLoan(values, attemptNum);
+      const flFeeBps = 0; // TODO
+      values = this.getRebalanceValues(flFeeBps);
+    } else {
+      return {
+        values,
+        rebalanceType: SolautoRebalanceType.Regular,
+      };
+    }
+  }
+
   private assembleTransaction() {}
 
   public async buildRebalanceTx(
-    attemptNum?: number
+    attemptNum: number
   ): Promise<TransactionItemInputs | undefined> {
     if (!this.shouldProceedWithRebalance()) {
       this.client.log("Not eligible for a rebalance");
       return undefined;
     }
+
+    const rebalanceDetails = this.getRebalanceDetails(attemptNum);
   }
 }

@@ -6,6 +6,7 @@ import {
   PositionState,
   SolautoPosition,
   SolautoSettingsParameters,
+  TokenType,
 } from "../generated";
 import { Umi } from "@metaplex-foundation/umi";
 import {
@@ -130,10 +131,6 @@ export abstract class SolautoPositionEx {
     );
   }
 
-  abstract supplyLiquidityDepositable(): bigint;
-  abstract supplyLiquidityAvailable(): bigint;
-  abstract debtLiquidityAvailable(): bigint;
-
   public netWorth() {
     return calcNetWorth(this.state());
   }
@@ -165,6 +162,10 @@ export abstract class SolautoPositionEx {
   public debtLiquidityUsdAvailable() {
     return debtLiquidityUsdAvailable(this.state());
   }
+
+  abstract supplyLiquidityDepositable(): bigint;
+  abstract supplyLiquidityAvailable(): bigint;
+  abstract debtLiquidityAvailable(): bigint;
 
   public sufficientLiquidityToBoost() {
     const limitsUpToDate =

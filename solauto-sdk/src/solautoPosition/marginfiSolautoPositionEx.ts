@@ -4,10 +4,12 @@ import { Bank, fetchMarginfiAccount, MarginfiAccount } from "../marginfi-sdk";
 import { publicKey } from "@metaplex-foundation/umi";
 import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 import {
+  bytesToI80F48,
   getBankLiquidityAvailableBaseUnit,
   getMarginfiAccountPositionState,
 } from "../utils";
 import { DEFAULT_MARGINFI_GROUP } from "../constants";
+import { TokenType } from "../generated";
 
 export class MarginfiSolautoPositionEx extends SolautoPositionEx {
   private marginfiAccountData: MarginfiAccount | null = null;

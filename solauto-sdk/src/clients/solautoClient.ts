@@ -13,7 +13,6 @@ import {
   DCASettingsInpArgs,
   LendingPlatform,
   SolautoActionArgs,
-  SolautoRebalanceType,
   SolautoRebalanceTypeArgs,
   SolautoSettingsParametersInpArgs,
   TokenType,
@@ -550,7 +549,6 @@ export abstract class SolautoClient extends ReferralStateManager {
   }
 
   abstract flashBorrow(
-    rebalanceType: SolautoRebalanceType,
     flashLoanDetails: FlashLoanDetails,
     destinationTokenAccount: PublicKey
   ): TransactionBuilder;
