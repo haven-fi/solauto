@@ -44,11 +44,11 @@ interface IMFIAccount {
 }
 
 export class MarginfiFlProvider extends FlProviderBase {
-  public supplyBankLiquiditySource!: Bank;
-  public debtBankLiquiditySource!: Bank;
   private existingMarginfiAccounts!: MarginfiAccount[];
-
-  public iMfiAccounts: Map<TokenType, IMFIAccount> = new Map();
+  private supplyBankLiquiditySource!: Bank;
+  private debtBankLiquiditySource!: Bank;
+  private supplyImfiAccount!: IMFIAccount;
+  private debtImfiAccount!: IMFIAccount;
 
   async initialize() {
     await super.initialize();
@@ -135,17 +135,22 @@ export class MarginfiFlProvider extends FlProviderBase {
 
     consoleLog("Intermediary MF account:", accountPk.toString());
     for (const s of sources) {
-      this.iMfiAccounts.set(s, {
+      const data: IMFIAccount = {
         signer,
         accountPk,
         accountData,
-      });
+      };
+      if (s === TokenType.Supply) {
+        this.supplyImfiAccount = data;
+      } else {
+        this.debtImfiAccount = data;
+      }
     }
   }
 
   public async initializeIMfiAccounts(): Promise<TransactionBuilder> {
-    const supplyImfiAccount = this.iMfiAccounts.get(TokenType.Supply)!;
-    const debtImfiAccount = this.iMfiAccounts.get(TokenType.Debt)!;
+    const supplyImfiAccount = this.iMfiAccount(TokenType.Supply);
+    const debtImfiAccount = this.iMfiAccount(TokenType.Debt);
 
     const [supplyImfiRpcAccount, debtImfiRpcAccount] =
       await this.umi.rpc.getAccounts([
@@ -189,19 +194,23 @@ export class MarginfiFlProvider extends FlProviderBase {
       ...super.lutAccountsToAdd(),
       ...Array.from(
         new Set([
-          this.iMfiAccounts.get(TokenType.Supply)!.accountPk.toString(),
-          this.iMfiAccounts.get(TokenType.Debt)!.accountPk.toString(),
+          this.iMfiAccount(TokenType.Supply),
+          this.iMfiAccount(TokenType.Debt),
         ])
       ).map((x) => new PublicKey(x)),
     ];
   }
 
   private liquidityBank(source: TokenType): Bank {
-    if (source === TokenType.Supply) {
-      return this.supplyBankLiquiditySource;
-    } else {
-      return this.debtBankLiquiditySource;
-    }
+    return source === TokenType.Supply
+      ? this.supplyBankLiquiditySource
+      : this.debtBankLiquiditySource;
+  }
+
+  private iMfiAccount(source: TokenType): IMFIAccount {
+    return source === TokenType.Supply
+      ? this.supplyImfiAccount
+      : this.debtImfiAccount;
   }
 
   liquidityAvailable(source: TokenType): bigint {
@@ -227,7 +236,7 @@ export class MarginfiFlProvider extends FlProviderBase {
     const associatedBankAccs = findMarginfiAccounts(
       toWeb3JsPublicKey(bank.publicKey)
     );
-    const iMfiAccount = this.iMfiAccounts.get(flashLoan.liquiditySource)!;
+    const iMfiAccount = this.iMfiAccount(flashLoan.liquiditySource)!;
 
     return transactionBuilder()
       .add(
@@ -266,7 +275,7 @@ export class MarginfiFlProvider extends FlProviderBase {
     const marginfiGroup = toWeb3JsPublicKey(
       this.liquidityBank(flashLoan.liquiditySource).group
     );
-    const iMfiAccount = this.iMfiAccounts.get(flashLoan.liquiditySource)!;
+    const iMfiAccount = this.iMfiAccount(flashLoan.liquiditySource)!;
 
     const remainingAccounts: AccountMeta[] = [];
     let includedFlashLoanToken = false;
