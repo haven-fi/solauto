@@ -1,8 +1,20 @@
-import { Signer, TransactionBuilder, Umi } from "@metaplex-foundation/umi";
+import {
+  Signer,
+  transactionBuilder,
+  TransactionBuilder,
+  Umi,
+} from "@metaplex-foundation/umi";
 import { PublicKey } from "@solana/web3.js";
-import { fromBaseUnit, safeGetPrice, tokenInfo } from "../utils";
+import {
+  fromBaseUnit,
+  getTokenAccount,
+  safeGetPrice,
+  splTokenTransferUmiIx,
+  tokenInfo,
+} from "../utils";
 import { TokenType } from "../generated";
 import { FlashLoanDetails } from "../types";
+import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 
 export abstract class FlProviderBase {
   public otherSigners: Signer[] = [];
@@ -37,7 +49,36 @@ export abstract class FlProviderBase {
   abstract flFeeBps(source: TokenType): number;
   abstract flashBorrow(
     flashLoan: FlashLoanDetails,
-    destinationTokenAccount: PublicKey
+    destTokenAccount: PublicKey
   ): TransactionBuilder;
   abstract flashRepay(flashLoan: FlashLoanDetails): TransactionBuilder;
+
+  protected signerFlashBorrow(
+    flashLoan: FlashLoanDetails,
+    destTokenAccount: PublicKey
+  ): TransactionBuilder {
+    if (
+      !destTokenAccount.equals(
+        getTokenAccount(
+          toWeb3JsPublicKey(this.signer.publicKey),
+          flashLoan.mint
+        )
+      )
+    ) {
+      return transactionBuilder().add(
+        splTokenTransferUmiIx(
+          this.signer,
+          getTokenAccount(
+            toWeb3JsPublicKey(this.signer.publicKey),
+            flashLoan.mint
+          ),
+          destTokenAccount,
+          toWeb3JsPublicKey(this.signer.publicKey),
+          flashLoan.baseUnitAmount
+        )
+      );
+    } else {
+      return transactionBuilder();
+    }
+  }
 }

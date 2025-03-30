@@ -60,8 +60,6 @@ export interface SolautoMarginfiClientArgs extends SolautoClientArgs {
 export class SolautoMarginfiClient extends SolautoClient {
   public lendingPlatform = LendingPlatform.Marginfi;
 
-  private initializedFor?: PublicKey;
-
   public marginfiProgram!: PublicKey;
 
   public marginfiAccount!: PublicKey | Signer;
@@ -73,11 +71,6 @@ export class SolautoMarginfiClient extends SolautoClient {
 
   public supplyPriceOracle!: PublicKey;
   public debtPriceOracle!: PublicKey;
-
-  // For flash loans
-  public intermediaryMarginfiAccountSigner?: Signer;
-  public intermediaryMarginfiAccountPk!: PublicKey;
-  public intermediaryMarginfiAccount?: MarginfiAccount;
 
   async initialize(args: SolautoMarginfiClientArgs) {
     await super.initialize(args);
@@ -154,13 +147,7 @@ export class SolautoMarginfiClient extends SolautoClient {
   }
 
   lutAccountsToAdd(): PublicKey[] {
-    return [
-      ...super.lutAccountsToAdd(),
-      this.marginfiAccountPk,
-      ...(this.signer.publicKey.toString() === this.authority.toString()
-        ? [this.intermediaryMarginfiAccountPk]
-        : []),
-    ];
+    return [...super.lutAccountsToAdd(), this.marginfiAccountPk];
   }
 
   marginfiAccountInitialize(marginfiAccount: Signer): TransactionBuilder {

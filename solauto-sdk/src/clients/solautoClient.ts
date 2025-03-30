@@ -41,6 +41,8 @@ import { getOrCreatePositionEx, SolautoPositionEx } from "../solautoPosition";
 import { RebalanceValues } from "../rebalance";
 import { MarginfiFlProvider } from "./marginfiFlProvider";
 import { FlashLoanDetails } from "../types";
+import { rpcAccountCreated } from "../utils";
+import { marginfiAccountInitialize } from "../marginfi-sdk";
 
 export interface SolautoClientArgs extends ReferralStateManagerArgs {
   new?: boolean;
@@ -278,19 +280,19 @@ export abstract class SolautoClient extends ReferralStateManager {
       return undefined;
     }
 
-    tx = tx.add(
-      getWrappedInstruction(
-        this.signer,
-        AddressLookupTableProgram.extendLookupTable({
-          payer: toWeb3JsPublicKey(this.signer.publicKey),
-          authority: this.authority,
-          lookupTable: this.authorityLutAddress,
-          addresses: accountsToAdd,
-        })
+    tx = tx
+      .add(
+        getWrappedInstruction(
+          this.signer,
+          AddressLookupTableProgram.extendLookupTable({
+            payer: toWeb3JsPublicKey(this.signer.publicKey),
+            authority: this.authority,
+            lookupTable: this.authorityLutAddress,
+            addresses: accountsToAdd,
+          })
+        )
       )
-    );
-
-    // TODO: initialize intermediary marginfi accounts from this.marginfiFlProvider where necessary and remove the initialization of it in rebalanceChoresBefore function
+      .add(await this.marginfiFlProvider.initializeIMfiAccounts());
 
     this.log("Requires authority LUT update...");
     return {

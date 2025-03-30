@@ -15,6 +15,7 @@ import {
   lendingAccountRepay,
   lendingAccountStartFlashloan,
   MarginfiAccount,
+  marginfiAccountInitialize,
   safeFetchAllBank,
 } from "../marginfi-sdk";
 import { FlProviderBase } from "./flProviderBase";
@@ -28,6 +29,7 @@ import {
   getBankLiquidityAvailableBaseUnit,
   getEmptyMarginfiAccountsByAuthority,
   getTokenAccount,
+  rpcAccountCreated,
   safeGetPrice,
   splTokenTransferUmiIx,
   tokenInfo,
@@ -43,11 +45,11 @@ interface IMFIAccount {
 }
 
 export class MarginfiFlProvider extends FlProviderBase {
-  private supplyBankLiquiditySource!: Bank;
-  private debtBankLiquiditySource!: Bank;
+  public supplyBankLiquiditySource!: Bank;
+  public debtBankLiquiditySource!: Bank;
   private existingMarginfiAccounts!: MarginfiAccount[];
 
-  private iMfiAccounts: Map<TokenType, IMFIAccount> = new Map();
+  public iMfiAccounts: Map<TokenType, IMFIAccount> = new Map();
 
   async initialize() {
     await super.initialize();
@@ -142,13 +144,57 @@ export class MarginfiFlProvider extends FlProviderBase {
     }
   }
 
+  public async initializeIMfiAccounts(): Promise<TransactionBuilder> {
+    const supplyImfiAccount = this.iMfiAccounts.get(TokenType.Supply)!;
+    const debtImfiAccount = this.iMfiAccounts.get(TokenType.Debt)!;
+
+    const [supplyImfiRpcAccount, debtImfiRpcAccount] =
+      await this.umi.rpc.getAccounts([
+        publicKey(supplyImfiAccount.accountPk),
+        publicKey(debtImfiAccount.accountPk),
+      ]);
+
+    let tx = transactionBuilder();
+
+    if (!rpcAccountCreated(supplyImfiRpcAccount)) {
+      tx = tx.add(
+        marginfiAccountInitialize(this.umi, {
+          marginfiAccount: supplyImfiAccount.signer!,
+          marginfiGroup: this.supplyBankLiquiditySource.group,
+          authority: this.signer,
+          feePayer: this.signer,
+        })
+      );
+    }
+
+    if (
+      supplyImfiAccount.accountPk.toString() !==
+        debtImfiAccount.accountPk.toString() &&
+      !rpcAccountCreated(debtImfiRpcAccount)
+    ) {
+      tx = tx.add(
+        marginfiAccountInitialize(this.umi, {
+          marginfiAccount: debtImfiAccount.signer!,
+          marginfiGroup: this.debtBankLiquiditySource.group,
+          authority: this.signer,
+          feePayer: this.signer,
+        })
+      );
+    }
+
+    return tx;
+  }
+
   public lutAccountsToAdd(): PublicKey[] {
-    return Array.from(
-      new Set([
-        this.iMfiAccounts.get(TokenType.Supply)!.accountPk.toString(),
-        this.iMfiAccounts.get(TokenType.Debt)!.accountPk.toString(),
-      ])
-    ).map((x) => new PublicKey(x));
+    return [
+      ...super.lutAccountsToAdd(),
+      ...Array.from(
+        new Set([
+          this.iMfiAccounts.get(TokenType.Supply)!.accountPk.toString(),
+          this.iMfiAccounts.get(TokenType.Debt)!.accountPk.toString(),
+        ])
+      ).map((x) => new PublicKey(x)),
+    ];
   }
 
   private liquidityBank(source: TokenType): Bank {
@@ -172,32 +218,10 @@ export class MarginfiFlProvider extends FlProviderBase {
 
   flashBorrow(
     flashLoan: FlashLoanDetails,
-    destinationTokenAccount: PublicKey
+    destTokenAccount: PublicKey
   ): TransactionBuilder {
     if (flashLoan.signerFlashLoan) {
-      if (
-        !destinationTokenAccount.equals(
-          getTokenAccount(
-            toWeb3JsPublicKey(this.signer.publicKey),
-            flashLoan.mint
-          )
-        )
-      ) {
-        return transactionBuilder().add(
-          splTokenTransferUmiIx(
-            this.signer,
-            getTokenAccount(
-              toWeb3JsPublicKey(this.signer.publicKey),
-              flashLoan.mint
-            ),
-            destinationTokenAccount,
-            toWeb3JsPublicKey(this.signer.publicKey),
-            flashLoan.baseUnitAmount
-          )
-        );
-      } else {
-        return transactionBuilder();
-      }
+      return this.signerFlashBorrow(flashLoan, destTokenAccount);
     }
 
     const bank = this.liquidityBank(flashLoan.liquiditySource);
@@ -223,7 +247,7 @@ export class MarginfiFlProvider extends FlProviderBase {
           bankLiquidityVaultAuthority: publicKey(
             associatedBankAccs.vaultAuthority
           ),
-          destinationTokenAccount: publicKey(destinationTokenAccount),
+          destinationTokenAccount: publicKey(destTokenAccount),
           marginfiAccount: publicKey(iMfiAccount.accountPk),
           marginfiGroup: this.liquidityBank(flashLoan.liquiditySource).group,
           signer: this.signer,

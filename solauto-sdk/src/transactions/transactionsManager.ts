@@ -416,11 +416,15 @@ export class TransactionsManager {
   }
 
   private async updateLut(tx: TransactionBuilder, newLut: boolean) {
+    const lutInputs = await getAddressLookupInputs(
+      this.txHandler.umi,
+      this.txHandler.defaultLookupTables()
+    );
     const updateLutTxName = `${newLut ? "create" : "update"} lookup table`;
     await retryWithExponentialBackoff(
       async (attemptNum, prevError) =>
         await this.sendTransaction(
-          tx,
+          tx.setAddressLookupTables(lutInputs),
           updateLutTxName,
           attemptNum,
           this.getUpdatedPriorityFeeSetting(prevError, attemptNum),

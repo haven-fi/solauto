@@ -278,9 +278,6 @@ export async function rebalanceChoresBefore(
     client.referredBySupplyTa() && usesAccount(client.referredBySupplyTa()!);
   const checkReferralDebtTa =
     client.referredByDebtTa() && usesAccount(client.referredByDebtTa()!);
-  const checkIntermediaryMfiAccount =
-    isMarginfiClient(client) &&
-    usesAccount(client.intermediaryMarginfiAccountPk);
   const checkSignerSupplyTa = usesAccount(client.signerSupplyTa);
   const checkSignerDebtTa = usesAccount(client.signerDebtTa);
 
@@ -289,24 +286,14 @@ export async function rebalanceChoresBefore(
       checkReferralSupplyTa ? client.referredBySupplyTa() : PublicKey.default,
     ],
     ...[checkReferralDebtTa ? client.referredByDebtTa() : PublicKey.default],
-    ...[
-      checkIntermediaryMfiAccount
-        ? client.intermediaryMarginfiAccountPk
-        : PublicKey.default,
-    ],
     ...[checkSignerSupplyTa ? client.signerSupplyTa : PublicKey.default],
     ...[checkSignerDebtTa ? client.signerDebtTa : PublicKey.default],
   ];
 
-  const [
-    referredBySupplyTa,
-    referredByDebtTa,
-    intermediaryMarginfiAccount,
-    signerSupplyTa,
-    signerDebtTa,
-  ] = await client.umi.rpc.getAccounts(
-    accountsNeeded.map((x) => publicKey(x ?? PublicKey.default))
-  );
+  const [referredBySupplyTa, referredByDebtTa, signerSupplyTa, signerDebtTa] =
+    await client.umi.rpc.getAccounts(
+      accountsNeeded.map((x) => publicKey(x ?? PublicKey.default))
+    );
 
   let chores = transactionBuilder();
 
@@ -328,18 +315,6 @@ export async function rebalanceChoresBefore(
         client.signer,
         client.referredByState!,
         client.solautoPosition.debtMint()
-      )
-    );
-  }
-
-  if (
-    checkIntermediaryMfiAccount &&
-    !rpcAccountCreated(intermediaryMarginfiAccount)
-  ) {
-    client.log("Creating intermediary marginfi account");
-    chores = chores.add(
-      client.marginfiAccountInitialize(
-        client.intermediaryMarginfiAccountSigner!
       )
     );
   }
