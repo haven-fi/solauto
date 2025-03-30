@@ -187,7 +187,7 @@ export function getFlashLoanDetails(
   };
 }
 
-async function findSufficientQuote(
+export async function findSufficientQuote(
   client: SolautoClient,
   values: RebalanceValues,
   jupSwapInput: JupSwapInput,

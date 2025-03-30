@@ -1,6 +1,6 @@
 import { SolautoClient } from "../clients";
 import { FlashLoanDetails, TransactionItemInputs } from "../types";
-import { maxBoostToBps } from "../utils";
+import { findSufficientQuote, maxBoostToBps } from "../utils";
 import { getRebalanceValues, RebalanceValues } from "./rebalanceValues";
 import { SolautoFeesBps } from "./solautoFees";
 import { SolautoRebalanceType } from "../generated";
@@ -44,6 +44,8 @@ export class RebalanceTxBuilder {
 
   private getRebalanceDetails(attemptNum: number): RebalanceDetails {
     let values = this.getRebalanceValues();
+
+    // TODO? We need to find sufficient quote, and then half-apply that amount to get the real intermediaryLiqUtilizationRateBps
 
     const maxBoostTo = maxBoostToBps(
       this.client.solautoPosition.state().maxLtvBps,
