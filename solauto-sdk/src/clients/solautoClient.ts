@@ -218,6 +218,7 @@ export abstract class SolautoClient extends ReferralStateManager {
       this.referralState,
       ...(this.referredBySupplyTa() ? [this.referredBySupplyTa()!] : []),
       ...(this.referredByDebtTa() ? [this.referredByDebtTa()!] : []),
+      ...this.marginfiFlProvider.lutAccountsToAdd(),
     ];
   }
 
@@ -288,6 +289,8 @@ export abstract class SolautoClient extends ReferralStateManager {
         })
       )
     );
+
+    // TODO: initialize intermediary marginfi accounts from this.marginfiFlProvider where necessary and remove the initialization of it in rebalanceChoresBefore function
 
     this.log("Requires authority LUT update...");
     return {
