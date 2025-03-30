@@ -147,7 +147,7 @@ export async function getMarginfiMaxLtvAndLiqThreshold(
 export async function getEmptyMarginfiAccountsByAuthority(
   umi: Umi,
   authority: PublicKey
-) {
+): Promise<MarginfiAccount[]> {
   const marginfiAccounts = await umi.rpc.getProgramAccounts(
     MARGINFI_PROGRAM_ID,
     {
