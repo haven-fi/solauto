@@ -1,9 +1,6 @@
 import { Signer, Umi } from "@metaplex-foundation/umi";
 import { Connection, PublicKey } from "@solana/web3.js";
-import {
-  consoleLog,
-  getSolanaRpcConnection,
-} from "../utils";
+import { consoleLog, getSolanaRpcConnection } from "../utils";
 import { SOLAUTO_PROD_PROGRAM } from "../constants";
 
 export abstract class TxHandler {
@@ -15,9 +12,14 @@ export abstract class TxHandler {
   constructor(
     public rpcUrl: string,
     localTest?: boolean,
-    public programId: PublicKey = SOLAUTO_PROD_PROGRAM
+    public programId: PublicKey = SOLAUTO_PROD_PROGRAM,
+    public wsEndpoint?: string
   ) {
-    const [connection, umi] = getSolanaRpcConnection(this.rpcUrl, this.programId);
+    const [connection, umi] = getSolanaRpcConnection(
+      this.rpcUrl,
+      this.programId,
+      wsEndpoint
+    );
     this.connection = connection;
     this.umi = umi;
 
