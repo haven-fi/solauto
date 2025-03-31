@@ -4,11 +4,13 @@ import { findSufficientQuote, maxBoostToBps } from "../utils";
 import { getRebalanceValues, RebalanceValues } from "./rebalanceValues";
 import { SolautoFeesBps } from "./solautoFees";
 import { SolautoRebalanceType } from "../generated";
+import { FlProviderBase } from "../clients/flProviderBase";
 
 interface RebalanceDetails {
   values: RebalanceValues;
-  flashLoan?: FlashLoanDetails;
   rebalanceType: SolautoRebalanceType;
+  flashLoan?: FlashLoanDetails;
+  flashLoanProvider?: FlProviderBase;
 }
 
 export class RebalanceTxBuilder {
