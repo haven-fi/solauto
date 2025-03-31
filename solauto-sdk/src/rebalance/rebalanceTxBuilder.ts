@@ -1,10 +1,25 @@
 import { SolautoClient } from "../clients";
-import { FlashLoanDetails, TransactionItemInputs } from "../types";
-import { findSufficientQuote, maxBoostToBps } from "../utils";
+import {
+  FlashLoanDetails,
+  FlashLoanRequirements,
+  TransactionItemInputs,
+} from "../types";
+import {
+  findSufficientQuote,
+  fromBaseUnit,
+  maxBoostToBps,
+  safeGetPrice,
+  tokenInfo,
+} from "../utils";
 import { getRebalanceValues, RebalanceValues } from "./rebalanceValues";
 import { SolautoFeesBps } from "./solautoFees";
-import { SolautoRebalanceType } from "../generated";
+import {
+  RebalanceDirection,
+  SolautoRebalanceType,
+  TokenType,
+} from "../generated";
 import { FlProviderBase } from "../clients/flProviderBase";
+import { PublicKey } from "@solana/web3.js";
 
 interface RebalanceDetails {
   values: RebalanceValues;
@@ -14,6 +29,9 @@ interface RebalanceDetails {
 }
 
 export class RebalanceTxBuilder {
+  private rebalanceValues!: RebalanceValues;
+  private flashLoanDetails: FlashLoanDetails | undefined = undefined;
+
   constructor(
     private client: SolautoClient,
     private targetLiqUtilizationRateBps?: number
@@ -42,25 +60,102 @@ export class RebalanceTxBuilder {
     );
   }
 
-  private signerShouldFlashLoan(values: RebalanceValues, attemptNum: number) {}
+  private getFlLiquiditySource(
+    supplyLiquidityAvailable: bigint,
+    debtLiquidityAvailable: bigint
+  ): TokenType | undefined {
+    const debtAdjustmentUsd = Math.abs(this.rebalanceValues.debtAdjustmentUsd);
 
-  private getRebalanceDetails(attemptNum: number): RebalanceDetails {
-    let values = this.getRebalanceValues();
+    const insufficientLiquidity = (
+      amountNeededUsd: number,
+      liquidityAvailable: bigint,
+      tokenMint: PublicKey
+    ) => {
+      return (
+        amountNeededUsd >
+        fromBaseUnit(liquidityAvailable, tokenInfo(tokenMint).decimals) *
+          (safeGetPrice(tokenMint) ?? 0) *
+          0.95
+      );
+    };
 
-    // TODO? We need to find sufficient quote, and then half-apply that amount to get the real intermediaryLiqUtilizationRateBps
+    const insufficientSupplyLiquidity = insufficientLiquidity(
+      debtAdjustmentUsd,
+      supplyLiquidityAvailable,
+      this.client.solautoPosition.supplyMint()
+    );
+    const insufficientDebtLiquidity = insufficientLiquidity(
+      debtAdjustmentUsd,
+      debtLiquidityAvailable,
+      this.client.solautoPosition.debtMint()
+    );
 
+    let useDebtLiquidity =
+      this.rebalanceValues.rebalanceDirection === RebalanceDirection.Boost ||
+      insufficientSupplyLiquidity;
+
+    if (useDebtLiquidity) {
+      return !insufficientDebtLiquidity ? TokenType.Debt : undefined;
+    } else {
+      return !insufficientSupplyLiquidity ? TokenType.Supply : undefined;
+    }
+  }
+
+  private async flashLoanRequirements(
+    attemptNum: number
+  ): Promise<FlashLoanRequirements | undefined> {
     const maxBoostTo = maxBoostToBps(
       this.client.solautoPosition.state().maxLtvBps,
       this.client.solautoPosition.state().liqThresholdBps
     );
 
-    if (values.intermediaryLiqUtilizationRateBps > maxBoostTo) {
-      const signerFlashLoan = this.signerShouldFlashLoan(values, attemptNum);
-      const flFeeBps = 0; // TODO
-      values = this.getRebalanceValues(flFeeBps);
+    if (this.rebalanceValues.intermediaryLiqUtilizationRateBps < maxBoostTo) {
+      return undefined;
+    }
+
+    const stdFlLiquiditySource = this.getFlLiquiditySource(
+      this.client.flProvider().liquidityAvailable(TokenType.Supply),
+      this.client.flProvider().liquidityAvailable(TokenType.Debt)
+    );
+
+    if ((attemptNum ?? 0) >= 3 || !stdFlLiquiditySource) {
+      const { supplyBalance, debtBalance } = await this.client.signerBalances();
+      const signerFlLiquiditySource = this.getFlLiquiditySource(
+        supplyBalance,
+        debtBalance
+      );
+
+      if (signerFlLiquiditySource) {
+        return {
+          liquiditySource: signerFlLiquiditySource,
+          signerFlashLoan: true,
+        };
+      } else {
+        throw new Error(`Insufficient liquidity to perform the transaction`);
+      }
+    } else {
+      return { liquiditySource: stdFlLiquiditySource };
+    }
+  }
+
+  private async getRebalanceDetails(
+    attemptNum: number
+  ): Promise<RebalanceDetails> {
+    this.rebalanceValues = this.getRebalanceValues();
+
+    // TODO? We need to find sufficient quote, and then half-apply that amount to get the real intermediaryLiqUtilizationRateBps
+
+    const flRequirements = await this.flashLoanRequirements(attemptNum);
+
+    if (flRequirements) {
+      this.rebalanceValues = this.getRebalanceValues(
+        this.client.flProvider().flFeeBps(flRequirements)
+      );
+
+      // TODO
     } else {
       return {
-        values,
+        values: this.rebalanceValues,
         rebalanceType: SolautoRebalanceType.Regular,
       };
     }
@@ -76,6 +171,6 @@ export class RebalanceTxBuilder {
       return undefined;
     }
 
-    const rebalanceDetails = this.getRebalanceDetails(attemptNum);
+    const rebalanceDetails = await this.getRebalanceDetails(attemptNum);
   }
 }

@@ -41,6 +41,7 @@ import { getOrCreatePositionEx, SolautoPositionEx } from "../solautoPosition";
 import { RebalanceValues } from "../rebalance";
 import { MarginfiFlProvider } from "./marginfiFlProvider";
 import { FlashLoanDetails } from "../types";
+import { FlProviderBase } from "./flProviderBase";
 
 export interface SolautoClientArgs extends ReferralStateManagerArgs {
   new?: boolean;
@@ -71,7 +72,7 @@ export abstract class SolautoClient extends ReferralStateManager {
 
   public authorityLutAddress?: PublicKey;
 
-  public marginfiFlProvider!: MarginfiFlProvider;
+  private marginfiFlProvider!: MarginfiFlProvider;
   public contextUpdates: ContextUpdates = new ContextUpdates();
 
   private signerSupplyBalance: bigint | undefined;
@@ -339,6 +340,10 @@ export abstract class SolautoClient extends ReferralStateManager {
       supplyBalance: this.signerSupplyBalance,
       debtBalance: this.signerDebtBalance,
     };
+  }
+
+  flProvider(): FlProviderBase {
+    return this.marginfiFlProvider;
   }
 
   openPosition(

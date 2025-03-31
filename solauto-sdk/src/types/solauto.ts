@@ -36,9 +36,12 @@ export interface TransactionItemInputs {
   orderPrio?: number;
 }
 
-export interface FlashLoanDetails {
+export interface FlashLoanRequirements {
   liquiditySource: TokenType;
-  signerFlashLoan: boolean;
+  signerFlashLoan?: boolean;
+}
+
+export interface FlashLoanDetails extends FlashLoanRequirements {
   baseUnitAmount: bigint;
   mint: PublicKey;
   flFeeBps?: number;
