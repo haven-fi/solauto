@@ -11,9 +11,9 @@ import {
   safeGetPrice,
   splTokenTransferUmiIx,
   tokenInfo,
-} from "../utils";
-import { TokenType } from "../generated";
-import { FlashLoanDetails, FlashLoanRequirements } from "../types";
+} from "../../utils";
+import { TokenType } from "../../generated";
+import { FlashLoanDetails, FlashLoanRequirements } from "../../types";
 import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 
 export abstract class FlProviderBase {

@@ -18,7 +18,7 @@ import {
   SolautoRebalanceType,
   TokenType,
 } from "../generated";
-import { FlProviderBase } from "../clients/flProviderBase";
+import { FlProviderBase } from "../clients/flashLoans/flProviderBase";
 import { PublicKey } from "@solana/web3.js";
 
 interface RebalanceDetails {

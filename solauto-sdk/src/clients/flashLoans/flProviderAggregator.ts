@@ -1,8 +1,8 @@
 import { FlProviderBase } from "./flProviderBase";
 import { PublicKey } from "@solana/web3.js";
-import { FlashLoanDetails, FlashLoanRequirements } from "../types";
+import { FlashLoanDetails, FlashLoanRequirements } from "../../types";
 import { Signer, TransactionBuilder, Umi } from "@metaplex-foundation/umi";
-import { TokenType } from "../generated";
+import { TokenType } from "../../generated";
 import { MarginfiFlProvider } from "./marginfiFlProvider";
 
 export class FlProviderAggregator extends FlProviderBase {

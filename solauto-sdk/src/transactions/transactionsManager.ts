@@ -5,7 +5,7 @@ import {
   TransactionBuilder,
   Umi,
 } from "@metaplex-foundation/umi";
-import { SolautoClient } from "../clients/solautoClient";
+import { SolautoClient } from "../clients/solauto/solautoClient";
 import {
   addTxOptimizations,
   getAddressLookupInputs,

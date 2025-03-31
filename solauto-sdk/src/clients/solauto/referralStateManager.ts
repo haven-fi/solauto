@@ -17,10 +17,10 @@ import {
   ReferralState,
   safeFetchReferralState,
   updateReferralStates,
-} from "../generated";
-import { getReferralState, getTokenAccount } from "../utils";
-import { TxHandler } from "./txHandler";
-import { SOLAUTO_LUT } from "../constants";
+} from "../../generated";
+import { getReferralState, getTokenAccount } from "../../utils";
+import { TxHandler } from "../txHandler";
+import { SOLAUTO_LUT } from "../../constants";
 
 export interface ReferralStateManagerArgs {
   signer?: Signer;

@@ -29,7 +29,7 @@ import {
   isSolautoAction,
   solautoAction,
 } from "../generated";
-import { SolautoClient } from "../clients/solautoClient";
+import { SolautoClient } from "../clients/solauto/solautoClient";
 import {
   closeTokenAccountUmiIx,
   createAssociatedTokenAccountUmiIx,

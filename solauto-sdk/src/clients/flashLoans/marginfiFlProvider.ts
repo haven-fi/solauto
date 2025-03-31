@@ -6,7 +6,7 @@ import {
   transactionBuilder,
   TransactionBuilder,
 } from "@metaplex-foundation/umi";
-import { MARGINFI_ACCOUNTS } from "../constants";
+import { MARGINFI_ACCOUNTS } from "../../constants";
 import {
   Bank,
   lendingAccountBorrow,
@@ -17,7 +17,7 @@ import {
   MarginfiAccount,
   marginfiAccountInitialize,
   safeFetchAllBank,
-} from "../marginfi-sdk";
+} from "../../marginfi-sdk";
 import { FlProviderBase } from "./flProviderBase";
 import { PublicKey, SYSVAR_INSTRUCTIONS_PUBKEY } from "@solana/web3.js";
 import {
@@ -32,10 +32,10 @@ import {
   rpcAccountCreated,
   safeGetPrice,
   tokenInfo,
-} from "../utils";
-import { TokenType } from "../generated";
+} from "../../utils";
+import { TokenType } from "../../generated";
 import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
-import { FlashLoanDetails, FlashLoanRequirements } from "../types";
+import { FlashLoanDetails, FlashLoanRequirements } from "../../types";
 
 interface IMFIAccount {
   signer?: Signer;

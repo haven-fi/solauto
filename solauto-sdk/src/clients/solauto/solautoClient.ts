@@ -20,29 +20,32 @@ import {
   cancelDCA,
   closePosition,
   updatePosition,
-} from "../generated";
+} from "../../generated";
 import {
   getSolautoPositionAccount,
   getTokenAccount,
-} from "../utils/accountUtils";
-import { SOLAUTO_FEES_WALLET } from "../constants/generalAccounts";
+} from "../../utils/accountUtils";
+import { SOLAUTO_FEES_WALLET } from "../../constants/generalAccounts";
 import {
   getWrappedInstruction,
   splTokenTransferUmiIx,
-} from "../utils/solanaUtils";
-import { SOLAUTO_LUT } from "../constants/solautoConstants";
-import { ContextUpdates } from "../utils/solauto/generalUtils";
+} from "../../utils/solanaUtils";
+import { SOLAUTO_LUT } from "../../constants/solautoConstants";
+import { ContextUpdates } from "../../utils/solauto/generalUtils";
 import {
   ReferralStateManager,
   ReferralStateManagerArgs,
 } from "./referralStateManager";
 import { QuoteResponse } from "@jup-ag/api";
-import { getOrCreatePositionEx, SolautoPositionEx } from "../solautoPosition";
-import { RebalanceValues } from "../rebalance";
-import { MarginfiFlProvider } from "./marginfiFlProvider";
-import { FlashLoanDetails } from "../types";
-import { FlProviderBase } from "./flProviderBase";
-import { FlProviderAggregator } from "./flProviderAggregator";
+import {
+  getOrCreatePositionEx,
+  SolautoPositionEx,
+} from "../../solautoPosition";
+import { RebalanceValues } from "../../rebalance";
+import { MarginfiFlProvider } from "../flashLoans/marginfiFlProvider";
+import { FlashLoanDetails } from "../../types";
+import { FlProviderBase } from "../flashLoans/flProviderBase";
+import { FlProviderAggregator } from "../flashLoans/flProviderAggregator";
 
 export interface SolautoClientArgs extends ReferralStateManagerArgs {
   new?: boolean;

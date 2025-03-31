@@ -1,6 +1,6 @@
 import { describe, it } from "mocha";
 import { setupTest } from "../shared";
-import { SolautoMarginfiClient } from "../../src/clients/solautoMarginfiClient";
+import { SolautoMarginfiClient } from "../../src/clients/solauto/solautoMarginfiClient";
 import { NATIVE_MINT } from "@solana/spl-token";
 import {
   TransactionItem,

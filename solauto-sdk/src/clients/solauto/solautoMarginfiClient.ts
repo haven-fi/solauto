@@ -8,11 +8,11 @@ import {
 } from "@metaplex-foundation/umi";
 import { PublicKey, SYSVAR_INSTRUCTIONS_PUBKEY } from "@solana/web3.js";
 import { SolautoClient, SolautoClientArgs } from "./solautoClient";
-import { MarginfiAssetAccounts } from "../types/accounts";
+import { MarginfiAssetAccounts } from "../../types/accounts";
 import {
   MARGINFI_ACCOUNTS,
   MARGINFI_ACCOUNTS_LOOKUP_TABLE,
-} from "../constants/marginfiAccounts";
+} from "../../constants/marginfiAccounts";
 import {
   DCASettingsInpArgs,
   LendingPlatform,
@@ -26,8 +26,8 @@ import {
   marginfiProtocolInteraction,
   marginfiRebalance,
   marginfiRefreshData,
-} from "../generated";
-import { getTokenAccount } from "../utils/accountUtils";
+} from "../../generated";
+import { getTokenAccount } from "../../utils/accountUtils";
 import {
   MARGINFI_PROGRAM_ID,
   lendingAccountBorrow,
@@ -36,15 +36,15 @@ import {
   lendingAccountWithdraw,
   marginfiAccountInitialize,
   safeFetchAllMarginfiAccount,
-} from "../marginfi-sdk";
+} from "../../marginfi-sdk";
 import {
   getAllMarginfiAccountsByAuthority,
   marginfiAccountEmpty,
-} from "../utils/marginfiUtils";
+} from "../../utils/marginfiUtils";
 import { QuoteResponse } from "@jup-ag/api";
-import { consoleLog } from "../utils";
-import { RebalanceValues } from "../rebalance";
-import { FlashLoanDetails } from "../types";
+import { consoleLog } from "../../utils";
+import { RebalanceValues } from "../../rebalance";
+import { FlashLoanDetails } from "../../types";
 
 export interface SolautoMarginfiClientArgs extends SolautoClientArgs {
   marginfiAccount?: PublicKey | Signer;
