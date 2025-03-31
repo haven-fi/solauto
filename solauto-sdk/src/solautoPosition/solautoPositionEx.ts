@@ -30,7 +30,7 @@ import {
   toRoundedUsdValue,
 } from "../utils";
 import { RebalanceAction } from "../types";
-import { getDebtAdjustment } from "../rebalance";
+import { getDebtAdjustment } from "../services/rebalance";
 import { MIN_POSITION_STATE_FRESHNESS_SECS } from "../constants";
 import {
   fromWeb3JsPublicKey,

@@ -6,7 +6,7 @@ import {
   TokenType,
 } from "../generated";
 import { TransactionBuilder } from "@metaplex-foundation/umi";
-import { RebalanceValues } from "../rebalance";
+import { RebalanceValues } from "../services/rebalance";
 import { QuoteResponse } from "@jup-ag/api";
 
 export interface SolautoPositionDetails {

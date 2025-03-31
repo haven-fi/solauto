@@ -5,33 +5,33 @@ import {
   TransactionBuilder,
   Umi,
 } from "@metaplex-foundation/umi";
-import { SolautoClient } from "../clients/solauto/solautoClient";
+import { SolautoClient } from "../solauto/solautoClient";
 import {
   addTxOptimizations,
   getAddressLookupInputs,
   sendSingleOptimizedTransaction,
-} from "../utils/solanaUtils";
+} from "../../utils/solanaUtils";
 import {
   consoleLog,
   ErrorsToThrow,
   retryWithExponentialBackoff,
-} from "../utils/generalUtils";
+} from "../../utils/generalUtils";
 import { getErrorInfo, getTransactionChores } from "./transactionUtils";
 import {
   PriorityFeeSetting,
   priorityFeeSettingValues,
   TransactionItemInputs,
   TransactionRunType,
-} from "../types";
-import { ReferralStateManager, TxHandler } from "../clients";
+} from "../../types";
+import { ReferralStateManager, TxHandler } from "..";
 import {
   PublicKey,
   TransactionExpiredBlockheightExceededError,
 } from "@solana/web3.js";
-import { SWITCHBOARD_PRICE_FEED_IDS } from "../constants/switchboardConstants";
-import { buildSwbSubmitResponseTx, getSwitchboardFeedData } from "../utils";
-import { sendJitoBundledTransactions } from "../utils/jitoUtils";
-import { SOLAUTO_PROD_PROGRAM, SOLAUTO_TEST_PROGRAM } from "../constants";
+import { SWITCHBOARD_PRICE_FEED_IDS } from "../../constants/switchboardConstants";
+import { buildSwbSubmitResponseTx, getSwitchboardFeedData } from "../../utils";
+import { sendJitoBundledTransactions } from "../../utils/jitoUtils";
+import { SOLAUTO_PROD_PROGRAM, SOLAUTO_TEST_PROGRAM } from "../../constants";
 
 const CHORES_TX_NAME = "account chores";
 const MAX_SUPPORTED_ACCOUNT_LOCKS = 64;

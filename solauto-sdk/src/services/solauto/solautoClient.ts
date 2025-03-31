@@ -41,7 +41,7 @@ import {
   getOrCreatePositionEx,
   SolautoPositionEx,
 } from "../../solautoPosition";
-import { RebalanceValues } from "../../rebalance";
+import { RebalanceValues } from "../rebalance";
 import { MarginfiFlProvider } from "../flashLoans/marginfiFlProvider";
 import { FlashLoanDetails, RebalanceDetails } from "../../types";
 import { FlProviderBase } from "../flashLoans/flProviderBase";

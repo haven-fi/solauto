@@ -28,36 +28,36 @@ import {
   getSolautoErrorFromCode,
   isSolautoAction,
   solautoAction,
-} from "../generated";
-import { SolautoClient } from "../clients/solauto/solautoClient";
+} from "../../generated";
+import { SolautoClient } from "../solauto/solautoClient";
 import {
   closeTokenAccountUmiIx,
   createAssociatedTokenAccountUmiIx,
   systemTransferUmiIx,
-} from "../utils/solanaUtils";
-import { getJupSwapTransaction } from "../utils/jupiterUtils";
+} from "../../utils/solanaUtils";
+import { getJupSwapTransaction } from "../../utils/jupiterUtils";
 import {
   getFlashLoanDetails,
   getFlashLoanRequirements,
   getJupSwapRebalanceDetails,
   getRebalanceValues,
-} from "../utils/solauto/rebalanceUtils";
+} from "../../utils/solauto/rebalanceUtils";
 import {
   consoleLog,
   currentUnixSeconds,
   getSolanaAccountCreated,
   rpcAccountCreated,
-} from "../utils/generalUtils";
-import { SolautoMarginfiClient } from "../clients/solautoMarginfiClient";
+} from "../../utils/generalUtils";
+import { SolautoMarginfiClient } from "../services/solautoMarginfiClient";
 import {
   getMaxLiqUtilizationRateBps,
   uint8ArrayToBigInt,
-} from "../utils/numberUtils";
+} from "../../utils/numberUtils";
 import {
   eligibleForRebalance,
   positionStateWithLatestPrices,
-} from "../utils/solauto/generalUtils";
-import { getTokenAccount, getTokenAccountData } from "../utils/accountUtils";
+} from "../../utils/solauto/generalUtils";
+import { getTokenAccount, getTokenAccountData } from "../../utils/accountUtils";
 import {
   createMarginfiProgram,
   getLendingAccountBorrowInstructionDataSerializer,
@@ -66,17 +66,17 @@ import {
   getLendingAccountWithdrawInstructionDataSerializer,
   getMarginfiErrorFromCode,
   MARGINFI_PROGRAM_ID,
-} from "../marginfi-sdk";
-import { ReferralStateManager } from "../clients";
+} from "../../marginfi-sdk";
+import { JupSwapManager, ReferralStateManager } from "..";
 import {
   createJupiterProgram,
   getJupiterErrorFromCode,
   JUPITER_PROGRAM_ID,
-} from "../jupiter-sdk";
-import { PRICES } from "../constants";
-import { TransactionItemInputs } from "../types";
-import { isMarginfiClient, safeGetPrice } from "../utils";
-import { BundleSimulationError } from "../types/transactions";
+} from "../../jupiter-sdk";
+import { PRICES } from "../../constants";
+import { TransactionItemInputs } from "../../types";
+import { isMarginfiClient, safeGetPrice } from "../../utils";
+import { BundleSimulationError } from "../../types/transactions";
 
 interface wSolTokenUsage {
   wSolTokenAccount: PublicKey;
@@ -780,8 +780,9 @@ export async function convertReferralFeesToDestination(
     return undefined;
   }
 
-  const { lookupTableAddresses, setupInstructions, swapIx } =
-    await getJupSwapTransaction(referralManager.umi.identity, {
+  const jupSwapManager = new JupSwapManager(referralManager.umi.identity);
+  const { lookupTableAddresses, setupInstructions, swapIx, cleanupIx } =
+    await jupSwapManager.getJupSwapTransactionData({
       amount: tokenAccountData.amount,
       destinationWallet: referralManager.referralState,
       inputMint: tokenAccountData.mint,

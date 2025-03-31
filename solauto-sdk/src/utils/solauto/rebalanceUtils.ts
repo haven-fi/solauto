@@ -1,5 +1,5 @@
 import { PublicKey } from "@solana/web3.js";
-import { SolautoClient } from "../../clients/solauto/solautoClient";
+import { SolautoClient } from "../../services/solauto/solautoClient";
 import {
   DCASettings,
   PositionState,

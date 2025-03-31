@@ -1,5 +1,5 @@
-import { REFERRER_PERCENTAGE } from "../constants";
-import { RebalanceDirection } from "../generated";
+import { REFERRER_PERCENTAGE } from "../../constants";
+import { RebalanceDirection } from "../../generated";
 
 export class SolautoFeesBps {
   constructor(

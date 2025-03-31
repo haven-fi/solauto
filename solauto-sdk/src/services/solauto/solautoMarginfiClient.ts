@@ -19,7 +19,6 @@ import {
   PositionType,
   RebalanceDirection,
   SolautoActionArgs,
-  SolautoRebalanceTypeArgs,
   SolautoSettingsParametersInpArgs,
   SwapType,
   marginfiOpenPosition,
@@ -41,10 +40,8 @@ import {
   getAllMarginfiAccountsByAuthority,
   marginfiAccountEmpty,
 } from "../../utils/marginfiUtils";
-import { QuoteResponse } from "@jup-ag/api";
 import { consoleLog } from "../../utils";
-import { RebalanceValues } from "../../rebalance";
-import { FlashLoanDetails, RebalanceDetails } from "../../types";
+import { RebalanceDetails } from "../../types";
 
 export interface SolautoMarginfiClientArgs extends SolautoClientArgs {
   marginfiAccount?: PublicKey | Signer;

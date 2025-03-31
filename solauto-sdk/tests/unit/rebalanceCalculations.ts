@@ -2,11 +2,11 @@ import { describe, it, before } from "mocha";
 import { PublicKey } from "@solana/web3.js";
 import { NATIVE_MINT } from "@solana/spl-token";
 import { assert } from "chai";
-import { SolautoMarginfiClient } from "../../src/clients/solautoMarginfiClient";
+import { SolautoMarginfiClient } from "../../src/services/solautoMarginfiClient";
 import { setupTest } from "../shared";
 import { getRebalanceValues } from "../../src/utils/solauto/rebalanceUtils";
 import { publicKey } from "@metaplex-foundation/umi";
-import { SolautoClient } from "../../src/clients/solautoClient";
+import { SolautoClient } from "../../src/services/solautoClient";
 import {
   DCASettings,
   LendingPlatform,

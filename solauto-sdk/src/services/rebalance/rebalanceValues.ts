@@ -2,9 +2,9 @@ import {
   RebalanceDirection,
   TokenBalanceChange,
   TokenBalanceChangeType,
-} from "../generated";
-import { SolautoPositionEx } from "../solautoPosition";
-import { fromBps, getLiqUtilzationRateBps, toBps } from "../utils";
+} from "../../generated";
+import { SolautoPositionEx } from "../../solautoPosition";
+import { fromBps, getLiqUtilzationRateBps, toBps } from "../../utils";
 import { SolautoFeesBps } from "./solautoFees";
 
 export interface PositionValues {

@@ -29,7 +29,7 @@ import {
   SolautoClient,
   SolautoMarginfiClient,
   TxHandlerProps,
-} from "../../clients";
+} from "../../services";
 
 export function createDynamicSolautoProgram(programId: PublicKey): Program {
   return {

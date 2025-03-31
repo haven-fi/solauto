@@ -1,22 +1,22 @@
-import { SolautoClient } from "../clients";
+import { SolautoClient } from "..";
 import {
   FlashLoanDetails,
   FlashLoanRequirements,
   TransactionItemInputs,
-} from "../types";
+} from "../../types";
 import {
   fromBaseUnit,
   getMaxLiqUtilizationRateBps,
   safeGetPrice,
   tokenInfo,
-} from "../utils";
+} from "../../utils";
 import { getRebalanceValues, RebalanceValues } from "./rebalanceValues";
 import { SolautoFeesBps } from "./solautoFees";
 import {
   RebalanceDirection,
   SolautoRebalanceType,
   TokenType,
-} from "../generated";
+} from "../../generated";
 import { PublicKey } from "@solana/web3.js";
 import { QuoteResponse } from "@jup-ag/api";
 

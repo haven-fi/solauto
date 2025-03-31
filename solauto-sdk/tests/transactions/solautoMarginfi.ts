@@ -1,11 +1,11 @@
 import { describe, it } from "mocha";
 import { setupTest } from "../shared";
-import { SolautoMarginfiClient } from "../../src/clients/solauto/solautoMarginfiClient";
+import { SolautoMarginfiClient } from "../../src/services/solauto/solautoMarginfiClient";
 import { NATIVE_MINT } from "@solana/spl-token";
 import {
   TransactionItem,
   TransactionsManager,
-} from "../../src/transactions/transactionsManager";
+} from "../../src/services/transactions/transactionsManager";
 import {
   SOLAUTO_PROD_PROGRAM,
   SOLAUTO_TEST_PROGRAM,
