@@ -104,39 +104,48 @@ export class JupSwapManager {
     return instructions;
   }
 
+  private priceImpactBps() {
+    return Math.round(toBps(parseFloat(this.jupQuote!.priceImpactPct))) + 1;
+  }
+
+  private adaptSlippageToPriceImpact(slippageIncFactor: number) {
+    const finalPriceSlippageBps = Math.round(
+      Math.max(20, this.jupQuote!.slippageBps, this.priceImpactBps()) *
+        (1 + slippageIncFactor)
+    );
+    this.jupQuote!.slippageBps = finalPriceSlippageBps;
+  }
+
+  private addInAmountSlippagePadding() {
+    consoleLog("Raw inAmount:", this.jupQuote!.inAmount);
+    const inc = Math.max(
+      fromBps(this.priceImpactBps()) * 1.1,
+      fromBps(this.jupQuote!.slippageBps) * 0.05
+    );
+    consoleLog("Inc:", inc);
+    this.jupQuote!.inAmount = Math.round(
+      parseInt(this.jupQuote!.inAmount) +
+        parseInt(this.jupQuote!.inAmount) * inc
+    ).toString();
+    consoleLog("Increased inAmount:", this.jupQuote!.inAmount);
+  }
+
   async getJupSwapTransactionData(
     data: SwapArgs
   ): Promise<JupSwapTransactionData> {
-    const quoteResponse = this.jupQuote ?? (await this.getQuote(data));
+    if (!this.jupQuote) {
+      this.jupQuote = await this.getQuote(data);
+    }
 
-    const priceImpactBps =
-      Math.round(toBps(parseFloat(quoteResponse.priceImpactPct))) + 1;
-    const finalPriceSlippageBps = Math.round(
-      Math.max(20, quoteResponse.slippageBps, priceImpactBps) *
-        (1 + (data.slippageIncFactor ?? 0))
-    );
-    quoteResponse.slippageBps = finalPriceSlippageBps;
-    consoleLog("Quote:", quoteResponse);
+    if (data.slippageIncFactor) {
+      this.adaptSlippageToPriceImpact(data.slippageIncFactor);
+    }
+    consoleLog("Quote:", this.jupQuote);
 
     const instructions = await this.getJupInstructions(data);
 
-    consoleLog("Raw price impact bps:", priceImpactBps);
-    const finalPriceImpactBps =
-      priceImpactBps * (1 + (data.slippageIncFactor ?? 0));
-    consoleLog("Increased price impact bps:", finalPriceImpactBps);
-
     if (data.exactOut) {
-      consoleLog("Raw inAmount:", quoteResponse.inAmount);
-      const inc = Math.max(
-        fromBps(finalPriceImpactBps) * 1.1,
-        fromBps(finalPriceSlippageBps) * 0.05
-      );
-      consoleLog("Inc:", inc);
-      quoteResponse.inAmount = Math.round(
-        parseInt(quoteResponse.inAmount) +
-          parseInt(quoteResponse.inAmount) * inc
-      ).toString();
-      consoleLog("Increased inAmount:", quoteResponse.inAmount);
+      this.addInAmountSlippagePadding();
     }
 
     return {

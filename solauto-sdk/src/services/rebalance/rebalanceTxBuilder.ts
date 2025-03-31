@@ -101,7 +101,7 @@ export class RebalanceTxBuilder {
     const maxLtvRateBps = getMaxLiqUtilizationRateBps(
       this.client.solautoPosition.state().maxLtvBps,
       this.client.solautoPosition.state().liqThresholdBps,
-      0.015
+      0.02
     );
 
     if (
