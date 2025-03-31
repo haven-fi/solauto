@@ -1,6 +1,13 @@
 import { PublicKey } from "@solana/web3.js";
-import { LendingPlatform, PositionType, TokenType } from "../generated";
+import {
+  LendingPlatform,
+  PositionType,
+  SolautoRebalanceType,
+  TokenType,
+} from "../generated";
 import { TransactionBuilder } from "@metaplex-foundation/umi";
+import { RebalanceValues } from "../rebalance";
+import { QuoteResponse } from "@jup-ag/api";
 
 export interface SolautoPositionDetails {
   publicKey?: PublicKey;
@@ -45,4 +52,12 @@ export interface FlashLoanDetails extends FlashLoanRequirements {
   baseUnitAmount: bigint;
   mint: PublicKey;
   flFeeBps?: number;
+}
+
+export interface RebalanceDetails {
+  values: RebalanceValues;
+  rebalanceType: SolautoRebalanceType;
+  flashLoan?: FlashLoanDetails;
+  jupQuote: QuoteResponse;
+  targetLiqUtilizationRateBps?: number;
 }

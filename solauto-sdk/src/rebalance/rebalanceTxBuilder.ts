@@ -5,9 +5,8 @@ import {
   TransactionItemInputs,
 } from "../types";
 import {
-  findSufficientQuote,
   fromBaseUnit,
-  maxBoostToBps,
+  getMaxLiqUtilizationRateBps,
   safeGetPrice,
   tokenInfo,
 } from "../utils";
@@ -18,19 +17,14 @@ import {
   SolautoRebalanceType,
   TokenType,
 } from "../generated";
-import { FlProviderBase } from "../clients/flashLoans/flProviderBase";
 import { PublicKey } from "@solana/web3.js";
-
-interface RebalanceDetails {
-  values: RebalanceValues;
-  rebalanceType: SolautoRebalanceType;
-  flashLoan?: FlashLoanDetails;
-  flashLoanProvider?: FlProviderBase;
-}
+import { QuoteResponse } from "@jup-ag/api";
 
 export class RebalanceTxBuilder {
   private rebalanceValues!: RebalanceValues;
-  private flashLoanDetails: FlashLoanDetails | undefined = undefined;
+  private flashLoan: FlashLoanDetails | undefined = undefined;
+  private jupQuote!: QuoteResponse;
+  private rebalanceType!: SolautoRebalanceType;
 
   constructor(
     private client: SolautoClient,
@@ -104,12 +98,15 @@ export class RebalanceTxBuilder {
   private async flashLoanRequirements(
     attemptNum: number
   ): Promise<FlashLoanRequirements | undefined> {
-    const maxBoostTo = maxBoostToBps(
+    const maxLtvRateBps = getMaxLiqUtilizationRateBps(
       this.client.solautoPosition.state().maxLtvBps,
-      this.client.solautoPosition.state().liqThresholdBps
+      this.client.solautoPosition.state().liqThresholdBps,
+      0.015
     );
 
-    if (this.rebalanceValues.intermediaryLiqUtilizationRateBps < maxBoostTo) {
+    if (
+      this.rebalanceValues.intermediaryLiqUtilizationRateBps < maxLtvRateBps
+    ) {
       return undefined;
     }
 
@@ -138,30 +135,27 @@ export class RebalanceTxBuilder {
     }
   }
 
-  private async getRebalanceDetails(
-    attemptNum: number
-  ): Promise<RebalanceDetails> {
+  private async setRebalanceDetails(attemptNum: number) {
     this.rebalanceValues = this.getRebalanceValues();
+    const flRequirements = await this.flashLoanRequirements(attemptNum);
 
     // TODO? We need to find sufficient quote, and then half-apply that amount to get the real intermediaryLiqUtilizationRateBps
-
-    const flRequirements = await this.flashLoanRequirements(attemptNum);
 
     if (flRequirements) {
       this.rebalanceValues = this.getRebalanceValues(
         this.client.flProvider.flFeeBps(flRequirements)
       );
 
-      // TODO
+      // TODO: set flashLoan and rebalanceType and jupQuote
     } else {
-      return {
-        values: this.rebalanceValues,
-        rebalanceType: SolautoRebalanceType.Regular,
-      };
+      // TODO: set jupQuote
+      this.rebalanceType = SolautoRebalanceType.Regular;
     }
   }
 
-  private assembleTransaction() {}
+  private assembleTransaction(): TransactionItemInputs {
+    // TODO: check if should refresh beforehand
+  }
 
   public async buildRebalanceTx(
     attemptNum: number
@@ -171,6 +165,7 @@ export class RebalanceTxBuilder {
       return undefined;
     }
 
-    const rebalanceDetails = await this.getRebalanceDetails(attemptNum);
+    await this.setRebalanceDetails(attemptNum);
+    return this.assembleTransaction();
   }
 }

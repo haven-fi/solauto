@@ -44,7 +44,7 @@ import {
 import { QuoteResponse } from "@jup-ag/api";
 import { consoleLog } from "../../utils";
 import { RebalanceValues } from "../../rebalance";
-import { FlashLoanDetails } from "../../types";
+import { FlashLoanDetails, RebalanceDetails } from "../../types";
 
 export interface SolautoMarginfiClientArgs extends SolautoClientArgs {
   marginfiAccount?: PublicKey | Signer;
@@ -355,26 +355,22 @@ export class SolautoMarginfiClient extends SolautoClient {
 
   rebalance(
     rebalanceStep: "A" | "B",
-    jupQuote: QuoteResponse,
-    rebalanceType: SolautoRebalanceTypeArgs,
-    rebalanceValues: RebalanceValues,
-    flashLoan?: FlashLoanDetails,
-    targetLiqUtilizationRateBps?: number
+    data: RebalanceDetails
   ): TransactionBuilder {
-    const inputIsSupply = new PublicKey(jupQuote.inputMint).equals(
+    const inputIsSupply = new PublicKey(data.jupQuote.inputMint).equals(
       this.solautoPosition.supplyMint()
     );
-    const outputIsSupply = new PublicKey(jupQuote.outputMint).equals(
+    const outputIsSupply = new PublicKey(data.jupQuote.outputMint).equals(
       this.solautoPosition.supplyMint()
     );
     const needSupplyAccounts =
       (inputIsSupply && rebalanceStep === "A") ||
       (outputIsSupply && rebalanceStep === "B") ||
-      (inputIsSupply && flashLoan !== undefined && rebalanceStep == "B");
+      (inputIsSupply && data.flashLoan !== undefined && rebalanceStep == "B");
     const needDebtAccounts =
       (!inputIsSupply && rebalanceStep === "A") ||
       (!outputIsSupply && rebalanceStep === "B") ||
-      (!inputIsSupply && flashLoan !== undefined && rebalanceStep == "B");
+      (!inputIsSupply && data.flashLoan !== undefined && rebalanceStep == "B");
 
     const isFirstRebalance = false; // TODO
 
@@ -385,7 +381,7 @@ export class SolautoMarginfiClient extends SolautoClient {
       solautoFeesTa:
         rebalanceStep === "B"
           ? publicKey(
-              rebalanceValues.rebalanceDirection === RebalanceDirection.Boost
+              data.values.rebalanceDirection === RebalanceDirection.Boost
                 ? this.solautoFeesSupplyTa
                 : this.solautoFeesDebtTa
             )
@@ -393,13 +389,13 @@ export class SolautoMarginfiClient extends SolautoClient {
       authorityReferralState: publicKey(this.referralState),
       referredByTa: this.referredByState
         ? publicKey(
-            rebalanceValues.rebalanceDirection === RebalanceDirection.Boost
+            data.values.rebalanceDirection === RebalanceDirection.Boost
               ? this.referredBySupplyTa()!
               : this.referredByDebtTa()!
           )
         : undefined,
       positionAuthority:
-        rebalanceValues.tokenBalanceChange !== undefined
+        data.values.tokenBalanceChange !== undefined
           ? publicKey(this.authority)
           : undefined,
       solautoPosition: publicKey(this.solautoPosition.publicKey),
@@ -408,7 +404,7 @@ export class SolautoMarginfiClient extends SolautoClient {
       intermediaryTa: publicKey(
         getTokenAccount(
           toWeb3JsPublicKey(this.signer.publicKey),
-          new PublicKey(jupQuote.inputMint)
+          new PublicKey(data.jupQuote.inputMint)
         )
       ),
       supplyBank: publicKey(this.marginfiSupplyAccounts.bank),
@@ -439,17 +435,19 @@ export class SolautoMarginfiClient extends SolautoClient {
       debtVaultAuthority: needDebtAccounts
         ? publicKey(this.marginfiDebtAccounts.vaultAuthority)
         : undefined,
-      rebalanceType,
-      targetLiqUtilizationRateBps: targetLiqUtilizationRateBps ?? null,
+      rebalanceType: data.rebalanceType,
+      targetLiqUtilizationRateBps: data.targetLiqUtilizationRateBps ?? null,
       swapInAmountBaseUnit: isFirstRebalance
-        ? parseInt(jupQuote.inAmount)
+        ? parseInt(data.jupQuote.inAmount)
         : null,
       swapType:
-        jupQuote.swapMode === "ExactOut" && isFirstRebalance
+        data.jupQuote.swapMode === "ExactOut" && isFirstRebalance
           ? SwapType.ExactOut
           : null,
       flashLoanFeeBps:
-        flashLoan?.flFeeBps && isFirstRebalance ? flashLoan.flFeeBps : null,
+        data.flashLoan?.flFeeBps && isFirstRebalance
+          ? data.flashLoan.flFeeBps
+          : null,
     });
   }
 }

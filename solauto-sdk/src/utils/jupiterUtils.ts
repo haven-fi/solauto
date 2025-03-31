@@ -12,10 +12,7 @@ import {
   QuoteResponse,
 } from "@jup-ag/api";
 import { getTokenAccount } from "./accountUtils";
-import {
-  consoleLog,
-  retryWithExponentialBackoff,
-} from "./generalUtils";
+import { consoleLog, retryWithExponentialBackoff } from "./generalUtils";
 
 const jupApi = createJupiterApiClient();
 
@@ -61,7 +58,7 @@ export async function getJupQuote(swapDetails: JupSwapInput) {
           : swapDetails.exactIn
             ? "ExactIn"
             : undefined,
-        slippageBps: 300,
+        slippageBps: 10,
         maxAccounts: !swapDetails.exactOut ? 15 + attemptNum * 5 : undefined,
       }),
     3,
@@ -71,7 +68,6 @@ export async function getJupQuote(swapDetails: JupSwapInput) {
 
 export interface JupSwapTransaction {
   jupQuote: QuoteResponse;
-  priceImpactBps: number;
   lookupTableAddresses: string[];
   setupInstructions: TransactionBuilder;
   tokenLedgerIx?: TransactionBuilder;
@@ -81,8 +77,7 @@ export interface JupSwapTransaction {
 
 export async function getJupSwapTransaction(
   signer: Signer,
-  swapDetails: JupSwapDetails,
-  attemptNum?: number
+  swapDetails: JupSwapDetails
 ): Promise<JupSwapTransaction> {
   const quoteResponse =
     swapDetails.jupQuote ?? (await getJupQuote(swapDetails));
@@ -90,7 +85,7 @@ export async function getJupSwapTransaction(
   const priceImpactBps =
     Math.round(toBps(parseFloat(quoteResponse.priceImpactPct))) + 1;
   const finalPriceSlippageBps = Math.round(
-    Math.max(50, quoteResponse.slippageBps, priceImpactBps) *
+    Math.max(20, quoteResponse.slippageBps, priceImpactBps) *
       (1 + (swapDetails.slippageIncFactor ?? 0))
   );
   quoteResponse.slippageBps = finalPriceSlippageBps;
@@ -144,34 +139,33 @@ export async function getJupSwapTransaction(
 
   return {
     jupQuote: quoteResponse,
-    priceImpactBps: finalPriceImpactBps,
     lookupTableAddresses: instructions.addressLookupTableAddresses,
-    setupInstructions: transactionBuilder().add(
+    setupInstructions: transactionBuilder(
       (instructions.setupInstructions ?? []).map((ix) =>
         getWrappedInstruction(signer, createTransactionInstruction(ix))
       )
     ),
     tokenLedgerIx: instructions.tokenLedgerInstruction
-      ? transactionBuilder().add(
+      ? transactionBuilder([
           getWrappedInstruction(
             signer,
             createTransactionInstruction(instructions.tokenLedgerInstruction)
-          )
-        )
+          ),
+        ])
       : undefined,
-    swapIx: transactionBuilder().add(
+    swapIx: transactionBuilder([
       getWrappedInstruction(
         signer,
         createTransactionInstruction(instructions.swapInstruction)
-      )
-    ),
+      ),
+    ]),
     cleanupIx: instructions.cleanupInstruction
-      ? transactionBuilder().add(
+      ? transactionBuilder([
           getWrappedInstruction(
             signer,
             createTransactionInstruction(instructions.cleanupInstruction)
-          )
-        )
+          ),
+        ])
       : transactionBuilder(),
   };
 }

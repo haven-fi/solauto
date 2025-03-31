@@ -58,7 +58,7 @@ export async function buildSwbSubmitResponseTx(
       await feed.fetchUpdateIx({
         crossbarClient: crossbar,
       }),
-    8,
+    2,
     200
   );
 

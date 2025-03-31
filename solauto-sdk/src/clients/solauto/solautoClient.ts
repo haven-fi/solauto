@@ -43,7 +43,7 @@ import {
 } from "../../solautoPosition";
 import { RebalanceValues } from "../../rebalance";
 import { MarginfiFlProvider } from "../flashLoans/marginfiFlProvider";
-import { FlashLoanDetails } from "../../types";
+import { FlashLoanDetails, RebalanceDetails } from "../../types";
 import { FlProviderBase } from "../flashLoans/flProviderBase";
 import { FlProviderAggregator } from "../flashLoans/flProviderAggregator";
 
@@ -565,10 +565,6 @@ export abstract class SolautoClient extends ReferralStateManager {
 
   abstract rebalance(
     rebalanceStep: "A" | "B",
-    jupQuote: QuoteResponse,
-    rebalanceType: SolautoRebalanceTypeArgs,
-    rebalanceValues: RebalanceValues,
-    flashLoan?: FlashLoanDetails,
-    targetLiqUtilizationRateBps?: number
+    data: RebalanceDetails
   ): TransactionBuilder;
 }
