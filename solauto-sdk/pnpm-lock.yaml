@@ -777,6 +777,20 @@ packages:
       - typescript
     dev: false
 
+  /@solana/spl-token-metadata@0.1.5(@solana/web3.js@1.95.8)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@4.9.5):
+    resolution: {integrity: sha512-DSBlo7vjuLe/xvNn75OKKndDBkFxlqjLdWlq6rf40StnrhRn7TDntHGLZpry1cf3uzQFShqeLROGNPAJwvkPnA==}
+    engines: {node: '>=16'}
+    peerDependencies:
+      '@solana/web3.js': ^1.95.3
+    dependencies:
+      '@solana/codecs': 2.0.0-rc.1(fastestsmallesttextencoderdecoder@1.0.22)(typescript@4.9.5)
+      '@solana/spl-type-length-value': 0.1.0
+      '@solana/web3.js': 1.95.8
+    transitivePeerDependencies:
+      - fastestsmallesttextencoderdecoder
+      - typescript
+    dev: false
+
   /@solana/spl-token-metadata@0.1.5(@solana/web3.js@1.95.8)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.6.3):
     resolution: {integrity: sha512-DSBlo7vjuLe/xvNn75OKKndDBkFxlqjLdWlq6rf40StnrhRn7TDntHGLZpry1cf3uzQFShqeLROGNPAJwvkPnA==}
     engines: {node: '>=16'}
@@ -791,21 +805,7 @@ packages:
       - typescript
     dev: false
 
-  /@solana/spl-token-metadata@0.1.5(@solana/web3.js@1.98.0)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@4.9.5):
-    resolution: {integrity: sha512-DSBlo7vjuLe/xvNn75OKKndDBkFxlqjLdWlq6rf40StnrhRn7TDntHGLZpry1cf3uzQFShqeLROGNPAJwvkPnA==}
-    engines: {node: '>=16'}
-    peerDependencies:
-      '@solana/web3.js': ^1.95.3
-    dependencies:
-      '@solana/codecs': 2.0.0-rc.1(fastestsmallesttextencoderdecoder@1.0.22)(typescript@4.9.5)
-      '@solana/spl-type-length-value': 0.1.0
-      '@solana/web3.js': 1.98.0
-    transitivePeerDependencies:
-      - fastestsmallesttextencoderdecoder
-      - typescript
-    dev: false
-
-  /@solana/spl-token@0.3.11(@solana/web3.js@1.98.0)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@4.9.5):
+  /@solana/spl-token@0.3.11(@solana/web3.js@1.95.8)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@4.9.5):
     resolution: {integrity: sha512-bvohO3rIMSVL24Pb+I4EYTJ6cL82eFpInEXD/I8K8upOGjpqHsKUoAempR/RnUlI1qSFNyFlWJfu6MNUgfbCQQ==}
     engines: {node: '>=16'}
     peerDependencies:
@@ -813,8 +813,8 @@ packages:
     dependencies:
       '@solana/buffer-layout': 4.0.1
       '@solana/buffer-layout-utils': 0.2.0
-      '@solana/spl-token-metadata': 0.1.5(@solana/web3.js@1.98.0)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@4.9.5)
-      '@solana/web3.js': 1.98.0
+      '@solana/spl-token-metadata': 0.1.5(@solana/web3.js@1.95.8)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@4.9.5)
+      '@solana/web3.js': 1.95.8
       buffer: 6.0.3
     transitivePeerDependencies:
       - bufferutil
@@ -920,36 +920,12 @@ packages:
       - utf-8-validate
     dev: false
 
-  /@solana/web3.js@1.98.0:
-    resolution: {integrity: sha512-nz3Q5OeyGFpFCR+erX2f6JPt3sKhzhYcSycBCSPkWjzSVDh/Rr1FqTVMRe58FKO16/ivTUcuJjeS5MyBvpkbzA==}
-    dependencies:
-      '@babel/runtime': 7.25.7
-      '@noble/curves': 1.6.0
-      '@noble/hashes': 1.5.0
-      '@solana/buffer-layout': 4.0.1
-      agentkeepalive: 4.5.0
-      bigint-buffer: 1.1.5
-      bn.js: 5.2.1
-      borsh: 0.7.0
-      bs58: 4.0.1
-      buffer: 6.0.3
-      fast-stable-stringify: 1.0.0
-      jayson: 4.1.2
-      node-fetch: 2.7.0
-      rpc-websockets: 9.0.4
-      superstruct: 2.0.2
-    transitivePeerDependencies:
-      - bufferutil
-      - encoding
-      - utf-8-validate
-    dev: false
-
   /@solworks/soltoolkit-sdk@0.0.23(fastestsmallesttextencoderdecoder@1.0.22):
     resolution: {integrity: sha512-O6lXT3EBR4gmcjt0/33i97VMHVEImwXGi+4TNrDDdifn3tyOUB7V6PR1VGxlavQb9hqmVai3xhedg/rmbQzX7w==}
     dependencies:
       '@solana/buffer-layout': 4.0.1
-      '@solana/spl-token': 0.3.11(@solana/web3.js@1.98.0)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@4.9.5)
-      '@solana/web3.js': 1.98.0
+      '@solana/spl-token': 0.3.11(@solana/web3.js@1.95.8)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@4.9.5)
+      '@solana/web3.js': 1.95.8
       '@types/bn.js': 5.1.6
       '@types/node': 18.19.65
       '@types/node-fetch': 2.6.12
@@ -977,7 +953,7 @@ packages:
     resolution: {integrity: sha512-/qUmZlrfQyckvHGzS5Cj2+Ocd3eE64rPjQb1eEocc5dv4HXZMqbBbpM6BwURrQhZ65i3jO1evhTcAk3TVqCA8w==}
     engines: {node: '>=12'}
     dependencies:
-      '@solana/web3.js': 1.98.0
+      '@solana/web3.js': 1.95.8
       axios: 1.8.4
       big.js: 6.2.2
       bn.js: 5.2.1
@@ -1002,7 +978,7 @@ packages:
     dependencies:
       '@brokerloop/ttlcache': 3.2.3
       '@coral-xyz/anchor-30': /@coral-xyz/anchor@0.30.1
-      '@solana/web3.js': 1.98.0
+      '@solana/web3.js': 1.95.8
       '@solworks/soltoolkit-sdk': 0.0.23(fastestsmallesttextencoderdecoder@1.0.22)
       '@switchboard-xyz/common': 2.5.5
       axios: 1.8.4
