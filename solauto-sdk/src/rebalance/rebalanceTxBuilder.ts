@@ -114,8 +114,8 @@ export class RebalanceTxBuilder {
     }
 
     const stdFlLiquiditySource = this.getFlLiquiditySource(
-      this.client.flProvider().liquidityAvailable(TokenType.Supply),
-      this.client.flProvider().liquidityAvailable(TokenType.Debt)
+      this.client.flProvider.liquidityAvailable(TokenType.Supply),
+      this.client.flProvider.liquidityAvailable(TokenType.Debt)
     );
 
     if ((attemptNum ?? 0) >= 3 || !stdFlLiquiditySource) {
@@ -149,7 +149,7 @@ export class RebalanceTxBuilder {
 
     if (flRequirements) {
       this.rebalanceValues = this.getRebalanceValues(
-        this.client.flProvider().flFeeBps(flRequirements)
+        this.client.flProvider.flFeeBps(flRequirements)
       );
 
       // TODO

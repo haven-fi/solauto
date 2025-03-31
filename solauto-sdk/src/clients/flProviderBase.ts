@@ -17,7 +17,7 @@ import { FlashLoanDetails, FlashLoanRequirements } from "../types";
 import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 
 export abstract class FlProviderBase {
-  public otherSigners: Signer[] = [];
+  protected flSigners: Signer[] = [];
 
   constructor(
     protected umi: Umi,
@@ -26,18 +26,22 @@ export abstract class FlProviderBase {
     protected debtMint: PublicKey
   ) {}
 
-  async initialize() {}
+  abstract initialize(): Promise<void>;
 
   lutAccountsToAdd(): PublicKey[] {
     return [];
   }
 
-  public mint(source: TokenType) {
+  otherSigners(): Signer[] {
+    return this.flSigners;
+  }
+
+  mint(source: TokenType) {
     return source === TokenType.Supply ? this.supplyMint : this.debtMint;
   }
 
   abstract liquidityAvailable(source: TokenType): bigint;
-  public liquidityAvailableUsd(source: TokenType): number {
+  liquidityAvailableUsd(source: TokenType): number {
     return (
       fromBaseUnit(
         this.liquidityAvailable(source),

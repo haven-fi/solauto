@@ -42,6 +42,7 @@ import { RebalanceValues } from "../rebalance";
 import { MarginfiFlProvider } from "./marginfiFlProvider";
 import { FlashLoanDetails } from "../types";
 import { FlProviderBase } from "./flProviderBase";
+import { FlProviderAggregator } from "./flProviderAggregator";
 
 export interface SolautoClientArgs extends ReferralStateManagerArgs {
   new?: boolean;
@@ -72,7 +73,7 @@ export abstract class SolautoClient extends ReferralStateManager {
 
   public authorityLutAddress?: PublicKey;
 
-  private marginfiFlProvider!: MarginfiFlProvider;
+  public flProvider!: FlProviderAggregator;
   public contextUpdates: ContextUpdates = new ContextUpdates();
 
   private signerSupplyBalance: bigint | undefined;
@@ -142,14 +143,14 @@ export abstract class SolautoClient extends ReferralStateManager {
         ? toWeb3JsPublicKey(this.referralStateData.lookupTable)
         : undefined;
 
-    this.marginfiFlProvider = new MarginfiFlProvider(
+    this.flProvider = new FlProviderAggregator(
       this.umi,
       this.signer,
       this.solautoPosition.supplyMint(),
       this.solautoPosition.debtMint()
     );
-    await this.marginfiFlProvider.initialize();
-    this.otherSigners.push(...this.marginfiFlProvider.otherSigners);
+    await this.flProvider.initialize();
+    this.otherSigners.push(...this.flProvider.otherSigners());
 
     this.log("Position state: ", this.solautoPosition.state());
     this.log("Position settings: ", this.solautoPosition.settings());
@@ -219,7 +220,7 @@ export abstract class SolautoClient extends ReferralStateManager {
       this.referralState,
       ...(this.referredBySupplyTa() ? [this.referredBySupplyTa()!] : []),
       ...(this.referredByDebtTa() ? [this.referredByDebtTa()!] : []),
-      ...this.marginfiFlProvider.lutAccountsToAdd(),
+      ...this.flProvider.lutAccountsToAdd(),
     ];
   }
 
@@ -289,7 +290,7 @@ export abstract class SolautoClient extends ReferralStateManager {
           })
         )
       )
-      .add(await this.marginfiFlProvider.initializeIMfiAccounts());
+      .add(await this.flProvider.flAccountPrereqIxs());
 
     this.log("Requires authority LUT update...");
     return {
@@ -340,10 +341,6 @@ export abstract class SolautoClient extends ReferralStateManager {
       supplyBalance: this.signerSupplyBalance,
       debtBalance: this.signerDebtBalance,
     };
-  }
-
-  flProvider(): FlProviderBase {
-    return this.marginfiFlProvider;
   }
 
   openPosition(

@@ -51,7 +51,6 @@ export class MarginfiFlProvider extends FlProviderBase {
   private debtImfiAccount!: IMFIAccount;
 
   async initialize() {
-    await super.initialize();
     await this.setAvailableBanks();
     this.existingMarginfiAccounts = await getEmptyMarginfiAccountsByAuthority(
       this.umi,
@@ -130,7 +129,7 @@ export class MarginfiFlProvider extends FlProviderBase {
         : undefined;
 
     if (signer) {
-      this.otherSigners.push(signer);
+      this.flSigners.push(signer);
     }
 
     consoleLog("Intermediary MF account:", accountPk.toString());
@@ -148,7 +147,7 @@ export class MarginfiFlProvider extends FlProviderBase {
     }
   }
 
-  public async initializeIMfiAccounts(): Promise<TransactionBuilder> {
+  async initializeIMfiAccounts(): Promise<TransactionBuilder> {
     const supplyImfiAccount = this.iMfiAccount(TokenType.Supply);
     const debtImfiAccount = this.iMfiAccount(TokenType.Debt);
 
@@ -189,7 +188,7 @@ export class MarginfiFlProvider extends FlProviderBase {
     return tx;
   }
 
-  public lutAccountsToAdd(): PublicKey[] {
+  lutAccountsToAdd(): PublicKey[] {
     return [
       ...super.lutAccountsToAdd(),
       ...Array.from(
