@@ -35,9 +35,12 @@ dependencies:
   '@solana/web3.js':
     specifier: '=1.95.8'
     version: 1.95.8
+  '@switchboard-xyz/common':
+    specifier: ^3.0.12
+    version: 3.0.12
   '@switchboard-xyz/on-demand':
-    specifier: '=1.2.51'
-    version: 1.2.51(fastestsmallesttextencoderdecoder@1.0.22)
+    specifier: '=2.4.0'
+    version: 2.4.0(@switchboard-xyz/common@3.0.12)
   axios:
     specifier: ^1.7.8
     version: 1.7.8
@@ -185,6 +188,11 @@ packages:
       long: 5.2.3
       protobufjs: 7.4.0
       yargs: 17.7.2
+    dev: false
+
+  /@isaacs/ttlcache@1.4.1:
+    resolution: {integrity: sha512-RQgQ4uQ+pLbqXfOmieB91ejmLwvSgv9nLx6sT6sD83s7umBypgg+OIBOBbEUiJXrfpnp9j0mRhYYdzp9uqq3lA==}
+    engines: {node: '>=12'}
     dev: false
 
   /@js-sdsl/ordered-map@4.4.2:
@@ -920,6 +928,30 @@ packages:
       - utf-8-validate
     dev: false
 
+  /@solana/web3.js@1.98.0:
+    resolution: {integrity: sha512-nz3Q5OeyGFpFCR+erX2f6JPt3sKhzhYcSycBCSPkWjzSVDh/Rr1FqTVMRe58FKO16/ivTUcuJjeS5MyBvpkbzA==}
+    dependencies:
+      '@babel/runtime': 7.25.7
+      '@noble/curves': 1.6.0
+      '@noble/hashes': 1.5.0
+      '@solana/buffer-layout': 4.0.1
+      agentkeepalive: 4.5.0
+      bigint-buffer: 1.1.5
+      bn.js: 5.2.1
+      borsh: 0.7.0
+      bs58: 4.0.1
+      buffer: 6.0.3
+      fast-stable-stringify: 1.0.0
+      jayson: 4.1.2
+      node-fetch: 2.7.0
+      rpc-websockets: 9.0.4
+      superstruct: 2.0.2
+    transitivePeerDependencies:
+      - bufferutil
+      - encoding
+      - utf-8-validate
+    dev: false
+
   /@solworks/soltoolkit-sdk@0.0.23(fastestsmallesttextencoderdecoder@1.0.22):
     resolution: {integrity: sha512-O6lXT3EBR4gmcjt0/33i97VMHVEImwXGi+4TNrDDdifn3tyOUB7V6PR1VGxlavQb9hqmVai3xhedg/rmbQzX7w==}
     dependencies:
@@ -971,6 +1003,27 @@ packages:
       - utf-8-validate
     dev: false
 
+  /@switchboard-xyz/common@3.0.12:
+    resolution: {integrity: sha512-SA+KEqM25rk+jYWVyiPrK3VaTajr38dPB1Hni+4AOCw7YUDNoM3JrTx8frZcj10ILzdHP3odAiUgxmulhZionQ==}
+    engines: {node: '>=20'}
+    dependencies:
+      '@solana/web3.js': 1.98.0
+      axios: 1.8.4
+      big.js: 6.2.2
+      bn.js: 5.2.1
+      bs58: 6.0.0
+      buffer: 6.0.3
+      decimal.js: 10.4.3
+      js-sha256: 0.11.0
+      protobufjs: 7.4.0
+      yaml: 2.6.1
+    transitivePeerDependencies:
+      - bufferutil
+      - debug
+      - encoding
+      - utf-8-validate
+    dev: false
+
   /@switchboard-xyz/on-demand@1.2.51(fastestsmallesttextencoderdecoder@1.0.22):
     resolution: {integrity: sha512-IqtAEtYdCRQqG8a3tL5WOcLgBco8Iionu60Q+hQzCslQw76zDlkToHkI+71ASulFdZ2z+2XjaKV5ZVqPcYgP7g==}
     engines: {node: '>= 18'}
@@ -991,6 +1044,26 @@ packages:
       - debug
       - encoding
       - fastestsmallesttextencoderdecoder
+      - utf-8-validate
+    dev: false
+
+  /@switchboard-xyz/on-demand@2.4.0(@switchboard-xyz/common@3.0.12):
+    resolution: {integrity: sha512-TtBw4CceI44NIWLJzHKTRdSqgIHr34UxUxRhp0r0P7Y1peIXgeJpmzx2Na18dH2XjcsTRcN/5U9Kdfm5bdf0+A==}
+    engines: {node: '>= 18'}
+    peerDependencies:
+      '@switchboard-xyz/common': '>=3.0.0'
+    dependencies:
+      '@coral-xyz/anchor-30': /@coral-xyz/anchor@0.30.1
+      '@isaacs/ttlcache': 1.4.1
+      '@switchboard-xyz/common': 3.0.12
+      axios: 1.8.4
+      bs58: 6.0.0
+      buffer: 6.0.3
+      js-yaml: 4.1.0
+    transitivePeerDependencies:
+      - bufferutil
+      - debug
+      - encoding
       - utf-8-validate
     dev: false
 

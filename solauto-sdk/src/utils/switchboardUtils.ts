@@ -49,25 +49,24 @@ export async function buildSwbSubmitResponseTx(
   signer: Signer,
   mint: PublicKey
 ): Promise<TransactionItemInputs | undefined> {
-  const { CrossbarClient } = OnDemand;
 
-  const crossbar = CrossbarClient.default();
   const feed = getPullFeed(conn, mint, toWeb3JsPublicKey(signer.publicKey));
-  const [pullIx, responses] = await retryWithExponentialBackoff(
-    async () =>
-      await feed.fetchUpdateIx({
-        crossbarClient: crossbar,
-      }),
+  const [pullIxs, responses] = await retryWithExponentialBackoff(
+    async () => await feed.fetchUpdateIx({}),
     2,
     200
   );
 
   return {
-    tx: transactionBuilder().add({
-      bytesCreatedOnChain: 0,
-      instruction: fromWeb3JsInstruction(pullIx!),
-      signers: [signer],
-    }),
+    tx: transactionBuilder(
+      pullIxs!.map((x) => {
+        return {
+          bytesCreatedOnChain: 0,
+          instruction: fromWeb3JsInstruction(x),
+          signers: [signer],
+        };
+      })
+    ),
     lookupTableAddresses: responses
       .filter((x) => Boolean(x.oracle.lut?.key))
       .map((x) => x.oracle.lut!.key.toString()),
