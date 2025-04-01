@@ -104,7 +104,7 @@ export class JupSwapManager {
     return instructions;
   }
 
-  private priceImpactBps() {
+  priceImpactBps() {
     return Math.round(toBps(parseFloat(this.jupQuote!.priceImpactPct))) + 1;
   }
 
@@ -120,7 +120,7 @@ export class JupSwapManager {
     consoleLog("Raw inAmount:", this.jupQuote!.inAmount);
     const inc = Math.max(
       fromBps(this.priceImpactBps()) * 1.1,
-      fromBps(this.jupQuote!.slippageBps) * 0.05
+      fromBps(this.jupQuote!.slippageBps) * 0.1
     );
     consoleLog("Inc:", inc);
     this.jupQuote!.inAmount = Math.round(
