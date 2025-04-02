@@ -36,7 +36,7 @@ export async function fetchTokenPrices(mints: PublicKey[]): Promise<number[]> {
   const [pythData, switchboardData, jupData] = await Promise.all([
     zip(pythMints, await getPythPrices(pythMints)),
     zip(switchboardMints, await getSwitchboardPrices(switchboardMints)),
-    zip(otherMints, await getJupTokenPrices(otherMints, true)),
+    zip(otherMints, await getJupTokenPrices(otherMints)),
   ]);
 
   const prices = mints.map((mint) => {
@@ -173,18 +173,12 @@ export async function getSwitchboardPrices(
   return Object.values(getSortedPriceData({ ...prices, ...jupPrices }, mints));
 }
 
-export async function getJupTokenPrices(
-  mints: PublicKey[],
-  mayIncludeSpamTokens?: boolean
-) {
+export async function getJupTokenPrices(mints: PublicKey[]) {
   if (mints.length == 0) {
     return [];
   }
 
-  const data = getSortedPriceData(
-    await getJupPriceData(mints, mayIncludeSpamTokens),
-    mints
-  );
+  const data = getSortedPriceData(await getJupPriceData(mints), mints);
 
   return Object.values(data).map((x) =>
     x !== null && typeof x === "object" && "price" in x

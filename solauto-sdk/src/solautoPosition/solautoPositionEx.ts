@@ -6,7 +6,6 @@ import {
   PositionState,
   SolautoPosition,
   SolautoSettingsParameters,
-  TokenType,
 } from "../generated";
 import { Umi } from "@metaplex-foundation/umi";
 import {
@@ -261,7 +260,7 @@ export abstract class SolautoPositionEx {
       ),
       netWorth: {
         baseUnit: toBaseUnit(
-          (supplyUsd - debtUsd) / supplyPrice,
+          supplyUsd > 0 ? (supplyUsd - debtUsd) / supplyPrice : 0,
           state.supply.decimals
         ),
         baseAmountUsdValue: toRoundedUsdValue(supplyUsd - debtUsd),

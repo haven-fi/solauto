@@ -11,7 +11,8 @@ import {
   SOLAUTO_TEST_PROGRAM,
 } from "../../src/constants";
 import { buildIronforgeApiUrl } from "../../src/utils";
-import { PriorityFeeSetting } from "../../src/types";
+import { PublicKey } from "@solana/web3.js";
+import { PriorityFeeSetting } from "../../src";
 
 describe("Solauto Marginfi tests", async () => {
   const signer = setupTest();
@@ -35,7 +36,7 @@ describe("Solauto Marginfi tests", async () => {
     await client.initialize({
       signer,
       positionId,
-      // authority: new PublicKey("5UqsR2PGzbP8pGPbXEeXx86Gjz2N2UFBAuFZUSVydAEe"),
+      authority: new PublicKey("EBhRj7jbF2EVE21i19JSuCX1BAbnZFYhoKW64HnaZ3kf"),
       // new: true,
       // marginfiAccount: new PublicKey(
       //   ""
