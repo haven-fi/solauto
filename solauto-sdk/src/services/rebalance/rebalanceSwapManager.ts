@@ -158,12 +158,20 @@ export class RebalanceSwapManager {
       inputAmount = this.bigIntWithIncrement(inputAmount, 0.005);
     }
 
+    const swapAmount = exactOut
+      ? this.flRequirements
+        ? this.bigIntWithIncrement(
+            outputAmount,
+            this.flRequirements.flFeeBps ?? 0
+          )
+        : outputAmount
+      : inputAmount;
     const swapInput: SwapInput = {
       inputMint: toWeb3JsPublicKey(input.mint),
       outputMint: toWeb3JsPublicKey(output.mint),
       exactIn,
       exactOut,
-      amount: exactOut ? outputAmount : inputAmount,
+      amount: swapAmount,
     };
     consoleLog(swapInput);
 
@@ -181,10 +189,7 @@ export class RebalanceSwapManager {
 
     if (this.flRequirements) {
       this.flBorrowAmount = exactOut
-        ? this.bigIntWithIncrement(
-            outputAmount,
-            this.flRequirements.flFeeBps ?? 0
-          )
+        ? outputAmount
         : this.swapQuote
           ? BigInt(parseInt(this.swapQuote.inAmount))
           : inputAmount;
