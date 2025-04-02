@@ -40,7 +40,7 @@ export function getPullFeed(
   const { PullFeed } = OnDemand;
   return new PullFeed(
     program,
-    new PublicKey(SWITCHBOARD_PRICE_FEED_IDS[mint.toString()])
+    new PublicKey(SWITCHBOARD_PRICE_FEED_IDS[mint.toString()].feedId)
   );
 }
 
@@ -49,7 +49,6 @@ export async function buildSwbSubmitResponseTx(
   signer: Signer,
   mint: PublicKey
 ): Promise<TransactionItemInputs | undefined> {
-
   const feed = getPullFeed(conn, mint, toWeb3JsPublicKey(signer.publicKey));
   const [pullIxs, responses] = await retryWithExponentialBackoff(
     async () => await feed.fetchUpdateIx({}),
