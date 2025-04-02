@@ -1,6 +1,7 @@
 import { SolautoClient } from "../solauto";
 import { FlashLoanRequirements, TransactionItemInputs } from "../../types";
 import {
+  consoleLog,
   fromBaseUnit,
   getMaxLiqUtilizationRateBps,
   safeGetPrice,
@@ -11,6 +12,8 @@ import { SolautoFeesBps } from "./solautoFees";
 import {
   RebalanceDirection,
   SolautoRebalanceType,
+  SwapType,
+  TokenBalanceChangeType,
   TokenType,
 } from "../../generated";
 import { PublicKey } from "@solana/web3.js";
@@ -128,6 +131,38 @@ export class RebalanceTxBuilder {
     }
   }
 
+  private setRebalanceType(flRequirements?: FlashLoanRequirements) {
+    if (flRequirements) {
+      const tokenBalanceChangeType = this.values.tokenBalanceChange?.changeType;
+      const firstRebalanceTokenChanges =
+        tokenBalanceChangeType === TokenBalanceChangeType.PreSwapDeposit;
+      const lastRebalanceTokenChanges = [
+        TokenBalanceChangeType.PostSwapDeposit,
+        TokenBalanceChangeType.PostRebalanceWithdrawDebtToken,
+        TokenBalanceChangeType.PostRebalanceWithdrawSupplyToken,
+      ].includes(tokenBalanceChangeType ?? TokenBalanceChangeType.None);
+
+      const swapType = this.swapManager.swapParams.exactIn
+        ? SwapType.ExactIn
+        : SwapType.ExactOut;
+
+      if (
+        (firstRebalanceTokenChanges && swapType === SwapType.ExactIn) ||
+        (lastRebalanceTokenChanges && swapType === SwapType.ExactOut)
+      ) {
+        this.rebalanceType = SolautoRebalanceType.DoubleRebalanceWithFL;
+      } else {
+        this.rebalanceType =
+          swapType === SwapType.ExactOut
+            ? SolautoRebalanceType.FLRebalanceThenSwap
+            : SolautoRebalanceType.FLSwapThenRebalance;
+      }
+    } else {
+      this.rebalanceType = SolautoRebalanceType.Regular;
+    }
+    consoleLog("Rebalance type:", this.rebalanceType);
+  }
+
   private async setRebalanceDetails(attemptNum: number) {
     this.values = this.getRebalanceValues();
     const flRequirements = await this.flashLoanRequirements(attemptNum);
@@ -146,11 +181,7 @@ export class RebalanceTxBuilder {
     );
     await this.swapManager.setSwapParams(attemptNum);
 
-    // TODO: set rebalanceType
-    // if () {
-    // } else {
-    //   this.rebalanceType = SolautoRebalanceType.Regular;
-    // }
+    this.setRebalanceType(flRequirements);
   }
 
   private assembleTransaction(): TransactionItemInputs {
