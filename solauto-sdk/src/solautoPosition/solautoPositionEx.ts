@@ -24,6 +24,7 @@ import {
   getLiqUtilzationRateBps,
   maxBoostToBps,
   maxRepayToBps,
+  solautoStrategyName,
   supplyLiquidityUsdDepositable,
   toBaseUnit,
   toRoundedUsdValue,
@@ -82,83 +83,90 @@ export abstract class SolautoPositionEx {
 
   abstract lendingPool(): Promise<PublicKey>;
 
-  public exists() {
+  exists() {
     return this.data.position !== undefined;
   }
 
-  public settings(): SolautoSettingsParameters | undefined {
+  strategyName() {
+    return solautoStrategyName(
+      toWeb3JsPublicKey(this.state().supply.mint),
+      toWeb3JsPublicKey(this.state().debt.mint)
+    );
+  }
+
+  settings(): SolautoSettingsParameters | undefined {
     return this.contextUpdates?.settings ?? this.data?.position?.settings;
   }
 
-  public dca(): DCASettings | undefined {
+  dca(): DCASettings | undefined {
     return this.contextUpdates?.dca ?? this.data?.position?.dca;
   }
 
-  public state(): PositionState {
+  state(): PositionState {
     return this.data.state;
   }
 
-  public supplyMint(): PublicKey {
+  supplyMint(): PublicKey {
     return toWeb3JsPublicKey(this.state().supply.mint);
   }
 
-  public debtMint(): PublicKey {
+  debtMint(): PublicKey {
     return toWeb3JsPublicKey(this.state().debt.mint);
   }
 
-  public boostToBps() {
+  boostToBps() {
     return Math.min(
       this.settings()?.boostToBps ?? 0,
       maxBoostToBps(this.state().maxLtvBps, this.state().liqThresholdBps)
     );
   }
 
-  public boostFromBps() {
+  boostFromBps() {
     return this.boostToBps() - (this.settings()?.boostGap ?? 0);
   }
 
-  public repayToBps() {
+  repayToBps() {
     return Math.min(
       this.settings()?.repayToBps ?? 0,
       maxRepayToBps(this.state().maxLtvBps, this.state().liqThresholdBps)
     );
   }
 
-  public repayFromBps() {
+  repayFromBps() {
     return (
       (this.settings()?.repayToBps ?? 0) + (this.settings()?.repayGap ?? 0)
     );
   }
 
-  public netWorth() {
+  netWorth() {
     return calcNetWorth(this.state());
   }
 
-  public netWorthUsd() {
+  netWorthUsd() {
     return calcNetWorthUsd(this.state());
   }
 
-  public totalSupply() {
+  totalSupply() {
     return calcTotalSupply(this.state());
   }
 
-  public supplyUsd() {
+  supplyUsd() {
     return calcSupplyUsd(this.state());
   }
 
-  public totalDebt() {
+  totalDebt() {
     return calcTotalDebt(this.state());
   }
 
-  public debtUsd() {
+  debtUsd() {
     return calcDebtUsd(this.state());
   }
 
-  public supplyLiquidityUsdDepositable() {
+  supplyLiquidityUsdDepositable() {
     return supplyLiquidityUsdDepositable(this.state());
   }
 
-  public debtLiquidityUsdAvailable() {
+  debtLiquidityUsdAvailable() {
     return debtLiquidityUsdAvailable(this.state());
   }
 
@@ -166,7 +174,7 @@ export abstract class SolautoPositionEx {
   abstract supplyLiquidityAvailable(): bigint;
   abstract debtLiquidityAvailable(): bigint;
 
-  public sufficientLiquidityToBoost() {
+  sufficientLiquidityToBoost() {
     const limitsUpToDate =
       this.debtLiquidityUsdAvailable() !== 0 ||
       this.supplyLiquidityUsdDepositable() !== 0;
@@ -192,9 +200,7 @@ export abstract class SolautoPositionEx {
     return true;
   }
 
-  public eligibleForRebalance(
-    bpsDistanceThreshold = 0
-  ): RebalanceAction | undefined {
+  eligibleForRebalance(bpsDistanceThreshold = 0): RebalanceAction | undefined {
     if (!this.settings() || !calcSupplyUsd(this.state())) {
       return undefined;
     }
@@ -215,7 +221,7 @@ export abstract class SolautoPositionEx {
     return undefined;
   }
 
-  public eligibleForRefresh(): boolean {
+  eligibleForRefresh(): boolean {
     if (this.data.selfManaged) return false;
 
     return (
@@ -237,63 +243,59 @@ export abstract class SolautoPositionEx {
 
   abstract refreshPositionState(): Promise<void>;
 
-  public async updateWithLatestPrices(
-    state: PositionState,
-    supplyPrice?: number,
-    debtPrice?: number
-  ) {
+  async updateWithLatestPrices(supplyPrice?: number, debtPrice?: number) {
     if (!supplyPrice || !debtPrice) {
       [supplyPrice, debtPrice] = await fetchTokenPrices([
-        toWeb3JsPublicKey(state.supply.mint),
-        toWeb3JsPublicKey(state.debt.mint),
+        toWeb3JsPublicKey(this.state().supply.mint),
+        toWeb3JsPublicKey(this.state().debt.mint),
       ]);
     }
 
     const supplyUsd = this.totalSupply() * supplyPrice;
     const debtUsd = this.totalDebt() * debtPrice;
     this.data.state = {
-      ...state,
+      ...this.state(),
       liqUtilizationRateBps: getLiqUtilzationRateBps(
         supplyUsd,
         debtUsd,
-        state.liqThresholdBps
+        this.state().liqThresholdBps
       ),
       netWorth: {
         baseUnit: toBaseUnit(
           supplyUsd > 0 ? (supplyUsd - debtUsd) / supplyPrice : 0,
-          state.supply.decimals
+          this.state().supply.decimals
         ),
         baseAmountUsdValue: toRoundedUsdValue(supplyUsd - debtUsd),
       },
       supply: {
-        ...state.supply,
+        ...this.state().supply,
         amountCanBeUsed: {
-          ...state.supply.amountCanBeUsed,
+          ...this.state().supply.amountCanBeUsed,
           baseAmountUsdValue: toRoundedUsdValue(
             fromBaseUnit(
-              state.supply.amountCanBeUsed.baseUnit,
-              state.supply.decimals
+              this.state().supply.amountCanBeUsed.baseUnit,
+              this.state().supply.decimals
             ) * supplyPrice
           ),
         },
         amountUsed: {
-          ...state.supply.amountUsed,
+          ...this.state().supply.amountUsed,
           baseAmountUsdValue: toRoundedUsdValue(supplyUsd),
         },
       },
       debt: {
-        ...state.debt,
+        ...this.state().debt,
         amountCanBeUsed: {
-          ...state.debt.amountCanBeUsed,
+          ...this.state().debt.amountCanBeUsed,
           baseAmountUsdValue: toRoundedUsdValue(
             fromBaseUnit(
-              state.debt.amountCanBeUsed.baseUnit,
-              state.debt.decimals
+              this.state().debt.amountCanBeUsed.baseUnit,
+              this.state().debt.decimals
             ) * debtPrice
           ),
         },
         amountUsed: {
-          ...state.debt.amountUsed,
+          ...this.state().debt.amountUsed,
           baseAmountUsdValue: toRoundedUsdValue(debtUsd),
         },
       },

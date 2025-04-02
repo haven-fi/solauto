@@ -8,15 +8,11 @@ import {
   VersionedTransaction,
   PublicKey,
 } from "@solana/web3.js";
-import { buildHeliusApiUrl, getSolanaRpcConnection } from "../src/utils/solanaUtils";
-
-export function getBatches<T>(items: T[], batchSize: number): T[][] {
-  const batches: T[][] = [];
-  for (let i = 0; i < items.length; i += batchSize) {
-    batches.push(items.slice(i, i + batchSize));
-  }
-  return batches;
-}
+import {
+  buildHeliusApiUrl,
+  getSolanaRpcConnection,
+} from "../src/utils/solanaUtils";
+import { getBatches } from "../src";
 
 function loadSecretKey(keypairPath: string) {
   const secretKey = JSON.parse(fs.readFileSync(keypairPath, "utf8"));
@@ -30,7 +26,9 @@ export function getSecretKey(keypairFilename: string = "id"): Uint8Array {
 }
 
 const keypair = Keypair.fromSecretKey(getSecretKey("solauto-fees"));
-const [connection, _] = getSolanaRpcConnection(buildHeliusApiUrl(process.env.HELIUS_API_KEY ?? ""));
+const [connection, _] = getSolanaRpcConnection(
+  buildHeliusApiUrl(process.env.HELIUS_API_KEY ?? "")
+);
 
 async function createAndSendV0Tx(txInstructions: TransactionInstruction[]) {
   let latestBlockhash = await connection.getLatestBlockhash("finalized");
@@ -67,11 +65,11 @@ async function addAddressesIfNeeded(
   const addresses = addressesToAdd
     .filter((x) => !existingAddresses.includes(x))
     .map((x) => new PublicKey(x));
-  
+
   if (addresses.length > 0) {
     const batches = getBatches(addresses, 20);
     for (const addressBatch of batches) {
-      console.log(addressBatch.map(x => x.toString()));
+      console.log(addressBatch.map((x) => x.toString()));
       await createAndSendV0Tx([
         AddressLookupTableProgram.extendLookupTable({
           payer: keypair.publicKey,

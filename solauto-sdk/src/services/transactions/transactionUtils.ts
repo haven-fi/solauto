@@ -56,7 +56,7 @@ import {
 import {
   eligibleForRebalance,
   positionStateWithLatestPrices,
-} from "../../utils/solauto/generalUtils";
+} from "../../utils/solautoUtils";
 import { getTokenAccount, getTokenAccountData } from "../../utils/accountUtils";
 import {
   createMarginfiProgram,

@@ -1,26 +1,15 @@
-import { publicKey } from "@metaplex-foundation/umi";
 import {
   buildIronforgeApiUrl,
-  calcNetWorthUsd,
-  calcSupplyUsd,
-  currentUnixSeconds,
-  eligibleForRebalance,
   fetchTokenPrices,
+  getPositionExBulk,
   getSolanaRpcConnection,
   getSolautoManagedPositions,
-  PositionState,
-  positionStateWithLatestPrices,
-  retryWithExponentialBackoff,
-  safeFetchAllSolautoPosition,
   safeGetPrice,
   SOLAUTO_PROD_PROGRAM,
-  solautoStrategyName,
 } from "../src";
 import { PublicKey } from "@solana/web3.js";
-import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 import path from "path";
 import { config } from "dotenv";
-import { getBatches } from "./shared";
 
 config({ path: path.join(__dirname, ".env") });
 
@@ -102,23 +91,12 @@ async function main(filterWhitelist: boolean) {
     );
   }
 
-  const batches = getBatches(positions, 30);
-
-  const solautoPositionsData = (
-    await Promise.all(
-      batches.map(async (pubkeys) => {
-        return retryWithExponentialBackoff(
-          async () =>
-            await safeFetchAllSolautoPosition(
-              umi,
-              pubkeys.map((x) => publicKey(x.publicKey!))
-            )
-        );
-      })
+  const positionsEx = (
+    await getPositionExBulk(
+      umi,
+      positions.map((x) => new PublicKey(x.publicKey!))
     )
-  )
-    .flat()
-    .sort((a, b) => calcNetWorthUsd(a.state) - calcNetWorthUsd(b.state));
+  ).sort((a, b) => a.netWorthUsd() - b.netWorthUsd());
 
   const tokensUsed = Array.from(
     new Set(
@@ -128,48 +106,25 @@ async function main(filterWhitelist: boolean) {
       ])
     )
   );
-
-  const tokenBatches = getBatches(tokensUsed, 15);
-  await Promise.all(
-    tokenBatches.map(async (batch) => {
-      await fetchTokenPrices(batch.map((x) => new PublicKey(x)));
-    })
-  );
+  await fetchTokenPrices(tokensUsed.map((x) => new PublicKey(x)));
 
   console.log("\n\n");
 
-  const latestStates: PositionState[] = [];
   let unhealthyPositions = 0;
   let awaitingBoostPositions = 0;
 
-  for (const pos of solautoPositionsData) {
-    const strategy = solautoStrategyName(
-      toWeb3JsPublicKey(pos.state.supply.mint),
-      toWeb3JsPublicKey(pos.state.debt.mint)
+  for (const pos of positionsEx) {
+    await pos.updateWithLatestPrices(
+      safeGetPrice(pos.state().supply.mint),
+      safeGetPrice(pos.state().debt.mint)
     );
 
-    const latestState = await positionStateWithLatestPrices(
-      pos.state,
-      safeGetPrice(pos.state.supply.mint),
-      safeGetPrice(pos.state.debt.mint)
-    );
-    latestStates.push(latestState);
+    const actionToTake = pos.eligibleForRebalance(0);
 
-    const actionToTake = eligibleForRebalance(
-      latestState,
-      pos.position.settings,
-      pos.position.dca,
-      currentUnixSeconds(),
-      safeGetPrice(latestState.supply.mint)!,
-      safeGetPrice(latestState.debt.mint)!,
-      0
-    );
-
-    const repayFrom =
-      pos.position.settings.repayToBps + pos.position.settings.repayGap;
+    const repayFrom = pos.settings()!.repayToBps + pos.settings()!.repayGap;
     const unhealthy = actionToTake === "repay";
     const healthText = unhealthy
-      ? `(Unhealthy: ${latestState.liqUtilizationRateBps - repayFrom}bps)`
+      ? `(Unhealthy: ${pos.state().liqUtilizationRateBps - repayFrom}bps)`
       : "";
     if (unhealthy) {
       unhealthyPositions += 1;
@@ -183,30 +138,30 @@ async function main(filterWhitelist: boolean) {
 
     console.log(
       pos.publicKey.toString(),
-      `(${pos.authority.toString()} ${pos.positionId})`
+      `(${pos.data.authority!.toString()} ${pos.data.positionId})`
     );
     console.log(
-      `${strategy}: $${formatNumber(calcNetWorthUsd(latestState), 2, 10000, 2)} ${healthText} ${boostText}`
+      `${pos.strategyName()}: $${formatNumber(pos.netWorthUsd(), 2, 10000, 2)} ${healthText} ${boostText}`
     );
   }
 
   console.log(
     "\nTotal positions:",
-    solautoPositionsData.length,
+    positionsEx.length,
     unhealthyPositions ? ` (unhealthy: ${unhealthyPositions})` : "",
     awaitingBoostPositions ? ` (awaiting boost: ${awaitingBoostPositions})` : ""
   );
   console.log(
     "Total users:",
-    Array.from(new Set(solautoPositionsData.map((x) => x.authority.toString())))
+    Array.from(new Set(positionsEx.map((x) => x.data.authority!.toString())))
       .length
   );
 
-  const tvl = latestStates
-    .map((x) => calcSupplyUsd(x))
+  const tvl = positionsEx
+    .map((x) => x.supplyUsd())
     .reduce((acc, curr) => acc + curr, 0);
-  const netWorth = latestStates
-    .map((x) => calcNetWorthUsd(x))
+  const netWorth = positionsEx
+    .map((x) => x.netWorthUsd())
     .reduce((acc, curr) => acc + curr, 0);
 
   console.log(`TVL: $${formatNumber(tvl, 2, 10000, 2)}`);

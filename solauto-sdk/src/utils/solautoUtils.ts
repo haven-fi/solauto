@@ -14,22 +14,22 @@ import {
   getSolautoErrorFromName,
   getSolautoPositionAccountDataSerializer,
   getSolautoPositionSize,
-} from "../../generated";
-import { getReferralState } from "../accountUtils";
+} from "../generated";
+import { getReferralState } from "./accountUtils";
 import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
-import { ALL_SUPPORTED_TOKENS } from "../../constants";
+import { ALL_SUPPORTED_TOKENS } from "../constants";
 import {
   findMarginfiAccounts,
   getAllMarginfiAccountsByAuthority,
-} from "../marginfiUtils";
-import { SolautoPositionDetails } from "../../types/solauto";
+} from "./marginfiUtils";
+import { SolautoPositionDetails } from "../types/solauto";
 import { QuoteResponse } from "@jup-ag/api";
-import { createSolautoSettings } from "../../solautoPosition";
+import { createSolautoSettings } from "../solautoPosition";
 import {
   SolautoClient,
   SolautoMarginfiClient,
   TxHandlerProps,
-} from "../../services";
+} from "../services";
 
 export function createDynamicSolautoProgram(programId: PublicKey): Program {
   return {

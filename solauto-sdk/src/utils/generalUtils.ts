@@ -36,6 +36,14 @@ export function tokenInfoByTicker(ticker: string) {
   return undefined;
 }
 
+export function getBatches<T>(items: T[], batchSize: number): T[][] {
+  const batches: T[][] = [];
+  for (let i = 0; i < items.length; i += batchSize) {
+    batches.push(items.slice(i, i + batchSize));
+  }
+  return batches;
+}
+
 export function generateRandomU8(): number {
   return Math.floor(Math.random() * 255 + 1);
 }

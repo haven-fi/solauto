@@ -31,7 +31,7 @@ import {
   eligibleForNextAutomationPeriod,
   getUpdatedValueFromAutomation,
   positionStateWithLatestPrices,
-} from "../../src/utils/solauto/generalUtils";
+} from "../../src/utils/solautoUtils";
 import { currentUnixSeconds } from "../../src/utils/generalUtils";
 import { USDC } from "../../src/constants/tokenConstants";
 import {

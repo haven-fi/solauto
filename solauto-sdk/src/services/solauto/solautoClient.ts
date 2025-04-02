@@ -31,7 +31,7 @@ import {
   splTokenTransferUmiIx,
 } from "../../utils/solanaUtils";
 import { SOLAUTO_LUT } from "../../constants/solautoConstants";
-import { ContextUpdates } from "../../utils/solauto/generalUtils";
+import { ContextUpdates } from "../../utils/solautoUtils";
 import {
   ReferralStateManager,
   ReferralStateManagerArgs,

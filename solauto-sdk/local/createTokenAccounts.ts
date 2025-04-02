@@ -1,9 +1,5 @@
 import { PublicKey } from "@solana/web3.js";
-import {
-  ALL_SUPPORTED_TOKENS,
-  SOLAUTO_FEES_WALLET,
-  SOLAUTO_MANAGER,
-} from "../src/constants";
+import { ALL_SUPPORTED_TOKENS, SOLAUTO_FEES_WALLET } from "../src/constants";
 import {
   buildHeliusApiUrl,
   createAssociatedTokenAccountUmiIx,

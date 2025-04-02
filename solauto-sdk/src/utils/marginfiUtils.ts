@@ -27,7 +27,7 @@ import {
 import { MarginfiAssetAccounts } from "../types/accounts";
 import { PositionState, PositionTokenState } from "../generated";
 import { USD_DECIMALS } from "../constants/generalAccounts";
-import { ContextUpdates } from "./solauto/generalUtils";
+import { ContextUpdates } from "./solautoUtils";
 import { ALL_SUPPORTED_TOKENS, TOKEN_INFO } from "../constants";
 import { fetchTokenPrices, safeGetPrice } from "./priceUtils";
 

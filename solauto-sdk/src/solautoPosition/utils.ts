@@ -2,18 +2,24 @@ import { Umi } from "@metaplex-foundation/umi";
 import {
   LendingPlatform,
   PositionState,
+  safeFetchAllSolautoPosition,
   safeFetchSolautoPosition,
   SolautoSettingsParameters,
   SolautoSettingsParametersInpArgs,
 } from "../generated";
 import { PublicKey } from "@solana/web3.js";
 import { PositionCustomArgs, SolautoPositionEx } from "./solautoPositionEx";
-import { fromWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
+import {
+  fromWeb3JsPublicKey,
+  toWeb3JsPublicKey,
+} from "@metaplex-foundation/umi-web3js-adapters";
 import { MarginfiSolautoPositionEx } from "./marginfiSolautoPositionEx";
 import {
   ContextUpdates,
   currentUnixSeconds,
+  getBatches,
   getLiqUtilzationRateBps,
+  retryWithExponentialBackoff,
   toBaseUnit,
   toRoundedUsdValue,
 } from "../utils";
@@ -29,6 +35,36 @@ export function createSolautoSettings(
     repayToBps: settings.repayToBps,
     padding: [],
   };
+}
+
+export async function getPositionExBulk(umi: Umi, publicKeys: PublicKey[]) {
+  const batches = getBatches(publicKeys, 30);
+
+  const data = (
+    await Promise.all(
+      batches.map(async (pubkeys) => {
+        return retryWithExponentialBackoff(
+          async () =>
+            await safeFetchAllSolautoPosition(
+              umi,
+              pubkeys.map((x) => fromWeb3JsPublicKey(x))
+            )
+        );
+      })
+    )
+  ).flat();
+
+  return data.map((x) => {
+    switch (x.position.lendingPlatform) {
+      case LendingPlatform.Marginfi:
+        return new MarginfiSolautoPositionEx({
+          umi,
+          publicKey: toWeb3JsPublicKey(x.publicKey),
+          data: x,
+        });
+      // TODO: PF
+    }
+  });
 }
 
 export async function getOrCreatePositionEx(
