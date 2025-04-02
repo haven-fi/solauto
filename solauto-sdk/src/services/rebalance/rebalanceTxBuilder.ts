@@ -1,9 +1,6 @@
-import { SolautoClient } from "..";
-import {
-  FlashLoanDetails,
-  FlashLoanRequirements,
-  TransactionItemInputs,
-} from "../../types";
+import { SolautoClient } from "../solauto";
+import { SwapArgs } from "../swap";
+import { FlashLoanRequirements, TransactionItemInputs } from "../../types";
 import {
   fromBaseUnit,
   getMaxLiqUtilizationRateBps,
@@ -18,13 +15,12 @@ import {
   TokenType,
 } from "../../generated";
 import { PublicKey } from "@solana/web3.js";
-import { QuoteResponse } from "@jup-ag/api";
+import { RebalanceSwapManager } from "./rebalanceSwapManager";
 
 export class RebalanceTxBuilder {
-  private rebalanceValues!: RebalanceValues;
-  private flashLoan: FlashLoanDetails | undefined = undefined;
-  private jupQuote!: QuoteResponse;
+  private values!: RebalanceValues;
   private rebalanceType!: SolautoRebalanceType;
+  private swapManager!: RebalanceSwapManager;
 
   constructor(
     private client: SolautoClient,
@@ -58,7 +54,7 @@ export class RebalanceTxBuilder {
     supplyLiquidityAvailable: bigint,
     debtLiquidityAvailable: bigint
   ): TokenType | undefined {
-    const debtAdjustmentUsd = Math.abs(this.rebalanceValues.debtAdjustmentUsd);
+    const debtAdjustmentUsd = Math.abs(this.values.debtAdjustmentUsd);
 
     const insufficientLiquidity = (
       amountNeededUsd: number,
@@ -85,7 +81,7 @@ export class RebalanceTxBuilder {
     );
 
     let useDebtLiquidity =
-      this.rebalanceValues.rebalanceDirection === RebalanceDirection.Boost ||
+      this.values.rebalanceDirection === RebalanceDirection.Boost ||
       insufficientSupplyLiquidity;
 
     if (useDebtLiquidity) {
@@ -104,9 +100,7 @@ export class RebalanceTxBuilder {
       0.02
     );
 
-    if (
-      this.rebalanceValues.intermediaryLiqUtilizationRateBps < maxLtvRateBps
-    ) {
+    if (this.values.intermediaryLiqUtilizationRateBps < maxLtvRateBps) {
       return undefined;
     }
 
@@ -136,24 +130,32 @@ export class RebalanceTxBuilder {
   }
 
   private async setRebalanceDetails(attemptNum: number) {
-    this.rebalanceValues = this.getRebalanceValues();
+    this.values = this.getRebalanceValues();
     const flRequirements = await this.flashLoanRequirements(attemptNum);
 
-    // TODO? We need to find sufficient quote, and then half-apply that amount to get the real intermediaryLiqUtilizationRateBps
-
     if (flRequirements) {
-      this.rebalanceValues = this.getRebalanceValues(
+      this.values = this.getRebalanceValues(
         this.client.flProvider.flFeeBps(flRequirements)
       );
-
-      // TODO: set flashLoan and rebalanceType and jupQuote
-    } else {
-      // TODO: set jupQuote
-      this.rebalanceType = SolautoRebalanceType.Regular;
     }
+
+    this.swapManager = new RebalanceSwapManager(
+      this.client,
+      this.values,
+      flRequirements,
+      this.targetLiqUtilizationRateBps
+    );
+    await this.swapManager.setSwapArgs(attemptNum);
+
+    // TODO: set rebalanceType
+    // if () {
+    // } else {
+    //   this.rebalanceType = SolautoRebalanceType.Regular;
+    // }
   }
 
   private assembleTransaction(): TransactionItemInputs {
+    // this.swapManager.swapQuote
     // TODO: check if should refresh beforehand
   }
 

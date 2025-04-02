@@ -4,7 +4,13 @@ import {
   TokenBalanceChangeType,
 } from "../../generated";
 import { SolautoPositionEx } from "../../solautoPosition";
-import { fromBps, getLiqUtilzationRateBps, toBps } from "../../utils";
+import {
+  fromBps,
+  getLiqUtilzationRateBps,
+  getMaxLiqUtilizationRateBps,
+  maxRepayToBps,
+  toBps,
+} from "../../utils";
 import { SolautoFeesBps } from "./solautoFees";
 
 export interface PositionValues {
@@ -173,6 +179,7 @@ function getRebalanceDirection(
 export interface RebalanceValues extends DebtAdjustment {
   rebalanceDirection: RebalanceDirection;
   tokenBalanceChange?: TokenBalanceChange;
+  repayingCloseToMaxLtv: boolean;
 }
 
 export function getRebalanceValues(
@@ -209,9 +216,18 @@ export function getRebalanceValues(
     targetRate
   );
 
+  const repayingCloseToMaxLtv =
+    rebalanceDirection === RebalanceDirection.Repay &&
+    targetRate >=
+      maxRepayToBps(
+        solautoPosition.state().maxLtvBps,
+        solautoPosition.state().liqThresholdBps
+      );
+
   return {
     ...debtAdjustment,
     rebalanceDirection,
     tokenBalanceChange,
+    repayingCloseToMaxLtv,
   };
 }
