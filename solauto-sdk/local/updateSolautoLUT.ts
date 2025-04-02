@@ -43,7 +43,7 @@ export async function updateSolautoLut(additionalAccounts?: string[]) {
       ...solautoManagerTokenAccounts.map((x) => x.toString()),
       ...solautoFeeWalletTokenAccounts.map((x) => x.toString()),
       ...ismAccounts.map((x) => x.marginfiAccount.toString()),
-      ...Object.values(SWITCHBOARD_PRICE_FEED_IDS),
+      ...Object.values(SWITCHBOARD_PRICE_FEED_IDS).map(x => x.feedId),
       ...(additionalAccounts ?? []),
     ],
     LOOKUP_TABLE_ADDRESS

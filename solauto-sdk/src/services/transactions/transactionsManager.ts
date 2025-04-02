@@ -474,12 +474,12 @@ export class TransactionsManager {
     });
 
     const swbOracle = allAccounts.find((x) =>
-      Object.values(SWITCHBOARD_PRICE_FEED_IDS).includes(x ?? "")
+      Object.values(SWITCHBOARD_PRICE_FEED_IDS).map(x => x.feedId).includes(x ?? "")
     );
     if (swbOracle) {
       const mint = new PublicKey(
         Object.keys(SWITCHBOARD_PRICE_FEED_IDS).find(
-          (x) => SWITCHBOARD_PRICE_FEED_IDS[x] === swbOracle
+          (x) => SWITCHBOARD_PRICE_FEED_IDS[x].feedId === swbOracle
         )!
       );
       const stale = (await getSwitchboardFeedData(client.connection, [mint]))[0]
