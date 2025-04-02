@@ -44,8 +44,8 @@ import {
   getLendingAccountStartFlashloanInstructionDataSerializer,
 } from "../marginfi-sdk";
 import { PriorityFeeSetting, TransactionRunType } from "../types";
-import { createDynamicSolautoProgram } from "./solauto";
 import { SOLAUTO_PROD_PROGRAM } from "../constants";
+import { createDynamicSolautoProgram } from "./solautoUtils";
 
 export function buildHeliusApiUrl(heliusApiKey: string) {
   return `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`;

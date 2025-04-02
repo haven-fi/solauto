@@ -20,6 +20,7 @@ import {
 import { PublicKey } from "@solana/web3.js";
 import { RebalanceSwapManager } from "./rebalanceSwapManager";
 import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
+import { transactionBuilder } from "@metaplex-foundation/umi";
 
 export class RebalanceTxBuilder {
   private values!: RebalanceValues;
@@ -215,6 +216,7 @@ export class RebalanceTxBuilder {
   private assembleTransaction(): TransactionItemInputs {
     // this.swapManager.swapQuote
     // TODO: check if should refresh beforehand
+    return { tx: transactionBuilder() };
   }
 
   public async buildRebalanceTx(
