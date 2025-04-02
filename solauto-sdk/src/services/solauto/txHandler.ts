@@ -7,6 +7,7 @@ export interface TxHandlerProps {
   rpcUrl: string;
   showLogs?: boolean;
   programId?: PublicKey;
+  wsEndpoint?: string;
 }
 
 export abstract class TxHandler {
@@ -30,7 +31,8 @@ export abstract class TxHandler {
 
     const [connection, umi] = getSolanaRpcConnection(
       this.rpcUrl,
-      this.programId
+      this.programId,
+      props.wsEndpoint
     );
     this.connection = connection;
     this.umi = umi;

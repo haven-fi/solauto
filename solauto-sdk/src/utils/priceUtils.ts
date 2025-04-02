@@ -10,7 +10,7 @@ import {
   retryWithExponentialBackoff,
   zip,
 } from "./generalUtils";
-import * as OnDemand from "@switchboard-xyz/on-demand";
+import * as SwbCommon from "@switchboard-xyz/common";
 import { getJupPriceData } from "./jupiterUtils";
 
 export async function fetchTokenPrices(mints: PublicKey[]): Promise<number[]> {
@@ -120,7 +120,8 @@ export async function getSwitchboardPrices(
   if (mints.length === 0) {
     return [];
   }
-  const { CrossbarClient } = OnDemand;
+
+  const { CrossbarClient } = SwbCommon;
   const crossbar = CrossbarClient.default();
 
   let prices: Record<string, number> = {};

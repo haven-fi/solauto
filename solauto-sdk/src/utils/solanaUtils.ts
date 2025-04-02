@@ -57,9 +57,13 @@ export function buildIronforgeApiUrl(ironforgeApiKey: string) {
 
 export function getSolanaRpcConnection(
   rpcUrl: string,
-  programId: PublicKey = SOLAUTO_PROD_PROGRAM
+  programId: PublicKey = SOLAUTO_PROD_PROGRAM,
+  wsEndpoint?: string
 ): [Connection, Umi] {
-  const connection = new Connection(rpcUrl, "confirmed");
+  const connection = new Connection(rpcUrl, {
+    commitment: "confirmed",
+    wsEndpoint: wsEndpoint,
+  });
   const umi = createUmi(connection).use({
     install(umi) {
       umi.programs.add(createDynamicSolautoProgram(programId), false);
