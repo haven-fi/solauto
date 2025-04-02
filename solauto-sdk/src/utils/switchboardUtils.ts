@@ -6,15 +6,13 @@ import {
   Transaction,
   VersionedTransaction,
 } from "@solana/web3.js";
-import * as OnDemand from "@switchboard-xyz/on-demand";
 import { SWITCHBOARD_PRICE_FEED_IDS } from "../constants/switchboardConstants";
 import { TransactionItemInputs } from "../types";
 import { Signer, transactionBuilder } from "@metaplex-foundation/umi";
-import {
-  fromWeb3JsInstruction,
-  toWeb3JsPublicKey,
-} from "@metaplex-foundation/umi-web3js-adapters";
-import { retryWithExponentialBackoff, zip } from "./generalUtils";
+import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
+import * as OnDemand from "@switchboard-xyz/on-demand";
+import { retryWithExponentialBackoff } from "./generalUtils";
+import { getWrappedInstruction } from "./solanaUtils";
 
 export function getPullFeed(
   conn: Connection,
@@ -50,22 +48,22 @@ export async function buildSwbSubmitResponseTx(
   mint: PublicKey
 ): Promise<TransactionItemInputs | undefined> {
   const feed = getPullFeed(conn, mint, toWeb3JsPublicKey(signer.publicKey));
-  const [pullIxs, responses] = await retryWithExponentialBackoff(
-    async () => await feed.fetchUpdateIx({}),
+  const [pullIx, responses] = await retryWithExponentialBackoff(
+    async () =>
+      await feed.fetchUpdateIx({
+        chain: "solana",
+        network: "mainnet-beta",
+      }),
     2,
     200
   );
 
+  if (!pullIx) {
+    throw new Error("Unable to fetch SWB crank IX");
+  }
+
   return {
-    tx: transactionBuilder(
-      pullIxs!.map((x) => {
-        return {
-          bytesCreatedOnChain: 0,
-          instruction: fromWeb3JsInstruction(x),
-          signers: [signer],
-        };
-      })
-    ),
+    tx: transactionBuilder([getWrappedInstruction(signer, pullIx!)]),
     lookupTableAddresses: responses
       .filter((x) => Boolean(x.oracle.lut?.key))
       .map((x) => x.oracle.lut!.key.toString()),
