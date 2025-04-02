@@ -13,7 +13,7 @@ import {
   tokenInfo,
 } from "../../utils";
 import { TokenType } from "../../generated";
-import { FlashLoanDetails, FlashLoanRequirements } from "../../types";
+import { FlashLoanDetails } from "../../types";
 import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 
 export abstract class FlProviderBase {
@@ -50,7 +50,7 @@ export abstract class FlProviderBase {
     );
   }
 
-  abstract flFeeBps(flRequirements: FlashLoanRequirements): number;
+  abstract flFeeBps(source: TokenType, signerFlashLoan?: boolean): number;
   abstract flashBorrow(
     flashLoan: FlashLoanDetails,
     destTokenAccount: PublicKey

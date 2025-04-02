@@ -35,7 +35,7 @@ import {
 } from "../../utils";
 import { TokenType } from "../../generated";
 import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
-import { FlashLoanDetails, FlashLoanRequirements } from "../../types";
+import { FlashLoanDetails } from "../../types";
 
 interface IMFIAccount {
   signer?: Signer;
@@ -216,14 +216,14 @@ export class MarginfiFlProvider extends FlProviderBase {
     return getBankLiquidityAvailableBaseUnit(this.liquidityBank(source), false);
   }
 
-  flFeeBps(flRequirements: FlashLoanRequirements): number {
-    if (flRequirements.signerFlashLoan) {
+  flFeeBps(source: TokenType, signerFlashLoan?: boolean): number {
+    if (signerFlashLoan) {
       return 0;
     }
 
     return bytesToI80F48(
-      this.liquidityBank(flRequirements.liquiditySource).config
-        .interestRateConfig.protocolOriginationFee.value
+      this.liquidityBank(source).config.interestRateConfig
+        .protocolOriginationFee.value
     );
   }
 

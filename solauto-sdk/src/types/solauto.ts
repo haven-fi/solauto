@@ -46,12 +46,12 @@ export interface TransactionItemInputs {
 export interface FlashLoanRequirements {
   liquiditySource: TokenType;
   signerFlashLoan?: boolean;
+  flFeeBps?: number;
 }
 
 export interface FlashLoanDetails extends FlashLoanRequirements {
   baseUnitAmount: bigint;
   mint: PublicKey;
-  flFeeBps?: number;
 }
 
 export interface RebalanceDetails {

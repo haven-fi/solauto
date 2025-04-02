@@ -130,7 +130,10 @@ export class RebalanceTxBuilder {
         throw new Error(`Insufficient liquidity to perform the transaction`);
       }
     } else {
-      return { liquiditySource: stdFlLiquiditySource };
+      return {
+        liquiditySource: stdFlLiquiditySource,
+        flFeeBps: this.client.flProvider.flFeeBps(stdFlLiquiditySource),
+      };
     }
   }
 
@@ -139,29 +142,21 @@ export class RebalanceTxBuilder {
       throw new Error("Flash loan requirements data needed");
     }
 
-    // TODO: factor in FL fee everything, maybe should be done from the setSwapParams?
-
-    const inAmount = BigInt(parseInt(this.swapManager.swapQuote!.inAmount));
-    const outAmount = BigInt(parseInt(this.swapManager.swapQuote!.outAmount));
-
     const boosting =
       this.values.rebalanceDirection === RebalanceDirection.Boost;
     const useDebtLiquidity =
       this.flRequirements.liquiditySource === TokenType.Debt;
-    let flashLoanToken: PositionTokenState | undefined = undefined;
 
+    let flashLoanToken: PositionTokenState | undefined = undefined;
     if (boosting || useDebtLiquidity) {
       flashLoanToken = this.client.solautoPosition.state().debt;
     } else {
       flashLoanToken = this.client.solautoPosition.state().supply;
     }
 
-    const baseUnitAmount =
-      boosting || (!boosting && !useDebtLiquidity) ? inAmount : outAmount;
-
     return {
       ...this.flRequirements,
-      baseUnitAmount,
+      baseUnitAmount: this.swapManager.flBorrowAmount!,
       mint: toWeb3JsPublicKey(flashLoanToken.mint),
     };
   }
@@ -202,10 +197,8 @@ export class RebalanceTxBuilder {
     this.values = this.getRebalanceValues();
     this.flRequirements = await this.flashLoanRequirements(attemptNum);
 
-    if (this.flRequirements) {
-      this.values = this.getRebalanceValues(
-        this.client.flProvider.flFeeBps(this.flRequirements)
-      );
+    if (this.flRequirements?.flFeeBps) {
+      this.values = this.getRebalanceValues(this.flRequirements.flFeeBps);
     }
 
     this.swapManager = new RebalanceSwapManager(

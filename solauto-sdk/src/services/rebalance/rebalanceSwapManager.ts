@@ -18,6 +18,7 @@ import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 export class RebalanceSwapManager {
   public swapParams!: SwapParams;
   public swapQuote?: QuoteResponse;
+  public flBorrowAmount?: bigint;
 
   jupSwapManager!: JupSwapManager;
 
@@ -176,6 +177,17 @@ export class RebalanceSwapManager {
             ) - 15
           : undefined,
       });
+    }
+
+    if (this.flRequirements) {
+      this.flBorrowAmount = exactOut
+        ? this.bigIntWithIncrement(
+            outputAmount,
+            this.flRequirements.flFeeBps ?? 0
+          )
+        : this.swapQuote
+          ? BigInt(parseInt(this.swapQuote.inAmount))
+          : inputAmount;
     }
 
     this.swapParams = {

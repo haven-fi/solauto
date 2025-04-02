@@ -54,10 +54,8 @@ export class FlProviderAggregator extends FlProviderBase {
     return this.flProvider(source).liquidityAvailable(source);
   }
 
-  flFeeBps(flRequirements: FlashLoanRequirements): number {
-    return this.flProvider(flRequirements.liquiditySource).flFeeBps(
-      flRequirements
-    );
+  flFeeBps(source: TokenType, signerFlashLoan?: boolean): number {
+    return this.flProvider(source).flFeeBps(source);
   }
 
   flashBorrow(
