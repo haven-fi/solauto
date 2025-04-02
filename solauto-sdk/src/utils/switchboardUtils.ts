@@ -40,7 +40,7 @@ export function getPullFeed(
   const { PullFeed } = OnDemand;
   return new PullFeed(
     program,
-    new PublicKey(SWITCHBOARD_PRICE_FEED_IDS[mint.toString()])
+    new PublicKey(SWITCHBOARD_PRICE_FEED_IDS[mint.toString()].feedId)
   );
 }
 

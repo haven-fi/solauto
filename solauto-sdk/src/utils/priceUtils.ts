@@ -27,7 +27,7 @@ export async function fetchTokenPrices(mints: PublicKey[]): Promise<number[]> {
 
   const pythMints = mints.filter((x) => x.toString() in PYTH_PRICE_FEED_IDS);
   const switchboardMints = mints.filter(
-    (x) => x.toString() in SWITCHBOARD_PRICE_FEED_IDS
+    (x) => x.toString() in Object.keys(SWITCHBOARD_PRICE_FEED_IDS)
   );
   const otherMints = mints.filter(
     (x) => !pythMints.includes(x) && !switchboardMints.includes(x)
