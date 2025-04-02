@@ -28,6 +28,7 @@ import {
   ALL_SUPPORTED_TOKENS,
   DEFAULT_MARGINFI_GROUP,
   MARGINFI_ACCOUNTS,
+  POPCAT,
   PRICES,
   SOLAUTO_PROD_PROGRAM,
   SOLAUTO_TEST_PROGRAM,
@@ -43,9 +44,11 @@ import {
   getQnComputeUnitPriceEstimate,
   getSolautoManagedPositions,
   getSolautoPositionAccount,
+  getSwitchboardPrices,
   retryWithExponentialBackoff,
 } from "../../src/utils";
 import { PriorityFeeSetting } from "../../src/types";
+import { SWITCHBOARD_PRICE_FEED_IDS } from "../../src/constants/switchboardConstants";
 
 describe("Solauto Marginfi tests", async () => {
   // const signer = setupTest();
