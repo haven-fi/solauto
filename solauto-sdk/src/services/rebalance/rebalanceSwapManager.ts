@@ -1,19 +1,22 @@
 import { QuoteResponse } from "@jup-ag/api";
 import { FlashLoanRequirements } from "../../types";
 import { SolautoClient } from "../solauto";
-import { JupSwapManager, SwapArgs, SwapInput } from "../swap";
+import { JupSwapManager, SwapParams, SwapInput } from "../swap";
 import { RebalanceValues } from "./rebalanceValues";
 import { RebalanceDirection, TokenType } from "../../generated";
 import {
   consoleLog,
+  fromBaseUnit,
+  getLiqUtilzationRateBps,
   maxRepayToBps,
   safeGetPrice,
   toBaseUnit,
+  tokenInfo,
 } from "../../utils";
 import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 
 export class RebalanceSwapManager {
-  public swapArgs!: SwapArgs;
+  public swapParams!: SwapParams;
   public swapQuote?: QuoteResponse;
 
   jupSwapManager!: JupSwapManager;
@@ -27,21 +30,91 @@ export class RebalanceSwapManager {
     this.jupSwapManager = new JupSwapManager(client.signer);
   }
 
-  private swapDetails() {
-    const input =
-      this.values.rebalanceDirection === RebalanceDirection.Boost
-        ? this.client.solautoPosition.state().debt
-        : this.client.solautoPosition.state().supply;
-    const output =
-      this.values.rebalanceDirection === RebalanceDirection.Boost
-        ? this.client.solautoPosition.state().supply
-        : this.client.solautoPosition.state().debt;
+  private isBoost() {
+    return this.values.rebalanceDirection === RebalanceDirection.Boost;
+  }
 
-    const usdToSwap = Math.abs(this.values.debtAdjustmentUsd);
+  private usdToSwap() {
+    return Math.abs(this.values.debtAdjustmentUsd);
+  }
+
+  private postRebalanceLiqUtilizationRateBps(swapOutputAmount?: bigint) {
+    let supplyUsd = this.client.solautoPosition.supplyUsd();
     // TODO: add token balance change
+    let debtUsd = this.client.solautoPosition.debtUsd();
+
+    const outputToken = toWeb3JsPublicKey(
+      this.isBoost()
+        ? this.client.solautoPosition.state().supply.mint
+        : this.client.solautoPosition.state().debt.mint
+    );
+    const swapOutputUsd = swapOutputAmount
+      ? fromBaseUnit(swapOutputAmount, tokenInfo(outputToken).decimals) *
+        (safeGetPrice(outputToken) ?? 0)
+      : this.usdToSwap();
+
+    supplyUsd = this.isBoost()
+      ? supplyUsd + swapOutputUsd
+      : supplyUsd - this.usdToSwap();
+    debtUsd = this.isBoost()
+      ? debtUsd + this.usdToSwap()
+      : debtUsd - swapOutputUsd;
+
+    return getLiqUtilzationRateBps(
+      supplyUsd,
+      debtUsd,
+      this.client.solautoPosition.state().liqThresholdBps ?? 0
+    );
+  }
+
+  private async findSufficientQuote(
+    swapInput: SwapInput,
+    criteria: {
+      minOutputAmount?: bigint;
+      minLiqUtilizationRateBps?: number;
+      maxLiqUtilizationRateBps?: number;
+    }
+  ): Promise<QuoteResponse> {
+    let swapQuote: QuoteResponse;
+    let insufficient: boolean = false;
+
+    for (let i = 0; i < 10; i++) {
+      consoleLog("Finding sufficient quote...");
+      swapQuote = await this.jupSwapManager.getQuote(swapInput);
+
+      const outputAmount = parseInt(swapQuote.outAmount);
+      const postRebalanceRate = this.postRebalanceLiqUtilizationRateBps(
+        BigInt(outputAmount)
+      );
+      insufficient = criteria.minOutputAmount
+        ? outputAmount < Number(criteria.minOutputAmount)
+        : criteria.minLiqUtilizationRateBps
+          ? postRebalanceRate < criteria.minLiqUtilizationRateBps
+          : postRebalanceRate > criteria.maxLiqUtilizationRateBps!;
+
+      if (insufficient) {
+        consoleLog(swapQuote);
+        swapInput.amount =
+          swapInput.amount +
+          BigInt(Math.round(Number(swapInput.amount) * 0.01));
+      } else {
+        break;
+      }
+    }
+
+    return swapQuote!;
+  }
+
+  private swapDetails() {
+    const input = this.isBoost()
+      ? this.client.solautoPosition.state().debt
+      : this.client.solautoPosition.state().supply;
+    const output = this.isBoost()
+      ? this.client.solautoPosition.state().supply
+      : this.client.solautoPosition.state().debt;
 
     let inputAmount = toBaseUnit(
-      usdToSwap / safeGetPrice(input.mint)!,
+      this.usdToSwap() / safeGetPrice(input.mint)!,
       input.decimals
     );
 
@@ -49,13 +122,12 @@ export class RebalanceSwapManager {
       input,
       output,
       inputAmount,
-      usdToSwap,
     };
   }
 
-  async setSwapArgs(attemptNum: number): Promise<SwapArgs> {
+  async setSwapParams(attemptNum: number) {
     const rebalanceToZero = this.targetLiqUtilizationRateBps === 0;
-    let { input, output, inputAmount, usdToSwap } = this.swapDetails();
+    let { input, output, inputAmount } = this.swapDetails();
 
     let outputAmount = rebalanceToZero
       ? output.amountUsed.baseUnit +
@@ -66,12 +138,13 @@ export class RebalanceSwapManager {
               0.0001
           )
         )
-      : toBaseUnit(usdToSwap / safeGetPrice(output.mint)!, output.decimals);
+      : toBaseUnit(
+          this.usdToSwap() / safeGetPrice(output.mint)!,
+          output.decimals
+        );
 
-    const repaying =
-      this.values.rebalanceDirection === RebalanceDirection.Repay;
     const flashLoanRepayFromDebt =
-      repaying &&
+      !this.isBoost() &&
       this.flRequirements &&
       this.flRequirements.liquiditySource === TokenType.Debt;
 
@@ -93,23 +166,18 @@ export class RebalanceSwapManager {
     consoleLog(swapInput);
 
     if (exactIn && (rebalanceToZero || this.values.repayingCloseToMaxLtv)) {
-      this.swapQuote = await findSufficientQuote(
-        this.client,
-        this.values,
-        swapInput,
-        {
-          minOutputAmount: rebalanceToZero ? outputAmount : undefined,
-          maxLiqUtilizationRateBps: this.values.repayingCloseToMaxLtv
-            ? maxRepayToBps(
-                this.client.solautoPosition.state().maxLtvBps ?? 0,
-                this.client.solautoPosition.state().liqThresholdBps ?? 0
-              ) - 15
-            : undefined,
-        }
-      );
+      this.swapQuote = await this.findSufficientQuote(swapInput, {
+        minOutputAmount: rebalanceToZero ? outputAmount : undefined,
+        maxLiqUtilizationRateBps: this.values.repayingCloseToMaxLtv
+          ? maxRepayToBps(
+              this.client.solautoPosition.state().maxLtvBps ?? 0,
+              this.client.solautoPosition.state().liqThresholdBps ?? 0
+            ) - 15
+          : undefined,
+      });
     }
 
-    this.swapArgs = {
+    this.swapParams = {
       ...swapInput,
       destinationWallet: flashLoanRepayFromDebt
         ? toWeb3JsPublicKey(this.client.signer.publicKey)

@@ -27,7 +27,7 @@ export interface SwapInput {
   exactOut?: boolean;
 }
 
-export interface SwapArgs extends SwapInput {
+export interface SwapParams extends SwapInput {
   destinationWallet: PublicKey;
   slippageIncFactor?: number;
   wrapAndUnwrapSol?: boolean;
@@ -47,7 +47,7 @@ export class JupSwapManager {
 
   constructor(private signer: Signer) {}
 
-  public async getQuote(data: SwapArgs): Promise<QuoteResponse> {
+  public async getQuote(data: SwapInput): Promise<QuoteResponse> {
     return await retryWithExponentialBackoff(
       async (attemptNum: number) =>
         await this.jupApi.quoteGet({
@@ -68,7 +68,7 @@ export class JupSwapManager {
   }
 
   private async getJupInstructions(
-    data: SwapArgs
+    data: SwapParams
   ): Promise<SwapInstructionsResponse> {
     if (!this.jupQuote) {
       throw new Error(
@@ -131,7 +131,7 @@ export class JupSwapManager {
   }
 
   async getJupSwapTransactionData(
-    data: SwapArgs
+    data: SwapParams
   ): Promise<JupSwapTransactionData> {
     if (!this.jupQuote) {
       this.jupQuote = await this.getQuote(data);
@@ -174,7 +174,7 @@ export class JupSwapManager {
     };
   }
 
-  async getSwapTx(data: SwapArgs): Promise<TransactionItemInputs> {
+  async getSwapTx(data: SwapParams): Promise<TransactionItemInputs> {
     const swapData = await this.getJupSwapTransactionData(data);
 
     return {

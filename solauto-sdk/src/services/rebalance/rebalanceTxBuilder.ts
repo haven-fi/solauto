@@ -1,5 +1,4 @@
 import { SolautoClient } from "../solauto";
-import { SwapArgs } from "../swap";
 import { FlashLoanRequirements, TransactionItemInputs } from "../../types";
 import {
   fromBaseUnit,
@@ -145,7 +144,7 @@ export class RebalanceTxBuilder {
       flRequirements,
       this.targetLiqUtilizationRateBps
     );
-    await this.swapManager.setSwapArgs(attemptNum);
+    await this.swapManager.setSwapParams(attemptNum);
 
     // TODO: set rebalanceType
     // if () {
