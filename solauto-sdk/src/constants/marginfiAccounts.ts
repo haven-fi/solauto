@@ -55,13 +55,13 @@ export const MARGINFI_ACCOUNTS: {
       bank: "GJCi1uj3kYPZ64puA5sLUiCQfFapxT2xnREzrbDzFkYY",
       liquidityVault: "8M97jkdr4rJtPnQ4yQ9stD6qVwaUvjrBdDPDbHJnPJLf",
       vaultAuthority: "8x7mgTn5RvHR8Tn3CJqexSuQwrs6MLEy8csuXCDVvvpt",
-      priceOracle: SWITCHBOARD_PRICE_FEED_IDS[tokens.H_SOL.toString()],
+      priceOracle: SWITCHBOARD_PRICE_FEED_IDS[tokens.H_SOL.toString()].feedId,
     },
     [tokens.JUP_SOL]: {
       bank: "8LaUZadNqtzuCG7iCvZd7d5cbquuYfv19KjAg6GPuuCb",
       liquidityVault: "B1zjqKPoYp9bTMhzFADaAvjyGb49FMitLpi6P3Pa3YR6",
       vaultAuthority: "93Qqsge2jHVsWLd8vas4cWghrsZJooMUr5JKN5DtcfMX",
-      priceOracle: SWITCHBOARD_PRICE_FEED_IDS[tokens.JUP_SOL.toString()],
+      priceOracle: SWITCHBOARD_PRICE_FEED_IDS[tokens.JUP_SOL.toString()].feedId,
     },
     [tokens.JUP]: {
       bank: "Guu5uBc8k1WK1U2ihGosNaCy57LSgCkpWAabtzQqrQf8",
@@ -135,7 +135,7 @@ export const MARGINFI_ACCOUNTS: {
       bank: "845oEvt1oduoBj5zQxTr21cWWaUVnRjGerJuW3yMo2nn",
       liquidityVault: "At6R64ip51zay4dT6k1WnVGETSMcaiY5vggD5DVTgxri",
       vaultAuthority: "dNraDCWb5usDSoW4kD1Mi2E9WsNu6EABcQZqnrDfjNb",
-      priceOracle: SWITCHBOARD_PRICE_FEED_IDS[tokens.POPCAT.toString()],
+      priceOracle: SWITCHBOARD_PRICE_FEED_IDS[tokens.POPCAT.toString()].feedId,
     },
     [tokens.USDC]: {
       bank: "EXrnNVfLagt3j4hCHSD9WqK75o6dkZBtjpnrSrSC78MA",
@@ -149,7 +149,7 @@ export const MARGINFI_ACCOUNTS: {
       bank: "3J5rKmCi7JXG6qmiobFJyAidVTnnNAMGj4jomfBxKGRM",
       liquidityVault: "863K9YPVT3xbUGFZevrQJLqMux3UdRkwNQ6usAp4hJyy",
       vaultAuthority: "Qsv2rnNRdv59AwRU3YmGPMCTdKT41CDAKyYAr4srCJR",
-      priceOracle: SWITCHBOARD_PRICE_FEED_IDS[tokens.RETARDIO.toString()],
+      priceOracle: SWITCHBOARD_PRICE_FEED_IDS[tokens.RETARDIO.toString()].feedId,
     },
     [tokens.USDC]: {
       bank: "6cgYhBFWCc5sNHxkvSRhd5H9AdAHR41zKwuF37HmLry5",
@@ -163,7 +163,7 @@ export const MARGINFI_ACCOUNTS: {
       bank: "Dj3PndQ3j1vuga5ApiFWWAfQ4h3wBtgS2SeLZBT2LD4g",
       liquidityVault: "BRcRMDVPBQzXNXWtSS6bNotcGxhVsxfiAt1qf8nFVUpx",
       vaultAuthority: "36SgFh1qBRyj1PEhsn7Kg9Sfwbrn7rHP7kvTM5o5n6AL",
-      priceOracle: SWITCHBOARD_PRICE_FEED_IDS[tokens.BILLY.toString()],
+      priceOracle: SWITCHBOARD_PRICE_FEED_IDS[tokens.BILLY.toString()].feedId,
     },
     [tokens.USDC]: {
       bank: "A7vBgCowCYeja7GTc3pyqUBdC9Gkue2gWaMjGZW38meM",
@@ -177,7 +177,7 @@ export const MARGINFI_ACCOUNTS: {
       bank: "Br3yzg2WSb81RaFWK9UsKtq8fD5viwooZG34mKqQWxdM",
       liquidityVault: "J45Je52qv2rDBuCQWPwp3bjRhf3bGzRWhKZtGDuLooCX",
       vaultAuthority: "CKDsAKjNruDSz4tmUairh8PDGD1Rqh9WMTLWERYnnZrH",
-      priceOracle: SWITCHBOARD_PRICE_FEED_IDS[tokens.HMTR.toString()],
+      priceOracle: SWITCHBOARD_PRICE_FEED_IDS[tokens.HMTR.toString()].feedId,
     },
     [tokens.USDC]: {
       bank: "9yNnhJ8c1vGbu3DMf6eeeUi6TDJ2ddGgaRA88rL2R3rP",

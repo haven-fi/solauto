@@ -129,7 +129,7 @@ export async function getSwitchboardPrices(
     prices = await retryWithExponentialBackoff(
       async () => {
         const resp = await crossbar.simulateFeeds(
-          mints.map((x) => SWITCHBOARD_PRICE_FEED_IDS[x.toString()])
+          mints.map((x) => SWITCHBOARD_PRICE_FEED_IDS[x.toString()].feedHash)
         );
 
         const prices = resp.flatMap((x) => x.results[0]);
@@ -143,7 +143,7 @@ export async function getSwitchboardPrices(
         const finalMap: Record<string, number> = {};
         for (const item of resp) {
           for (const [k, v] of Object.entries(SWITCHBOARD_PRICE_FEED_IDS)) {
-            if (item.feedHash === v) {
+            if (item.feedHash === v.feedHash) {
               finalMap[k] = Number(item.results[0]);
             }
           }
