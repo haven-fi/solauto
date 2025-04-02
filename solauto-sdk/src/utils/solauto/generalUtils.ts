@@ -467,7 +467,7 @@ export async function positionStateWithLatestPrices(
     ),
     netWorth: {
       baseUnit: toBaseUnit(
-        (supplyUsd - debtUsd) / supplyPrice,
+        supplyPrice > 0 ? (supplyUsd - debtUsd) / supplyPrice : 0,
         state.supply.decimals
       ),
       baseAmountUsdValue: toBaseUnit(supplyUsd - debtUsd, USD_DECIMALS),
@@ -632,7 +632,7 @@ type ContextAdjustment =
   | { type: "dca"; value: DCASettingsInpArgs }
   | { type: "dcaInBalance"; value: { amount: bigint; tokenType: TokenType } }
   | { type: "cancellingDca"; value: TokenType }
-  | { type: "jupSwap", value: QuoteResponse };
+  | { type: "jupSwap"; value: QuoteResponse };
 
 export class ContextUpdates {
   public supplyAdjustment = BigInt(0);

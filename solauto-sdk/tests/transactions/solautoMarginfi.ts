@@ -39,6 +39,7 @@ import {
   buildIronforgeApiUrl,
   fetchTokenPrices,
   getAllPositionsByAuthority,
+  getJupTokenPrices,
   getQnComputeUnitPriceEstimate,
   getSolautoManagedPositions,
   getSolautoPositionAccount,
@@ -50,9 +51,9 @@ describe("Solauto Marginfi tests", async () => {
   // const signer = setupTest();
   const signer = setupTest("solauto-manager");
 
-  const payForTransactions = true;
+  const payForTransactions = false;
   const testProgram = false;
-  const positionId = 3;
+  const positionId = 1;
 
   it("open - deposit - borrow - rebalance to 0 - withdraw - close", async () => {
     const client = new SolautoMarginfiClient(
@@ -68,7 +69,7 @@ describe("Solauto Marginfi tests", async () => {
     await client.initialize({
       signer,
       positionId,
-      authority: new PublicKey("FKYQs7KgRvaKQHxXwb8HKfoBcFdSxLL3JvHWpPdVQ16v"),
+      authority: new PublicKey("EBhRj7jbF2EVE21i19JSuCX1BAbnZFYhoKW64HnaZ3kf"),
       // new: true,
       // marginfiAccount: new PublicKey(
       //   ""
