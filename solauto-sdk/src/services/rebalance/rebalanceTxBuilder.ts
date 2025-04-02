@@ -10,6 +10,7 @@ import {
 import { getRebalanceValues, RebalanceValues } from "./rebalanceValues";
 import { SolautoFeesBps } from "./solautoFees";
 import {
+  PositionTokenState,
   RebalanceDirection,
   SolautoRebalanceType,
   SwapType,
@@ -18,11 +19,13 @@ import {
 } from "../../generated";
 import { PublicKey } from "@solana/web3.js";
 import { RebalanceSwapManager } from "./rebalanceSwapManager";
+import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 
 export class RebalanceTxBuilder {
   private values!: RebalanceValues;
   private rebalanceType!: SolautoRebalanceType;
   private swapManager!: RebalanceSwapManager;
+  private flRequirements?: FlashLoanRequirements;
 
   constructor(
     private client: SolautoClient,
@@ -131,8 +134,40 @@ export class RebalanceTxBuilder {
     }
   }
 
-  private setRebalanceType(flRequirements?: FlashLoanRequirements) {
-    if (flRequirements) {
+  private getFlashLoanDetails() {
+    if (!this.flRequirements) {
+      throw new Error("Flash loan requirements data needed");
+    }
+
+    // TODO: factor in FL fee everything, maybe should be done from the setSwapParams?
+
+    const inAmount = BigInt(parseInt(this.swapManager.swapQuote!.inAmount));
+    const outAmount = BigInt(parseInt(this.swapManager.swapQuote!.outAmount));
+
+    const boosting =
+      this.values.rebalanceDirection === RebalanceDirection.Boost;
+    const useDebtLiquidity =
+      this.flRequirements.liquiditySource === TokenType.Debt;
+    let flashLoanToken: PositionTokenState | undefined = undefined;
+
+    if (boosting || useDebtLiquidity) {
+      flashLoanToken = this.client.solautoPosition.state().debt;
+    } else {
+      flashLoanToken = this.client.solautoPosition.state().supply;
+    }
+
+    const baseUnitAmount =
+      boosting || (!boosting && !useDebtLiquidity) ? inAmount : outAmount;
+
+    return {
+      ...this.flRequirements,
+      baseUnitAmount,
+      mint: toWeb3JsPublicKey(flashLoanToken.mint),
+    };
+  }
+
+  private setRebalanceType() {
+    if (this.flRequirements) {
       const tokenBalanceChangeType = this.values.tokenBalanceChange?.changeType;
       const firstRebalanceTokenChanges =
         tokenBalanceChangeType === TokenBalanceChangeType.PreSwapDeposit;
@@ -165,23 +200,23 @@ export class RebalanceTxBuilder {
 
   private async setRebalanceDetails(attemptNum: number) {
     this.values = this.getRebalanceValues();
-    const flRequirements = await this.flashLoanRequirements(attemptNum);
+    this.flRequirements = await this.flashLoanRequirements(attemptNum);
 
-    if (flRequirements) {
+    if (this.flRequirements) {
       this.values = this.getRebalanceValues(
-        this.client.flProvider.flFeeBps(flRequirements)
+        this.client.flProvider.flFeeBps(this.flRequirements)
       );
     }
 
     this.swapManager = new RebalanceSwapManager(
       this.client,
       this.values,
-      flRequirements,
+      this.flRequirements,
       this.targetLiqUtilizationRateBps
     );
     await this.swapManager.setSwapParams(attemptNum);
 
-    this.setRebalanceType(flRequirements);
+    this.setRebalanceType();
   }
 
   private assembleTransaction(): TransactionItemInputs {

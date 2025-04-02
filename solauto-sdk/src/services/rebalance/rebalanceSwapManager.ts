@@ -94,9 +94,7 @@ export class RebalanceSwapManager {
 
       if (insufficient) {
         consoleLog(swapQuote);
-        swapInput.amount =
-          swapInput.amount +
-          BigInt(Math.round(Number(swapInput.amount) * 0.01));
+        swapInput.amount = this.bigIntWithIncrement(swapInput.amount, 0.01);
       } else {
         break;
       }
@@ -123,6 +121,10 @@ export class RebalanceSwapManager {
       output,
       inputAmount,
     };
+  }
+
+  private bigIntWithIncrement(num: bigint, inc: number) {
+    return num + BigInt(Math.round(Number(num) * inc));
   }
 
   async setSwapParams(attemptNum: number) {
@@ -152,8 +154,7 @@ export class RebalanceSwapManager {
     const exactIn = !exactOut;
 
     if (exactIn && (rebalanceToZero || this.values.repayingCloseToMaxLtv)) {
-      inputAmount =
-        inputAmount + BigInt(Math.round(Number(inputAmount) * 0.005));
+      inputAmount = this.bigIntWithIncrement(inputAmount, 0.005);
     }
 
     const swapInput: SwapInput = {
