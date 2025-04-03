@@ -15,7 +15,6 @@ import {
 } from "@solana/spl-token";
 import {
   InvalidRebalanceConditionError,
-  LendingPlatform,
   RebalanceDirection,
   SolautoAction,
   SolautoRebalanceType,
@@ -35,28 +34,13 @@ import {
   createAssociatedTokenAccountUmiIx,
   systemTransferUmiIx,
 } from "../../utils/solanaUtils";
-import { getJupSwapTransaction } from "../../utils/jupiterUtils";
-import {
-  getFlashLoanDetails,
-  getFlashLoanRequirements,
-  getJupSwapRebalanceDetails,
-  getRebalanceValues,
-} from "../../utils/solauto/rebalanceUtils";
 import {
   consoleLog,
   currentUnixSeconds,
   getSolanaAccountCreated,
   rpcAccountCreated,
 } from "../../utils/generalUtils";
-import { SolautoMarginfiClient } from "../services/solautoMarginfiClient";
-import {
-  getMaxLiqUtilizationRateBps,
-  uint8ArrayToBigInt,
-} from "../../utils/numberUtils";
-import {
-  eligibleForRebalance,
-  positionStateWithLatestPrices,
-} from "../../utils/solautoUtils";
+import { uint8ArrayToBigInt } from "../../utils/numberUtils";
 import { getTokenAccount, getTokenAccountData } from "../../utils/accountUtils";
 import {
   createMarginfiProgram,
@@ -73,7 +57,6 @@ import {
   getJupiterErrorFromCode,
   JUPITER_PROGRAM_ID,
 } from "../../jupiter-sdk";
-import { PRICES } from "../../constants";
 import { TransactionItemInputs } from "../../types";
 import { isMarginfiClient, safeGetPrice } from "../../utils";
 import { BundleSimulationError } from "../../types/transactions";
@@ -570,61 +553,6 @@ export async function getTransactionChores(
   );
 
   return [choresBefore, choresAfter];
-}
-
-export async function requiresRefreshBeforeRebalance(client: SolautoClient) {
-  const neverRefreshedBefore =
-    client.solautoPositionData &&
-    client.solautoPositionData.state.supply.amountCanBeUsed.baseUnit ===
-      BigInt(0) &&
-    client.solautoPositionData.state.debt.amountCanBeUsed.baseUnit ===
-      BigInt(0);
-  const aboveMaxLtv =
-    client.solautoPositionState!.liqUtilizationRateBps >
-    getMaxLiqUtilizationRateBps(
-      client.solautoPositionState!.maxLtvBps,
-      client.solautoPositionState!.liqThresholdBps,
-      0.01
-    );
-
-  if (aboveMaxLtv || neverRefreshedBefore) {
-    return true;
-  } else if (client.solautoPositionData && !client.selfManaged) {
-    if (
-      client.contextUpdates.supplyAdjustment > BigInt(0) ||
-      client.contextUpdates.debtAdjustment > BigInt(0)
-    ) {
-      return false;
-    }
-
-    const oldStateWithLatestPrices = await positionStateWithLatestPrices(
-      client.solautoPositionData.state,
-      PRICES[client.supplyMint.toString()].price,
-      PRICES[client.debtMint.toString()].price
-    );
-    const utilizationRateDiff = Math.abs(
-      (client.solautoPositionState?.liqUtilizationRateBps ?? 0) -
-        oldStateWithLatestPrices.liqUtilizationRateBps
-    );
-
-    client.log("Liq utilization rate diff:", utilizationRateDiff);
-    if (
-      client.contextUpdates.supplyAdjustment === BigInt(0) &&
-      client.contextUpdates.debtAdjustment === BigInt(0) &&
-      utilizationRateDiff >= 10
-    ) {
-      client.log(
-        "Choosing to refresh before rebalance. Utilization rate diff:",
-        utilizationRateDiff
-      );
-      return true;
-    }
-  }
-
-  // Rebalance ix will already refresh internally if position is self managed, has automation to update, or position state last updated >= 1 day ago
-
-  client.log("Not refreshing before rebalance");
-  return false;
 }
 
 export async function buildSolautoRebalanceTransaction(
