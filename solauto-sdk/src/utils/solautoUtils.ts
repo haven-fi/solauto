@@ -369,40 +369,6 @@ export async function positionStateWithLatestPrices(
   };
 }
 
-export function getClient(
-  lendingPlatform: LendingPlatform,
-  txHandlerProps: TxHandlerProps
-) {
-  if (lendingPlatform === LendingPlatform.Marginfi) {
-    return new SolautoMarginfiClient(txHandlerProps);
-  } else {
-    // TODO: PF
-  }
-}
-
-export function isMarginfiClient(
-  client: SolautoClient
-): client is SolautoMarginfiClient {
-  return client.lendingPlatform == LendingPlatform.Marginfi;
-}
-// TODO: PF
-
-export function hasFirstRebalance(rebalanceType: SolautoRebalanceType) {
-  return [
-    SolautoRebalanceType.Regular,
-    SolautoRebalanceType.DoubleRebalanceWithFL,
-    SolautoRebalanceType.FLRebalanceThenSwap,
-  ].includes(rebalanceType);
-}
-
-export function hasLastRebalance(rebalanceType: SolautoRebalanceType) {
-  return [
-    SolautoRebalanceType.Regular,
-    SolautoRebalanceType.DoubleRebalanceWithFL,
-    SolautoRebalanceType.FLSwapThenRebalance,
-  ].includes(rebalanceType);
-}
-
 type ContextAdjustment =
   | { type: "supply"; value: bigint }
   | { type: "debt"; value: bigint }
@@ -470,4 +436,38 @@ export class ContextUpdates {
       this.cancellingDca !== undefined
     );
   }
+}
+
+export function getClient(
+  lendingPlatform: LendingPlatform,
+  txHandlerProps: TxHandlerProps
+) {
+  if (lendingPlatform === LendingPlatform.Marginfi) {
+    return new SolautoMarginfiClient(txHandlerProps);
+  } else {
+    // TODO: PF
+  }
+}
+
+export function isMarginfiClient(
+  client: SolautoClient
+): client is SolautoMarginfiClient {
+  return client.lendingPlatform == LendingPlatform.Marginfi;
+}
+// TODO: PF
+
+export function hasFirstRebalance(rebalanceType: SolautoRebalanceType) {
+  return [
+    SolautoRebalanceType.Regular,
+    SolautoRebalanceType.DoubleRebalanceWithFL,
+    SolautoRebalanceType.FLRebalanceThenSwap,
+  ].includes(rebalanceType);
+}
+
+export function hasLastRebalance(rebalanceType: SolautoRebalanceType) {
+  return [
+    SolautoRebalanceType.Regular,
+    SolautoRebalanceType.DoubleRebalanceWithFL,
+    SolautoRebalanceType.FLSwapThenRebalance,
+  ].includes(rebalanceType);
 }
