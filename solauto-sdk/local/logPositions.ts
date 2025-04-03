@@ -138,7 +138,7 @@ async function main(filterWhitelist: boolean) {
 
     console.log(
       pos.publicKey.toString(),
-      `(${pos.data.authority!.toString()} ${pos.data.positionId})`
+      `(${pos.data().authority!.toString()} ${pos.data().positionId})`
     );
     console.log(
       `${pos.strategyName()}: $${formatNumber(pos.netWorthUsd(), 2, 10000, 2)} ${healthText} ${boostText}`
@@ -153,7 +153,7 @@ async function main(filterWhitelist: boolean) {
   );
   console.log(
     "Total users:",
-    Array.from(new Set(positionsEx.map((x) => x.data.authority!.toString())))
+    Array.from(new Set(positionsEx.map((x) => x.data().authority!.toString())))
       .length
   );
 
