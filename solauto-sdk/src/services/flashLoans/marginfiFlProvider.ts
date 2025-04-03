@@ -106,6 +106,8 @@ export class MarginfiFlProvider extends FlProviderBase {
     const supplyBanks = mapBanksAndBalances(this.supplyMint);
     const debtBanks = mapBanksAndBalances(this.debtMint);
 
+    console.log(supplyBanks);
+    console.log(debtBanks);
     this.supplyBankLiquiditySource = supplyBanks[0][1];
     this.debtBankLiquiditySource = debtBanks[0][1];
   }
