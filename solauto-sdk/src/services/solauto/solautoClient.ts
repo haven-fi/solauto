@@ -12,8 +12,8 @@ import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 import {
   DCASettingsInpArgs,
   LendingPlatform,
+  RebalanceStep,
   SolautoActionArgs,
-  SolautoRebalanceTypeArgs,
   SolautoSettingsParametersInpArgs,
   TokenType,
   UpdatePositionDataArgs,
@@ -36,15 +36,11 @@ import {
   ReferralStateManager,
   ReferralStateManagerArgs,
 } from "./referralStateManager";
-import { QuoteResponse } from "@jup-ag/api";
 import {
   getOrCreatePositionEx,
   SolautoPositionEx,
 } from "../../solautoPosition";
-import { RebalanceValues } from "../rebalance";
-import { MarginfiFlProvider } from "../flashLoans/marginfiFlProvider";
-import { FlashLoanDetails, RebalanceDetails } from "../../types";
-import { FlProviderBase } from "../flashLoans/flProviderBase";
+import { RebalanceDetails } from "../../types";
 import { FlProviderAggregator } from "../flashLoans/flProviderAggregator";
 
 export interface SolautoClientArgs extends ReferralStateManagerArgs {
@@ -564,7 +560,7 @@ export abstract class SolautoClient extends ReferralStateManager {
   }
 
   abstract rebalance(
-    rebalanceStep: "A" | "B",
+    rebalanceStep: RebalanceStep,
     data: RebalanceDetails
   ): TransactionBuilder;
 }

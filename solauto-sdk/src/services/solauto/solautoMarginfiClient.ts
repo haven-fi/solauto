@@ -18,6 +18,7 @@ import {
   LendingPlatform,
   PositionType,
   RebalanceDirection,
+  RebalanceStep,
   SolautoActionArgs,
   SolautoRebalanceType,
   SolautoSettingsParametersInpArgs,
@@ -41,7 +42,7 @@ import {
   getAllMarginfiAccountsByAuthority,
   marginfiAccountEmpty,
 } from "../../utils/marginfiUtils";
-import { consoleLog, hasFirstRebalance, hasLastRebalance } from "../../utils";
+import { hasFirstRebalance } from "../../utils/solautoUtils";
 import { RebalanceDetails } from "../../types";
 
 export interface SolautoMarginfiClientArgs extends SolautoClientArgs {
@@ -131,7 +132,7 @@ export class SolautoMarginfiClient extends SolautoClient {
     );
     this.debtPriceOracle = new PublicKey(this.marginfiDebtAccounts.priceOracle);
 
-    consoleLog("Marginfi account:", this.marginfiAccountPk.toString());
+    this.log("Marginfi account:", this.marginfiAccountPk.toString());
   }
 
   defaultLookupTables(): string[] {
@@ -352,7 +353,7 @@ export class SolautoMarginfiClient extends SolautoClient {
   }
 
   rebalance(
-    rebalanceStep: "A" | "B",
+    rebalanceStep: RebalanceStep,
     data: RebalanceDetails
   ): TransactionBuilder {
     const inputIsSupply = new PublicKey(data.swapQuote.inputMint).equals(
@@ -361,32 +362,35 @@ export class SolautoMarginfiClient extends SolautoClient {
     const outputIsSupply = new PublicKey(data.swapQuote.outputMint).equals(
       this.solautoPosition.supplyMint()
     );
+
+    const preSwapRebalance = rebalanceStep === RebalanceStep.PreSwap;
+    const postSwapRebalance = rebalanceStep === RebalanceStep.PostSwap;
+
     const needSupplyAccounts =
-      (inputIsSupply && rebalanceStep === "A") ||
-      (outputIsSupply && rebalanceStep === "B") ||
-      (inputIsSupply && data.flashLoan !== undefined && rebalanceStep == "B");
+      (inputIsSupply && preSwapRebalance) ||
+      (outputIsSupply && postSwapRebalance) ||
+      (inputIsSupply && data.flashLoan !== undefined && postSwapRebalance);
     const needDebtAccounts =
-      (!inputIsSupply && rebalanceStep === "A") ||
-      (!outputIsSupply && rebalanceStep === "B") ||
-      (!inputIsSupply && data.flashLoan !== undefined && rebalanceStep == "B");
+      (!inputIsSupply && preSwapRebalance) ||
+      (!outputIsSupply && postSwapRebalance) ||
+      (!inputIsSupply && data.flashLoan !== undefined && postSwapRebalance);
 
     const isFirstRebalance =
-      (rebalanceStep === "A" && hasFirstRebalance(data.rebalanceType)) ||
-      (rebalanceStep === "B" &&
+      (preSwapRebalance && hasFirstRebalance(data.rebalanceType)) ||
+      (postSwapRebalance &&
         data.rebalanceType === SolautoRebalanceType.FLSwapThenRebalance);
 
     return marginfiRebalance(this.umi, {
       signer: this.signer,
       marginfiProgram: publicKey(MARGINFI_PROGRAM_ID),
       ixsSysvar: publicKey(SYSVAR_INSTRUCTIONS_PUBKEY),
-      solautoFeesTa:
-        rebalanceStep === "B"
-          ? publicKey(
-              data.values.rebalanceDirection === RebalanceDirection.Boost
-                ? this.solautoFeesSupplyTa
-                : this.solautoFeesDebtTa
-            )
-          : undefined,
+      solautoFeesTa: postSwapRebalance
+        ? publicKey(
+            data.values.rebalanceDirection === RebalanceDirection.Boost
+              ? this.solautoFeesSupplyTa
+              : this.solautoFeesDebtTa
+          )
+        : undefined,
       authorityReferralState: publicKey(this.referralState),
       referredByTa: this.referredByState
         ? publicKey(

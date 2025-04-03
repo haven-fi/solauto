@@ -19,6 +19,7 @@ import { SolautoFeesBps } from "./solautoFees";
 import {
   PositionTokenState,
   RebalanceDirection,
+  RebalanceStep,
   SolautoRebalanceType,
   SwapType,
   TokenBalanceChangeType,
@@ -270,8 +271,14 @@ export class RebalanceTxBuilder {
       targetLiqUtilizationRateBps: this.targetLiqUtilizationRateBps,
     };
 
-    const firstRebalance = this.client.rebalance("A", rebalanceDetails);
-    const lastRebalance = this.client.rebalance("B", rebalanceDetails);
+    const firstRebalance = this.client.rebalance(
+      RebalanceStep.PreSwap,
+      rebalanceDetails
+    );
+    const lastRebalance = this.client.rebalance(
+      RebalanceStep.PostSwap,
+      rebalanceDetails
+    );
 
     if (!flashLoanDetails) {
       tx = tx.add([setupInstructions, firstRebalance, swapIx, lastRebalance]);
