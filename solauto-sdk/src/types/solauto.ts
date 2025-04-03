@@ -58,6 +58,6 @@ export interface RebalanceDetails {
   values: RebalanceValues;
   rebalanceType: SolautoRebalanceType;
   flashLoan?: FlashLoanDetails;
-  jupQuote: QuoteResponse;
+  swapQuote: QuoteResponse;
   targetLiqUtilizationRateBps?: number;
 }

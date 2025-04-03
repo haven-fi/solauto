@@ -354,10 +354,10 @@ export class SolautoMarginfiClient extends SolautoClient {
     rebalanceStep: "A" | "B",
     data: RebalanceDetails
   ): TransactionBuilder {
-    const inputIsSupply = new PublicKey(data.jupQuote.inputMint).equals(
+    const inputIsSupply = new PublicKey(data.swapQuote.inputMint).equals(
       this.solautoPosition.supplyMint()
     );
-    const outputIsSupply = new PublicKey(data.jupQuote.outputMint).equals(
+    const outputIsSupply = new PublicKey(data.swapQuote.outputMint).equals(
       this.solautoPosition.supplyMint()
     );
     const needSupplyAccounts =
@@ -401,7 +401,7 @@ export class SolautoMarginfiClient extends SolautoClient {
       intermediaryTa: publicKey(
         getTokenAccount(
           toWeb3JsPublicKey(this.signer.publicKey),
-          new PublicKey(data.jupQuote.inputMint)
+          new PublicKey(data.swapQuote.inputMint)
         )
       ),
       supplyBank: publicKey(this.marginfiSupplyAccounts.bank),
@@ -435,10 +435,10 @@ export class SolautoMarginfiClient extends SolautoClient {
       rebalanceType: data.rebalanceType,
       targetLiqUtilizationRateBps: data.targetLiqUtilizationRateBps ?? null,
       swapInAmountBaseUnit: isFirstRebalance
-        ? parseInt(data.jupQuote.inAmount)
+        ? parseInt(data.swapQuote.inAmount)
         : null,
       swapType:
-        data.jupQuote.swapMode === "ExactOut" && isFirstRebalance
+        data.swapQuote.swapMode === "ExactOut" && isFirstRebalance
           ? SwapType.ExactOut
           : null,
       flashLoanFeeBps:

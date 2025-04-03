@@ -20,7 +20,7 @@ export class RebalanceSwapManager {
   public swapQuote?: QuoteResponse;
   public flBorrowAmount?: bigint;
 
-  jupSwapManager!: JupSwapManager;
+  private jupSwapManager!: JupSwapManager;
 
   constructor(
     private client: SolautoClient,
@@ -201,6 +201,18 @@ export class RebalanceSwapManager {
         ? toWeb3JsPublicKey(this.client.signer.publicKey)
         : this.client.solautoPosition.publicKey,
       slippageIncFactor: 0.2 + attemptNum * 0.25,
+    };
+  }
+
+  async getSwapTxData() {
+    const { jupQuote, lookupTableAddresses, setupInstructions, swapIx } =
+      await this.jupSwapManager.getJupSwapTxData(this.swapParams);
+
+    return {
+      swapQuote: jupQuote,
+      lookupTableAddresses,
+      setupInstructions,
+      swapIx,
     };
   }
 }

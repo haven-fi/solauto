@@ -34,6 +34,7 @@ export interface SwapParams extends SwapInput {
 }
 
 export interface JupSwapTransactionData {
+  jupQuote: QuoteResponse;
   setupInstructions: TransactionBuilder;
   swapIx: TransactionBuilder;
   cleanupIx: TransactionBuilder;
@@ -130,9 +131,7 @@ export class JupSwapManager {
     consoleLog("Increased inAmount:", this.jupQuote!.inAmount);
   }
 
-  async getJupSwapTransactionData(
-    data: SwapParams
-  ): Promise<JupSwapTransactionData> {
+  async getJupSwapTxData(data: SwapParams): Promise<JupSwapTransactionData> {
     if (!this.jupQuote) {
       this.jupQuote = await this.getQuote(data);
     }
@@ -149,6 +148,7 @@ export class JupSwapManager {
     }
 
     return {
+      jupQuote: this.jupQuote,
       lookupTableAddresses: instructions.addressLookupTableAddresses,
       setupInstructions: transactionBuilder(
         (instructions.setupInstructions ?? []).map((ix) =>
@@ -175,7 +175,7 @@ export class JupSwapManager {
   }
 
   async getSwapTx(data: SwapParams): Promise<TransactionItemInputs> {
-    const swapData = await this.getJupSwapTransactionData(data);
+    const swapData = await this.getJupSwapTxData(data);
 
     return {
       tx: transactionBuilder().add([

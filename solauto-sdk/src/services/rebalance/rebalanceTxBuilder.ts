@@ -1,9 +1,14 @@
 import { SolautoClient } from "../solauto";
-import { FlashLoanRequirements, TransactionItemInputs } from "../../types";
+import {
+  FlashLoanRequirements,
+  RebalanceDetails,
+  TransactionItemInputs,
+} from "../../types";
 import {
   consoleLog,
   fromBaseUnit,
   getMaxLiqUtilizationRateBps,
+  getTokenAccount,
   safeGetPrice,
   tokenInfo,
 } from "../../utils";
@@ -241,10 +246,70 @@ export class RebalanceTxBuilder {
     return false;
   }
 
-  private assembleTransaction(): TransactionItemInputs {
-    // this.swapManager.swapQuote
-    // TODO: check if should refresh beforehand
-    return { tx: transactionBuilder() };
+  private async assembleTransaction(): Promise<TransactionItemInputs> {
+    const { swapQuote, lookupTableAddresses, setupInstructions, swapIx } =
+      await this.swapManager.getSwapTxData();
+
+    const flashLoanDetails = this.flRequirements
+      ? this.getFlashLoanDetails()
+      : undefined;
+
+    let tx = transactionBuilder();
+
+    if (await this.refreshBeforeRebalance()) {
+      tx = tx.add(this.client.refresh());
+    }
+
+    const rebalanceDetails: RebalanceDetails = {
+      values: this.values,
+      rebalanceType: this.rebalanceType,
+      flashLoan: flashLoanDetails,
+      swapQuote,
+      targetLiqUtilizationRateBps: this.targetLiqUtilizationRateBps,
+    };
+
+    const firstRebalance = this.client.rebalance("A", rebalanceDetails);
+    const lastRebalance = this.client.rebalance("B", rebalanceDetails);
+
+    if (!flashLoanDetails) {
+      tx = tx.add([setupInstructions, firstRebalance, swapIx, lastRebalance]);
+    } else {
+      consoleLog("Flash loan details: ", flashLoanDetails);
+      consoleLog("Rebalance type:", this.rebalanceType);
+
+      const exactOut = swapQuote.swapMode === "ExactOut";
+      const addFirstRebalance = [
+        SolautoRebalanceType.DoubleRebalanceWithFL,
+        SolautoRebalanceType.FLRebalanceThenSwap,
+      ].includes(this.rebalanceType);
+      const addLastRebalance = [
+        SolautoRebalanceType.DoubleRebalanceWithFL,
+        SolautoRebalanceType.FLSwapThenRebalance,
+      ].includes(this.rebalanceType);
+
+      const flashBorrowDest = getTokenAccount(
+        exactOut && !addLastRebalance
+          ? toWeb3JsPublicKey(this.client.signer.publicKey)
+          : this.client.solautoPosition.publicKey,
+        exactOut
+          ? new PublicKey(swapQuote.outputMint)
+          : new PublicKey(swapQuote.inputMint)
+      );
+
+      tx = tx.add([
+        setupInstructions,
+        this.client.flProvider.flashBorrow(flashLoanDetails, flashBorrowDest),
+        ...(addFirstRebalance ? [firstRebalance] : []),
+        swapIx,
+        ...(addLastRebalance ? [lastRebalance] : []),
+        this.client.flProvider.flashRepay(flashLoanDetails),
+      ]);
+    }
+
+    return {
+      tx,
+      lookupTableAddresses,
+    };
   }
 
   public async buildRebalanceTx(
@@ -256,6 +321,6 @@ export class RebalanceTxBuilder {
     }
 
     await this.setRebalanceDetails(attemptNum);
-    return this.assembleTransaction();
+    return await this.assembleTransaction();
   }
 }
