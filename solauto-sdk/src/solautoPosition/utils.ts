@@ -186,5 +186,3 @@ export function createFakePositionState(
     padding: [],
   };
 }
-
-export function positionStateWithLatestPrices() {}

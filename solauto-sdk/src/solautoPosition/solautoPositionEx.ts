@@ -19,16 +19,12 @@ import {
   ContextUpdates,
   currentUnixSeconds,
   debtLiquidityUsdAvailable,
-  fetchTokenPrices,
-  fromBaseUnit,
-  getLiqUtilzationRateBps,
   maxBoostToBps,
   maxRepayToBps,
+  positionStateWithLatestPrices,
   safeGetPrice,
   solautoStrategyName,
   supplyLiquidityUsdDepositable,
-  toBaseUnit,
-  toRoundedUsdValue,
 } from "../utils";
 import { RebalanceAction } from "../types";
 import { getDebtAdjustment } from "../services/rebalance";
@@ -67,7 +63,7 @@ export abstract class SolautoPositionEx {
   protected lp?: PublicKey = undefined;
   public lpUserAccount?: PublicKey = undefined;
 
-  private firstState!: PositionState;
+  private readonly firstState!: PositionState;
 
   constructor(args: PositionExArgs) {
     this.umi = args.umi;
@@ -250,12 +246,12 @@ export abstract class SolautoPositionEx {
   async utilizationRateBpsDrift() {
     const supplyPrice = safeGetPrice(this.state().supply.mint) ?? 0;
     const debtPrice = safeGetPrice(this.state().debt.mint) ?? 0;
-    const oldState = await this.positionStateWithLatestPrices(
+    const oldState = await positionStateWithLatestPrices(
       this.firstState,
       supplyPrice,
       debtPrice
     );
-    const newState = await this.positionStateWithLatestPrices(
+    const newState = await positionStateWithLatestPrices(
       this.state(),
       supplyPrice,
       debtPrice
@@ -265,74 +261,11 @@ export abstract class SolautoPositionEx {
   }
 
   async updateWithLatestPrices(supplyPrice?: number, debtPrice?: number) {
-    this.data.state = await this.positionStateWithLatestPrices(
+    this.data.state = await positionStateWithLatestPrices(
       this.state(),
       supplyPrice,
       debtPrice
     );
-  }
-
-  private async positionStateWithLatestPrices(
-    state: PositionState,
-    supplyPrice?: number,
-    debtPrice?: number
-  ): Promise<PositionState> {
-    if (!supplyPrice || !debtPrice) {
-      [supplyPrice, debtPrice] = await fetchTokenPrices([
-        toWeb3JsPublicKey(state.supply.mint),
-        toWeb3JsPublicKey(state.debt.mint),
-      ]);
-    }
-
-    const supplyUsd = this.totalSupply() * supplyPrice;
-    const debtUsd = this.totalDebt() * debtPrice;
-    return {
-      ...state,
-      liqUtilizationRateBps: getLiqUtilzationRateBps(
-        supplyUsd,
-        debtUsd,
-        state.liqThresholdBps
-      ),
-      netWorth: {
-        baseUnit: toBaseUnit(
-          supplyUsd > 0 ? (supplyUsd - debtUsd) / supplyPrice : 0,
-          state.supply.decimals
-        ),
-        baseAmountUsdValue: toRoundedUsdValue(supplyUsd - debtUsd),
-      },
-      supply: {
-        ...state.supply,
-        amountCanBeUsed: {
-          ...state.supply.amountCanBeUsed,
-          baseAmountUsdValue: toRoundedUsdValue(
-            fromBaseUnit(
-              state.supply.amountCanBeUsed.baseUnit,
-              state.supply.decimals
-            ) * supplyPrice
-          ),
-        },
-        amountUsed: {
-          ...state.supply.amountUsed,
-          baseAmountUsdValue: toRoundedUsdValue(supplyUsd),
-        },
-      },
-      debt: {
-        ...state.debt,
-        amountCanBeUsed: {
-          ...state.debt.amountCanBeUsed,
-          baseAmountUsdValue: toRoundedUsdValue(
-            fromBaseUnit(
-              state.debt.amountCanBeUsed.baseUnit,
-              state.debt.decimals
-            ) * debtPrice
-          ),
-        },
-        amountUsed: {
-          ...state.debt.amountUsed,
-          baseAmountUsdValue: toRoundedUsdValue(debtUsd),
-        },
-      },
-    };
   }
 
   async refetchPositionData() {

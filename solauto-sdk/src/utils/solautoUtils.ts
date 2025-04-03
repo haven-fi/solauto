@@ -5,6 +5,7 @@ import {
   DCASettings,
   DCASettingsInpArgs,
   LendingPlatform,
+  PositionState,
   PositionType,
   SolautoSettingsParameters,
   SolautoSettingsParametersInpArgs,
@@ -30,6 +31,15 @@ import {
   SolautoMarginfiClient,
   TxHandlerProps,
 } from "../services";
+import {
+  calcTotalDebt,
+  calcTotalSupply,
+  fromBaseUnit,
+  getLiqUtilzationRateBps,
+  toBaseUnit,
+  toRoundedUsdValue,
+} from "./numberUtils";
+import { fetchTokenPrices } from "./priceUtils";
 
 export function createDynamicSolautoProgram(programId: PublicKey): Program {
   return {
@@ -293,6 +303,69 @@ export async function getAllPositionsByAuthority(
     ]);
 
   return solautoCompatiblePositions.flat();
+}
+
+export async function positionStateWithLatestPrices(
+  state: PositionState,
+  supplyPrice?: number,
+  debtPrice?: number
+): Promise<PositionState> {
+  if (!supplyPrice || !debtPrice) {
+    [supplyPrice, debtPrice] = await fetchTokenPrices([
+      toWeb3JsPublicKey(state.supply.mint),
+      toWeb3JsPublicKey(state.debt.mint),
+    ]);
+  }
+
+  const supplyUsd = calcTotalSupply(state) * supplyPrice;
+  const debtUsd = calcTotalDebt(state) * debtPrice;
+  return {
+    ...state,
+    liqUtilizationRateBps: getLiqUtilzationRateBps(
+      supplyUsd,
+      debtUsd,
+      state.liqThresholdBps
+    ),
+    netWorth: {
+      baseUnit: toBaseUnit(
+        supplyUsd > 0 ? (supplyUsd - debtUsd) / supplyPrice : 0,
+        state.supply.decimals
+      ),
+      baseAmountUsdValue: toRoundedUsdValue(supplyUsd - debtUsd),
+    },
+    supply: {
+      ...state.supply,
+      amountCanBeUsed: {
+        ...state.supply.amountCanBeUsed,
+        baseAmountUsdValue: toRoundedUsdValue(
+          fromBaseUnit(
+            state.supply.amountCanBeUsed.baseUnit,
+            state.supply.decimals
+          ) * supplyPrice
+        ),
+      },
+      amountUsed: {
+        ...state.supply.amountUsed,
+        baseAmountUsdValue: toRoundedUsdValue(supplyUsd),
+      },
+    },
+    debt: {
+      ...state.debt,
+      amountCanBeUsed: {
+        ...state.debt.amountCanBeUsed,
+        baseAmountUsdValue: toRoundedUsdValue(
+          fromBaseUnit(
+            state.debt.amountCanBeUsed.baseUnit,
+            state.debt.decimals
+          ) * debtPrice
+        ),
+      },
+      amountUsed: {
+        ...state.debt.amountUsed,
+        baseAmountUsdValue: toRoundedUsdValue(debtUsd),
+      },
+    },
+  };
 }
 
 export function getClient(
