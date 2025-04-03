@@ -7,6 +7,7 @@ import {
   LendingPlatform,
   PositionState,
   PositionType,
+  SolautoRebalanceType,
   SolautoSettingsParameters,
   SolautoSettingsParametersInpArgs,
   TokenType,
@@ -385,6 +386,22 @@ export function isMarginfiClient(
   return client.lendingPlatform == LendingPlatform.Marginfi;
 }
 // TODO: PF
+
+export function hasFirstRebalance(rebalanceType: SolautoRebalanceType) {
+  return [
+    SolautoRebalanceType.Regular,
+    SolautoRebalanceType.DoubleRebalanceWithFL,
+    SolautoRebalanceType.FLRebalanceThenSwap,
+  ].includes(rebalanceType);
+}
+
+export function hasLastRebalance(rebalanceType: SolautoRebalanceType) {
+  return [
+    SolautoRebalanceType.Regular,
+    SolautoRebalanceType.DoubleRebalanceWithFL,
+    SolautoRebalanceType.FLSwapThenRebalance,
+  ].includes(rebalanceType);
+}
 
 type ContextAdjustment =
   | { type: "supply"; value: bigint }

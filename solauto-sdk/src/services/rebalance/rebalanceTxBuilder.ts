@@ -9,6 +9,8 @@ import {
   fromBaseUnit,
   getMaxLiqUtilizationRateBps,
   getTokenAccount,
+  hasFirstRebalance,
+  hasLastRebalance,
   safeGetPrice,
   tokenInfo,
 } from "../../utils";
@@ -278,14 +280,8 @@ export class RebalanceTxBuilder {
       consoleLog("Rebalance type:", this.rebalanceType);
 
       const exactOut = swapQuote.swapMode === "ExactOut";
-      const addFirstRebalance = [
-        SolautoRebalanceType.DoubleRebalanceWithFL,
-        SolautoRebalanceType.FLRebalanceThenSwap,
-      ].includes(this.rebalanceType);
-      const addLastRebalance = [
-        SolautoRebalanceType.DoubleRebalanceWithFL,
-        SolautoRebalanceType.FLSwapThenRebalance,
-      ].includes(this.rebalanceType);
+      const addFirstRebalance = hasFirstRebalance(this.rebalanceType);
+      const addLastRebalance = hasLastRebalance(this.rebalanceType);
 
       const flashBorrowDest = getTokenAccount(
         exactOut && !addLastRebalance

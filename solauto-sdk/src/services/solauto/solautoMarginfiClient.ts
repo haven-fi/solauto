@@ -19,6 +19,7 @@ import {
   PositionType,
   RebalanceDirection,
   SolautoActionArgs,
+  SolautoRebalanceType,
   SolautoSettingsParametersInpArgs,
   SwapType,
   marginfiOpenPosition,
@@ -40,7 +41,7 @@ import {
   getAllMarginfiAccountsByAuthority,
   marginfiAccountEmpty,
 } from "../../utils/marginfiUtils";
-import { consoleLog } from "../../utils";
+import { consoleLog, hasFirstRebalance, hasLastRebalance } from "../../utils";
 import { RebalanceDetails } from "../../types";
 
 export interface SolautoMarginfiClientArgs extends SolautoClientArgs {
@@ -369,7 +370,10 @@ export class SolautoMarginfiClient extends SolautoClient {
       (!outputIsSupply && rebalanceStep === "B") ||
       (!inputIsSupply && data.flashLoan !== undefined && rebalanceStep == "B");
 
-    const isFirstRebalance = false; // TODO
+    const isFirstRebalance =
+      (rebalanceStep === "A" && hasFirstRebalance(data.rebalanceType)) ||
+      (rebalanceStep === "B" &&
+        data.rebalanceType === SolautoRebalanceType.FLSwapThenRebalance);
 
     return marginfiRebalance(this.umi, {
       signer: this.signer,
