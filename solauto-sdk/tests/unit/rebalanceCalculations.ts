@@ -66,7 +66,6 @@ async function getFakePosition(
 ): Promise<SolautoClient> {
   const client = getClient(LendingPlatform.Marginfi, {
     rpcUrl: buildHeliusApiUrl(process.env.HELIUS_API_KEY!),
-    showLogs: true,
   });
   await client.initialize({
     positionId: 1,

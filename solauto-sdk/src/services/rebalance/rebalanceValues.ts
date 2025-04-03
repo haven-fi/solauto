@@ -122,7 +122,7 @@ function getTargetLiqUtilizationRateBps(
     return targetLiqUtilizationRateBps;
   }
 
-  const currentRate = solautoPosition.data.state.liqUtilizationRateBps;
+  const currentRate = solautoPosition.state().liqUtilizationRateBps;
 
   if (currentRate <= solautoPosition.boostFromBps()) {
     return solautoPosition.settings()!.boostToBps;
@@ -170,7 +170,7 @@ function getRebalanceDirection(
   solautoPosition: SolautoPositionEx,
   targetLtvBps: number
 ): RebalanceDirection {
-  return solautoPosition.data.state.liqUtilizationRateBps < targetLtvBps
+  return solautoPosition.state().liqUtilizationRateBps < targetLtvBps
     ? RebalanceDirection.Boost
     : RebalanceDirection.Repay;
 }
@@ -204,12 +204,12 @@ export function getRebalanceValues(
 
   const fees: RebalanceFeesBps = {
     solauto: solautoFeeBps.getSolautoFeesBps(rebalanceDirection).total,
-    lpBorrow: solautoPosition.data.state.debt.borrowFeeBps,
+    lpBorrow: solautoPosition.state().debt.borrowFeeBps,
     flashLoan: flFeeBps,
   };
 
   const debtAdjustment = getDebtAdjustment(
-    fromBps(solautoPosition.data.state.liqThresholdBps),
+    fromBps(solautoPosition.state().liqThresholdBps),
     position,
     fees,
     targetRate

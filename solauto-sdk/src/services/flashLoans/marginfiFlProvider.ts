@@ -77,7 +77,7 @@ export class MarginfiFlProvider extends FlProviderBase {
 
     for (const group of Object.keys(MARGINFI_ACCOUNTS)) {
       checkIfUsable(group, this.supplyMint);
-      checkIfUsable(group, this.supplyMint);
+      checkIfUsable(group, this.debtMint);
     }
 
     const banks = await safeFetchAllBank(
@@ -106,8 +106,6 @@ export class MarginfiFlProvider extends FlProviderBase {
     const supplyBanks = mapBanksAndBalances(this.supplyMint);
     const debtBanks = mapBanksAndBalances(this.debtMint);
 
-    console.log(supplyBanks);
-    console.log(debtBanks);
     this.supplyBankLiquiditySource = supplyBanks[0][1];
     this.debtBankLiquiditySource = debtBanks[0][1];
   }
