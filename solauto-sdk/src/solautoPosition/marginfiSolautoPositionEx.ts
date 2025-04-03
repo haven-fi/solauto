@@ -4,12 +4,10 @@ import { Bank, fetchMarginfiAccount, MarginfiAccount } from "../marginfi-sdk";
 import { publicKey } from "@metaplex-foundation/umi";
 import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 import {
-  bytesToI80F48,
   getBankLiquidityAvailableBaseUnit,
   getMarginfiAccountPositionState,
 } from "../utils";
 import { DEFAULT_MARGINFI_GROUP } from "../constants";
-import { TokenType } from "../generated";
 
 export class MarginfiSolautoPositionEx extends SolautoPositionEx {
   private marginfiAccountData: MarginfiAccount | null = null;
@@ -58,7 +56,7 @@ export class MarginfiSolautoPositionEx extends SolautoPositionEx {
       return;
     }
 
-    const useDesignatedMint = !this.data.position || !this.data.selfManaged;
+    const useDesignatedMint = !this._data.position || !this._data.selfManaged;
     const resp = await getMarginfiAccountPositionState(
       this.umi,
       { pk: this.lpUserAccount ?? PublicKey.default },
@@ -75,7 +73,7 @@ export class MarginfiSolautoPositionEx extends SolautoPositionEx {
     if (resp) {
       this.supplyBank = resp.supplyBank;
       this.debtBank = resp.debtBank;
-      this.data.state = resp.state;
+      this._data.state = resp.state;
     }
   }
 }

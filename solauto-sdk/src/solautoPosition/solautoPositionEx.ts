@@ -57,11 +57,10 @@ interface PositionExArgs {
 export abstract class SolautoPositionEx {
   public umi!: Umi;
   public publicKey!: PublicKey;
-  public data!: SolautoPositionExData;
-  protected contextUpdates?: ContextUpdates;
-
+  protected _data!: SolautoPositionExData;
   protected lp?: PublicKey = undefined;
   public lpUserAccount?: PublicKey = undefined;
+  protected contextUpdates?: ContextUpdates;
 
   private readonly firstState!: PositionState;
 
@@ -77,14 +76,14 @@ export abstract class SolautoPositionEx {
         ? toWeb3JsPublicKey(args.data.position!.protocolUserAccount)
         : undefined);
 
-    this.data = args.data;
+    this._data = args.data;
     this.firstState = { ...args.data.state };
   }
 
   abstract lendingPool(): Promise<PublicKey>;
 
   exists() {
-    return this.data.position !== undefined;
+    return this._data.position !== undefined;
   }
 
   strategyName() {
@@ -94,16 +93,20 @@ export abstract class SolautoPositionEx {
     );
   }
 
-  settings(): SolautoSettingsParameters | undefined {
-    return this.contextUpdates?.settings ?? this.data?.position?.settings;
-  }
-
-  dca(): DCASettings | undefined {
-    return this.contextUpdates?.dca ?? this.data?.position?.dca;
+  data(): SolautoPositionExData {
+    return this._data;
   }
 
   state(): PositionState {
-    return this.data.state;
+    return this.data().state;
+  }
+
+  settings(): SolautoSettingsParameters | undefined {
+    return this.contextUpdates?.settings ?? this.data().position?.settings;
+  }
+
+  dca(): DCASettings | undefined {
+    return this.contextUpdates?.dca ?? this.data().position?.dca;
   }
 
   supplyMint(): PublicKey {
@@ -222,7 +225,7 @@ export abstract class SolautoPositionEx {
   }
 
   eligibleForRefresh(): boolean {
-    if (this.data.selfManaged) return false;
+    if (this._data.selfManaged) return false;
 
     return (
       currentUnixSeconds() - Number(this.state().lastRefreshed) >
@@ -261,7 +264,7 @@ export abstract class SolautoPositionEx {
   }
 
   async updateWithLatestPrices(supplyPrice?: number, debtPrice?: number) {
-    this.data.state = await positionStateWithLatestPrices(
+    this._data.state = await positionStateWithLatestPrices(
       this.state(),
       supplyPrice,
       debtPrice
@@ -269,7 +272,7 @@ export abstract class SolautoPositionEx {
   }
 
   async refetchPositionData() {
-    this.data = await fetchSolautoPosition(
+    this._data = await fetchSolautoPosition(
       this.umi,
       fromWeb3JsPublicKey(this.publicKey)
     );

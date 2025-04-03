@@ -231,7 +231,7 @@ export class RebalanceTxBuilder {
     }
     // Rebalance ix will already refresh internally if position is self managed
 
-    if (!this.client.solautoPosition.data.position) {
+    if (!this.client.solautoPosition.data().position) {
       return true;
     }
 

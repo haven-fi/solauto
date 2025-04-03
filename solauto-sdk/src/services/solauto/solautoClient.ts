@@ -183,11 +183,11 @@ export abstract class SolautoClient extends ReferralStateManager {
         await this.solautoPosition.refetchPositionData();
       } else {
         if (this.contextUpdates.settings) {
-          this.solautoPosition.data.position!.settings =
+          this.solautoPosition.data().position!.settings =
             this.contextUpdates.settings;
         }
         if (this.contextUpdates.dca) {
-          this.solautoPosition.data.position!.dca = this.contextUpdates.dca;
+          this.solautoPosition.data().position!.dca = this.contextUpdates.dca;
         }
         // All other live position updates can be derived by getting a fresh position state, so we don't need to do anything else form contextUpdates
       }
