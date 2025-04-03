@@ -19,7 +19,7 @@ export async function fetchTokenPrices(mints: PublicKey[]): Promise<number[]> {
     !mints.some(
       (mint) =>
         !(mint.toString() in PRICES) ||
-        currentTime - PRICES[mint.toString()].time > 5
+        currentTime - PRICES[mint.toString()].time > 3
     )
   ) {
     return mints.map((mint) => PRICES[mint.toString()].price);
