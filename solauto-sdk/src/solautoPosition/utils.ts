@@ -37,7 +37,10 @@ export function createSolautoSettings(
   };
 }
 
-export async function getPositionExBulk(umi: Umi, publicKeys: PublicKey[]) {
+export async function getPositionExBulk(
+  umi: Umi,
+  publicKeys: PublicKey[]
+): Promise<SolautoPositionEx[]> {
   const batches = getBatches(publicKeys, 30);
 
   const data = (
@@ -183,3 +186,5 @@ export function createFakePositionState(
     padding: [],
   };
 }
+
+export function positionStateWithLatestPrices() {}
