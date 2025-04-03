@@ -24,6 +24,7 @@ import {
   getLiqUtilzationRateBps,
   maxBoostToBps,
   maxRepayToBps,
+  safeGetPrice,
   solautoStrategyName,
   supplyLiquidityUsdDepositable,
   toBaseUnit,
@@ -66,6 +67,8 @@ export abstract class SolautoPositionEx {
   protected lp?: PublicKey = undefined;
   public lpUserAccount?: PublicKey = undefined;
 
+  private firstState!: PositionState;
+
   constructor(args: PositionExArgs) {
     this.umi = args.umi;
     this.publicKey = args.publicKey;
@@ -79,6 +82,7 @@ export abstract class SolautoPositionEx {
         : undefined);
 
     this.data = args.data;
+    this.firstState = { ...args.data.state };
   }
 
   abstract lendingPool(): Promise<PublicKey>;
@@ -243,59 +247,88 @@ export abstract class SolautoPositionEx {
 
   abstract refreshPositionState(): Promise<void>;
 
+  async utilizationRateBpsDrift() {
+    const supplyPrice = safeGetPrice(this.state().supply.mint) ?? 0;
+    const debtPrice = safeGetPrice(this.state().debt.mint) ?? 0;
+    const oldState = await this.positionStateWithLatestPrices(
+      this.firstState,
+      supplyPrice,
+      debtPrice
+    );
+    const newState = await this.positionStateWithLatestPrices(
+      this.state(),
+      supplyPrice,
+      debtPrice
+    );
+
+    return newState.liqUtilizationRateBps - oldState.liqUtilizationRateBps;
+  }
+
   async updateWithLatestPrices(supplyPrice?: number, debtPrice?: number) {
+    this.data.state = await this.positionStateWithLatestPrices(
+      this.state(),
+      supplyPrice,
+      debtPrice
+    );
+  }
+
+  private async positionStateWithLatestPrices(
+    state: PositionState,
+    supplyPrice?: number,
+    debtPrice?: number
+  ): Promise<PositionState> {
     if (!supplyPrice || !debtPrice) {
       [supplyPrice, debtPrice] = await fetchTokenPrices([
-        toWeb3JsPublicKey(this.state().supply.mint),
-        toWeb3JsPublicKey(this.state().debt.mint),
+        toWeb3JsPublicKey(state.supply.mint),
+        toWeb3JsPublicKey(state.debt.mint),
       ]);
     }
 
     const supplyUsd = this.totalSupply() * supplyPrice;
     const debtUsd = this.totalDebt() * debtPrice;
-    this.data.state = {
-      ...this.state(),
+    return {
+      ...state,
       liqUtilizationRateBps: getLiqUtilzationRateBps(
         supplyUsd,
         debtUsd,
-        this.state().liqThresholdBps
+        state.liqThresholdBps
       ),
       netWorth: {
         baseUnit: toBaseUnit(
           supplyUsd > 0 ? (supplyUsd - debtUsd) / supplyPrice : 0,
-          this.state().supply.decimals
+          state.supply.decimals
         ),
         baseAmountUsdValue: toRoundedUsdValue(supplyUsd - debtUsd),
       },
       supply: {
-        ...this.state().supply,
+        ...state.supply,
         amountCanBeUsed: {
-          ...this.state().supply.amountCanBeUsed,
+          ...state.supply.amountCanBeUsed,
           baseAmountUsdValue: toRoundedUsdValue(
             fromBaseUnit(
-              this.state().supply.amountCanBeUsed.baseUnit,
-              this.state().supply.decimals
+              state.supply.amountCanBeUsed.baseUnit,
+              state.supply.decimals
             ) * supplyPrice
           ),
         },
         amountUsed: {
-          ...this.state().supply.amountUsed,
+          ...state.supply.amountUsed,
           baseAmountUsdValue: toRoundedUsdValue(supplyUsd),
         },
       },
       debt: {
-        ...this.state().debt,
+        ...state.debt,
         amountCanBeUsed: {
-          ...this.state().debt.amountCanBeUsed,
+          ...state.debt.amountCanBeUsed,
           baseAmountUsdValue: toRoundedUsdValue(
             fromBaseUnit(
-              this.state().debt.amountCanBeUsed.baseUnit,
-              this.state().debt.decimals
+              state.debt.amountCanBeUsed.baseUnit,
+              state.debt.decimals
             ) * debtPrice
           ),
         },
         amountUsed: {
-          ...this.state().debt.amountUsed,
+          ...state.debt.amountUsed,
           baseAmountUsdValue: toRoundedUsdValue(debtUsd),
         },
       },

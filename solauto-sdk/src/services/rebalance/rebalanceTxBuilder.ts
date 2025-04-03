@@ -213,6 +213,34 @@ export class RebalanceTxBuilder {
     this.setRebalanceType();
   }
 
+  private async refreshBeforeRebalance() {
+    if (
+      this.client.selfManaged ||
+      this.client.contextUpdates.supplyAdjustment > BigInt(0) ||
+      this.client.contextUpdates.debtAdjustment > BigInt(0)
+    ) {
+      return false;
+    }
+    // Rebalance ix will already refresh internally if position is self managed
+
+    if (!this.client.solautoPosition.data.position) {
+      return true;
+    }
+
+    const utilizationRateDiff = Math.abs(
+      await this.client.solautoPosition.utilizationRateBpsDrift()
+    );
+    consoleLog("Liq utilization rate diff:", utilizationRateDiff);
+
+    if (utilizationRateDiff >= 10) {
+      consoleLog("Refreshing before rebalance");
+      return true;
+    }
+
+    consoleLog("Not refreshing before rebalance");
+    return false;
+  }
+
   private assembleTransaction(): TransactionItemInputs {
     // this.swapManager.swapQuote
     // TODO: check if should refresh beforehand
