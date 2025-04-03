@@ -274,7 +274,7 @@ export class RebalanceTxBuilder {
     if (!flashLoanDetails) {
       tx = tx.add([setupInstructions, firstRebalance, swapIx, lastRebalance]);
     } else {
-      consoleLog("Flash loan details: ", flashLoanDetails);
+      consoleLog("Flash loan details:", flashLoanDetails);
       consoleLog("Rebalance type:", this.rebalanceType);
 
       const exactOut = swapQuote.swapMode === "ExactOut";

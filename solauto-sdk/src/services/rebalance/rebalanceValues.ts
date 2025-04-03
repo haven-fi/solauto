@@ -7,7 +7,6 @@ import { SolautoPositionEx } from "../../solautoPosition";
 import {
   fromBps,
   getLiqUtilzationRateBps,
-  getMaxLiqUtilizationRateBps,
   maxRepayToBps,
   toBps,
 } from "../../utils";
