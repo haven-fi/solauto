@@ -1,6 +1,5 @@
 import { describe, it } from "mocha";
 import { setupTest } from "../shared";
-import { SolautoMarginfiClient } from "../../src/services/solauto/solautoMarginfiClient";
 import { NATIVE_MINT } from "@solana/spl-token";
 import {
   TransactionItem,
@@ -9,19 +8,29 @@ import {
 import {
   SOLAUTO_PROD_PROGRAM,
   SOLAUTO_TEST_PROGRAM,
+  USDC,
 } from "../../src/constants";
-import { buildIronforgeApiUrl, getClient } from "../../src/utils";
+import {
+  buildIronforgeApiUrl,
+  fetchTokenPrices,
+  getClient,
+  maxBoostToBps,
+  maxRepayToBps,
+  toBaseUnit,
+} from "../../src/utils";
 import { PublicKey } from "@solana/web3.js";
 import {
   LendingPlatform,
   PriorityFeeSetting,
+  RebalanceTxBuilder,
+  solautoAction,
+  SolautoSettingsParametersInpArgs,
 } from "../../src";
+import { tokenInfo } from "../../dist";
 
 describe("Solauto Marginfi tests", async () => {
   const signer = setupTest();
-  // const signer = setupTest("solauto-manager");
 
-  const payForTransactions = false;
   const testProgram = true;
   const positionId = 1;
 
@@ -33,184 +42,104 @@ describe("Solauto Marginfi tests", async () => {
       programId: testProgram ? SOLAUTO_TEST_PROGRAM : SOLAUTO_PROD_PROGRAM,
     });
 
-    const supply = NATIVE_MINT;
-    const supplyDecimals = 6;
-    const debtDecimals = 6;
+    const supplyMint = new PublicKey(NATIVE_MINT);
+    const debtMint = new PublicKey(USDC);
 
     await client.initialize({
       positionId,
-      authority: new PublicKey("EBhRj7jbF2EVE21i19JSuCX1BAbnZFYhoKW64HnaZ3kf"),
-      // new: true,
-      // marginfiAccount: new PublicKey(
-      //   ""
-      // ),
-      // marginfiGroup: new PublicKey(""),
-      // supplyMint: new PublicKey(""),
-      // debtMint: new PublicKey(USDC),
+      new: true,
+      supplyMint,
+      debtMint,
     });
 
-    // const mfiAccount = await safeFetchMarginfiAccount(
-    //   client.umi,
-    //   publicKey("E8oukAkTMW4YsAPymMzWQHWb8egmGq9yjDtmMi6gfY18")
-    // );
-    // // console.log(mfiAccount.lendingAccount.balances);
-    // console.log(
-    //   mfiAccount.lendingAccount.balances.map((x) =>
-    //     bytesToI80F48(x.liabilityShares.value)
-    //   )
-    // );
-    // console.log(
-    //   mfiAccount.lendingAccount.balances.map((x) => x.bankPk.toString())
-    // );
-
     const transactionItems: TransactionItem[] = [];
-    // const settings: SolautoSettingsParametersInpArgs = {
-    //   boostToBps: maxBoostToBps(
-    //     client.solautoPositionState?.maxLtvBps ?? 0,
-    //     client.solautoPositionState?.liqThresholdBps ?? 0
-    //   ),
-    //   boostGap: 50,
-    //   repayToBps: maxRepayToBps(
-    //     client.solautoPositionState?.maxLtvBps ?? 0,
-    //     client.solautoPositionState?.liqThresholdBps ?? 0
-    //   ),
-    //   repayGap: 50,
-    //   automation: none(),
-    //   targetBoostToBps: none(),
-    // };
+    const settings: SolautoSettingsParametersInpArgs = {
+      boostToBps:
+        maxBoostToBps(
+          client.solautoPosition.state().maxLtvBps ?? 0,
+          client.solautoPosition.state().liqThresholdBps ?? 0
+        ) - 200,
+      boostGap: 50,
+      repayToBps: maxRepayToBps(
+        client.solautoPosition.state().maxLtvBps ?? 0,
+        client.solautoPosition.state().liqThresholdBps ?? 0
+      ),
+      repayGap: 50,
+    };
 
-    // const settings: SolautoSettingsParametersInpArgs = {
-    //   boostToBps: client.solautoPositionSettings().boostToBps - 150,
-    //   boostGap: 50,
-    //   repayToBps: client.solautoPositionSettings().repayToBps - 150,
-    //   repayGap: 50,
-    // };
+    transactionItems.push(
+      new TransactionItem(async () => {
+        return {
+          tx: client.openPosition(settings),
+        };
+      }, "open position")
+    );
 
-    // if (client.solautoPositionData === null) {
-    //   transactionItems.push(
-    //     new TransactionItem(async () => {
-    //       return {
-    //         tx: client.openPosition(settings),
-    //       };
-    //     }, "open position")
-    //   );
+    const [supplyPrice, debtPrice] = await fetchTokenPrices([
+      supplyMint,
+      debtMint,
+    ]);
 
-    // const initialSupplyUsd = 150;
-    // transactionItems.push(
-    //   new TransactionItem(async () => {
-    //     // const [supplyPrice] = await fetchTokenPrices([supply]);
-    //     return {
-    //       tx: client.protocolInteraction(
-    //         solautoAction("Deposit", [toBaseUnit(300, supplyDecimals)])
-    //       ),
-    //     };
-    //   }, "deposit")
-    // );
-    // }
+    const supplyUsd = 100;
+    transactionItems.push(
+      new TransactionItem(async () => {
+        return {
+          tx: client.protocolInteraction(
+            solautoAction("Deposit", [
+              toBaseUnit(
+                supplyUsd / supplyPrice,
+                tokenInfo(supplyMint).decimals
+              ),
+            ])
+          ),
+        };
+      }, "deposit")
+    );
 
-    // const maxLtvBps = client.solautoPositionState!.maxLtvBps;
-    // const liqThresholdBps = client.solautoPositionState!.liqThresholdBps;
-    // const maxRepayFrom = maxRepayFromBps(maxLtvBps, liqThresholdBps);
-    // const maxRepayTo = maxRepayToBps(maxLtvBps, liqThresholdBps);
-    // const maxBoostTo = maxBoostToBps(maxLtvBps, liqThresholdBps);
-    // transactionItems.push(
-    //   new TransactionItem(
-    //     async () => ({
-    //       tx: client.updatePositionIx({
-    //         positionId: client.positionId,
-    //         settings: some({
-    //           ...settings,
-    //         }),
-    //         dca: null,
-    //       }),
-    //     }),
-    //     "update position"
-    //   )
-    // );
+    const debtUsd = 20;
+    transactionItems.push(
+      new TransactionItem(async () => {
+        return {
+          tx: client.protocolInteraction(
+            solautoAction("Borrow", [
+              toBaseUnit(debtUsd / debtPrice, tokenInfo(debtMint).decimals),
+            ])
+          ),
+        };
+      }, "borrow")
+    );
 
-    // transactionItems.push(
-    //   new TransactionItem(
-    //     async (attemptNum) =>
-    //       await buildSolautoRebalanceTransaction(client, undefined, attemptNum),
-    //     "rebalance"
-    //   )
-    // );
+    transactionItems.push(
+      new TransactionItem(async (attemptNum) => {
+        const rebalancer = new RebalanceTxBuilder(client, 0);
+        return await rebalancer.buildRebalanceTx(attemptNum);
+      }, "rebalance")
+    );
 
-    // transactionItems.push(
-    //   new TransactionItem(async () => ({
-    //     tx: transactionBuilder().add([
-    //       lendingPoolAccrueBankInterest(client.umi, {
-    //         bank: publicKey("3J5rKmCi7JXG6qmiobFJyAidVTnnNAMGj4jomfBxKGRM"),
-    //         marginfiGroup: publicKey(
-    //           "EpzY5EYF1A5eFDRfjtsPXSYMPmEx1FXKaXPnouTMF4dm"
-    //         ),
-    //       }),
-    //       lendingPoolAccrueBankInterest(client.umi, {
-    //         bank: publicKey("6cgYhBFWCc5sNHxkvSRhd5H9AdAHR41zKwuF37HmLry5"),
-    //         marginfiGroup: publicKey(
-    //           "EpzY5EYF1A5eFDRfjtsPXSYMPmEx1FXKaXPnouTMF4dm"
-    //         ),
-    //       }),
-    //     ]),
-    //   }))
-    // );
+    transactionItems.push(
+      new TransactionItem(
+        async () => ({
+          tx: client.protocolInteraction(
+            solautoAction("Withdraw", [{ __kind: "All" }])
+          ),
+        }),
+        "withdraw"
+      )
+    );
 
-    // transactionItems.push(
-    //   new TransactionItem(async () => ({
-    //     tx: transactionBuilder().add(
-    //       imfiAccount.lendingAccount.balances
-    //         .filter(
-    //           (x) => x.active && bytesToI80F48(x.liabilityShares.value) > 0
-    //         )
-    //         .map((x) =>
-    //           client.closeBalance(
-    //             client.intermediaryMarginfiAccountPk,
-    //             toWeb3JsPublicKey(x.bankPk)
-    //           )
-    //         )
-    //     ),
-    //   }))
-    // );
-
-    // transactionItems.push(
-    //   new TransactionItem(
-    //     async () => ({ tx: client.refresh() }),
-    //     "refresh"
-    //   )
-    // );
-
-    // transactionItems.push(
-    //   new TransactionItem(
-    //     async (attemptNum) =>
-    //       await buildSolautoRebalanceTransaction(client, 0, attemptNum),
-    //     "rebalance"
-    //   )
-    // );
-
-    // transactionItems.push(
-    //   new TransactionItem(
-    //     async () => ({
-    //       tx: client.protocolInteraction(
-    //         solautoAction("Withdraw", [{ __kind: "All" }])
-    //       ),
-    //     }),
-    //     "withdraw"
-    //   )
-    // );
-
-    // transactionItems.push(
-    //   new TransactionItem(
-    //     async () => ({
-    //       tx: client.closePositionIx(),
-    //     }),
-    //     "close position"
-    //   )
-    // );
+    transactionItems.push(
+      new TransactionItem(
+        async () => ({
+          tx: client.closePositionIx(),
+        }),
+        "close position"
+      )
+    );
 
     const statuses = await new TransactionsManager(
       client,
       undefined,
-      !payForTransactions ? "only-simulate" : "normal",
+      "only-simulate",
       PriorityFeeSetting.Min,
       true,
       undefined,
