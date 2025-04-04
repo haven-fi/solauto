@@ -203,11 +203,11 @@ export class RebalanceTxBuilder {
   private async setRebalanceDetails(attemptNum: number) {
     this.values = this.getRebalanceValues();
     this.flRequirements = await this.flashLoanRequirements(attemptNum);
-    
+
     if (this.flRequirements?.flFeeBps) {
       this.values = this.getRebalanceValues(this.flRequirements.flFeeBps);
     }
-    
+
     consoleLog("Rebalance values:", this.values);
     this.swapManager = new RebalanceSwapManager(
       this.client,
@@ -288,14 +288,15 @@ export class RebalanceTxBuilder {
       const addFirstRebalance = hasFirstRebalance(this.rebalanceType);
       const addLastRebalance = hasLastRebalance(this.rebalanceType);
 
-      const flashBorrowDest = getTokenAccount(
-        exactOut
-          ? this.client.solautoPosition.publicKey
-          : toWeb3JsPublicKey(this.client.signer.publicKey),
-        exactOut
-          ? new PublicKey(swapQuote.outputMint)
-          : new PublicKey(swapQuote.inputMint)
-      );
+      const flashBorrowDest = exactOut
+        ? getTokenAccount(
+            this.client.solautoPosition.publicKey,
+            new PublicKey(swapQuote.outputMint)
+          )
+        : getTokenAccount(
+            toWeb3JsPublicKey(this.client.signer.publicKey),
+            new PublicKey(swapQuote.inputMint)
+          );
 
       tx = tx.add([
         setupInstructions,
