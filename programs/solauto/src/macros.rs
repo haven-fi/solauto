@@ -42,3 +42,11 @@ macro_rules! error_if {
         }
     };
 }
+
+#[macro_export]
+macro_rules! derive_pod_traits {
+    ($type:ty) => {
+        unsafe impl Zeroable for $type {}
+        unsafe impl Pod for $type {}
+    };
+}

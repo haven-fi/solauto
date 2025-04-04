@@ -12,6 +12,8 @@ use solana_program::{
 };
 use std::fmt;
 
+use crate::derive_pod_traits;
+
 use super::errors::SolautoError;
 
 #[repr(u8)]
@@ -20,8 +22,7 @@ pub enum LendingPlatform {
     #[default]
     Marginfi,
 }
-unsafe impl Zeroable for LendingPlatform {}
-unsafe impl Pod for LendingPlatform {}
+derive_pod_traits!(LendingPlatform);
 
 #[repr(u8)]
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, Default, PartialEq, Copy)]
@@ -30,8 +31,7 @@ pub enum PositionType {
     Leverage,
     SafeLoan,
 }
-unsafe impl Zeroable for PositionType {}
-unsafe impl Pod for PositionType {}
+derive_pod_traits!(PositionType);
 
 #[repr(u8)]
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, Default, PartialEq, Copy)]
@@ -40,8 +40,8 @@ pub enum TokenType {
     Supply,
     Debt,
 }
-unsafe impl Zeroable for TokenType {}
-unsafe impl Pod for TokenType {}
+derive_pod_traits!(TokenType);
+
 impl fmt::Display for TokenType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
@@ -59,8 +59,7 @@ pub enum RebalanceDirection {
     Boost,
     Repay,
 }
-unsafe impl Zeroable for RebalanceDirection {}
-unsafe impl Pod for RebalanceDirection {}
+derive_pod_traits!(RebalanceDirection);
 
 #[repr(u8)]
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, Default, PartialEq, Copy)]
@@ -69,8 +68,7 @@ pub enum RebalanceStep {
     PreSwap,
     PostSwap,
 }
-unsafe impl Zeroable for RebalanceStep {}
-unsafe impl Pod for RebalanceStep {}
+derive_pod_traits!(RebalanceStep);
 
 #[repr(u8)]
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, Default, PartialEq, Copy)]
@@ -81,8 +79,7 @@ pub enum SolautoRebalanceType {
     FLSwapThenRebalance,
     FLRebalanceThenSwap,
 }
-unsafe impl Zeroable for SolautoRebalanceType {}
-unsafe impl Pod for SolautoRebalanceType {}
+derive_pod_traits!(SolautoRebalanceType);
 
 #[repr(u8)]
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, Default, PartialEq, Copy)]
@@ -91,8 +88,7 @@ pub enum SwapType {
     ExactIn,
     ExactOut,
 }
-unsafe impl Zeroable for SwapType {}
-unsafe impl Pod for SwapType {}
+derive_pod_traits!(SwapType);
 
 #[derive(Debug)]
 pub struct RefreshedTokenState {
@@ -140,8 +136,7 @@ pub struct PodBool {
     pub val: bool,
 }
 
-unsafe impl Zeroable for PodBool {}
-unsafe impl Pod for PodBool {}
+derive_pod_traits!(PodBool);
 
 impl PodBool {
     pub fn new(val: bool) -> Self {

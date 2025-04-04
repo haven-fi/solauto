@@ -8,16 +8,14 @@ use std::{
 };
 
 use crate::{
-    constants::USD_DECIMALS,
-    types::shared::{
+    constants::USD_DECIMALS, derive_pod_traits, types::shared::{
         LendingPlatform, PodBool, PositionType, RebalanceDirection, SolautoRebalanceType, SwapType,
         TokenType,
-    },
-    utils::math_utils::{
+    }, utils::math_utils::{
         base_unit_to_usd_value, from_bps, from_rounded_usd_value, get_liq_utilization_rate_bps,
         get_max_boost_to_bps, get_max_repay_to_bps, net_worth_base_amount, to_base_unit,
         to_rounded_usd_value,
-    },
+    }
 };
 
 use super::automation::DCASettings;
@@ -176,8 +174,7 @@ pub enum TokenBalanceChangeType {
     PostRebalanceWithdrawSupplyToken,
     PostRebalanceWithdrawDebtToken,
 }
-unsafe impl Zeroable for TokenBalanceChangeType {}
-unsafe impl Pod for TokenBalanceChangeType {}
+derive_pod_traits!(TokenBalanceChangeType);
 
 #[repr(C, align(8))]
 #[derive(ShankType, BorshSerialize, Clone, Debug, Default, Copy, Pod, Zeroable)]
