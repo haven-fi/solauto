@@ -1,11 +1,19 @@
 import { describe, it } from "mocha";
-import { clusterApiUrl, Connection, PublicKey } from "@solana/web3.js";
+import { PublicKey } from "@solana/web3.js";
 import {
   MARGINFI_ACCOUNTS,
   MARGINFI_ACCOUNTS_LOOKUP_TABLE,
 } from "../../src/constants/marginfiAccounts";
+import {
+  buildIronforgeApiUrl,
+  getEmptyMarginfiAccountsByAuthority,
+  getSolanaRpcConnection,
+  SOLAUTO_MANAGER,
+} from "../../src";
 
-const conn = new Connection(clusterApiUrl("mainnet-beta"), "confirmed");
+const [conn, umi] = getSolanaRpcConnection(
+  buildIronforgeApiUrl(process.env.IRONFORGE_API_KEY!)
+);
 
 describe("Assert lookup tables up-to-date", async () => {
   it("marginfi accounts LUT should have everything", async () => {
@@ -16,6 +24,11 @@ describe("Assert lookup tables up-to-date", async () => {
       throw new Error("Lookup table not found");
     }
 
+    const ismAccounts = await getEmptyMarginfiAccountsByAuthority(
+      umi,
+      SOLAUTO_MANAGER
+    );
+
     const existingAccounts =
       lookupTable.value?.state.addresses.map((x) => x.toString()) ?? [];
 
@@ -25,6 +38,13 @@ describe("Assert lookup tables up-to-date", async () => {
           continue;
         }
 
+        const groupIsmAccounts = ismAccounts
+          .filter((x) => x.group.toString() === group)
+          .map((x) => x.publicKey.toString());
+        if (groupIsmAccounts.length === 0) {
+          throw new Error(`Missing ISM account for group: ${group}`);
+        }
+
         const accounts = MARGINFI_ACCOUNTS[group][key];
         const addresses = [
           group,
@@ -32,6 +52,7 @@ describe("Assert lookup tables up-to-date", async () => {
           accounts.liquidityVault,
           accounts.vaultAuthority,
           accounts.priceOracle,
+          ...groupIsmAccounts,
         ];
 
         if (addresses.find((x) => !existingAccounts.includes(x.toString()))) {

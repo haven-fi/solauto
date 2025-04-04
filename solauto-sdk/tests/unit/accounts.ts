@@ -10,7 +10,7 @@ import {
 import { publicKey } from "@metaplex-foundation/umi";
 import { assert } from "chai";
 import {
-  getAllMarginfiAccountsByAuthority,
+  getEmptyMarginfiAccountsByAuthority,
   getTokenAccount,
 } from "../../src/utils";
 import {
@@ -19,7 +19,6 @@ import {
   SOLAUTO_MANAGER,
 } from "../../src/constants";
 import { PublicKey } from "@solana/web3.js";
-import { safeFetchAllMarginfiAccount } from "../../src/marginfi-sdk";
 import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 
 async function hasTokenAccounts(wallet: PublicKey) {
@@ -54,21 +53,15 @@ describe("Assert Solauto fee token accounts are created", async () => {
       buildHeliusApiUrl(process.env.HELIUS_API_KEY!)
     );
 
-    const ismAccounts = await getAllMarginfiAccountsByAuthority(
+    const ismAccounts = await getEmptyMarginfiAccountsByAuthority(
       umi,
       SOLAUTO_MANAGER,
-      undefined,
-      false
-    );
-    const ismData = await safeFetchAllMarginfiAccount(
-      umi,
-      ismAccounts.map((x) => publicKey(x.marginfiAccount))
     );
     const supportedMarginfiGroups = Object.keys(MARGINFI_ACCOUNTS).map(
       (x) => new PublicKey(x)
     );
     const missingIsmAccounts = supportedMarginfiGroups.filter(
-      (group) => !ismData.find((x) => group.equals(toWeb3JsPublicKey(x.group)))
+      (group) => !ismAccounts.find((x) => group.equals(toWeb3JsPublicKey(x.group)))
     );
 
     console.log("Missing ISM accounts", missingIsmAccounts);
