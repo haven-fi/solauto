@@ -1,17 +1,7 @@
 import { PublicKey } from "@solana/web3.js";
 import { NATIVE_MINT } from "@solana/spl-token";
-import {
-  publicKey,
-  Signer,
-  signerIdentity,
-  TransactionBuilder,
-  Umi,
-} from "@metaplex-foundation/umi";
+import { publicKey, TransactionBuilder, Umi } from "@metaplex-foundation/umi";
 import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
-import {
-  WalletAdapter,
-  walletAdapterIdentity,
-} from "@metaplex-foundation/umi-signer-wallet-adapters";
 import {
   claimReferralFees,
   ReferralState,
@@ -19,10 +9,10 @@ import {
   updateReferralStates,
 } from "../../generated";
 import { getReferralState, getTokenAccount } from "../../utils";
-import { TxHandler } from "./txHandler";
+import { TxHandler, TxHandlerArgs } from "./txHandler";
 import { SOLAUTO_LUT } from "../../constants";
 
-export interface ReferralStateManagerArgs {
+export interface ReferralStateManagerArgs extends TxHandlerArgs {
   authority?: PublicKey;
   referralState?: PublicKey;
   referredByAuthority?: PublicKey;
@@ -39,6 +29,8 @@ export class ReferralStateManager extends TxHandler {
   public referredByState?: PublicKey;
 
   async initialize(args: ReferralStateManagerArgs) {
+    super.initialize(args);
+
     this.referralState =
       args.referralState ??
       getReferralState(
