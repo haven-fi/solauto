@@ -23,7 +23,6 @@ import {
   TokenType,
   UpdatePositionDataArgs,
   cancelDCA,
-  closePosition,
   updatePosition,
 } from "../../generated";
 import {
@@ -353,7 +352,7 @@ export abstract class SolautoClient extends ReferralStateManager {
     };
   }
 
-  openPosition(
+  openPositionIx(
     settings?: SolautoSettingsParametersInpArgs,
     dca?: DCASettingsInpArgs
   ): TransactionBuilder {
@@ -436,17 +435,7 @@ export abstract class SolautoClient extends ReferralStateManager {
     });
   }
 
-  closePositionIx(): TransactionBuilder {
-    return closePosition(this.umi, {
-      signer: this.signer,
-      solautoPosition: publicKey(this.solautoPosition.publicKey),
-      signerSupplyTa: publicKey(this.signerSupplyTa),
-      positionSupplyTa: publicKey(this.positionSupplyTa),
-      positionDebtTa: publicKey(this.positionDebtTa),
-      signerDebtTa: publicKey(this.signerDebtTa),
-      lpUserAccount: publicKey(this.solautoPosition.lpUserAccount!),
-    });
-  }
+  abstract closePositionIx(): TransactionBuilder;
 
   cancelDCAIx(): TransactionBuilder {
     let dcaMint: UmiPublicKey | undefined = undefined;
@@ -480,9 +469,9 @@ export abstract class SolautoClient extends ReferralStateManager {
     });
   }
 
-  abstract refresh(): TransactionBuilder;
+  abstract refreshIx(): TransactionBuilder;
 
-  protocolInteraction(args: SolautoActionArgs): TransactionBuilder {
+  protocolInteractionIx(args: SolautoActionArgs): TransactionBuilder {
     let tx = transactionBuilder();
 
     if (!this.selfManaged) {
@@ -570,7 +559,7 @@ export abstract class SolautoClient extends ReferralStateManager {
     return tx;
   }
 
-  abstract rebalance(
+  abstract rebalanceIx(
     rebalanceStep: RebalanceStep,
     data: RebalanceDetails
   ): TransactionBuilder;

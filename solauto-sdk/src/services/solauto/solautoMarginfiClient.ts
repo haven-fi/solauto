@@ -23,6 +23,7 @@ import {
   SolautoRebalanceType,
   SolautoSettingsParametersInpArgs,
   SwapType,
+  closePosition,
   marginfiOpenPosition,
   marginfiProtocolInteraction,
   marginfiRebalance,
@@ -152,12 +153,12 @@ export class SolautoMarginfiClient extends SolautoClient {
     });
   }
 
-  openPosition(
+  openPositionIx(
     settings?: SolautoSettingsParametersInpArgs,
     dca?: DCASettingsInpArgs
   ): TransactionBuilder {
     return super
-      .openPosition(settings, dca)
+      .openPositionIx(settings, dca)
       .add(this.marginfiOpenPositionIx(settings, dca));
   }
 
@@ -203,7 +204,19 @@ export class SolautoMarginfiClient extends SolautoClient {
     });
   }
 
-  refresh(): TransactionBuilder {
+  closePositionIx(): TransactionBuilder {
+    return closePosition(this.umi, {
+      signer: this.signer,
+      solautoPosition: publicKey(this.solautoPosition.publicKey),
+      signerSupplyTa: publicKey(this.signerSupplyTa),
+      positionSupplyTa: publicKey(this.positionSupplyTa),
+      positionDebtTa: publicKey(this.positionDebtTa),
+      signerDebtTa: publicKey(this.signerDebtTa),
+      lpUserAccount: publicKey(this.marginfiAccountPk),
+    });
+  }
+
+  refreshIx(): TransactionBuilder {
     return marginfiRefreshData(this.umi, {
       signer: this.signer,
       marginfiProgram: publicKey(MARGINFI_PROGRAM_ID),
@@ -217,8 +230,8 @@ export class SolautoMarginfiClient extends SolautoClient {
     });
   }
 
-  protocolInteraction(args: SolautoActionArgs): TransactionBuilder {
-    let tx = super.protocolInteraction(args);
+  protocolInteractionIx(args: SolautoActionArgs): TransactionBuilder {
+    let tx = super.protocolInteractionIx(args);
 
     if (this.selfManaged) {
       return tx.add(this.marginfiProtocolInteractionIx(args));
@@ -352,7 +365,7 @@ export class SolautoMarginfiClient extends SolautoClient {
     });
   }
 
-  rebalance(
+  rebalanceIx(
     rebalanceStep: RebalanceStep,
     data: RebalanceDetails
   ): TransactionBuilder {

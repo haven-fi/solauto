@@ -94,7 +94,7 @@ export class RebalanceSwapManager {
           : postRebalanceRate > criteria.maxLiqUtilizationRateBps!;
 
       if (insufficient) {
-        consoleLog(swapQuote);
+        consoleLog("Insufficient swap quote:", swapQuote);
         swapInput.amount = this.bigIntWithIncrement(swapInput.amount, 0.01);
       } else {
         break;
@@ -173,7 +173,7 @@ export class RebalanceSwapManager {
       exactOut,
       amount: swapAmount,
     };
-    consoleLog(swapInput);
+    consoleLog("Swap input:", swapInput);
 
     if (exactIn && (rebalanceToZero || this.values.repayingCloseToMaxLtv)) {
       this.swapQuote = await this.findSufficientQuote(swapInput, {

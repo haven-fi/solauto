@@ -58,7 +58,7 @@ export async function e2eTransactionTest(
   transactionItems.push(
     new TransactionItem(async () => {
       return {
-        tx: client.openPosition(settings),
+        tx: client.openPositionIx(settings),
       };
     }, "open position")
   );
@@ -72,7 +72,7 @@ export async function e2eTransactionTest(
   transactionItems.push(
     new TransactionItem(async () => {
       return {
-        tx: client.protocolInteraction(
+        tx: client.protocolInteractionIx(
           solautoAction("Deposit", [
             toBaseUnit(supplyUsd / supplyPrice, tokenInfo(supplyMint).decimals),
           ])
@@ -85,7 +85,7 @@ export async function e2eTransactionTest(
   transactionItems.push(
     new TransactionItem(async () => {
       return {
-        tx: client.protocolInteraction(
+        tx: client.protocolInteractionIx(
           solautoAction("Borrow", [
             toBaseUnit(debtUsd / debtPrice, tokenInfo(debtMint).decimals),
           ])
@@ -104,7 +104,7 @@ export async function e2eTransactionTest(
   transactionItems.push(
     new TransactionItem(
       async () => ({
-        tx: client.protocolInteraction(
+        tx: client.protocolInteractionIx(
           solautoAction("Withdraw", [{ __kind: "All" }])
         ),
       }),

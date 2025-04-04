@@ -259,7 +259,7 @@ export class RebalanceTxBuilder {
     let tx = transactionBuilder();
 
     if (await this.refreshBeforeRebalance()) {
-      tx = tx.add(this.client.refresh());
+      tx = tx.add(this.client.refreshIx());
     }
 
     const rebalanceDetails: RebalanceDetails = {
@@ -270,11 +270,11 @@ export class RebalanceTxBuilder {
       targetLiqUtilizationRateBps: this.targetLiqUtilizationRateBps,
     };
 
-    const firstRebalance = this.client.rebalance(
+    const firstRebalance = this.client.rebalanceIx(
       RebalanceStep.PreSwap,
       rebalanceDetails
     );
-    const lastRebalance = this.client.rebalance(
+    const lastRebalance = this.client.rebalanceIx(
       RebalanceStep.PostSwap,
       rebalanceDetails
     );
@@ -318,7 +318,7 @@ export class RebalanceTxBuilder {
     attemptNum: number
   ): Promise<TransactionItemInputs | undefined> {
     await this.client.solautoPosition.refreshPositionState();
-    
+
     if (!this.shouldProceedWithRebalance()) {
       this.client.log("Not eligible for a rebalance");
       return undefined;
