@@ -42,8 +42,6 @@ export class RebalanceTxBuilder {
   ) {}
 
   private async shouldProceedWithRebalance() {
-    await this.client.solautoPosition.refreshPositionState();
-
     return (
       this.client.solautoPosition.supplyUsd() > 0 &&
       (this.targetLiqUtilizationRateBps !== undefined ||
@@ -205,11 +203,12 @@ export class RebalanceTxBuilder {
   private async setRebalanceDetails(attemptNum: number) {
     this.values = this.getRebalanceValues();
     this.flRequirements = await this.flashLoanRequirements(attemptNum);
-
+    
     if (this.flRequirements?.flFeeBps) {
       this.values = this.getRebalanceValues(this.flRequirements.flFeeBps);
     }
-
+    
+    consoleLog("Rebalance values:", this.values);
     this.swapManager = new RebalanceSwapManager(
       this.client,
       this.values,
@@ -318,6 +317,8 @@ export class RebalanceTxBuilder {
   public async buildRebalanceTx(
     attemptNum: number
   ): Promise<TransactionItemInputs | undefined> {
+    await this.client.solautoPosition.refreshPositionState();
+    
     if (!this.shouldProceedWithRebalance()) {
       this.client.log("Not eligible for a rebalance");
       return undefined;

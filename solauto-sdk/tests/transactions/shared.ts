@@ -24,7 +24,8 @@ import { NATIVE_MINT } from "@solana/spl-token";
 export async function e2eTransactionTest(
   signer: Signer,
   testProgram: boolean,
-  lendingPlatform: LendingPlatform
+  lendingPlatform: LendingPlatform,
+  withFlashLoan: boolean
 ) {
   const client = getClient(lendingPlatform, {
     signer,
@@ -80,7 +81,7 @@ export async function e2eTransactionTest(
     }, "deposit")
   );
 
-  const debtUsd = 20;
+  const debtUsd = withFlashLoan ? 60 : 10;
   transactionItems.push(
     new TransactionItem(async () => {
       return {

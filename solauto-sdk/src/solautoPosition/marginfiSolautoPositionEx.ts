@@ -91,7 +91,7 @@ export class MarginfiSolautoPositionEx extends SolautoPositionEx {
     const useDesignatedMint = !this._data.position || !this._data.selfManaged;
     const resp = await getMarginfiAccountPositionState(
       this.umi,
-      { pk: this.lpUserAccount ?? PublicKey.default },
+      { pk: this.lpUserAccount },
       await this.lendingPool(),
       useDesignatedMint
         ? { mint: toWeb3JsPublicKey(this.state().supply.mint) }
