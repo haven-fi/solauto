@@ -30,7 +30,6 @@ export async function e2eTransactionTest(
   const client = getClient(lendingPlatform, {
     signer,
     rpcUrl: buildIronforgeApiUrl(process.env.IRONFORGE_API_KEY!),
-    showLogs: true,
     programId: testProgram ? SOLAUTO_TEST_PROGRAM : SOLAUTO_PROD_PROGRAM,
   });
 
@@ -126,7 +125,9 @@ export async function e2eTransactionTest(
     undefined,
     "only-simulate",
     undefined,
-    true
+    true,
+    undefined,
+    { totalRetries: 5 }
   );
   const statuses = await txManager.clientSend(transactionItems);
 
