@@ -30,17 +30,21 @@ const [connection, _] = getSolanaRpcConnection(
   buildHeliusApiUrl(process.env.HELIUS_API_KEY ?? "")
 );
 
-async function createAndSendV0Tx(txInstructions: TransactionInstruction[]) {
+export async function createAndSendV0Tx(
+  txInstructions: TransactionInstruction[],
+  payer: Keypair,
+  otherSigners?: Keypair[]
+) {
   let latestBlockhash = await connection.getLatestBlockhash("finalized");
 
   const messageV0 = new TransactionMessage({
-    payerKey: keypair.publicKey,
+    payerKey: payer.publicKey,
     recentBlockhash: latestBlockhash.blockhash,
     instructions: txInstructions,
   }).compileToV0Message();
   const transaction = new VersionedTransaction(messageV0);
 
-  transaction.sign([keypair]);
+  transaction.sign([payer, ...(otherSigners ?? [])]);
 
   const txid = await connection.sendTransaction(transaction, {
     maxRetries: 5,
@@ -70,14 +74,17 @@ async function addAddressesIfNeeded(
     const batches = getBatches(addresses, 20);
     for (const addressBatch of batches) {
       console.log(addressBatch.map((x) => x.toString()));
-      await createAndSendV0Tx([
-        AddressLookupTableProgram.extendLookupTable({
-          payer: keypair.publicKey,
-          authority: keypair.publicKey,
-          lookupTable: lookupTableAddress,
-          addresses: addressBatch,
-        }),
-      ]);
+      await createAndSendV0Tx(
+        [
+          AddressLookupTableProgram.extendLookupTable({
+            payer: keypair.publicKey,
+            authority: keypair.publicKey,
+            lookupTable: lookupTableAddress,
+            addresses: addressBatch,
+          }),
+        ],
+        keypair
+      );
     }
   }
 }
@@ -97,7 +104,7 @@ export async function updateLookupTable(
     });
     lookupTableAddress = addr;
     console.log("Lookup Table Address:", lookupTableAddress.toString());
-    await createAndSendV0Tx([createLutIx]);
+    await createAndSendV0Tx([createLutIx], keypair);
   }
 
   const existingAccounts =

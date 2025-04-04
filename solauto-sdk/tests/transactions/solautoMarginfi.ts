@@ -12,7 +12,8 @@ import {
 } from "../../src/constants";
 import { buildIronforgeApiUrl } from "../../src/utils";
 import { PublicKey } from "@solana/web3.js";
-import { PriorityFeeSetting } from "../../src";
+import { PriorityFeeSetting, safeFetchMarginfiAccount } from "../../src";
+import { publicKey } from "@metaplex-foundation/umi";
 
 describe("Solauto Marginfi tests", async () => {
   const signer = setupTest();

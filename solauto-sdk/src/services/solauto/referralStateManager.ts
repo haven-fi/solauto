@@ -23,8 +23,6 @@ import { TxHandler } from "./txHandler";
 import { SOLAUTO_LUT } from "../../constants";
 
 export interface ReferralStateManagerArgs {
-  signer?: Signer;
-  wallet?: WalletAdapter;
   authority?: PublicKey;
   referralState?: PublicKey;
   referredByAuthority?: PublicKey;
@@ -41,16 +39,6 @@ export class ReferralStateManager extends TxHandler {
   public referredByState?: PublicKey;
 
   async initialize(args: ReferralStateManagerArgs) {
-    if (!args.signer && !args.wallet) {
-      throw new Error("Signer or wallet must be provided");
-    }
-    this.umi = this.umi.use(
-      args.signer
-        ? signerIdentity(args.signer, true)
-        : walletAdapterIdentity(args.wallet!, true)
-    );
-    this.signer = this.umi.identity;
-
     this.referralState =
       args.referralState ??
       getReferralState(
