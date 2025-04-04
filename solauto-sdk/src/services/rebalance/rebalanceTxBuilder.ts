@@ -283,7 +283,6 @@ export class RebalanceTxBuilder {
       tx = tx.add([setupInstructions, firstRebalance, swapIx, lastRebalance]);
     } else {
       consoleLog("Flash loan details:", flashLoanDetails);
-      consoleLog("Rebalance type:", this.rebalanceType);
 
       const exactOut = swapQuote.swapMode === "ExactOut";
       const addFirstRebalance = hasFirstRebalance(this.rebalanceType);
@@ -291,8 +290,8 @@ export class RebalanceTxBuilder {
 
       const flashBorrowDest = getTokenAccount(
         exactOut && !addLastRebalance
-          ? toWeb3JsPublicKey(this.client.signer.publicKey)
-          : this.client.solautoPosition.publicKey,
+          ? this.client.solautoPosition.publicKey
+          : toWeb3JsPublicKey(this.client.signer.publicKey),
         exactOut
           ? new PublicKey(swapQuote.outputMint)
           : new PublicKey(swapQuote.inputMint)
