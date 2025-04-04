@@ -173,6 +173,7 @@ export abstract class SolautoPositionEx {
     return debtLiquidityUsdAvailable(this.state());
   }
 
+  abstract maxLtvAndLiqThresholdBps(): Promise<[number, number]>;
   abstract supplyLiquidityDepositable(): bigint;
   abstract supplyLiquidityAvailable(): bigint;
   abstract debtLiquidityAvailable(): bigint;

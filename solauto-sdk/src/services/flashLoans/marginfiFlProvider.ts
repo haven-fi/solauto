@@ -193,8 +193,8 @@ export class MarginfiFlProvider extends FlProviderBase {
       ...super.lutAccountsToAdd(),
       ...Array.from(
         new Set([
-          this.iMfiAccount(TokenType.Supply),
-          this.iMfiAccount(TokenType.Debt),
+          this.iMfiAccount(TokenType.Supply).accountPk.toString(),
+          this.iMfiAccount(TokenType.Debt).accountPk.toString(),
         ])
       ).map((x) => new PublicKey(x)),
     ];

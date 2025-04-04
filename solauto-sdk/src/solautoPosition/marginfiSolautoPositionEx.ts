@@ -1,13 +1,21 @@
 import { PublicKey } from "@solana/web3.js";
 import { SolautoPositionEx } from "./solautoPositionEx";
-import { Bank, fetchMarginfiAccount, MarginfiAccount } from "../marginfi-sdk";
+import {
+  Bank,
+  fetchMarginfiAccount,
+  MarginfiAccount,
+  safeFetchAllBank,
+} from "../marginfi-sdk";
 import { publicKey } from "@metaplex-foundation/umi";
 import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 import {
+  calcMarginfiMaxLtvAndLiqThreshold,
+  fetchTokenPrices,
   getBankLiquidityAvailableBaseUnit,
   getMarginfiAccountPositionState,
+  toBps,
 } from "../utils";
-import { DEFAULT_MARGINFI_GROUP } from "../constants";
+import { DEFAULT_MARGINFI_GROUP, MARGINFI_ACCOUNTS } from "../constants";
 
 export class MarginfiSolautoPositionEx extends SolautoPositionEx {
   private marginfiAccountData: MarginfiAccount | null = null;
@@ -37,6 +45,30 @@ export class MarginfiSolautoPositionEx extends SolautoPositionEx {
     }
 
     return this.lp;
+  }
+
+  async maxLtvAndLiqThresholdBps(): Promise<[number, number]> {
+    if (!this.supplyBank || !this.debtBank) {
+      const group = (await this.lendingPool()).toString();
+      const supplyBank =
+        MARGINFI_ACCOUNTS[group][this.supplyMint().toString()].bank;
+      const debtBank =
+        MARGINFI_ACCOUNTS[group][this.debtMint().toString()].bank;
+
+      [this.supplyBank, this.debtBank] = await safeFetchAllBank(this.umi, [
+        publicKey(supplyBank),
+        publicKey(debtBank),
+      ]);
+    }
+
+    const [supplyPrice] = await fetchTokenPrices([this.supplyMint()]);
+    const [maxLtv, liqThreshold] = calcMarginfiMaxLtvAndLiqThreshold(
+      this.supplyBank,
+      this.debtBank,
+      supplyPrice
+    );
+
+    return [toBps(maxLtv), toBps(liqThreshold)];
   }
 
   supplyLiquidityAvailable(): bigint {
