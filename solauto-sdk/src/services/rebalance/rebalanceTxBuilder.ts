@@ -289,7 +289,7 @@ export class RebalanceTxBuilder {
       const addLastRebalance = hasLastRebalance(this.rebalanceType);
 
       const flashBorrowDest = getTokenAccount(
-        exactOut && !addLastRebalance
+        exactOut
           ? this.client.solautoPosition.publicKey
           : toWeb3JsPublicKey(this.client.signer.publicKey),
         exactOut
