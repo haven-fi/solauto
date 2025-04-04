@@ -8,15 +8,12 @@ import {
 } from "@metaplex-foundation/umi-signer-wallet-adapters";
 
 export interface TxHandlerProps {
+  signer?: Signer;
+  wallet?: WalletAdapter;
   rpcUrl: string;
   showLogs?: boolean;
   programId?: PublicKey;
   wsEndpoint?: string;
-}
-
-export interface TxHandlerArgs {
-  signer?: Signer;
-  wallet?: WalletAdapter;
 }
 
 export abstract class TxHandler {
@@ -30,14 +27,11 @@ export abstract class TxHandler {
   public otherSigners: Signer[] = [];
 
   constructor(props: TxHandlerProps) {
-    this.rpcUrl = props.rpcUrl;
-    if (props.showLogs !== undefined) {
-      this.showLogs = props.showLogs;
-    }
     if (props.programId !== undefined) {
       this.programId = props.programId;
     }
 
+    this.rpcUrl = props.rpcUrl;
     const [connection, umi] = getSolanaRpcConnection(
       this.rpcUrl,
       this.programId,
@@ -46,21 +40,23 @@ export abstract class TxHandler {
     this.connection = connection;
     this.umi = umi;
 
-    if (!(globalThis as any).SHOW_LOGS && this.showLogs) {
-      (globalThis as any).SHOW_LOGS = Boolean(this.showLogs);
-    }
-  }
-
-  async initialize(args: TxHandlerArgs) {
-    if (!args.signer && !args.wallet) {
+    if (!props.signer && !props.wallet) {
       throw new Error("Signer or wallet must be provided");
     }
     this.umi = this.umi.use(
-      args.signer
-        ? signerIdentity(args.signer, true)
-        : walletAdapterIdentity(args.wallet!, true)
+      props.signer
+        ? signerIdentity(props.signer, true)
+        : walletAdapterIdentity(props.wallet!, true)
     );
     this.signer = this.umi.identity;
+
+    if (props.showLogs !== undefined) {
+      this.showLogs = props.showLogs;
+    }
+
+    if (!(globalThis as any).SHOW_LOGS && this.showLogs) {
+      (globalThis as any).SHOW_LOGS = Boolean(this.showLogs);
+    }
   }
 
   log(...args: any[]): void {

@@ -9,10 +9,10 @@ import {
   updateReferralStates,
 } from "../../generated";
 import { getReferralState, getTokenAccount } from "../../utils";
-import { TxHandler, TxHandlerArgs } from "./txHandler";
+import { TxHandler } from "./txHandler";
 import { SOLAUTO_LUT } from "../../constants";
 
-export interface ReferralStateManagerArgs extends TxHandlerArgs {
+export interface ReferralStateManagerArgs {
   authority?: PublicKey;
   referralState?: PublicKey;
   referredByAuthority?: PublicKey;
@@ -29,8 +29,6 @@ export class ReferralStateManager extends TxHandler {
   public referredByState?: PublicKey;
 
   async initialize(args: ReferralStateManagerArgs) {
-    super.initialize(args);
-
     this.referralState =
       args.referralState ??
       getReferralState(

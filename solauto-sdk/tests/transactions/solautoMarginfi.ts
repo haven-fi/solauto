@@ -10,10 +10,12 @@ import {
   SOLAUTO_PROD_PROGRAM,
   SOLAUTO_TEST_PROGRAM,
 } from "../../src/constants";
-import { buildIronforgeApiUrl } from "../../src/utils";
+import { buildIronforgeApiUrl, getClient } from "../../src/utils";
 import { PublicKey } from "@solana/web3.js";
-import { PriorityFeeSetting, safeFetchMarginfiAccount } from "../../src";
-import { publicKey } from "@metaplex-foundation/umi";
+import {
+  LendingPlatform,
+  PriorityFeeSetting,
+} from "../../src";
 
 describe("Solauto Marginfi tests", async () => {
   const signer = setupTest();
@@ -24,7 +26,8 @@ describe("Solauto Marginfi tests", async () => {
   const positionId = 1;
 
   it("open - deposit - borrow - rebalance to 0 - withdraw - close", async () => {
-    const client = new SolautoMarginfiClient({
+    const client = getClient(LendingPlatform.Marginfi, {
+      signer,
       rpcUrl: buildIronforgeApiUrl(process.env.IRONFORGE_API_KEY!),
       showLogs: true,
       programId: testProgram ? SOLAUTO_TEST_PROGRAM : SOLAUTO_PROD_PROGRAM,
@@ -35,7 +38,6 @@ describe("Solauto Marginfi tests", async () => {
     const debtDecimals = 6;
 
     await client.initialize({
-      signer,
       positionId,
       authority: new PublicKey("EBhRj7jbF2EVE21i19JSuCX1BAbnZFYhoKW64HnaZ3kf"),
       // new: true,

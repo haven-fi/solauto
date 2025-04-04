@@ -24,6 +24,7 @@ import {
   SolautoClient,
 } from "../../src";
 import { SolautoFeesBps } from "../../src/services/rebalance/solautoFees";
+import { buildIronforgeApiUrl } from "../../dist";
 
 const signer = setupTest(undefined, true);
 const [conn, _] = getSolanaRpcConnection(
@@ -65,11 +66,11 @@ async function getFakePosition(
   settings: SolautoSettingsParameters
 ): Promise<SolautoClient> {
   const client = getClient(LendingPlatform.Marginfi, {
-    rpcUrl: buildHeliusApiUrl(process.env.HELIUS_API_KEY!),
+    signer,
+    rpcUrl: buildIronforgeApiUrl(process.env.IRONFORGE_API_KEY!),
   });
   await client.initialize({
     positionId: 1,
-    signer,
     supplyMint: new PublicKey(NATIVE_MINT),
     debtMint: new PublicKey(USDC),
   });
