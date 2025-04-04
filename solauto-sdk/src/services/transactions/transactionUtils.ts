@@ -151,7 +151,7 @@ async function transactionChoresBefore(
     // TODO: PF
 
     if (!client.solautoPosition.exists()) {
-      chores = chores.add(client.openPosition());
+      chores = chores.add(client.openPositionIx());
     }
   }
 

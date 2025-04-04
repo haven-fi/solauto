@@ -56,10 +56,10 @@ pub struct RebalancerData<'a> {
     pub rebalance_args: RebalanceSettings,
     pub solauto_position: SolautoPositionData<'a>,
     pub intermediary_ta: TokenAccountData,
-    pub authority_supply_ta: TokenAccountData,
-    pub authority_debt_ta: TokenAccountData,
+    pub authority_supply_ta: Option<TokenAccountData>,
+    pub authority_debt_ta: Option<TokenAccountData>,
     pub solauto_fees_bps: SolautoFeesBps,
-    pub solauto_fees_ta: Pubkey,
+    pub solauto_fees_ta: Option<Pubkey>,
     pub referred_by_state: Option<Pubkey>,
     pub referred_by_ta: Option<Pubkey>,
 }
@@ -171,7 +171,7 @@ impl<'a> Rebalancer<'a> {
                 BareSplTokenTransferArgs {
                     from_wallet: self.data.solauto_position.data.pubkey(),
                     from_wallet_ta: solauto_position_ta,
-                    to_wallet_ta: authority_ta.pk,
+                    to_wallet_ta: authority_ta.as_ref().unwrap().pk,
                     amount: base_unit_amount,
                 },
             ));
@@ -311,7 +311,7 @@ impl<'a> Rebalancer<'a> {
                         amount,
                         from_wallet: self.data.solauto_position.data.pubkey(),
                         from_wallet_ta: self.position_supply_ta().pk,
-                        to_wallet_ta: self.data.authority_supply_ta.pk, // TODO: what if this is native mint
+                        to_wallet_ta: self.data.authority_supply_ta.as_ref().unwrap().pk, // TODO: what if this is native mint
                     },
                 ))
             }
@@ -326,7 +326,7 @@ impl<'a> Rebalancer<'a> {
                         amount,
                         from_wallet: self.data.solauto_position.data.pubkey(),
                         from_wallet_ta: self.position_debt_ta().pk,
-                        to_wallet_ta: self.data.authority_debt_ta.pk, // TODO: what if this is native mint
+                        to_wallet_ta: self.data.authority_debt_ta.as_ref().unwrap().pk, // TODO: what if this is native mint
                     },
                 ))
             }
@@ -359,7 +359,7 @@ impl<'a> Rebalancer<'a> {
             BareSplTokenTransferArgs {
                 from_wallet: self.data.solauto_position.data.pubkey(),
                 from_wallet_ta: position_ta,
-                to_wallet_ta: self.data.solauto_fees_ta,
+                to_wallet_ta: self.data.solauto_fees_ta.unwrap(),
                 amount: fee_amount,
             },
         ));
@@ -391,7 +391,7 @@ impl<'a> Rebalancer<'a> {
             token_mint,
             position_ta,
             SOLAUTO_FEES_WALLET,
-            self.data.solauto_fees_ta,
+            self.data.solauto_fees_ta.unwrap(),
         )?;
 
         let referrer_fees = if self.data.referred_by_state.is_some()

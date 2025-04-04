@@ -393,17 +393,18 @@ export class SolautoMarginfiClient extends SolautoClient {
       (postSwapRebalance &&
         data.rebalanceType === SolautoRebalanceType.FLSwapThenRebalance);
 
+    const addAuthorityTas =
+      this.selfManaged || data.values.tokenBalanceChange !== undefined;
+
     return marginfiRebalance(this.umi, {
       signer: this.signer,
       marginfiProgram: publicKey(MARGINFI_PROGRAM_ID),
       ixsSysvar: publicKey(SYSVAR_INSTRUCTIONS_PUBKEY),
-      solautoFeesTa: postSwapRebalance
-        ? publicKey(
-            data.values.rebalanceDirection === RebalanceDirection.Boost
-              ? this.solautoFeesSupplyTa
-              : this.solautoFeesDebtTa
-          )
-        : undefined,
+      solautoFeesTa: publicKey(
+        data.values.rebalanceDirection === RebalanceDirection.Boost
+          ? this.solautoFeesSupplyTa
+          : this.solautoFeesDebtTa
+      ),
       authorityReferralState: publicKey(this.referralState),
       referredByTa: this.referredByState
         ? publicKey(
@@ -428,7 +429,7 @@ export class SolautoMarginfiClient extends SolautoClient {
       supplyBank: publicKey(this.marginfiSupplyAccounts.bank),
       supplyPriceOracle: publicKey(this.supplyPriceOracle),
       positionSupplyTa: publicKey(this.positionSupplyTa),
-      authoritySupplyTa: this.selfManaged
+      authoritySupplyTa: addAuthorityTas
         ? publicKey(
             getTokenAccount(this.authority, this.solautoPosition.supplyMint())
           )
@@ -442,7 +443,7 @@ export class SolautoMarginfiClient extends SolautoClient {
       debtBank: publicKey(this.marginfiDebtAccounts.bank),
       debtPriceOracle: publicKey(this.debtPriceOracle),
       positionDebtTa: publicKey(this.positionDebtTa),
-      authorityDebtTa: this.selfManaged
+      authorityDebtTa: addAuthorityTas
         ? publicKey(
             getTokenAccount(this.authority, this.solautoPosition.debtMint())
           )

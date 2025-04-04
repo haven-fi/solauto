@@ -146,13 +146,13 @@ fn create_rebalancer<'a>(
                 data.position_debt_ta_balance.unwrap_or(0),
             ),
         },
-        authority_supply_ta: TokenAccountData::without_balance(position_authority_supply_ta),
-        authority_debt_ta: TokenAccountData::without_balance(position_authority_debt_ta),
+        authority_supply_ta: Some(TokenAccountData::without_balance(position_authority_supply_ta)),
+        authority_debt_ta: Some(TokenAccountData::without_balance(position_authority_debt_ta)),
         solauto_fees_bps: solauto_fees,
         referred_by_state: None,
         referred_by_ta: None,
         intermediary_ta: TokenAccountData::without_balance(Pubkey::new_unique()),
-        solauto_fees_ta,
+        solauto_fees_ta: Some(solauto_fees_ta),
     });
 
     rebalancer
@@ -174,10 +174,10 @@ fn credit_token_account<'a>(rebalancer: &mut Rebalancer<'a>, ta_pk: Pubkey, base
         credit_ta(&mut rebalancer.data.solauto_position.debt_ta);
     } else if ta_pk == rebalancer.data.intermediary_ta.pk {
         credit_ta(&mut rebalancer.data.intermediary_ta);
-    } else if ta_pk == rebalancer.data.authority_supply_ta.pk {
-        credit_ta(&mut rebalancer.data.authority_supply_ta);
-    } else if ta_pk == rebalancer.data.authority_debt_ta.pk {
-        credit_ta(&mut rebalancer.data.authority_debt_ta);
+    } else if ta_pk == rebalancer.data.authority_supply_ta.as_ref().unwrap().pk {
+        credit_ta(&mut rebalancer.data.authority_supply_ta.as_mut().unwrap());
+    } else if ta_pk == rebalancer.data.authority_debt_ta.as_ref().unwrap().pk {
+        credit_ta(&mut rebalancer.data.authority_debt_ta.as_mut().unwrap());
     } else {
         println!("Couldn't find token account");
     }
