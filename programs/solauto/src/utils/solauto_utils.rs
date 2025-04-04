@@ -11,7 +11,6 @@ use super::{
 use crate::{
     check,
     constants::WSOL_MINT,
-    error_if,
     state::{
         automation::DCASettings,
         referral_state::ReferralState,

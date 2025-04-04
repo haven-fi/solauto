@@ -4,7 +4,7 @@ use shank::{ShankAccount, ShankType};
 use solana_program::{msg, pubkey::Pubkey};
 use std::{
     cmp::min,
-    ops::{Add, Mul},
+    ops::Mul,
 };
 
 use crate::{
