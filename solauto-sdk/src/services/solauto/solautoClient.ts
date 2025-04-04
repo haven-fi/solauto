@@ -1,5 +1,10 @@
 import "rpc-websockets/dist/lib/client";
-import { AddressLookupTableProgram, PublicKey } from "@solana/web3.js";
+import {
+  AddressLookupTableProgram,
+  PublicKey,
+  RpcResponseAndContext,
+  TokenAmount,
+} from "@solana/web3.js";
 import {
   TransactionBuilder,
   isOption,
@@ -315,23 +320,29 @@ export abstract class SolautoClient extends ReferralStateManager {
 
     [this.signerSupplyBalance, this.signerDebtBalance] = await Promise.all([
       (async () => {
-        const data = await this.connection.getTokenAccountBalance(
-          getTokenAccount(
-            toWeb3JsPublicKey(this.signer.publicKey),
-            this.solautoPosition.supplyMint()
-          ),
-          "confirmed"
-        );
+        let data: RpcResponseAndContext<TokenAmount> | undefined;
+        try {
+          data = await this.connection.getTokenAccountBalance(
+            getTokenAccount(
+              toWeb3JsPublicKey(this.signer.publicKey),
+              this.solautoPosition.supplyMint()
+            ),
+            "confirmed"
+          );
+        } catch {}
         return BigInt(parseInt(data?.value.amount ?? "0"));
       })(),
       (async () => {
-        const data = await this.connection.getTokenAccountBalance(
-          getTokenAccount(
-            toWeb3JsPublicKey(this.signer.publicKey),
-            this.solautoPosition.debtMint()
-          ),
-          "confirmed"
-        );
+        let data: RpcResponseAndContext<TokenAmount> | undefined;
+        try {
+          const data = await this.connection.getTokenAccountBalance(
+            getTokenAccount(
+              toWeb3JsPublicKey(this.signer.publicKey),
+              this.solautoPosition.debtMint()
+            ),
+            "confirmed"
+          );
+        } catch {}
         return BigInt(parseInt(data?.value.amount ?? "0"));
       })(),
     ]);

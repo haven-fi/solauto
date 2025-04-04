@@ -123,9 +123,7 @@ export class RebalanceTxBuilder {
       this.client.flProvider.liquidityAvailable(TokenType.Debt)
     );
 
-    if ((attemptNum ?? 0) >= 3 || !stdFlLiquiditySource) {
-      console.log(attemptNum, stdFlLiquiditySource);
-      console.log(this.client.signer.publicKey.toString());
+    if ((attemptNum ?? 0) >= 3 || stdFlLiquiditySource === undefined) {
       const { supplyBalance, debtBalance } = await this.client.signerBalances();
       const signerFlLiquiditySource = this.getFlLiquiditySource(
         supplyBalance,
