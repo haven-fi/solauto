@@ -3,12 +3,10 @@ import {
   PublicKey,
   SimulatedTransactionResponse,
   TransactionExpiredBlockheightExceededError,
-  VersionedMessage,
   VersionedTransaction,
 } from "@solana/web3.js";
 import { toWeb3JsTransaction } from "@metaplex-foundation/umi-web3js-adapters";
 import {
-  JITO_BLOCK_ENGINE,
   JITO_TIP_ACCOUNTS,
 } from "../constants/solautoConstants";
 import {
@@ -17,7 +15,6 @@ import {
   Umi,
   WrappedInstruction,
   TransactionMessage,
-  AddressLookupTableInput,
 } from "@metaplex-foundation/umi";
 import {
   assembleFinalTransaction,
@@ -31,7 +28,6 @@ import {
   retryWithExponentialBackoff,
 } from "./generalUtils";
 import { PriorityFeeSetting, TransactionRunType } from "../types";
-import axios from "axios";
 import base58 from "bs58";
 import { BundleSimulationError } from "../types/transactions";
 import { bs58 } from "@coral-xyz/anchor/dist/cjs/utils/bytes";

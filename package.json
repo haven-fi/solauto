@@ -15,7 +15,7 @@
     "test:all": "pnpm build:rs:local && pnpm test:rs:all && pnpm test:ts:all",
     "test:rs:unit": "cargo test --package solauto",
     "test:rs:solana": "cd programs/solauto-sdk && cargo test-sbf",
-    "test:rs:all": "pnpm test:rs:unit && pnpm test:rs:solana",
+    "test:rs:all": "pnpm test:rs:solana && pnpm test:rs:unit",
     "test:ts:unit": "cd solauto-sdk && pnpm test:unit",
     "test:ts:txs": "cd solauto-sdk && pnpm test:txs",
     "test:ts:all": "cd solauto-sdk && pnpm test:all",

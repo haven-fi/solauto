@@ -1,4 +1,4 @@
-import { Connection, PublicKey } from "@solana/web3.js";
+import { PublicKey } from "@solana/web3.js";
 import { publicKey, Umi } from "@metaplex-foundation/umi";
 import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 import {

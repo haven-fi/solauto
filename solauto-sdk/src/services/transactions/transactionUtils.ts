@@ -15,7 +15,6 @@ import {
 } from "@solana/spl-token";
 import {
   InvalidRebalanceConditionError,
-  RebalanceDirection,
   SolautoAction,
   SolautoRebalanceType,
   SwapType,
@@ -36,7 +35,6 @@ import {
 } from "../../utils/solanaUtils";
 import {
   consoleLog,
-  currentUnixSeconds,
   getSolanaAccountCreated,
   rpcAccountCreated,
 } from "../../utils/generalUtils";
@@ -58,7 +56,7 @@ import {
   JUPITER_PROGRAM_ID,
 } from "../../jupiter-sdk";
 import { TransactionItemInputs } from "../../types";
-import { isMarginfiClient, safeGetPrice } from "../../utils";
+import { isMarginfiClient } from "../../utils";
 import { BundleSimulationError } from "../../types/transactions";
 
 interface wSolTokenUsage {
