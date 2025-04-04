@@ -11,7 +11,7 @@ describe("Solauto Marginfi tests", async () => {
     await e2eTransactionTest(signer, testProgram, LendingPlatform.Marginfi, false);
   });
 
-  // it("open - deposit - borrow - fl rebalance to 0 - withdraw - close", async () => {
-  //   await e2eTransactionTest(signer, testProgram, LendingPlatform.Marginfi, true);
-  // });
+  it("open - deposit - borrow - fl rebalance to 0 - withdraw - close", async () => {
+    await e2eTransactionTest(signer, testProgram, LendingPlatform.Marginfi, true);
+  });
 });
