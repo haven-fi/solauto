@@ -6,7 +6,7 @@ import {
   getClient,
   LendingPlatform,
   maxBoostToBps,
-  maxRepayFromBps,
+  maxRepayToBps,
   RebalanceTxBuilder,
   SOLAUTO_PROD_PROGRAM,
   SOLAUTO_TEST_PROGRAM,
@@ -45,11 +45,11 @@ export async function e2eTransactionTest(
   });
 
   const [maxLtvBps, liqThresholdBps] =
-    await client.solautoPosition.maxLtvAndLiqThresholdBps();
+  await client.solautoPosition.maxLtvAndLiqThresholdBps();
   const settings: SolautoSettingsParametersInpArgs = {
     boostToBps: maxBoostToBps(maxLtvBps, liqThresholdBps) - 200,
     boostGap: 50,
-    repayToBps: maxRepayFromBps(maxLtvBps, liqThresholdBps),
+    repayToBps: maxRepayToBps(maxLtvBps, liqThresholdBps),
     repayGap: 50,
   };
 
