@@ -73,8 +73,8 @@ function getWSolUsage(
   },
   cancellingDcaIn?: TokenType
 ): wSolTokenUsage | undefined {
-  const supplyIsWsol = client.solautoPosition.supplyMint().equals(NATIVE_MINT);
-  const debtIsWsol = client.solautoPosition.debtMint().equals(NATIVE_MINT);
+  const supplyIsWsol = client.pos.supplyMint().equals(NATIVE_MINT);
+  const debtIsWsol = client.pos.debtMint().equals(NATIVE_MINT);
   if (!supplyIsWsol && !debtIsWsol) {
     return undefined;
   }
@@ -148,7 +148,7 @@ async function transactionChoresBefore(
     }
     // TODO: PF
 
-    if (!client.solautoPosition.exists()) {
+    if (!client.pos.exists()) {
       chores = chores.add(client.openPositionIx());
     }
   }
@@ -229,8 +229,8 @@ async function transactionChoresBefore(
           client.signer,
           toWeb3JsPublicKey(client.signer.publicKey),
           isSolautoAction("Withdraw", solautoAction)
-            ? client.solautoPosition.supplyMint()
-            : client.solautoPosition.debtMint()
+            ? client.pos.supplyMint()
+            : client.pos.debtMint()
         )
       );
       accountsGettingCreated.push(tokenAccount.toString());
@@ -284,7 +284,7 @@ export async function rebalanceChoresBefore(
       createAssociatedTokenAccountUmiIx(
         client.signer,
         client.referredByState!,
-        client.solautoPosition.supplyMint()
+        client.pos.supplyMint()
       )
     );
   }
@@ -295,7 +295,7 @@ export async function rebalanceChoresBefore(
       createAssociatedTokenAccountUmiIx(
         client.signer,
         client.referredByState!,
-        client.solautoPosition.debtMint()
+        client.pos.debtMint()
       )
     );
   }
@@ -310,7 +310,7 @@ export async function rebalanceChoresBefore(
       createAssociatedTokenAccountUmiIx(
         client.signer,
         toWeb3JsPublicKey(client.signer.publicKey),
-        client.solautoPosition.supplyMint()
+        client.pos.supplyMint()
       )
     );
     accountsGettingCreated.push(signerSupplyTa.publicKey.toString());
@@ -326,7 +326,7 @@ export async function rebalanceChoresBefore(
       createAssociatedTokenAccountUmiIx(
         client.signer,
         toWeb3JsPublicKey(client.signer.publicKey),
-        client.solautoPosition.debtMint()
+        client.pos.debtMint()
       )
     );
     accountsGettingCreated.push(signerDebtTa.publicKey.toString());

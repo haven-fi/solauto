@@ -44,7 +44,7 @@ export async function e2eTransactionTest(
   });
 
   const [maxLtvBps, liqThresholdBps] =
-    await client.solautoPosition.maxLtvAndLiqThresholdBps();
+    await client.pos.maxLtvAndLiqThresholdBps();
   const settings: SolautoSettingsParametersInpArgs = {
     boostToBps: maxBoostToBps(maxLtvBps, liqThresholdBps) - 200,
     boostGap: 50,

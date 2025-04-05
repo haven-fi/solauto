@@ -192,7 +192,7 @@ export async function getSolautoManagedPositions(
       positionId: position.positionId[0],
       lendingPlatform: position.position.lendingPlatform,
       positionType: position.positionType,
-      protocolAccount: toWeb3JsPublicKey(position.position.protocolUserAccount),
+      lpUserAccount: toWeb3JsPublicKey(position.position.protocolUserAccount),
       supplyMint: tokens![0],
       debtMint: tokens![1],
     };
@@ -296,7 +296,7 @@ export async function getAllPositionsByAuthority(
           positionId: 0,
           positionType: PositionType.Leverage,
           lendingPlatform: LendingPlatform.Marginfi,
-          protocolAccount: x.marginfiAccount,
+          lpUserAccount: x.marginfiAccount,
           supplyMint: x.supplyMint,
           debtMint: x.debtMint,
         }));

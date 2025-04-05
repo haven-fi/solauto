@@ -37,11 +37,11 @@ function assertAccurateRebalance(
   targetLiqUtilizationRateBps?: number
 ) {
   const { endResult } = getRebalanceValues(
-    client.solautoPosition,
+    client.pos,
     new SolautoFeesBps(
       false,
       targetLiqUtilizationRateBps,
-      client.solautoPosition.netWorthUsd()
+      client.pos.netWorthUsd()
     ),
     50,
     targetLiqUtilizationRateBps
@@ -50,7 +50,7 @@ function assertAccurateRebalance(
   const newLiqUtilizationRateBps = getLiqUtilzationRateBps(
     endResult.supplyUsd,
     endResult.debtUsd,
-    client.solautoPosition.state().liqThresholdBps
+    client.pos.state().liqThresholdBps
   );
   assert(
     Math.round(newLiqUtilizationRateBps) ===
@@ -98,7 +98,7 @@ async function getFakePosition(
     liqThresholdBps
   );
 
-  client.solautoPosition = new MarginfiSolautoPositionEx({
+  client.pos = new MarginfiSolautoPositionEx({
     umi: client.umi,
     publicKey: PublicKey.default,
     data: {

@@ -40,14 +40,14 @@ export class RebalanceSwapManager {
   }
 
   private postRebalanceLiqUtilizationRateBps(swapOutputAmount?: bigint) {
-    let supplyUsd = this.client.solautoPosition.supplyUsd();
+    let supplyUsd = this.client.pos.supplyUsd();
     // TODO: add token balance change
-    let debtUsd = this.client.solautoPosition.debtUsd();
+    let debtUsd = this.client.pos.debtUsd();
 
     const outputToken = toWeb3JsPublicKey(
       this.isBoost()
-        ? this.client.solautoPosition.state().supply.mint
-        : this.client.solautoPosition.state().debt.mint
+        ? this.client.pos.state().supply.mint
+        : this.client.pos.state().debt.mint
     );
     const swapOutputUsd = swapOutputAmount
       ? fromBaseUnit(swapOutputAmount, tokenInfo(outputToken).decimals) *
@@ -64,7 +64,7 @@ export class RebalanceSwapManager {
     return getLiqUtilzationRateBps(
       supplyUsd,
       debtUsd,
-      this.client.solautoPosition.state().liqThresholdBps ?? 0
+      this.client.pos.state().liqThresholdBps ?? 0
     );
   }
 
@@ -106,11 +106,11 @@ export class RebalanceSwapManager {
 
   private swapDetails() {
     const input = this.isBoost()
-      ? this.client.solautoPosition.state().debt
-      : this.client.solautoPosition.state().supply;
+      ? this.client.pos.state().debt
+      : this.client.pos.state().supply;
     const output = this.isBoost()
-      ? this.client.solautoPosition.state().supply
-      : this.client.solautoPosition.state().debt;
+      ? this.client.pos.state().supply
+      : this.client.pos.state().debt;
 
     let inputAmount = toBaseUnit(
       this.usdToSwap() / safeGetPrice(input.mint)!,
@@ -180,8 +180,8 @@ export class RebalanceSwapManager {
         minOutputAmount: rebalanceToZero ? outputAmount : undefined,
         maxLiqUtilizationRateBps: this.values.repayingCloseToMaxLtv
           ? maxRepayToBps(
-              this.client.solautoPosition.state().maxLtvBps ?? 0,
-              this.client.solautoPosition.state().liqThresholdBps ?? 0
+              this.client.pos.state().maxLtvBps ?? 0,
+              this.client.pos.state().liqThresholdBps ?? 0
             ) - 15
           : undefined,
       });
@@ -199,7 +199,7 @@ export class RebalanceSwapManager {
       ...swapInput,
       destinationWallet: flashLoanRepayFromDebt
         ? toWeb3JsPublicKey(this.client.signer.publicKey)
-        : this.client.solautoPosition.publicKey,
+        : this.client.pos.publicKey,
       slippageIncFactor: 0.2 + attemptNum * 0.25,
     };
   }

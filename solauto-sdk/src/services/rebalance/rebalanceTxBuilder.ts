@@ -43,19 +43,19 @@ export class RebalanceTxBuilder {
 
   private async shouldProceedWithRebalance() {
     return (
-      this.client.solautoPosition.supplyUsd() > 0 &&
+      this.client.pos.supplyUsd() > 0 &&
       (this.targetLiqUtilizationRateBps !== undefined ||
-        this.client.solautoPosition.eligibleForRebalance())
+        this.client.pos.eligibleForRebalance())
     );
   }
 
   private getRebalanceValues(flFee?: number) {
     return getRebalanceValues(
-      this.client.solautoPosition,
+      this.client.pos,
       new SolautoFeesBps(
         this.client.isReferred(),
         this.targetLiqUtilizationRateBps,
-        this.client.solautoPosition.netWorthUsd()
+        this.client.pos.netWorthUsd()
       ),
       flFee ?? 0,
       this.targetLiqUtilizationRateBps
@@ -84,12 +84,12 @@ export class RebalanceTxBuilder {
     const insufficientSupplyLiquidity = insufficientLiquidity(
       debtAdjustmentUsd,
       supplyLiquidityAvailable,
-      this.client.solautoPosition.supplyMint()
+      this.client.pos.supplyMint()
     );
     const insufficientDebtLiquidity = insufficientLiquidity(
       debtAdjustmentUsd,
       debtLiquidityAvailable,
-      this.client.solautoPosition.debtMint()
+      this.client.pos.debtMint()
     );
 
     let useDebtLiquidity =
@@ -107,8 +107,8 @@ export class RebalanceTxBuilder {
     attemptNum: number
   ): Promise<FlashLoanRequirements | undefined> {
     const maxLtvRateBps = getMaxLiqUtilizationRateBps(
-      this.client.solautoPosition.state().maxLtvBps,
-      this.client.solautoPosition.state().liqThresholdBps,
+      this.client.pos.state().maxLtvBps,
+      this.client.pos.state().liqThresholdBps,
       0.02
     );
 
@@ -156,9 +156,9 @@ export class RebalanceTxBuilder {
 
     let flashLoanToken: PositionTokenState | undefined = undefined;
     if (boosting || useDebtLiquidity) {
-      flashLoanToken = this.client.solautoPosition.state().debt;
+      flashLoanToken = this.client.pos.state().debt;
     } else {
-      flashLoanToken = this.client.solautoPosition.state().supply;
+      flashLoanToken = this.client.pos.state().supply;
     }
 
     return {
@@ -225,14 +225,14 @@ export class RebalanceTxBuilder {
       this.client.selfManaged ||
       this.client.contextUpdates.supplyAdjustment > BigInt(0) ||
       this.client.contextUpdates.debtAdjustment > BigInt(0) ||
-      !this.client.solautoPosition.exists()
+      !this.client.pos.exists()
     ) {
       return false;
     }
     // Rebalance ix will already refresh internally if position is self managed
 
     const utilizationRateDiff = Math.abs(
-      await this.client.solautoPosition.utilizationRateBpsDrift()
+      await this.client.pos.utilizationRateBpsDrift()
     );
     consoleLog("Liq utilization rate diff:", utilizationRateDiff);
 
@@ -287,7 +287,7 @@ export class RebalanceTxBuilder {
 
       const flashBorrowDest = exactOut
         ? getTokenAccount(
-            this.client.solautoPosition.publicKey,
+            this.client.pos.publicKey,
             new PublicKey(swapQuote.outputMint)
           )
         : getTokenAccount(
@@ -314,7 +314,7 @@ export class RebalanceTxBuilder {
   public async buildRebalanceTx(
     attemptNum: number
   ): Promise<TransactionItemInputs | undefined> {
-    await this.client.solautoPosition.refreshPositionState();
+    await this.client.pos.refreshPositionState();
 
     if (!this.shouldProceedWithRebalance()) {
       this.client.log("Not eligible for a rebalance");

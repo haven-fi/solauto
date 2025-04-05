@@ -350,7 +350,7 @@ async function getBank(
 
 export async function getMarginfiAccountPositionState(
   umi: Umi,
-  protocolAccount: { pk?: PublicKey; data?: MarginfiAccount | null },
+  lpUserAccount: { pk?: PublicKey; data?: MarginfiAccount | null },
   marginfiGroup?: PublicKey,
   supply?: BankSelection,
   debt?: BankSelection,
@@ -360,9 +360,9 @@ export async function getMarginfiAccountPositionState(
   | undefined
 > {
   let marginfiAccount =
-    protocolAccount.data ??
-    (protocolAccount.pk
-      ? await safeFetchMarginfiAccount(umi, publicKey(protocolAccount.pk), {
+    lpUserAccount.data ??
+    (lpUserAccount.pk
+      ? await safeFetchMarginfiAccount(umi, publicKey(lpUserAccount.pk), {
           commitment: "confirmed",
         })
       : null);

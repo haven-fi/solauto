@@ -15,7 +15,7 @@ export interface SolautoPositionDetails {
   positionId: number;
   positionType: PositionType;
   lendingPlatform: LendingPlatform;
-  protocolAccount?: PublicKey;
+  lpUserAccount?: PublicKey;
   supplyMint?: PublicKey;
   debtMint?: PublicKey;
 }
