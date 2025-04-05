@@ -25,10 +25,16 @@ import {
   safeGetPrice,
   solautoStrategyName,
   supplyLiquidityUsdDepositable,
+  toBaseUnit,
   tokenInfo,
+  toRoundedUsdValue,
 } from "../utils";
 import { RebalanceAction } from "../types";
-import { getDebtAdjustment } from "../services/rebalance";
+import {
+  getDebtAdjustment,
+  getRebalanceValues,
+  SolautoFeesBps,
+} from "../services/rebalance";
 import { MIN_POSITION_STATE_FRESHNESS_SECS, TokenInfo } from "../constants";
 import {
   fromWeb3JsPublicKey,
@@ -295,6 +301,49 @@ export abstract class SolautoPositionEx {
     this._data = await fetchSolautoPosition(
       this.umi,
       fromWeb3JsPublicKey(this.publicKey)
+    );
+  }
+
+  simulateRebalance(
+    unixTime: number,
+    supplyPrice: number,
+    debtPrice: number,
+    targetLiqUtilizationRateBps?: number
+  ) {
+    this._data.state.lastRefreshed = BigInt(unixTime);
+    const rebalance = getRebalanceValues(
+      this,
+      targetLiqUtilizationRateBps,
+      SolautoFeesBps.create(
+        true,
+        targetLiqUtilizationRateBps,
+        this.netWorthUsd()
+      )
+    );
+
+    const newDebtUsd = rebalance.endResult.debtUsd;
+    const newSupplyUsd = rebalance.endResult.supplyUsd;
+
+    this._data.state.debt.amountUsed.baseAmountUsdValue =
+      toRoundedUsdValue(newDebtUsd);
+    this._data.state.debt.amountUsed.baseUnit = toBaseUnit(
+      newDebtUsd / debtPrice,
+      this.debtMintInfo().decimals
+    );
+
+    this._data.state.supply.amountUsed.baseAmountUsdValue =
+      toRoundedUsdValue(newSupplyUsd);
+    this._data.state.supply.amountUsed.baseUnit = toBaseUnit(
+      newSupplyUsd / supplyPrice,
+      this.supplyMintInfo().decimals
+    );
+
+    this._data.state.netWorth.baseAmountUsdValue = toRoundedUsdValue(
+      newSupplyUsd - newDebtUsd
+    );
+    this._data.state.netWorth.baseUnit = toBaseUnit(
+      newSupplyUsd - newDebtUsd / supplyPrice,
+      this.supplyMintInfo().decimals
     );
   }
 }
