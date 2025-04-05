@@ -37,7 +37,7 @@ export async function e2eTransactionTest(
   const debtMint = new PublicKey(USDC);
 
   await client.initialize({
-    positionId: 100,
+    positionId: 1,
     new: true,
     supplyMint,
     debtMint,
