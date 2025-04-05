@@ -224,15 +224,12 @@ export class RebalanceTxBuilder {
     if (
       this.client.selfManaged ||
       this.client.contextUpdates.supplyAdjustment > BigInt(0) ||
-      this.client.contextUpdates.debtAdjustment > BigInt(0)
+      this.client.contextUpdates.debtAdjustment > BigInt(0) ||
+      !this.client.solautoPosition.exists()
     ) {
       return false;
     }
     // Rebalance ix will already refresh internally if position is self managed
-
-    if (!this.client.solautoPosition.data().position) {
-      return true;
-    }
 
     const utilizationRateDiff = Math.abs(
       await this.client.solautoPosition.utilizationRateBpsDrift()

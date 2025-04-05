@@ -86,6 +86,16 @@ export abstract class SolautoPositionEx {
     return this._data.position !== undefined;
   }
 
+  authority() {
+    return this._data.authority
+      ? toWeb3JsPublicKey(this._data.authority)
+      : undefined;
+  }
+
+  positionId() {
+    return this._data.positionId ? this._data.positionId[0] : undefined;
+  }
+
   strategyName() {
     return solautoStrategyName(
       toWeb3JsPublicKey(this.state().supply.mint),

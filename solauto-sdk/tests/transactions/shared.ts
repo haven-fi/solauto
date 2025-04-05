@@ -44,7 +44,7 @@ export async function e2eTransactionTest(
   });
 
   const [maxLtvBps, liqThresholdBps] =
-  await client.solautoPosition.maxLtvAndLiqThresholdBps();
+    await client.solautoPosition.maxLtvAndLiqThresholdBps();
   const settings: SolautoSettingsParametersInpArgs = {
     boostToBps: maxBoostToBps(maxLtvBps, liqThresholdBps) - 200,
     boostGap: 50,
@@ -94,10 +94,11 @@ export async function e2eTransactionTest(
   );
 
   transactionItems.push(
-    new TransactionItem(async (attemptNum) => {
-      const rebalancer = new RebalanceTxBuilder(client, 0);
-      return await rebalancer.buildRebalanceTx(attemptNum);
-    }, "rebalance")
+    new TransactionItem(
+      async (attemptNum) =>
+        await new RebalanceTxBuilder(client, 0).buildRebalanceTx(attemptNum),
+      "rebalance"
+    )
   );
 
   transactionItems.push(

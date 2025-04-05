@@ -32,7 +32,7 @@ export async function main() {
     showLogs: true,
     rpcUrl: buildIronforgeApiUrl(process.env.IRONFORGE_API_KEY!),
     programId: testProgram ? SOLAUTO_TEST_PROGRAM : SOLAUTO_PROD_PROGRAM,
-  })!;
+  });
 
   await client.initialize({
     positionId: 1,

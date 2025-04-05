@@ -445,6 +445,7 @@ export function getClient(
   if (lendingPlatform === LendingPlatform.Marginfi) {
     return new SolautoMarginfiClient(txHandlerProps);
   } else {
+    throw new Error("Lending platform not yet supported");
     // TODO: PF
   }
 }
