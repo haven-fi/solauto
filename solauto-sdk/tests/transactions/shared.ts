@@ -73,7 +73,7 @@ export async function e2eTransactionTest(
       return {
         tx: client.protocolInteractionIx(
           solautoAction("Deposit", [
-            toBaseUnit(supplyUsd / supplyPrice, tokenInfo(supplyMint).decimals),
+            toBaseUnit(supplyUsd / supplyPrice, client.pos.supplyMintInfo().decimals),
           ])
         ),
       };
@@ -86,7 +86,7 @@ export async function e2eTransactionTest(
       return {
         tx: client.protocolInteractionIx(
           solautoAction("Borrow", [
-            toBaseUnit(debtUsd / debtPrice, tokenInfo(debtMint).decimals),
+            toBaseUnit(debtUsd / debtPrice, client.pos.debtMintInfo().decimals),
           ])
         ),
       };

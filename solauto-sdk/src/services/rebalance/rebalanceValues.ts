@@ -183,9 +183,9 @@ export interface RebalanceValues extends DebtAdjustment {
 
 export function getRebalanceValues(
   solautoPosition: SolautoPositionEx,
-  solautoFeeBps: SolautoFeesBps,
-  flFeeBps: number,
-  targetLiqUtilizationRateBps?: number
+  targetLiqUtilizationRateBps?: number,
+  solautoFeeBps?: SolautoFeesBps,
+  flFeeBps?: number,
 ): RebalanceValues {
   const tokenBalanceChange = getTokenBalanceChange();
 
@@ -203,9 +203,11 @@ export function getRebalanceValues(
   );
 
   const fees: RebalanceFeesBps = {
-    solauto: solautoFeeBps.getSolautoFeesBps(rebalanceDirection).total,
+    solauto: solautoFeeBps
+      ? solautoFeeBps.getSolautoFeesBps(rebalanceDirection).total
+      : 0,
     lpBorrow: solautoPosition.state().debt.borrowFeeBps,
-    flashLoan: flFeeBps,
+    flashLoan: flFeeBps ?? 0,
   };
 
   const debtAdjustment = getDebtAdjustment(

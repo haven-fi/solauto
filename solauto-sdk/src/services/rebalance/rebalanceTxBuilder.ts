@@ -52,13 +52,13 @@ export class RebalanceTxBuilder {
   private getRebalanceValues(flFee?: number) {
     return getRebalanceValues(
       this.client.pos,
-      new SolautoFeesBps(
+      this.targetLiqUtilizationRateBps,
+      SolautoFeesBps.create(
         this.client.isReferred(),
         this.targetLiqUtilizationRateBps,
         this.client.pos.netWorthUsd()
       ),
       flFee ?? 0,
-      this.targetLiqUtilizationRateBps
     );
   }
 

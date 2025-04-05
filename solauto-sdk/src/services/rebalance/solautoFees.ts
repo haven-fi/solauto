@@ -8,7 +8,19 @@ export class SolautoFeesBps {
     private positionNetWorthUsd: number
   ) {}
 
-  public getSolautoFeesBps(rebalanceDirection: RebalanceDirection) {
+  static create(
+    isReferred: boolean,
+    targetLiqUtilizationRateBps: number | undefined,
+    netWorthUsd: number
+  ) {
+    return new SolautoFeesBps(
+      isReferred,
+      targetLiqUtilizationRateBps,
+      netWorthUsd
+    );
+  }
+
+  getSolautoFeesBps(rebalanceDirection: RebalanceDirection) {
     const minSize = 10_000; // Minimum position size
     const maxSize = 250_000; // Maximum position size
     const maxFeeBps = 50; // Fee in basis points for minSize (0.5%)

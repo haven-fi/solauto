@@ -11,12 +11,7 @@ import {
 import { fromBps, getLiqUtilzationRateBps } from "../../src/utils/numberUtils";
 import { getClient } from "../../src/utils/solautoUtils";
 import { USDC } from "../../src/constants/tokenConstants";
-import {
-  buildHeliusApiUrl,
-  fetchTokenPrices,
-  getSolanaRpcConnection,
-  safeGetPrice,
-} from "../../src/utils";
+import { buildIronforgeApiUrl, fetchTokenPrices, safeGetPrice } from "../../src/utils";
 import {
   createFakePositionState,
   getRebalanceValues,
@@ -24,12 +19,8 @@ import {
   SolautoClient,
 } from "../../src";
 import { SolautoFeesBps } from "../../src/services/rebalance/solautoFees";
-import { buildIronforgeApiUrl } from "../../dist";
 
 const signer = setupTest(undefined, true);
-const [conn, _] = getSolanaRpcConnection(
-  buildHeliusApiUrl(process.env.HELIUS_API_URL!)
-);
 
 function assertAccurateRebalance(
   client: SolautoClient,
@@ -38,13 +29,13 @@ function assertAccurateRebalance(
 ) {
   const { endResult } = getRebalanceValues(
     client.pos,
-    new SolautoFeesBps(
+    targetLiqUtilizationRateBps,
+    SolautoFeesBps.create(
       false,
       targetLiqUtilizationRateBps,
       client.pos.netWorthUsd()
     ),
-    50,
-    targetLiqUtilizationRateBps
+    50
   );
 
   const newLiqUtilizationRateBps = getLiqUtilzationRateBps(

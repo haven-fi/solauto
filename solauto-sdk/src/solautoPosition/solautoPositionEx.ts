@@ -25,10 +25,11 @@ import {
   safeGetPrice,
   solautoStrategyName,
   supplyLiquidityUsdDepositable,
+  tokenInfo,
 } from "../utils";
 import { RebalanceAction } from "../types";
 import { getDebtAdjustment } from "../services/rebalance";
-import { MIN_POSITION_STATE_FRESHNESS_SECS } from "../constants";
+import { MIN_POSITION_STATE_FRESHNESS_SECS, TokenInfo } from "../constants";
 import {
   fromWeb3JsPublicKey,
   toWeb3JsPublicKey,
@@ -123,8 +124,16 @@ export abstract class SolautoPositionEx {
     return toWeb3JsPublicKey(this.state().supply.mint);
   }
 
+  supplyMintInfo(): TokenInfo {
+    return tokenInfo(this.supplyMint());
+  }
+
   debtMint(): PublicKey {
     return toWeb3JsPublicKey(this.state().debt.mint);
+  }
+
+  debtMintInfo(): TokenInfo {
+    return tokenInfo(this.debtMint());
   }
 
   boostToBps() {
