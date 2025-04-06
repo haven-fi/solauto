@@ -342,7 +342,7 @@ export abstract class SolautoPositionEx {
       newSupplyUsd - newDebtUsd
     );
     this._data.state.netWorth.baseUnit = toBaseUnit(
-      newSupplyUsd - newDebtUsd / supplyPrice,
+      (newSupplyUsd - newDebtUsd) / supplyPrice,
       this.supplyMintInfo().decimals
     );
   }
