@@ -2,20 +2,20 @@ use borsh::{BorshDeserialize, BorshSerialize};
 use bytemuck::{Pod, Zeroable};
 use shank::{ShankAccount, ShankType};
 use solana_program::{msg, pubkey::Pubkey};
-use std::{
-    cmp::min,
-    ops::Mul,
-};
+use std::{cmp::min, ops::Mul};
 
 use crate::{
-    constants::USD_DECIMALS, derive_pod_traits, types::shared::{
+    constants::USD_DECIMALS,
+    derive_pod_traits,
+    types::shared::{
         LendingPlatform, PodBool, PositionType, RebalanceDirection, SolautoRebalanceType, SwapType,
         TokenType,
-    }, utils::math_utils::{
+    },
+    utils::math_utils::{
         base_unit_to_usd_value, from_bps, from_rounded_usd_value, get_liq_utilization_rate_bps,
         get_max_boost_to_bps, get_max_repay_to_bps, net_worth_base_amount, to_base_unit,
         to_rounded_usd_value,
-    }
+    },
 };
 
 use super::automation::DCASettings;

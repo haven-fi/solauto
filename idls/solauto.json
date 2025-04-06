@@ -1767,46 +1767,66 @@
     },
     {
       "code": 2,
-      "name": "InvalidPositionSettings",
-      "msg": "Invalid position settings provided"
+      "name": "InvalidBoostToSetting",
+      "msg": "Invalid Boost-to param"
     },
     {
       "code": 3,
+      "name": "InvalidBoostGapSetting",
+      "msg": "Invalid Boost gap param"
+    },
+    {
+      "code": 4,
+      "name": "InvalidRepayToSetting",
+      "msg": "Invalid repay-to param"
+    },
+    {
+      "code": 5,
+      "name": "InvalidRepayGapSetting",
+      "msg": "Invalid repay gap param"
+    },
+    {
+      "code": 6,
+      "name": "InvalidRepayFromSetting",
+      "msg": "Invalid repay-from (repay-to + repay gap)"
+    },
+    {
+      "code": 7,
       "name": "InvalidDCASettings",
       "msg": "Invalid DCA configuration provided"
     },
     {
-      "code": 4,
+      "code": 8,
       "name": "InvalidAutomationData",
       "msg": "Invalid automation settings provided"
     },
     {
-      "code": 5,
+      "code": 9,
       "name": "InvalidRebalanceCondition",
       "msg": "Invalid position condition to rebalance"
     },
     {
-      "code": 6,
+      "code": 10,
       "name": "InstructionIsCPI",
       "msg": "Unable to invoke instruction through a CPI"
     },
     {
-      "code": 7,
+      "code": 11,
       "name": "IncorrectInstructions",
       "msg": "Incorrect set of instructions or instruction data in the transaction"
     },
     {
-      "code": 8,
+      "code": 12,
       "name": "IncorrectDebtAdjustment",
       "msg": "Incorrect swap amount provided. Likely due to high price volatility"
     },
     {
-      "code": 9,
+      "code": 13,
       "name": "InvalidRebalanceMade",
       "msg": "Invalid rebalance was made. Target supply USD and target debt USD was not met"
     },
     {
-      "code": 10,
+      "code": 14,
       "name": "NonAuthorityProvidedTargetLTV",
       "msg": "Cannot provide a target liquidation utilization rate if the instruction is not signed by the position authority"
     }

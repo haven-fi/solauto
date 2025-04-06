@@ -115,59 +115,44 @@ pub fn validate_instruction(
 }
 
 pub fn validate_position_settings(solauto_position: &SolautoPosition) -> ProgramResult {
-    let invalid_params = |error_msg| {
-        msg!(error_msg);
-        Err(SolautoError::InvalidPositionSettings.into())
-    };
-
-    let data = &solauto_position.position;
-    if data.settings.repay_to_bps < data.settings.boost_to_bps {
-        return invalid_params("repay_to_bps value must be greater than boost_to_bps value");
-    }
     let max_boost_to = get_max_boost_to_bps(
         solauto_position.state.max_ltv_bps,
         solauto_position.state.liq_threshold_bps,
     );
-    if data.settings.boost_to_bps > max_boost_to {
-        return invalid_params(
-            format!("Exceeds the maximum boost-to of {}", max_boost_to).as_str(),
-        );
-    }
-
-    if data.settings.repay_gap < MIN_REPAY_GAP_BPS {
-        return invalid_params(
-            format!("repay_gap must be {} or greater", MIN_REPAY_GAP_BPS).as_str(),
-        );
-    }
-    if data.settings.boost_gap < MIN_BOOST_GAP_BPS {
-        return invalid_params(
-            format!("boost_gap must be {} or greater", MIN_BOOST_GAP_BPS).as_str(),
-        );
-    }
-
     let max_repay_to_bps = get_max_repay_to_bps(
         solauto_position.state.max_ltv_bps,
         solauto_position.state.liq_threshold_bps,
     );
-    if data.settings.repay_to_bps > max_repay_to_bps {
-        return invalid_params(
-            format!("For the given max_ltv and liq_threshold of the supplied asset, repay_to_bps must be lower or equal to {} in order to bring the utilization rate to an allowed position", max_repay_to_bps).as_str()
-        );
-    }
     let max_repay_from_bps = get_max_repay_from_bps(
         solauto_position.state.max_ltv_bps,
         solauto_position.state.liq_threshold_bps,
     );
-    if data.settings.repay_to_bps + data.settings.repay_gap > max_repay_from_bps {
-        return invalid_params(
-            format!(
-                "repay_to_bps + repay_gap must be equal-to or below {}",
-                max_repay_from_bps
-            )
-            .as_str(),
-        );
-    }
 
+    let data = &solauto_position.position;
+    check!(
+        data.settings.repay_to_bps >= data.settings.boost_to_bps,
+        SolautoError::InvalidRepayToSetting
+    );
+    check!(
+        data.settings.boost_to_bps <= max_boost_to,
+        SolautoError::InvalidBoostToSetting
+    );
+    check!(
+        data.settings.repay_gap >= MIN_REPAY_GAP_BPS,
+        SolautoError::InvalidRepayGapSetting
+    );
+    check!(
+        data.settings.boost_gap >= MIN_BOOST_GAP_BPS,
+        SolautoError::InvalidBoostGapSetting
+    );
+    check!(
+        data.settings.repay_to_bps <= max_repay_to_bps,
+        SolautoError::InvalidRepayToSetting
+    );
+    check!(
+        data.settings.repay_to_bps + data.settings.repay_gap <= max_repay_from_bps,
+        SolautoError::InvalidRepayFromSetting
+    );
     Ok(())
 }
 

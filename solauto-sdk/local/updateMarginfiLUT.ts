@@ -106,6 +106,7 @@ addBanks().then((x) => x);
 
 addImfiAccounts().then((x) => x);
 
+// TODO: get rid of these lookup tables
 // EoEVYjz3MnsX6fKyxrwJkRhzMCHKjj6dvnjTCHoZLMc7
 // AuoepJfrCrkQF2PeUAgpnnJybRoiff82cNdwXTqyjjvm
 // Bno3JybASPc1jNBZ9rnrdKVvbhk6UNMvSsYvgtitq3zb

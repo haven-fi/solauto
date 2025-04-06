@@ -7,8 +7,16 @@ pub enum SolautoError {
     IncorrectAccounts,
     #[error("Failed to deserialize account data")]
     FailedAccountDeserialization,
-    #[error("Invalid position settings provided")]
-    InvalidPositionSettings,
+    #[error("Invalid Boost-to param")]
+    InvalidBoostToSetting,
+    #[error("Invalid Boost gap param")]
+    InvalidBoostGapSetting,
+    #[error("Invalid repay-to param")]
+    InvalidRepayToSetting,
+    #[error("Invalid repay gap param")]
+    InvalidRepayGapSetting,
+    #[error("Invalid repay-from (repay-to + repay gap)")]
+    InvalidRepayFromSetting,
     #[error("Invalid DCA configuration provided")]
     InvalidDCASettings,
     #[error("Invalid automation settings provided")]

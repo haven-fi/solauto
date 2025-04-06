@@ -48,76 +48,128 @@ nameToErrorMap.set(
   FailedAccountDeserializationError
 );
 
-/** InvalidPositionSettings: Invalid position settings provided */
-export class InvalidPositionSettingsError extends ProgramError {
-  override readonly name: string = 'InvalidPositionSettings';
+/** InvalidBoostToSetting: Invalid Boost-to param */
+export class InvalidBoostToSettingError extends ProgramError {
+  override readonly name: string = 'InvalidBoostToSetting';
 
   readonly code: number = 0x2; // 2
 
   constructor(program: Program, cause?: Error) {
-    super('Invalid position settings provided', program, cause);
+    super('Invalid Boost-to param', program, cause);
   }
 }
-codeToErrorMap.set(0x2, InvalidPositionSettingsError);
-nameToErrorMap.set('InvalidPositionSettings', InvalidPositionSettingsError);
+codeToErrorMap.set(0x2, InvalidBoostToSettingError);
+nameToErrorMap.set('InvalidBoostToSetting', InvalidBoostToSettingError);
+
+/** InvalidBoostGapSetting: Invalid Boost gap param */
+export class InvalidBoostGapSettingError extends ProgramError {
+  override readonly name: string = 'InvalidBoostGapSetting';
+
+  readonly code: number = 0x3; // 3
+
+  constructor(program: Program, cause?: Error) {
+    super('Invalid Boost gap param', program, cause);
+  }
+}
+codeToErrorMap.set(0x3, InvalidBoostGapSettingError);
+nameToErrorMap.set('InvalidBoostGapSetting', InvalidBoostGapSettingError);
+
+/** InvalidRepayToSetting: Invalid repay-to param */
+export class InvalidRepayToSettingError extends ProgramError {
+  override readonly name: string = 'InvalidRepayToSetting';
+
+  readonly code: number = 0x4; // 4
+
+  constructor(program: Program, cause?: Error) {
+    super('Invalid repay-to param', program, cause);
+  }
+}
+codeToErrorMap.set(0x4, InvalidRepayToSettingError);
+nameToErrorMap.set('InvalidRepayToSetting', InvalidRepayToSettingError);
+
+/** InvalidRepayGapSetting: Invalid repay gap param */
+export class InvalidRepayGapSettingError extends ProgramError {
+  override readonly name: string = 'InvalidRepayGapSetting';
+
+  readonly code: number = 0x5; // 5
+
+  constructor(program: Program, cause?: Error) {
+    super('Invalid repay gap param', program, cause);
+  }
+}
+codeToErrorMap.set(0x5, InvalidRepayGapSettingError);
+nameToErrorMap.set('InvalidRepayGapSetting', InvalidRepayGapSettingError);
+
+/** InvalidRepayFromSetting: Invalid repay-from (repay-to + repay gap) */
+export class InvalidRepayFromSettingError extends ProgramError {
+  override readonly name: string = 'InvalidRepayFromSetting';
+
+  readonly code: number = 0x6; // 6
+
+  constructor(program: Program, cause?: Error) {
+    super('Invalid repay-from (repay-to + repay gap)', program, cause);
+  }
+}
+codeToErrorMap.set(0x6, InvalidRepayFromSettingError);
+nameToErrorMap.set('InvalidRepayFromSetting', InvalidRepayFromSettingError);
 
 /** InvalidDCASettings: Invalid DCA configuration provided */
 export class InvalidDCASettingsError extends ProgramError {
   override readonly name: string = 'InvalidDCASettings';
 
-  readonly code: number = 0x3; // 3
+  readonly code: number = 0x7; // 7
 
   constructor(program: Program, cause?: Error) {
     super('Invalid DCA configuration provided', program, cause);
   }
 }
-codeToErrorMap.set(0x3, InvalidDCASettingsError);
+codeToErrorMap.set(0x7, InvalidDCASettingsError);
 nameToErrorMap.set('InvalidDCASettings', InvalidDCASettingsError);
 
 /** InvalidAutomationData: Invalid automation settings provided */
 export class InvalidAutomationDataError extends ProgramError {
   override readonly name: string = 'InvalidAutomationData';
 
-  readonly code: number = 0x4; // 4
+  readonly code: number = 0x8; // 8
 
   constructor(program: Program, cause?: Error) {
     super('Invalid automation settings provided', program, cause);
   }
 }
-codeToErrorMap.set(0x4, InvalidAutomationDataError);
+codeToErrorMap.set(0x8, InvalidAutomationDataError);
 nameToErrorMap.set('InvalidAutomationData', InvalidAutomationDataError);
 
 /** InvalidRebalanceCondition: Invalid position condition to rebalance */
 export class InvalidRebalanceConditionError extends ProgramError {
   override readonly name: string = 'InvalidRebalanceCondition';
 
-  readonly code: number = 0x5; // 5
+  readonly code: number = 0x9; // 9
 
   constructor(program: Program, cause?: Error) {
     super('Invalid position condition to rebalance', program, cause);
   }
 }
-codeToErrorMap.set(0x5, InvalidRebalanceConditionError);
+codeToErrorMap.set(0x9, InvalidRebalanceConditionError);
 nameToErrorMap.set('InvalidRebalanceCondition', InvalidRebalanceConditionError);
 
 /** InstructionIsCPI: Unable to invoke instruction through a CPI */
 export class InstructionIsCPIError extends ProgramError {
   override readonly name: string = 'InstructionIsCPI';
 
-  readonly code: number = 0x6; // 6
+  readonly code: number = 0xa; // 10
 
   constructor(program: Program, cause?: Error) {
     super('Unable to invoke instruction through a CPI', program, cause);
   }
 }
-codeToErrorMap.set(0x6, InstructionIsCPIError);
+codeToErrorMap.set(0xa, InstructionIsCPIError);
 nameToErrorMap.set('InstructionIsCPI', InstructionIsCPIError);
 
 /** IncorrectInstructions: Incorrect set of instructions or instruction data in the transaction */
 export class IncorrectInstructionsError extends ProgramError {
   override readonly name: string = 'IncorrectInstructions';
 
-  readonly code: number = 0x7; // 7
+  readonly code: number = 0xb; // 11
 
   constructor(program: Program, cause?: Error) {
     super(
@@ -127,14 +179,14 @@ export class IncorrectInstructionsError extends ProgramError {
     );
   }
 }
-codeToErrorMap.set(0x7, IncorrectInstructionsError);
+codeToErrorMap.set(0xb, IncorrectInstructionsError);
 nameToErrorMap.set('IncorrectInstructions', IncorrectInstructionsError);
 
 /** IncorrectDebtAdjustment: Incorrect swap amount provided. Likely due to high price volatility */
 export class IncorrectDebtAdjustmentError extends ProgramError {
   override readonly name: string = 'IncorrectDebtAdjustment';
 
-  readonly code: number = 0x8; // 8
+  readonly code: number = 0xc; // 12
 
   constructor(program: Program, cause?: Error) {
     super(
@@ -144,14 +196,14 @@ export class IncorrectDebtAdjustmentError extends ProgramError {
     );
   }
 }
-codeToErrorMap.set(0x8, IncorrectDebtAdjustmentError);
+codeToErrorMap.set(0xc, IncorrectDebtAdjustmentError);
 nameToErrorMap.set('IncorrectDebtAdjustment', IncorrectDebtAdjustmentError);
 
 /** InvalidRebalanceMade: Invalid rebalance was made. Target supply USD and target debt USD was not met */
 export class InvalidRebalanceMadeError extends ProgramError {
   override readonly name: string = 'InvalidRebalanceMade';
 
-  readonly code: number = 0x9; // 9
+  readonly code: number = 0xd; // 13
 
   constructor(program: Program, cause?: Error) {
     super(
@@ -161,14 +213,14 @@ export class InvalidRebalanceMadeError extends ProgramError {
     );
   }
 }
-codeToErrorMap.set(0x9, InvalidRebalanceMadeError);
+codeToErrorMap.set(0xd, InvalidRebalanceMadeError);
 nameToErrorMap.set('InvalidRebalanceMade', InvalidRebalanceMadeError);
 
 /** NonAuthorityProvidedTargetLTV: Cannot provide a target liquidation utilization rate if the instruction is not signed by the position authority */
 export class NonAuthorityProvidedTargetLTVError extends ProgramError {
   override readonly name: string = 'NonAuthorityProvidedTargetLTV';
 
-  readonly code: number = 0xa; // 10
+  readonly code: number = 0xe; // 14
 
   constructor(program: Program, cause?: Error) {
     super(
@@ -178,7 +230,7 @@ export class NonAuthorityProvidedTargetLTVError extends ProgramError {
     );
   }
 }
-codeToErrorMap.set(0xa, NonAuthorityProvidedTargetLTVError);
+codeToErrorMap.set(0xe, NonAuthorityProvidedTargetLTVError);
 nameToErrorMap.set(
   'NonAuthorityProvidedTargetLTV',
   NonAuthorityProvidedTargetLTVError

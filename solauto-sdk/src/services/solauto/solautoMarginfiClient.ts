@@ -46,11 +46,6 @@ import {
 import { hasFirstRebalance } from "../../utils/solautoUtils";
 import { RebalanceDetails } from "../../types";
 
-export interface SolautoMarginfiClientArgs extends SolautoClientArgs {
-  marginfiAccount?: PublicKey | Signer;
-  marginfiAccountSeedIdx?: bigint;
-}
-
 export class SolautoMarginfiClient extends SolautoClient {
   public lendingPlatform = LendingPlatform.Marginfi;
 
@@ -66,14 +61,14 @@ export class SolautoMarginfiClient extends SolautoClient {
   public supplyPriceOracle!: PublicKey;
   public debtPriceOracle!: PublicKey;
 
-  async initialize(args: SolautoMarginfiClientArgs) {
+  async initialize(args: SolautoClientArgs) {
     await super.initialize(args);
 
     this.marginfiGroup = await this.pos.lendingPool();
 
     if (this.selfManaged) {
       this.marginfiAccount =
-        args.marginfiAccount ??
+        args.lpUserAccount ??
         createSignerFromKeypair(this.umi, this.umi.eddsa.generateKeypair());
     } else {
       if (this.pos.exists()) {

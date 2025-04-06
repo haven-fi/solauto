@@ -146,8 +146,12 @@ fn create_rebalancer<'a>(
                 data.position_debt_ta_balance.unwrap_or(0),
             ),
         },
-        authority_supply_ta: Some(TokenAccountData::without_balance(position_authority_supply_ta)),
-        authority_debt_ta: Some(TokenAccountData::without_balance(position_authority_debt_ta)),
+        authority_supply_ta: Some(TokenAccountData::without_balance(
+            position_authority_supply_ta,
+        )),
+        authority_debt_ta: Some(TokenAccountData::without_balance(
+            position_authority_debt_ta,
+        )),
         solauto_fees_bps: solauto_fees,
         referred_by_state: None,
         referred_by_ta: None,

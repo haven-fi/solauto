@@ -16,31 +16,43 @@ pub enum SolautoError {
     /// 1 (0x1) - Failed to deserialize account data
     #[error("Failed to deserialize account data")]
     FailedAccountDeserialization,
-    /// 2 (0x2) - Invalid position settings provided
-    #[error("Invalid position settings provided")]
-    InvalidPositionSettings,
-    /// 3 (0x3) - Invalid DCA configuration provided
+    /// 2 (0x2) - Invalid Boost-to param
+    #[error("Invalid Boost-to param")]
+    InvalidBoostToSetting,
+    /// 3 (0x3) - Invalid Boost gap param
+    #[error("Invalid Boost gap param")]
+    InvalidBoostGapSetting,
+    /// 4 (0x4) - Invalid repay-to param
+    #[error("Invalid repay-to param")]
+    InvalidRepayToSetting,
+    /// 5 (0x5) - Invalid repay gap param
+    #[error("Invalid repay gap param")]
+    InvalidRepayGapSetting,
+    /// 6 (0x6) - Invalid repay-from (repay-to + repay gap)
+    #[error("Invalid repay-from (repay-to + repay gap)")]
+    InvalidRepayFromSetting,
+    /// 7 (0x7) - Invalid DCA configuration provided
     #[error("Invalid DCA configuration provided")]
     InvalidDCASettings,
-    /// 4 (0x4) - Invalid automation settings provided
+    /// 8 (0x8) - Invalid automation settings provided
     #[error("Invalid automation settings provided")]
     InvalidAutomationData,
-    /// 5 (0x5) - Invalid position condition to rebalance
+    /// 9 (0x9) - Invalid position condition to rebalance
     #[error("Invalid position condition to rebalance")]
     InvalidRebalanceCondition,
-    /// 6 (0x6) - Unable to invoke instruction through a CPI
+    /// 10 (0xA) - Unable to invoke instruction through a CPI
     #[error("Unable to invoke instruction through a CPI")]
     InstructionIsCPI,
-    /// 7 (0x7) - Incorrect set of instructions or instruction data in the transaction
+    /// 11 (0xB) - Incorrect set of instructions or instruction data in the transaction
     #[error("Incorrect set of instructions or instruction data in the transaction")]
     IncorrectInstructions,
-    /// 8 (0x8) - Incorrect swap amount provided. Likely due to high price volatility
+    /// 12 (0xC) - Incorrect swap amount provided. Likely due to high price volatility
     #[error("Incorrect swap amount provided. Likely due to high price volatility")]
     IncorrectDebtAdjustment,
-    /// 9 (0x9) - Invalid rebalance was made. Target supply USD and target debt USD was not met
+    /// 13 (0xD) - Invalid rebalance was made. Target supply USD and target debt USD was not met
     #[error("Invalid rebalance was made. Target supply USD and target debt USD was not met")]
     InvalidRebalanceMade,
-    /// 10 (0xA) - Cannot provide a target liquidation utilization rate if the instruction is not signed by the position authority
+    /// 14 (0xE) - Cannot provide a target liquidation utilization rate if the instruction is not signed by the position authority
     #[error("Cannot provide a target liquidation utilization rate if the instruction is not signed by the position authority")]
     NonAuthorityProvidedTargetLTV,
 }
