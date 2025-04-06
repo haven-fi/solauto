@@ -414,12 +414,12 @@ mod tests {
         let debt_adjustment = get_debt_adjustment(
             from_bps(LIQ_THRESHOLD_BPS),
             &pos_values,
+            rebalance_to,
             &(RebalanceFeesBps {
                 solauto: SOLAUTO_FEE_BPS,
                 lp_borrow: BORROW_FEE_BPS,
                 flash_loan: 0,
             }),
-            rebalance_to,
         );
         let rebalance_args = RebalanceSettings {
             rebalance_type: SolautoRebalanceType::Regular,
@@ -481,12 +481,12 @@ mod tests {
         let debt_adjustment = get_debt_adjustment(
             from_bps(LIQ_THRESHOLD_BPS),
             &pos_values,
+            rebalance_to,
             &(RebalanceFeesBps {
                 solauto: SOLAUTO_FEE_BPS,
                 lp_borrow: BORROW_FEE_BPS,
                 flash_loan: 0,
             }),
-            rebalance_to,
         );
         let rebalance_args = RebalanceSettings {
             rebalance_type: SolautoRebalanceType::Regular,
@@ -556,12 +556,12 @@ mod tests {
         let debt_adjustment = get_debt_adjustment(
             from_bps(LIQ_THRESHOLD_BPS),
             &pos_values,
+            rebalance_to,
             &(RebalanceFeesBps {
                 solauto: SOLAUTO_FEE_BPS,
                 lp_borrow: BORROW_FEE_BPS,
                 flash_loan: FLASH_LOAN_FEE_BPS,
             }),
-            rebalance_to,
         );
         let flash_borrow = to_base_unit(
             debt_adjustment.debt_adjustment_usd.abs().div(DEBT_PRICE),
@@ -628,12 +628,12 @@ mod tests {
         let debt_adjustment = get_debt_adjustment(
             from_bps(LIQ_THRESHOLD_BPS),
             &pos_values,
+            rebalance_to,
             &(RebalanceFeesBps {
                 solauto: SOLAUTO_FEE_BPS,
                 lp_borrow: BORROW_FEE_BPS,
                 flash_loan: FLASH_LOAN_FEE_BPS,
             }),
-            rebalance_to,
         );
         let flash_borrow = to_base_unit(
             debt_adjustment.debt_adjustment_usd.abs().div(SUPPLY_PRICE),
@@ -702,12 +702,12 @@ mod tests {
         let debt_adjustment = get_debt_adjustment(
             from_bps(LIQ_THRESHOLD_BPS),
             &pos_values,
+            rebalance_to,
             &(RebalanceFeesBps {
                 solauto: SOLAUTO_FEE_BPS,
                 lp_borrow: BORROW_FEE_BPS,
                 flash_loan: 0,
             }),
-            rebalance_to,
         );
 
         println!("{}", debt_adjustment.debt_adjustment_usd.abs());
@@ -783,12 +783,12 @@ mod tests {
         let debt_adjustment = get_debt_adjustment(
             from_bps(LIQ_THRESHOLD_BPS),
             &pos_values,
+            rebalance_to,
             &(RebalanceFeesBps {
                 solauto: SOLAUTO_FEE_BPS,
                 lp_borrow: BORROW_FEE_BPS,
                 flash_loan: 0,
             }),
-            rebalance_to,
         );
         let rebalance_args = RebalanceSettings {
             rebalance_type: SolautoRebalanceType::Regular,

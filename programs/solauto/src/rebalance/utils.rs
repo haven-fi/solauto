@@ -160,8 +160,8 @@ pub fn get_rebalance_values(
     let debt_adjustment = get_debt_adjustment(
         from_bps(solauto_position.state.liq_threshold_bps),
         &position,
-        &fees,
         target_liq_utilization_rate_bps,
+        &fees,
     );
 
     return Ok(RebalanceStateValues::from(

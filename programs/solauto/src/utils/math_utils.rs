@@ -177,8 +177,8 @@ fn apply_debt_adjustment_usd(
 pub fn get_debt_adjustment(
     liq_threshold: f64,
     pos: &PositionValues,
-    fees: &RebalanceFeesBps,
     target_liq_utilization_rate_bps: u16,
+    fees: &RebalanceFeesBps,
 ) -> DebtAdjustment {
     let is_boost = get_liq_utilization_rate_bps(pos.supply_usd, pos.debt_usd, liq_threshold)
         < target_liq_utilization_rate_bps;
@@ -269,8 +269,8 @@ mod tests {
         let debt_adjustment = get_debt_adjustment(
             liq_threshold,
             &position,
-            &fees,
             target_liq_utilization_rate_bps,
+            &fees,
         );
 
         let (new_supply_usd, new_debt_usd) = (

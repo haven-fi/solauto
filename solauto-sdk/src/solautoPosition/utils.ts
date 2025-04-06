@@ -21,9 +21,9 @@ import {
   getLiqUtilzationRateBps,
   retryWithExponentialBackoff,
   toBaseUnit,
+  tokenInfo,
   toRoundedUsdValue,
 } from "../utils";
-import { TOKEN_INFO } from "../constants";
 
 export function createSolautoSettings(
   settings: SolautoSettingsParametersInpArgs
@@ -122,8 +122,8 @@ export function createFakePositionState(
   maxLtvBps: number,
   liqThresholdBps: number
 ): PositionState {
-  const supplyDecimals = TOKEN_INFO[supply.mint.toString()].decimals;
-  const debtDecimals = TOKEN_INFO[debt.mint.toString()].decimals;
+  const supplyDecimals = tokenInfo(supply.mint).decimals;
+  const debtDecimals = tokenInfo(debt.mint).decimals;
 
   const supplyUsd = (supply.amountUsed ?? 0) * (supply.price ?? 0);
   const debtUsd = (debt.amountUsed ?? 0) * (debt.price ?? 0);

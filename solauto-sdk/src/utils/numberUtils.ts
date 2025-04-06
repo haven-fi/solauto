@@ -132,24 +132,6 @@ export function uint8ArrayToBigInt(uint8Array: Uint8Array): bigint {
   return (BigInt(high) << 32n) | BigInt(low);
 }
 
-export function getDebtAdjustmentUsd(
-  liqThresholdBps: number,
-  supplyUsd: number,
-  debtUsd: number,
-  targetLiqUtilizationRateBps: number,
-  adjustmentFeeBps?: number
-) {
-  const adjustmentFee =
-    adjustmentFeeBps && adjustmentFeeBps > 0 ? fromBps(adjustmentFeeBps) : 0;
-  const liqThreshold = fromBps(liqThresholdBps);
-  const targetLiqUtilizationRate = fromBps(targetLiqUtilizationRateBps);
-
-  const debtAdjustmentUsd =
-    (targetLiqUtilizationRate * supplyUsd * liqThreshold - debtUsd) /
-    (1 - targetLiqUtilizationRate * (1 - adjustmentFee) * liqThreshold);
-  return debtAdjustmentUsd;
-}
-
 export function getMaxLiqUtilizationRateBps(
   maxLtvBps: number,
   liqThresholdBps: number,

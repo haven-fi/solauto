@@ -212,8 +212,8 @@ export abstract class SolautoPositionEx {
       const { debtAdjustmentUsd } = getDebtAdjustment(
         this.state().liqThresholdBps,
         { supplyUsd: this.supplyUsd(), debtUsd: this.debtUsd() },
-        { solauto: 50, lpBorrow: 50, flashLoan: 50 }, // TODO: add better fix here instead of magic numbers
-        this.boostToBps()
+        this.boostToBps(),
+        { solauto: 50, lpBorrow: 50, flashLoan: 50 }, // TODO: get true data here instead of magic numbers
       );
 
       const sufficientLiquidity =

@@ -37,20 +37,20 @@ interface ApplyDebtAdjustmentResult {
 export function applyDebtAdjustmentUsd(
   debtAdjustmentUsd: number,
   pos: PositionValues,
-  fees: RebalanceFeesBps,
-  liqThreshold: number
+  liqThreshold: number,
+  fees?: RebalanceFeesBps,
 ): ApplyDebtAdjustmentResult {
   const newPos = { ...pos };
   const isBoost = debtAdjustmentUsd > 0;
 
   const daMinusSolautoFees =
-    debtAdjustmentUsd - debtAdjustmentUsd * fromBps(fees.solauto);
-  const daWithFlashLoan = debtAdjustmentUsd * (1.0 + fromBps(fees.flashLoan));
+    debtAdjustmentUsd - debtAdjustmentUsd * fromBps(fees?.solauto ?? 0);
+  const daWithFlashLoan = debtAdjustmentUsd * (1.0 + fromBps(fees?.flashLoan ?? 0));
 
   let intermediaryLiqUtilizationRateBps = 0;
   if (isBoost) {
     newPos.debtUsd +=
-      daWithFlashLoan * fromBps(fees.lpBorrow) + daWithFlashLoan;
+      daWithFlashLoan * fromBps(fees?.lpBorrow ?? 0) + daWithFlashLoan;
     intermediaryLiqUtilizationRateBps = getLiqUtilzationRateBps(
       newPos.supplyUsd,
       newPos.debtUsd,
@@ -73,17 +73,17 @@ export function applyDebtAdjustmentUsd(
 export function getDebtAdjustment(
   liqThreshold: number,
   pos: PositionValues,
-  fees: RebalanceFeesBps,
-  targetLiqUtilizationRateBps: number
+  targetLiqUtilizationRateBps: number,
+  fees?: RebalanceFeesBps,
 ): DebtAdjustment {
   const isBoost =
     getLiqUtilzationRateBps(pos.supplyUsd, pos.debtUsd, toBps(liqThreshold)) <
     targetLiqUtilizationRateBps;
 
   const targetUtilizationRate = fromBps(targetLiqUtilizationRateBps);
-  const actualizedFee = 1.0 - fromBps(fees.solauto);
-  const flFee = fromBps(fees.flashLoan);
-  const lpBorrowFee = fromBps(fees.lpBorrow);
+  const actualizedFee = 1.0 - fromBps(fees?.solauto ?? 0);
+  const flFee = fromBps(fees?.flashLoan ?? 0);
+  const lpBorrowFee = fromBps(fees?.lpBorrow ?? 0);
 
   const debtAdjustmentUsd = isBoost
     ? (targetUtilizationRate * liqThreshold * pos.supplyUsd - pos.debtUsd) /
@@ -97,8 +97,8 @@ export function getDebtAdjustment(
   const newPos = applyDebtAdjustmentUsd(
     debtAdjustmentUsd,
     pos,
-    fees,
-    liqThreshold
+    liqThreshold,
+    fees
   );
 
   return {
@@ -213,8 +213,8 @@ export function getRebalanceValues(
   const debtAdjustment = getDebtAdjustment(
     fromBps(solautoPosition.state().liqThresholdBps),
     position,
-    fees,
-    targetRate
+    targetRate,
+    fees
   );
 
   const repayingCloseToMaxLtv =
