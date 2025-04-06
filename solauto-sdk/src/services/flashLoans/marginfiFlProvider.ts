@@ -132,18 +132,23 @@ export class MarginfiFlProvider extends FlProviderBase {
       this.flSigners.push(signer);
     }
 
-    consoleLog("Intermediary MF account:", accountPk.toString());
     for (const s of sources) {
       const data: IMFIAccount = {
         signer,
         accountPk,
         accountData,
       };
-      if (s === TokenType.Supply) {
+
+      const supply = s === TokenType.Supply;
+      if (supply) {
         this.supplyImfiAccount = data;
       } else {
         this.debtImfiAccount = data;
       }
+      consoleLog(
+        `${supply ? "Supply" : "Debt"} iMfi account:`,
+        accountPk.toString()
+      );
     }
   }
 
