@@ -53,9 +53,9 @@ class LookupTables {
   ) {}
 
   async getLutInputs(
-    additionalAddresses: string[]
+    additionalAddresses?: string[]
   ): Promise<AddressLookupTableInput[]> {
-    const addresses = [...this.defaultLuts, ...additionalAddresses];
+    const addresses = [...this.defaultLuts, ...(additionalAddresses ?? [])];
     const currentCacheAddresses = this.cache.map((x) => x.publicKey.toString());
 
     const missingAddresses = addresses.filter(
@@ -416,10 +416,7 @@ export class TransactionsManager {
   }
 
   private async updateLut(tx: TransactionBuilder, newLut: boolean) {
-    const lutInputs = await getAddressLookupInputs(
-      this.txHandler.umi,
-      this.txHandler.defaultLookupTables()
-    );
+    const lutInputs = await this.lookupTables.getLutInputs();
     const updateLutTxName = `${newLut ? "create" : "update"} lookup table`;
     await retryWithExponentialBackoff(
       async (attemptNum, prevError) =>
@@ -474,7 +471,9 @@ export class TransactionsManager {
     });
 
     const swbOracle = allAccounts.find((x) =>
-      Object.values(SWITCHBOARD_PRICE_FEED_IDS).map(x => x.feedId).includes(x ?? "")
+      Object.values(SWITCHBOARD_PRICE_FEED_IDS)
+        .map((x) => x.feedId)
+        .includes(x ?? "")
     );
     if (swbOracle) {
       const mint = new PublicKey(
