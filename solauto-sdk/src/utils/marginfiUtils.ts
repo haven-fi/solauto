@@ -51,7 +51,7 @@ export function findMarginfiAccounts(
   throw new Error(`Marginfi accounts not found by the bank: ${bank}`);
 }
 
-export function calcMarginfiMaxLtvAndLiqThreshold(
+export function calcMarginfiMaxLtvAndLiqThresholdBps(
   supplyBank: Bank,
   debtBank: Bank,
   supplyPrice: number
@@ -83,10 +83,10 @@ export function calcMarginfiMaxLtvAndLiqThreshold(
     maxLtv = maxLtv * Number(discount);
   }
 
-  return [maxLtv, liqThreshold];
+  return [toBps(maxLtv, "Floor"), toBps(liqThreshold, "Floor")];
 }
 
-export async function getMarginfiMaxLtvAndLiqThreshold(
+export async function getMarginfiMaxLtvAndLiqThresholdBps(
   umi: Umi,
   marginfiGroup: PublicKey,
   supply: {
@@ -137,7 +137,7 @@ export async function getMarginfiMaxLtvAndLiqThreshold(
     return [0, 0];
   }
 
-  return calcMarginfiMaxLtvAndLiqThreshold(
+  return calcMarginfiMaxLtvAndLiqThresholdBps(
     supply.bank!,
     debt.bank,
     supplyPrice
@@ -266,7 +266,7 @@ export function getBankLiquidityAvailableBaseUnit(
         );
   }
 
-  return BigInt(Math.round(amountCanBeUsed));
+  return BigInt(Math.floor(amountCanBeUsed));
 }
 
 async function getTokenUsage(
@@ -479,7 +479,7 @@ export async function getMarginfiAccountPositionState(
   }
 
   const supplyPrice = safeGetPrice(supply.mint!)!;
-  let [maxLtv, liqThreshold] = await getMarginfiMaxLtvAndLiqThreshold(
+  let [maxLtvBps, liqThresholdBps] = await getMarginfiMaxLtvAndLiqThresholdBps(
     umi,
     marginfiGroup ?? new PublicKey(DEFAULT_MARGINFI_GROUP),
     {
@@ -508,7 +508,7 @@ export async function getMarginfiAccountPositionState(
       liqUtilizationRateBps: getLiqUtilzationRateBps(
         supplyUsd,
         debtUsd,
-        toBps(liqThreshold)
+        liqThresholdBps
       ),
       netWorth: {
         baseAmountUsdValue: toBaseUnit(supplyUsd - debtUsd, USD_DECIMALS),
@@ -519,8 +519,8 @@ export async function getMarginfiAccountPositionState(
       },
       supply: supplyUsage!,
       debt: debtUsage!,
-      maxLtvBps: toBps(maxLtv),
-      liqThresholdBps: toBps(liqThreshold),
+      maxLtvBps,
+      liqThresholdBps,
       lastRefreshed: BigInt(currentUnixSeconds()),
       padding1: [],
       padding2: [],

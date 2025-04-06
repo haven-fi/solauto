@@ -88,8 +88,17 @@ export function fromBps(value: number): number {
   return value / BASIS_POINTS;
 }
 
-export function toBps(value: number): number {
-  return Math.round(value * BASIS_POINTS);
+type RoundAction = "Floor" | "Round" | "Ceil";
+export function toBps(
+  value: number,
+  roundAction: RoundAction = "Round"
+): number {
+  const bps = value * BASIS_POINTS;
+  return roundAction === "Round"
+    ? Math.round(bps)
+    : roundAction === "Floor"
+      ? Math.floor(bps)
+      : Math.ceil(bps);
 }
 
 export function bytesToI80F48(bytes: number[]): number {

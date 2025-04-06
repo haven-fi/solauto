@@ -115,7 +115,7 @@ pub fn validate_instruction(
 }
 
 pub fn validate_position_settings(solauto_position: &SolautoPosition) -> ProgramResult {
-    let max_boost_to = get_max_boost_to_bps(
+    let max_boost_to_bps = get_max_boost_to_bps(
         solauto_position.state.max_ltv_bps,
         solauto_position.state.liq_threshold_bps,
     );
@@ -134,7 +134,7 @@ pub fn validate_position_settings(solauto_position: &SolautoPosition) -> Program
         SolautoError::InvalidRepayToSetting
     );
     check!(
-        data.settings.boost_to_bps <= max_boost_to,
+        data.settings.boost_to_bps <= max_boost_to_bps,
         SolautoError::InvalidBoostToSetting
     );
     check!(

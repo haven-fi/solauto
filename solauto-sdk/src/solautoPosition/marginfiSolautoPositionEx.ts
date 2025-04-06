@@ -9,7 +9,7 @@ import {
 import { publicKey } from "@metaplex-foundation/umi";
 import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 import {
-  calcMarginfiMaxLtvAndLiqThreshold,
+  calcMarginfiMaxLtvAndLiqThresholdBps,
   fetchTokenPrices,
   getBankLiquidityAvailableBaseUnit,
   getMarginfiAccountPositionState,
@@ -62,13 +62,13 @@ export class MarginfiSolautoPositionEx extends SolautoPositionEx {
     }
 
     const [supplyPrice] = await fetchTokenPrices([this.supplyMint()]);
-    const [maxLtv, liqThreshold] = calcMarginfiMaxLtvAndLiqThreshold(
+    const [maxLtvBps, liqThresholdBps] = calcMarginfiMaxLtvAndLiqThresholdBps(
       this.supplyBank,
       this.debtBank,
       supplyPrice
     );
 
-    return [toBps(maxLtv), toBps(liqThreshold)];
+    return [maxLtvBps, liqThresholdBps];
   }
 
   supplyLiquidityAvailable(): bigint {
