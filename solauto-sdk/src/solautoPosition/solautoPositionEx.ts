@@ -19,6 +19,8 @@ import {
   ContextUpdates,
   currentUnixSeconds,
   debtLiquidityUsdAvailable,
+  fetchTokenPrices,
+  getLiqUtilzationRateBps,
   maxBoostToBps,
   maxRepayToBps,
   positionStateWithLatestPrices,
@@ -213,7 +215,7 @@ export abstract class SolautoPositionEx {
         this.state().liqThresholdBps,
         { supplyUsd: this.supplyUsd(), debtUsd: this.debtUsd() },
         this.boostToBps(),
-        { solauto: 50, lpBorrow: 50, flashLoan: 50 }, // TODO: get true data here instead of magic numbers
+        { solauto: 50, lpBorrow: 50, flashLoan: 50 } // TODO: get true data here instead of magic numbers
       );
 
       const sufficientLiquidity =
@@ -289,19 +291,57 @@ export abstract class SolautoPositionEx {
     return newState.liqUtilizationRateBps - oldState.liqUtilizationRateBps;
   }
 
-  async updateWithLatestPrices(supplyPrice?: number, debtPrice?: number) {
-    this._data.state = await positionStateWithLatestPrices(
-      this.state(),
-      supplyPrice,
-      debtPrice
+  updateSupply(newSupplyUsd: number, supplyPrice?: number) {
+    this._data.state.supply.amountUsed.baseAmountUsdValue =
+      toRoundedUsdValue(newSupplyUsd);
+    this._data.state.supply.amountUsed.baseUnit = toBaseUnit(
+      newSupplyUsd / (supplyPrice ?? safeGetPrice(this.supplyMint()) ?? 0),
+      this.supplyMintInfo().decimals
     );
   }
 
-  async refetchPositionData() {
-    this._data = await fetchSolautoPosition(
-      this.umi,
-      fromWeb3JsPublicKey(this.publicKey)
+  updateDebt(newDebtUsd: number, debtPrice?: number) {
+    this._data.state.debt.amountUsed.baseAmountUsdValue =
+      toRoundedUsdValue(newDebtUsd);
+    this._data.state.debt.amountUsed.baseUnit = toBaseUnit(
+      newDebtUsd / (debtPrice ?? safeGetPrice(this.debtMint()) ?? 0),
+      this.debtMintInfo().decimals
     );
+  }
+
+  updateNetWorth(supplyPrice?: number) {
+    const netWorthUsd = this.supplyUsd() - this.debtUsd();
+    this._data.state.netWorth.baseAmountUsdValue =
+      toRoundedUsdValue(netWorthUsd);
+    this._data.state.netWorth.baseUnit = toBaseUnit(
+      netWorthUsd / (supplyPrice ?? safeGetPrice(this.supplyMint()) ?? 0),
+      this.supplyMintInfo().decimals
+    );
+  }
+
+  updateLiqUtilizationRate() {
+    this._data.state.liqUtilizationRateBps = getLiqUtilzationRateBps(
+      this.supplyUsd(),
+      this.debtUsd(),
+      this.state().liqThresholdBps
+    );
+  }
+
+  async updateWithLatestPrices(supplyPrice?: number, debtPrice?: number) {
+    if (!supplyPrice || !debtPrice) {
+      [supplyPrice, debtPrice] = await fetchTokenPrices([
+        this.supplyMint(),
+        this.debtMint(),
+      ]);
+    }
+
+    const supplyUsd = this.totalSupply() * supplyPrice;
+    const debtUsd = this.totalDebt() * debtPrice;
+
+    this.updateSupply(supplyUsd, supplyPrice);
+    this.updateDebt(debtUsd, debtPrice);
+    this.updateNetWorth(supplyPrice);
+    this.updateLiqUtilizationRate();
   }
 
   simulateRebalance(
@@ -320,30 +360,16 @@ export abstract class SolautoPositionEx {
         this.netWorthUsd()
       )
     );
+    this.updateSupply(rebalance.endResult.supplyUsd, supplyPrice);
+    this.updateDebt(rebalance.endResult.debtUsd, debtPrice);
+    this.updateNetWorth(supplyPrice);
+    this.updateLiqUtilizationRate();
+  }
 
-    const newDebtUsd = rebalance.endResult.debtUsd;
-    const newSupplyUsd = rebalance.endResult.supplyUsd;
-
-    this._data.state.debt.amountUsed.baseAmountUsdValue =
-      toRoundedUsdValue(newDebtUsd);
-    this._data.state.debt.amountUsed.baseUnit = toBaseUnit(
-      newDebtUsd / debtPrice,
-      this.debtMintInfo().decimals
-    );
-
-    this._data.state.supply.amountUsed.baseAmountUsdValue =
-      toRoundedUsdValue(newSupplyUsd);
-    this._data.state.supply.amountUsed.baseUnit = toBaseUnit(
-      newSupplyUsd / supplyPrice,
-      this.supplyMintInfo().decimals
-    );
-
-    this._data.state.netWorth.baseAmountUsdValue = toRoundedUsdValue(
-      newSupplyUsd - newDebtUsd
-    );
-    this._data.state.netWorth.baseUnit = toBaseUnit(
-      (newSupplyUsd - newDebtUsd) / supplyPrice,
-      this.supplyMintInfo().decimals
+  async refetchPositionData() {
+    this._data = await fetchSolautoPosition(
+      this.umi,
+      fromWeb3JsPublicKey(this.publicKey)
     );
   }
 }
