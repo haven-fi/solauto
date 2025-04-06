@@ -25,6 +25,7 @@ export interface SwapInput {
   amount: bigint;
   exactIn?: boolean;
   exactOut?: boolean;
+  slippageBps?: number;
 }
 
 export interface SwapParams extends SwapInput {
@@ -60,11 +61,11 @@ export class JupSwapManager {
             : data.exactIn
               ? "ExactIn"
               : undefined,
-          slippageBps: 10,
+          slippageBps: data.slippageBps ?? 10,
           maxAccounts: !data.exactOut ? 15 + attemptNum * 5 : undefined,
         }),
-      3,
-      200
+      4,
+      150
     );
   }
 

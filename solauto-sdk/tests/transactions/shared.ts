@@ -13,7 +13,6 @@ import {
   solautoAction,
   SolautoSettingsParametersInpArgs,
   toBaseUnit,
-  tokenInfo,
   TransactionItem,
   TransactionsManager,
   USDC,
