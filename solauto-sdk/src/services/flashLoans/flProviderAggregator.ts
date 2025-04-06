@@ -4,6 +4,7 @@ import { FlashLoanDetails, FlashLoanRequirements } from "../../types";
 import { Signer, TransactionBuilder, Umi } from "@metaplex-foundation/umi";
 import { TokenType } from "../../generated";
 import { MarginfiFlProvider } from "./marginfiFlProvider";
+import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 
 export class FlProviderAggregator extends FlProviderBase {
   private marginfiFlProvider!: MarginfiFlProvider;
@@ -11,13 +12,15 @@ export class FlProviderAggregator extends FlProviderBase {
   constructor(
     umi: Umi,
     signer: Signer,
+    authority: PublicKey,
     supplyMint: PublicKey,
     debtMint: PublicKey
   ) {
-    super(umi, signer, supplyMint, debtMint);
+    super(umi, signer, authority, supplyMint, debtMint);
     this.marginfiFlProvider = new MarginfiFlProvider(
       umi,
       signer,
+      authority,
       supplyMint,
       debtMint
     );
@@ -39,10 +42,12 @@ export class FlProviderAggregator extends FlProviderBase {
   }
 
   lutAccountsToAdd(): PublicKey[] {
-    return [
-      ...super.lutAccountsToAdd(),
-      ...this.marginfiFlProvider.lutAccountsToAdd(),
-    ];
+    return toWeb3JsPublicKey(this.signer.publicKey).equals(this.authority)
+      ? [
+          ...super.lutAccountsToAdd(),
+          ...this.marginfiFlProvider.lutAccountsToAdd(),
+        ]
+      : [];
   }
 
   private flProvider(source: TokenType): FlProviderBase {

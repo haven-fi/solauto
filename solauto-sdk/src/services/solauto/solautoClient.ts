@@ -150,6 +150,7 @@ export abstract class SolautoClient extends ReferralStateManager {
     this.flProvider = new FlProviderAggregator(
       this.umi,
       this.signer,
+      this.authority,
       this.pos.supplyMint(),
       this.pos.debtMint()
     );

@@ -22,6 +22,7 @@ export abstract class FlProviderBase {
   constructor(
     protected umi: Umi,
     protected signer: Signer,
+    protected authority: PublicKey,
     protected supplyMint: PublicKey,
     protected debtMint: PublicKey
   ) {}

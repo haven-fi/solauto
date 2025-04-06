@@ -41,7 +41,7 @@ export class RebalanceTxBuilder {
     private targetLiqUtilizationRateBps?: number
   ) {}
 
-  private async shouldProceedWithRebalance() {
+  private shouldProceedWithRebalance() {
     return (
       this.client.pos.supplyUsd() > 0 &&
       (this.targetLiqUtilizationRateBps !== undefined ||

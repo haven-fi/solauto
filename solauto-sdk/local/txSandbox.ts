@@ -1,10 +1,12 @@
-import { Keypair } from "@solana/web3.js";
+import { Keypair, PublicKey } from "@solana/web3.js";
 import {
   buildIronforgeApiUrl,
   consoleLog,
   getClient,
   getSolanaRpcConnection,
   LendingPlatform,
+  PriorityFeeSetting,
+  RebalanceTxBuilder,
   SOLAUTO_PROD_PROGRAM,
   SOLAUTO_TEST_PROGRAM,
   TransactionItem,
@@ -14,7 +16,7 @@ import { getSecretKey } from "./shared";
 import { createSignerFromKeypair } from "@metaplex-foundation/umi";
 import { fromWeb3JsKeypair } from "@metaplex-foundation/umi-web3js-adapters";
 
-const payForTransaction = false;
+const payForTransaction = true;
 const testProgram = true;
 
 export async function main() {
@@ -25,7 +27,7 @@ export async function main() {
 
   const signer = createSignerFromKeypair(
     umi,
-    fromWeb3JsKeypair(Keypair.fromSecretKey(getSecretKey()))
+    fromWeb3JsKeypair(Keypair.fromSecretKey(getSecretKey("solauto-manager")))
   );
 
   const client = getClient(LendingPlatform.Marginfi, {
@@ -37,16 +39,16 @@ export async function main() {
 
   await client.initialize({
     positionId: 1,
+    authority: new PublicKey("5UqsR2PGzbP8pGPbXEeXx86Gjz2N2UFBAuFZUSVydAEe"),
   });
 
   const transactionItems: TransactionItem[] = [];
 
   transactionItems.push(
     new TransactionItem(
-      async () => ({
-        tx: client.closePositionIx(),
-      }),
-      "close position"
+      async (attemptNum) =>
+        await new RebalanceTxBuilder(client).buildRebalanceTx(attemptNum),
+      "rebalance"
     )
   );
 
@@ -54,7 +56,7 @@ export async function main() {
     client,
     undefined,
     payForTransaction ? "normal" : "only-simulate",
-    undefined,
+    PriorityFeeSetting.Min,
     true,
     undefined,
     { totalRetries: 5 }
