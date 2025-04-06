@@ -105,6 +105,7 @@ export abstract class SolautoClient extends ReferralStateManager {
       {
         supplyMint: args.supplyMint,
         debtMint: args.debtMint,
+        lendingPool: args.lendingPool,
         lpUserAccount: args.lpUserAccount,
         lendingPlatform: this.lendingPlatform,
       },

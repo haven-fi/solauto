@@ -22,6 +22,7 @@ export async function main() {
     buildIronforgeApiUrl(process.env.IRONFORGE_API_KEY!),
     testProgram ? SOLAUTO_TEST_PROGRAM : SOLAUTO_PROD_PROGRAM
   );
+
   const signer = createSignerFromKeypair(
     umi,
     fromWeb3JsKeypair(Keypair.fromSecretKey(getSecretKey()))
