@@ -412,7 +412,7 @@ mod tests {
             }),
         );
         let debt_adjustment = get_debt_adjustment(
-            from_bps(LIQ_THRESHOLD_BPS),
+            LIQ_THRESHOLD_BPS,
             &pos_values,
             rebalance_to,
             &(RebalanceFeesBps {
@@ -479,7 +479,7 @@ mod tests {
             }),
         );
         let debt_adjustment = get_debt_adjustment(
-            from_bps(LIQ_THRESHOLD_BPS),
+            LIQ_THRESHOLD_BPS,
             &pos_values,
             rebalance_to,
             &(RebalanceFeesBps {
@@ -554,7 +554,7 @@ mod tests {
         );
 
         let debt_adjustment = get_debt_adjustment(
-            from_bps(LIQ_THRESHOLD_BPS),
+            LIQ_THRESHOLD_BPS,
             &pos_values,
             rebalance_to,
             &(RebalanceFeesBps {
@@ -626,7 +626,7 @@ mod tests {
         );
 
         let debt_adjustment = get_debt_adjustment(
-            from_bps(LIQ_THRESHOLD_BPS),
+            LIQ_THRESHOLD_BPS,
             &pos_values,
             rebalance_to,
             &(RebalanceFeesBps {
@@ -700,7 +700,7 @@ mod tests {
         );
 
         let debt_adjustment = get_debt_adjustment(
-            from_bps(LIQ_THRESHOLD_BPS),
+            LIQ_THRESHOLD_BPS,
             &pos_values,
             rebalance_to,
             &(RebalanceFeesBps {
@@ -781,7 +781,7 @@ mod tests {
             }),
         );
         let debt_adjustment = get_debt_adjustment(
-            from_bps(LIQ_THRESHOLD_BPS),
+            LIQ_THRESHOLD_BPS,
             &pos_values,
             rebalance_to,
             &(RebalanceFeesBps {

@@ -38,14 +38,15 @@ export function applyDebtAdjustmentUsd(
   debtAdjustmentUsd: number,
   pos: PositionValues,
   liqThreshold: number,
-  fees?: RebalanceFeesBps,
+  fees?: RebalanceFeesBps
 ): ApplyDebtAdjustmentResult {
   const newPos = { ...pos };
   const isBoost = debtAdjustmentUsd > 0;
 
   const daMinusSolautoFees =
     debtAdjustmentUsd - debtAdjustmentUsd * fromBps(fees?.solauto ?? 0);
-  const daWithFlashLoan = debtAdjustmentUsd * (1.0 + fromBps(fees?.flashLoan ?? 0));
+  const daWithFlashLoan =
+    debtAdjustmentUsd * (1.0 + fromBps(fees?.flashLoan ?? 0));
 
   let intermediaryLiqUtilizationRateBps = 0;
   if (isBoost) {
@@ -71,14 +72,15 @@ export function applyDebtAdjustmentUsd(
 }
 
 export function getDebtAdjustment(
-  liqThreshold: number,
+  liqThresholdBps: number,
   pos: PositionValues,
   targetLiqUtilizationRateBps: number,
-  fees?: RebalanceFeesBps,
+  fees?: RebalanceFeesBps
 ): DebtAdjustment {
   const isBoost =
-    getLiqUtilzationRateBps(pos.supplyUsd, pos.debtUsd, toBps(liqThreshold)) <
+    getLiqUtilzationRateBps(pos.supplyUsd, pos.debtUsd, liqThresholdBps) <
     targetLiqUtilizationRateBps;
+  const liqThreshold = fromBps(liqThresholdBps);
 
   const targetUtilizationRate = fromBps(targetLiqUtilizationRateBps);
   const actualizedFee = 1.0 - fromBps(fees?.solauto ?? 0);
@@ -185,7 +187,7 @@ export function getRebalanceValues(
   solautoPosition: SolautoPositionEx,
   targetLiqUtilizationRateBps?: number,
   solautoFeeBps?: SolautoFeesBps,
-  flFeeBps?: number,
+  flFeeBps?: number
 ): RebalanceValues {
   const tokenBalanceChange = getTokenBalanceChange();
 
@@ -211,7 +213,7 @@ export function getRebalanceValues(
   };
 
   const debtAdjustment = getDebtAdjustment(
-    fromBps(solautoPosition.state().liqThresholdBps),
+    solautoPosition.state().liqThresholdBps,
     position,
     targetRate,
     fees
