@@ -291,13 +291,13 @@ export class MarginfiFlProvider extends FlProviderBase {
     const iMfiAccount = this.iMfiAccount(flashLoan.liquiditySource)!;
 
     const remainingAccounts: AccountMeta[] = [];
-    let includedFlashLoanToken = false;
+    let flBankHadPrevBalance = false;
 
     if (iMfiAccount?.accountData) {
       iMfiAccount.accountData.lendingAccount.balances.forEach(async (x) => {
         if (x.active) {
           if (x.bankPk.toString() === bank.publicKey.toString()) {
-            includedFlashLoanToken = true;
+            flBankHadPrevBalance = true;
           }
 
           // TODO: Don't dynamically pull from bank until Marginfi sorts out their price oracle issues.
@@ -324,35 +324,12 @@ export class MarginfiFlProvider extends FlProviderBase {
         }
       });
     }
-    if (!includedFlashLoanToken) {
-      remainingAccounts.push(
-        ...[
-          {
-            pubkey: bank.publicKey,
-            isSigner: false,
-            isWritable: false,
-          },
-          {
-            pubkey: publicKey(associatedBankAccs.priceOracle),
-            isSigner: false,
-            isWritable: false,
-          },
-        ]
-      );
-    }
-
-    const closeBalances = remainingAccounts
-      .filter(
-        (x, index) =>
-          index % 2 === 0 && x.pubkey.toString() !== bank.publicKey.toString()
-      )
-      .map((x) => toWeb3JsPublicKey(x.pubkey));
 
     return transactionBuilder()
       .add(
         lendingAccountRepay(this.umi, {
           amount: flashLoan.baseUnitAmount,
-          repayAll: true,
+          repayAll: !flBankHadPrevBalance,
           bank: bank.publicKey,
           bankLiquidityVault: publicKey(associatedBankAccs.liquidityVault),
           marginfiAccount: publicKey(iMfiAccount.accountPk),
@@ -365,13 +342,6 @@ export class MarginfiFlProvider extends FlProviderBase {
             )
           ),
         })
-      )
-      .add(
-        closeBalances.length
-          ? closeBalances.map((bank) =>
-              this.closeBalance(iMfiAccount.accountPk, bank, marginfiGroup)
-            )
-          : []
       )
       .add(
         lendingAccountEndFlashloan(this.umi, {

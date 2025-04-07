@@ -1,4 +1,4 @@
-use solana_program::{program_error::ProgramError};
+use solana_program::program_error::ProgramError;
 
 use crate::{
     state::solauto_position::{
