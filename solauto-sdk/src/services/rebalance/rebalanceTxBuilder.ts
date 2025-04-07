@@ -197,7 +197,6 @@ export class RebalanceTxBuilder {
     } else {
       this.rebalanceType = SolautoRebalanceType.Regular;
     }
-    consoleLog("Rebalance type:", this.rebalanceType);
   }
 
   private async setRebalanceDetails(attemptNum: number) {
@@ -208,7 +207,6 @@ export class RebalanceTxBuilder {
       this.values = this.getRebalanceValues(this.flRequirements.flFeeBps);
     }
 
-    consoleLog("Rebalance values:", this.values);
     this.swapManager = new RebalanceSwapManager(
       this.client,
       this.values,
@@ -266,6 +264,7 @@ export class RebalanceTxBuilder {
       swapQuote,
       targetLiqUtilizationRateBps: this.targetLiqUtilizationRateBps,
     };
+    consoleLog("Rebalance details:", rebalanceDetails);
 
     const firstRebalance = this.client.rebalanceIx(
       RebalanceStep.PreSwap,
@@ -279,8 +278,6 @@ export class RebalanceTxBuilder {
     if (!flashLoanDetails) {
       tx = tx.add([setupIx, firstRebalance, swapIx, lastRebalance]);
     } else {
-      consoleLog("Flash loan details:", flashLoanDetails);
-
       const exactOut = swapQuote.swapMode === "ExactOut";
       const addFirstRebalance = hasFirstRebalance(this.rebalanceType);
       const addLastRebalance = hasLastRebalance(this.rebalanceType);

@@ -27,10 +27,7 @@ export class SolautoFeesBps {
     const minFeeBps = 25; // Fee in basis points for maxSize (0.25%)
     const k = 1.5;
 
-    if (
-      this.targetLiqUtilizationRateBps !== undefined &&
-      this.targetLiqUtilizationRateBps === 0
-    ) {
+    if (this.targetLiqUtilizationRateBps === 0) {
       return {
         solauto: 0,
         referrer: 0,

@@ -116,6 +116,7 @@ export class MarginfiFlProvider extends FlProviderBase {
       (x) => x.group.toString() == this.liquidityBank(sources[0]).group
     );
 
+    // TODO: instead of picking first compatibleMarginfiAccoutn, pick one where we already have it in the marginfi Lut
     const signer =
       compatibleMarginfiAccounts.length > 0
         ? undefined
