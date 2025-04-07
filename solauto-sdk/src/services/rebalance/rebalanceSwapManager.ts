@@ -211,13 +211,13 @@ export class RebalanceSwapManager {
   }
 
   async getSwapTxData() {
-    const { jupQuote, lookupTableAddresses, setupInstructions, swapIx } =
+    const { jupQuote, lookupTableAddresses, setupIx, swapIx } =
       await this.jupSwapManager.getJupSwapTxData(this.swapParams);
 
     return {
       swapQuote: jupQuote,
       lookupTableAddresses,
-      setupInstructions,
+      setupIx,
       swapIx,
     };
   }

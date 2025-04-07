@@ -567,7 +567,7 @@ export async function convertReferralFeesToDestination(
   }
 
   const jupSwapManager = new JupSwapManager(referralManager.umi.identity);
-  const { lookupTableAddresses, setupInstructions, swapIx, cleanupIx } =
+  const { lookupTableAddresses, setupIx, swapIx, cleanupIx } =
     await jupSwapManager.getJupSwapTxData({
       amount: tokenAccountData.amount,
       destinationWallet: referralManager.referralState,
@@ -578,7 +578,7 @@ export async function convertReferralFeesToDestination(
     });
 
   let tx = transactionBuilder()
-    .add(setupInstructions)
+    .add(setupIx)
     .add(
       convertReferralFees(referralManager.umi, {
         signer: referralManager.signer,

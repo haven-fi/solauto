@@ -18,6 +18,7 @@ import {
   retryWithExponentialBackoff,
 } from "../../utils";
 import { TransactionItemInputs } from "../../types";
+import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 
 export interface SwapInput {
   inputMint: PublicKey;
@@ -29,14 +30,14 @@ export interface SwapInput {
 }
 
 export interface SwapParams extends SwapInput {
-  destinationWallet: PublicKey;
+  destinationWallet?: PublicKey;
   slippageIncFactor?: number;
   wrapAndUnwrapSol?: boolean;
 }
 
 export interface JupSwapTransactionData {
   jupQuote: QuoteResponse;
-  setupInstructions: TransactionBuilder;
+  setupIx: TransactionBuilder;
   swapIx: TransactionBuilder;
   cleanupIx: TransactionBuilder;
   lookupTableAddresses: string[];
@@ -87,7 +88,8 @@ export class JupSwapManager {
             wrapAndUnwrapSol: data.wrapAndUnwrapSol ?? false,
             useTokenLedger: !data.exactOut && !data.exactIn,
             destinationTokenAccount: getTokenAccount(
-              data.destinationWallet,
+              data.destinationWallet ??
+                toWeb3JsPublicKey(this.signer.publicKey),
               data.outputMint
             ).toString(),
           },
@@ -151,7 +153,7 @@ export class JupSwapManager {
     return {
       jupQuote: this.jupQuote,
       lookupTableAddresses: instructions.addressLookupTableAddresses,
-      setupInstructions: transactionBuilder(
+      setupIx: transactionBuilder(
         (instructions.setupInstructions ?? []).map((ix) =>
           getWrappedInstruction(this.signer, jupIxToSolanaIx(ix))
         )
@@ -180,7 +182,7 @@ export class JupSwapManager {
 
     return {
       tx: transactionBuilder().add([
-        swapData.setupInstructions,
+        swapData.setupIx,
         swapData.swapIx,
         swapData.cleanupIx,
       ]),

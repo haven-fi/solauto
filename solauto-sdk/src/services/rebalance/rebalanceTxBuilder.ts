@@ -246,7 +246,7 @@ export class RebalanceTxBuilder {
   }
 
   private async assembleTransaction(): Promise<TransactionItemInputs> {
-    const { swapQuote, lookupTableAddresses, setupInstructions, swapIx } =
+    const { swapQuote, lookupTableAddresses, setupIx, swapIx } =
       await this.swapManager.getSwapTxData();
 
     const flashLoanDetails = this.flRequirements
@@ -277,7 +277,7 @@ export class RebalanceTxBuilder {
     );
 
     if (!flashLoanDetails) {
-      tx = tx.add([setupInstructions, firstRebalance, swapIx, lastRebalance]);
+      tx = tx.add([setupIx, firstRebalance, swapIx, lastRebalance]);
     } else {
       consoleLog("Flash loan details:", flashLoanDetails);
 
@@ -296,7 +296,7 @@ export class RebalanceTxBuilder {
           );
 
       tx = tx.add([
-        setupInstructions,
+        setupIx,
         this.client.flProvider.flashBorrow(flashLoanDetails, flashBorrowDest),
         ...(addFirstRebalance ? [firstRebalance] : []),
         swapIx,
