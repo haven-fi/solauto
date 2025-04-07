@@ -31,6 +31,7 @@ import {
 } from "../../utils/accountUtils";
 import { SOLAUTO_FEES_WALLET } from "../../constants/generalAccounts";
 import {
+  getWalletSplBalances,
   getWrappedInstruction,
   splTokenTransferUmiIx,
 } from "../../utils/solanaUtils";
@@ -306,44 +307,14 @@ export abstract class SolautoClient extends ReferralStateManager {
     supplyBalance: bigint;
     debtBalance: bigint;
   }> {
-    if (
-      this.signerSupplyBalance !== undefined &&
-      this.signerDebtBalance !== undefined
-    ) {
-      return {
-        supplyBalance: this.signerSupplyBalance,
-        debtBalance: this.signerDebtBalance,
-      };
+    if (!this.signerSupplyBalance || !this.signerDebtBalance) {
+      [this.signerSupplyBalance, this.signerDebtBalance] =
+        await getWalletSplBalances(
+          this.connection,
+          toWeb3JsPublicKey(this.signer.publicKey),
+          [this.pos.supplyMint(), this.pos.debtMint()]
+        );
     }
-
-    [this.signerSupplyBalance, this.signerDebtBalance] = await Promise.all([
-      (async () => {
-        let data: RpcResponseAndContext<TokenAmount> | undefined;
-        try {
-          data = await this.connection.getTokenAccountBalance(
-            getTokenAccount(
-              toWeb3JsPublicKey(this.signer.publicKey),
-              this.pos.supplyMint()
-            ),
-            "confirmed"
-          );
-        } catch {}
-        return BigInt(parseInt(data?.value.amount ?? "0"));
-      })(),
-      (async () => {
-        let data: RpcResponseAndContext<TokenAmount> | undefined;
-        try {
-          const data = await this.connection.getTokenAccountBalance(
-            getTokenAccount(
-              toWeb3JsPublicKey(this.signer.publicKey),
-              this.pos.debtMint()
-            ),
-            "confirmed"
-          );
-        } catch {}
-        return BigInt(parseInt(data?.value.amount ?? "0"));
-      })(),
-    ]);
 
     return {
       supplyBalance: this.signerSupplyBalance,

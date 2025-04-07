@@ -162,6 +162,26 @@ export function splTokenTransferUmiIx(
   );
 }
 
+export async function getWalletSplBalances(
+  conn: Connection,
+  wallet: PublicKey,
+  tokenMints: PublicKey[]
+): Promise<bigint[]> {
+  return await Promise.all(
+    tokenMints.map(async (mint) => {
+      try {
+        const data = await conn.getTokenAccountBalance(
+          getTokenAccount(wallet, mint),
+          "confirmed"
+        );
+        return BigInt(data.value.amount);
+      } catch {
+        return 0n;
+      }
+    })
+  );
+}
+
 export async function getAddressLookupInputs(
   umi: Umi,
   lookupTableAddresses: string[]

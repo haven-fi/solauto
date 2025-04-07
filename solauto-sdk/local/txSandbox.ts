@@ -38,7 +38,7 @@ export async function main() {
   });
 
   await client.initialize({
-    positionId: 1,
+    positionId: 5,
     authority: new PublicKey("5UqsR2PGzbP8pGPbXEeXx86Gjz2N2UFBAuFZUSVydAEe"),
   });
 

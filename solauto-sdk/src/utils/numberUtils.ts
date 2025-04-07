@@ -1,5 +1,6 @@
 import { BASIS_POINTS, MIN_REPAY_GAP_BPS, USD_DECIMALS } from "../constants";
 import { PositionState } from "../generated";
+import { tokenInfo } from "./generalUtils";
 
 export function calcNetWorthUsd(state?: PositionState) {
   return fromRoundedUsdValue(state?.netWorth.baseAmountUsdValue ?? BigInt(0));
@@ -38,9 +39,23 @@ export function calcTotalDebt(state?: PositionState) {
   );
 }
 
+export function debtLiquidityAvailable(state?: PositionState) {
+  return fromBaseUnit(
+    state?.debt.amountCanBeUsed.baseUnit ?? BigInt(0),
+    state?.debt.decimals ?? 1
+  );
+}
+
 export function debtLiquidityUsdAvailable(state?: PositionState) {
   return fromRoundedUsdValue(
     state?.debt.amountCanBeUsed.baseAmountUsdValue ?? BigInt(0)
+  );
+}
+
+export function supplyLiquidityDepositable(state?: PositionState) {
+  return fromBaseUnit(
+    state?.supply.amountCanBeUsed.baseUnit ?? BigInt(0),
+    state?.supply.decimals ?? 1
   );
 }
 

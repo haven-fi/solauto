@@ -58,7 +58,7 @@ export class RebalanceTxBuilder {
         this.targetLiqUtilizationRateBps,
         this.client.pos.netWorthUsd()
       ),
-      flFee ?? 0,
+      flFee ?? 0
     );
   }
 

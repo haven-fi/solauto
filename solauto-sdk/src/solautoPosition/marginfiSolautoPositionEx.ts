@@ -11,6 +11,7 @@ import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 import {
   calcMarginfiMaxLtvAndLiqThresholdBps,
   fetchTokenPrices,
+  fromBaseUnit,
   getBankLiquidityAvailableBaseUnit,
   getMarginfiAccountPositionState,
   toBps,
@@ -71,16 +72,11 @@ export class MarginfiSolautoPositionEx extends SolautoPositionEx {
     return [maxLtvBps, liqThresholdBps];
   }
 
-  supplyLiquidityAvailable(): bigint {
-    return getBankLiquidityAvailableBaseUnit(this.supplyBank, false);
-  }
-
-  supplyLiquidityDepositable(): bigint {
-    return getBankLiquidityAvailableBaseUnit(this.supplyBank, true);
-  }
-
-  debtLiquidityAvailable(): bigint {
-    return getBankLiquidityAvailableBaseUnit(this.debtBank, false);
+  supplyLiquidityAvailable(): number {
+    return fromBaseUnit(
+      getBankLiquidityAvailableBaseUnit(this.supplyBank, false),
+      this.state().supply.decimals
+    );
   }
 
   async refreshPositionState(): Promise<void> {

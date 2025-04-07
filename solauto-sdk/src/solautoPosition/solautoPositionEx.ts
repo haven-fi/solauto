@@ -18,6 +18,7 @@ import {
   consoleLog,
   ContextUpdates,
   currentUnixSeconds,
+  debtLiquidityAvailable,
   debtLiquidityUsdAvailable,
   fetchTokenPrices,
   getLiqUtilzationRateBps,
@@ -26,6 +27,7 @@ import {
   positionStateWithLatestPrices,
   safeGetPrice,
   solautoStrategyName,
+  supplyLiquidityDepositable,
   supplyLiquidityUsdDepositable,
   toBaseUnit,
   tokenInfo,
@@ -192,8 +194,20 @@ export abstract class SolautoPositionEx {
     return calcDebtUsd(this.state());
   }
 
+  supplyLiquidityDepositable() {
+    return supplyLiquidityDepositable(this.state());
+  }
+
   supplyLiquidityUsdDepositable() {
     return supplyLiquidityUsdDepositable(this.state());
+  }
+
+  supplyLiquidityUsdAvailable() {
+    return this.supplyLiquidityAvailable() * (safeGetPrice(this.supplyMint()) ?? 0);
+  }
+
+  debtLiquidityAvailable() {
+    return debtLiquidityAvailable(this.state());
   }
 
   debtLiquidityUsdAvailable() {
@@ -201,9 +215,7 @@ export abstract class SolautoPositionEx {
   }
 
   abstract maxLtvAndLiqThresholdBps(): Promise<[number, number]>;
-  abstract supplyLiquidityDepositable(): bigint;
-  abstract supplyLiquidityAvailable(): bigint;
-  abstract debtLiquidityAvailable(): bigint;
+  abstract supplyLiquidityAvailable(): number;
 
   sufficientLiquidityToBoost() {
     const limitsUpToDate =

@@ -192,6 +192,7 @@ async function pollBundleStatus(
 
     const statuses = await retryWithExponentialBackoff(async () => {
       const resp = await getBundleStatus(umi, bundleId);
+      // TODO: remove me
       if (resp?.value?.length > 0 && resp.value[0] === null) {
         throw new Error("No confirmation status");
       }
