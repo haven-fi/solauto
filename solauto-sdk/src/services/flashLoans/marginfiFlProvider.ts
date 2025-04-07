@@ -323,7 +323,7 @@ export class MarginfiFlProvider extends FlProviderBase {
         }
       });
     }
-    if (!iMfiAccount.accountData || !includedFlashLoanToken) {
+    if (!includedFlashLoanToken) {
       remainingAccounts.push(
         ...[
           {
@@ -340,14 +340,12 @@ export class MarginfiFlProvider extends FlProviderBase {
       );
     }
 
-    const banksRequiringBalanceClose = Array.from(
-      new Set([
-        bank.publicKey.toString(),
-        ...(iMfiAccount.accountData?.lendingAccount.balances ?? [])
-          .filter((x) => x.active && bytesToI80F48(x.liabilityShares.value) > 0)
-          .map((x) => x.bankPk.toString()),
-      ])
-    );
+    const closeBalances = remainingAccounts
+      .filter(
+        (x, index) =>
+          index % 2 === 0 && x.pubkey.toString() !== bank.publicKey.toString()
+      )
+      .map((x) => toWeb3JsPublicKey(x.pubkey));
 
     return transactionBuilder()
       .add(
@@ -368,13 +366,11 @@ export class MarginfiFlProvider extends FlProviderBase {
         })
       )
       .add(
-        banksRequiringBalanceClose.map((x) =>
-          this.closeBalance(
-            iMfiAccount.accountPk,
-            new PublicKey(x),
-            marginfiGroup
-          )
-        )
+        closeBalances.length
+          ? closeBalances.map((bank) =>
+              this.closeBalance(iMfiAccount.accountPk, bank, marginfiGroup)
+            )
+          : []
       )
       .add(
         lendingAccountEndFlashloan(this.umi, {
