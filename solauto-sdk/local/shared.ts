@@ -89,14 +89,21 @@ async function addAddressesIfNeeded(
   }
 }
 
+const CACHE: { [key: string]: string[] } = {};
+
 export async function updateLookupTable(
   accounts: string[],
   lookupTableAddress?: PublicKey
 ) {
-  let lookupTable = lookupTableAddress
-    ? await connection.getAddressLookupTable(lookupTableAddress)
-    : null;
-  if (lookupTable === null) {
+  if (lookupTableAddress && !(lookupTableAddress.toString() in CACHE)) {
+    const lookupTable =
+      await connection.getAddressLookupTable(lookupTableAddress);
+    CACHE[lookupTableAddress.toString()] = (
+      lookupTable?.value?.state?.addresses ?? []
+    ).map((x) => x.toString());
+  }
+
+  if (!lookupTableAddress) {
     const [createLutIx, addr] = AddressLookupTableProgram.createLookupTable({
       authority: keypair.publicKey,
       payer: keypair.publicKey,
@@ -107,8 +114,7 @@ export async function updateLookupTable(
     await createAndSendV0Tx([createLutIx], keypair);
   }
 
-  const existingAccounts =
-    lookupTable?.value?.state.addresses.map((x) => x.toString()) ?? [];
+  const existingAccounts = CACHE[lookupTableAddress.toString()];
   console.log("Existing accounts: ", existingAccounts.length);
 
   await addAddressesIfNeeded(lookupTableAddress!, existingAccounts, accounts);

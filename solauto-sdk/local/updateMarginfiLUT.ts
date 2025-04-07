@@ -68,31 +68,34 @@ async function addImfiAccounts() {
     SOLAUTO_MANAGER
   );
 
+  const iMfiAccountsPerGrp = 2;
   for (const group in MARGINFI_ACCOUNTS) {
     const emptyAccs = imfiAccounts.filter((x) => x.group.toString() === group);
-    if (emptyAccs.length > 0) {
+    if (emptyAccs.length >= iMfiAccountsPerGrp) {
       await updateLookupTable(
         emptyAccs.map((x) => x.publicKey.toString()),
         LOOKUP_TABLE_ADDRESS
       );
     } else {
-      console.log("Creating Imfi account for group:", group);
-      const iMfiAccountKeypair = umi.eddsa.generateKeypair();
-      const iMfiAccount = createSignerFromKeypair(umi, iMfiAccountKeypair);
-      const umiIx = marginfiAccountInitialize(umi, {
-        marginfiAccount: iMfiAccount,
-        marginfiGroup: publicKey(group),
-        authority: solautoManager,
-        feePayer: solautoManager,
-      });
-      const ix = toWeb3JsInstruction(umiIx.getInstructions()[0]);
-      await createAndSendV0Tx([ix], solautoManagerKeypair, [
-        toWeb3JsKeypair(iMfiAccountKeypair),
-      ]);
-      await updateLookupTable(
-        [iMfiAccount.publicKey.toString()],
-        LOOKUP_TABLE_ADDRESS
-      );
+      for (let i = 0; i < iMfiAccountsPerGrp - emptyAccs.length; i++) {
+        console.log("Creating Imfi account for group:", group);
+        const iMfiAccountKeypair = umi.eddsa.generateKeypair();
+        const iMfiAccount = createSignerFromKeypair(umi, iMfiAccountKeypair);
+        const umiIx = marginfiAccountInitialize(umi, {
+          marginfiAccount: iMfiAccount,
+          marginfiGroup: publicKey(group),
+          authority: solautoManager,
+          feePayer: solautoManager,
+        });
+        const ix = toWeb3JsInstruction(umiIx.getInstructions()[0]);
+        await createAndSendV0Tx([ix], solautoManagerKeypair, [
+          toWeb3JsKeypair(iMfiAccountKeypair),
+        ]);
+        await updateLookupTable(
+          [iMfiAccount.publicKey.toString()],
+          LOOKUP_TABLE_ADDRESS
+        );
+      }
     }
   }
 }
