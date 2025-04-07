@@ -16,7 +16,7 @@ import { getSecretKey } from "./shared";
 import { createSignerFromKeypair } from "@metaplex-foundation/umi";
 import { fromWeb3JsKeypair } from "@metaplex-foundation/umi-web3js-adapters";
 
-const payForTransaction = true;
+const payForTransaction = false;
 const testProgram = true;
 
 export async function main() {

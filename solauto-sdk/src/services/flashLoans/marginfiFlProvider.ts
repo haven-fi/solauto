@@ -31,6 +31,7 @@ import {
   getTokenAccount,
   rpcAccountCreated,
   safeGetPrice,
+  toBps,
   tokenInfo,
 } from "../../utils";
 import { TokenType } from "../../generated";
@@ -226,9 +227,12 @@ export class MarginfiFlProvider extends FlProviderBase {
       return 0;
     }
 
-    return bytesToI80F48(
-      this.liquidityBank(source).config.interestRateConfig
-        .protocolOriginationFee.value
+    return toBps(
+      bytesToI80F48(
+        this.liquidityBank(source).config.interestRateConfig
+          .protocolOriginationFee.value
+      ),
+      "Ceil"
     );
   }
 
@@ -349,7 +353,7 @@ export class MarginfiFlProvider extends FlProviderBase {
       .add(
         lendingAccountRepay(this.umi, {
           amount: flashLoan.baseUnitAmount,
-          repayAll: null,
+          repayAll: true,
           bank: bank.publicKey,
           bankLiquidityVault: publicKey(associatedBankAccs.liquidityVault),
           marginfiAccount: publicKey(iMfiAccount.accountPk),

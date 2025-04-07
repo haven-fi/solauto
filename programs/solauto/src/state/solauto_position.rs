@@ -355,10 +355,11 @@ impl SolautoPosition {
             .net_worth
             .update_usd_value(self.state.supply.market_price(), self.state.supply.decimals);
         msg!(
-            "New liquidation utilization rate: {}, (${}, ${})",
+            "New liquidation utilization rate: {}, (${}, ${}). Max: {}",
             self.state.liq_utilization_rate_bps,
             supply_usd,
-            debt_usd
+            debt_usd,
+            get_max_boost_to_bps(self.state.max_ltv_bps, self.state.liq_threshold_bps)
         );
     }
 

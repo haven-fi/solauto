@@ -206,6 +206,7 @@ export abstract class SolautoClient extends ReferralStateManager {
   lutAccountsToAdd(): PublicKey[] {
     return [
       this.authority,
+      ...(this.authorityLutAddress ? [this.authorityLutAddress] : []),
       ...(toWeb3JsPublicKey(this.signer.publicKey).equals(this.authority)
         ? [this.signerSupplyTa]
         : []),
@@ -291,6 +292,7 @@ export abstract class SolautoClient extends ReferralStateManager {
       .add(await this.flProvider.flAccountPrereqIxs());
 
     this.log("Requires authority LUT update...");
+    this.log("Addresses to add:", accountsToAdd.join(", "));
     return {
       tx,
       new: existingLutAccounts.length === 0,
