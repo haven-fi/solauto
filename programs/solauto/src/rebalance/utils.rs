@@ -1,4 +1,4 @@
-use solana_program::{msg, program_error::ProgramError};
+use solana_program::{program_error::ProgramError};
 
 use crate::{
     state::solauto_position::{
@@ -16,7 +16,7 @@ use crate::{
             get_flash_borrow_ix_idx, get_marginfi_flash_loan_amount,
             validate_rebalance_instructions,
         },
-        math_utils::{from_bps, from_rounded_usd_value, get_debt_adjustment},
+        math_utils::{from_rounded_usd_value, get_debt_adjustment},
     },
 };
 
@@ -90,7 +90,6 @@ fn get_target_liq_utilization_rate_bps(
         return Ok(solauto_position.state.liq_utilization_rate_bps);
     }
 
-    msg!("Invalid rebalance condition");
     Err(SolautoError::InvalidRebalanceCondition.into())
 }
 
