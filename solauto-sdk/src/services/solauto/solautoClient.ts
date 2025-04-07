@@ -160,6 +160,8 @@ export abstract class SolautoClient extends ReferralStateManager {
     this.log("Position state: ", this.pos.state());
     this.log("Position settings: ", this.pos.settings());
     this.log("Position DCA: ", this.pos.dca());
+    this.log("Supply mint:", this.pos.supplyMint().toString());
+    this.log("Debt mint:", this.pos.debtMint().toString());
   }
 
   referredBySupplyTa(): PublicKey | undefined {

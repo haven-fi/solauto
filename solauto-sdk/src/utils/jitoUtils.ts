@@ -6,9 +6,7 @@ import {
   VersionedTransaction,
 } from "@solana/web3.js";
 import { toWeb3JsTransaction } from "@metaplex-foundation/umi-web3js-adapters";
-import {
-  JITO_TIP_ACCOUNTS,
-} from "../constants/solautoConstants";
+import { JITO_TIP_ACCOUNTS } from "../constants/solautoConstants";
 import {
   Signer,
   TransactionBuilder,
@@ -191,7 +189,15 @@ async function pollBundleStatus(
   const endTime = Date.now() + timeout;
   while (Date.now() < endTime) {
     await new Promise((resolve) => setTimeout(resolve, interval));
-    const statuses = await getBundleStatus(umi, bundleId);
+
+    const statuses = await retryWithExponentialBackoff(async () => {
+      const resp = await getBundleStatus(umi, bundleId);
+      if (resp?.value?.length > 0 && resp.value[0] === null) {
+        throw new Error("No confirmation status");
+      }
+      return resp;
+    }, 3, 250);
+
     if (statuses?.value?.length > 0) {
       consoleLog("Statuses:", statuses);
       const status = statuses.value[0].confirmation_status;
