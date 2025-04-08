@@ -35,16 +35,18 @@ pnpm build:rs:prod
 ### Testing
 
 ```bash
-# Run all tests
+# If running rust tests, build program first
+pnpm build:rs:local
+
+# Run all rust & typescript tests
 pnpm test:all
 
-# Run unit tests
-pnpm test:unit
+# Run all rust tests
+pnpm test:rs:all
 
-# Run transaction tests
-pnpm test:txs
+# Run all typescript tests
+pnpm test:ts:all
 ```
-
 
 ## Solauto Typescript SDK
 

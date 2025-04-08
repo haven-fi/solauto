@@ -37,7 +37,6 @@ use solauto_sdk::{
 };
 use spl_associated_token_account::{ get_associated_token_address, instruction as ata_instruction };
 use spl_token::{ instruction as token_instruction, state::Mint };
-use rand::{ Rng, thread_rng };
 
 #[macro_export]
 macro_rules! assert_instruction_error {
@@ -458,7 +457,10 @@ impl<'a> MarginfiTestData<'a> {
         let marginfi_group = Keypair::new().pubkey();
 
         let (marginfi_account, marginfi_account_keypair) = if args.position_id != 0 {
-            let marginfi_account_seeds = &[general.solauto_position.as_ref(), marginfi_group.as_ref()];
+            let marginfi_account_seeds = &[
+                general.solauto_position.as_ref(),
+                marginfi_group.as_ref(),
+            ];
             let (marginfi_account, _) = Pubkey::find_program_address(
                 marginfi_account_seeds.as_slice(),
                 &SOLAUTO_ID

@@ -154,7 +154,8 @@ export const MARGINFI_ACCOUNTS: {
       bank: "3J5rKmCi7JXG6qmiobFJyAidVTnnNAMGj4jomfBxKGRM",
       liquidityVault: "863K9YPVT3xbUGFZevrQJLqMux3UdRkwNQ6usAp4hJyy",
       vaultAuthority: "Qsv2rnNRdv59AwRU3YmGPMCTdKT41CDAKyYAr4srCJR",
-      priceOracle: SWITCHBOARD_PRICE_FEED_IDS[tokens.RETARDIO.toString()].feedId,
+      priceOracle:
+        SWITCHBOARD_PRICE_FEED_IDS[tokens.RETARDIO.toString()].feedId,
     },
     [tokens.USDC]: {
       bank: "6cgYhBFWCc5sNHxkvSRhd5H9AdAHR41zKwuF37HmLry5",
@@ -189,9 +190,12 @@ export const MARGINFI_ACCOUNTS: {
       liquidityVault: "4U1UBjXrPrW7JuQ894JbLUBqcb5LFfK9rfkWFwT7EdQ9",
       vaultAuthority: "CY74V1r48kuuHA6APD3AaU2oPV1mBqe9srikrQQSHNR6",
       priceOracle: USDC_PRICE_ORACLE,
-    }
-  }
+    },
+  },
 };
 
 export const MARGINFI_ACCOUNTS_LOOKUP_TABLE =
   "GAjmWmBPcH5Gxbiykasydj6RsCEaCLyHEvK6kHdFigc6";
+
+export const MARGINFI_STAGING_ACCOUNTS_LOOKUP_TABLE =
+  "EoEVYjz3MnsX6fKyxrwJkRhzMCHKjj6dvnjTCHoZLMc7";
