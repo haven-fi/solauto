@@ -11,7 +11,6 @@ import {
 } from "@solana/spl-token";
 import { SOLAUTO_MANAGER } from "./generalConstants";
 import { JUPITER_PROGRAM_ID } from "../jupiter-sdk";
-import { buildIronforgeApiUrl } from "../utils";
 
 export const SOLAUTO_PROD_PROGRAM = new PublicKey(
   "AutoyKBRaHSBHy9RsmXCZMy6nNFAg5FYijrvZyQcNLV"
@@ -22,8 +21,6 @@ export const SOLAUTO_TEST_PROGRAM = new PublicKey(
 
 (globalThis as any).SHOW_LOGS = false;
 
-export const BASIS_POINTS = 10000;
-
 export const MIN_POSITION_STATE_FRESHNESS_SECS = 5;
 export const MIN_REPAY_GAP_BPS = 50;
 export const MIN_BOOST_GAP_BPS = 50;
@@ -32,8 +29,6 @@ export const MIN_USD_SUPPORTED_POSITION = 1000;
 export const REFERRER_PERCENTAGE = 0.15;
 
 export const PRICES: { [key: string]: { price: number; time: number } } = {};
-
-export const JITO_BLOCK_ENGINE = "https://mainnet.block-engine.jito.wtf";
 
 export const JITO_TIP_ACCOUNTS = [
   "96gYZGLnJYVFmbjzopPSU6QiEV5fGqZNyN9nmNhvrZU5",
