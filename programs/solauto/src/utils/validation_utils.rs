@@ -1,9 +1,6 @@
 use std::ops::Div;
 
-use marginfi_sdk::{
-    generated::accounts::{Bank, MarginfiAccount},
-    MARGINFI_ID,
-};
+use marginfi_sdk::generated::accounts::{Bank, MarginfiAccount};
 use solana_program::{
     account_info::AccountInfo,
     entrypoint::ProgramResult,
@@ -18,7 +15,10 @@ use spl_token::ID as token_program_id;
 
 use crate::{
     check,
-    constants::{MIN_BOOST_GAP_BPS, MIN_REPAY_GAP_BPS, SOLAUTO_MANAGER},
+    constants::{
+        MARGINFI_PROD_PROGRAM, MARGINFI_STAGING_PROGRAM, MIN_BOOST_GAP_BPS, MIN_REPAY_GAP_BPS,
+        SOLAUTO_MANAGER,
+    },
     error_if,
     state::{
         automation::AutomationSettings,
@@ -203,7 +203,10 @@ pub fn validate_lending_program_account(
 ) -> ProgramResult {
     match lending_platform {
         LendingPlatform::Marginfi => {
-            check!(*program.key == MARGINFI_ID, SolautoError::IncorrectAccounts);
+            check!(
+                *program.key == MARGINFI_PROD_PROGRAM || *program.key == MARGINFI_STAGING_PROGRAM,
+                SolautoError::IncorrectAccounts
+            );
         }
     }
     // We don't need to check more than this, as lending protocols have their own account checks and will fail during CPI if there is an issue with the provided accounts

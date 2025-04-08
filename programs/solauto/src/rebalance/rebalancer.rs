@@ -115,8 +115,11 @@ impl<'a> Rebalancer<'a> {
         }
 
         check!(
-            self.data.rebalance_args.target_liq_utilization_rate_bps.is_some() ||
-                eligible_for_rebalance(self.position_data()),
+            self.data
+                .rebalance_args
+                .target_liq_utilization_rate_bps
+                .is_some()
+                || eligible_for_rebalance(self.position_data()),
             SolautoError::InvalidRebalanceCondition
         );
 
