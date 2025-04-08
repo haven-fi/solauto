@@ -1,3 +1,4 @@
+import { PublicKey, SYSVAR_INSTRUCTIONS_PUBKEY } from "@solana/web3.js";
 import {
   AccountMeta,
   createSignerFromKeypair,
@@ -6,6 +7,7 @@ import {
   transactionBuilder,
   TransactionBuilder,
 } from "@metaplex-foundation/umi";
+import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 import { MARGINFI_ACCOUNTS } from "../../constants";
 import {
   Bank,
@@ -19,7 +21,6 @@ import {
   safeFetchAllBank,
 } from "../../marginfi-sdk";
 import { FlProviderBase } from "./flProviderBase";
-import { PublicKey, SYSVAR_INSTRUCTIONS_PUBKEY } from "@solana/web3.js";
 import {
   bytesToI80F48,
   consoleLog,
@@ -33,10 +34,10 @@ import {
   safeGetPrice,
   toBps,
   tokenInfo,
+  umiWithMarginfiProgram,
 } from "../../utils";
-import { TokenType } from "../../generated";
-import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 import { FlashLoanDetails } from "../../types";
+import { TokenType } from "../../generated";
 
 interface IMFIAccount {
   signer?: Signer;
@@ -52,6 +53,8 @@ export class MarginfiFlProvider extends FlProviderBase {
   private debtImfiAccount!: IMFIAccount;
 
   async initialize() {
+    this.umi = umiWithMarginfiProgram(this.umi, this.programEnv);
+
     await this.setAvailableBanks();
     this.existingMarginfiAccounts = await getEmptyMarginfiAccountsByAuthority(
       this.umi,

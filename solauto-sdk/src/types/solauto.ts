@@ -61,3 +61,5 @@ export interface RebalanceDetails {
   swapQuote: QuoteResponse;
   targetLiqUtilizationRateBps?: number;
 }
+
+export type ProgramEnv = "Prod" | "Staging";

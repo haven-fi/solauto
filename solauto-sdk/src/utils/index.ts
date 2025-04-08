@@ -1,5 +1,6 @@
 export * from "./accountUtils";
 export * from "./generalUtils";
+export * from "./jitoUtils";
 export * from "./jupiterUtils";
 export * from "./marginfiUtils";
 export * from "./numberUtils";

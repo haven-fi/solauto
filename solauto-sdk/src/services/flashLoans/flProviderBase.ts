@@ -1,10 +1,11 @@
+import { PublicKey } from "@solana/web3.js";
 import {
   Signer,
   transactionBuilder,
   TransactionBuilder,
   Umi,
 } from "@metaplex-foundation/umi";
-import { PublicKey } from "@solana/web3.js";
+import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 import {
   fromBaseUnit,
   getTokenAccount,
@@ -13,8 +14,7 @@ import {
   tokenInfo,
 } from "../../utils";
 import { TokenType } from "../../generated";
-import { FlashLoanDetails } from "../../types";
-import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
+import { FlashLoanDetails, ProgramEnv } from "../../types";
 
 export abstract class FlProviderBase {
   protected flSigners: Signer[] = [];
@@ -24,7 +24,8 @@ export abstract class FlProviderBase {
     protected signer: Signer,
     protected authority: PublicKey,
     protected supplyMint: PublicKey,
-    protected debtMint: PublicKey
+    protected debtMint: PublicKey,
+    protected programEnv: ProgramEnv = "Prod"
   ) {}
 
   abstract initialize(): Promise<void>;

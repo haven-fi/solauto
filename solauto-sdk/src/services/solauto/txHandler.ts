@@ -1,11 +1,11 @@
-import { Signer, signerIdentity, Umi } from "@metaplex-foundation/umi";
 import { Connection, PublicKey } from "@solana/web3.js";
-import { consoleLog, getSolanaRpcConnection } from "../../utils";
-import { SOLAUTO_PROD_PROGRAM } from "../../constants";
+import { Signer, signerIdentity, Umi } from "@metaplex-foundation/umi";
 import {
   WalletAdapter,
   walletAdapterIdentity,
 } from "@metaplex-foundation/umi-signer-wallet-adapters";
+import { consoleLog, getSolanaRpcConnection } from "../../utils";
+import { SOLAUTO_PROD_PROGRAM } from "../../constants";
 
 export interface TxHandlerProps {
   signer?: Signer;

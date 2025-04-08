@@ -1,11 +1,12 @@
 import { PublicKey } from "@solana/web3.js";
-import { publicKey, Umi } from "@metaplex-foundation/umi";
+import { Program, publicKey, Umi } from "@metaplex-foundation/umi";
 import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 import {
   Bank,
   deserializeMarginfiAccount,
   getMarginfiAccountSize,
-  MARGINFI_PROGRAM_ID,
+  getMarginfiErrorFromCode,
+  getMarginfiErrorFromName,
   MarginfiAccount,
   OracleSetup,
   safeFetchBank,
@@ -20,16 +21,57 @@ import {
   toBaseUnit,
   toBps,
 } from "./numberUtils";
+import { PositionState, PositionTokenState } from "../generated";
+import { ContextUpdates } from "./solautoUtils";
 import {
   DEFAULT_MARGINFI_GROUP,
   MARGINFI_ACCOUNTS,
-} from "../constants/marginfiAccounts";
-import { MarginfiAssetAccounts } from "../types/accounts";
-import { PositionState, PositionTokenState } from "../generated";
-import { USD_DECIMALS } from "../constants/generalAccounts";
-import { ContextUpdates } from "./solautoUtils";
-import { ALL_SUPPORTED_TOKENS, TOKEN_INFO } from "../constants";
+  ALL_SUPPORTED_TOKENS,
+  MARGINFI_PROD_PROGRAM,
+  MARGINFI_STAGING_PROGRAM,
+  TOKEN_INFO,
+  USD_DECIMALS,
+} from "../constants";
 import { fetchTokenPrices, safeGetPrice } from "./priceUtils";
+import { ProgramEnv, MarginfiAssetAccounts } from "../types";
+
+export function getMarginfiProgram(env: ProgramEnv) {
+  return env === "Prod" ? MARGINFI_PROD_PROGRAM : MARGINFI_STAGING_PROGRAM;
+}
+
+export function isMarginfiProgram(programId: PublicKey) {
+  return (
+    programId.equals(MARGINFI_PROD_PROGRAM) ||
+    programId.equals(MARGINFI_STAGING_PROGRAM)
+  );
+}
+
+export function createDynamicMarginfiProgram(env: ProgramEnv): Program {
+  return {
+    name: "marginfi",
+    publicKey: publicKey(getMarginfiProgram(env)),
+    getErrorFromCode(code: number, cause?: Error) {
+      return getMarginfiErrorFromCode(code, this, cause);
+    },
+    getErrorFromName(name: string, cause?: Error) {
+      return getMarginfiErrorFromName(name, this, cause);
+    },
+    isOnCluster() {
+      return true;
+    },
+  };
+}
+
+export function umiWithMarginfiProgram(umi: Umi, marginfiEnv?: ProgramEnv) {
+  return umi.use({
+    install(umi) {
+      umi.programs.add(
+        createDynamicMarginfiProgram(marginfiEnv ?? "Prod"),
+        false
+      );
+    },
+  });
+}
 
 interface AllMarginfiAssetAccounts extends MarginfiAssetAccounts {
   mint: PublicKey;
@@ -149,7 +191,7 @@ export async function getEmptyMarginfiAccountsByAuthority(
   authority: PublicKey
 ): Promise<MarginfiAccount[]> {
   const marginfiAccounts = await umi.rpc.getProgramAccounts(
-    MARGINFI_PROGRAM_ID,
+    umi.programs.get("marginfi").publicKey,
     {
       commitment: "confirmed",
       filters: [
@@ -187,7 +229,7 @@ export async function getAllMarginfiAccountsByAuthority(
   { marginfiAccount: PublicKey; supplyMint?: PublicKey; debtMint?: PublicKey }[]
 > {
   const marginfiAccounts = await umi.rpc.getProgramAccounts(
-    MARGINFI_PROGRAM_ID,
+    umi.programs.get("marginfi").publicKey,
     {
       commitment: "confirmed",
       dataSlice: {

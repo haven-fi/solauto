@@ -1,10 +1,10 @@
-import { FlProviderBase } from "./flProviderBase";
 import { PublicKey } from "@solana/web3.js";
-import { FlashLoanDetails, FlashLoanRequirements } from "../../types";
 import { Signer, TransactionBuilder, Umi } from "@metaplex-foundation/umi";
+import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
+import { FlProviderBase } from "./flProviderBase";
+import { FlashLoanDetails, ProgramEnv } from "../../types";
 import { TokenType } from "../../generated";
 import { MarginfiFlProvider } from "./marginfiFlProvider";
-import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 
 export class FlProviderAggregator extends FlProviderBase {
   private marginfiFlProvider!: MarginfiFlProvider;
@@ -14,15 +14,17 @@ export class FlProviderAggregator extends FlProviderBase {
     signer: Signer,
     authority: PublicKey,
     supplyMint: PublicKey,
-    debtMint: PublicKey
+    debtMint: PublicKey,
+    programEnv?: ProgramEnv
   ) {
-    super(umi, signer, authority, supplyMint, debtMint);
+    super(umi, signer, authority, supplyMint, debtMint, programEnv);
     this.marginfiFlProvider = new MarginfiFlProvider(
       umi,
       signer,
       authority,
       supplyMint,
-      debtMint
+      debtMint,
+      programEnv
     );
   }
 
@@ -60,7 +62,7 @@ export class FlProviderAggregator extends FlProviderBase {
   }
 
   flFeeBps(source: TokenType, signerFlashLoan?: boolean): number {
-    return this.flProvider(source).flFeeBps(source);
+    return this.flProvider(source).flFeeBps(source, signerFlashLoan);
   }
 
   flashBorrow(

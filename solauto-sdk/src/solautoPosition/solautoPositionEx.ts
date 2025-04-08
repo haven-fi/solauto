@@ -1,4 +1,9 @@
 import { PublicKey } from "@solana/web3.js";
+import { Umi } from "@metaplex-foundation/umi";
+import {
+  fromWeb3JsPublicKey,
+  toWeb3JsPublicKey,
+} from "@metaplex-foundation/umi-web3js-adapters";
 import {
   DCASettings,
   fetchSolautoPosition,
@@ -7,7 +12,6 @@ import {
   SolautoPosition,
   SolautoSettingsParameters,
 } from "../generated";
-import { Umi } from "@metaplex-foundation/umi";
 import {
   calcDebtUsd,
   calcNetWorth,
@@ -40,10 +44,6 @@ import {
   SolautoFeesBps,
 } from "../services/rebalance";
 import { MIN_POSITION_STATE_FRESHNESS_SECS, TokenInfo } from "../constants";
-import {
-  fromWeb3JsPublicKey,
-  toWeb3JsPublicKey,
-} from "@metaplex-foundation/umi-web3js-adapters";
 
 export interface PositionCustomArgs {
   lendingPlatform: LendingPlatform;

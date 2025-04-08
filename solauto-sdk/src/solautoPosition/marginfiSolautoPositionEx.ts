@@ -1,5 +1,4 @@
 import { PublicKey } from "@solana/web3.js";
-import { SolautoPositionEx } from "./solautoPositionEx";
 import {
   Bank,
   fetchMarginfiAccount,
@@ -14,9 +13,9 @@ import {
   fromBaseUnit,
   getBankLiquidityAvailableBaseUnit,
   getMarginfiAccountPositionState,
-  toBps,
 } from "../utils";
 import { DEFAULT_MARGINFI_GROUP, MARGINFI_ACCOUNTS } from "../constants";
+import { SolautoPositionEx } from "./solautoPositionEx";
 
 export class MarginfiSolautoPositionEx extends SolautoPositionEx {
   private marginfiAccountData: MarginfiAccount | null = null;

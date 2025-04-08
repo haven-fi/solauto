@@ -1,13 +1,18 @@
+import { PublicKey } from "@solana/web3.js";
 import { NATIVE_MINT } from "@solana/spl-token";
 import * as tokens from "./tokenConstants";
 import { MarginfiAssetAccounts } from "../types/accounts";
-import { PublicKey } from "@solana/web3.js";
 import { SWITCHBOARD_PRICE_FEED_IDS } from "./switchboardConstants";
+
+export const MARGINFI_PROD_PROGRAM = new PublicKey(
+  "MFv2hWf31Z9kbCa1snEPYctwafyhdvnV7FZnsebVacA"
+);
+export const MARGINFI_STAGING_PROGRAM = new PublicKey(
+  "stag8sTKds2h4KzjUw3zKTsxbqvT4XKHdaR9X9E6Rct"
+);
 
 export const DEFAULT_MARGINFI_GROUP =
   "4qp6Fx6tnZkY5Wropq9wUYgtFxXKwE6viZxFHg3rdAG8";
-
-export const DEFAULT_PUBKEY = PublicKey.default.toString();
 
 const USDC_PRICE_ORACLE = "Dpw1EAVrSB1ibxiDQyTAW6Zip3J4Btk2x4SgApQCeFbX";
 

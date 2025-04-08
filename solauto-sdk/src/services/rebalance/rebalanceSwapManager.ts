@@ -1,4 +1,5 @@
 import { QuoteResponse } from "@jup-ag/api";
+import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 import { FlashLoanRequirements } from "../../types";
 import { SolautoClient } from "../solauto";
 import { JupSwapManager, SwapParams, SwapInput } from "../swap";
@@ -13,7 +14,6 @@ import {
   toBaseUnit,
   tokenInfo,
 } from "../../utils";
-import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 
 export class RebalanceSwapManager {
   public swapParams!: SwapParams;

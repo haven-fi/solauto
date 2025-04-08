@@ -1,10 +1,5 @@
 import "rpc-websockets/dist/lib/client";
-import {
-  AddressLookupTableProgram,
-  PublicKey,
-  RpcResponseAndContext,
-  TokenAmount,
-} from "@solana/web3.js";
+import { AddressLookupTableProgram, PublicKey } from "@solana/web3.js";
 import {
   TransactionBuilder,
   isOption,
@@ -28,15 +23,13 @@ import {
 import {
   getSolautoPositionAccount,
   getTokenAccount,
-} from "../../utils/accountUtils";
-import { SOLAUTO_FEES_WALLET } from "../../constants/generalAccounts";
-import {
   getWalletSplBalances,
   getWrappedInstruction,
   splTokenTransferUmiIx,
-} from "../../utils/solanaUtils";
-import { SOLAUTO_LUT } from "../../constants/solautoConstants";
-import { ContextUpdates } from "../../utils/solautoUtils";
+  ContextUpdates,
+} from "../../utils";
+import { SOLAUTO_FEES_WALLET, SOLAUTO_LUT } from "../../constants";
+import { ProgramEnv, RebalanceDetails } from "../../types";
 import {
   ReferralStateManager,
   ReferralStateManagerArgs,
@@ -45,8 +38,7 @@ import {
   getOrCreatePositionEx,
   SolautoPositionEx,
 } from "../../solautoPosition";
-import { RebalanceDetails } from "../../types";
-import { FlProviderAggregator } from "../flashLoans/flProviderAggregator";
+import { FlProviderAggregator } from "../flashLoans";
 
 export interface SolautoClientArgs extends ReferralStateManagerArgs {
   new?: boolean;
@@ -55,10 +47,12 @@ export interface SolautoClientArgs extends ReferralStateManagerArgs {
   debtMint?: PublicKey;
   lendingPool?: PublicKey;
   lpUserAccount?: PublicKey;
+  lpEnv?: ProgramEnv;
 }
 
 export abstract class SolautoClient extends ReferralStateManager {
   public lendingPlatform!: LendingPlatform;
+  public lpEnv!: ProgramEnv;
 
   public authority!: PublicKey;
 
@@ -85,6 +79,8 @@ export abstract class SolautoClient extends ReferralStateManager {
 
   async initialize(args: SolautoClientArgs) {
     await super.initialize(args);
+
+    this.lpEnv = args.lpEnv ?? "Prod";
 
     this.positionId = args.positionId ?? 0;
     this.selfManaged = this.positionId === 0;
@@ -153,7 +149,8 @@ export abstract class SolautoClient extends ReferralStateManager {
       this.signer,
       this.authority,
       this.pos.supplyMint(),
-      this.pos.debtMint()
+      this.pos.debtMint(),
+      this.lpEnv
     );
     await this.flProvider.initialize();
     this.otherSigners.push(...this.flProvider.otherSigners());

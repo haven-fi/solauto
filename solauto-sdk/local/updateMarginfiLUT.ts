@@ -5,7 +5,6 @@ import {
   DEFAULT_MARGINFI_GROUP,
 } from "../src/constants/marginfiAccounts";
 import {
-  MARGINFI_PROGRAM_ID,
   marginfiAccountInitialize,
 } from "../src/marginfi-sdk";
 import { createAndSendV0Tx, getSecretKey, updateLookupTable } from "./shared";

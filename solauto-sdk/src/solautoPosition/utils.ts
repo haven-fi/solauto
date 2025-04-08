@@ -1,4 +1,9 @@
+import { PublicKey } from "@solana/web3.js";
 import { Umi } from "@metaplex-foundation/umi";
+import {
+  fromWeb3JsPublicKey,
+  toWeb3JsPublicKey,
+} from "@metaplex-foundation/umi-web3js-adapters";
 import {
   LendingPlatform,
   PositionState,
@@ -7,13 +12,6 @@ import {
   SolautoSettingsParameters,
   SolautoSettingsParametersInpArgs,
 } from "../generated";
-import { PublicKey } from "@solana/web3.js";
-import { PositionCustomArgs, SolautoPositionEx } from "./solautoPositionEx";
-import {
-  fromWeb3JsPublicKey,
-  toWeb3JsPublicKey,
-} from "@metaplex-foundation/umi-web3js-adapters";
-import { MarginfiSolautoPositionEx } from "./marginfiSolautoPositionEx";
 import {
   ContextUpdates,
   currentUnixSeconds,
@@ -24,6 +22,8 @@ import {
   tokenInfo,
   toRoundedUsdValue,
 } from "../utils";
+import { PositionCustomArgs, SolautoPositionEx } from "./solautoPositionEx";
+import { MarginfiSolautoPositionEx } from "./marginfiSolautoPositionEx";
 
 export function createSolautoSettings(
   settings: SolautoSettingsParametersInpArgs

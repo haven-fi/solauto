@@ -1,3 +1,8 @@
+import { PublicKey, SYSVAR_INSTRUCTIONS_PUBKEY } from "@solana/web3.js";
+import {
+  ACCOUNT_SIZE as TOKEN_ACCOUNT_SIZE,
+  NATIVE_MINT,
+} from "@solana/spl-token";
 import {
   Instruction,
   ProgramError,
@@ -8,11 +13,6 @@ import {
   transactionBuilder,
 } from "@metaplex-foundation/umi";
 import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
-import { PublicKey, SYSVAR_INSTRUCTIONS_PUBKEY } from "@solana/web3.js";
-import {
-  ACCOUNT_SIZE as TOKEN_ACCOUNT_SIZE,
-  NATIVE_MINT,
-} from "@solana/spl-token";
 import {
   InvalidRebalanceConditionError,
   SolautoAction,
@@ -27,19 +27,20 @@ import {
   isSolautoAction,
   solautoAction,
 } from "../../generated";
-import { SolautoClient } from "../solauto/solautoClient";
+import { SolautoClient, ReferralStateManager } from "../solauto";
 import {
   closeTokenAccountUmiIx,
   createAssociatedTokenAccountUmiIx,
   systemTransferUmiIx,
-} from "../../utils/solanaUtils";
-import {
   consoleLog,
   getSolanaAccountCreated,
   rpcAccountCreated,
-} from "../../utils/generalUtils";
-import { uint8ArrayToBigInt } from "../../utils/numberUtils";
-import { getTokenAccount, getTokenAccountData } from "../../utils/accountUtils";
+  uint8ArrayToBigInt,
+  getTokenAccount,
+  getTokenAccountData,
+  isMarginfiClient,
+  isMarginfiProgram,
+} from "../../utils";
 import {
   createMarginfiProgram,
   getLendingAccountBorrowInstructionDataSerializer,
@@ -47,17 +48,14 @@ import {
   getLendingAccountRepayInstructionDataSerializer,
   getLendingAccountWithdrawInstructionDataSerializer,
   getMarginfiErrorFromCode,
-  MARGINFI_PROGRAM_ID,
 } from "../../marginfi-sdk";
-import { JupSwapManager, ReferralStateManager } from "..";
+import { JupSwapManager } from "../swap";
 import {
   createJupiterProgram,
   getJupiterErrorFromCode,
   JUPITER_PROGRAM_ID,
 } from "../../jupiter-sdk";
-import { TransactionItemInputs } from "../../types";
-import { isMarginfiClient } from "../../utils";
-import { BundleSimulationError } from "../../types/transactions";
+import { TransactionItemInputs, BundleSimulationError } from "../../types";
 
 interface wSolTokenUsage {
   wSolTokenAccount: PublicKey;
@@ -410,7 +408,7 @@ function getSolautoActions(umi: Umi, tx: TransactionBuilder): SolautoAction[] {
       } catch {}
     }
 
-    if (x.programId === MARGINFI_PROGRAM_ID) {
+    if (isMarginfiProgram(toWeb3JsPublicKey(x.programId))) {
       try {
         const serializer = getLendingAccountDepositInstructionDataSerializer();
         const discriminator = uint8ArrayToBigInt(
@@ -680,7 +678,8 @@ export function getErrorInfo(
       }
     } else if (
       errCode !== undefined &&
-      errIx?.programId === MARGINFI_PROGRAM_ID
+      errIx &&
+      isMarginfiProgram(toWeb3JsPublicKey(errIx.programId))
     ) {
       programName = "Marginfi";
       programError = marginfiError;

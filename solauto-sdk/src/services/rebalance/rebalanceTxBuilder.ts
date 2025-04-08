@@ -1,3 +1,6 @@
+import { PublicKey } from "@solana/web3.js";
+import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
+import { transactionBuilder } from "@metaplex-foundation/umi";
 import { SolautoClient } from "../solauto";
 import {
   FlashLoanRequirements,
@@ -14,8 +17,6 @@ import {
   safeGetPrice,
   tokenInfo,
 } from "../../utils";
-import { getRebalanceValues, RebalanceValues } from "./rebalanceValues";
-import { SolautoFeesBps } from "./solautoFees";
 import {
   PositionTokenState,
   RebalanceDirection,
@@ -25,10 +26,9 @@ import {
   TokenBalanceChangeType,
   TokenType,
 } from "../../generated";
-import { PublicKey } from "@solana/web3.js";
+import { getRebalanceValues, RebalanceValues } from "./rebalanceValues";
+import { SolautoFeesBps } from "./solautoFees";
 import { RebalanceSwapManager } from "./rebalanceSwapManager";
-import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
-import { transactionBuilder } from "@metaplex-foundation/umi";
 
 export class RebalanceTxBuilder {
   private values!: RebalanceValues;

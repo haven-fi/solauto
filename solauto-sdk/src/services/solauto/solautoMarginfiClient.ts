@@ -1,18 +1,18 @@
-import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
+import { PublicKey, SYSVAR_INSTRUCTIONS_PUBKEY } from "@solana/web3.js";
 import {
   Signer,
   TransactionBuilder,
   publicKey,
   PublicKey as UmiPublicKey,
   createSignerFromKeypair,
+  Program,
 } from "@metaplex-foundation/umi";
-import { PublicKey, SYSVAR_INSTRUCTIONS_PUBKEY } from "@solana/web3.js";
-import { SolautoClient, SolautoClientArgs } from "./solautoClient";
-import { MarginfiAssetAccounts } from "../../types/accounts";
+import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
+import { MarginfiAssetAccounts, RebalanceDetails } from "../../types";
 import {
   MARGINFI_ACCOUNTS,
   MARGINFI_ACCOUNTS_LOOKUP_TABLE,
-} from "../../constants/marginfiAccounts";
+} from "../../constants";
 import {
   DCASettingsInpArgs,
   LendingPlatform,
@@ -29,9 +29,14 @@ import {
   marginfiRebalance,
   marginfiRefreshData,
 } from "../../generated";
-import { getTokenAccount } from "../../utils/accountUtils";
 import {
-  MARGINFI_PROGRAM_ID,
+  getAllMarginfiAccountsByAuthority,
+  marginfiAccountEmpty,
+  umiWithMarginfiProgram,
+  getTokenAccount,
+  hasFirstRebalance,
+} from "../../utils";
+import {
   lendingAccountBorrow,
   lendingAccountDeposit,
   lendingAccountRepay,
@@ -39,17 +44,12 @@ import {
   marginfiAccountInitialize,
   safeFetchAllMarginfiAccount,
 } from "../../marginfi-sdk";
-import {
-  getAllMarginfiAccountsByAuthority,
-  marginfiAccountEmpty,
-} from "../../utils/marginfiUtils";
-import { hasFirstRebalance } from "../../utils/solautoUtils";
-import { RebalanceDetails } from "../../types";
+import { SolautoClient, SolautoClientArgs } from "./solautoClient";
 
 export class SolautoMarginfiClient extends SolautoClient {
   public lendingPlatform = LendingPlatform.Marginfi;
 
-  public marginfiProgram!: PublicKey;
+  public marginfiProgram!: Program;
 
   public marginfiAccount!: PublicKey | Signer;
   public marginfiAccountPk!: PublicKey;
@@ -63,6 +63,8 @@ export class SolautoMarginfiClient extends SolautoClient {
 
   async initialize(args: SolautoClientArgs) {
     await super.initialize(args);
+
+    this.umi = umiWithMarginfiProgram(this.umi, this.lpEnv);
 
     this.marginfiGroup = await this.pos.lendingPool();
 
@@ -169,7 +171,7 @@ export class SolautoMarginfiClient extends SolautoClient {
 
     return marginfiOpenPosition(this.umi, {
       signer: this.signer,
-      marginfiProgram: publicKey(MARGINFI_PROGRAM_ID),
+      marginfiProgram: publicKey(this.marginfiProgram),
       signerReferralState: publicKey(this.referralState),
       referredByState: this.referredByState
         ? publicKey(this.referredByState)
@@ -214,7 +216,7 @@ export class SolautoMarginfiClient extends SolautoClient {
   refreshIx(): TransactionBuilder {
     return marginfiRefreshData(this.umi, {
       signer: this.signer,
-      marginfiProgram: publicKey(MARGINFI_PROGRAM_ID),
+      marginfiProgram: publicKey(this.marginfiProgram),
       marginfiGroup: publicKey(this.marginfiGroup),
       marginfiAccount: publicKey(this.marginfiAccount),
       supplyBank: publicKey(this.marginfiSupplyAccounts.bank),
@@ -342,7 +344,7 @@ export class SolautoMarginfiClient extends SolautoClient {
 
     return marginfiProtocolInteraction(this.umi, {
       signer: this.signer,
-      marginfiProgram: publicKey(MARGINFI_PROGRAM_ID),
+      marginfiProgram: publicKey(this.marginfiProgram),
       solautoPosition: publicKey(this.pos.publicKey),
       marginfiGroup: publicKey(this.marginfiGroup),
       marginfiAccount: publicKey(this.marginfiAccountPk),
@@ -393,7 +395,7 @@ export class SolautoMarginfiClient extends SolautoClient {
 
     return marginfiRebalance(this.umi, {
       signer: this.signer,
-      marginfiProgram: publicKey(MARGINFI_PROGRAM_ID),
+      marginfiProgram: publicKey(this.marginfiProgram),
       ixsSysvar: publicKey(SYSVAR_INSTRUCTIONS_PUBKEY),
       solautoFeesTa: publicKey(
         data.values.rebalanceDirection === RebalanceDirection.Boost
@@ -425,9 +427,7 @@ export class SolautoMarginfiClient extends SolautoClient {
       supplyPriceOracle: publicKey(this.supplyPriceOracle),
       positionSupplyTa: publicKey(this.positionSupplyTa),
       authoritySupplyTa: addAuthorityTas
-        ? publicKey(
-            getTokenAccount(this.authority, this.pos.supplyMint())
-          )
+        ? publicKey(getTokenAccount(this.authority, this.pos.supplyMint()))
         : undefined,
       vaultSupplyTa: needSupplyAccounts
         ? publicKey(this.marginfiSupplyAccounts.liquidityVault)
@@ -439,9 +439,7 @@ export class SolautoMarginfiClient extends SolautoClient {
       debtPriceOracle: publicKey(this.debtPriceOracle),
       positionDebtTa: publicKey(this.positionDebtTa),
       authorityDebtTa: addAuthorityTas
-        ? publicKey(
-            getTokenAccount(this.authority, this.pos.debtMint())
-          )
+        ? publicKey(getTokenAccount(this.authority, this.pos.debtMint()))
         : undefined,
       vaultDebtTa: needDebtAccounts
         ? publicKey(this.marginfiDebtAccounts.liquidityVault)

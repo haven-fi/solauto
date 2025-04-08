@@ -3,13 +3,13 @@ import {
   TokenBalanceChange,
   TokenBalanceChangeType,
 } from "../../generated";
-import { SolautoPositionEx } from "../../solautoPosition";
 import {
   fromBps,
   getLiqUtilzationRateBps,
   maxRepayToBps,
   toBps,
 } from "../../utils";
+import { SolautoPositionEx } from "../../solautoPosition";
 import { SolautoFeesBps } from "./solautoFees";
 
 export interface PositionValues {
