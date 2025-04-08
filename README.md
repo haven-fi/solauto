@@ -19,6 +19,33 @@ pnpm install -g ts-node
 
 Define `IRONFORGE_API_KEY` environment variable for running package tests/scripts locally.
 
+### Building
+
+```bash
+# Build typescript
+pnpm build:ts
+
+# Build Solauto test program
+pnpm build:rs:test
+
+# Build Solauto prod program
+pnpm build:rs:prod
+```
+
+### Testing
+
+```bash
+# Run all tests
+pnpm test:all
+
+# Run unit tests
+pnpm test:unit
+
+# Run transaction tests
+pnpm test:txs
+```
+
+
 ## Solauto Typescript SDK
 
 The Solauto Typescript SDK is made for interacting with the Solauto program on the Solana blockchain. This SDK provides tools for managing, & reading Solauto state data, as well as executing transactions.
@@ -131,32 +158,4 @@ transactionItems.push(
 
 const txManager = new TransactionsManager(client);
 const statuses = await txManager.clientSend(transactionItems);
-```
-
-## Development
-
-### Building
-
-```bash
-# Build typescript
-pnpm build:ts
-
-# Build Solauto test program
-pnpm build:rs:test
-
-# Build Solauto prod program
-pnpm build:rs:prod
-```
-
-### Testing
-
-```bash
-# Run all tests
-pnpm test:all
-
-# Run unit tests
-pnpm test:unit
-
-# Run transaction tests
-pnpm test:txs
 ```
