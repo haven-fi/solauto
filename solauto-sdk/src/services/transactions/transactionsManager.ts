@@ -258,7 +258,7 @@ export class TransactionsManager {
     private statusCallback?: (statuses: TransactionManagerStatuses) => void,
     private txType?: TransactionRunType,
     private priorityFeeSetting: PriorityFeeSetting = PriorityFeeSetting.Min,
-    private atomically: boolean = false,
+    private atomically: boolean = true,
     private errorsToThrow?: ErrorsToThrow,
     retryConfig?: RetryConfig
   ) {
@@ -267,7 +267,7 @@ export class TransactionsManager {
       this.txHandler.umi
     );
     this.signableRetries =
-      retryConfig?.signableRetries ?? retryConfig?.totalRetries ?? 3;
+      retryConfig?.signableRetries ?? retryConfig?.totalRetries ?? 4;
     this.totalRetries =
       retryConfig?.totalRetries ?? retryConfig?.signableRetries ?? 4;
     this.retryDelay = retryConfig?.retryDelay ?? 150;

@@ -72,7 +72,10 @@ export async function e2eTransactionTest(
       return {
         tx: client.protocolInteractionIx(
           solautoAction("Deposit", [
-            toBaseUnit(supplyUsd / supplyPrice, client.pos.supplyMintInfo().decimals),
+            toBaseUnit(
+              supplyUsd / supplyPrice,
+              client.pos.supplyMintInfo().decimals
+            ),
           ])
         ),
       };
@@ -120,15 +123,7 @@ export async function e2eTransactionTest(
     )
   );
 
-  const txManager = new TransactionsManager(
-    client,
-    undefined,
-    "only-simulate",
-    undefined,
-    true,
-    undefined,
-    { totalRetries: 5 }
-  );
+  const txManager = new TransactionsManager(client, undefined, "only-simulate");
   const statuses = await txManager.clientSend(transactionItems);
 
   consoleLog(statuses);
