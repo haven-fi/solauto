@@ -1,7 +1,7 @@
+import axios from "axios";
 import { PublicKey } from "@solana/web3.js";
 import { MaybeRpcAccount, publicKey, Umi } from "@metaplex-foundation/umi";
 import { TOKEN_INFO, TokenInfo } from "../constants";
-import axios from "axios";
 
 export function consoleLog(...args: any[]): void {
   if ((globalThis as any).SHOW_LOGS) {

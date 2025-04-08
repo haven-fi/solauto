@@ -1,6 +1,6 @@
+import { PublicKey } from "@solana/web3.js";
 import { NATIVE_MINT } from "@solana/spl-token";
 import { WBTC, WETH } from "../constants";
-import { PublicKey } from "@solana/web3.js";
 import { tokenInfo } from "./generalUtils";
 
 export const StrategyTypes = ["Long", "Short", "Ratio"] as const;

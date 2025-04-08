@@ -1,6 +1,5 @@
 import { BASIS_POINTS, MIN_REPAY_GAP_BPS, USD_DECIMALS } from "../constants";
 import { PositionState } from "../generated";
-import { tokenInfo } from "./generalUtils";
 
 export function calcNetWorthUsd(state?: PositionState) {
   return fromRoundedUsdValue(state?.netWorth.baseAmountUsdValue ?? BigInt(0));

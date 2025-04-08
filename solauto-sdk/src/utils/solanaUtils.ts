@@ -1,20 +1,5 @@
 import bs58 from "bs58";
 import {
-  AddressLookupTableInput,
-  Signer,
-  TransactionBuilder,
-  Umi,
-  WrappedInstruction,
-  publicKey,
-  transactionBuilder,
-} from "@metaplex-foundation/umi";
-import {
-  fromWeb3JsInstruction,
-  toWeb3JsPublicKey,
-  toWeb3JsTransaction,
-} from "@metaplex-foundation/umi-web3js-adapters";
-import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
-import {
   AddressLookupTableAccount,
   BlockhashWithExpiryBlockHeight,
   ComputeBudgetProgram,
@@ -32,6 +17,26 @@ import {
   createCloseAccountInstruction,
   createTransferInstruction,
 } from "@solana/spl-token";
+import {
+  AddressLookupTableInput,
+  Signer,
+  TransactionBuilder,
+  Umi,
+  WrappedInstruction,
+  publicKey,
+  transactionBuilder,
+} from "@metaplex-foundation/umi";
+import {
+  fromWeb3JsInstruction,
+  toWeb3JsPublicKey,
+  toWeb3JsTransaction,
+} from "@metaplex-foundation/umi-web3js-adapters";
+import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
+import { PriorityFeeSetting, TransactionRunType } from "../types";
+import {
+  getLendingAccountEndFlashloanInstructionDataSerializer,
+  getLendingAccountStartFlashloanInstructionDataSerializer,
+} from "../marginfi-sdk";
 import { getTokenAccount } from "./accountUtils";
 import {
   arraysAreEqual,
@@ -39,12 +44,6 @@ import {
   customRpcCall,
   retryWithExponentialBackoff,
 } from "./generalUtils";
-import {
-  getLendingAccountEndFlashloanInstructionDataSerializer,
-  getLendingAccountStartFlashloanInstructionDataSerializer,
-} from "../marginfi-sdk";
-import { PriorityFeeSetting, TransactionRunType } from "../types";
-import { SOLAUTO_PROD_PROGRAM } from "../constants";
 import { createDynamicSolautoProgram } from "./solautoUtils";
 
 export function buildHeliusApiUrl(heliusApiKey: string) {
@@ -57,7 +56,7 @@ export function buildIronforgeApiUrl(ironforgeApiKey: string) {
 
 export function getSolanaRpcConnection(
   rpcUrl: string,
-  programId: PublicKey = SOLAUTO_PROD_PROGRAM,
+  programId?: PublicKey,
   wsEndpoint?: string
 ): [Connection, Umi] {
   const connection = new Connection(rpcUrl, {

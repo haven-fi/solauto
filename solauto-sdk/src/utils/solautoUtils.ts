@@ -1,5 +1,7 @@
 import { PublicKey } from "@solana/web3.js";
 import { Program, publicKey, Umi } from "@metaplex-foundation/umi";
+import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
+import { QuoteResponse } from "@jup-ag/api";
 import {
   AutomationSettings,
   DCASettings,
@@ -17,21 +19,15 @@ import {
   getSolautoPositionAccountDataSerializer,
   getSolautoPositionSize,
 } from "../generated";
-import { getReferralState } from "./accountUtils";
-import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
-import { ALL_SUPPORTED_TOKENS } from "../constants";
-import {
-  findMarginfiAccounts,
-  getAllMarginfiAccountsByAuthority,
-} from "./marginfiUtils";
-import { SolautoPositionDetails } from "../types/solauto";
-import { QuoteResponse } from "@jup-ag/api";
-import { createSolautoSettings } from "../solautoPosition";
+import { ALL_SUPPORTED_TOKENS, SOLAUTO_PROD_PROGRAM } from "../constants";
+import { SolautoPositionDetails } from "../types";
 import {
   SolautoClient,
   SolautoMarginfiClient,
   TxHandlerProps,
 } from "../services";
+import { createSolautoSettings } from "../solautoPosition";
+import { getReferralState } from "./accountUtils";
 import {
   calcTotalDebt,
   calcTotalSupply,
@@ -41,11 +37,15 @@ import {
   toRoundedUsdValue,
 } from "./numberUtils";
 import { fetchTokenPrices } from "./priceUtils";
+import {
+  findMarginfiAccounts,
+  getAllMarginfiAccountsByAuthority,
+} from "./marginfiUtils";
 
-export function createDynamicSolautoProgram(programId: PublicKey): Program {
+export function createDynamicSolautoProgram(programId?: PublicKey): Program {
   return {
     name: "solauto",
-    publicKey: publicKey(programId),
+    publicKey: publicKey(programId ?? SOLAUTO_PROD_PROGRAM),
     getErrorFromCode(code: number, cause?: Error) {
       return getSolautoErrorFromCode(code, this, cause);
     },

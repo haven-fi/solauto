@@ -1,16 +1,18 @@
 import { PublicKey } from "@solana/web3.js";
 import { PublicKey as UmiPublicKey } from "@metaplex-foundation/umi";
-import { PYTH_PRICE_FEED_IDS } from "../constants/pythConstants";
-import { fromBaseUnit, toBaseUnit, toBps } from "./numberUtils";
-import { PRICES } from "../constants/solautoConstants";
-import { SWITCHBOARD_PRICE_FEED_IDS } from "../constants/switchboardConstants";
+import * as SwbCommon from "@switchboard-xyz/common";
+import {
+  PYTH_PRICE_FEED_IDS,
+  PRICES,
+  SWITCHBOARD_PRICE_FEED_IDS,
+} from "../constants";
+import { fromBaseUnit, toBaseUnit } from "./numberUtils";
 import {
   consoleLog,
   currentUnixSeconds,
   retryWithExponentialBackoff,
   zip,
 } from "./generalUtils";
-import * as SwbCommon from "@switchboard-xyz/common";
 import { getJupPriceData } from "./jupiterUtils";
 
 export async function fetchTokenPrices(mints: PublicKey[]): Promise<number[]> {

@@ -1,6 +1,17 @@
 import { PublicKey } from "@solana/web3.js";
 import { Program, publicKey, Umi } from "@metaplex-foundation/umi";
 import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
+import { ProgramEnv, MarginfiAssetAccounts } from "../types";
+import { PositionState, PositionTokenState } from "../generated";
+import {
+  DEFAULT_MARGINFI_GROUP,
+  MARGINFI_ACCOUNTS,
+  ALL_SUPPORTED_TOKENS,
+  MARGINFI_PROD_PROGRAM,
+  MARGINFI_STAGING_PROGRAM,
+  TOKEN_INFO,
+  USD_DECIMALS,
+} from "../constants";
 import {
   Bank,
   deserializeMarginfiAccount,
@@ -12,6 +23,8 @@ import {
   safeFetchBank,
   safeFetchMarginfiAccount,
 } from "../marginfi-sdk";
+import { ContextUpdates } from "./solautoUtils";
+import { fetchTokenPrices, safeGetPrice } from "./priceUtils";
 import { currentUnixSeconds } from "./generalUtils";
 import {
   bytesToI80F48,
@@ -21,19 +34,6 @@ import {
   toBaseUnit,
   toBps,
 } from "./numberUtils";
-import { PositionState, PositionTokenState } from "../generated";
-import { ContextUpdates } from "./solautoUtils";
-import {
-  DEFAULT_MARGINFI_GROUP,
-  MARGINFI_ACCOUNTS,
-  ALL_SUPPORTED_TOKENS,
-  MARGINFI_PROD_PROGRAM,
-  MARGINFI_STAGING_PROGRAM,
-  TOKEN_INFO,
-  USD_DECIMALS,
-} from "../constants";
-import { fetchTokenPrices, safeGetPrice } from "./priceUtils";
-import { ProgramEnv, MarginfiAssetAccounts } from "../types";
 
 export function getMarginfiProgram(env: ProgramEnv) {
   return env === "Prod" ? MARGINFI_PROD_PROGRAM : MARGINFI_STAGING_PROGRAM;
