@@ -31,7 +31,9 @@
     "log-positions": "cd solauto-sdk && npx ts-node local/logPositions.ts"
   },
   "dependencies": {
-    "@metaplex-foundation/kinobi": "^0.18.5"
+    "@metaplex-foundation/kinobi": "^0.18.5",
+    "@mrgnlabs/marginfi-client-v2": "^6.0.1",
+    "@mrgnlabs/mrgn-common": "^2.0.2"
   },
   "devDependencies": {
     "solauto-sdk": "file:solauto-sdk",

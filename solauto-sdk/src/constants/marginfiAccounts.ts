@@ -14,11 +14,39 @@ export const MARGINFI_STAGING_PROGRAM = new PublicKey(
 export const DEFAULT_MARGINFI_GROUP =
   "4qp6Fx6tnZkY5Wropq9wUYgtFxXKwE6viZxFHg3rdAG8";
 
+export const DEFAULT_MARGINFI_STAGING_GROUP =
+  "FCPfpHA69EbS8f9KKSreTRkXbzFpunsKuYf5qNmnJjpo";
+
 const USDC_PRICE_ORACLE = "Dpw1EAVrSB1ibxiDQyTAW6Zip3J4Btk2x4SgApQCeFbX";
 
-export const MARGINFI_ACCOUNTS: {
+type MarginfiAccountsMap = {
   [group: string]: { [token: string]: MarginfiAssetAccounts };
-} = {
+};
+
+export const MARGINFI_STAGING_ACCOUNTS: MarginfiAccountsMap = {
+  [DEFAULT_MARGINFI_STAGING_GROUP]: {
+    [NATIVE_MINT.toString()]: {
+      bank: "3evdJSa25nsUiZzEUzd92UNa13TPRJrje1dRyiQP5Lhp",
+      liquidityVault: "FVXESa7wCd1tf3o9LGroBc3Ym8Gpcq1HdsLek6oo7Ykv",
+      vaultAuthority: "DuYk1WGq8UsjW5ThLtaehFLrnJeupTjtF7TaPzja9LBQ",
+      priceOracle: "7UVimffxr9ow1uXYxsr4LHAcV58mLzhmwaeKvJ1pjLiE",
+    },
+    [tokens.USDC]: {
+      bank: "Ek5JSFJFD8QgXM6rPDCzf31XhDp1q3xezaWYSkJWqbqc",
+      liquidityVault: "6n7xXMni5WJKUMb4Vm5Zis6UaUtGF5xEGmagZNVWWoKB",
+      vaultAuthority: "9mXNyA5yS4WSTpYUa5gi3yBrSJWWM7XNPNDWRzWGjdVe",
+      priceOracle: USDC_PRICE_ORACLE,
+    },
+    [tokens.USDT]: {
+      bank: "4WFCsVXwfnQvZG52VvPwae7CtL13PUFVWdjkw5YCRBo6",
+      liquidityVault: "BFSyniKfXU9rHqUvHLKeZMivQsAKWTE7HZ1fW6vZcvJp",
+      vaultAuthority: "Fgxe3SUMzcNuLtT9Xkv8QhhWXCmu4VxynzUMwCF4HvJd",
+      priceOracle: "HT2PLQBcG5EiCcNSaMHAjSgd9F98ecpATbk4Sk5oYuM",
+    },
+  },
+};
+
+export const MARGINFI_ACCOUNTS: MarginfiAccountsMap = {
   [DEFAULT_MARGINFI_GROUP.toString()]: {
     [NATIVE_MINT.toString()]: {
       bank: "CCKtUs6Cgwo4aaQUmBPmyoApH2gUDErxNZCAntD6LYGh",

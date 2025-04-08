@@ -1,6 +1,6 @@
 import { PublicKey } from "@solana/web3.js";
 import { Program, publicKey, Umi } from "@metaplex-foundation/umi";
-import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
+import { fromWeb3JsPublicKey, toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 import { ProgramEnv, MarginfiAssetAccounts } from "../types";
 import { PositionState, PositionTokenState } from "../generated";
 import {
@@ -34,6 +34,7 @@ import {
   toBaseUnit,
   toBps,
 } from "./numberUtils";
+import { getTokenAccountData } from "./accountUtils";
 
 export function getMarginfiProgram(env: ProgramEnv) {
   return env === "Prod" ? MARGINFI_PROD_PROGRAM : MARGINFI_STAGING_PROGRAM;
@@ -71,6 +72,17 @@ export function umiWithMarginfiProgram(umi: Umi, marginfiEnv?: ProgramEnv) {
       );
     },
   });
+}
+
+export async function fetchBankAddresses(umi: Umi, bankPk: PublicKey) {
+  const bank = await safeFetchBank(umi, fromWeb3JsPublicKey(bankPk));
+  const liquidityVault = toWeb3JsPublicKey(bank!.liquidityVault);
+  const vaultAuthority = (await getTokenAccountData(umi, liquidityVault))?.owner;
+  return {
+    bank: bankPk,
+    liquidityVault,
+    vaultAuthority,
+  };
 }
 
 interface AllMarginfiAssetAccounts extends MarginfiAssetAccounts {
