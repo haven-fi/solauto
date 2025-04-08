@@ -71,9 +71,9 @@ impl SolautoFeesBps {
             };
         }
 
-        if self.target_liq_utilization_rate_bps.is_some()
-            || rebalance_direction == &RebalanceDirection::Repay
-        {
+        if self.target_liq_utilization_rate_bps.is_some() {
+            fee_bps = 15.0;
+        } else if rebalance_direction == &RebalanceDirection::Repay {
             fee_bps = 25.0;
         } else if self.position_net_worth_usd <= min_size {
             fee_bps = max_fee_bps;
