@@ -1,3 +1,6 @@
+import { PublicKey } from "@solana/web3.js";
+import path from "path";
+import { config } from "dotenv";
 import {
   buildIronforgeApiUrl,
   fetchTokenPrices,
@@ -7,9 +10,6 @@ import {
   safeGetPrice,
   SOLAUTO_PROD_PROGRAM,
 } from "../src";
-import { PublicKey } from "@solana/web3.js";
-import path from "path";
-import { config } from "dotenv";
 
 config({ path: path.join(__dirname, ".env") });
 

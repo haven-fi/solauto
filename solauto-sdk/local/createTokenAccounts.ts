@@ -1,4 +1,10 @@
 import { PublicKey } from "@solana/web3.js";
+import {
+  createSignerFromKeypair,
+  publicKey,
+  signerIdentity,
+  transactionBuilder,
+} from "@metaplex-foundation/umi";
 import { ALL_SUPPORTED_TOKENS, SOLAUTO_FEES_WALLET } from "../src/constants";
 import {
   buildHeliusApiUrl,
@@ -9,12 +15,6 @@ import {
   zip,
 } from "../src/utils";
 import { getSecretKey } from "./shared";
-import {
-  createSignerFromKeypair,
-  publicKey,
-  signerIdentity,
-  transactionBuilder,
-} from "@metaplex-foundation/umi";
 
 async function createTokenAccounts(wallet: PublicKey) {
   let [connection, umi] = getSolanaRpcConnection(

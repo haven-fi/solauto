@@ -1,4 +1,6 @@
 import { Keypair, PublicKey } from "@solana/web3.js";
+import { createSignerFromKeypair } from "@metaplex-foundation/umi";
+import { fromWeb3JsKeypair } from "@metaplex-foundation/umi-web3js-adapters";
 import {
   buildIronforgeApiUrl,
   consoleLog,
@@ -13,8 +15,6 @@ import {
   TransactionsManager,
 } from "../src";
 import { getSecretKey } from "./shared";
-import { createSignerFromKeypair } from "@metaplex-foundation/umi";
-import { fromWeb3JsKeypair } from "@metaplex-foundation/umi-web3js-adapters";
 
 const payForTransaction = false;
 const testProgram = true;

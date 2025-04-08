@@ -11,8 +11,8 @@ import {
 import {
   buildHeliusApiUrl,
   getSolanaRpcConnection,
-} from "../src/utils/solanaUtils";
-import { getBatches } from "../src";
+  getBatches,
+} from "../src";
 
 function loadSecretKey(keypairPath: string) {
   const secretKey = JSON.parse(fs.readFileSync(keypairPath, "utf8"));

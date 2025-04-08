@@ -1,23 +1,21 @@
 import { PublicKey } from "@solana/web3.js";
-import { getTokenAccounts } from "../src/utils/accountUtils";
 import {
   SOLAUTO_FEES_WALLET,
   SOLAUTO_MANAGER,
-} from "../src/constants/generalAccounts";
-import { ALL_SUPPORTED_TOKENS } from "../src/constants/tokenConstants";
-import { updateLookupTable } from "./shared";
-import {
   SOLAUTO_LUT,
   STANDARD_LUT_ACCOUNTS,
-} from "../src/constants/solautoConstants";
-import {
+  SWITCHBOARD_PRICE_FEED_IDS,
+  ALL_SUPPORTED_TOKENS,
   buildHeliusApiUrl,
   getAllMarginfiAccountsByAuthority,
   getSolanaRpcConnection,
-} from "../src/utils";
-import { SWITCHBOARD_PRICE_FEED_IDS } from "../src/constants/switchboardConstants";
+  getTokenAccounts,
+} from "../src";
+import { updateLookupTable } from "./shared";
 
-const LOOKUP_TABLE_ADDRESS = Boolean(SOLAUTO_LUT) ? new PublicKey(SOLAUTO_LUT) : undefined;
+const LOOKUP_TABLE_ADDRESS = Boolean(SOLAUTO_LUT)
+  ? new PublicKey(SOLAUTO_LUT)
+  : undefined;
 const solautoManagerTokenAccounts = getTokenAccounts(
   SOLAUTO_MANAGER,
   ALL_SUPPORTED_TOKENS.map((x) => new PublicKey(x))
@@ -43,7 +41,7 @@ export async function updateSolautoLut(additionalAccounts?: string[]) {
       ...solautoManagerTokenAccounts.map((x) => x.toString()),
       ...solautoFeeWalletTokenAccounts.map((x) => x.toString()),
       ...ismAccounts.map((x) => x.marginfiAccount.toString()),
-      ...Object.values(SWITCHBOARD_PRICE_FEED_IDS).map(x => x.feedId),
+      ...Object.values(SWITCHBOARD_PRICE_FEED_IDS).map((x) => x.feedId),
       ...(additionalAccounts ?? []),
     ],
     LOOKUP_TABLE_ADDRESS

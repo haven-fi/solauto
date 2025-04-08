@@ -1,19 +1,4 @@
 import { Keypair, PublicKey } from "@solana/web3.js";
-import { MARGINFI_ACCOUNTS_LOOKUP_TABLE } from "../src/constants/marginfiAccounts";
-import {
-  MARGINFI_ACCOUNTS,
-  DEFAULT_MARGINFI_GROUP,
-} from "../src/constants/marginfiAccounts";
-import {
-  marginfiAccountInitialize,
-} from "../src/marginfi-sdk";
-import { createAndSendV0Tx, getSecretKey, updateLookupTable } from "./shared";
-import {
-  buildIronforgeApiUrl,
-  getEmptyMarginfiAccountsByAuthority,
-  getSolanaRpcConnection,
-  SOLAUTO_MANAGER,
-} from "../src";
 import {
   createSignerFromKeypair,
   publicKey,
@@ -24,6 +9,17 @@ import {
   toWeb3JsInstruction,
   toWeb3JsKeypair,
 } from "@metaplex-foundation/umi-web3js-adapters";
+import {
+  MARGINFI_ACCOUNTS_LOOKUP_TABLE,
+  MARGINFI_ACCOUNTS,
+  DEFAULT_MARGINFI_GROUP,
+  buildIronforgeApiUrl,
+  getEmptyMarginfiAccountsByAuthority,
+  getSolanaRpcConnection,
+  SOLAUTO_MANAGER,
+  marginfiAccountInitialize,
+} from "../src";
+import { createAndSendV0Tx, getSecretKey, updateLookupTable } from "./shared";
 
 const LOOKUP_TABLE_ADDRESS = new PublicKey(MARGINFI_ACCOUNTS_LOOKUP_TABLE);
 let [, umi] = getSolanaRpcConnection(
