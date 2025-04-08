@@ -6,6 +6,19 @@ Solauto is a program on the Solana blockchain that lets you manage leveraged lon
 
 See the [Program documentation](/programs/solauto/README.md) for more info on the underlying Solana program.
 
+### Repository Dependencies
+
+- Rust
+- PNPM
+
+```
+crate install shank-idl
+rustup component add rustfmt
+pnpm install -g ts-node
+```
+
+Define `IRONFORGE_API_KEY` environment variable for running package tests/scripts locally.
+
 ## Solauto Typescript SDK
 
 The Solauto Typescript SDK is made for interacting with the Solauto program on the Solana blockchain. This SDK provides tools for managing, & reading Solauto state data, as well as executing transactions.
