@@ -1,4 +1,4 @@
-export * from "./generalAccounts";
+export * from "./generalConstants";
 export * from "./marginfiAccounts";
 export * from "./pythConstants";
 export * from "./solautoConstants";

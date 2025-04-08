@@ -9,7 +9,7 @@ import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
-import { SOLAUTO_MANAGER } from "./generalAccounts";
+import { SOLAUTO_MANAGER } from "./generalConstants";
 import { JUPITER_PROGRAM_ID } from "../jupiter-sdk";
 import { buildIronforgeApiUrl } from "../utils";
 
@@ -60,5 +60,3 @@ export const STANDARD_LUT_ACCOUNTS = [
   SYSVAR_INSTRUCTIONS_PUBKEY,
   JUPITER_PROGRAM_ID,
 ].map((x) => x.toString());
-
-export const LOCAL_IRONFORGE_API_URL = buildIronforgeApiUrl(process.env.IRONFORGE_API_KEY!);
