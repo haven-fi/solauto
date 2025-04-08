@@ -3,13 +3,13 @@ import { PublicKey } from "@solana/web3.js";
 import {
   MARGINFI_ACCOUNTS,
   MARGINFI_ACCOUNTS_LOOKUP_TABLE,
-} from "../../src/constants/marginfiAccounts";
+  SOLAUTO_MANAGER,
+} from "../../src/constants";
 import {
   buildIronforgeApiUrl,
   getEmptyMarginfiAccountsByAuthority,
   getSolanaRpcConnection,
-  SOLAUTO_MANAGER,
-} from "../../src";
+} from "../../src/utils";
 
 const [conn, umi] = getSolanaRpcConnection(
   buildIronforgeApiUrl(process.env.IRONFORGE_API_KEY!)

@@ -1,24 +1,31 @@
 import { describe, it, before } from "mocha";
+import { assert } from "chai";
 import { PublicKey } from "@solana/web3.js";
 import { NATIVE_MINT } from "@solana/spl-token";
-import { assert } from "chai";
-import { setupTest } from "../shared";
 import { publicKey } from "@metaplex-foundation/umi";
+import { setupTest } from "../shared";
 import {
   LendingPlatform,
   SolautoSettingsParameters,
 } from "../../src/generated";
-import { fromBps, getLiqUtilzationRateBps } from "../../src/utils/numberUtils";
-import { getClient } from "../../src/utils/solautoUtils";
-import { USDC } from "../../src/constants/tokenConstants";
-import { buildIronforgeApiUrl, fetchTokenPrices, safeGetPrice } from "../../src/utils";
+import {
+  fromBps,
+  getLiqUtilzationRateBps,
+  getClient,
+  buildIronforgeApiUrl,
+  fetchTokenPrices,
+  safeGetPrice,
+} from "../../src/utils";
+import { USDC } from "../../src/constants";
+import {
+  getRebalanceValues,
+  SolautoClient,
+  SolautoFeesBps,
+} from "../../src/services";
 import {
   createFakePositionState,
-  getRebalanceValues,
   MarginfiSolautoPositionEx,
-  SolautoClient,
-} from "../../src";
-import { SolautoFeesBps } from "../../src/services/rebalance/solautoFees";
+} from "../../src/solautoPosition";
 
 const signer = setupTest(undefined, true);
 

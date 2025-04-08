@@ -1,3 +1,5 @@
+import { PublicKey } from "@solana/web3.js";
+import { NATIVE_MINT } from "@solana/spl-token";
 import { Signer } from "@metaplex-foundation/umi";
 import {
   buildIronforgeApiUrl,
@@ -17,8 +19,6 @@ import {
   TransactionsManager,
   USDC,
 } from "../../src";
-import { PublicKey } from "@solana/web3.js";
-import { NATIVE_MINT } from "@solana/spl-token";
 
 export async function e2eTransactionTest(
   signer: Signer,
