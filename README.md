@@ -16,4 +16,4 @@ rustup component add rustfmt
 pnpm install -g ts-node
 ```
 
-Define `HELIUS_API_KEY` environment variable
+Define `IRONFORGE_API_KEY` environment variable

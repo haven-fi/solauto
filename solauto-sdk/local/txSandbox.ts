@@ -2,11 +2,11 @@ import { Keypair, PublicKey } from "@solana/web3.js";
 import { createSignerFromKeypair } from "@metaplex-foundation/umi";
 import { fromWeb3JsKeypair } from "@metaplex-foundation/umi-web3js-adapters";
 import {
-  buildIronforgeApiUrl,
   consoleLog,
   getClient,
   getSolanaRpcConnection,
   LendingPlatform,
+  LOCAL_IRONFORGE_API_URL,
   PriorityFeeSetting,
   RebalanceTxBuilder,
   SOLAUTO_PROD_PROGRAM,
@@ -21,7 +21,7 @@ const testProgram = true;
 
 export async function main() {
   const [, umi] = getSolanaRpcConnection(
-    buildIronforgeApiUrl(process.env.IRONFORGE_API_KEY!),
+    LOCAL_IRONFORGE_API_URL,
     testProgram ? SOLAUTO_TEST_PROGRAM : SOLAUTO_PROD_PROGRAM
   );
 
@@ -33,7 +33,7 @@ export async function main() {
   const client = getClient(LendingPlatform.Marginfi, {
     signer,
     showLogs: true,
-    rpcUrl: buildIronforgeApiUrl(process.env.IRONFORGE_API_KEY!),
+    rpcUrl: LOCAL_IRONFORGE_API_URL,
     programId: testProgram ? SOLAUTO_TEST_PROGRAM : SOLAUTO_PROD_PROGRAM,
   });
 

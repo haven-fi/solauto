@@ -9,9 +9,9 @@ import {
   MARGINFI_ACCOUNTS,
   SOLAUTO_FEES_WALLET,
   SOLAUTO_MANAGER,
+  LOCAL_IRONFORGE_API_URL,
 } from "../../src/constants";
 import {
-  buildHeliusApiUrl,
   getSolanaRpcConnection,
   getEmptyMarginfiAccountsByAuthority,
   getTokenAccount,
@@ -19,7 +19,7 @@ import {
 
 async function hasTokenAccounts(wallet: PublicKey) {
   let [_, umi] = getSolanaRpcConnection(
-    buildHeliusApiUrl(process.env.HELIUS_API_KEY!)
+    LOCAL_IRONFORGE_API_URL
   );
 
   const tokenAccounts = await umi.rpc.getAccounts(
@@ -46,7 +46,7 @@ describe("Assert Solauto fee token accounts are created", async () => {
 
   it("ISM accounts for every supported Marginfi group", async () => {
     let [_, umi] = getSolanaRpcConnection(
-      buildHeliusApiUrl(process.env.HELIUS_API_KEY!)
+      LOCAL_IRONFORGE_API_URL
     );
 
     const ismAccounts = await getEmptyMarginfiAccountsByAuthority(

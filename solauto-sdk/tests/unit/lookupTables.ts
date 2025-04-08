@@ -1,18 +1,18 @@
 import { describe, it } from "mocha";
 import { PublicKey } from "@solana/web3.js";
 import {
+  LOCAL_IRONFORGE_API_URL,
   MARGINFI_ACCOUNTS,
   MARGINFI_ACCOUNTS_LOOKUP_TABLE,
   SOLAUTO_MANAGER,
 } from "../../src/constants";
 import {
-  buildIronforgeApiUrl,
   getEmptyMarginfiAccountsByAuthority,
   getSolanaRpcConnection,
 } from "../../src/utils";
 
 const [conn, umi] = getSolanaRpcConnection(
-  buildIronforgeApiUrl(process.env.IRONFORGE_API_KEY!)
+  LOCAL_IRONFORGE_API_URL
 );
 
 describe("Assert lookup tables up-to-date", async () => {

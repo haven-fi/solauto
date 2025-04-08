@@ -6,6 +6,7 @@ import {
 } from "@metaplex-foundation/umi-signer-wallet-adapters";
 import { consoleLog, getSolanaRpcConnection } from "../../utils";
 import { SOLAUTO_PROD_PROGRAM } from "../../constants";
+import { ProgramEnv } from "../../types";
 
 export interface TxHandlerProps {
   signer?: Signer;
@@ -13,13 +14,14 @@ export interface TxHandlerProps {
   rpcUrl: string;
   showLogs?: boolean;
   programId?: PublicKey;
-  wsEndpoint?: string;
+  lpEnv?: ProgramEnv;
 }
 
 export abstract class TxHandler {
   public rpcUrl!: string;
   public showLogs = false;
-  public programId = SOLAUTO_PROD_PROGRAM;
+  public programId!: PublicKey;
+  public lpEnv!: ProgramEnv;
 
   public connection!: Connection;
   public umi!: Umi;
@@ -27,15 +29,14 @@ export abstract class TxHandler {
   public otherSigners: Signer[] = [];
 
   constructor(props: TxHandlerProps) {
-    if (props.programId !== undefined) {
-      this.programId = props.programId;
-    }
+    this.programId = props.programId ?? SOLAUTO_PROD_PROGRAM;
+    this.lpEnv = props.lpEnv ?? "Prod";
 
     this.rpcUrl = props.rpcUrl;
     const [connection, umi] = getSolanaRpcConnection(
       this.rpcUrl,
       this.programId,
-      props.wsEndpoint
+      this.lpEnv
     );
     this.connection = connection;
     this.umi = umi;

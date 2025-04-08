@@ -32,7 +32,7 @@ import {
   toWeb3JsTransaction,
 } from "@metaplex-foundation/umi-web3js-adapters";
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
-import { PriorityFeeSetting, TransactionRunType } from "../types";
+import { PriorityFeeSetting, ProgramEnv, TransactionRunType } from "../types";
 import {
   getLendingAccountEndFlashloanInstructionDataSerializer,
   getLendingAccountStartFlashloanInstructionDataSerializer,
@@ -45,27 +45,20 @@ import {
   retryWithExponentialBackoff,
 } from "./generalUtils";
 import { createDynamicSolautoProgram } from "./solautoUtils";
-
-export function buildHeliusApiUrl(heliusApiKey: string) {
-  return `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`;
-}
-
-export function buildIronforgeApiUrl(ironforgeApiKey: string) {
-  return `https://rpc.ironforge.network/mainnet?apiKey=${ironforgeApiKey}`;
-}
+import { createDynamicMarginfiProgram } from "./marginfiUtils";
 
 export function getSolanaRpcConnection(
   rpcUrl: string,
   programId?: PublicKey,
-  wsEndpoint?: string
+  lpEnv?: ProgramEnv
 ): [Connection, Umi] {
   const connection = new Connection(rpcUrl, {
     commitment: "confirmed",
-    wsEndpoint: wsEndpoint,
   });
   const umi = createUmi(connection).use({
     install(umi) {
       umi.programs.add(createDynamicSolautoProgram(programId), false);
+      umi.programs.add(createDynamicMarginfiProgram(lpEnv), false);
     },
   });
   return [connection, umi];

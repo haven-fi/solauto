@@ -31,7 +31,6 @@ import {
 import {
   getAllMarginfiAccountsByAuthority,
   marginfiAccountEmpty,
-  umiWithMarginfiProgram,
   getTokenAccount,
   hasFirstRebalance,
 } from "../../utils";
@@ -63,7 +62,6 @@ export class SolautoMarginfiClient extends SolautoClient {
   async initialize(args: SolautoClientArgs) {
     await super.initialize(args);
 
-    this.umi = umiWithMarginfiProgram(this.umi, this.lpEnv);
     this.marginfiProgram = toWeb3JsPublicKey(
       this.umi.programs.get("marginfi").publicKey
     );

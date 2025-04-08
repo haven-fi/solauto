@@ -34,7 +34,6 @@ import {
   safeGetPrice,
   toBps,
   tokenInfo,
-  umiWithMarginfiProgram,
 } from "../../utils";
 import { FlashLoanDetails } from "../../types";
 import { TokenType } from "../../generated";
@@ -53,8 +52,6 @@ export class MarginfiFlProvider extends FlProviderBase {
   private debtImfiAccount!: IMFIAccount;
 
   async initialize() {
-    this.umi = umiWithMarginfiProgram(this.umi, this.programEnv);
-
     await this.setAvailableBanks();
     this.existingMarginfiAccounts = await getEmptyMarginfiAccountsByAuthority(
       this.umi,

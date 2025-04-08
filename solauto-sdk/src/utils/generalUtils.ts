@@ -3,6 +3,14 @@ import { PublicKey } from "@solana/web3.js";
 import { MaybeRpcAccount, publicKey, Umi } from "@metaplex-foundation/umi";
 import { TOKEN_INFO, TokenInfo } from "../constants";
 
+export function buildHeliusApiUrl(heliusApiKey: string) {
+  return `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`;
+}
+
+export function buildIronforgeApiUrl(ironforgeApiKey: string) {
+  return `https://rpc.ironforge.network/mainnet?apiKey=${ironforgeApiKey}`;
+}
+
 export function consoleLog(...args: any[]): void {
   if ((globalThis as any).SHOW_LOGS) {
     console.log(...args);

@@ -2,11 +2,11 @@ import { PublicKey } from "@solana/web3.js";
 import path from "path";
 import { config } from "dotenv";
 import {
-  buildIronforgeApiUrl,
   fetchTokenPrices,
   getPositionExBulk,
   getSolanaRpcConnection,
   getSolautoManagedPositions,
+  LOCAL_IRONFORGE_API_URL,
   safeGetPrice,
   SOLAUTO_PROD_PROGRAM,
 } from "../src";
@@ -78,7 +78,7 @@ export function formatNumber(
 
 async function main(filterWhitelist: boolean) {
   const [_, umi] = getSolanaRpcConnection(
-    buildIronforgeApiUrl(process.env.IRONFORGE_API_KEY!),
+    LOCAL_IRONFORGE_API_URL,
     SOLAUTO_PROD_PROGRAM
   );
 

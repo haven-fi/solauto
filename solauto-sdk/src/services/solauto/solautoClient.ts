@@ -47,7 +47,6 @@ export interface SolautoClientArgs extends ReferralStateManagerArgs {
   debtMint?: PublicKey;
   lendingPool?: PublicKey;
   lpUserAccount?: PublicKey;
-  lpEnv?: ProgramEnv;
 }
 
 export abstract class SolautoClient extends ReferralStateManager {
@@ -79,8 +78,6 @@ export abstract class SolautoClient extends ReferralStateManager {
 
   async initialize(args: SolautoClientArgs) {
     await super.initialize(args);
-
-    this.lpEnv = args.lpEnv ?? "Prod";
 
     this.positionId = args.positionId ?? 0;
     this.selfManaged = this.positionId === 0;

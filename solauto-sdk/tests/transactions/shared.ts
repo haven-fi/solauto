@@ -2,11 +2,11 @@ import { PublicKey } from "@solana/web3.js";
 import { NATIVE_MINT } from "@solana/spl-token";
 import { Signer } from "@metaplex-foundation/umi";
 import {
-  buildIronforgeApiUrl,
   consoleLog,
   fetchTokenPrices,
   getClient,
   LendingPlatform,
+  LOCAL_IRONFORGE_API_URL,
   maxBoostToBps,
   maxRepayToBps,
   RebalanceTxBuilder,
@@ -28,7 +28,7 @@ export async function e2eTransactionTest(
 ) {
   const client = getClient(lendingPlatform, {
     signer,
-    rpcUrl: buildIronforgeApiUrl(process.env.IRONFORGE_API_KEY!),
+    rpcUrl: LOCAL_IRONFORGE_API_URL,
     programId: testProgram ? SOLAUTO_TEST_PROGRAM : SOLAUTO_PROD_PROGRAM,
   });
 

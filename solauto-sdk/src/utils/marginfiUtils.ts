@@ -46,10 +46,10 @@ export function isMarginfiProgram(programId: PublicKey) {
   );
 }
 
-export function createDynamicMarginfiProgram(env: ProgramEnv): Program {
+export function createDynamicMarginfiProgram(env?: ProgramEnv): Program {
   return {
     name: "marginfi",
-    publicKey: publicKey(getMarginfiProgram(env)),
+    publicKey: publicKey(getMarginfiProgram(env ?? "Prod")),
     getErrorFromCode(code: number, cause?: Error) {
       return getMarginfiErrorFromCode(code, this, cause);
     },

@@ -7,8 +7,8 @@ export const StrategyTypes = ["Long", "Short", "Ratio"] as const;
 export type StrategyType = (typeof StrategyTypes)[number];
 
 const MAJORS_PRIO = {
-  [WBTC.toString()]: 0,
-  [WETH.toString()]: 1,
+  [WBTC]: 0,
+  [WETH]: 1,
   [NATIVE_MINT.toString()]: 2,
 };
 

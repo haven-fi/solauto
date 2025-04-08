@@ -13,17 +13,18 @@ import {
   MARGINFI_ACCOUNTS_LOOKUP_TABLE,
   MARGINFI_ACCOUNTS,
   DEFAULT_MARGINFI_GROUP,
-  buildIronforgeApiUrl,
   getEmptyMarginfiAccountsByAuthority,
   getSolanaRpcConnection,
   SOLAUTO_MANAGER,
   marginfiAccountInitialize,
+  LOCAL_IRONFORGE_API_URL,
+  MARGINFI_PROD_PROGRAM,
 } from "../src";
 import { createAndSendV0Tx, getSecretKey, updateLookupTable } from "./shared";
 
 const LOOKUP_TABLE_ADDRESS = new PublicKey(MARGINFI_ACCOUNTS_LOOKUP_TABLE);
 let [, umi] = getSolanaRpcConnection(
-  buildIronforgeApiUrl(process.env.IRONFORGE_API_KEY!)
+  LOCAL_IRONFORGE_API_URL
 );
 umi = umi.use(
   signerIdentity(
@@ -96,15 +97,10 @@ async function addImfiAccounts() {
 }
 
 updateLookupTable(
-  [DEFAULT_MARGINFI_GROUP, MARGINFI_PROGRAM_ID],
+  [DEFAULT_MARGINFI_GROUP, MARGINFI_PROD_PROGRAM.toString()], // TODO
   LOOKUP_TABLE_ADDRESS
 );
 
 addBanks().then((x) => x);
 
 addImfiAccounts().then((x) => x);
-
-// TODO: get rid of these lookup tables
-// EoEVYjz3MnsX6fKyxrwJkRhzMCHKjj6dvnjTCHoZLMc7
-// AuoepJfrCrkQF2PeUAgpnnJybRoiff82cNdwXTqyjjvm
-// Bno3JybASPc1jNBZ9rnrdKVvbhk6UNMvSsYvgtitq3zb

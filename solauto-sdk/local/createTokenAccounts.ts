@@ -5,9 +5,12 @@ import {
   signerIdentity,
   transactionBuilder,
 } from "@metaplex-foundation/umi";
-import { ALL_SUPPORTED_TOKENS, SOLAUTO_FEES_WALLET } from "../src/constants";
 import {
-  buildHeliusApiUrl,
+  ALL_SUPPORTED_TOKENS,
+  LOCAL_IRONFORGE_API_URL,
+  SOLAUTO_FEES_WALLET,
+} from "../src/constants";
+import {
   createAssociatedTokenAccountUmiIx,
   getSolanaRpcConnection,
   getTokenAccount,
@@ -17,9 +20,7 @@ import {
 import { getSecretKey } from "./shared";
 
 async function createTokenAccounts(wallet: PublicKey) {
-  let [connection, umi] = getSolanaRpcConnection(
-    buildHeliusApiUrl(process.env.HELIUS_API_KEY!)
-  );
+  let [connection, umi] = getSolanaRpcConnection(LOCAL_IRONFORGE_API_URL);
 
   const secretKey = getSecretKey();
   const signerKeypair = umi.eddsa.createKeypairFromSecretKey(secretKey);

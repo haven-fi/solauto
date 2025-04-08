@@ -12,11 +12,10 @@ import {
   fromBps,
   getLiqUtilzationRateBps,
   getClient,
-  buildIronforgeApiUrl,
   fetchTokenPrices,
   safeGetPrice,
 } from "../../src/utils";
-import { USDC } from "../../src/constants";
+import { LOCAL_IRONFORGE_API_URL, USDC } from "../../src/constants";
 import {
   getRebalanceValues,
   SolautoClient,
@@ -65,7 +64,7 @@ async function getFakePosition(
 ): Promise<SolautoClient> {
   const client = getClient(LendingPlatform.Marginfi, {
     signer,
-    rpcUrl: buildIronforgeApiUrl(process.env.IRONFORGE_API_KEY!),
+    rpcUrl: LOCAL_IRONFORGE_API_URL,
   });
   await client.initialize({
     positionId: 1,

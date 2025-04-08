@@ -11,7 +11,7 @@ import {
 } from "@solana/spl-token";
 import { SOLAUTO_MANAGER } from "./generalAccounts";
 import { JUPITER_PROGRAM_ID } from "../jupiter-sdk";
-import { HNT, JLP, JTO, JUP, PYTH, WETH } from "./tokenConstants";
+import { buildIronforgeApiUrl } from "../utils";
 
 export const SOLAUTO_PROD_PROGRAM = new PublicKey(
   "AutoyKBRaHSBHy9RsmXCZMy6nNFAg5FYijrvZyQcNLV"
@@ -61,5 +61,4 @@ export const STANDARD_LUT_ACCOUNTS = [
   JUPITER_PROGRAM_ID,
 ].map((x) => x.toString());
 
-// TODO:
-export const BROKEN_TOKENS = [JUP, JLP, WETH, HNT, JTO, PYTH];
+export const LOCAL_IRONFORGE_API_URL = buildIronforgeApiUrl(process.env.IRONFORGE_API_KEY!);

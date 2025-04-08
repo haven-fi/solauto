@@ -5,7 +5,6 @@ import {
   transactionBuilder,
 } from "@metaplex-foundation/umi";
 import {
-  buildHeliusApiUrl,
   getSolanaRpcConnection,
   sendSingleOptimizedTransaction,
   getAllMarginfiAccountsByAuthority,
@@ -14,14 +13,16 @@ import {
   marginfiAccountInitialize,
   safeFetchAllMarginfiAccount,
 } from "../src/marginfi-sdk";
-import { MARGINFI_ACCOUNTS, SOLAUTO_MANAGER } from "../src/constants";
+import {
+  LOCAL_IRONFORGE_API_URL,
+  MARGINFI_ACCOUNTS,
+  SOLAUTO_MANAGER,
+} from "../src/constants";
 import { updateSolautoLut } from "./updateSolautoLUT";
 import { getSecretKey } from "./shared";
 
 async function createIntermediarySolautoManagerAccounts() {
-  let [connection, umi] = getSolanaRpcConnection(
-    buildHeliusApiUrl(process.env.HELIUS_API_KEY!)
-  );
+  let [connection, umi] = getSolanaRpcConnection(LOCAL_IRONFORGE_API_URL);
 
   const secretKey = getSecretKey("solauto-manager");
   const signerKeypair = umi.eddsa.createKeypairFromSecretKey(secretKey);
