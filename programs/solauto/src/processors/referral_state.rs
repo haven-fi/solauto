@@ -126,7 +126,7 @@ pub fn process_convert_referral_fees<'a>(accounts: &'a [AccountInfo<'a>]) -> Pro
 
     let jup_swap = ix_utils::InstructionChecker::from_anchor(
         ctx.accounts.ixs_sysvar,
-        JUPITER_ID,
+        vec![JUPITER_ID],
         vec!["route", "shared_accounts_route"],
         current_ix_idx,
     );

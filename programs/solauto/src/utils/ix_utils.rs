@@ -1,6 +1,6 @@
 use borsh::{BorshDeserialize, BorshSerialize};
 use jupiter_sdk::JUPITER_ID;
-use marginfi_sdk::{generated::instructions::LendingAccountBorrowInstructionArgs, MARGINFI_ID};
+use marginfi_sdk::generated::instructions::LendingAccountBorrowInstructionArgs;
 use solana_program::{
     account_info::AccountInfo,
     entrypoint::ProgramResult,
@@ -17,13 +17,11 @@ use solana_program::{
 
 use super::solana_utils::invoke_instruction;
 use crate::{
-    check, error_if,
-    state::solauto_position::SolautoPosition,
-    types::{
+    check, constants::{MARGINFI_PROD_PROGRAM, MARGINFI_STAGING_PROGRAM}, error_if, state::solauto_position::SolautoPosition, types::{
         errors::SolautoError,
         instruction::{SolautoStandardAccounts, SOLAUTO_REBALANCE_IX_DISCRIMINATORS},
         shared::{DeserializedAccount, SolautoRebalanceType},
-    },
+    }
 };
 
 pub fn update_data<T: BorshSerialize>(account: &mut DeserializedAccount<T>) -> ProgramResult {
@@ -146,7 +144,7 @@ pub fn get_anchor_ix_discriminator(instruction_name: &str) -> u64 {
 pub struct InstructionChecker<'a> {
     anchor_program: bool,
     ixs_sysvar: &'a AccountInfo<'a>,
-    program_id: Pubkey,
+    program_ids: Vec<Pubkey>,
     ix_discriminators: Option<Vec<u8>>,
     anchor_ix_discriminators: Option<Vec<u64>>,
     curr_ix_idx: u16,
@@ -154,14 +152,14 @@ pub struct InstructionChecker<'a> {
 impl<'a> InstructionChecker<'a> {
     pub fn from(
         ixs_sysvar: &'a AccountInfo<'a>,
-        program_id: Pubkey,
+        program_ids: Vec<Pubkey>,
         ix_discriminators: Option<Vec<u8>>,
         curr_ix_idx: u16,
     ) -> Self {
         Self {
             anchor_program: false,
             ixs_sysvar,
-            program_id,
+            program_ids,
             ix_discriminators,
             anchor_ix_discriminators: None,
             curr_ix_idx,
@@ -169,7 +167,7 @@ impl<'a> InstructionChecker<'a> {
     }
     pub fn from_anchor(
         ixs_sysvar: &'a AccountInfo<'a>,
-        program_id: Pubkey,
+        program_ids: Vec<Pubkey>,
         ix_names: Vec<&str>,
         curr_ix_idx: u16,
     ) -> Self {
@@ -180,14 +178,14 @@ impl<'a> InstructionChecker<'a> {
         Self {
             anchor_program: true,
             ixs_sysvar,
-            program_id,
+            program_ids,
             ix_discriminators: None,
             anchor_ix_discriminators: Some(ix_discriminators),
             curr_ix_idx,
         }
     }
     fn ix_matches(&self, program_id: Pubkey, discriminator_data: &[u8]) -> bool {
-        if program_id == self.program_id {
+        if self.program_ids.iter().any(|prog| prog == &program_id) {
             if self.anchor_program {
                 let discriminator = u64::from_le_bytes(
                     discriminator_data[0..8]
@@ -251,13 +249,13 @@ pub fn validate_rebalance_instructions(
 
     let solauto_rebalance = InstructionChecker::from(
         ixs_sysvar,
-        crate::ID,
+        vec![crate::ID],
         Some(SOLAUTO_REBALANCE_IX_DISCRIMINATORS.to_vec()),
         current_ix_idx,
     );
     let jup_swap = InstructionChecker::from_anchor(
         ixs_sysvar,
-        JUPITER_ID,
+        vec![JUPITER_ID],
         vec![
             "route",
             "shared_accounts_route",
@@ -301,7 +299,7 @@ pub fn get_flash_borrow_ix_idx(
 
     let marginfi_borrow = InstructionChecker::from_anchor(
         ixs_sysvar,
-        MARGINFI_ID,
+        vec![MARGINFI_PROD_PROGRAM, MARGINFI_STAGING_PROGRAM],
         vec!["lending_account_borrow"],
         current_ix_idx,
     );

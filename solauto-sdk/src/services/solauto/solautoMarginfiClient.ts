@@ -5,7 +5,6 @@ import {
   publicKey,
   PublicKey as UmiPublicKey,
   createSignerFromKeypair,
-  Program,
 } from "@metaplex-foundation/umi";
 import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 import { MarginfiAssetAccounts, RebalanceDetails } from "../../types";
@@ -49,7 +48,7 @@ import { SolautoClient, SolautoClientArgs } from "./solautoClient";
 export class SolautoMarginfiClient extends SolautoClient {
   public lendingPlatform = LendingPlatform.Marginfi;
 
-  public marginfiProgram!: Program;
+  public marginfiProgram!: PublicKey;
 
   public marginfiAccount!: PublicKey | Signer;
   public marginfiAccountPk!: PublicKey;
@@ -65,6 +64,9 @@ export class SolautoMarginfiClient extends SolautoClient {
     await super.initialize(args);
 
     this.umi = umiWithMarginfiProgram(this.umi, this.lpEnv);
+    this.marginfiProgram = toWeb3JsPublicKey(
+      this.umi.programs.get("marginfi").publicKey
+    );
 
     this.marginfiGroup = await this.pos.lendingPool();
 
