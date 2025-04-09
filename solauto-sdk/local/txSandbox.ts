@@ -8,6 +8,7 @@ import {
   LendingPlatform,
   LOCAL_IRONFORGE_API_URL,
   PriorityFeeSetting,
+  rebalance,
   RebalanceTxBuilder,
   SOLAUTO_PROD_PROGRAM,
   SOLAUTO_TEST_PROGRAM,
@@ -17,7 +18,7 @@ import {
 import { getSecretKey } from "./shared";
 
 const payForTransaction = false;
-const testProgram = false;
+const testProgram = true;
 
 export async function main() {
   const [, umi] = getSolanaRpcConnection(
@@ -38,19 +39,11 @@ export async function main() {
   });
 
   await client.initialize({
-    positionId: 1,
-    authority: new PublicKey("7ZN1w3ZE51FTXxdDjPPNpdZHuXWRvDK2h6osTHNXfsuL"),
+    positionId: 3,
+    authority: new PublicKey("5UqsR2PGzbP8pGPbXEeXx86Gjz2N2UFBAuFZUSVydAEe"),
   });
 
-  const transactionItems: TransactionItem[] = [];
-
-  transactionItems.push(
-    new TransactionItem(
-      async (attemptNum) =>
-        await new RebalanceTxBuilder(client).buildRebalanceTx(attemptNum),
-      "rebalance"
-    )
-  );
+  const transactionItems = [rebalance(client)];
 
   const txManager = new TransactionsManager(
     client,
