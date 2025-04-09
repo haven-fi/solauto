@@ -5,10 +5,10 @@ import { MarginfiAssetAccounts } from "../types/accounts";
 import { SWITCHBOARD_PRICE_FEED_IDS } from "./switchboardConstants";
 import { ProgramEnv } from "../types";
 
-export const MARGINFI_PROD_PROGRAM = new PublicKey(
+const MARGINFI_PROD_PROGRAM = new PublicKey(
   "MFv2hWf31Z9kbCa1snEPYctwafyhdvnV7FZnsebVacA"
 );
-export const MARGINFI_STAGING_PROGRAM = new PublicKey(
+const MARGINFI_STAGING_PROGRAM = new PublicKey(
   "stag8sTKds2h4KzjUw3zKTsxbqvT4XKHdaR9X9E6Rct"
 );
 
@@ -267,4 +267,11 @@ export function getMarginfiAccounts(
       bankAccounts: MARGINFI_STAGING_ACCOUNTS,
     };
   }
+}
+
+export function isMarginfiProgram(programId: PublicKey) {
+  return (
+    programId.equals(MARGINFI_PROD_PROGRAM) ||
+    programId.equals(MARGINFI_STAGING_PROGRAM)
+  );
 }

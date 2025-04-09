@@ -9,8 +9,6 @@ import { PositionState, PositionTokenState } from "../generated";
 import {
   ALL_SUPPORTED_TOKENS,
   getMarginfiAccounts,
-  MARGINFI_PROD_PROGRAM,
-  MARGINFI_STAGING_PROGRAM,
   MarginfiAccountsMap,
   TOKEN_INFO,
   USD_DECIMALS,
@@ -39,21 +37,10 @@ import {
 } from "./numberUtils";
 import { getTokenAccountData } from "./accountUtils";
 
-export function getMarginfiProgram(env: ProgramEnv) {
-  return env === "Prod" ? MARGINFI_PROD_PROGRAM : MARGINFI_STAGING_PROGRAM;
-}
-
-export function isMarginfiProgram(programId: PublicKey) {
-  return (
-    programId.equals(MARGINFI_PROD_PROGRAM) ||
-    programId.equals(MARGINFI_STAGING_PROGRAM)
-  );
-}
-
 export function createDynamicMarginfiProgram(env?: ProgramEnv): Program {
   return {
     name: "marginfi",
-    publicKey: publicKey(getMarginfiProgram(env ?? "Prod")),
+    publicKey: publicKey(getMarginfiAccounts(env ?? "Prod").program),
     getErrorFromCode(code: number, cause?: Error) {
       return getMarginfiErrorFromCode(code, this, cause);
     },

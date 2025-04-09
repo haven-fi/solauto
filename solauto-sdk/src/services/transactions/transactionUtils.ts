@@ -39,7 +39,6 @@ import {
   getTokenAccount,
   getTokenAccountData,
   isMarginfiClient,
-  isMarginfiProgram,
 } from "../../utils";
 import {
   createMarginfiProgram,
@@ -56,6 +55,7 @@ import {
   JUPITER_PROGRAM_ID,
 } from "../../jupiter-sdk";
 import { TransactionItemInputs, BundleSimulationError } from "../../types";
+import { isMarginfiProgram } from "../../constants";
 
 interface wSolTokenUsage {
   wSolTokenAccount: PublicKey;
