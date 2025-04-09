@@ -14,7 +14,7 @@ import {
   getBankLiquidityAvailableBaseUnit,
   getMarginfiAccountPositionState,
 } from "../utils";
-import { DEFAULT_MARGINFI_GROUP, MARGINFI_ACCOUNTS } from "../constants";
+import { getMarginfiAccounts } from "../constants";
 import { SolautoPositionEx } from "./solautoPositionEx";
 
 export class MarginfiSolautoPositionEx extends SolautoPositionEx {
@@ -41,7 +41,7 @@ export class MarginfiSolautoPositionEx extends SolautoPositionEx {
     }
 
     if (!this.lp) {
-      this.lp = new PublicKey(DEFAULT_MARGINFI_GROUP);
+      this.lp = getMarginfiAccounts(this.lpEnv).defaultGroup;
     }
 
     return this.lp;
@@ -50,10 +50,9 @@ export class MarginfiSolautoPositionEx extends SolautoPositionEx {
   async maxLtvAndLiqThresholdBps(): Promise<[number, number]> {
     if (!this.supplyBank || !this.debtBank) {
       const group = (await this.lendingPool()).toString();
-      const supplyBank =
-        MARGINFI_ACCOUNTS[group][this.supplyMint().toString()].bank;
-      const debtBank =
-        MARGINFI_ACCOUNTS[group][this.debtMint().toString()].bank;
+      const bankAccounts = getMarginfiAccounts(this.lpEnv).bankAccounts;
+      const supplyBank = bankAccounts[group][this.supplyMint().toString()].bank;
+      const debtBank = bankAccounts[group][this.debtMint().toString()].bank;
 
       [this.supplyBank, this.debtBank] = await safeFetchAllBank(this.umi, [
         publicKey(supplyBank),
@@ -94,6 +93,7 @@ export class MarginfiSolautoPositionEx extends SolautoPositionEx {
       useDesignatedMint
         ? { mint: toWeb3JsPublicKey(this.state().debt.mint) }
         : undefined,
+      this.lpEnv,
       this.contextUpdates
     );
 

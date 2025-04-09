@@ -8,10 +8,7 @@ import {
 } from "@metaplex-foundation/umi";
 import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 import { MarginfiAssetAccounts, RebalanceDetails } from "../../types";
-import {
-  MARGINFI_ACCOUNTS,
-  MARGINFI_ACCOUNTS_LOOKUP_TABLE,
-} from "../../constants";
+import { getMarginfiAccounts, MarginfiProgramAccounts } from "../../constants";
 import {
   DCASettingsInpArgs,
   LendingPlatform,
@@ -47,7 +44,7 @@ import { SolautoClient, SolautoClientArgs } from "./solautoClient";
 export class SolautoMarginfiClient extends SolautoClient {
   public lendingPlatform = LendingPlatform.Marginfi;
 
-  public marginfiProgram!: PublicKey;
+  public mfiAccounts!: MarginfiProgramAccounts;
 
   public marginfiAccount!: PublicKey | Signer;
   public marginfiAccountPk!: PublicKey;
@@ -62,9 +59,7 @@ export class SolautoMarginfiClient extends SolautoClient {
   async initialize(args: SolautoClientArgs) {
     await super.initialize(args);
 
-    this.marginfiProgram = toWeb3JsPublicKey(
-      this.umi.programs.get("marginfi").publicKey
-    );
+    this.mfiAccounts = getMarginfiAccounts(this.lpEnv);
 
     this.marginfiGroup = await this.pos.lendingPool();
 
@@ -110,11 +105,11 @@ export class SolautoMarginfiClient extends SolautoClient {
     }
 
     this.marginfiSupplyAccounts =
-      MARGINFI_ACCOUNTS[this.marginfiGroup.toString()][
+      this.mfiAccounts.bankAccounts[this.marginfiGroup.toString()][
         this.pos.supplyMint().toString()
       ]!;
     this.marginfiDebtAccounts =
-      MARGINFI_ACCOUNTS[this.marginfiGroup.toString()][
+      this.mfiAccounts.bankAccounts[this.marginfiGroup.toString()][
         this.pos.debtMint().toString()
       ]!;
 
@@ -134,7 +129,10 @@ export class SolautoMarginfiClient extends SolautoClient {
   }
 
   defaultLookupTables(): string[] {
-    return [MARGINFI_ACCOUNTS_LOOKUP_TABLE, ...super.defaultLookupTables()];
+    return [
+      this.mfiAccounts.lookupTable.toString(),
+      ...super.defaultLookupTables(),
+    ];
   }
 
   lutAccountsToAdd(): PublicKey[] {
@@ -171,7 +169,7 @@ export class SolautoMarginfiClient extends SolautoClient {
 
     return marginfiOpenPosition(this.umi, {
       signer: this.signer,
-      marginfiProgram: publicKey(this.marginfiProgram),
+      marginfiProgram: publicKey(this.mfiAccounts.program),
       signerReferralState: publicKey(this.referralState),
       referredByState: this.referredByState
         ? publicKey(this.referredByState)
@@ -216,7 +214,7 @@ export class SolautoMarginfiClient extends SolautoClient {
   refreshIx(): TransactionBuilder {
     return marginfiRefreshData(this.umi, {
       signer: this.signer,
-      marginfiProgram: publicKey(this.marginfiProgram),
+      marginfiProgram: publicKey(this.mfiAccounts.program),
       marginfiGroup: publicKey(this.marginfiGroup),
       marginfiAccount: publicKey(this.marginfiAccount),
       supplyBank: publicKey(this.marginfiSupplyAccounts.bank),
@@ -344,7 +342,7 @@ export class SolautoMarginfiClient extends SolautoClient {
 
     return marginfiProtocolInteraction(this.umi, {
       signer: this.signer,
-      marginfiProgram: publicKey(this.marginfiProgram),
+      marginfiProgram: publicKey(this.mfiAccounts.program),
       solautoPosition: publicKey(this.pos.publicKey),
       marginfiGroup: publicKey(this.marginfiGroup),
       marginfiAccount: publicKey(this.marginfiAccountPk),
@@ -395,7 +393,7 @@ export class SolautoMarginfiClient extends SolautoClient {
 
     return marginfiRebalance(this.umi, {
       signer: this.signer,
-      marginfiProgram: publicKey(this.marginfiProgram),
+      marginfiProgram: publicKey(this.mfiAccounts.program),
       ixsSysvar: publicKey(SYSVAR_INSTRUCTIONS_PUBKEY),
       solautoFeesTa: publicKey(
         data.values.rebalanceDirection === RebalanceDirection.Boost

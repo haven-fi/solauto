@@ -3,6 +3,7 @@ import { NATIVE_MINT } from "@solana/spl-token";
 import * as tokens from "./tokenConstants";
 import { MarginfiAssetAccounts } from "../types/accounts";
 import { SWITCHBOARD_PRICE_FEED_IDS } from "./switchboardConstants";
+import { ProgramEnv } from "../types";
 
 export const MARGINFI_PROD_PROGRAM = new PublicKey(
   "MFv2hWf31Z9kbCa1snEPYctwafyhdvnV7FZnsebVacA"
@@ -11,20 +12,20 @@ export const MARGINFI_STAGING_PROGRAM = new PublicKey(
   "stag8sTKds2h4KzjUw3zKTsxbqvT4XKHdaR9X9E6Rct"
 );
 
-export const DEFAULT_MARGINFI_GROUP =
+const PROD_DEFAULT_MARGINFI_GROUP =
   "4qp6Fx6tnZkY5Wropq9wUYgtFxXKwE6viZxFHg3rdAG8";
 
-export const DEFAULT_MARGINFI_STAGING_GROUP =
+const STAGING_DEFAULT_MARGINFI_GROUP =
   "FCPfpHA69EbS8f9KKSreTRkXbzFpunsKuYf5qNmnJjpo";
 
 const USDC_PRICE_ORACLE = "Dpw1EAVrSB1ibxiDQyTAW6Zip3J4Btk2x4SgApQCeFbX";
 
-type MarginfiAccountsMap = {
+export type MarginfiAccountsMap = {
   [group: string]: { [token: string]: MarginfiAssetAccounts };
 };
 
-export const MARGINFI_STAGING_ACCOUNTS: MarginfiAccountsMap = {
-  [DEFAULT_MARGINFI_STAGING_GROUP]: {
+const MARGINFI_STAGING_ACCOUNTS: MarginfiAccountsMap = {
+  [STAGING_DEFAULT_MARGINFI_GROUP]: {
     [NATIVE_MINT.toString()]: {
       bank: "3evdJSa25nsUiZzEUzd92UNa13TPRJrje1dRyiQP5Lhp",
       liquidityVault: "FVXESa7wCd1tf3o9LGroBc3Ym8Gpcq1HdsLek6oo7Ykv",
@@ -46,8 +47,8 @@ export const MARGINFI_STAGING_ACCOUNTS: MarginfiAccountsMap = {
   },
 };
 
-export const MARGINFI_ACCOUNTS: MarginfiAccountsMap = {
-  [DEFAULT_MARGINFI_GROUP.toString()]: {
+const MARGINFI_PROD_ACCOUNTS: MarginfiAccountsMap = {
+  [PROD_DEFAULT_MARGINFI_GROUP.toString()]: {
     [NATIVE_MINT.toString()]: {
       bank: "CCKtUs6Cgwo4aaQUmBPmyoApH2gUDErxNZCAntD6LYGh",
       liquidityVault: "2eicbpitfJXDwqCuFAmPgDP7t2oUotnAzbGzRKLMgSLe",
@@ -222,8 +223,48 @@ export const MARGINFI_ACCOUNTS: MarginfiAccountsMap = {
   },
 };
 
-export const MARGINFI_ACCOUNTS_LOOKUP_TABLE =
+const MARGINFI_PROD_ACCOUNTS_LOOKUP_TABLE =
   "GAjmWmBPcH5Gxbiykasydj6RsCEaCLyHEvK6kHdFigc6";
 
-export const MARGINFI_STAGING_ACCOUNTS_LOOKUP_TABLE =
+const MARGINFI_STAGING_ACCOUNTS_LOOKUP_TABLE =
   "EoEVYjz3MnsX6fKyxrwJkRhzMCHKjj6dvnjTCHoZLMc7";
+
+export interface MarginfiProgramAccounts {
+  program: PublicKey;
+  defaultGroup: PublicKey;
+  lookupTable: PublicKey;
+  bankAccounts: MarginfiAccountsMap;
+}
+
+export function getMarginfiAccounts(
+  programEnv?: ProgramEnv,
+  marginfiGroup?: PublicKey
+): MarginfiProgramAccounts {
+  if (programEnv === undefined) {
+    if (Boolean(marginfiGroup)) {
+      programEnv = Object.keys(MARGINFI_PROD_ACCOUNTS).includes(
+        marginfiGroup!.toString()
+      )
+        ? "Prod"
+        : "Staging";
+    } else {
+      programEnv = "Prod";
+    }
+  }
+
+  if (programEnv === "Prod") {
+    return {
+      program: MARGINFI_PROD_PROGRAM,
+      defaultGroup: new PublicKey(PROD_DEFAULT_MARGINFI_GROUP),
+      lookupTable: new PublicKey(MARGINFI_PROD_ACCOUNTS_LOOKUP_TABLE),
+      bankAccounts: MARGINFI_PROD_ACCOUNTS,
+    };
+  } else {
+    return {
+      program: MARGINFI_STAGING_PROGRAM,
+      defaultGroup: new PublicKey(STAGING_DEFAULT_MARGINFI_GROUP),
+      lookupTable: new PublicKey(MARGINFI_STAGING_ACCOUNTS_LOOKUP_TABLE),
+      bankAccounts: MARGINFI_STAGING_ACCOUNTS,
+    };
+  }
+}

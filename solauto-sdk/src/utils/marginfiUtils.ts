@@ -1,14 +1,17 @@
 import { PublicKey } from "@solana/web3.js";
 import { Program, publicKey, Umi } from "@metaplex-foundation/umi";
-import { fromWeb3JsPublicKey, toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
+import {
+  fromWeb3JsPublicKey,
+  toWeb3JsPublicKey,
+} from "@metaplex-foundation/umi-web3js-adapters";
 import { ProgramEnv, MarginfiAssetAccounts } from "../types";
 import { PositionState, PositionTokenState } from "../generated";
 import {
-  DEFAULT_MARGINFI_GROUP,
-  MARGINFI_ACCOUNTS,
   ALL_SUPPORTED_TOKENS,
+  getMarginfiAccounts,
   MARGINFI_PROD_PROGRAM,
   MARGINFI_STAGING_PROGRAM,
+  MarginfiAccountsMap,
   TOKEN_INFO,
   USD_DECIMALS,
 } from "../constants";
@@ -77,7 +80,8 @@ export function umiWithMarginfiProgram(umi: Umi, marginfiEnv?: ProgramEnv) {
 export async function fetchBankAddresses(umi: Umi, bankPk: PublicKey) {
   const bank = await safeFetchBank(umi, fromWeb3JsPublicKey(bankPk));
   const liquidityVault = toWeb3JsPublicKey(bank!.liquidityVault);
-  const vaultAuthority = (await getTokenAccountData(umi, liquidityVault))?.owner;
+  const vaultAuthority = (await getTokenAccountData(umi, liquidityVault))
+    ?.owner;
   return {
     bank: bankPk,
     liquidityVault,
@@ -92,16 +96,29 @@ interface AllMarginfiAssetAccounts extends MarginfiAssetAccounts {
 export function findMarginfiAccounts(
   bank: PublicKey
 ): AllMarginfiAssetAccounts {
-  for (const group in MARGINFI_ACCOUNTS) {
-    for (const key in MARGINFI_ACCOUNTS[group]) {
-      const account = MARGINFI_ACCOUNTS[group][key];
-      if (
-        account.bank.toString().toLowerCase() === bank.toString().toLowerCase()
-      ) {
-        return { ...account, mint: new PublicKey(key) };
+  const search = (bankAccounts: MarginfiAccountsMap) => {
+    for (const group in bankAccounts) {
+      for (const key in bankAccounts[group]) {
+        const account = bankAccounts[group][key];
+        if (
+          account.bank.toString().toLowerCase() ===
+          bank.toString().toLowerCase()
+        ) {
+          return { ...account, mint: new PublicKey(key) };
+        }
       }
     }
+  };
+
+  let res = search(getMarginfiAccounts("Prod").bankAccounts);
+  if (res) {
+    return res;
   }
+  res = search(getMarginfiAccounts("Staging").bankAccounts);
+  if (res) {
+    return res;
+  }
+
   throw new Error(`Marginfi accounts not found by the bank: ${bank}`);
 }
 
@@ -157,11 +174,16 @@ export async function getMarginfiMaxLtvAndLiqThresholdBps(
     return [0, 0];
   }
 
+  const bankAccounts = getMarginfiAccounts(
+    undefined,
+    marginfiGroup
+  ).bankAccounts;
+
   if (!supply.bank || supply.bank === null) {
     supply.bank = await safeFetchBank(
       umi,
       publicKey(
-        MARGINFI_ACCOUNTS[marginfiGroup.toString()][supply.mint.toString()].bank
+        bankAccounts[marginfiGroup.toString()][supply.mint.toString()].bank
       ),
       { commitment: "confirmed" }
     );
@@ -174,7 +196,7 @@ export async function getMarginfiMaxLtvAndLiqThresholdBps(
     debt.bank = await safeFetchBank(
       umi,
       publicKey(
-        MARGINFI_ACCOUNTS[marginfiGroup.toString()][debt.mint.toString()].bank
+        bankAccounts[marginfiGroup.toString()][debt.mint.toString()].bank
       ),
       { commitment: "confirmed" }
     );
@@ -393,9 +415,9 @@ async function getBank(
       ? await safeFetchBank(
           umi,
           publicKey(
-            MARGINFI_ACCOUNTS[marginfiGroup?.toString() ?? ""][
-              data?.mint.toString()
-            ].bank
+            getMarginfiAccounts(undefined, marginfiGroup).bankAccounts[
+              marginfiGroup?.toString() ?? ""
+            ][data?.mint.toString()].bank
           ),
           { commitment: "confirmed" }
         )
@@ -408,6 +430,7 @@ export async function getMarginfiAccountPositionState(
   marginfiGroup?: PublicKey,
   supply?: BankSelection,
   debt?: BankSelection,
+  programEnv?: ProgramEnv,
   contextUpdates?: ContextUpdates
 ): Promise<
   | { supplyBank: Bank | null; debtBank: Bank | null; state: PositionState }
@@ -535,7 +558,7 @@ export async function getMarginfiAccountPositionState(
   const supplyPrice = safeGetPrice(supply.mint!)!;
   let [maxLtvBps, liqThresholdBps] = await getMarginfiMaxLtvAndLiqThresholdBps(
     umi,
-    marginfiGroup ?? new PublicKey(DEFAULT_MARGINFI_GROUP),
+    marginfiGroup ?? getMarginfiAccounts(programEnv).defaultGroup,
     {
       mint: toWeb3JsPublicKey(supplyBank.mint),
       bank: supplyBank,

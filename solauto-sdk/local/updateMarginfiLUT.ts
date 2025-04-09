@@ -1,4 +1,4 @@
-import { Keypair, PublicKey } from "@solana/web3.js";
+import { Keypair } from "@solana/web3.js";
 import {
   createSignerFromKeypair,
   publicKey,
@@ -10,22 +10,19 @@ import {
   toWeb3JsKeypair,
 } from "@metaplex-foundation/umi-web3js-adapters";
 import {
-  MARGINFI_ACCOUNTS_LOOKUP_TABLE,
-  MARGINFI_ACCOUNTS,
-  DEFAULT_MARGINFI_GROUP,
   getEmptyMarginfiAccountsByAuthority,
   getSolanaRpcConnection,
   SOLAUTO_MANAGER,
   marginfiAccountInitialize,
   LOCAL_IRONFORGE_API_URL,
-  MARGINFI_PROD_PROGRAM,
+  getMarginfiAccounts,
 } from "../src";
 import { createAndSendV0Tx, getSecretKey, updateLookupTable } from "./shared";
 
-const LOOKUP_TABLE_ADDRESS = new PublicKey(MARGINFI_ACCOUNTS_LOOKUP_TABLE);
-let [, umi] = getSolanaRpcConnection(
-  LOCAL_IRONFORGE_API_URL
-);
+const mfiAccounts = getMarginfiAccounts("Prod");
+
+const LOOKUP_TABLE_ADDRESS = mfiAccounts.lookupTable;
+let [, umi] = getSolanaRpcConnection(LOCAL_IRONFORGE_API_URL);
 umi = umi.use(
   signerIdentity(
     createSignerFromKeypair(umi, umi.eddsa.generateKeypair()),
@@ -41,9 +38,9 @@ const solautoManager = createSignerFromKeypair(
 );
 
 async function addBanks() {
-  for (const group in MARGINFI_ACCOUNTS) {
-    for (const key in MARGINFI_ACCOUNTS[group]) {
-      const accounts = MARGINFI_ACCOUNTS[group][key];
+  for (const group in mfiAccounts.bankAccounts) {
+    for (const key in mfiAccounts.bankAccounts[group]) {
+      const accounts = mfiAccounts.bankAccounts[group][key];
       await updateLookupTable(
         [
           group,
@@ -65,7 +62,7 @@ async function addImfiAccounts() {
   );
 
   const iMfiAccountsPerGrp = 2;
-  for (const group in MARGINFI_ACCOUNTS) {
+  for (const group in mfiAccounts.bankAccounts) {
     const emptyAccs = imfiAccounts.filter((x) => x.group.toString() === group);
     if (emptyAccs.length >= iMfiAccountsPerGrp) {
       await updateLookupTable(
@@ -97,7 +94,7 @@ async function addImfiAccounts() {
 }
 
 updateLookupTable(
-  [DEFAULT_MARGINFI_GROUP, MARGINFI_PROD_PROGRAM.toString()], // TODO
+  [mfiAccounts.defaultGroup.toString(), mfiAccounts.program.toString()],
   LOOKUP_TABLE_ADDRESS
 );
 

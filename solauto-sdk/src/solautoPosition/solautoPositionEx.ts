@@ -37,7 +37,7 @@ import {
   tokenInfo,
   toRoundedUsdValue,
 } from "../utils";
-import { RebalanceAction } from "../types";
+import { ProgramEnv, RebalanceAction } from "../types";
 import {
   getDebtAdjustment,
   getRebalanceValues,
@@ -51,6 +51,7 @@ export interface PositionCustomArgs {
   debtMint?: PublicKey;
   lendingPool?: PublicKey;
   lpUserAccount?: PublicKey;
+  lpEnv?: ProgramEnv;
 }
 
 interface SolautoPositionExData extends Partial<SolautoPosition> {
@@ -70,6 +71,7 @@ export abstract class SolautoPositionEx {
   public publicKey!: PublicKey;
   protected _data!: SolautoPositionExData;
   protected lp?: PublicKey = undefined;
+  protected lpEnv!: ProgramEnv;
   public lpUserAccount?: PublicKey = undefined;
   protected contextUpdates?: ContextUpdates;
 
@@ -86,6 +88,7 @@ export abstract class SolautoPositionEx {
       (args.data.position
         ? toWeb3JsPublicKey(args.data.position!.protocolUserAccount)
         : undefined);
+    this.lpEnv = args.customArgs?.lpEnv ?? "Prod";
 
     this._data = args.data;
     this.firstState = { ...args.data.state };

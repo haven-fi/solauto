@@ -8,7 +8,7 @@ import {
   TransactionBuilder,
 } from "@metaplex-foundation/umi";
 import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
-import { MARGINFI_ACCOUNTS } from "../../constants";
+import { getMarginfiAccounts } from "../../constants";
 import {
   Bank,
   lendingAccountBorrow,
@@ -69,14 +69,16 @@ export class MarginfiFlProvider extends FlProviderBase {
   }
 
   private async setAvailableBanks() {
+    const bankAccounts = getMarginfiAccounts(this.programEnv).bankAccounts;
+
     const availableBanks: string[] = [];
     const checkIfUsable = (group: string, mint: PublicKey) => {
-      if (Object.keys(MARGINFI_ACCOUNTS[group]).includes(mint.toString())) {
-        availableBanks.push(MARGINFI_ACCOUNTS[group][mint.toString()].bank);
+      if (Object.keys(bankAccounts[group]).includes(mint.toString())) {
+        availableBanks.push(bankAccounts[group][mint.toString()].bank);
       }
     };
 
-    for (const group of Object.keys(MARGINFI_ACCOUNTS)) {
+    for (const group of Object.keys(bankAccounts)) {
       checkIfUsable(group, this.supplyMint);
       checkIfUsable(group, this.debtMint);
     }
