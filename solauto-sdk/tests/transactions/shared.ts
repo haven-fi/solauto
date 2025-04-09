@@ -18,6 +18,12 @@ import {
   TransactionItem,
   TransactionsManager,
   USDC,
+  deposit,
+  openSolautoPosition,
+  borrow,
+  rebalance,
+  withdraw,
+  closeSolautoPosition,
 } from "../../src";
 
 export async function e2eTransactionTest(
@@ -51,77 +57,27 @@ export async function e2eTransactionTest(
     repayGap: 50,
   };
 
-  const transactionItems: TransactionItem[] = [];
-
-  transactionItems.push(
-    new TransactionItem(async () => {
-      return {
-        tx: client.openPositionIx(settings),
-      };
-    }, "open position")
-  );
-
+  const supplyUsd = 100;
+  const debtUsd = withFlashLoan ? 60 : 10;
   const [supplyPrice, debtPrice] = await fetchTokenPrices([
     supplyMint,
     debtMint,
   ]);
 
-  const supplyUsd = 100;
-  transactionItems.push(
-    new TransactionItem(async () => {
-      return {
-        tx: client.protocolInteractionIx(
-          solautoAction("Deposit", [
-            toBaseUnit(
-              supplyUsd / supplyPrice,
-              client.pos.supplyMintInfo().decimals
-            ),
-          ])
-        ),
-      };
-    }, "deposit")
-  );
-
-  const debtUsd = withFlashLoan ? 60 : 10;
-  transactionItems.push(
-    new TransactionItem(async () => {
-      return {
-        tx: client.protocolInteractionIx(
-          solautoAction("Borrow", [
-            toBaseUnit(debtUsd / debtPrice, client.pos.debtMintInfo().decimals),
-          ])
-        ),
-      };
-    }, "borrow")
-  );
-
-  transactionItems.push(
-    new TransactionItem(
-      async (attemptNum) =>
-        await new RebalanceTxBuilder(client, 0).buildRebalanceTx(attemptNum),
-      "rebalance"
-    )
-  );
-
-  transactionItems.push(
-    new TransactionItem(
-      async () => ({
-        tx: client.protocolInteractionIx(
-          solautoAction("Withdraw", [{ __kind: "All" }])
-        ),
-      }),
-      "withdraw"
-    )
-  );
-
-  transactionItems.push(
-    new TransactionItem(
-      async () => ({
-        tx: client.closePositionIx(),
-      }),
-      "close position"
-    )
-  );
+  const transactionItems = [
+    openSolautoPosition(client, settings),
+    deposit(
+      client,
+      toBaseUnit(supplyUsd / supplyPrice, client.pos.supplyMintInfo().decimals)
+    ),
+    borrow(
+      client,
+      toBaseUnit(debtUsd / debtPrice, client.pos.debtMintInfo().decimals)
+    ),
+    rebalance(client, 0),
+    withdraw(client, "All"),
+    closeSolautoPosition(client),
+  ];
 
   const txManager = new TransactionsManager(client, undefined, "only-simulate");
   const statuses = await txManager.clientSend(transactionItems);
