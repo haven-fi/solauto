@@ -1,64 +1,6 @@
-# Solauto
-
-## Overview
-
-Solauto is a program on the Solana blockchain that lets you manage leveraged longs & shorts on auto-pilot to maximize your gains and eliminate the risk of liquidation.
-
-See the [Program documentation](/programs/solauto/README.md) for more info on the underlying Solana program.
-
-### Repository Dependencies
-
-- Rust
-- PNPM
-
-```
-crate install shank-idl
-rustup component add rustfmt
-pnpm install -g ts-node
-```
-
-Define `IRONFORGE_API_KEY` environment variable for running package tests/scripts locally.
-
-### Building
-
-```bash
-# Build typescript
-pnpm build:ts
-
-# Build Solauto test program
-pnpm build:rs:test
-
-# Build Solauto prod program
-pnpm build:rs:prod
-```
-
-### Testing
-
-```bash
-# If running rust tests, build program first
-pnpm build:rs:local
-
-# Run all rust & typescript tests
-pnpm test:all
-
-# Run all rust tests
-pnpm test:rs:all
-
-# Run all typescript tests
-pnpm test:ts:all
-```
-
 ## Solauto Typescript SDK
 
-The Solauto typescript SDK is made for interacting with the Solauto program. This SDK provides tools for managing, & reading Solauto state data, as well as executing transactions.
-
-```bash
-npm install @haven-fi/solauto-sdk
-# or
-yarn add @haven-fi/solauto-sdk
-# or
-pnpm add @haven-fi/solauto-sdk
-```
+Solauto is a program on the Solana blockchain that lets you manage leveraged longs & shorts on auto-pilot to maximize your gains and eliminate the risk of liquidation. The typescript SDK is made for interacting with the Solauto program. This SDK provides tools for managing, & reading Solauto state data, as well as executing transactions.
 
 ## Basic Usage
 
