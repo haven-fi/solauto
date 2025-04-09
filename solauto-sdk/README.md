@@ -8,16 +8,15 @@ Solauto is a program on the Solana blockchain that lets you manage leveraged lon
 import { PublicKey } from "@solana/web3.js";
 import * as solauto from "@haven-fi/solauto-sdk";
 
-// Initialize the client
+// Create new Solauto client
 const client = solauto.getClient(solauto.LendingPlatform.MARGINFI, {
   signer: yourSigner,
   rpcUrl: "[YOUR_RPC_URL]",
 });
 
+// Initialize the client
 const supplyMint = new PublicKey(NATIVE_MINT);
 const debtMint = new PublicKey(USDC);
-
-// Initialize a new position
 await client.initialize({
   positionId: 1,
   new: true,
