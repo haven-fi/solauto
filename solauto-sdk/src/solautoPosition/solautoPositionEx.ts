@@ -183,7 +183,10 @@ export abstract class SolautoPositionEx {
   }
 
   supplyUsd() {
-    return calcSupplyUsd(this.state());
+    const supplyPrice = safeGetPrice(this.supplyMint());
+    return supplyPrice
+      ? calcTotalSupply(this.state()) * supplyPrice
+      : calcSupplyUsd(this.state());
   }
 
   totalDebt() {
@@ -191,7 +194,10 @@ export abstract class SolautoPositionEx {
   }
 
   debtUsd() {
-    return calcDebtUsd(this.state());
+    const debtPrice = safeGetPrice(this.debtMint());
+    return debtPrice
+      ? calcTotalDebt(this.state()) * debtPrice
+      : calcDebtUsd(this.state());
   }
 
   supplyLiquidityDepositable() {
@@ -203,7 +209,9 @@ export abstract class SolautoPositionEx {
   }
 
   supplyLiquidityUsdAvailable() {
-    return this.supplyLiquidityAvailable() * (safeGetPrice(this.supplyMint()) ?? 0);
+    return (
+      this.supplyLiquidityAvailable() * (safeGetPrice(this.supplyMint()) ?? 0)
+    );
   }
 
   debtLiquidityAvailable() {
@@ -244,7 +252,7 @@ export abstract class SolautoPositionEx {
   }
 
   eligibleForRebalance(bpsDistanceThreshold = 0): RebalanceAction | undefined {
-    if (!this.settings() || !calcSupplyUsd(this.state())) {
+    if (!this.settings() || !this.supplyUsd()) {
       return undefined;
     }
 
