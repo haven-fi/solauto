@@ -32,6 +32,7 @@ import {
   hasFirstRebalance,
 } from "../../utils";
 import {
+  Bank,
   lendingAccountBorrow,
   lendingAccountDeposit,
   lendingAccountRepay,
@@ -113,13 +114,12 @@ export class SolautoMarginfiClient extends SolautoClient {
         this.pos.debtMint().toString()
       ]!;
 
-    // TODO:
-    this.supplyPriceOracle = new PublicKey(
-      this.marginfiSupplyAccounts.priceOracle
-    );
-    this.debtPriceOracle = new PublicKey(this.marginfiDebtAccounts.priceOracle);
+    [this.supplyPriceOracle, this.debtPriceOracle] =
+      await this.pos.priceOracles();
 
     this.log("Marginfi account:", this.marginfiAccountPk.toString());
+    this.log("Supply price oracle:", this.supplyPriceOracle.toString());
+    this.log("Debt price oracle:", this.debtPriceOracle.toString());
   }
 
   defaultLookupTables(): string[] {

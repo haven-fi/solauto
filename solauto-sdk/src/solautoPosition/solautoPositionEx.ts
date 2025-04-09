@@ -227,6 +227,7 @@ export abstract class SolautoPositionEx {
   }
 
   abstract maxLtvAndLiqThresholdBps(): Promise<[number, number]>;
+  abstract priceOracles(): Promise<PublicKey[]>;
   abstract supplyLiquidityAvailable(): number;
 
   sufficientLiquidityToBoost() {

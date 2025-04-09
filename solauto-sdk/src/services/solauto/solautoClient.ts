@@ -205,12 +205,8 @@ export abstract class SolautoClient extends ReferralStateManager {
     return [
       this.authority,
       ...(this.authorityLutAddress ? [this.authorityLutAddress] : []),
-      ...(toWeb3JsPublicKey(this.signer.publicKey).equals(this.authority)
-        ? [this.signerSupplyTa]
-        : []),
-      ...(toWeb3JsPublicKey(this.signer.publicKey).equals(this.authority)
-        ? [this.signerDebtTa]
-        : []),
+      this.signerSupplyTa,
+      this.signerDebtTa,
       this.pos.publicKey,
       this.positionSupplyTa,
       this.positionDebtTa,
@@ -239,6 +235,10 @@ export abstract class SolautoClient extends ReferralStateManager {
       }
     | undefined
   > {
+    if (!toWeb3JsPublicKey(this.signer.publicKey).equals(this.authority)) {
+      return undefined;
+    }
+
     const existingLutAccounts = await this.fetchExistingAuthorityLutAccounts();
     if (
       this.lutAccountsToAdd().every((element) =>

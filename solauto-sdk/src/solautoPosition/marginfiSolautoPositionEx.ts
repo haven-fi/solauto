@@ -13,6 +13,7 @@ import {
   fromBaseUnit,
   getBankLiquidityAvailableBaseUnit,
   getMarginfiAccountPositionState,
+  getMarginfiPriceOracle,
 } from "../utils";
 import { getMarginfiAccounts } from "../constants";
 import { SolautoPositionEx } from "./solautoPositionEx";
@@ -50,7 +51,7 @@ export class MarginfiSolautoPositionEx extends SolautoPositionEx {
     return this.lp;
   }
 
-  async maxLtvAndLiqThresholdBps(): Promise<[number, number]> {
+  async getBanks(): Promise<Bank[]> {
     if (!this.supplyBank || !this.debtBank) {
       const group = (await this.lendingPool()).toString();
       const bankAccounts = getMarginfiAccounts(this.lpEnv).bankAccounts;
@@ -63,10 +64,25 @@ export class MarginfiSolautoPositionEx extends SolautoPositionEx {
       ]);
     }
 
+    return [this.supplyBank!, this.debtBank!];
+  }
+
+  async priceOracles(): Promise<PublicKey[]> {
+    const [supplyBank, debtBank] = await this.getBanks();
+
+    return await Promise.all([
+      getMarginfiPriceOracle(this.umi, { data: supplyBank }),
+      getMarginfiPriceOracle(this.umi, { data: debtBank }),
+    ]);
+  }
+
+  async maxLtvAndLiqThresholdBps(): Promise<[number, number]> {
+    const [supplyBank, debtBank] = await this.getBanks();
+
     const [supplyPrice] = await fetchTokenPrices([this.supplyMint()]);
     const [maxLtvBps, liqThresholdBps] = calcMarginfiMaxLtvAndLiqThresholdBps(
-      this.supplyBank,
-      this.debtBank,
+      supplyBank,
+      debtBank,
       supplyPrice
     );
 

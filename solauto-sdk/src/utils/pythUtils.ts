@@ -1,7 +1,9 @@
-import { Connection, PublicKey } from "@solana/web3.js";
-import { PYTH_PUSH_ORACLE_ID } from "../constants";
-import { u16ToArrayBufferLE } from "./generalUtils";
+import { PublicKey } from "@solana/web3.js";
+import { PYTH_PUSH_PROGRAM } from "../constants";
+import { u16ToArrayBufferLE, zip } from "./generalUtils";
 import * as borsh from "borsh";
+import { Umi } from "@metaplex-foundation/umi";
+import { fromWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 
 type PriceUpdateV2 = {
   writeAuthority: Buffer;
@@ -40,65 +42,43 @@ const priceUpdateV2Schema = {
   },
 };
 
-export const parsePriceInfo = (data: Buffer): PriceUpdateV2 => {
+export function parsePriceInfo(data: Uint8Array): PriceUpdateV2 {
   let decoded: PriceUpdateV2 = borsh.deserialize(
     priceUpdateV2Schema,
     data
   ) as any;
   return decoded;
-};
-
-export async function getPythOracle(
-  connection: Connection,
-  oracleKey: PublicKey
-) {
-  const pythOracle = findPythPushOracleAddress(
-    oracleKey.toBuffer(),
-    PYTH_PUSH_ORACLE_ID,
-    PYTH_SPONSORED_SHARD_ID
-  );
-  const mfiOracle = findPythPushOracleAddress(
-    oracleKey.toBuffer(),
-    PYTH_PUSH_ORACLE_ID,
-    MARGINFI_SPONSORED_SHARD_ID
-  );
-
-  const [pythSponsoredOracle, mfiSponsoredOracle] =
-    await connection.getMultipleAccountsInfo([pythOracle, mfiOracle]);
-
-  if (mfiSponsoredOracle && pythSponsoredOracle) {
-    let pythPriceAccount = parsePriceInfo(pythSponsoredOracle.data.slice(8));
-    let pythPublishTime = pythPriceAccount.priceMessage.publishTime;
-
-    let mfiPriceAccount = parsePriceInfo(mfiSponsoredOracle.data.slice(8));
-    let mfiPublishTime = mfiPriceAccount.priceMessage.publishTime;
-
-    console.log("Pyth:", pythOracle.toString());
-    console.log("Mfi:", mfiOracle.toString());
-    if (pythPublishTime > mfiPublishTime) {
-      return pythOracle;
-    } else {
-      return mfiOracle;
-    }
-  } else if (pythSponsoredOracle) {
-    return pythOracle;
-  } else if (mfiSponsoredOracle) {
-    return mfiOracle;
-  } else {
-    throw new Error(
-      `No oracle found for feedId: ${oracleKey}, either Pyth or MFI sponsored oracle must exist`
-    );
-  }
 }
 
-export const PYTH_SPONSORED_SHARD_ID = 0;
-export const MARGINFI_SPONSORED_SHARD_ID = 3301;
+export async function getMostUpToDatePythOracle(
+  umi: Umi,
+  oracleKeys: PublicKey[]
+) {
+  const oracles = zip(
+    oracleKeys,
+    (
+      await umi.rpc.getAccounts(
+        oracleKeys.map((x) => fromWeb3JsPublicKey(x)),
+        { commitment: "confirmed" }
+      )
+    ).map((x) => (x.exists ? parsePriceInfo(x!.data.slice(8)) : undefined))
+  ).sort(
+    (a, b) =>
+      Number(b[1]?.priceMessage.publishTime ?? 0) -
+      Number(a[1]?.priceMessage.publishTime ?? 0)
+  );
 
-export function findPythPushOracleAddress(
-  feedId: Buffer,
-  programId: PublicKey,
-  shardId: number
+  return oracles[0][0];
+}
+
+export function getPythPushOracleAddress(
+  feedId: PublicKey,
+  shardId: number,
+  programId: PublicKey = PYTH_PUSH_PROGRAM
 ): PublicKey {
   const shardBytes = u16ToArrayBufferLE(shardId);
-  return PublicKey.findProgramAddressSync([shardBytes, feedId], programId)[0];
+  return PublicKey.findProgramAddressSync(
+    [shardBytes, feedId.toBuffer()],
+    programId
+  )[0];
 }

@@ -9,7 +9,9 @@ import { PositionState, PositionTokenState } from "../generated";
 import {
   ALL_SUPPORTED_TOKENS,
   getMarginfiAccounts,
+  MARGINFI_SPONSORED_SHARD_ID,
   MarginfiAccountsMap,
+  PYTH_SPONSORED_SHARD_ID,
   TOKEN_INFO,
   USD_DECIMALS,
 } from "../constants";
@@ -37,7 +39,10 @@ import {
   toBps,
 } from "./numberUtils";
 import { getTokenAccountData } from "./accountUtils";
-import { getPythOracle } from "./pythUtils";
+import {
+  getMostUpToDatePythOracle,
+  getPythPushOracleAddress,
+} from "./pythUtils";
 
 export function createDynamicMarginfiProgram(env?: ProgramEnv): Program {
   return {
@@ -66,17 +71,12 @@ export function umiWithMarginfiProgram(umi: Umi, marginfiEnv?: ProgramEnv) {
   });
 }
 
-export async function fetchBankAddresses(connection: Connection, umi: Umi, bankPk: PublicKey) {
+export async function fetchBankAddresses(umi: Umi, bankPk: PublicKey) {
   const bank = await fetchBank(umi, fromWeb3JsPublicKey(bankPk));
   const liquidityVault = toWeb3JsPublicKey(bank!.liquidityVault);
   const vaultAuthority = (await getTokenAccountData(umi, liquidityVault))
     ?.owner;
-
-  const oracleKey = toWeb3JsPublicKey(bank.config.oracleKeys[0]);
-  const priceOracle =
-    bank.config.oracleSetup === OracleSetup.PythPushOracle
-      ? await getPythOracle(connection, oracleKey)
-      : oracleKey;
+  const priceOracle = await getMarginfiPriceOracle(umi, { data: bank });
 
   return {
     bank: bankPk,
@@ -84,6 +84,26 @@ export async function fetchBankAddresses(connection: Connection, umi: Umi, bankP
     vaultAuthority,
     priceOracle,
   };
+}
+
+export async function getMarginfiPriceOracle(
+  umi: Umi,
+  bank: { pk?: PublicKey; data?: Bank }
+) {
+  if (!bank.data) {
+    bank.data = await fetchBank(umi, fromWeb3JsPublicKey(bank.pk!));
+  }
+
+  const oracleKey = toWeb3JsPublicKey(bank.data.config.oracleKeys[0]);
+  const priceOracle =
+    bank.data.config.oracleSetup === OracleSetup.PythPushOracle
+      ? await getMostUpToDatePythOracle(umi, [
+          getPythPushOracleAddress(oracleKey, PYTH_SPONSORED_SHARD_ID),
+          getPythPushOracleAddress(oracleKey, MARGINFI_SPONSORED_SHARD_ID),
+        ])
+      : oracleKey;
+
+  return priceOracle;
 }
 
 interface AllMarginfiAssetAccounts extends MarginfiAssetAccounts {

@@ -29,6 +29,7 @@ import {
   fromBaseUnit,
   getBankLiquidityAvailableBaseUnit,
   getEmptyMarginfiAccountsByAuthority,
+  getMarginfiPriceOracle,
   getTokenAccount,
   rpcAccountCreated,
   safeGetPrice,
@@ -72,15 +73,15 @@ export class MarginfiFlProvider extends FlProviderBase {
     const bankAccounts = getMarginfiAccounts(this.programEnv).bankAccounts;
 
     const availableBanks: string[] = [];
-    const checkIfUsable = (group: string, mint: PublicKey) => {
-      if (Object.keys(bankAccounts[group]).includes(mint.toString())) {
-        availableBanks.push(bankAccounts[group][mint.toString()].bank);
+    const checkIfUsable = (group: string, mint: string) => {
+      if (Object.keys(bankAccounts[group]).includes(mint)) {
+        availableBanks.push(bankAccounts[group][mint].bank);
       }
     };
 
     for (const group of Object.keys(bankAccounts)) {
-      checkIfUsable(group, this.supplyMint);
-      checkIfUsable(group, this.debtMint);
+      checkIfUsable(group, this.supplyMint.toString());
+      checkIfUsable(group, this.debtMint.toString());
     }
 
     const banks = await safeFetchAllBank(
@@ -301,11 +302,10 @@ export class MarginfiFlProvider extends FlProviderBase {
             flBankHadPrevBalance = true;
           }
 
-          // TODO: Don't dynamically pull from bank until Marginfi sorts out their price oracle issues.
-          // const bankData = await safeFetchBank(this.umi, publicKey(accounts.data.bank));
-          // const priceOracle = bankData!.config.oracleKeys[0];
           const priceOracle = publicKey(
-            findMarginfiAccounts(toWeb3JsPublicKey(x.bankPk)).priceOracle
+            await getMarginfiPriceOracle(this.umi, {
+              pk: toWeb3JsPublicKey(x.bankPk),
+            })
           );
 
           remainingAccounts.push(
