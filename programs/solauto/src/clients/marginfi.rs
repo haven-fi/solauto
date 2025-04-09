@@ -320,12 +320,6 @@ impl<'a> MarginfiClient<'a> {
         bank: &DeserializedAccount<Bank>,
         price_oracle: &AccountInfo,
     ) -> Result<f64, ProgramError> {
-        // TODO: Don't validate this until Marginfi's sorted out their price oracle issues and this is congruent with what they use.
-        // if price_oracle.key != &bank.data.config.oracle_keys[0] {
-        //     msg!("Incorrect price oracle provided");
-        //     return Err(SolautoError::IncorrectAccounts.into());
-        // }
-
         let clock = Clock::get()?;
         let max_price_age = 120; // Default used by Marginfi is 60
 

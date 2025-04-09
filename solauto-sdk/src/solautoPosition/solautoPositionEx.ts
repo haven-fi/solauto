@@ -67,6 +67,7 @@ interface PositionExArgs {
 }
 
 export abstract class SolautoPositionEx {
+  public lendingPlatform!: LendingPlatform;
   public umi!: Umi;
   public publicKey!: PublicKey;
   protected _data!: SolautoPositionExData;

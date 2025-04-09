@@ -453,7 +453,7 @@ export function getClient(
 export function isMarginfiClient(
   client: SolautoClient
 ): client is SolautoMarginfiClient {
-  return client.lendingPlatform == LendingPlatform.Marginfi;
+  return client.lendingPlatform === LendingPlatform.Marginfi;
 }
 // TODO: PF
 

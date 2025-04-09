@@ -184,3 +184,15 @@ export async function customRpcCall(umi: Umi, method: string, params?: any) {
     return data;
   }
 }
+
+export function u16ToArrayBufferLE(value: number): Uint8Array {
+  // Create a buffer of 2 bytes
+  const buffer = new ArrayBuffer(2);
+  const dataView = new DataView(buffer);
+
+  // Set the Uint16 value in little-endian order
+  dataView.setUint16(0, value, true);
+
+  // Return the buffer
+  return new Uint8Array(buffer);
+}

@@ -8,4 +8,5 @@ export * from "./solautoUtils";
 export * from "./solanaUtils";
 export * from "./stringUtils";
 export * from "./priceUtils";
+export * from "./pythUtils";
 export * from "./switchboardUtils";

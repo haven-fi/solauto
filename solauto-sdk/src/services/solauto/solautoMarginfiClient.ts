@@ -113,13 +113,7 @@ export class SolautoMarginfiClient extends SolautoClient {
         this.pos.debtMint().toString()
       ]!;
 
-    // TODO: Don't dynamically pull oracle from bank until Marginfi sorts out their price oracle issues.
-    // const [supplyBank, debtBank] = await safeFetchAllBank(this.umi, [
-    //   publicKey(this.marginfiSupplyAccounts.bank),
-    //   publicKey(this.marginfiDebtAccounts.bank),
-    // ]);
-    // this.supplyPriceOracle = toWeb3JsPublicKey(supplyBank.config.oracleKeys[0]);
-    // this.debtPriceOracle = toWeb3JsPublicKey(debtBank.config.oracleKeys[0]);
+    // TODO:
     this.supplyPriceOracle = new PublicKey(
       this.marginfiSupplyAccounts.priceOracle
     );

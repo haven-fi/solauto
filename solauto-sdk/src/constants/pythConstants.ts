@@ -1,5 +1,8 @@
 import { NATIVE_MINT } from "@solana/spl-token";
 import * as tokens from "./tokenConstants";
+import { PublicKey } from "@solana/web3.js";
+
+export const PYTH_PUSH_ORACLE_ID = new PublicKey("pythWSnswVUd12oZpeFP8e9CVaEqJg25g1Vtc2biRsT");
 
 // https://pyth.network/developers/price-feed-ids#solana-stable
 export const PYTH_PRICE_FEED_IDS = {

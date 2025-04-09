@@ -1,4 +1,4 @@
-import { PublicKey } from "@solana/web3.js";
+import { Connection, PublicKey } from "@solana/web3.js";
 import { Program, publicKey, Umi } from "@metaplex-foundation/umi";
 import {
   fromWeb3JsPublicKey,
@@ -16,6 +16,7 @@ import {
 import {
   Bank,
   deserializeMarginfiAccount,
+  fetchBank,
   getMarginfiAccountSize,
   getMarginfiErrorFromCode,
   getMarginfiErrorFromName,
@@ -36,6 +37,7 @@ import {
   toBps,
 } from "./numberUtils";
 import { getTokenAccountData } from "./accountUtils";
+import { getPythOracle } from "./pythUtils";
 
 export function createDynamicMarginfiProgram(env?: ProgramEnv): Program {
   return {
@@ -64,15 +66,23 @@ export function umiWithMarginfiProgram(umi: Umi, marginfiEnv?: ProgramEnv) {
   });
 }
 
-export async function fetchBankAddresses(umi: Umi, bankPk: PublicKey) {
-  const bank = await safeFetchBank(umi, fromWeb3JsPublicKey(bankPk));
+export async function fetchBankAddresses(connection: Connection, umi: Umi, bankPk: PublicKey) {
+  const bank = await fetchBank(umi, fromWeb3JsPublicKey(bankPk));
   const liquidityVault = toWeb3JsPublicKey(bank!.liquidityVault);
   const vaultAuthority = (await getTokenAccountData(umi, liquidityVault))
     ?.owner;
+
+  const oracleKey = toWeb3JsPublicKey(bank.config.oracleKeys[0]);
+  const priceOracle =
+    bank.config.oracleSetup === OracleSetup.PythPushOracle
+      ? await getPythOracle(connection, oracleKey)
+      : oracleKey;
+
   return {
     bank: bankPk,
     liquidityVault,
     vaultAuthority,
+    priceOracle,
   };
 }
 

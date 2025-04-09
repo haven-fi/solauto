@@ -16,8 +16,11 @@ import {
 } from "../utils";
 import { getMarginfiAccounts } from "../constants";
 import { SolautoPositionEx } from "./solautoPositionEx";
+import { LendingPlatform } from "../generated";
 
 export class MarginfiSolautoPositionEx extends SolautoPositionEx {
+  lendingPlatform = LendingPlatform.Marginfi;
+
   private marginfiAccountData: MarginfiAccount | null = null;
   private supplyBank: Bank | null = null;
   private debtBank: Bank | null = null;
