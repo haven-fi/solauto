@@ -51,6 +51,7 @@ const [supplyPrice, debtPrice] = await fetchTokenPrices([supplyMint, debtMint]);
 
 const transactionItems: TransactionItem[] = [];
 
+// Open position
 transactionItems.push(
   new TransactionItem(async () => {
     return {
@@ -59,19 +60,43 @@ transactionItems.push(
   }, "open position")
 );
 
-const debtUsd = withFlashLoan ? 60 : 10;
+const supplyUsdToDeposit = 100;
+const debtUsdToBorrow = 60;
+
+// Deposit supply (SOL) transaction
+transactionItems.push(
+  new TransactionItem(async () => {
+    return {
+      tx: client.protocolInteractionIx(
+        solautoAction("Deposit", [
+          toBaseUnit(
+            supplyUsdToDeposit / supplyPrice,
+            client.pos.supplyMintInfo().decimals
+          ),
+        ])
+      ),
+    };
+  }, "deposit")
+);
+
+// Borrow debt (USDC) transaction
 transactionItems.push(
   new TransactionItem(async () => {
     return {
       tx: client.protocolInteractionIx(
         solautoAction("Borrow", [
-          toBaseUnit(debtUsd / debtPrice, client.pos.debtMintInfo().decimals),
+          toBaseUnit(
+            debtUsdToBorrow / debtPrice,
+            client.pos.debtMintInfo().decimals
+          ),
         ])
       ),
     };
   }, "borrow")
 );
 
+// Rebalance to 0 LTV (repays all debt using collateral)
+const rebalanceTo = 0;
 transactionItems.push(
   new TransactionItem(
     async (attemptNum) =>
@@ -80,6 +105,7 @@ transactionItems.push(
   )
 );
 
+// Withdraw remaining supply in position
 transactionItems.push(
   new TransactionItem(
     async () => ({
@@ -91,6 +117,7 @@ transactionItems.push(
   )
 );
 
+// Close position
 transactionItems.push(
   new TransactionItem(
     async () => ({
@@ -100,6 +127,7 @@ transactionItems.push(
   )
 );
 
+// Send all transactions atomically
 const txManager = new TransactionsManager(client);
 const statuses = await txManager.clientSend(transactionItems);
 ```
