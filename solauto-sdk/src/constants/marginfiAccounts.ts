@@ -2,7 +2,6 @@ import { PublicKey } from "@solana/web3.js";
 import { NATIVE_MINT } from "@solana/spl-token";
 import * as tokens from "./tokenConstants";
 import { MarginfiAssetAccounts } from "../types/accounts";
-import { SWITCHBOARD_PRICE_FEED_IDS } from "./switchboardConstants";
 import { ProgramEnv } from "../types";
 
 const MARGINFI_PROD_PROGRAM = new PublicKey(

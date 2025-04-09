@@ -56,7 +56,7 @@ export async function createAndSendV0Tx(
     lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
   });
   if (confirmation.value.err) {
-    throw new Error(confirmation.value.err.toString());
+    throw confirmation.value.err;
   }
   console.log(txid);
 }

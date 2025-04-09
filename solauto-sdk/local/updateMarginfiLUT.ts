@@ -17,19 +17,26 @@ import {
   LOCAL_IRONFORGE_API_URL,
   getMarginfiAccounts,
   getAllBankRelatedAccounts,
+  umiWithMarginfiProgram,
+  ProgramEnv,
 } from "../src";
 import { createAndSendV0Tx, getSecretKey, updateLookupTable } from "./shared";
 
-const mfiAccounts = getMarginfiAccounts("Prod");
+const programEnv: ProgramEnv = "Prod";
+const mfiAccounts = getMarginfiAccounts(programEnv);
 
 const LOOKUP_TABLE_ADDRESS = mfiAccounts.lookupTable;
 let [, umi] = getSolanaRpcConnection(LOCAL_IRONFORGE_API_URL);
-umi = umi.use(
-  signerIdentity(
-    createSignerFromKeypair(umi, umi.eddsa.generateKeypair()),
-    true
-  )
+umi = umiWithMarginfiProgram(
+  umi.use(
+    signerIdentity(
+      createSignerFromKeypair(umi, umi.eddsa.generateKeypair()),
+      true
+    )
+  ),
+  programEnv
 );
+
 const solautoManagerKeypair = Keypair.fromSecretKey(
   getSecretKey("solauto-manager")
 );
