@@ -6,21 +6,17 @@ import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 import {
   ALL_SUPPORTED_TOKENS,
   TOKEN_INFO,
-  MARGINFI_ACCOUNTS,
   SOLAUTO_FEES_WALLET,
   SOLAUTO_MANAGER,
   LOCAL_IRONFORGE_API_URL,
-} from "../../src/constants";
-import {
+  getMarginfiAccounts,
   getSolanaRpcConnection,
   getEmptyMarginfiAccountsByAuthority,
   getTokenAccount,
-} from "../../src/utils";
+} from "../../src";
 
 async function hasTokenAccounts(wallet: PublicKey) {
-  let [_, umi] = getSolanaRpcConnection(
-    LOCAL_IRONFORGE_API_URL
-  );
+  let [_, umi] = getSolanaRpcConnection(LOCAL_IRONFORGE_API_URL);
 
   const tokenAccounts = await umi.rpc.getAccounts(
     ALL_SUPPORTED_TOKENS.map((x) =>
@@ -45,17 +41,15 @@ describe("Assert Solauto fee token accounts are created", async () => {
   });
 
   it("ISM accounts for every supported Marginfi group", async () => {
-    let [_, umi] = getSolanaRpcConnection(
-      LOCAL_IRONFORGE_API_URL
-    );
+    let [_, umi] = getSolanaRpcConnection(LOCAL_IRONFORGE_API_URL);
 
     const ismAccounts = await getEmptyMarginfiAccountsByAuthority(
       umi,
       SOLAUTO_MANAGER
     );
-    const supportedMarginfiGroups = Object.keys(MARGINFI_ACCOUNTS).map(
-      (x) => new PublicKey(x)
-    );
+    const supportedMarginfiGroups = Object.keys(
+      getMarginfiAccounts("Prod").bankAccounts
+    ).map((x) => new PublicKey(x));
     const missingIsmAccounts = supportedMarginfiGroups.filter(
       (group) =>
         !ismAccounts.find((x) => group.equals(toWeb3JsPublicKey(x.group)))

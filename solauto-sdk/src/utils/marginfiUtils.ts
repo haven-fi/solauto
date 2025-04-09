@@ -1,4 +1,4 @@
-import { Connection, PublicKey } from "@solana/web3.js";
+import { PublicKey } from "@solana/web3.js";
 import { Program, publicKey, Umi } from "@metaplex-foundation/umi";
 import {
   fromWeb3JsPublicKey,
@@ -10,7 +10,7 @@ import {
   ALL_SUPPORTED_TOKENS,
   getMarginfiAccounts,
   MARGINFI_SPONSORED_SHARD_ID,
-  MarginfiAccountsMap,
+  MarginfiBankAccountsMap,
   PYTH_SPONSORED_SHARD_ID,
   TOKEN_INFO,
   USD_DECIMALS,
@@ -24,6 +24,7 @@ import {
   getMarginfiErrorFromName,
   MarginfiAccount,
   OracleSetup,
+  safeFetchAllBank,
   safeFetchBank,
   safeFetchMarginfiAccount,
 } from "../marginfi-sdk";
@@ -71,6 +72,46 @@ export function umiWithMarginfiProgram(umi: Umi, marginfiEnv?: ProgramEnv) {
   });
 }
 
+export async function getAllBankRelatedAccounts(
+  umi: Umi,
+  bankAccountsMap: MarginfiBankAccountsMap
+): Promise<PublicKey[]> {
+  const banks = Object.values(bankAccountsMap).flatMap((group) =>
+    Object.values(group).map((accounts) => accounts.bank)
+  );
+  const banksData = await safeFetchAllBank(
+    umi,
+    banks.map((x) => publicKey(x))
+  );
+
+  const oracles = banksData
+    .map((bank) => {
+      const oracleKey = toWeb3JsPublicKey(bank.config.oracleKeys[0]);
+      return bank.config.oracleSetup === OracleSetup.PythPushOracle
+        ? [
+            getPythPushOracleAddress(oracleKey, PYTH_SPONSORED_SHARD_ID),
+            getPythPushOracleAddress(oracleKey, MARGINFI_SPONSORED_SHARD_ID),
+          ]
+        : [oracleKey];
+
+    })
+    .flat()
+    .map((x) => x.toString());
+
+  const otherAccounts = Object.entries(bankAccountsMap).flatMap(
+    ([groupName, tokenMap]) =>
+      Object.values(tokenMap).flatMap((accounts) => [
+        groupName,
+        accounts.liquidityVault,
+        accounts.vaultAuthority,
+      ])
+  );
+
+  return Array.from(new Set([...banks, ...oracles, ...otherAccounts]))
+    .filter((x) => x !== PublicKey.default.toString())
+    .map((x) => new PublicKey(x));
+}
+
 export async function fetchBankAddresses(umi: Umi, bankPk: PublicKey) {
   const bank = await fetchBank(umi, fromWeb3JsPublicKey(bankPk));
   const liquidityVault = toWeb3JsPublicKey(bank!.liquidityVault);
@@ -113,7 +154,7 @@ interface AllMarginfiAssetAccounts extends MarginfiAssetAccounts {
 export function findMarginfiAccounts(
   bank: PublicKey
 ): AllMarginfiAssetAccounts {
-  const search = (bankAccounts: MarginfiAccountsMap) => {
+  const search = (bankAccounts: MarginfiBankAccountsMap) => {
     for (const group in bankAccounts) {
       for (const key in bankAccounts[group]) {
         const account = bankAccounts[group][key];

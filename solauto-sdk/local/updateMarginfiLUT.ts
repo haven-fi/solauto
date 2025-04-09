@@ -16,6 +16,7 @@ import {
   marginfiAccountInitialize,
   LOCAL_IRONFORGE_API_URL,
   getMarginfiAccounts,
+  getAllBankRelatedAccounts,
 } from "../src";
 import { createAndSendV0Tx, getSecretKey, updateLookupTable } from "./shared";
 
@@ -38,21 +39,14 @@ const solautoManager = createSignerFromKeypair(
 );
 
 async function addBanks() {
-  for (const group in mfiAccounts.bankAccounts) {
-    for (const key in mfiAccounts.bankAccounts[group]) {
-      const accounts = mfiAccounts.bankAccounts[group][key];
-      await updateLookupTable(
-        [
-          group,
-          accounts.bank,
-          accounts.liquidityVault,
-          accounts.vaultAuthority,
-          accounts.priceOracle,
-        ],
-        LOOKUP_TABLE_ADDRESS
-      );
-    }
-  }
+  const accounts = await getAllBankRelatedAccounts(
+    umi,
+    mfiAccounts.bankAccounts
+  );
+  await updateLookupTable(
+    accounts.map((x) => x.toString()),
+    LOOKUP_TABLE_ADDRESS
+  );
 }
 
 async function addImfiAccounts() {

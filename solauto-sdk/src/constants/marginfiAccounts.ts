@@ -18,11 +18,11 @@ const PROD_DEFAULT_MARGINFI_GROUP =
 const STAGING_DEFAULT_MARGINFI_GROUP =
   "FCPfpHA69EbS8f9KKSreTRkXbzFpunsKuYf5qNmnJjpo";
 
-export type MarginfiAccountsMap = {
+export type MarginfiBankAccountsMap = {
   [group: string]: { [token: string]: MarginfiAssetAccounts };
 };
 
-const MARGINFI_STAGING_ACCOUNTS: MarginfiAccountsMap = {
+const MARGINFI_STAGING_ACCOUNTS: MarginfiBankAccountsMap = {
   [STAGING_DEFAULT_MARGINFI_GROUP]: {
     [NATIVE_MINT.toString()]: {
       bank: "3evdJSa25nsUiZzEUzd92UNa13TPRJrje1dRyiQP5Lhp",
@@ -42,7 +42,7 @@ const MARGINFI_STAGING_ACCOUNTS: MarginfiAccountsMap = {
   },
 };
 
-const MARGINFI_PROD_ACCOUNTS: MarginfiAccountsMap = {
+const MARGINFI_PROD_ACCOUNTS: MarginfiBankAccountsMap = {
   [PROD_DEFAULT_MARGINFI_GROUP.toString()]: {
     [NATIVE_MINT.toString()]: {
       bank: "CCKtUs6Cgwo4aaQUmBPmyoApH2gUDErxNZCAntD6LYGh",
@@ -200,7 +200,7 @@ export interface MarginfiProgramAccounts {
   program: PublicKey;
   defaultGroup: PublicKey;
   lookupTable: PublicKey;
-  bankAccounts: MarginfiAccountsMap;
+  bankAccounts: MarginfiBankAccountsMap;
 }
 
 export function getMarginfiAccounts(
