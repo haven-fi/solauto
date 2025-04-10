@@ -337,6 +337,7 @@ impl<'a> MarginfiClient<'a> {
         price_oracle: &AccountInfo,
         price_type: PriceType,
     ) -> Result<f64, ProgramError> {
+        msg!("Getting {} price", price_type);
         let clock = Clock::get()?;
         let max_price_age = 120; // Default used by Marginfi is 60
 

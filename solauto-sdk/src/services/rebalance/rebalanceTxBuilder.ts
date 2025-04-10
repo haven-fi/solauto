@@ -37,7 +37,7 @@ export class RebalanceTxBuilder {
   private rebalanceType!: SolautoRebalanceType;
   private swapManager!: RebalanceSwapManager;
   private flRequirements?: FlashLoanRequirements;
-  private priceType!: PriceType;
+  private priceType: PriceType = PriceType.Realtime;
 
   constructor(
     private client: SolautoClient,
@@ -52,10 +52,10 @@ export class RebalanceTxBuilder {
     );
   }
 
-  private getRebalanceValues(priceType: PriceType, flFee?: number) {
+  private getRebalanceValues(flFee?: number) {
     return getRebalanceValues(
       this.client.pos,
-      priceType,
+      this.priceType,
       this.targetLiqUtilizationRateBps,
       SolautoFeesBps.create(
         this.client.isReferred(),
@@ -211,8 +211,7 @@ export class RebalanceTxBuilder {
   }
 
   private async setRebalanceDetails(attemptNum: number) {
-    this.priceType = PriceType.Realtime;
-    this.values = this.getRebalanceValues(this.priceType);
+    this.values = this.getRebalanceValues();
 
     const postRebalanceEmaUtilRateBps = getLiqUtilzationRateBps(
       this.realtimeUsdToEmaUsd(
@@ -227,7 +226,7 @@ export class RebalanceTxBuilder {
     );
     if (postRebalanceEmaUtilRateBps > this.client.pos.maxBoostToBps) {
       this.priceType = PriceType.Ema;
-      this.values = this.getRebalanceValues(this.priceType);
+      this.values = this.getRebalanceValues();
     }
 
     this.flRequirements = await this.flashLoanRequirements(attemptNum);
