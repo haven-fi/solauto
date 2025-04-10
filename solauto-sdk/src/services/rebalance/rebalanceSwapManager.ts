@@ -9,7 +9,6 @@ import {
   consoleLog,
   fromBaseUnit,
   getLiqUtilzationRateBps,
-  maxRepayToBps,
   safeGetPrice,
   toBaseUnit,
   tokenInfo,
@@ -185,10 +184,7 @@ export class RebalanceSwapManager {
       this.swapQuote = await this.findSufficientQuote(swapInput, {
         minOutputAmount: rebalanceToZero ? outputAmount : undefined,
         maxLiqUtilizationRateBps: this.values.repayingCloseToMaxLtv
-          ? maxRepayToBps(
-              this.client.pos.state().maxLtvBps ?? 0,
-              this.client.pos.state().liqThresholdBps ?? 0
-            ) - 15
+          ? this.client.pos.maxRepayToBps() - 15
           : undefined,
       });
     }

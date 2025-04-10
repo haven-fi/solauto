@@ -81,15 +81,18 @@ pub fn marginfi_rebalance<'a>(
                 ctx.accounts.debt_bank,
                 ctx.accounts.debt_price_oracle.unwrap(),
                 &mut std_accounts.solauto_position,
+                args.price_type.unwrap().clone(),
             )?;
         } else {
             let supply_price = MarginfiClient::load_price(
                 &DeserializedAccount::<Bank>::zerocopy(Some(ctx.accounts.supply_bank))?.unwrap(),
                 ctx.accounts.supply_price_oracle.unwrap(),
+                args.price_type.unwrap().clone(),
             )?;
             let debt_price = MarginfiClient::load_price(
                 &DeserializedAccount::<Bank>::zerocopy(Some(ctx.accounts.debt_bank))?.unwrap(),
                 ctx.accounts.debt_price_oracle.unwrap(),
+                args.price_type.unwrap().clone(),
             )?;
             update_token_prices(&mut std_accounts, supply_price, debt_price);
         }

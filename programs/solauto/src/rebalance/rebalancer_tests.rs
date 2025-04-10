@@ -434,6 +434,7 @@ mod tests {
             )),
             flash_loan_fee_bps: None,
             swap_type: Some(SwapType::ExactIn),
+            price_type: None,
         };
         let rebalancer = &mut create_rebalancer(
             FakeRebalance {
@@ -501,6 +502,7 @@ mod tests {
             )),
             flash_loan_fee_bps: None,
             swap_type: Some(SwapType::ExactIn),
+            price_type: None,
         };
         let rebalancer = &mut create_rebalancer(
             FakeRebalance {
@@ -578,6 +580,7 @@ mod tests {
             swap_in_amount_base_unit: Some(flash_borrow),
             flash_loan_fee_bps: Some(FLASH_LOAN_FEE_BPS),
             swap_type: Some(SwapType::ExactIn),
+            price_type: None,
         };
         let rebalancer = &mut create_rebalancer(
             FakeRebalance {
@@ -650,6 +653,7 @@ mod tests {
             swap_in_amount_base_unit: Some(flash_borrow),
             flash_loan_fee_bps: Some(FLASH_LOAN_FEE_BPS),
             swap_type: Some(SwapType::ExactIn),
+            price_type: None,
         };
         let rebalancer = &mut create_rebalancer(
             FakeRebalance {
@@ -724,6 +728,7 @@ mod tests {
             )),
             flash_loan_fee_bps: None,
             swap_type: Some(SwapType::ExactOut),
+            price_type: None,
         };
         let rebalancer = &mut create_rebalancer(
             FakeRebalance {
@@ -803,6 +808,7 @@ mod tests {
             )),
             flash_loan_fee_bps: None,
             swap_type: Some(SwapType::ExactIn),
+            price_type: None,
         };
         let rebalancer = &mut create_rebalancer(
             FakeRebalance {

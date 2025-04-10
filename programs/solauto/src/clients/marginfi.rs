@@ -7,7 +7,7 @@ use marginfi_sdk::generated::{
     types::{Balance, OracleSetup},
 };
 use pyth_sdk_solana::state::SolanaPriceAccount;
-use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
+use pyth_solana_receiver_sdk::price_update::{PriceUpdateV2, VerificationLevel};
 use solana_program::{
     account_info::AccountInfo, clock::Clock, entrypoint::ProgramResult, msg,
     program_error::ProgramError, pubkey::Pubkey, sysvar::Sysvar,
@@ -28,9 +28,17 @@ use crate::{
             SolautoStandardAccounts,
         },
         lending_protocol::{LendingProtocolClient, LendingProtocolTokenAccounts},
-        shared::{DeserializedAccount, RefreshStateProps, RefreshedTokenState, TokenBalanceAmount},
+        shared::{
+            DeserializedAccount, PriceType, RefreshStateProps, RefreshedTokenState,
+            TokenBalanceAmount,
+        },
     },
-    utils::{math_utils, solana_utils::*, solauto_utils::*, validation_utils::*},
+    utils::{
+        math_utils::{self, derive_price},
+        solana_utils::*,
+        solauto_utils::*,
+        validation_utils::*,
+    },
 };
 
 pub struct MarginfiBankAccounts<'a> {
@@ -189,13 +197,14 @@ impl<'a> MarginfiClient<'a> {
         account_balances: &[Balance],
         supply_bank: &'a AccountInfo<'a>,
         price_oracle: &'a AccountInfo<'a>,
+        price_type: PriceType,
         mut max_ltv: f64,
     ) -> Result<(RefreshedTokenState, f64), ProgramError> {
         let bank = DeserializedAccount::<Bank>::zerocopy(Some(supply_bank))?.unwrap();
 
         let asset_share_value = I80F48::from_le_bytes(bank.data.asset_share_value.value);
 
-        let market_price = MarginfiClient::load_price(&bank, price_oracle)?;
+        let market_price = MarginfiClient::load_price(&bank, price_oracle, price_type)?;
 
         let supply_shares = MarginfiClient::get_account_balance(account_balances, &bank, true);
         let base_unit_account_deposits = if supply_shares.is_some() {
@@ -239,12 +248,13 @@ impl<'a> MarginfiClient<'a> {
         account_balances: &[Balance],
         debt_bank: &'a AccountInfo<'a>,
         price_oracle: &'a AccountInfo<'a>,
+        price_type: PriceType,
     ) -> Result<RefreshedTokenState, ProgramError> {
         let bank = DeserializedAccount::<Bank>::zerocopy(Some(debt_bank))?.unwrap();
 
         let liability_share_value = I80F48::from_le_bytes(bank.data.liability_share_value.value);
 
-        let market_price = MarginfiClient::load_price(&bank, price_oracle)?;
+        let market_price = MarginfiClient::load_price(&bank, price_oracle, price_type)?;
 
         let debt_shares = MarginfiClient::get_account_balance(account_balances, &bank, false);
         let base_unit_account_debt = if debt_shares.is_some() {
@@ -287,24 +297,30 @@ impl<'a> MarginfiClient<'a> {
         })
     }
 
-    pub fn get_updated_state(
+    pub fn get_updated_state<'b>(
         marginfi_account: &DeserializedAccount<MarginfiAccount>,
         supply_bank: &'a AccountInfo<'a>,
         supply_price_oracle: &'a AccountInfo<'a>,
         debt_bank: &'a AccountInfo<'a>,
         debt_price_oracle: &'a AccountInfo<'a>,
+        price_type: PriceType,
     ) -> Result<RefreshStateProps, ProgramError> {
         let (max_ltv, liq_threshold) =
             MarginfiClient::get_max_ltv_and_liq_threshold(supply_bank, debt_bank)?;
 
         let account_balances = &marginfi_account.data.lending_account.balances[..2];
-        let debt =
-            MarginfiClient::get_debt_token_usage(account_balances, debt_bank, debt_price_oracle)?;
+        let debt = MarginfiClient::get_debt_token_usage(
+            account_balances,
+            debt_bank,
+            debt_price_oracle,
+            price_type,
+        )?;
 
         let (supply, max_ltv) = MarginfiClient::get_supply_token_usage(
             account_balances,
             supply_bank,
             supply_price_oracle,
+            price_type,
             max_ltv,
         )?;
 
@@ -319,6 +335,7 @@ impl<'a> MarginfiClient<'a> {
     pub fn load_price(
         bank: &DeserializedAccount<Bank>,
         price_oracle: &AccountInfo,
+        price_type: PriceType,
     ) -> Result<f64, ProgramError> {
         let clock = Clock::get()?;
         let max_price_age = 120; // Default used by Marginfi is 60
@@ -333,19 +350,17 @@ impl<'a> MarginfiClient<'a> {
             }
             OracleSetup::PythLegacy => {
                 let price_feed = SolanaPriceAccount::account_info_to_feed(price_oracle)?;
-                let price_result = price_feed
-                    .get_ema_price_no_older_than(clock.unix_timestamp, max_price_age)
-                    .unwrap();
 
-                let price = if price_result.expo == 0 {
-                    price_result.price as f64
-                } else if price_result.expo < 0 {
-                    math_utils::from_base_unit::<i64, u32, f64>(
-                        price_result.price,
-                        price_result.expo.unsigned_abs(),
-                    )
+                let price = if price_type == PriceType::Ema {
+                    let price_result = price_feed
+                        .get_price_no_older_than(clock.unix_timestamp, max_price_age)
+                        .unwrap();
+                    derive_price(price_result.price, price_result.expo)
                 } else {
-                    math_utils::to_base_unit(price_result.price, price_result.expo.unsigned_abs())
+                    let price_result = price_feed
+                        .get_price_no_older_than(clock.unix_timestamp, max_price_age)
+                        .unwrap();
+                    derive_price(price_result.price, price_result.expo)
                 };
 
                 Ok(price)
@@ -354,26 +369,24 @@ impl<'a> MarginfiClient<'a> {
                 let price_feed_data = price_oracle.try_borrow_data()?;
                 let price_feed = PriceUpdateV2::deserialize(&mut &price_feed_data.as_ref()[8..])?;
 
-                let feed_id = &bank.data.config.oracle_keys[0].to_bytes();
-                let price_result = price_feed
-                    .get_price_no_older_than(&clock, max_price_age, feed_id)
-                    .map_err(|e| {
-                        msg!("Pyth push oracle error: {:?}", e);
-                        ProgramError::Custom(0)
-                    })?;
-
-                let price = if price_result.exponent == 0 {
-                    price_result.price as f64
-                } else if price_result.exponent < 0 {
-                    math_utils::from_base_unit(
-                        price_result.price,
-                        price_result.exponent.unsigned_abs(),
-                    )
+                let price = if price_type == PriceType::Ema {
+                    let ema_price = price_feed.price_message.ema_price;
+                    let exponent = price_feed.price_message.exponent;
+                    derive_price(ema_price, exponent)
                 } else {
-                    math_utils::to_base_unit(
-                        price_result.price,
-                        price_result.exponent.unsigned_abs(),
-                    )
+                    let feed_id = &bank.data.config.oracle_keys[0].to_bytes();
+                    let price_result = price_feed
+                        .get_price_no_older_than_with_custom_verification_level(
+                            &clock,
+                            max_price_age,
+                            feed_id,
+                            VerificationLevel::Full,
+                        )
+                        .map_err(|e| {
+                            msg!("Pyth push oracle error: {:?}", e);
+                            ProgramError::Custom(0)
+                        })?;
+                    derive_price(price_result.price, price_result.exponent)
                 };
 
                 Ok(price)

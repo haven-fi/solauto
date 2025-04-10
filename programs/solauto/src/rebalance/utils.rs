@@ -81,10 +81,10 @@ fn get_target_liq_utilization_rate_bps(
         return Ok(rebalance_args.target_liq_utilization_rate_bps.unwrap());
     }
 
-    if solauto_position.state.liq_utilization_rate_bps <= solauto_position.boost_from_bps() {
-        return Ok(solauto_position.position.settings.boost_to_bps);
-    } else if solauto_position.state.liq_utilization_rate_bps >= solauto_position.repay_from_bps() {
+    if solauto_position.state.liq_utilization_rate_bps >= solauto_position.repay_from_bps() {
         return Ok(solauto_position.position.settings.repay_to_bps);
+    } else if solauto_position.state.liq_utilization_rate_bps <= solauto_position.boost_from_bps() {
+        return Ok(solauto_position.position.settings.boost_to_bps);
     } else if token_balance_change.is_some() {
         // TODO: DCA, limit orders, take profit, stop loss, etc.
         return Ok(solauto_position.state.liq_utilization_rate_bps);

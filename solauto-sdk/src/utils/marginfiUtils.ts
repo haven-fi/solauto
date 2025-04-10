@@ -5,7 +5,7 @@ import {
   toWeb3JsPublicKey,
 } from "@metaplex-foundation/umi-web3js-adapters";
 import { ProgramEnv, MarginfiAssetAccounts } from "../types";
-import { PositionState, PositionTokenState } from "../generated";
+import { PositionState, PositionTokenState, PriceType } from "../generated";
 import {
   ALL_SUPPORTED_TOKENS,
   getMarginfiAccounts,
@@ -407,7 +407,8 @@ async function getTokenUsage(
   bank: Bank | null,
   isAsset: boolean,
   shares: number,
-  amountUsedAdjustment?: bigint
+  amountUsedAdjustment?: bigint,
+  priceType?: PriceType
 ): Promise<PositionTokenState> {
   let amountUsed = 0;
   let amountCanBeUsed = BigInt(0);
@@ -415,7 +416,7 @@ async function getTokenUsage(
   let originationFee = 0;
 
   if (bank !== null) {
-    [marketPrice] = await fetchTokenPrices([toWeb3JsPublicKey(bank.mint)]);
+    [marketPrice] = await fetchTokenPrices([toWeb3JsPublicKey(bank.mint)], priceType);
     const [assetShareValue, liabilityShareValue] = getUpToDateShareValues(bank);
     const shareValue = isAsset ? assetShareValue : liabilityShareValue;
     amountUsed = shares * shareValue + Number(amountUsedAdjustment ?? 0);
@@ -489,7 +490,8 @@ export async function getMarginfiAccountPositionState(
   supply?: BankSelection,
   debt?: BankSelection,
   programEnv?: ProgramEnv,
-  contextUpdates?: ContextUpdates
+  contextUpdates?: ContextUpdates,
+  priceType?: PriceType
 ): Promise<
   | { supplyBank: Bank | null; debtBank: Bank | null; state: PositionState }
   | undefined
@@ -550,7 +552,8 @@ export async function getMarginfiAccountPositionState(
         supplyBank!,
         true,
         bytesToI80F48(supplyBalances[0].assetShares.value),
-        contextUpdates?.supplyAdjustment
+        contextUpdates?.supplyAdjustment,
+        priceType
       );
     }
 
@@ -567,7 +570,8 @@ export async function getMarginfiAccountPositionState(
         debtBank!,
         false,
         bytesToI80F48(debtBalances[0].liabilityShares.value),
-        contextUpdates?.debtAdjustment
+        contextUpdates?.debtAdjustment,
+        priceType
       );
     }
   }
@@ -581,7 +585,7 @@ export async function getMarginfiAccountPositionState(
       supplyBank,
       true,
       0,
-      contextUpdates?.supplyAdjustment
+      contextUpdates?.supplyAdjustment,
     );
   }
 
@@ -609,7 +613,7 @@ export async function getMarginfiAccountPositionState(
       debtBank,
       false,
       0,
-      contextUpdates?.debtAdjustment
+      contextUpdates?.debtAdjustment,
     );
   }
 

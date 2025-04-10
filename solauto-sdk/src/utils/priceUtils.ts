@@ -14,8 +14,17 @@ import {
   zip,
 } from "./generalUtils";
 import { getJupPriceData } from "./jupiterUtils";
+import { PriceType } from "../generated";
 
-export async function fetchTokenPrices(mints: PublicKey[]): Promise<number[]> {
+interface PriceResult {
+  realtimePrice: number;
+  emaPrice?: number;
+}
+
+export async function fetchTokenPrices(
+  mints: PublicKey[],
+  priceType: PriceType = PriceType.Realtime
+): Promise<number[]> {
   const currentTime = currentUnixSeconds();
   if (
     !mints.some(
@@ -24,7 +33,12 @@ export async function fetchTokenPrices(mints: PublicKey[]): Promise<number[]> {
         currentTime - PRICES[mint.toString()].time > 3
     )
   ) {
-    return mints.map((mint) => PRICES[mint.toString()].price);
+    return mints.map((mint) => {
+      const priceData = PRICES[mint.toString()];
+      return priceType === PriceType.Ema
+        ? priceData.emaPrice
+        : priceData.realtimePrice;
+    });
   }
 
   const pythMints = mints.filter((x) => x.toString() in PYTH_PRICE_FEED_IDS);
@@ -36,7 +50,7 @@ export async function fetchTokenPrices(mints: PublicKey[]): Promise<number[]> {
   );
 
   const [pythData, switchboardData, jupData] = await Promise.all([
-    zip(pythMints, await getPythPrices(pythMints)),
+    zip(pythMints, await getPythPrices(pythMints, priceType)),
     zip(switchboardMints, await getSwitchboardPrices(switchboardMints)),
     zip(otherMints, await getJupTokenPrices(otherMints)),
   ]);
@@ -45,20 +59,29 @@ export async function fetchTokenPrices(mints: PublicKey[]): Promise<number[]> {
     const item = [...pythData, ...switchboardData, ...jupData].find((data) =>
       data[0].equals(mint)
     );
-    return item ? item[1] : 0;
+    return item ? item[1] : { realtimePrice: 0 };
   });
 
   for (var i = 0; i < mints.length; i++) {
+    const realtimePrice = prices[i].realtimePrice;
     PRICES[mints[i].toString()] = {
-      price: Number(prices[i]),
+      realtimePrice,
+      emaPrice: prices[i].emaPrice ?? realtimePrice,
       time: currentUnixSeconds(),
     };
   }
 
-  return prices;
+  return prices.map((x) =>
+    priceType === PriceType.Ema
+      ? (x.emaPrice ?? x.realtimePrice)
+      : x.realtimePrice
+  );
 }
 
-export async function getPythPrices(mints: PublicKey[]) {
+export async function getPythPrices(
+  mints: PublicKey[],
+  priceType: PriceType
+): Promise<PriceResult[]> {
   if (mints.length === 0) {
     return [];
   }
@@ -72,7 +95,17 @@ export async function getPythPrices(mints: PublicKey[]) {
       `https://hermes.pyth.network/v2/updates/price/latest?${priceFeedIds.map((x) => `ids%5B%5D=${x}`).join("&")}`
     );
 
-  const prices: number[] = await retryWithExponentialBackoff(
+  const derivePrice = (price: number, exponent: number) => {
+    if (exponent > 0) {
+      return Number(toBaseUnit(Number(price), exponent));
+    } else if (exponent < 0) {
+      return fromBaseUnit(BigInt(price), Math.abs(exponent));
+    } else {
+      return Number(price);
+    }
+  };
+
+  const prices: PriceResult[] = await retryWithExponentialBackoff(
     async () => {
       let resp = await getReq();
       let status = resp.status;
@@ -82,13 +115,10 @@ export async function getPythPrices(mints: PublicKey[]) {
 
       const json = await resp.json();
       const prices = json.parsed.map((x: any) => {
-        if (x.price.expo > 0) {
-          return Number(toBaseUnit(Number(x.price.price), x.price.expo));
-        } else if (x.price.expo < 0) {
-          return fromBaseUnit(BigInt(x.price.price), Math.abs(x.price.expo));
-        } else {
-          return Number(x.price.price);
-        }
+        return {
+          realtimePrice: derivePrice(x.price.price, x.price.expo),
+          emaPrice: derivePrice(x.ema_price.price, x.ema_price.expo),
+        };
       });
 
       return prices;
@@ -118,7 +148,7 @@ function getSortedPriceData(
 
 export async function getSwitchboardPrices(
   mints: PublicKey[]
-): Promise<number[]> {
+): Promise<PriceResult[]> {
   if (mints.length === 0) {
     return [];
   }
@@ -165,34 +195,48 @@ export async function getSwitchboardPrices(
     await getJupTokenPrices(missingMints.map((x) => new PublicKey(x)))
   ).reduce(
     (acc, [key, value]) => {
-      acc[key.toString()] = value;
+      acc[key.toString()] = value.realtimePrice;
       return acc;
     },
     {} as Record<string, number>
   );
 
-  return Object.values(getSortedPriceData({ ...prices, ...jupPrices }, mints));
+  return Object.values(
+    getSortedPriceData({ ...prices, ...jupPrices }, mints)
+  ).map((x) => {
+    return { realtimePrice: x };
+  });
 }
 
-export async function getJupTokenPrices(mints: PublicKey[]) {
+export async function getJupTokenPrices(
+  mints: PublicKey[]
+): Promise<PriceResult[]> {
   if (mints.length == 0) {
     return [];
   }
 
   const data = getSortedPriceData(await getJupPriceData(mints), mints);
 
-  return Object.values(data).map((x) =>
+  const prices = Object.values(data).map((x) =>
     x !== null && typeof x === "object" && "price" in x
       ? parseFloat(x.price as string)
       : 0
   );
+
+  return prices.map((x) => {
+    return { realtimePrice: x };
+  });
 }
 
 export function safeGetPrice(
-  mint: PublicKey | UmiPublicKey | string | undefined
+  mint: PublicKey | UmiPublicKey | string | undefined,
+  priceType: PriceType = PriceType.Realtime
 ): number | undefined {
   if (mint && mint?.toString() in PRICES) {
-    return PRICES[mint!.toString()].price;
+    const priceData = PRICES[mint!.toString()];
+    return priceType === PriceType.Ema
+      ? priceData.emaPrice
+      : priceData.realtimePrice;
   }
   return undefined;
 }

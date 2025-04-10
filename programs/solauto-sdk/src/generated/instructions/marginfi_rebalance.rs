@@ -5,6 +5,7 @@
 //! [https://github.com/metaplex-foundation/kinobi]
 //!
 
+use crate::generated::types::PriceType;
 use crate::generated::types::SolautoRebalanceType;
 use crate::generated::types::SwapType;
 use borsh::BorshDeserialize;
@@ -291,9 +292,10 @@ impl MarginfiRebalanceInstructionData {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct MarginfiRebalanceInstructionArgs {
     pub rebalance_type: SolautoRebalanceType,
-    pub target_liq_utilization_rate_bps: Option<u16>,
     pub swap_in_amount_base_unit: Option<u64>,
+    pub target_liq_utilization_rate_bps: Option<u16>,
     pub flash_loan_fee_bps: Option<u16>,
+    pub price_type: Option<PriceType>,
     pub swap_type: Option<SwapType>,
 }
 
@@ -354,9 +356,10 @@ pub struct MarginfiRebalanceBuilder {
     vault_debt_ta: Option<solana_program::pubkey::Pubkey>,
     debt_vault_authority: Option<solana_program::pubkey::Pubkey>,
     rebalance_type: Option<SolautoRebalanceType>,
-    target_liq_utilization_rate_bps: Option<u16>,
     swap_in_amount_base_unit: Option<u64>,
+    target_liq_utilization_rate_bps: Option<u16>,
     flash_loan_fee_bps: Option<u16>,
+    price_type: Option<PriceType>,
     swap_type: Option<SwapType>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
@@ -565,6 +568,12 @@ impl MarginfiRebalanceBuilder {
     }
     /// `[optional argument]`
     #[inline(always)]
+    pub fn swap_in_amount_base_unit(&mut self, swap_in_amount_base_unit: u64) -> &mut Self {
+        self.swap_in_amount_base_unit = Some(swap_in_amount_base_unit);
+        self
+    }
+    /// `[optional argument]`
+    #[inline(always)]
     pub fn target_liq_utilization_rate_bps(
         &mut self,
         target_liq_utilization_rate_bps: u16,
@@ -574,14 +583,14 @@ impl MarginfiRebalanceBuilder {
     }
     /// `[optional argument]`
     #[inline(always)]
-    pub fn swap_in_amount_base_unit(&mut self, swap_in_amount_base_unit: u64) -> &mut Self {
-        self.swap_in_amount_base_unit = Some(swap_in_amount_base_unit);
+    pub fn flash_loan_fee_bps(&mut self, flash_loan_fee_bps: u16) -> &mut Self {
+        self.flash_loan_fee_bps = Some(flash_loan_fee_bps);
         self
     }
     /// `[optional argument]`
     #[inline(always)]
-    pub fn flash_loan_fee_bps(&mut self, flash_loan_fee_bps: u16) -> &mut Self {
-        self.flash_loan_fee_bps = Some(flash_loan_fee_bps);
+    pub fn price_type(&mut self, price_type: PriceType) -> &mut Self {
+        self.price_type = Some(price_type);
         self
     }
     /// `[optional argument]`
@@ -650,9 +659,10 @@ impl MarginfiRebalanceBuilder {
                 .rebalance_type
                 .clone()
                 .expect("rebalance_type is not set"),
-            target_liq_utilization_rate_bps: self.target_liq_utilization_rate_bps.clone(),
             swap_in_amount_base_unit: self.swap_in_amount_base_unit.clone(),
+            target_liq_utilization_rate_bps: self.target_liq_utilization_rate_bps.clone(),
             flash_loan_fee_bps: self.flash_loan_fee_bps.clone(),
+            price_type: self.price_type.clone(),
             swap_type: self.swap_type.clone(),
         };
 
@@ -1169,9 +1179,10 @@ impl<'a, 'b> MarginfiRebalanceCpiBuilder<'a, 'b> {
             vault_debt_ta: None,
             debt_vault_authority: None,
             rebalance_type: None,
-            target_liq_utilization_rate_bps: None,
             swap_in_amount_base_unit: None,
+            target_liq_utilization_rate_bps: None,
             flash_loan_fee_bps: None,
+            price_type: None,
             swap_type: None,
             __remaining_accounts: Vec::new(),
         });
@@ -1396,6 +1407,12 @@ impl<'a, 'b> MarginfiRebalanceCpiBuilder<'a, 'b> {
     }
     /// `[optional argument]`
     #[inline(always)]
+    pub fn swap_in_amount_base_unit(&mut self, swap_in_amount_base_unit: u64) -> &mut Self {
+        self.instruction.swap_in_amount_base_unit = Some(swap_in_amount_base_unit);
+        self
+    }
+    /// `[optional argument]`
+    #[inline(always)]
     pub fn target_liq_utilization_rate_bps(
         &mut self,
         target_liq_utilization_rate_bps: u16,
@@ -1405,14 +1422,14 @@ impl<'a, 'b> MarginfiRebalanceCpiBuilder<'a, 'b> {
     }
     /// `[optional argument]`
     #[inline(always)]
-    pub fn swap_in_amount_base_unit(&mut self, swap_in_amount_base_unit: u64) -> &mut Self {
-        self.instruction.swap_in_amount_base_unit = Some(swap_in_amount_base_unit);
+    pub fn flash_loan_fee_bps(&mut self, flash_loan_fee_bps: u16) -> &mut Self {
+        self.instruction.flash_loan_fee_bps = Some(flash_loan_fee_bps);
         self
     }
     /// `[optional argument]`
     #[inline(always)]
-    pub fn flash_loan_fee_bps(&mut self, flash_loan_fee_bps: u16) -> &mut Self {
-        self.instruction.flash_loan_fee_bps = Some(flash_loan_fee_bps);
+    pub fn price_type(&mut self, price_type: PriceType) -> &mut Self {
+        self.instruction.price_type = Some(price_type);
         self
     }
     /// `[optional argument]`
@@ -1468,12 +1485,13 @@ impl<'a, 'b> MarginfiRebalanceCpiBuilder<'a, 'b> {
                 .rebalance_type
                 .clone()
                 .expect("rebalance_type is not set"),
+            swap_in_amount_base_unit: self.instruction.swap_in_amount_base_unit.clone(),
             target_liq_utilization_rate_bps: self
                 .instruction
                 .target_liq_utilization_rate_bps
                 .clone(),
-            swap_in_amount_base_unit: self.instruction.swap_in_amount_base_unit.clone(),
             flash_loan_fee_bps: self.instruction.flash_loan_fee_bps.clone(),
+            price_type: self.instruction.price_type.clone(),
             swap_type: self.instruction.swap_type.clone(),
         };
         let instruction = MarginfiRebalanceCpi {
@@ -1595,9 +1613,10 @@ struct MarginfiRebalanceCpiBuilderInstruction<'a, 'b> {
     vault_debt_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     debt_vault_authority: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     rebalance_type: Option<SolautoRebalanceType>,
-    target_liq_utilization_rate_bps: Option<u16>,
     swap_in_amount_base_unit: Option<u64>,
+    target_liq_utilization_rate_bps: Option<u16>,
     flash_loan_fee_bps: Option<u16>,
+    price_type: Option<PriceType>,
     swap_type: Option<SwapType>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(

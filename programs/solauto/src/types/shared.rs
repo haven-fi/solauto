@@ -144,6 +144,14 @@ impl PodBool {
     }
 }
 
+#[repr(u8)]
+#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, Default, PartialEq, Copy)]
+pub enum PriceType {
+    #[default]
+    Realtime,
+    Ema,
+}
+
 #[derive(Clone)]
 pub struct DeserializedAccount<'a, T> {
     pub account_info: &'a AccountInfo<'a>,

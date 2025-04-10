@@ -2,6 +2,7 @@ import { PublicKey } from "@solana/web3.js";
 import {
   LendingPlatform,
   PositionType,
+  PriceType,
   SolautoRebalanceType,
   TokenType,
 } from "../generated";
@@ -60,6 +61,7 @@ export interface RebalanceDetails {
   flashLoan?: FlashLoanDetails;
   swapQuote: QuoteResponse;
   targetLiqUtilizationRateBps?: number;
+  priceType: PriceType;
 }
 
 export type ProgramEnv = "Prod" | "Staging";

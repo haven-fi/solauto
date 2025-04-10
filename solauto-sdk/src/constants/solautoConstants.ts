@@ -28,7 +28,7 @@ export const MIN_USD_SUPPORTED_POSITION = 1000;
 
 export const REFERRER_PERCENTAGE = 0.15;
 
-export const PRICES: { [key: string]: { price: number; time: number } } = {};
+export const PRICES: { [key: string]: { realtimePrice: number; emaPrice: number; time: number } } = {};
 
 export const JITO_TIP_ACCOUNTS = [
   "96gYZGLnJYVFmbjzopPSU6QiEV5fGqZNyN9nmNhvrZU5",

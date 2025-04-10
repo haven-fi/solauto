@@ -13,6 +13,7 @@ import {
   DCASettingsInpArgs,
   LendingPlatform,
   PositionType,
+  PriceType,
   RebalanceDirection,
   RebalanceStep,
   SolautoActionArgs,
@@ -205,7 +206,7 @@ export class SolautoMarginfiClient extends SolautoClient {
     });
   }
 
-  refreshIx(): TransactionBuilder {
+  refreshIx(priceType: PriceType): TransactionBuilder {
     return marginfiRefreshData(this.umi, {
       signer: this.signer,
       marginfiProgram: publicKey(this.mfiAccounts.program),
@@ -216,6 +217,7 @@ export class SolautoMarginfiClient extends SolautoClient {
       debtBank: publicKey(this.marginfiDebtAccounts.bank),
       debtPriceOracle: publicKey(this.debtPriceOracle),
       solautoPosition: publicKey(this.pos.publicKey),
+      priceType,
     });
   }
 
@@ -448,6 +450,7 @@ export class SolautoMarginfiClient extends SolautoClient {
         data.swapQuote.swapMode === "ExactOut" && isFirstRebalance
           ? SwapType.ExactOut
           : null,
+      priceType: isFirstRebalance ? data.priceType : null,
       flashLoanFeeBps:
         data.flashLoan?.flFeeBps && isFirstRebalance
           ? data.flashLoan.flFeeBps

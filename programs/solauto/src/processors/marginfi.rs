@@ -17,7 +17,7 @@ use crate::{
             },
             MarginfiOpenPositionData, RebalanceSettings, SolautoAction, SolautoStandardAccounts,
         },
-        shared::{DeserializedAccount, LendingPlatform},
+        shared::{DeserializedAccount, LendingPlatform, PriceType},
     },
     utils::*,
 };
@@ -108,7 +108,10 @@ pub fn process_marginfi_open_position_instruction<'a>(
     open_position::marginfi_open_position(ctx, std_accounts.solauto_position)
 }
 
-pub fn process_marginfi_refresh_data<'a>(accounts: &'a [AccountInfo<'a>]) -> ProgramResult {
+pub fn process_marginfi_refresh_data<'a>(
+    accounts: &'a [AccountInfo<'a>],
+    price_type: PriceType,
+) -> ProgramResult {
     msg!("Instruction: Marginfi refresh data");
     let ctx = MarginfiRefreshDataAccounts::context(accounts)?;
     let mut solauto_position =
@@ -141,6 +144,7 @@ pub fn process_marginfi_refresh_data<'a>(accounts: &'a [AccountInfo<'a>]) -> Pro
         ctx.accounts.debt_bank,
         ctx.accounts.debt_price_oracle,
         &mut solauto_position,
+        price_type,
     )
 }
 

@@ -17,11 +17,15 @@ use solana_program::{
 
 use super::solana_utils::invoke_instruction;
 use crate::{
-    check, constants::{MARGINFI_PROD_PROGRAM, MARGINFI_STAGING_PROGRAM}, error_if, state::solauto_position::SolautoPosition, types::{
+    check,
+    constants::{MARGINFI_PROD_PROGRAM, MARGINFI_STAGING_PROGRAM},
+    error_if,
+    state::solauto_position::SolautoPosition,
+    types::{
         errors::SolautoError,
         instruction::{SolautoStandardAccounts, SOLAUTO_REBALANCE_IX_DISCRIMINATORS},
         shared::{DeserializedAccount, SolautoRebalanceType},
-    }
+    },
 };
 
 pub fn update_data<T: BorshSerialize>(account: &mut DeserializedAccount<T>) -> ProgramResult {

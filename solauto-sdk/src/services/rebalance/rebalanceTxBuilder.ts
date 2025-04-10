@@ -10,6 +10,7 @@ import {
 import {
   consoleLog,
   fromBaseUnit,
+  getLiqUtilzationRateBps,
   getMaxLiqUtilizationRateBps,
   getTokenAccount,
   hasFirstRebalance,
@@ -19,6 +20,7 @@ import {
 } from "../../utils";
 import {
   PositionTokenState,
+  PriceType,
   RebalanceDirection,
   RebalanceStep,
   SolautoRebalanceType,
@@ -35,6 +37,7 @@ export class RebalanceTxBuilder {
   private rebalanceType!: SolautoRebalanceType;
   private swapManager!: RebalanceSwapManager;
   private flRequirements?: FlashLoanRequirements;
+  private priceType!: PriceType;
 
   constructor(
     private client: SolautoClient,
@@ -49,9 +52,10 @@ export class RebalanceTxBuilder {
     );
   }
 
-  private getRebalanceValues(flFee?: number) {
+  private getRebalanceValues(priceType: PriceType, flFee?: number) {
     return getRebalanceValues(
       this.client.pos,
+      priceType,
       this.targetLiqUtilizationRateBps,
       SolautoFeesBps.create(
         this.client.isReferred(),
@@ -199,8 +203,33 @@ export class RebalanceTxBuilder {
     }
   }
 
+  private realtimeUsdToEmaUsd(realtimeAmountUsd: number, mint: PublicKey) {
+    return (
+      (realtimeAmountUsd / safeGetPrice(mint, PriceType.Realtime)!) *
+      safeGetPrice(mint, PriceType.Ema)!
+    );
+  }
+
   private async setRebalanceDetails(attemptNum: number) {
-    this.values = this.getRebalanceValues();
+    this.priceType = PriceType.Realtime;
+    this.values = this.getRebalanceValues(this.priceType);
+
+    const postRebalanceEmaUtilRateBps = getLiqUtilzationRateBps(
+      this.realtimeUsdToEmaUsd(
+        this.values.endResult.supplyUsd,
+        this.client.pos.supplyMint()
+      ),
+      this.realtimeUsdToEmaUsd(
+        this.values.endResult.debtUsd,
+        this.client.pos.debtMint()
+      ),
+      this.client.pos.state().liqThresholdBps
+    );
+    if (postRebalanceEmaUtilRateBps > this.client.pos.maxBoostToBps()) {
+      this.priceType = PriceType.Ema;
+      this.values = this.getRebalanceValues(this.priceType);
+    }
+
     this.flRequirements = await this.flashLoanRequirements(attemptNum);
 
     if (this.flRequirements?.flFeeBps) {
@@ -254,7 +283,7 @@ export class RebalanceTxBuilder {
     let tx = transactionBuilder();
 
     if (await this.refreshBeforeRebalance()) {
-      tx = tx.add(this.client.refreshIx());
+      tx = tx.add(this.client.refreshIx(this.priceType));
     }
 
     const rebalanceDetails: RebalanceDetails = {
@@ -263,6 +292,7 @@ export class RebalanceTxBuilder {
       flashLoan: flashLoanDetails,
       swapQuote,
       targetLiqUtilizationRateBps: this.targetLiqUtilizationRateBps,
+      priceType: this.priceType,
     };
     consoleLog("Rebalance details:", rebalanceDetails);
 

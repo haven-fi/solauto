@@ -1,4 +1,5 @@
 import {
+  PriceType,
   RebalanceDirection,
   TokenBalanceChange,
   TokenBalanceChangeType,
@@ -117,6 +118,7 @@ function getTokenBalanceChange(): TokenBalanceChange | undefined {
 
 function getTargetLiqUtilizationRateBps(
   solautoPosition: SolautoPositionEx,
+  priceType: PriceType,
   targetLiqUtilizationRateBps: number | undefined,
   tokenBalanceChange: TokenBalanceChange | undefined
 ): number {
@@ -124,12 +126,16 @@ function getTargetLiqUtilizationRateBps(
     return targetLiqUtilizationRateBps;
   }
 
-  const currentRate = solautoPosition.state().liqUtilizationRateBps;
-
-  if (currentRate <= solautoPosition.boostFromBps()) {
-    return solautoPosition.settings()!.boostToBps;
-  } else if (currentRate >= solautoPosition.repayFromBps()) {
+  if (
+    solautoPosition.liqUtilizationRateBps(PriceType.Realtime) >=
+    solautoPosition.repayFromBps()
+  ) {
     return solautoPosition.settings()!.repayToBps;
+  } else if (
+    solautoPosition.liqUtilizationRateBps(priceType) <=
+    solautoPosition.boostFromBps()
+  ) {
+    return solautoPosition.settings()!.boostToBps;
   }
   // TODO: DCA, limit orders, take profit, stop loss, etc.
   //   else if (tokenBalanceChange !== null) {
@@ -141,10 +147,11 @@ function getTargetLiqUtilizationRateBps(
 
 function getAdjustedPositionValues(
   solautoPosition: SolautoPositionEx,
+  priceType: PriceType,
   tokenBalanceChange: TokenBalanceChange | undefined
 ): PositionValues {
-  let supplyUsd = solautoPosition.supplyUsd();
-  const debtUsd = solautoPosition.debtUsd();
+  let supplyUsd = solautoPosition.supplyUsd(priceType);
+  const debtUsd = solautoPosition.debtUsd(priceType);
 
   if (tokenBalanceChange) {
     const tb = tokenBalanceChange;
@@ -185,6 +192,7 @@ export interface RebalanceValues extends DebtAdjustment {
 
 export function getRebalanceValues(
   solautoPosition: SolautoPositionEx,
+  priceType: PriceType,
   targetLiqUtilizationRateBps?: number,
   solautoFeeBps?: SolautoFeesBps,
   flFeeBps?: number
@@ -193,6 +201,7 @@ export function getRebalanceValues(
 
   const targetRate = getTargetLiqUtilizationRateBps(
     solautoPosition,
+    priceType,
     targetLiqUtilizationRateBps,
     tokenBalanceChange
   );
@@ -201,6 +210,7 @@ export function getRebalanceValues(
 
   const position = getAdjustedPositionValues(
     solautoPosition,
+    priceType,
     tokenBalanceChange
   );
 
@@ -221,11 +231,7 @@ export function getRebalanceValues(
 
   const repayingCloseToMaxLtv =
     rebalanceDirection === RebalanceDirection.Repay &&
-    targetRate >=
-      maxRepayToBps(
-        solautoPosition.state().maxLtvBps,
-        solautoPosition.state().liqThresholdBps
-      );
+    targetRate >= solautoPosition.maxRepayToBps();
 
   return {
     ...debtAdjustment,

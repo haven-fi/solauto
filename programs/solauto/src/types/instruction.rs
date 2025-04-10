@@ -117,7 +117,7 @@ pub enum Instruction {
     #[account(mut, name = "debt_bank")]
     #[account(name = "debt_price_oracle")]
     #[account(mut, name = "solauto_position")]
-    MarginfiRefreshData,
+    MarginfiRefreshData(PriceType),
 
     /// Marginfi protocol interaction. Can only be invoked by the authority of the position
     #[account(signer, name = "signer")]
@@ -211,11 +211,12 @@ pub enum SolautoAction {
 #[derive(BorshDeserialize, Clone, Debug, Default, ShankType)]
 pub struct RebalanceSettings {
     pub rebalance_type: SolautoRebalanceType,
-    /// Target liq utilization rate. Only used/allowed if signed by the position authority.
-    pub target_liq_utilization_rate_bps: Option<u16>,
     /// The in-amount to use in the token swap. Gets validated by the program.
     pub swap_in_amount_base_unit: Option<u64>,
+    /// Target liq utilization rate. Only used/allowed if signed by the position authority.
+    pub target_liq_utilization_rate_bps: Option<u16>,
     pub flash_loan_fee_bps: Option<u16>,
+    pub price_type: Option<PriceType>,
     pub swap_type: Option<SwapType>,
 }
 

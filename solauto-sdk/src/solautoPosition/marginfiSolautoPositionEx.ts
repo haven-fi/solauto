@@ -17,7 +17,7 @@ import {
 } from "../utils";
 import { getMarginfiAccounts } from "../constants";
 import { SolautoPositionEx } from "./solautoPositionEx";
-import { LendingPlatform } from "../generated";
+import { LendingPlatform, PriceType } from "../generated";
 
 export class MarginfiSolautoPositionEx extends SolautoPositionEx {
   lendingPlatform = LendingPlatform.Marginfi;
@@ -96,7 +96,7 @@ export class MarginfiSolautoPositionEx extends SolautoPositionEx {
     );
   }
 
-  async refreshPositionState(): Promise<void> {
+  async refreshPositionState(priceType?: PriceType): Promise<void> {
     if (!this.canRefreshPositionState()) {
       return;
     }
@@ -113,7 +113,8 @@ export class MarginfiSolautoPositionEx extends SolautoPositionEx {
         ? { mint: toWeb3JsPublicKey(this.state().debt.mint) }
         : undefined,
       this.lpEnv,
-      this.contextUpdates
+      this.contextUpdates,
+      priceType
     );
 
     if (resp) {

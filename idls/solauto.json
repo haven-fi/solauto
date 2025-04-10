@@ -506,7 +506,14 @@
           "isSigner": false
         }
       ],
-      "args": [],
+      "args": [
+        {
+          "name": "priceType",
+          "type": {
+            "defined": "PriceType"
+          }
+        }
+      ],
       "discriminant": {
         "type": "u8",
         "value": 7
@@ -1533,21 +1540,29 @@
             }
           },
           {
-            "name": "targetLiqUtilizationRateBps",
-            "type": {
-              "option": "u16"
-            }
-          },
-          {
             "name": "swapInAmountBaseUnit",
             "type": {
               "option": "u64"
             }
           },
           {
+            "name": "targetLiqUtilizationRateBps",
+            "type": {
+              "option": "u16"
+            }
+          },
+          {
             "name": "flashLoanFeeBps",
             "type": {
               "option": "u16"
+            }
+          },
+          {
+            "name": "priceType",
+            "type": {
+              "option": {
+                "defined": "PriceType"
+              }
             }
           },
           {
@@ -1749,6 +1764,20 @@
           },
           {
             "name": "All"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PriceType",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Realtime"
+          },
+          {
+            "name": "Ema"
           }
         ]
       }

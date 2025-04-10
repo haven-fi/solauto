@@ -140,6 +140,16 @@ pub fn get_max_boost_to_bps(max_ltv_bps: u16, liq_threshold_bps: u16) -> u16 {
     )
 }
 
+pub fn derive_price(price: i64, exponent: i32) -> f64 {
+    if exponent == 0 {
+        price as f64
+    } else if exponent < 0 {
+        from_base_unit(price, exponent.unsigned_abs())
+    } else {
+        to_base_unit(price, exponent.unsigned_abs())
+    }
+}
+
 #[inline(always)]
 pub fn calc_fee_amount(value: u64, fee_pct_bps: u16) -> u64 {
     (value as f64).mul(from_bps(fee_pct_bps)) as u64

@@ -5,26 +5,22 @@ import { NATIVE_MINT } from "@solana/spl-token";
 import { publicKey } from "@metaplex-foundation/umi";
 import { setupTest } from "../shared";
 import {
-  LendingPlatform,
-  SolautoSettingsParameters,
-} from "../../src/generated";
-import {
+  LOCAL_IRONFORGE_API_URL,
+  USDC,
   fromBps,
   getLiqUtilzationRateBps,
   getClient,
   fetchTokenPrices,
   safeGetPrice,
-} from "../../src/utils";
-import { LOCAL_IRONFORGE_API_URL, USDC } from "../../src/constants";
-import {
+  LendingPlatform,
+  PriceType,
+  SolautoSettingsParameters,
   getRebalanceValues,
   SolautoClient,
   SolautoFeesBps,
-} from "../../src/services";
-import {
   createFakePositionState,
   MarginfiSolautoPositionEx,
-} from "../../src/solautoPosition";
+} from "../../src";
 
 const signer = setupTest(undefined, true);
 
@@ -35,6 +31,7 @@ function assertAccurateRebalance(
 ) {
   const { endResult } = getRebalanceValues(
     client.pos,
+    PriceType.Realtime,
     targetLiqUtilizationRateBps,
     SolautoFeesBps.create(
       false,

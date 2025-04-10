@@ -12,6 +12,7 @@ import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 import {
   DCASettingsInpArgs,
   LendingPlatform,
+  PriceType,
   RebalanceStep,
   SolautoActionArgs,
   SolautoSettingsParametersInpArgs,
@@ -434,7 +435,7 @@ export abstract class SolautoClient extends ReferralStateManager {
     });
   }
 
-  abstract refreshIx(): TransactionBuilder;
+  abstract refreshIx(priceType: PriceType): TransactionBuilder;
 
   protocolInteractionIx(args: SolautoActionArgs): TransactionBuilder {
     let tx = transactionBuilder();

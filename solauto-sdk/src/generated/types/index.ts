@@ -16,6 +16,7 @@ export * from './positionData';
 export * from './positionState';
 export * from './positionTokenState';
 export * from './positionType';
+export * from './priceType';
 export * from './rebalanceData';
 export * from './rebalanceDirection';
 export * from './rebalanceInstructionData';
