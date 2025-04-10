@@ -322,9 +322,9 @@ export abstract class SolautoPositionEx {
 
   abstract refreshPositionState(priceType?: PriceType): Promise<void>;
 
-  async utilizationRateBpsDrift() {
-    const supplyPrice = safeGetPrice(this.supplyMint) ?? 0;
-    const debtPrice = safeGetPrice(this.debtMint) ?? 0;
+  async utilizationRateBpsDrift(priceType?: PriceType) {
+    const supplyPrice = safeGetPrice(this.supplyMint, priceType) ?? 0;
+    const debtPrice = safeGetPrice(this.debtMint, priceType) ?? 0;
     const oldState = await positionStateWithLatestPrices(
       this.firstState,
       supplyPrice,

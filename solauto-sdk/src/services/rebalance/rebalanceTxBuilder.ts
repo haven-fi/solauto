@@ -259,7 +259,7 @@ export class RebalanceTxBuilder {
     // Rebalance ix will already refresh internally if position is self managed
 
     const utilizationRateDiff = Math.abs(
-      await this.client.pos.utilizationRateBpsDrift()
+      await this.client.pos.utilizationRateBpsDrift(this.priceType)
     );
     consoleLog("Liq utilization rate diff:", utilizationRateDiff);
 
