@@ -101,12 +101,12 @@ impl LendingAccountLiquidate {
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
-struct LendingAccountLiquidateInstructionData {
+pub struct LendingAccountLiquidateInstructionData {
     discriminator: [u8; 8],
 }
 
 impl LendingAccountLiquidateInstructionData {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             discriminator: [214, 169, 151, 213, 251, 167, 86, 219],
         }

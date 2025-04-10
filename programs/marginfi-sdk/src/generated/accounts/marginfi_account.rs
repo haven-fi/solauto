@@ -28,8 +28,15 @@ pub struct MarginfiAccount {
     )]
     pub authority: Pubkey,
     pub lending_account: LendingAccount,
+    /// The flags that indicate the state of the account.
+    /// This is u64 bitfield, where each bit represents a flag.
+    ///
+    /// Flags:
+    /// - DISABLED_FLAG = 1 << 0 = 1 - This flag indicates that the account is disabled,
+    /// and no further actions can be taken on it.
+    pub account_flags: u64,
     #[cfg_attr(feature = "serde", serde(with = "serde_with::As::<serde_with::Bytes>"))]
-    pub padding: [u64; 64],
+    pub padding: [u64; 63],
 }
 
 impl MarginfiAccount {
