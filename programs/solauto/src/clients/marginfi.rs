@@ -481,6 +481,7 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
             },
             LendingAccountDepositInstructionArgs {
                 amount: base_unit_amount,
+                deposit_up_to_limit: Some(true)
             },
         );
 

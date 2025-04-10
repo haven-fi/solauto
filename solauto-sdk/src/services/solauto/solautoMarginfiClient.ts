@@ -235,7 +235,6 @@ export class SolautoMarginfiClient extends SolautoClient {
     switch (args.__kind) {
       case "Deposit": {
         return lendingAccountDeposit(this.umi, {
-          amount: args.fields[0],
           signer: this.signer,
           signerTokenAccount: publicKey(this.signerSupplyTa),
           marginfiAccount: publicKey(this.marginfiAccountPk),
@@ -244,6 +243,8 @@ export class SolautoMarginfiClient extends SolautoClient {
           bankLiquidityVault: publicKey(
             this.marginfiSupplyAccounts.liquidityVault
           ),
+          amount: args.fields[0],
+          depositUpToLimit: true,
         });
       }
       case "Borrow": {

@@ -803,6 +803,12 @@
         {
           "name": "amount",
           "type": "u64"
+        },
+        {
+          "name": "deposit_up_to_limit",
+          "type": {
+            "option": "bool"
+          }
         }
       ]
     },
