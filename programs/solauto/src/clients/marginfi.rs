@@ -51,7 +51,7 @@ pub struct MarginfiBankAccounts<'a> {
 pub struct MarginfiClient<'a> {
     signer: &'a AccountInfo<'a>,
     program: &'a AccountInfo<'a>,
-    marginfi_account: DeserializedAccount<'a, MarginfiAccount>,
+    marginfi_account: &'a AccountInfo<'a>,
     marginfi_group: &'a AccountInfo<'a>,
     supply: MarginfiBankAccounts<'a>,
     debt: MarginfiBankAccounts<'a>,
@@ -127,10 +127,7 @@ impl<'a> MarginfiClient<'a> {
         Ok(Self {
             signer,
             program,
-            marginfi_account: DeserializedAccount::<MarginfiAccount>::zerocopy(Some(
-                marginfi_account,
-            ))?
-            .unwrap(),
+            marginfi_account,
             marginfi_group,
             supply,
             debt,
@@ -472,7 +469,7 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
             self.program,
             LendingAccountDepositCpiAccounts {
                 marginfi_group: self.marginfi_group,
-                marginfi_account: self.marginfi_account.account_info,
+                marginfi_account: self.marginfi_account,
                 signer: authority,
                 bank: self.supply.bank.account_info,
                 signer_token_account,
@@ -514,7 +511,7 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
             self.program,
             LendingAccountWithdrawCpiAccounts {
                 marginfi_group: self.marginfi_group,
-                marginfi_account: self.marginfi_account.account_info,
+                marginfi_account: self.marginfi_account,
                 signer: authority,
                 bank: self.supply.bank.account_info,
                 destination_token_account: destination,
@@ -528,9 +525,12 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
             },
         );
 
-        let active_balances = self
-            .marginfi_account
-            .data
+        let marginfi_account_data = DeserializedAccount::<MarginfiAccount>::zerocopy(Some(
+            self.marginfi_account,
+        ))?
+        .unwrap().data;
+
+        let active_balances = marginfi_account_data
             .lending_account
             .balances
             .iter()
@@ -587,7 +587,7 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
             self.program,
             LendingAccountBorrowCpiAccounts {
                 marginfi_group: self.marginfi_group,
-                marginfi_account: self.marginfi_account.account_info,
+                marginfi_account: self.marginfi_account,
                 signer: authority,
                 bank: self.debt.bank.account_info,
                 destination_token_account: destination,
@@ -643,7 +643,7 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
             self.program,
             LendingAccountRepayCpiAccounts {
                 marginfi_group: self.marginfi_group,
-                marginfi_account: self.marginfi_account.account_info,
+                marginfi_account: self.marginfi_account,
                 signer: authority,
                 bank: self.debt.bank.account_info,
                 signer_token_account: signer_token_account,
