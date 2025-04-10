@@ -69,14 +69,15 @@ interface PositionExArgs {
 }
 
 export abstract class SolautoPositionEx {
-  public lendingPlatform!: LendingPlatform;
   public umi!: Umi;
+  protected contextUpdates?: ContextUpdates;
+  
   public publicKey!: PublicKey;
+  public lendingPlatform!: LendingPlatform;
   protected _data!: SolautoPositionExData;
   protected lp?: PublicKey = undefined;
   protected lpEnv!: ProgramEnv;
   public lpUserAccount?: PublicKey = undefined;
-  protected contextUpdates?: ContextUpdates;
 
   private readonly firstState!: PositionState;
 
