@@ -8,6 +8,7 @@ import {
   LendingPlatform,
   LOCAL_IRONFORGE_API_URL,
   PriorityFeeSetting,
+  ProgramEnv,
   rebalance,
   SOLAUTO_PROD_PROGRAM,
   SOLAUTO_TEST_PROGRAM,
@@ -17,11 +18,13 @@ import { getSecretKey } from "./shared";
 
 const payForTransaction = false;
 const testProgram = true;
+const lpEnv: ProgramEnv = "Prod";
 
 export async function main() {
-  const [, umi] = getSolanaRpcConnection(
+  let [, umi] = getSolanaRpcConnection(
     LOCAL_IRONFORGE_API_URL,
-    testProgram ? SOLAUTO_TEST_PROGRAM : SOLAUTO_PROD_PROGRAM
+    testProgram ? SOLAUTO_TEST_PROGRAM : SOLAUTO_PROD_PROGRAM,
+    lpEnv
   );
 
   const signer = createSignerFromKeypair(
@@ -34,6 +37,7 @@ export async function main() {
     showLogs: true,
     rpcUrl: LOCAL_IRONFORGE_API_URL,
     programId: testProgram ? SOLAUTO_TEST_PROGRAM : SOLAUTO_PROD_PROGRAM,
+    lpEnv,
   });
 
   await client.initialize({
