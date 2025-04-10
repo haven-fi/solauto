@@ -1,4 +1,6 @@
 import {
+  createSolautoProgram,
+  InvalidRebalanceConditionError,
   PriceType,
   RebalanceDirection,
   TokenBalanceChange,
@@ -142,7 +144,7 @@ function getTargetLiqUtilizationRateBps(
   //     return currentRate;
   //   }
 
-  throw new Error("Invalid rebalance condition");
+  throw new InvalidRebalanceConditionError(createSolautoProgram());
 }
 
 function getAdjustedPositionValues(
