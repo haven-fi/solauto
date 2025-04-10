@@ -128,3 +128,33 @@ const statuses = await new solauto.TransactionsManager(client).clientSend(
   transactionItems
 );
 ```
+
+## Rebalancing an existing position
+
+```typescript
+import { PublicKey } from "@solana/web3.js";
+import * as solauto from "@haven-fi/solauto-sdk";
+
+// Create new Solauto client
+const client = solauto.getClient(solauto.LendingPlatform.MARGINFI, {
+  signer: yourSigner,
+  rpcUrl: "[YOUR_RPC_URL]",
+});
+
+// Initialize the client
+await client.initialize({
+  positionId: myPositionId,
+  authority: "[POSITION AUTHORITY]",
+});
+
+const transactionItems = [
+  solauto.rebalance(
+    client,
+    undefined // Provide target liquidation utilization rate if you want a specific LTV, otherwise it will rebalance according to position's settings (default)
+  ),
+];
+
+const statuses = await new solauto.TransactionsManager(client).clientSend(
+  transactionItems
+);
+```
