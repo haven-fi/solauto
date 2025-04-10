@@ -34,7 +34,7 @@ use crate::{
         },
     },
     utils::{
-        math_utils::{self, derive_price},
+        math_utils::*,
         solana_utils::*,
         solauto_utils::*,
         validation_utils::*,
@@ -160,29 +160,29 @@ impl<'a> MarginfiClient<'a> {
         let supply_bank = DeserializedAccount::<Bank>::zerocopy(Some(supply_bank))?.unwrap();
         let debt_bank = DeserializedAccount::<Bank>::zerocopy(Some(debt_bank))?.unwrap();
 
-        let max_ltv = math_utils::i80f48_to_f64(I80F48::from_le_bytes(
+        let max_ltv = i80f48_to_f64(I80F48::from_le_bytes(
             supply_bank.data.config.asset_weight_init.value,
         ))
-        .div(math_utils::i80f48_to_f64(I80F48::from_le_bytes(
+        .div(i80f48_to_f64(I80F48::from_le_bytes(
             debt_bank.data.config.liability_weight_init.value,
         )));
 
-        let liq_threshold = math_utils::i80f48_to_f64(I80F48::from_le_bytes(
+        let liq_threshold = i80f48_to_f64(I80F48::from_le_bytes(
             supply_bank.data.config.asset_weight_maint.value,
         ))
-        .div(math_utils::i80f48_to_f64(I80F48::from_le_bytes(
+        .div(i80f48_to_f64(I80F48::from_le_bytes(
             debt_bank.data.config.liability_weight_maint.value,
         )));
 
         msg!(
             "Asset weight init {}",
-            math_utils::i80f48_to_f64(I80F48::from_le_bytes(
+            i80f48_to_f64(I80F48::from_le_bytes(
                 supply_bank.data.config.asset_weight_init.value
             ))
         );
         msg!(
             "Liab weight init {}",
-            math_utils::i80f48_to_f64(I80F48::from_le_bytes(
+            i80f48_to_f64(I80F48::from_le_bytes(
                 debt_bank.data.config.liability_weight_init.value
             ))
         );
@@ -205,7 +205,7 @@ impl<'a> MarginfiClient<'a> {
 
         let supply_shares = MarginfiClient::get_account_balance(account_balances, &bank, true);
         let base_unit_account_deposits = if supply_shares.is_some() {
-            math_utils::i80f48_to_u64(supply_shares.unwrap().mul(asset_share_value))
+            i80f48_to_u64(supply_shares.unwrap().mul(asset_share_value))
         } else {
             0
         };
@@ -215,8 +215,8 @@ impl<'a> MarginfiClient<'a> {
         let base_unit_deposit_room_available =
             I80F48::from(bank.data.config.deposit_limit).sub(total_deposited);
 
-        let bank_deposits_usd_value = math_utils::from_base_unit::<f64, u8, f64>(
-            math_utils::i80f48_to_f64(total_deposited),
+        let bank_deposits_usd_value = from_base_unit::<f64, u8, f64>(
+            i80f48_to_f64(total_deposited),
             bank.data.mint_decimals,
         )
         .mul(market_price);
@@ -233,7 +233,7 @@ impl<'a> MarginfiClient<'a> {
                 mint: bank.data.mint,
                 decimals: bank.data.mint_decimals,
                 amount_used: base_unit_account_deposits,
-                amount_can_be_used: math_utils::i80f48_to_u64(base_unit_deposit_room_available),
+                amount_can_be_used: i80f48_to_u64(base_unit_deposit_room_available),
                 market_price,
                 borrow_fee_bps: None,
             },
@@ -255,7 +255,7 @@ impl<'a> MarginfiClient<'a> {
 
         let debt_shares = MarginfiClient::get_account_balance(account_balances, &bank, false);
         let base_unit_account_debt = if debt_shares.is_some() {
-            math_utils::i80f48_to_u64(debt_shares.unwrap().mul(liability_share_value))
+            i80f48_to_u64(debt_shares.unwrap().mul(liability_share_value))
         } else {
             0
         };
@@ -270,11 +270,11 @@ impl<'a> MarginfiClient<'a> {
             bank.data
                 .config
                 .borrow_limit
-                .saturating_sub(math_utils::i80f48_to_u64(total_borrows)),
-            math_utils::i80f48_to_u64(base_unit_supply_available),
+                .saturating_sub(i80f48_to_u64(total_borrows)),
+            i80f48_to_u64(base_unit_supply_available),
         );
 
-        let borrow_fee_bps = math_utils::i80f48_to_f64(I80F48::from_le_bytes(
+        let borrow_fee_bps = i80f48_to_f64(I80F48::from_le_bytes(
             bank.data
                 .config
                 .interest_rate_config
@@ -398,7 +398,7 @@ impl<'a> MarginfiClient<'a> {
                 let price = if sw_decimal.scale == 0 {
                     sw_decimal.mantissa as f64
                 } else {
-                    math_utils::from_base_unit::<i128, u32, f64>(
+                    from_base_unit::<i128, u32, f64>(
                         sw_decimal.mantissa,
                         sw_decimal.scale,
                     )
@@ -416,7 +416,7 @@ impl<'a> MarginfiClient<'a> {
                     .checked_div(I80F48!(1000000000000000000))
                     .unwrap();
 
-                Ok(math_utils::i80f48_to_f64(price))
+                Ok(i80f48_to_f64(price))
             }
         }
     }
@@ -541,7 +541,7 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
         let mut withdrawing_all = amount == TokenBalanceAmount::All;
         if !withdrawing_all && active_balances.len() == 1 {
             let asset_shares = I80F48::from_le_bytes(active_balances[0].asset_shares.value);
-            let supply_balance = math_utils::i80f48_to_u64(asset_shares.mul(
+            let supply_balance = i80f48_to_u64(asset_shares.mul(
                 I80F48::from_le_bytes(self.supply.bank.data.asset_share_value.value),
             ));
             let TokenBalanceAmount::Some(withdraw_amount) = amount else {
