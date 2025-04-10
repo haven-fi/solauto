@@ -60,7 +60,7 @@ export class RebalanceTxBuilder {
       SolautoFeesBps.create(
         this.client.isReferred(),
         this.targetLiqUtilizationRateBps,
-        this.client.pos.netWorthUsd()
+        this.client.pos.netWorthUsd
       ),
       flFee ?? 0
     );
@@ -88,12 +88,12 @@ export class RebalanceTxBuilder {
     const insufficientSupplyLiquidity = insufficientLiquidity(
       debtAdjustmentUsd,
       supplyLiquidityAvailable,
-      this.client.pos.supplyMint()
+      this.client.pos.supplyMint
     );
     const insufficientDebtLiquidity = insufficientLiquidity(
       debtAdjustmentUsd,
       debtLiquidityAvailable,
-      this.client.pos.debtMint()
+      this.client.pos.debtMint
     );
 
     let useDebtLiquidity =
@@ -111,8 +111,8 @@ export class RebalanceTxBuilder {
     attemptNum: number
   ): Promise<FlashLoanRequirements | undefined> {
     const maxLtvRateBps = getMaxLiqUtilizationRateBps(
-      this.client.pos.state().maxLtvBps,
-      this.client.pos.state().liqThresholdBps,
+      this.client.pos.state.maxLtvBps,
+      this.client.pos.state.liqThresholdBps,
       0.02
     );
 
@@ -160,9 +160,9 @@ export class RebalanceTxBuilder {
 
     let flashLoanToken: PositionTokenState | undefined = undefined;
     if (boosting || useDebtLiquidity) {
-      flashLoanToken = this.client.pos.state().debt;
+      flashLoanToken = this.client.pos.state.debt;
     } else {
-      flashLoanToken = this.client.pos.state().supply;
+      flashLoanToken = this.client.pos.state.supply;
     }
 
     return {
@@ -217,15 +217,15 @@ export class RebalanceTxBuilder {
     const postRebalanceEmaUtilRateBps = getLiqUtilzationRateBps(
       this.realtimeUsdToEmaUsd(
         this.values.endResult.supplyUsd,
-        this.client.pos.supplyMint()
+        this.client.pos.supplyMint
       ),
       this.realtimeUsdToEmaUsd(
         this.values.endResult.debtUsd,
-        this.client.pos.debtMint()
+        this.client.pos.debtMint
       ),
-      this.client.pos.state().liqThresholdBps
+      this.client.pos.state.liqThresholdBps
     );
-    if (postRebalanceEmaUtilRateBps > this.client.pos.maxBoostToBps()) {
+    if (postRebalanceEmaUtilRateBps > this.client.pos.maxBoostToBps) {
       this.priceType = PriceType.Ema;
       this.values = this.getRebalanceValues(this.priceType);
     }
@@ -252,7 +252,7 @@ export class RebalanceTxBuilder {
       this.client.selfManaged ||
       this.client.contextUpdates.supplyAdjustment > BigInt(0) ||
       this.client.contextUpdates.debtAdjustment > BigInt(0) ||
-      !this.client.pos.exists()
+      !this.client.pos.exists
     ) {
       return false;
     }

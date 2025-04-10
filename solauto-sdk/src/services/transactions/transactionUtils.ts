@@ -15,6 +15,7 @@ import {
 import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 import {
   InvalidRebalanceConditionError,
+  PriceType,
   SolautoAction,
   SolautoRebalanceType,
   SwapType,
@@ -71,8 +72,8 @@ function getWSolUsage(
   },
   cancellingDcaIn?: TokenType
 ): wSolTokenUsage | undefined {
-  const supplyIsWsol = client.pos.supplyMint().equals(NATIVE_MINT);
-  const debtIsWsol = client.pos.debtMint().equals(NATIVE_MINT);
+  const supplyIsWsol = client.pos.supplyMint.equals(NATIVE_MINT);
+  const debtIsWsol = client.pos.debtMint.equals(NATIVE_MINT);
   if (!supplyIsWsol && !debtIsWsol) {
     return undefined;
   }
@@ -146,7 +147,7 @@ async function transactionChoresBefore(
     }
     // TODO: PF
 
-    if (!client.pos.exists()) {
+    if (!client.pos.exists) {
       chores = chores.add(client.openPositionIx());
     }
   }
@@ -227,8 +228,8 @@ async function transactionChoresBefore(
           client.signer,
           toWeb3JsPublicKey(client.signer.publicKey),
           isSolautoAction("Withdraw", solautoAction)
-            ? client.pos.supplyMint()
-            : client.pos.debtMint()
+            ? client.pos.supplyMint
+            : client.pos.debtMint
         )
       );
       accountsGettingCreated.push(tokenAccount.toString());
@@ -282,7 +283,7 @@ export async function rebalanceChoresBefore(
       createAssociatedTokenAccountUmiIx(
         client.signer,
         client.referredByState!,
-        client.pos.supplyMint()
+        client.pos.supplyMint
       )
     );
   }
@@ -293,7 +294,7 @@ export async function rebalanceChoresBefore(
       createAssociatedTokenAccountUmiIx(
         client.signer,
         client.referredByState!,
-        client.pos.debtMint()
+        client.pos.debtMint
       )
     );
   }
@@ -308,7 +309,7 @@ export async function rebalanceChoresBefore(
       createAssociatedTokenAccountUmiIx(
         client.signer,
         toWeb3JsPublicKey(client.signer.publicKey),
-        client.pos.supplyMint()
+        client.pos.supplyMint
       )
     );
     accountsGettingCreated.push(signerSupplyTa.publicKey.toString());
@@ -324,7 +325,7 @@ export async function rebalanceChoresBefore(
       createAssociatedTokenAccountUmiIx(
         client.signer,
         toWeb3JsPublicKey(client.signer.publicKey),
-        client.pos.debtMint()
+        client.pos.debtMint
       )
     );
     accountsGettingCreated.push(signerDebtTa.publicKey.toString());
@@ -375,6 +376,7 @@ function getRebalanceInstructions(
           rebalanceType: SolautoRebalanceType.Regular,
           swapType: SwapType.ExactIn,
           targetLiqUtilizationRateBps: 0,
+          priceType: PriceType.Realtime,
           flashLoanFeeBps: null,
         })[0];
         const [data, _] = serializer.deserialize(x.data);

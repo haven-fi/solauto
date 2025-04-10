@@ -7,6 +7,7 @@ import {
   getSolanaRpcConnection,
   getSolautoManagedPositions,
   LOCAL_IRONFORGE_API_URL,
+  PriceType,
   safeGetPrice,
   SOLAUTO_PROD_PROGRAM,
 } from "../src";
@@ -96,7 +97,7 @@ async function main(filterWhitelist: boolean) {
       umi,
       positions.map((x) => new PublicKey(x.publicKey!))
     )
-  ).sort((a, b) => a.netWorthUsd() - b.netWorthUsd());
+  ).sort((a, b) => a.netWorthUsd - b.netWorthUsd);
 
   const tokensUsed = Array.from(
     new Set(
@@ -114,17 +115,17 @@ async function main(filterWhitelist: boolean) {
   let awaitingBoostPositions = 0;
 
   for (const pos of positionsEx) {
-    await pos.updateWithLatestPrices(
-      safeGetPrice(pos.state().supply.mint),
-      safeGetPrice(pos.state().debt.mint)
-    );
+    await pos.updateWithLatestPrices({
+      supplyPrice: safeGetPrice(pos.supplyMint),
+      debtPrice: safeGetPrice(pos.debtMint),
+    });
 
     const actionToTake = pos.eligibleForRebalance(0);
 
-    const repayFrom = pos.settings()!.repayToBps + pos.settings()!.repayGap;
+    const repayFrom = pos.settings!.repayToBps + pos.settings!.repayGap;
     const unhealthy = actionToTake === "repay";
     const healthText = unhealthy
-      ? `(Unhealthy: ${pos.state().liqUtilizationRateBps - repayFrom}bps)`
+      ? `(Unhealthy: ${pos.state.liqUtilizationRateBps - repayFrom}bps)`
       : "";
     if (unhealthy) {
       unhealthyPositions += 1;
@@ -138,10 +139,10 @@ async function main(filterWhitelist: boolean) {
 
     console.log(
       pos.publicKey.toString(),
-      `(${pos.data().authority!.toString()} ${pos.data().positionId})`
+      `(${pos.authority.toString()} ${pos.positionId})`
     );
     console.log(
-      `${pos.strategyName()}: $${formatNumber(pos.netWorthUsd(), 2, 10000, 2)} ${healthText} ${boostText}`
+      `${pos.strategyName}: $${formatNumber(pos.netWorthUsd, 2, 10000, 2)} ${healthText} ${boostText}`
     );
   }
 
@@ -153,15 +154,14 @@ async function main(filterWhitelist: boolean) {
   );
   console.log(
     "Total users:",
-    Array.from(new Set(positionsEx.map((x) => x.data().authority!.toString())))
-      .length
+    Array.from(new Set(positionsEx.map((x) => x.authority.toString()))).length
   );
 
   const tvl = positionsEx
     .map((x) => x.supplyUsd())
     .reduce((acc, curr) => acc + curr, 0);
   const netWorth = positionsEx
-    .map((x) => x.netWorthUsd())
+    .map((x) => x.netWorthUsd)
     .reduce((acc, curr) => acc + curr, 0);
 
   console.log(`TVL: $${formatNumber(tvl, 2, 10000, 2)}`);

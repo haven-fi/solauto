@@ -139,10 +139,10 @@ export function swapThenDeposit(
 ) {
   return [
     new TransactionItem(async () => {
-      const memeSwap = tokenInfo(client.pos.supplyMint()).isMeme;
+      const memeSwap = tokenInfo(client.pos.supplyMint).isMeme;
       const swapInput: SwapInput = {
         inputMint: depositMint,
-        outputMint: client.pos.supplyMint(),
+        outputMint: client.pos.supplyMint,
         amount: depositAmountBaseUnit,
         exactIn: true,
         slippageBps: memeSwap ? 300 : 50,

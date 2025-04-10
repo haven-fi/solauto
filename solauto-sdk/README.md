@@ -49,13 +49,13 @@ const transactionItems = [
     client,
     toBaseUnit(
       supplyUsdToDeposit / supplyPrice,
-      client.pos.supplyMintInfo().decimals
+      client.pos.supplyMintInfo.decimals
     )
   ),
   // Borrow debt (USDC) transaction
   solauto.borrow(
     client,
-    toBaseUnit(debtUsdToBorrow / debtPrice, client.pos.debtMintInfo().decimals)
+    toBaseUnit(debtUsdToBorrow / debtPrice, client.pos.debtMintInfo.decimals)
   ),
   // Rebalance to 0 LTV (repays all debt using collateral)
   solauto.rebalance(client, 0),

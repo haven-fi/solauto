@@ -99,178 +99,175 @@ export abstract class SolautoPositionEx {
 
   abstract lendingPool(): Promise<PublicKey>;
 
-  exists() {
+  get exists() {
     return this._data.position !== undefined;
   }
 
-  authority() {
+  get authority() {
     return this._data.authority
       ? toWeb3JsPublicKey(this._data.authority)
-      : undefined;
+      : PublicKey.default;
   }
 
-  positionId() {
+  get positionId() {
     return this._data.positionId ? this._data.positionId[0] : undefined;
   }
 
-  strategyName() {
-    return solautoStrategyName(
-      toWeb3JsPublicKey(this.state().supply.mint),
-      toWeb3JsPublicKey(this.state().debt.mint)
-    );
+  get positionType() {
+    return this._data.positionType;
+  }
+
+  get strategyName() {
+    return solautoStrategyName(this.supplyMint, this.debtMint);
   }
 
   liqUtilizationRateBps(priceType?: PriceType): number {
     return getLiqUtilzationRateBps(
       this.supplyUsd(priceType),
       this.debtUsd(priceType),
-      this.state().liqThresholdBps
+      this.state.liqThresholdBps
     );
   }
 
-  data(): SolautoPositionExData {
+  protected get data(): SolautoPositionExData {
     return this._data;
   }
 
-  state(): PositionState {
-    return this.data().state;
+  get state(): PositionState {
+    return this.data.state;
   }
 
-  settings(): SolautoSettingsParameters | undefined {
-    return this.contextUpdates?.settings ?? this.data().position?.settings;
+  get settings(): SolautoSettingsParameters | undefined {
+    return this.contextUpdates?.settings ?? this.data.position?.settings;
   }
 
-  dca(): DCASettings | undefined {
-    return this.contextUpdates?.dca ?? this.data().position?.dca;
+  updateSettings(settings: SolautoSettingsParameters) {
+    this.data.position!.settings = settings;
   }
 
-  supplyMint(): PublicKey {
-    return toWeb3JsPublicKey(this.state().supply.mint);
+  get dca(): DCASettings | undefined {
+    return this.contextUpdates?.dca ?? this.data.position?.dca;
   }
 
-  supplyMintInfo(): TokenInfo {
-    return tokenInfo(this.supplyMint());
+  updateDca(dca: DCASettings) {
+    this.data.position!.dca = dca;
   }
 
-  debtMint(): PublicKey {
-    return toWeb3JsPublicKey(this.state().debt.mint);
+  get supplyMint(): PublicKey {
+    return toWeb3JsPublicKey(this.state.supply.mint);
   }
 
-  debtMintInfo(): TokenInfo {
-    return tokenInfo(this.debtMint());
+  get supplyMintInfo(): TokenInfo {
+    return tokenInfo(this.supplyMint);
   }
 
-  boostToBps() {
-    return Math.min(
-      this.settings()?.boostToBps ?? 0,
-      maxBoostToBps(this.state().maxLtvBps, this.state().liqThresholdBps)
-    );
+  get debtMint(): PublicKey {
+    return toWeb3JsPublicKey(this.state.debt.mint);
   }
 
-  maxBoostToBps() {
-    return maxBoostToBps(this.state().maxLtvBps, this.state().liqThresholdBps);
+  get debtMintInfo(): TokenInfo {
+    return tokenInfo(this.debtMint);
   }
 
-  boostFromBps() {
-    return this.boostToBps() - (this.settings()?.boostGap ?? 0);
+  get boostToBps() {
+    return Math.min(this.settings?.boostToBps ?? 0, this.maxBoostToBps);
   }
 
-  repayToBps() {
-    return Math.min(
-      this.settings()?.repayToBps ?? 0,
-      maxRepayToBps(this.state().maxLtvBps, this.state().liqThresholdBps)
-    );
+  get maxBoostToBps() {
+    return maxBoostToBps(this.state.maxLtvBps, this.state.liqThresholdBps);
   }
 
-  maxRepayToBps() {
-    return maxRepayToBps(this.state().maxLtvBps, this.state().liqThresholdBps);
+  get boostFromBps() {
+    return this.boostToBps - (this.settings?.boostGap ?? 0);
   }
 
-  repayFromBps() {
-    return (
-      (this.settings()?.repayToBps ?? 0) + (this.settings()?.repayGap ?? 0)
-    );
+  get repayToBps() {
+    return Math.min(this.settings?.repayToBps ?? 0, this.maxRepayToBps);
   }
 
-  maxRepayFromBps() {
-    return maxRepayFromBps(
-      this.state().maxLtvBps,
-      this.state().liqThresholdBps
-    );
+  get maxRepayToBps() {
+    return maxRepayToBps(this.state.maxLtvBps, this.state.liqThresholdBps);
   }
 
-  netWorth() {
-    return calcNetWorth(this.state());
+  get repayFromBps() {
+    return (this.settings?.repayToBps ?? 0) + (this.settings?.repayGap ?? 0);
   }
 
-  netWorthUsd() {
-    return calcNetWorthUsd(this.state());
+  get maxRepayFromBps() {
+    return maxRepayFromBps(this.state.maxLtvBps, this.state.liqThresholdBps);
   }
 
-  totalSupply() {
-    return calcTotalSupply(this.state());
+  get netWorth() {
+    return calcNetWorth(this.state);
+  }
+
+  get netWorthUsd() {
+    return calcNetWorthUsd(this.state);
+  }
+
+  get totalSupply() {
+    return calcTotalSupply(this.state);
   }
 
   supplyUsd(priceType?: PriceType) {
-    const supplyPrice = safeGetPrice(this.supplyMint(), priceType);
+    const supplyPrice = safeGetPrice(this.supplyMint, priceType);
     return supplyPrice
-      ? calcTotalSupply(this.state()) * supplyPrice
-      : calcSupplyUsd(this.state());
+      ? calcTotalSupply(this.state) * supplyPrice
+      : calcSupplyUsd(this.state);
   }
 
-  totalDebt() {
-    return calcTotalDebt(this.state());
+  get totalDebt() {
+    return calcTotalDebt(this.state);
   }
 
   debtUsd(priceType?: PriceType) {
-    const debtPrice = safeGetPrice(this.debtMint(), priceType);
+    const debtPrice = safeGetPrice(this.debtMint, priceType);
     return debtPrice
-      ? calcTotalDebt(this.state()) * debtPrice
-      : calcDebtUsd(this.state());
+      ? calcTotalDebt(this.state) * debtPrice
+      : calcDebtUsd(this.state);
   }
 
-  supplyLiquidityDepositable() {
-    return supplyLiquidityDepositable(this.state());
+  get supplyLiquidityDepositable() {
+    return supplyLiquidityDepositable(this.state);
   }
 
-  supplyLiquidityUsdDepositable() {
-    return supplyLiquidityUsdDepositable(this.state());
+  get supplyLiquidityUsdDepositable() {
+    return supplyLiquidityUsdDepositable(this.state);
   }
 
-  supplyLiquidityUsdAvailable() {
-    return (
-      this.supplyLiquidityAvailable() * (safeGetPrice(this.supplyMint()) ?? 0)
-    );
+  get supplyLiquidityUsdAvailable() {
+    return this.supplyLiquidityAvailable * (safeGetPrice(this.supplyMint) ?? 0);
   }
 
-  debtLiquidityAvailable() {
-    return debtLiquidityAvailable(this.state());
+  get debtLiquidityAvailable() {
+    return debtLiquidityAvailable(this.state);
   }
 
-  debtLiquidityUsdAvailable() {
-    return debtLiquidityUsdAvailable(this.state());
+  get debtLiquidityUsdAvailable() {
+    return debtLiquidityUsdAvailable(this.state);
   }
+
+  abstract get supplyLiquidityAvailable(): number;
 
   abstract maxLtvAndLiqThresholdBps(): Promise<[number, number]>;
   abstract priceOracles(): Promise<PublicKey[]>;
-  abstract supplyLiquidityAvailable(): number;
 
-  sufficientLiquidityToBoost() {
+  private sufficientLiquidityToBoost() {
     const limitsUpToDate =
-      this.debtLiquidityUsdAvailable() !== 0 ||
-      this.supplyLiquidityUsdDepositable() !== 0;
+      this.debtLiquidityUsdAvailable !== 0 ||
+      this.supplyLiquidityUsdDepositable !== 0;
 
     if (limitsUpToDate) {
       const { debtAdjustmentUsd } = getDebtAdjustment(
-        this.state().liqThresholdBps,
+        this.state.liqThresholdBps,
         { supplyUsd: this.supplyUsd(), debtUsd: this.debtUsd() },
-        this.boostToBps(),
+        this.boostToBps,
         { solauto: 50, lpBorrow: 50, flashLoan: 50 } // TODO: get true data here instead of magic numbers
       );
 
       const sufficientLiquidity =
-        this.debtLiquidityUsdAvailable() * 0.95 > debtAdjustmentUsd &&
-        this.supplyLiquidityUsdDepositable() * 0.95 > debtAdjustmentUsd;
+        this.debtLiquidityUsdAvailable * 0.95 > debtAdjustmentUsd &&
+        this.supplyLiquidityUsdDepositable * 0.95 > debtAdjustmentUsd;
 
       if (!sufficientLiquidity) {
         consoleLog("Insufficient liquidity to further boost");
@@ -282,7 +279,7 @@ export abstract class SolautoPositionEx {
   }
 
   eligibleForRebalance(bpsDistanceThreshold = 0): RebalanceAction | undefined {
-    if (!this.settings() || !this.supplyUsd()) {
+    if (!this.settings || !this.supplyUsd()) {
       return undefined;
     }
 
@@ -291,11 +288,11 @@ export abstract class SolautoPositionEx {
     );
     const emaLiqUtilRateBps = this.liqUtilizationRateBps(PriceType.Ema);
 
-    if (this.repayFromBps() - realtimeLiqUtilRateBps <= bpsDistanceThreshold) {
+    if (this.repayFromBps - realtimeLiqUtilRateBps <= bpsDistanceThreshold) {
       return "repay";
     } else if (
-      realtimeLiqUtilRateBps - this.boostFromBps() <= bpsDistanceThreshold ||
-      emaLiqUtilRateBps - this.boostFromBps() <= bpsDistanceThreshold
+      realtimeLiqUtilRateBps - this.boostFromBps <= bpsDistanceThreshold ||
+      emaLiqUtilRateBps - this.boostFromBps <= bpsDistanceThreshold
     ) {
       const sufficientLiquidity = this.sufficientLiquidityToBoost();
       return sufficientLiquidity ? "boost" : undefined;
@@ -308,14 +305,13 @@ export abstract class SolautoPositionEx {
     if (this._data.selfManaged) return false;
 
     return (
-      currentUnixSeconds() - Number(this.state().lastRefreshed) >
-      60 * 60 * 24 * 7
+      currentUnixSeconds() - Number(this.state.lastRefreshed) > 60 * 60 * 24 * 7
     );
   }
 
   protected canRefreshPositionState() {
     if (
-      Number(this.state().lastRefreshed) >
+      Number(this.state.lastRefreshed) >
         currentUnixSeconds() - MIN_POSITION_STATE_FRESHNESS_SECS &&
       !this.contextUpdates?.positionUpdates()
     ) {
@@ -327,15 +323,15 @@ export abstract class SolautoPositionEx {
   abstract refreshPositionState(priceType?: PriceType): Promise<void>;
 
   async utilizationRateBpsDrift() {
-    const supplyPrice = safeGetPrice(this.state().supply.mint) ?? 0;
-    const debtPrice = safeGetPrice(this.state().debt.mint) ?? 0;
+    const supplyPrice = safeGetPrice(this.supplyMint) ?? 0;
+    const debtPrice = safeGetPrice(this.debtMint) ?? 0;
     const oldState = await positionStateWithLatestPrices(
       this.firstState,
       supplyPrice,
       debtPrice
     );
     const newState = await positionStateWithLatestPrices(
-      this.state(),
+      this.state,
       supplyPrice,
       debtPrice
     );
@@ -347,8 +343,8 @@ export abstract class SolautoPositionEx {
     this._data.state.supply.amountUsed.baseAmountUsdValue =
       toRoundedUsdValue(newSupplyUsd);
     this._data.state.supply.amountUsed.baseUnit = toBaseUnit(
-      newSupplyUsd / (supplyPrice ?? safeGetPrice(this.supplyMint()) ?? 0),
-      this.supplyMintInfo().decimals
+      newSupplyUsd / (supplyPrice ?? safeGetPrice(this.supplyMint) ?? 0),
+      this.supplyMintInfo.decimals
     );
   }
 
@@ -356,8 +352,8 @@ export abstract class SolautoPositionEx {
     this._data.state.debt.amountUsed.baseAmountUsdValue =
       toRoundedUsdValue(newDebtUsd);
     this._data.state.debt.amountUsed.baseUnit = toBaseUnit(
-      newDebtUsd / (debtPrice ?? safeGetPrice(this.debtMint()) ?? 0),
-      this.debtMintInfo().decimals
+      newDebtUsd / (debtPrice ?? safeGetPrice(this.debtMint) ?? 0),
+      this.debtMintInfo.decimals
     );
   }
 
@@ -366,8 +362,8 @@ export abstract class SolautoPositionEx {
     this._data.state.netWorth.baseAmountUsdValue =
       toRoundedUsdValue(netWorthUsd);
     this._data.state.netWorth.baseUnit = toBaseUnit(
-      netWorthUsd / (supplyPrice ?? safeGetPrice(this.supplyMint()) ?? 0),
-      this.supplyMintInfo().decimals
+      netWorthUsd / (supplyPrice ?? safeGetPrice(this.supplyMint) ?? 0),
+      this.supplyMintInfo.decimals
     );
   }
 
@@ -375,24 +371,28 @@ export abstract class SolautoPositionEx {
     this._data.state.liqUtilizationRateBps = getLiqUtilzationRateBps(
       this.supplyUsd(priceType),
       this.debtUsd(priceType),
-      this.state().liqThresholdBps
+      this.state.liqThresholdBps
     );
   }
 
-  async updateWithLatestPrices(data: {
+  async updateWithLatestPrices(data?: {
     priceType?: PriceType;
     supplyPrice?: number;
     debtPrice?: number;
   }) {
+    if (!data) {
+      data = {};
+    }
+
     if (!data.supplyPrice || !data.debtPrice) {
       [data.supplyPrice, data.debtPrice] = await fetchTokenPrices(
-        [this.supplyMint(), this.debtMint()],
+        [this.supplyMint, this.debtMint],
         data.priceType
       );
     }
 
-    const supplyUsd = this.totalSupply() * data.supplyPrice;
-    const debtUsd = this.totalDebt() * data.debtPrice;
+    const supplyUsd = this.totalSupply * data.supplyPrice;
+    const debtUsd = this.totalDebt * data.debtPrice;
 
     this.updateSupply(supplyUsd, data.supplyPrice);
     this.updateDebt(debtUsd, data.debtPrice);
@@ -411,11 +411,7 @@ export abstract class SolautoPositionEx {
       this,
       PriceType.Realtime,
       targetLiqUtilizationRateBps,
-      SolautoFeesBps.create(
-        true,
-        targetLiqUtilizationRateBps,
-        this.netWorthUsd()
-      )
+      SolautoFeesBps.create(true, targetLiqUtilizationRateBps, this.netWorthUsd)
     );
     this.updateSupply(rebalance.endResult.supplyUsd, supplyPrice);
     this.updateDebt(rebalance.endResult.debtUsd, debtPrice);

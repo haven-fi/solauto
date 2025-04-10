@@ -65,11 +65,11 @@ export async function e2eTransactionTest(
     openSolautoPosition(client, settings),
     deposit(
       client,
-      toBaseUnit(supplyUsd / supplyPrice, client.pos.supplyMintInfo().decimals)
+      toBaseUnit(supplyUsd / supplyPrice, client.pos.supplyMintInfo.decimals)
     ),
     borrow(
       client,
-      toBaseUnit(debtUsd / debtPrice, client.pos.debtMintInfo().decimals)
+      toBaseUnit(debtUsd / debtPrice, client.pos.debtMintInfo.decimals)
     ),
     rebalance(client, 0),
     withdraw(client, "All"),

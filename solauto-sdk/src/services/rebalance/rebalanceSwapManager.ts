@@ -43,11 +43,9 @@ export class RebalanceSwapManager {
     // TODO: add token balance change
     let debtUsd = this.client.pos.debtUsd();
 
-    const outputToken = toWeb3JsPublicKey(
-      this.isBoost()
-        ? this.client.pos.state().supply.mint
-        : this.client.pos.state().debt.mint
-    );
+    const outputToken = this.isBoost()
+      ? this.client.pos.supplyMint
+      : this.client.pos.debtMint;
     const swapOutputUsd = swapOutputAmount
       ? fromBaseUnit(swapOutputAmount, tokenInfo(outputToken).decimals) *
         (safeGetPrice(outputToken) ?? 0)
@@ -63,7 +61,7 @@ export class RebalanceSwapManager {
     return getLiqUtilzationRateBps(
       supplyUsd,
       debtUsd,
-      this.client.pos.state().liqThresholdBps ?? 0
+      this.client.pos.state.liqThresholdBps ?? 0
     );
   }
 
@@ -105,11 +103,11 @@ export class RebalanceSwapManager {
 
   private swapDetails() {
     const input = this.isBoost()
-      ? this.client.pos.state().debt
-      : this.client.pos.state().supply;
+      ? this.client.pos.state.debt
+      : this.client.pos.state.supply;
     const output = this.isBoost()
-      ? this.client.pos.state().supply
-      : this.client.pos.state().debt;
+      ? this.client.pos.state.supply
+      : this.client.pos.state.debt;
 
     let inputAmount = toBaseUnit(
       this.usdToSwap() / safeGetPrice(input.mint)!,
@@ -184,7 +182,7 @@ export class RebalanceSwapManager {
       this.swapQuote = await this.findSufficientQuote(swapInput, {
         minOutputAmount: rebalanceToZero ? outputAmount : undefined,
         maxLiqUtilizationRateBps: this.values.repayingCloseToMaxLtv
-          ? this.client.pos.maxRepayToBps() - 15
+          ? this.client.pos.maxRepayToBps - 15
           : undefined,
       });
     }

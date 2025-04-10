@@ -70,7 +70,7 @@ export class SolautoMarginfiClient extends SolautoClient {
         args.lpUserAccount ??
         createSignerFromKeypair(this.umi, this.umi.eddsa.generateKeypair());
     } else {
-      if (this.pos.exists()) {
+      if (this.pos.exists) {
         this.marginfiAccount = this.pos.lpUserAccount!;
       } else {
         const accounts = await getAllMarginfiAccountsByAuthority(
@@ -108,11 +108,11 @@ export class SolautoMarginfiClient extends SolautoClient {
 
     this.marginfiSupplyAccounts =
       this.mfiAccounts.bankAccounts[this.marginfiGroup.toString()][
-        this.pos.supplyMint().toString()
+        this.pos.supplyMint.toString()
       ]!;
     this.marginfiDebtAccounts =
       this.mfiAccounts.bankAccounts[this.marginfiGroup.toString()][
-        this.pos.debtMint().toString()
+        this.pos.debtMint.toString()
       ]!;
 
     [this.supplyPriceOracle, this.debtPriceOracle] =
@@ -178,10 +178,10 @@ export class SolautoMarginfiClient extends SolautoClient {
         "publicKey" in this.marginfiAccount
           ? (this.marginfiAccount as Signer)
           : publicKey(this.marginfiAccount),
-      supplyMint: publicKey(this.pos.supplyMint()),
+      supplyMint: publicKey(this.pos.supplyMint),
       supplyBank: publicKey(this.marginfiSupplyAccounts.bank),
       positionSupplyTa: publicKey(this.positionSupplyTa),
-      debtMint: publicKey(this.pos.debtMint()),
+      debtMint: publicKey(this.pos.debtMint),
       debtBank: publicKey(this.marginfiDebtAccounts.bank),
       positionDebtTa: publicKey(this.positionDebtTa),
       signerDebtTa: signerDebtTa,
@@ -361,10 +361,10 @@ export class SolautoMarginfiClient extends SolautoClient {
     data: RebalanceDetails
   ): TransactionBuilder {
     const inputIsSupply = new PublicKey(data.swapQuote.inputMint).equals(
-      this.pos.supplyMint()
+      this.pos.supplyMint
     );
     const outputIsSupply = new PublicKey(data.swapQuote.outputMint).equals(
-      this.pos.supplyMint()
+      this.pos.supplyMint
     );
 
     const preSwapRebalance = rebalanceStep === RebalanceStep.PreSwap;
@@ -421,7 +421,7 @@ export class SolautoMarginfiClient extends SolautoClient {
       supplyPriceOracle: publicKey(this.supplyPriceOracle),
       positionSupplyTa: publicKey(this.positionSupplyTa),
       authoritySupplyTa: addAuthorityTas
-        ? publicKey(getTokenAccount(this.authority, this.pos.supplyMint()))
+        ? publicKey(getTokenAccount(this.authority, this.pos.supplyMint))
         : undefined,
       vaultSupplyTa: needSupplyAccounts
         ? publicKey(this.marginfiSupplyAccounts.liquidityVault)
@@ -433,7 +433,7 @@ export class SolautoMarginfiClient extends SolautoClient {
       debtPriceOracle: publicKey(this.debtPriceOracle),
       positionDebtTa: publicKey(this.positionDebtTa),
       authorityDebtTa: addAuthorityTas
-        ? publicKey(getTokenAccount(this.authority, this.pos.debtMint()))
+        ? publicKey(getTokenAccount(this.authority, this.pos.debtMint))
         : undefined,
       vaultDebtTa: needDebtAccounts
         ? publicKey(this.marginfiDebtAccounts.liquidityVault)

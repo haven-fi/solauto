@@ -55,8 +55,8 @@ export class MarginfiSolautoPositionEx extends SolautoPositionEx {
     if (!this.supplyBank || !this.debtBank) {
       const group = (await this.lendingPool()).toString();
       const bankAccounts = getMarginfiAccounts(this.lpEnv).bankAccounts;
-      const supplyBank = bankAccounts[group][this.supplyMint().toString()].bank;
-      const debtBank = bankAccounts[group][this.debtMint().toString()].bank;
+      const supplyBank = bankAccounts[group][this.supplyMint.toString()].bank;
+      const debtBank = bankAccounts[group][this.debtMint.toString()].bank;
 
       [this.supplyBank, this.debtBank] = await safeFetchAllBank(this.umi, [
         publicKey(supplyBank),
@@ -79,7 +79,7 @@ export class MarginfiSolautoPositionEx extends SolautoPositionEx {
   async maxLtvAndLiqThresholdBps(): Promise<[number, number]> {
     const [supplyBank, debtBank] = await this.getBanks();
 
-    const [supplyPrice] = await fetchTokenPrices([this.supplyMint()]);
+    const [supplyPrice] = await fetchTokenPrices([this.supplyMint]);
     const [maxLtvBps, liqThresholdBps] = calcMarginfiMaxLtvAndLiqThresholdBps(
       supplyBank,
       debtBank,
@@ -89,10 +89,10 @@ export class MarginfiSolautoPositionEx extends SolautoPositionEx {
     return [maxLtvBps, liqThresholdBps];
   }
 
-  supplyLiquidityAvailable(): number {
+  get supplyLiquidityAvailable(): number {
     return fromBaseUnit(
       getBankLiquidityAvailableBaseUnit(this.supplyBank, false),
-      this.state().supply.decimals
+      this.state.supply.decimals
     );
   }
 
@@ -106,12 +106,8 @@ export class MarginfiSolautoPositionEx extends SolautoPositionEx {
       this.umi,
       { pk: this.lpUserAccount },
       await this.lendingPool(),
-      useDesignatedMint
-        ? { mint: toWeb3JsPublicKey(this.state().supply.mint) }
-        : undefined,
-      useDesignatedMint
-        ? { mint: toWeb3JsPublicKey(this.state().debt.mint) }
-        : undefined,
+      useDesignatedMint ? { mint: this.supplyMint } : undefined,
+      useDesignatedMint ? { mint: this.debtMint } : undefined,
       this.lpEnv,
       this.contextUpdates,
       priceType

@@ -36,7 +36,7 @@ function assertAccurateRebalance(
     SolautoFeesBps.create(
       false,
       targetLiqUtilizationRateBps,
-      client.pos.netWorthUsd()
+      client.pos.netWorthUsd
     ),
     50
   );
@@ -44,7 +44,7 @@ function assertAccurateRebalance(
   const newLiqUtilizationRateBps = getLiqUtilzationRateBps(
     endResult.supplyUsd,
     endResult.debtUsd,
-    client.pos.state().liqThresholdBps
+    client.pos.state.liqThresholdBps
   );
   assert(
     Math.round(newLiqUtilizationRateBps) ===
