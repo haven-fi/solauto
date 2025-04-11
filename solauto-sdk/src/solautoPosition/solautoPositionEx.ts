@@ -71,7 +71,7 @@ interface PositionExArgs {
 export abstract class SolautoPositionEx {
   public umi!: Umi;
   protected contextUpdates?: ContextUpdates;
-  
+
   public publicKey!: PublicKey;
   public lendingPlatform!: LendingPlatform;
   protected _data!: SolautoPositionExData;
@@ -414,6 +414,10 @@ export abstract class SolautoPositionEx {
       targetLiqUtilizationRateBps,
       SolautoFeesBps.create(true, targetLiqUtilizationRateBps, this.netWorthUsd)
     );
+    if (!rebalance) {
+      return undefined;
+    }
+
     this.updateSupply(rebalance.endResult.supplyUsd, supplyPrice);
     this.updateDebt(rebalance.endResult.debtUsd, debtPrice);
     this.updateNetWorth(supplyPrice);

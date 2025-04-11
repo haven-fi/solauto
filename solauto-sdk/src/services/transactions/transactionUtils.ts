@@ -604,15 +604,6 @@ export function getErrorInfo(
   error: Error,
   simulationSuccessful?: boolean
 ) {
-  if (error instanceof InvalidRebalanceConditionError) {
-    return {
-      canBeIgnored: true,
-      errorName: InvalidRebalanceConditionError.name,
-      errorInfo: new InvalidRebalanceConditionError(createSolautoProgram())
-        .message,
-    };
-  }
-
   let canBeIgnored = false;
   let errorName: string | undefined = undefined;
   let errorInfo: string | undefined = undefined;

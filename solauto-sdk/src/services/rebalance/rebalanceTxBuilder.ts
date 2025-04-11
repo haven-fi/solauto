@@ -210,30 +210,41 @@ export class RebalanceTxBuilder {
     );
   }
 
-  private async setRebalanceDetails(attemptNum: number) {
-    this.values = this.getRebalanceValues();
+  private async setRebalanceValues(attemptNum: number) {
+    let rebalanceValues = this.getRebalanceValues();
+    if (!rebalanceValues) {
+      return false;
+    }
 
     const postRebalanceEmaUtilRateBps = getLiqUtilzationRateBps(
       this.realtimeUsdToEmaUsd(
-        this.values.endResult.supplyUsd,
+        rebalanceValues.endResult.supplyUsd,
         this.client.pos.supplyMint
       ),
       this.realtimeUsdToEmaUsd(
-        this.values.endResult.debtUsd,
+        rebalanceValues.endResult.debtUsd,
         this.client.pos.debtMint
       ),
       this.client.pos.state.liqThresholdBps
     );
     if (postRebalanceEmaUtilRateBps > this.client.pos.maxBoostToBps) {
       this.priceType = PriceType.Ema;
-      this.values = this.getRebalanceValues();
+      rebalanceValues = this.getRebalanceValues();
+      if (!rebalanceValues) {
+        return false;
+      }
     }
+    this.values = rebalanceValues!;
 
     this.flRequirements = await this.flashLoanRequirements(attemptNum);
 
     if (this.flRequirements?.flFeeBps) {
-      this.values = this.getRebalanceValues(this.flRequirements.flFeeBps);
+      this.values = this.getRebalanceValues(this.flRequirements.flFeeBps)!;
     }
+  }
+
+  private async setRebalanceDetails(attemptNum: number) {
+    await this.setRebalanceValues(attemptNum);
 
     this.swapManager = new RebalanceSwapManager(
       this.client,
@@ -244,6 +255,7 @@ export class RebalanceTxBuilder {
     await this.swapManager.setSwapParams(attemptNum);
 
     this.setRebalanceType();
+    return true;
   }
 
   private async refreshBeforeRebalance() {
@@ -347,7 +359,11 @@ export class RebalanceTxBuilder {
       return undefined;
     }
 
-    await this.setRebalanceDetails(attemptNum);
+    const proceed = await this.setRebalanceDetails(attemptNum);
+    if (!proceed) {
+      return undefined;
+    }
+
     return await this.assembleTransaction();
   }
 }
