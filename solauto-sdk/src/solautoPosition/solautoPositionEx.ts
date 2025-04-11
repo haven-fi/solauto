@@ -204,8 +204,8 @@ export abstract class SolautoPositionEx {
     return calcNetWorth(this.state);
   }
 
-  get netWorthUsd() {
-    return calcNetWorthUsd(this.state);
+  netWorthUsd(priceType?: PriceType) {
+    return this.supplyUsd(priceType) - this.debtUsd(priceType);
   }
 
   get totalSupply() {
@@ -409,7 +409,11 @@ export abstract class SolautoPositionEx {
       this,
       PriceType.Realtime,
       targetLiqUtilizationRateBps,
-      SolautoFeesBps.create(true, targetLiqUtilizationRateBps, this.netWorthUsd)
+      SolautoFeesBps.create(
+        true,
+        targetLiqUtilizationRateBps,
+        this.netWorthUsd()
+      )
     );
     if (!rebalance) {
       return undefined;

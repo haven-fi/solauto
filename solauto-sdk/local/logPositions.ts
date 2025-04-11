@@ -97,7 +97,7 @@ async function main(filterWhitelist: boolean) {
       umi,
       positions.map((x) => new PublicKey(x.publicKey!))
     )
-  ).sort((a, b) => a.netWorthUsd - b.netWorthUsd);
+  ).sort((a, b) => a.netWorthUsd() - b.netWorthUsd());
 
   const tokensUsed = Array.from(
     new Set(
@@ -115,11 +115,6 @@ async function main(filterWhitelist: boolean) {
   let awaitingBoostPositions = 0;
 
   for (const pos of positionsEx) {
-    await pos.updateWithLatestPrices({
-      supplyPrice: safeGetPrice(pos.supplyMint),
-      debtPrice: safeGetPrice(pos.debtMint),
-    });
-
     const actionToTake = pos.eligibleForRebalance(0);
 
     const repayFrom = pos.settings!.repayToBps + pos.settings!.repayGap;
@@ -142,7 +137,7 @@ async function main(filterWhitelist: boolean) {
       `(${pos.authority.toString()} ${pos.positionId})`
     );
     console.log(
-      `${pos.strategyName}: $${formatNumber(pos.netWorthUsd, 2, 10000, 2)} ${healthText} ${boostText}`
+      `${pos.strategyName}: $${formatNumber(pos.netWorthUsd(), 2, 10000, 2)} ${healthText} ${boostText}`
     );
   }
 
@@ -161,7 +156,7 @@ async function main(filterWhitelist: boolean) {
     .map((x) => x.supplyUsd())
     .reduce((acc, curr) => acc + curr, 0);
   const netWorth = positionsEx
-    .map((x) => x.netWorthUsd)
+    .map((x) => x.netWorthUsd())
     .reduce((acc, curr) => acc + curr, 0);
 
   console.log(`TVL: $${formatNumber(tvl, 2, 10000, 2)}`);

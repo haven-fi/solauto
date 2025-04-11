@@ -60,7 +60,7 @@ export class RebalanceTxBuilder {
       SolautoFeesBps.create(
         this.client.isReferred(),
         this.targetLiqUtilizationRateBps,
-        this.client.pos.netWorthUsd
+        this.client.pos.netWorthUsd(this.priceType)
       ),
       flFee ?? 0
     );
