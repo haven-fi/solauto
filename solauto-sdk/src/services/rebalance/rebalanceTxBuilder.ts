@@ -210,10 +210,10 @@ export class RebalanceTxBuilder {
     );
   }
 
-  private async setRebalanceValues(attemptNum: number) {
+  private getInitialRebalanceValues() {
     let rebalanceValues = this.getRebalanceValues();
     if (!rebalanceValues) {
-      return false;
+      return undefined;
     }
 
     const postRebalanceEmaUtilRateBps = getLiqUtilzationRateBps(
@@ -231,22 +231,24 @@ export class RebalanceTxBuilder {
       this.priceType = PriceType.Ema;
       rebalanceValues = this.getRebalanceValues();
       if (!rebalanceValues) {
-        return false;
+        return undefined;
       }
     }
-    this.values = rebalanceValues!;
 
+    return rebalanceValues;
+  }
+
+  private async setRebalanceDetails(attemptNum: number): Promise<boolean> {
+    const rebalanceValues = this.getInitialRebalanceValues();
+    if (!rebalanceValues) {
+      return false;
+    }
+
+    this.values = rebalanceValues;
     this.flRequirements = await this.flashLoanRequirements(attemptNum);
 
     if (this.flRequirements?.flFeeBps) {
       this.values = this.getRebalanceValues(this.flRequirements.flFeeBps)!;
-    }
-  }
-
-  private async setRebalanceDetails(attemptNum: number): Promise<boolean> {
-    const proceed = await this.setRebalanceValues(attemptNum);
-    if (!proceed) {
-      return false;
     }
 
     this.swapManager = new RebalanceSwapManager(
