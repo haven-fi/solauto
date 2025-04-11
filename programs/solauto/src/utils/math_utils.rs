@@ -6,7 +6,7 @@ use std::{
 };
 
 use crate::{
-    constants::{MAX_BASIS_POINTS, MIN_REPAY_GAP_BPS, USD_DECIMALS},
+    constants::{MAX_BASIS_POINTS, MIN_REPAY_GAP_BPS, OFFSET_FROM_MAX_LTV, USD_DECIMALS},
     types::solauto::{DebtAdjustment, PositionValues, RebalanceFeesBps},
 };
 
@@ -119,8 +119,8 @@ pub fn get_max_liq_utilization_rate_bps(
 #[inline(always)]
 pub fn get_max_repay_from_bps(max_ltv_bps: u16, liq_threshold_bps: u16) -> u16 {
     min(
-        8700,
-        get_max_liq_utilization_rate_bps(max_ltv_bps, liq_threshold_bps - 1000, 0.01),
+        9000,
+        get_max_liq_utilization_rate_bps(max_ltv_bps, liq_threshold_bps - 1000, OFFSET_FROM_MAX_LTV),
     )
 }
 
@@ -128,7 +128,7 @@ pub fn get_max_repay_from_bps(max_ltv_bps: u16, liq_threshold_bps: u16) -> u16 {
 pub fn get_max_repay_to_bps(max_ltv_bps: u16, liq_threshold_bps: u16) -> u16 {
     min(
         get_max_repay_from_bps(max_ltv_bps, liq_threshold_bps) - MIN_REPAY_GAP_BPS,
-        get_max_liq_utilization_rate_bps(max_ltv_bps, liq_threshold_bps, 0.01),
+        get_max_liq_utilization_rate_bps(max_ltv_bps, liq_threshold_bps, OFFSET_FROM_MAX_LTV),
     )
 }
 
@@ -136,7 +136,7 @@ pub fn get_max_repay_to_bps(max_ltv_bps: u16, liq_threshold_bps: u16) -> u16 {
 pub fn get_max_boost_to_bps(max_ltv_bps: u16, liq_threshold_bps: u16) -> u16 {
     min(
         get_max_repay_to_bps(max_ltv_bps, liq_threshold_bps),
-        get_max_liq_utilization_rate_bps(max_ltv_bps, liq_threshold_bps, 0.01),
+        get_max_liq_utilization_rate_bps(max_ltv_bps, liq_threshold_bps, OFFSET_FROM_MAX_LTV),
     )
 }
 

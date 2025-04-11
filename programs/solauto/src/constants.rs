@@ -16,3 +16,5 @@ pub const MIN_BOOST_GAP_BPS: u16 = 50;
 pub const MAX_BASIS_POINTS: u16 = 10000;
 
 pub const REFERRER_PERCENTAGE: f64 = 0.15;
+
+pub const OFFSET_FROM_MAX_LTV: f64 = 0.005;

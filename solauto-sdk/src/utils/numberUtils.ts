@@ -1,4 +1,4 @@
-import { BASIS_POINTS, MIN_REPAY_GAP_BPS, USD_DECIMALS } from "../constants";
+import { BASIS_POINTS, MIN_REPAY_GAP_BPS, OFFSET_FROM_MAX_LTV, USD_DECIMALS } from "../constants";
 import { PositionState } from "../generated";
 
 export function calcNetWorthUsd(state?: PositionState) {
@@ -168,21 +168,21 @@ export function getMaxLiqUtilizationRateBps(
 
 export function maxRepayFromBps(maxLtvBps: number, liqThresholdBps: number) {
   return Math.min(
-    8700,
-    getMaxLiqUtilizationRateBps(maxLtvBps, liqThresholdBps - 1000, 0.01)
+    9000,
+    getMaxLiqUtilizationRateBps(maxLtvBps, liqThresholdBps - 1000, OFFSET_FROM_MAX_LTV)
   );
 }
 
 export function maxRepayToBps(maxLtvBps: number, liqThresholdBps: number) {
   return Math.min(
     maxRepayFromBps(maxLtvBps, liqThresholdBps) - MIN_REPAY_GAP_BPS,
-    getMaxLiqUtilizationRateBps(maxLtvBps, liqThresholdBps, 0.01)
+    getMaxLiqUtilizationRateBps(maxLtvBps, liqThresholdBps, OFFSET_FROM_MAX_LTV)
   );
 }
 
 export function maxBoostToBps(maxLtvBps: number, liqThresholdBps: number) {
   return Math.min(
     maxRepayToBps(maxLtvBps, liqThresholdBps),
-    getMaxLiqUtilizationRateBps(maxLtvBps, liqThresholdBps, 0.01)
+    getMaxLiqUtilizationRateBps(maxLtvBps, liqThresholdBps, OFFSET_FROM_MAX_LTV)
   );
 }
