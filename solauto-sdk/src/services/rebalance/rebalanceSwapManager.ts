@@ -166,15 +166,12 @@ export class RebalanceSwapManager {
 
     const inputMint = toWeb3JsPublicKey(input.mint);
     const outputMint = toWeb3JsPublicKey(output.mint);
-    const swappingMeme =
-      tokenInfo(inputMint).isMeme || tokenInfo(outputMint).isMeme;
     const swapInput: SwapInput = {
       inputMint,
       outputMint,
       exactIn,
       exactOut,
       amount: swapAmount,
-      slippageBps: swappingMeme ? 250 : 100,
     };
     consoleLog("Swap input:", swapInput);
 

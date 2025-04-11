@@ -18,6 +18,7 @@ import {
   toBps,
   getTokenAccount,
   jupIxToSolanaIx,
+  tokenInfo,
 } from "../../utils";
 import { TransactionItemInputs } from "../../types";
 
@@ -52,6 +53,10 @@ export class JupSwapManager {
   constructor(private signer: Signer) {}
 
   public async getQuote(data: SwapInput): Promise<QuoteResponse> {
+    const memeSwap =
+      tokenInfo(data.inputMint).isMeme || tokenInfo(data.outputMint).isMeme;
+    const slippageBps = data.slippageBps ?? (memeSwap ? 250 : 100);
+
     return await retryWithExponentialBackoff(
       async (attemptNum: number) =>
         await this.jupApi.quoteGet({
@@ -63,7 +68,7 @@ export class JupSwapManager {
             : data.exactIn
               ? "ExactIn"
               : undefined,
-          slippageBps: data.slippageBps ?? 10,
+          slippageBps,
           maxAccounts: !data.exactOut ? 15 + attemptNum * 5 : undefined,
         }),
       4,
