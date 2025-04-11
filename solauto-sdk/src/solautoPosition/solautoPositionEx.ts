@@ -16,7 +16,6 @@ import {
 import {
   calcDebtUsd,
   calcNetWorth,
-  calcNetWorthUsd,
   calcSupplyUsd,
   calcTotalDebt,
   calcTotalSupply,
@@ -25,7 +24,6 @@ import {
   currentUnixSeconds,
   debtLiquidityAvailable,
   debtLiquidityUsdAvailable,
-  fetchTokenPrices,
   getLiqUtilzationRateBps,
   maxBoostToBps,
   maxRepayFromBps,
@@ -193,7 +191,10 @@ export abstract class SolautoPositionEx {
   }
 
   get repayFromBps() {
-    return (this.settings?.repayToBps ?? 0) + (this.settings?.repayGap ?? 0);
+    return Math.min(
+      (this.settings?.repayToBps ?? 0) + (this.settings?.repayGap ?? 0),
+      this.maxRepayFromBps
+    );
   }
 
   get maxRepayFromBps() {

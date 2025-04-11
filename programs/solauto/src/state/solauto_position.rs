@@ -12,9 +12,7 @@ use crate::{
         TokenType,
     },
     utils::math_utils::{
-        base_unit_to_usd_value, from_bps, from_rounded_usd_value, get_liq_utilization_rate_bps,
-        get_max_boost_to_bps, get_max_repay_to_bps, net_worth_base_amount, to_base_unit,
-        to_rounded_usd_value,
+        base_unit_to_usd_value, from_bps, from_rounded_usd_value, get_liq_utilization_rate_bps, get_max_boost_to_bps, get_max_repay_from_bps, get_max_repay_to_bps, net_worth_base_amount, to_base_unit, to_rounded_usd_value
     },
 };
 
@@ -404,7 +402,10 @@ impl SolautoPosition {
 
     #[inline(always)]
     pub fn repay_from_bps(&self) -> u16 {
-        self.position.settings.repay_to_bps + self.position.settings.repay_gap
+        min(
+            self.position.settings.repay_to_bps + self.position.settings.repay_gap,
+            get_max_repay_from_bps(self.state.max_ltv_bps, self.state.liq_threshold_bps)
+        )
     }
 }
 
