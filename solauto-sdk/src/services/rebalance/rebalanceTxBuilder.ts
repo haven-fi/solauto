@@ -243,8 +243,11 @@ export class RebalanceTxBuilder {
     }
   }
 
-  private async setRebalanceDetails(attemptNum: number) {
-    await this.setRebalanceValues(attemptNum);
+  private async setRebalanceDetails(attemptNum: number): Promise<boolean> {
+    const proceed = await this.setRebalanceValues(attemptNum);
+    if (!proceed) {
+      return false;
+    }
 
     this.swapManager = new RebalanceSwapManager(
       this.client,
