@@ -360,24 +360,8 @@ export class SolautoMarginfiClient extends SolautoClient {
     rebalanceStep: RebalanceStep,
     data: RebalanceDetails
   ): TransactionBuilder {
-    const inputIsSupply = new PublicKey(data.swapQuote.inputMint).equals(
-      this.pos.supplyMint
-    );
-    const outputIsSupply = new PublicKey(data.swapQuote.outputMint).equals(
-      this.pos.supplyMint
-    );
-
     const preSwapRebalance = rebalanceStep === RebalanceStep.PreSwap;
     const postSwapRebalance = rebalanceStep === RebalanceStep.PostSwap;
-
-    const needSupplyAccounts =
-      (inputIsSupply && preSwapRebalance) ||
-      (outputIsSupply && postSwapRebalance) ||
-      (inputIsSupply && data.flashLoan !== undefined && postSwapRebalance);
-    const needDebtAccounts =
-      (!inputIsSupply && preSwapRebalance) ||
-      (!outputIsSupply && postSwapRebalance) ||
-      (!inputIsSupply && data.flashLoan !== undefined && postSwapRebalance);
 
     const isFirstRebalance =
       (preSwapRebalance && hasFirstRebalance(data.rebalanceType)) ||
@@ -423,24 +407,16 @@ export class SolautoMarginfiClient extends SolautoClient {
       authoritySupplyTa: addAuthorityTas
         ? publicKey(getTokenAccount(this.authority, this.pos.supplyMint))
         : undefined,
-      vaultSupplyTa: needSupplyAccounts
-        ? publicKey(this.marginfiSupplyAccounts.liquidityVault)
-        : undefined,
-      supplyVaultAuthority: needSupplyAccounts
-        ? publicKey(this.marginfiSupplyAccounts.vaultAuthority)
-        : undefined,
+      vaultSupplyTa: publicKey(this.marginfiSupplyAccounts.liquidityVault),
+      supplyVaultAuthority: publicKey(this.marginfiSupplyAccounts.vaultAuthority),
       debtBank: publicKey(this.marginfiDebtAccounts.bank),
       debtPriceOracle: publicKey(this.debtPriceOracle),
       positionDebtTa: publicKey(this.positionDebtTa),
       authorityDebtTa: addAuthorityTas
         ? publicKey(getTokenAccount(this.authority, this.pos.debtMint))
         : undefined,
-      vaultDebtTa: needDebtAccounts
-        ? publicKey(this.marginfiDebtAccounts.liquidityVault)
-        : undefined,
-      debtVaultAuthority: needDebtAccounts
-        ? publicKey(this.marginfiDebtAccounts.vaultAuthority)
-        : undefined,
+      vaultDebtTa: publicKey(this.marginfiDebtAccounts.liquidityVault),
+      debtVaultAuthority: publicKey(this.marginfiDebtAccounts.vaultAuthority),
       rebalanceType: data.rebalanceType,
       targetLiqUtilizationRateBps: data.targetLiqUtilizationRateBps ?? null,
       swapInAmountBaseUnit: isFirstRebalance

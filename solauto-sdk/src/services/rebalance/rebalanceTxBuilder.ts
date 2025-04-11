@@ -337,6 +337,7 @@ export class RebalanceTxBuilder {
             new PublicKey(swapQuote.inputMint)
           );
 
+      consoleLog("Flash borrow dest:", flashBorrowDest.toString());
       tx = tx.add([
         setupIx,
         this.client.flProvider.flashBorrow(flashLoanDetails, flashBorrowDest),
