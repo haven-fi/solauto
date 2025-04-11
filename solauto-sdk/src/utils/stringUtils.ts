@@ -1,16 +1,10 @@
 import { PublicKey } from "@solana/web3.js";
 import { NATIVE_MINT } from "@solana/spl-token";
-import { WBTC, WETH } from "../constants";
+import { MAJORS_PRIO } from "../constants";
 import { tokenInfo } from "./generalUtils";
 
 export const StrategyTypes = ["Long", "Short", "Ratio"] as const;
 export type StrategyType = (typeof StrategyTypes)[number];
-
-const MAJORS_PRIO = {
-  [WBTC]: 0,
-  [WETH]: 1,
-  [NATIVE_MINT.toString()]: 2,
-};
 
 function adjustedTicker(mint?: PublicKey) {
   const info = tokenInfo(mint);
@@ -29,7 +23,8 @@ export function ratioName(supplyMint?: PublicKey, debtMint?: PublicKey) {
     (tokenInfo(supplyMint).isLST && debtMint?.equals(NATIVE_MINT)) ||
     (supplyMint &&
       debtMint &&
-      MAJORS_PRIO[supplyMint!.toString()] > MAJORS_PRIO[debtMint!.toString()])
+      MAJORS_PRIO[supplyMint?.toString() ?? ""] >
+        MAJORS_PRIO[debtMint?.toString() ?? ""])
   ) {
     return `${adjustedTicker(supplyMint)}/${adjustedTicker(debtMint)} Long`;
   } else {

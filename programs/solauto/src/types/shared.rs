@@ -152,15 +152,6 @@ pub enum PriceType {
     Ema,
 }
 
-impl fmt::Display for PriceType {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            PriceType::Realtime => write!(f, "realtime"),
-            PriceType::Ema => write!(f, "Ema"),
-        }
-    }
-}
-
 #[derive(Clone)]
 pub struct DeserializedAccount<'a, T> {
     pub account_info: &'a AccountInfo<'a>,
