@@ -243,10 +243,9 @@ export class RebalanceTxBuilder {
     if (!rebalanceValues) {
       return false;
     }
-
     this.values = rebalanceValues;
-    this.flRequirements = await this.flashLoanRequirements(attemptNum);
 
+    this.flRequirements = await this.flashLoanRequirements(attemptNum);
     if (this.flRequirements?.flFeeBps) {
       this.values = this.getRebalanceValues(this.flRequirements.flFeeBps)!;
     }
