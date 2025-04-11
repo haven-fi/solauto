@@ -92,7 +92,7 @@ export class MarginfiSolautoPositionEx extends SolautoPositionEx {
   get supplyLiquidityAvailable(): number {
     return fromBaseUnit(
       getBankLiquidityAvailableBaseUnit(this.supplyBank, false),
-      this.state.supply.decimals
+      this.supplyMintInfo.decimals
     );
   }
 
