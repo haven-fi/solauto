@@ -33,12 +33,7 @@ use crate::{
             TokenBalanceAmount,
         },
     },
-    utils::{
-        math_utils::*,
-        solana_utils::*,
-        solauto_utils::*,
-        validation_utils::*,
-    },
+    utils::{math_utils::*, solana_utils::*, solauto_utils::*, validation_utils::*},
 };
 
 pub struct MarginfiBankAccounts<'a> {
@@ -215,11 +210,9 @@ impl<'a> MarginfiClient<'a> {
         let base_unit_deposit_room_available =
             I80F48::from(bank.data.config.deposit_limit).sub(total_deposited);
 
-        let bank_deposits_usd_value = from_base_unit::<f64, u8, f64>(
-            i80f48_to_f64(total_deposited),
-            bank.data.mint_decimals,
-        )
-        .mul(market_price);
+        let bank_deposits_usd_value =
+            from_base_unit::<f64, u8, f64>(i80f48_to_f64(total_deposited), bank.data.mint_decimals)
+                .mul(market_price);
         if bank.data.config.total_asset_value_init_limit != 0
             && bank_deposits_usd_value > (bank.data.config.total_asset_value_init_limit as f64)
         {
@@ -398,10 +391,7 @@ impl<'a> MarginfiClient<'a> {
                 let price = if sw_decimal.scale == 0 {
                     sw_decimal.mantissa as f64
                 } else {
-                    from_base_unit::<i128, u32, f64>(
-                        sw_decimal.mantissa,
-                        sw_decimal.scale,
-                    )
+                    from_base_unit::<i128, u32, f64>(sw_decimal.mantissa, sw_decimal.scale)
                 };
 
                 Ok(price)
@@ -524,10 +514,10 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
             },
         );
 
-        let marginfi_account_data = DeserializedAccount::<MarginfiAccount>::zerocopy(Some(
-            self.marginfi_account,
-        ))?
-        .unwrap().data;
+        let marginfi_account_data =
+            DeserializedAccount::<MarginfiAccount>::zerocopy(Some(self.marginfi_account))?
+                .unwrap()
+                .data;
 
         let active_balances = marginfi_account_data
             .lending_account
@@ -541,9 +531,9 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
         let mut withdrawing_all = amount == TokenBalanceAmount::All;
         if !withdrawing_all && active_balances.len() == 1 {
             let asset_shares = I80F48::from_le_bytes(active_balances[0].asset_shares.value);
-            let supply_balance = i80f48_to_u64(asset_shares.mul(
-                I80F48::from_le_bytes(self.supply.bank.data.asset_share_value.value),
-            ));
+            let supply_balance = i80f48_to_u64(asset_shares.mul(I80F48::from_le_bytes(
+                self.supply.bank.data.asset_share_value.value,
+            )));
             let TokenBalanceAmount::Some(withdraw_amount) = amount else {
                 panic!("Unexpected amount type");
             };

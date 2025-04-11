@@ -21,17 +21,17 @@ pub struct PositionData {
         feature = "serde",
         serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
     )]
-    pub protocol_user_account: Pubkey,
+    pub lp_user_account: Pubkey,
     #[cfg_attr(
         feature = "serde",
         serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
     )]
-    pub protocol_supply_account: Pubkey,
+    pub lp_supply_account: Pubkey,
     #[cfg_attr(
         feature = "serde",
         serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
     )]
-    pub protocol_debt_account: Pubkey,
+    pub lp_debt_account: Pubkey,
     pub settings: SolautoSettingsParameters,
     pub dca: DCASettings,
     pub padding: [u32; 4],

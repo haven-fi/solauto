@@ -42,7 +42,6 @@ import {
 import { FlProviderAggregator } from "../flashLoans";
 
 export interface SolautoClientArgs extends ReferralStateManagerArgs {
-  new?: boolean;
   positionId?: number;
   supplyMint?: PublicKey;
   debtMint?: PublicKey;

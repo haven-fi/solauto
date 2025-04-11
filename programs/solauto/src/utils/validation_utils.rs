@@ -289,23 +289,23 @@ pub fn validate_marginfi_bank<'a>(
 pub fn validate_lending_program_accounts_with_position<'a>(
     lending_platform: LendingPlatform,
     solauto_position: &DeserializedAccount<SolautoPosition>,
-    protocol_user_account: &'a AccountInfo<'a>,
-    protocol_supply_account: &'a AccountInfo<'a>,
-    protocol_debt_account: &'a AccountInfo<'a>,
+    lp_user_account: &'a AccountInfo<'a>,
+    lp_supply_account: &'a AccountInfo<'a>,
+    lp_debt_account: &'a AccountInfo<'a>,
 ) -> ProgramResult {
     let supply_mint = &solauto_position.data.state.supply.mint;
     let debt_mint = &solauto_position.data.state.debt.mint;
 
     error_if!(
         !solauto_position.data.self_managed.val
-            && protocol_user_account.key != &solauto_position.data.position.protocol_user_account,
+            && lp_user_account.key != &solauto_position.data.position.lp_user_account,
         SolautoError::IncorrectAccounts
     );
 
     match lending_platform {
         LendingPlatform::Marginfi => {
-            validate_marginfi_bank(protocol_supply_account, &supply_mint)?;
-            validate_marginfi_bank(protocol_debt_account, &debt_mint)?;
+            validate_marginfi_bank(lp_supply_account, &supply_mint)?;
+            validate_marginfi_bank(lp_debt_account, &debt_mint)?;
         }
     }
 

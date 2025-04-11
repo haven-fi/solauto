@@ -12,7 +12,9 @@ use crate::{
         TokenType,
     },
     utils::math_utils::{
-        base_unit_to_usd_value, from_bps, from_rounded_usd_value, get_liq_utilization_rate_bps, get_max_boost_to_bps, get_max_repay_from_bps, get_max_repay_to_bps, net_worth_base_amount, to_base_unit, to_rounded_usd_value
+        base_unit_to_usd_value, from_bps, from_rounded_usd_value, get_liq_utilization_rate_bps,
+        get_max_boost_to_bps, get_max_repay_from_bps, get_max_repay_to_bps, net_worth_base_amount,
+        to_base_unit, to_rounded_usd_value,
     },
 };
 
@@ -154,9 +156,9 @@ pub struct PositionState {
 pub struct PositionData {
     pub lending_platform: LendingPlatform,
     _padding1: [u8; 7],
-    pub protocol_user_account: Pubkey,
-    pub protocol_supply_account: Pubkey,
-    pub protocol_debt_account: Pubkey,
+    pub lp_user_account: Pubkey,
+    pub lp_supply_account: Pubkey,
+    pub lp_debt_account: Pubkey,
     pub settings: SolautoSettingsParameters,
     pub dca: DCASettings,
     _padding: [u32; 4],
@@ -404,7 +406,7 @@ impl SolautoPosition {
     pub fn repay_from_bps(&self) -> u16 {
         min(
             self.position.settings.repay_to_bps + self.position.settings.repay_gap,
-            get_max_repay_from_bps(self.state.max_ltv_bps, self.state.liq_threshold_bps)
+            get_max_repay_from_bps(self.state.max_ltv_bps, self.state.liq_threshold_bps),
         )
     }
 }

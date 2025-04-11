@@ -177,10 +177,10 @@ export async function getSolautoManagedPositions(
     if (position.position.lendingPlatform === LendingPlatform.Marginfi) {
       tokens = [
         findMarginfiAccounts(
-          toWeb3JsPublicKey(position.position.protocolSupplyAccount)
+          toWeb3JsPublicKey(position.position.lpSupplyAccount)
         ).mint,
         findMarginfiAccounts(
-          toWeb3JsPublicKey(position.position.protocolDebtAccount)
+          toWeb3JsPublicKey(position.position.lpDebtAccount)
         ).mint,
       ];
     }
@@ -192,7 +192,7 @@ export async function getSolautoManagedPositions(
       positionId: position.positionId[0],
       lendingPlatform: position.position.lendingPlatform,
       positionType: position.positionType,
-      lpUserAccount: toWeb3JsPublicKey(position.position.protocolUserAccount),
+      lpUserAccount: toWeb3JsPublicKey(position.position.lpUserAccount),
       supplyMint: tokens![0],
       debtMint: tokens![1],
     };

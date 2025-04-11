@@ -1275,15 +1275,15 @@
             }
           },
           {
-            "name": "protocolUserAccount",
+            "name": "lpUserAccount",
             "type": "publicKey"
           },
           {
-            "name": "protocolSupplyAccount",
+            "name": "lpSupplyAccount",
             "type": "publicKey"
           },
           {
-            "name": "protocolDebtAccount",
+            "name": "lpDebtAccount",
             "type": "publicKey"
           },
           {

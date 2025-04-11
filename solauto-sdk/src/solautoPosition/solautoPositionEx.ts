@@ -90,7 +90,7 @@ export abstract class SolautoPositionEx {
     this.lpUserAccount =
       args.customArgs?.lpUserAccount ??
       (args.data.position
-        ? toWeb3JsPublicKey(args.data.position!.protocolUserAccount)
+        ? toWeb3JsPublicKey(args.data.position!.lpUserAccount)
         : undefined);
     this.lpEnv = args.customArgs?.lpEnv ?? "Prod";
 

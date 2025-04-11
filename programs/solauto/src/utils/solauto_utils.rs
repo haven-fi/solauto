@@ -48,10 +48,10 @@ pub fn create_new_solauto_position<'a>(
     update_position_data: UpdatePositionData,
     lending_platform: LendingPlatform,
     supply_mint: &'a AccountInfo<'a>,
-    protocol_supply_account: &'a AccountInfo<'a>,
+    lp_supply_account: &'a AccountInfo<'a>,
     debt_mint: &'a AccountInfo<'a>,
-    protocol_debt_account: &'a AccountInfo<'a>,
-    protocol_user_account: &'a AccountInfo<'a>,
+    lp_debt_account: &'a AccountInfo<'a>,
+    lp_user_account: &'a AccountInfo<'a>,
     max_ltv: f64,
     liq_threshold: f64,
 ) -> Result<DeserializedAccount<'a, SolautoPosition>, ProgramError> {
@@ -81,9 +81,9 @@ pub fn create_new_solauto_position<'a>(
         position_data.lending_platform = lending_platform;
         position_data.settings =
             SolautoSettingsParameters::from(*update_position_data.settings.as_ref().unwrap());
-        position_data.protocol_user_account = *protocol_user_account.key;
-        position_data.protocol_supply_account = *protocol_supply_account.key;
-        position_data.protocol_debt_account = *protocol_debt_account.key;
+        position_data.lp_user_account = *lp_user_account.key;
+        position_data.lp_supply_account = *lp_supply_account.key;
+        position_data.lp_debt_account = *lp_debt_account.key;
 
         if update_position_data.dca.is_some() {
             position_data.dca = DCASettings::from(*update_position_data.dca.as_ref().unwrap());

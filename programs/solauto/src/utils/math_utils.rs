@@ -120,7 +120,11 @@ pub fn get_max_liq_utilization_rate_bps(
 pub fn get_max_repay_from_bps(max_ltv_bps: u16, liq_threshold_bps: u16) -> u16 {
     min(
         9000,
-        get_max_liq_utilization_rate_bps(max_ltv_bps, liq_threshold_bps - 1000, OFFSET_FROM_MAX_LTV),
+        get_max_liq_utilization_rate_bps(
+            max_ltv_bps,
+            liq_threshold_bps - 1000,
+            OFFSET_FROM_MAX_LTV,
+        ),
     )
 }
 
