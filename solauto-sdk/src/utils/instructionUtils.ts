@@ -145,7 +145,7 @@ export function swapThenDeposit(
         outputMint: client.pos.supplyMint,
         amount: depositAmountBaseUnit,
         exactIn: true,
-        slippageBps: memeSwap ? 300 : 50,
+        slippageBps: memeSwap ? 250 : 100,
       };
       const jupSwapManager = new JupSwapManager(client.signer);
       const { setupIx, swapIx, cleanupIx, lookupTableAddresses } =
