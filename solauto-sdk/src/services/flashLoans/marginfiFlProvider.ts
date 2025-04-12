@@ -278,7 +278,7 @@ export class MarginfiFlProvider extends FlProviderBase {
       );
   }
 
-  flashRepay(flashLoan: FlashLoanDetails): TransactionBuilder {
+  async flashRepay(flashLoan: FlashLoanDetails): Promise<TransactionBuilder> {
     if (flashLoan.signerFlashLoan) {
       return transactionBuilder();
     }
@@ -296,22 +296,22 @@ export class MarginfiFlProvider extends FlProviderBase {
     let flBankHadPrevBalance = false;
 
     if (iMfiAccount?.accountData) {
-      iMfiAccount.accountData.lendingAccount.balances.forEach(async (x) => {
-        if (x.active) {
-          if (x.bankPk.toString() === bank.publicKey.toString()) {
+      for (const balance of iMfiAccount.accountData.lendingAccount.balances) {
+        if (balance.active) {
+          if (balance.bankPk.toString() === bank.publicKey.toString()) {
             flBankHadPrevBalance = true;
           }
 
           const priceOracle = publicKey(
             await getMarginfiPriceOracle(this.umi, {
-              pk: toWeb3JsPublicKey(x.bankPk),
+              pk: toWeb3JsPublicKey(balance.bankPk),
             })
           );
 
           remainingAccounts.push(
             ...[
               {
-                pubkey: x.bankPk,
+                pubkey: balance.bankPk,
                 isSigner: false,
                 isWritable: false,
               },
@@ -323,7 +323,7 @@ export class MarginfiFlProvider extends FlProviderBase {
             ]
           );
         }
-      });
+      }
     }
 
     return transactionBuilder()

@@ -75,7 +75,9 @@ export class FlProviderAggregator extends FlProviderBase {
     );
   }
 
-  flashRepay(flashLoan: FlashLoanDetails): TransactionBuilder {
-    return this.flProvider(flashLoan.liquiditySource).flashRepay(flashLoan);
+  async flashRepay(flashLoan: FlashLoanDetails): Promise<TransactionBuilder> {
+    return await this.flProvider(flashLoan.liquiditySource).flashRepay(
+      flashLoan
+    );
   }
 }

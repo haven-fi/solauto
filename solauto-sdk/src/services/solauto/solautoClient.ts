@@ -78,9 +78,6 @@ export abstract class SolautoClient extends ReferralStateManager {
     await super.initialize(args);
 
     const positionId = args.positionId ?? 0;
-    if (positionId === 0 && !args.lpUserAccount) {
-      throw new Error("Self managed position is missing arguments");
-    }
     this.pos = await getOrCreatePositionEx(
       this.umi,
       this.authority,

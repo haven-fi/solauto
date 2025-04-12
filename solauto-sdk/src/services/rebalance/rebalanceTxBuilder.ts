@@ -330,7 +330,7 @@ export class RebalanceTxBuilder {
         ...(addFirstRebalance ? [firstRebalance] : []),
         swapIx,
         ...(addLastRebalance ? [lastRebalance] : []),
-        this.client.flProvider.flashRepay(flashLoanDetails),
+        await this.client.flProvider.flashRepay(flashLoanDetails),
       ]);
     }
 
