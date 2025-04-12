@@ -26,6 +26,8 @@ export const MIN_REPAY_GAP_BPS = 50;
 export const MIN_BOOST_GAP_BPS = 50;
 export const MIN_USD_SUPPORTED_POSITION = 1000;
 
+export const OFFSET_FROM_MAX_LTV = 0.005;
+
 export const REFERRER_PERCENTAGE = 0.15;
 
 export const PRICES: { [key: string]: { realtimePrice: number; emaPrice: number; time: number } } = {};

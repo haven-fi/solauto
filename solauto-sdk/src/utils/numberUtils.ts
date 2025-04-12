@@ -1,5 +1,11 @@
-import { BASIS_POINTS, MIN_REPAY_GAP_BPS, USD_DECIMALS } from "../constants";
+import {
+  BASIS_POINTS,
+  MIN_REPAY_GAP_BPS,
+  OFFSET_FROM_MAX_LTV,
+  USD_DECIMALS,
+} from "../constants";
 import { PositionState } from "../generated";
+import { RoundAction } from "../types";
 
 export function calcNetWorthUsd(state?: PositionState) {
   return fromRoundedUsdValue(state?.netWorth.baseAmountUsdValue ?? BigInt(0));
@@ -84,11 +90,15 @@ export function getLiqUtilzationRateBps(
   return toBps(debtUsd / (supplyUsd * fromBps(liqThresholdBps)));
 }
 
-export function toBaseUnit(value: number, decimals: number): bigint {
+export function toBaseUnit(
+  value: number,
+  decimals: number,
+  roundAction: RoundAction = "Round"
+): bigint {
   if (!decimals) {
     return BigInt(Math.floor(value));
   }
-  return BigInt(Math.round(value * Math.pow(10, decimals)));
+  return BigInt(roundNumber(value * Math.pow(10, decimals), roundAction));
 }
 
 export function fromBaseUnit(value: bigint, decimals: number): number {
@@ -102,17 +112,20 @@ export function fromBps(value: number): number {
   return value / BASIS_POINTS;
 }
 
-type RoundAction = "Floor" | "Round" | "Ceil";
 export function toBps(
   value: number,
   roundAction: RoundAction = "Round"
 ): number {
   const bps = value * BASIS_POINTS;
+  return roundNumber(bps, roundAction);
+}
+
+function roundNumber(number: number, roundAction: RoundAction = "Round") {
   return roundAction === "Round"
-    ? Math.round(bps)
+    ? Math.round(number)
     : roundAction === "Floor"
-      ? Math.floor(bps)
-      : Math.ceil(bps);
+      ? Math.floor(number)
+      : Math.ceil(number);
 }
 
 export function bytesToI80F48(bytes: number[]): number {
@@ -168,21 +181,25 @@ export function getMaxLiqUtilizationRateBps(
 
 export function maxRepayFromBps(maxLtvBps: number, liqThresholdBps: number) {
   return Math.min(
-    8700,
-    getMaxLiqUtilizationRateBps(maxLtvBps, liqThresholdBps - 1000, 0.01)
+    9000,
+    getMaxLiqUtilizationRateBps(
+      maxLtvBps,
+      liqThresholdBps - 1000,
+      OFFSET_FROM_MAX_LTV
+    )
   );
 }
 
 export function maxRepayToBps(maxLtvBps: number, liqThresholdBps: number) {
   return Math.min(
     maxRepayFromBps(maxLtvBps, liqThresholdBps) - MIN_REPAY_GAP_BPS,
-    getMaxLiqUtilizationRateBps(maxLtvBps, liqThresholdBps, 0.01)
+    getMaxLiqUtilizationRateBps(maxLtvBps, liqThresholdBps, OFFSET_FROM_MAX_LTV)
   );
 }
 
 export function maxBoostToBps(maxLtvBps: number, liqThresholdBps: number) {
   return Math.min(
     maxRepayToBps(maxLtvBps, liqThresholdBps),
-    getMaxLiqUtilizationRateBps(maxLtvBps, liqThresholdBps, 0.01)
+    getMaxLiqUtilizationRateBps(maxLtvBps, liqThresholdBps, OFFSET_FROM_MAX_LTV)
   );
 }

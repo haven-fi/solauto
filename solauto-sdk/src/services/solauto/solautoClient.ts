@@ -42,7 +42,6 @@ import {
 import { FlProviderAggregator } from "../flashLoans";
 
 export interface SolautoClientArgs extends ReferralStateManagerArgs {
-  new?: boolean;
   positionId?: number;
   supplyMint?: PublicKey;
   debtMint?: PublicKey;
@@ -107,6 +106,9 @@ export abstract class SolautoClient extends ReferralStateManager {
       },
       this.contextUpdates
     );
+    if (this.pos.selfManaged && (!args.supplyMint || !args.debtMint)) {
+      await this.pos.refreshPositionState();
+    }
 
     this.positionSupplyTa = getTokenAccount(
       this.pos.publicKey,
@@ -205,7 +207,6 @@ export abstract class SolautoClient extends ReferralStateManager {
   lutAccountsToAdd(): PublicKey[] {
     return [
       this.authority,
-      ...(this.authorityLutAddress ? [this.authorityLutAddress] : []),
       this.signerSupplyTa,
       this.signerDebtTa,
       this.pos.publicKey,

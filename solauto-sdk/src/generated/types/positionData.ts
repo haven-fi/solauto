@@ -30,9 +30,9 @@ import {
 export type PositionData = {
   lendingPlatform: LendingPlatform;
   padding1: Array<number>;
-  protocolUserAccount: PublicKey;
-  protocolSupplyAccount: PublicKey;
-  protocolDebtAccount: PublicKey;
+  lpUserAccount: PublicKey;
+  lpSupplyAccount: PublicKey;
+  lpDebtAccount: PublicKey;
   settings: SolautoSettingsParameters;
   dca: DCASettings;
   padding: Array<number>;
@@ -41,9 +41,9 @@ export type PositionData = {
 export type PositionDataArgs = {
   lendingPlatform: LendingPlatformArgs;
   padding1: Array<number>;
-  protocolUserAccount: PublicKey;
-  protocolSupplyAccount: PublicKey;
-  protocolDebtAccount: PublicKey;
+  lpUserAccount: PublicKey;
+  lpSupplyAccount: PublicKey;
+  lpDebtAccount: PublicKey;
   settings: SolautoSettingsParametersArgs;
   dca: DCASettingsArgs;
   padding: Array<number>;
@@ -57,9 +57,9 @@ export function getPositionDataSerializer(): Serializer<
     [
       ['lendingPlatform', getLendingPlatformSerializer()],
       ['padding1', array(u8(), { size: 7 })],
-      ['protocolUserAccount', publicKeySerializer()],
-      ['protocolSupplyAccount', publicKeySerializer()],
-      ['protocolDebtAccount', publicKeySerializer()],
+      ['lpUserAccount', publicKeySerializer()],
+      ['lpSupplyAccount', publicKeySerializer()],
+      ['lpDebtAccount', publicKeySerializer()],
       ['settings', getSolautoSettingsParametersSerializer()],
       ['dca', getDCASettingsSerializer()],
       ['padding', array(u32(), { size: 4 })],

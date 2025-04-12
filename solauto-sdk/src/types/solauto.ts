@@ -65,3 +65,5 @@ export interface RebalanceDetails {
 }
 
 export type ProgramEnv = "Prod" | "Staging";
+
+export type RoundAction = "Floor" | "Round" | "Ceil";

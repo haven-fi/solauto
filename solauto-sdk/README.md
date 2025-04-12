@@ -19,7 +19,6 @@ const supplyMint = new PublicKey(NATIVE_MINT);
 const debtMint = new PublicKey(USDC);
 await client.initialize({
   positionId: 1,
-  new: true,
   supplyMint,
   debtMint,
 });

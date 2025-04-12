@@ -60,7 +60,7 @@ export class RebalanceTxBuilder {
       SolautoFeesBps.create(
         this.client.isReferred(),
         this.targetLiqUtilizationRateBps,
-        this.client.pos.netWorthUsd
+        this.client.pos.netWorthUsd(this.priceType)
       ),
       flFee ?? 0
     );
@@ -113,9 +113,8 @@ export class RebalanceTxBuilder {
     const maxLtvRateBps = getMaxLiqUtilizationRateBps(
       this.client.pos.state.maxLtvBps,
       this.client.pos.state.liqThresholdBps,
-      0.02
+      0.01
     );
-
     if (this.values.intermediaryLiqUtilizationRateBps < maxLtvRateBps) {
       return undefined;
     }
@@ -210,29 +209,44 @@ export class RebalanceTxBuilder {
     );
   }
 
-  private async setRebalanceDetails(attemptNum: number) {
-    this.values = this.getRebalanceValues();
+  private getInitialRebalanceValues() {
+    let rebalanceValues = this.getRebalanceValues();
+    if (!rebalanceValues) {
+      return undefined;
+    }
 
     const postRebalanceEmaUtilRateBps = getLiqUtilzationRateBps(
       this.realtimeUsdToEmaUsd(
-        this.values.endResult.supplyUsd,
+        rebalanceValues.endResult.supplyUsd,
         this.client.pos.supplyMint
       ),
       this.realtimeUsdToEmaUsd(
-        this.values.endResult.debtUsd,
+        rebalanceValues.endResult.debtUsd,
         this.client.pos.debtMint
       ),
       this.client.pos.state.liqThresholdBps
     );
     if (postRebalanceEmaUtilRateBps > this.client.pos.maxBoostToBps) {
       this.priceType = PriceType.Ema;
-      this.values = this.getRebalanceValues();
+      rebalanceValues = this.getRebalanceValues();
+      if (!rebalanceValues) {
+        return undefined;
+      }
     }
 
-    this.flRequirements = await this.flashLoanRequirements(attemptNum);
+    return rebalanceValues;
+  }
 
+  private async setRebalanceDetails(attemptNum: number): Promise<boolean> {
+    const rebalanceValues = this.getInitialRebalanceValues();
+    if (!rebalanceValues) {
+      return false;
+    }
+    this.values = rebalanceValues;
+
+    this.flRequirements = await this.flashLoanRequirements(attemptNum);
     if (this.flRequirements?.flFeeBps) {
-      this.values = this.getRebalanceValues(this.flRequirements.flFeeBps);
+      this.values = this.getRebalanceValues(this.flRequirements.flFeeBps)!;
     }
 
     this.swapManager = new RebalanceSwapManager(
@@ -244,6 +258,7 @@ export class RebalanceTxBuilder {
     await this.swapManager.setSwapParams(attemptNum);
 
     this.setRebalanceType();
+    return true;
   }
 
   private async refreshBeforeRebalance() {
@@ -321,6 +336,7 @@ export class RebalanceTxBuilder {
             new PublicKey(swapQuote.inputMint)
           );
 
+      consoleLog("Flash borrow dest:", flashBorrowDest.toString());
       tx = tx.add([
         setupIx,
         this.client.flProvider.flashBorrow(flashLoanDetails, flashBorrowDest),
@@ -347,7 +363,11 @@ export class RebalanceTxBuilder {
       return undefined;
     }
 
-    await this.setRebalanceDetails(attemptNum);
+    const proceed = await this.setRebalanceDetails(attemptNum);
+    if (!proceed) {
+      return undefined;
+    }
+
     return await this.assembleTransaction();
   }
 }

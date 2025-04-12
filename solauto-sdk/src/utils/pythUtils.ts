@@ -1,54 +1,8 @@
 import { PublicKey } from "@solana/web3.js";
+import { publicKey, Umi } from "@metaplex-foundation/umi";
 import { PYTH_PUSH_PROGRAM } from "../constants";
 import { u16ToArrayBufferLE, zip } from "./generalUtils";
-import * as borsh from "borsh";
-import { Umi } from "@metaplex-foundation/umi";
-import { fromWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
-
-type PriceUpdateV2 = {
-  writeAuthority: Buffer;
-  verificationLevel: number;
-  priceMessage: {
-    feedId: Buffer;
-    price: bigint;
-    conf: bigint;
-    exponent: number;
-    publishTime: bigint;
-    prevPublishTime: bigint;
-    emaPrice: bigint;
-    emaConf: bigint;
-  };
-};
-
-const priceUpdateV2Schema = {
-  struct: {
-    writeAuthority: {
-      array: { type: "u8", len: 32 },
-    },
-    verificationLevel: "u8",
-    priceMessage: {
-      struct: {
-        feedId: { array: { type: "u8", len: 32 } },
-        price: "i64",
-        conf: "u64",
-        exponent: "i32",
-        publishTime: "i64",
-        prevPublishTime: "i64",
-        emaPrice: "i64",
-        emaConf: "u64",
-      },
-    },
-    postedSlot: "u64",
-  },
-};
-
-export function parsePriceInfo(data: Uint8Array): PriceUpdateV2 {
-  let decoded: PriceUpdateV2 = borsh.deserialize(
-    priceUpdateV2Schema,
-    data
-  ) as any;
-  return decoded;
-}
+import { safeFetchAllPriceUpdateV2Account } from "../pyth-sdk";
 
 export async function getMostUpToDatePythOracle(
   umi: Umi,
@@ -56,12 +10,11 @@ export async function getMostUpToDatePythOracle(
 ) {
   const oracles = zip(
     oracleKeys,
-    (
-      await umi.rpc.getAccounts(
-        oracleKeys.map((x) => fromWeb3JsPublicKey(x)),
-        { commitment: "confirmed" }
-      )
-    ).map((x) => (x.exists ? parsePriceInfo(x!.data.slice(8)) : undefined))
+    await safeFetchAllPriceUpdateV2Account(
+      umi,
+      oracleKeys.map((x) => publicKey(x)),
+      { commitment: "confirmed" }
+    )
   ).sort(
     (a, b) =>
       Number(b[1]?.priceMessage.publishTime ?? 0) -

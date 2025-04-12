@@ -2,6 +2,7 @@ import bs58 from "bs58";
 import {
   PublicKey,
   TransactionExpiredBlockheightExceededError,
+  VersionedTransaction,
 } from "@solana/web3.js";
 import {
   AddressLookupTableInput,
@@ -154,7 +155,7 @@ class TransactionSet {
     }
 
     const singleTx = await this.getSingleTransaction();
-    const tx = addTxOptimizations(this.txHandler.umi.identity, singleTx, 1, 1)
+    const tx = addTxOptimizations(this.txHandler.umi, singleTx, 1, 1)
       .add(item.tx)
       .setAddressLookupTables(
         await this.lookupTables.getLutInputs([
@@ -441,13 +442,10 @@ export class TransactionsManager {
     const items = [...transactions];
     const client = this.txHandler as SolautoClient;
 
-    const updateLookupTable = await client.updateLookupTable();
+    const updateLut = await client.updateLookupTable();
 
-    if (
-      updateLookupTable &&
-      (updateLookupTable?.new || updateLookupTable.accountsToAdd.length > 4)
-    ) {
-      await this.updateLut(updateLookupTable.tx, updateLookupTable.new);
+    if (updateLut && (updateLut?.new || updateLut.accountsToAdd.length > 4)) {
+      await this.updateLut(updateLut.tx, updateLut.new);
     }
     this.lookupTables.defaultLuts = client.defaultLookupTables();
 
@@ -505,8 +503,8 @@ export class TransactionsManager {
           .map((x) => x.tx!)
       )
     );
-    if (updateLookupTable && !updateLookupTable?.new) {
-      choresBefore = choresBefore.prepend(updateLookupTable.tx);
+    if (updateLut && !updateLut?.new) {
+      choresBefore = choresBefore.prepend(updateLut.tx);
     }
     if (choresBefore.getInstructions().length > 0) {
       const chore = new TransactionItem(

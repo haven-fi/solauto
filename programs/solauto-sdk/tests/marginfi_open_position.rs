@@ -52,7 +52,7 @@ mod open_position {
         assert!(position.lending_platform == LendingPlatform::Marginfi);
         assert!(solauto_position.state.supply.mint == data.general.supply_mint.pubkey());
         assert!(solauto_position.state.debt.mint == data.general.debt_mint.pubkey());
-        assert!(position.protocol_user_account == data.marginfi_account);
+        assert!(position.lp_user_account == data.marginfi_account);
     }
 
     #[tokio::test]

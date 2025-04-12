@@ -36,7 +36,7 @@ function assertAccurateRebalance(
     SolautoFeesBps.create(
       false,
       targetLiqUtilizationRateBps,
-      client.pos.netWorthUsd
+      client.pos.netWorthUsd()
     ),
     50
   );
@@ -99,9 +99,9 @@ async function getFakePosition(
       state: fakeState,
       position: {
         lendingPlatform: LendingPlatform.Marginfi,
-        protocolUserAccount: publicKey(PublicKey.default),
-        protocolSupplyAccount: publicKey(PublicKey.default),
-        protocolDebtAccount: publicKey(PublicKey.default),
+        lpUserAccount: publicKey(PublicKey.default),
+        lpSupplyAccount: publicKey(PublicKey.default),
+        lpDebtAccount: publicKey(PublicKey.default),
         settings,
         dca: null,
         padding: [],

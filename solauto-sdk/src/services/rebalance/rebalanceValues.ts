@@ -123,7 +123,7 @@ function getTargetLiqUtilizationRateBps(
   priceType: PriceType,
   targetLiqUtilizationRateBps: number | undefined,
   tokenBalanceChange: TokenBalanceChange | undefined
-): number {
+): number | undefined {
   if (targetLiqUtilizationRateBps !== undefined) {
     return targetLiqUtilizationRateBps;
   }
@@ -144,7 +144,7 @@ function getTargetLiqUtilizationRateBps(
   //     return currentRate;
   //   }
 
-  throw new InvalidRebalanceConditionError(createSolautoProgram());
+  return undefined;
 }
 
 function getAdjustedPositionValues(
@@ -198,7 +198,7 @@ export function getRebalanceValues(
   targetLiqUtilizationRateBps?: number,
   solautoFeeBps?: SolautoFeesBps,
   flFeeBps?: number
-): RebalanceValues {
+): RebalanceValues | undefined {
   const tokenBalanceChange = getTokenBalanceChange();
 
   const targetRate = getTargetLiqUtilizationRateBps(
@@ -207,6 +207,9 @@ export function getRebalanceValues(
     targetLiqUtilizationRateBps,
     tokenBalanceChange
   );
+  if (targetRate === undefined) {
+    return undefined;
+  }
 
   const rebalanceDirection = getRebalanceDirection(solautoPosition, targetRate);
 

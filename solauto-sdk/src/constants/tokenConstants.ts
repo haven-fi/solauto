@@ -176,3 +176,9 @@ export const TOKEN_INFO: { [key: string]: TokenInfo } = {
     isMeme: true,
   },
 };
+
+export const MAJORS_PRIO = {
+  [WBTC]: 0,
+  [WETH]: 1,
+  [NATIVE_MINT.toString()]: 2,
+};

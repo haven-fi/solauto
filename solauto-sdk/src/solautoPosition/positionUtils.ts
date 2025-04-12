@@ -24,6 +24,7 @@ import {
 } from "../utils";
 import { PositionCustomArgs, SolautoPositionEx } from "./solautoPositionEx";
 import { MarginfiSolautoPositionEx } from "./marginfiSolautoPositionEx";
+import { assert } from "console";
 
 export function createSolautoSettings(
   settings: SolautoSettingsParametersInpArgs
@@ -80,6 +81,12 @@ export async function getOrCreatePositionEx(
     umi,
     fromWeb3JsPublicKey(publicKey)
   );
+
+  if (!data && (!customArgs?.supplyMint || !customArgs.debtMint)) {
+    throw new Error(
+      "Must provide a supply & debt mint if creating a new position"
+    );
+  }
 
   const placeholderState = createFakePositionState(
     {

@@ -148,7 +148,7 @@ export class RebalanceSwapManager {
       this.flRequirements &&
       this.flRequirements.liquiditySource === TokenType.Debt;
 
-    const exactOut = flashLoanRepayFromDebt && !rebalanceToZero;
+    const exactOut = flashLoanRepayFromDebt;
     const exactIn = !exactOut;
 
     if (exactIn && (rebalanceToZero || this.values.repayingCloseToMaxLtv)) {
@@ -166,15 +166,12 @@ export class RebalanceSwapManager {
 
     const inputMint = toWeb3JsPublicKey(input.mint);
     const outputMint = toWeb3JsPublicKey(output.mint);
-    const swappingMeme =
-      tokenInfo(inputMint).isMeme || tokenInfo(outputMint).isMeme;
     const swapInput: SwapInput = {
       inputMint,
       outputMint,
       exactIn,
       exactOut,
       amount: swapAmount,
-      slippageBps: swappingMeme ? 300 : 50,
     };
     consoleLog("Swap input:", swapInput);
 
@@ -197,7 +194,7 @@ export class RebalanceSwapManager {
 
     this.swapParams = {
       ...swapInput,
-      destinationWallet: flashLoanRepayFromDebt
+      destinationWallet: exactOut
         ? toWeb3JsPublicKey(this.client.signer.publicKey)
         : this.client.pos.publicKey,
       slippageIncFactor: 0.2 + attemptNum * 0.25,
