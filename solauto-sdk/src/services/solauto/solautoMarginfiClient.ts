@@ -5,8 +5,12 @@ import {
   publicKey,
   PublicKey as UmiPublicKey,
   createSignerFromKeypair,
+  AccountMeta,
 } from "@metaplex-foundation/umi";
-import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
+import {
+  fromWeb3JsPublicKey,
+  toWeb3JsPublicKey,
+} from "@metaplex-foundation/umi-web3js-adapters";
 import { MarginfiAssetAccounts, RebalanceDetails } from "../../types";
 import { getMarginfiAccounts, MarginfiProgramAccounts } from "../../constants";
 import {
@@ -31,17 +35,24 @@ import {
   marginfiAccountEmpty,
   getTokenAccount,
   hasFirstRebalance,
+  getRemainingAccountsForMarginfiHealthCheck,
 } from "../../utils";
 import {
   Bank,
+  fetchMarginfiAccount,
   lendingAccountBorrow,
   lendingAccountDeposit,
   lendingAccountRepay,
   lendingAccountWithdraw,
   marginfiAccountInitialize,
   safeFetchAllMarginfiAccount,
+  safeFetchMarginfiAccount,
 } from "../../marginfi-sdk";
 import { SolautoClient, SolautoClientArgs } from "./solautoClient";
+
+function isSigner(account: PublicKey | Signer): account is Signer {
+  return "publicKey" in account;
+}
 
 export class SolautoMarginfiClient extends SolautoClient {
   public lendingPlatform = LendingPlatform.Marginfi;
@@ -50,6 +61,7 @@ export class SolautoMarginfiClient extends SolautoClient {
 
   public marginfiAccount!: PublicKey | Signer;
   public marginfiAccountPk!: PublicKey;
+  public healthCheckRemainingAccounts?: AccountMeta[];
   public marginfiGroup!: PublicKey;
 
   public marginfiSupplyAccounts!: MarginfiAssetAccounts;
@@ -97,13 +109,25 @@ export class SolautoMarginfiClient extends SolautoClient {
               );
       }
     }
-    this.marginfiAccountPk =
-      "publicKey" in this.marginfiAccount
-        ? toWeb3JsPublicKey(this.marginfiAccount.publicKey)
-        : this.marginfiAccount;
 
-    if ("publicKey" in this.marginfiAccount) {
+    this.marginfiAccountPk = isSigner(this.marginfiAccount)
+      ? toWeb3JsPublicKey(this.marginfiAccount.publicKey)
+      : this.marginfiAccount;
+
+    if (isSigner(this.marginfiAccount)) {
       this.otherSigners.push(this.marginfiAccount);
+    } else if (this.pos.selfManaged) {
+      const accountData = await fetchMarginfiAccount(
+        this.umi,
+        fromWeb3JsPublicKey(this.marginfiAccount as PublicKey)
+      );
+      this.healthCheckRemainingAccounts = (
+        await Promise.all(
+          accountData.lendingAccount.balances.map((balance) =>
+            getRemainingAccountsForMarginfiHealthCheck(this.umi, balance)
+          )
+        )
+      ).flat();
     }
 
     this.marginfiSupplyAccounts =
@@ -260,7 +284,7 @@ export class SolautoMarginfiClient extends SolautoClient {
           bankLiquidityVaultAuthority: publicKey(
             this.marginfiDebtAccounts.vaultAuthority
           ),
-        });
+        }).addRemainingAccounts(this.healthCheckRemainingAccounts ?? []);
       }
       case "Repay": {
         return lendingAccountRepay(this.umi, {
@@ -293,7 +317,7 @@ export class SolautoMarginfiClient extends SolautoClient {
           bankLiquidityVaultAuthority: publicKey(
             this.marginfiSupplyAccounts.vaultAuthority
           ),
-        });
+        }).addRemainingAccounts(this.healthCheckRemainingAccounts ?? []);
       }
     }
   }
@@ -408,7 +432,9 @@ export class SolautoMarginfiClient extends SolautoClient {
         ? publicKey(getTokenAccount(this.authority, this.pos.supplyMint))
         : undefined,
       vaultSupplyTa: publicKey(this.marginfiSupplyAccounts.liquidityVault),
-      supplyVaultAuthority: publicKey(this.marginfiSupplyAccounts.vaultAuthority),
+      supplyVaultAuthority: publicKey(
+        this.marginfiSupplyAccounts.vaultAuthority
+      ),
       debtBank: publicKey(this.marginfiDebtAccounts.bank),
       debtPriceOracle: publicKey(this.debtPriceOracle),
       positionDebtTa: publicKey(this.positionDebtTa),
