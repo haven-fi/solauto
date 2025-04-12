@@ -15,18 +15,18 @@ type ProgramErrorConstructor = new (
 const codeToErrorMap: Map<number, ProgramErrorConstructor> = new Map();
 const nameToErrorMap: Map<string, ProgramErrorConstructor> = new Map();
 
-/** MathError: Math error */
-export class MathErrorError extends ProgramError {
-  override readonly name: string = 'MathError';
+/** InternalLogicError: Internal Marginfi logic error */
+export class InternalLogicErrorError extends ProgramError {
+  override readonly name: string = 'InternalLogicError';
 
   readonly code: number = 0x1770; // 6000
 
   constructor(program: Program, cause?: Error) {
-    super('Math error', program, cause);
+    super('Internal Marginfi logic error', program, cause);
   }
 }
-codeToErrorMap.set(0x1770, MathErrorError);
-nameToErrorMap.set('MathError', MathErrorError);
+codeToErrorMap.set(0x1770, InternalLogicErrorError);
+nameToErrorMap.set('InternalLogicError', InternalLogicErrorError);
 
 /** BankNotFound: Invalid bank index */
 export class BankNotFoundError extends ProgramError {
@@ -83,14 +83,14 @@ export class InvalidTransferError extends ProgramError {
 codeToErrorMap.set(0x1774, InvalidTransferError);
 nameToErrorMap.set('InvalidTransfer', InvalidTransferError);
 
-/** MissingPythOrBankAccount: Missing Pyth or Bank account */
+/** MissingPythOrBankAccount: Missing Oracle, Bank, LST mint, or Sol Pool */
 export class MissingPythOrBankAccountError extends ProgramError {
   override readonly name: string = 'MissingPythOrBankAccount';
 
   readonly code: number = 0x1775; // 6005
 
   constructor(program: Program, cause?: Error) {
-    super('Missing Pyth or Bank account', program, cause);
+    super('Missing Oracle, Bank, LST mint, or Sol Pool', program, cause);
   }
 }
 codeToErrorMap.set(0x1775, MissingPythOrBankAccountError);
@@ -109,69 +109,60 @@ export class MissingPythAccountError extends ProgramError {
 codeToErrorMap.set(0x1776, MissingPythAccountError);
 nameToErrorMap.set('MissingPythAccount', MissingPythAccountError);
 
-/** InvalidOracleAccount: Invalid Pyth account */
-export class InvalidOracleAccountError extends ProgramError {
-  override readonly name: string = 'InvalidOracleAccount';
-
-  readonly code: number = 0x1777; // 6007
-
-  constructor(program: Program, cause?: Error) {
-    super('Invalid Pyth account', program, cause);
-  }
-}
-codeToErrorMap.set(0x1777, InvalidOracleAccountError);
-nameToErrorMap.set('InvalidOracleAccount', InvalidOracleAccountError);
-
 /** MissingBankAccount: Missing Bank account */
 export class MissingBankAccountError extends ProgramError {
   override readonly name: string = 'MissingBankAccount';
 
-  readonly code: number = 0x1778; // 6008
+  readonly code: number = 0x1777; // 6007
 
   constructor(program: Program, cause?: Error) {
     super('Missing Bank account', program, cause);
   }
 }
-codeToErrorMap.set(0x1778, MissingBankAccountError);
+codeToErrorMap.set(0x1777, MissingBankAccountError);
 nameToErrorMap.set('MissingBankAccount', MissingBankAccountError);
 
 /** InvalidBankAccount: Invalid Bank account */
 export class InvalidBankAccountError extends ProgramError {
   override readonly name: string = 'InvalidBankAccount';
 
-  readonly code: number = 0x1779; // 6009
+  readonly code: number = 0x1778; // 6008
 
   constructor(program: Program, cause?: Error) {
     super('Invalid Bank account', program, cause);
   }
 }
-codeToErrorMap.set(0x1779, InvalidBankAccountError);
+codeToErrorMap.set(0x1778, InvalidBankAccountError);
 nameToErrorMap.set('InvalidBankAccount', InvalidBankAccountError);
 
-/** BadAccountHealth: Bad account health */
-export class BadAccountHealthError extends ProgramError {
-  override readonly name: string = 'BadAccountHealth';
+/** RiskEngineInitRejected: RiskEngine rejected due to either bad health or stale oracles */
+export class RiskEngineInitRejectedError extends ProgramError {
+  override readonly name: string = 'RiskEngineInitRejected';
 
-  readonly code: number = 0x177a; // 6010
+  readonly code: number = 0x1779; // 6009
 
   constructor(program: Program, cause?: Error) {
-    super('Bad account health', program, cause);
+    super(
+      'RiskEngine rejected due to either bad health or stale oracles',
+      program,
+      cause
+    );
   }
 }
-codeToErrorMap.set(0x177a, BadAccountHealthError);
-nameToErrorMap.set('BadAccountHealth', BadAccountHealthError);
+codeToErrorMap.set(0x1779, RiskEngineInitRejectedError);
+nameToErrorMap.set('RiskEngineInitRejected', RiskEngineInitRejectedError);
 
 /** LendingAccountBalanceSlotsFull: Lending account balance slots are full */
 export class LendingAccountBalanceSlotsFullError extends ProgramError {
   override readonly name: string = 'LendingAccountBalanceSlotsFull';
 
-  readonly code: number = 0x177b; // 6011
+  readonly code: number = 0x177a; // 6010
 
   constructor(program: Program, cause?: Error) {
     super('Lending account balance slots are full', program, cause);
   }
 }
-codeToErrorMap.set(0x177b, LendingAccountBalanceSlotsFullError);
+codeToErrorMap.set(0x177a, LendingAccountBalanceSlotsFullError);
 nameToErrorMap.set(
   'LendingAccountBalanceSlotsFull',
   LendingAccountBalanceSlotsFullError
@@ -181,234 +172,221 @@ nameToErrorMap.set(
 export class BankAlreadyExistsError extends ProgramError {
   override readonly name: string = 'BankAlreadyExists';
 
-  readonly code: number = 0x177c; // 6012
+  readonly code: number = 0x177b; // 6011
 
   constructor(program: Program, cause?: Error) {
     super('Bank already exists', program, cause);
   }
 }
-codeToErrorMap.set(0x177c, BankAlreadyExistsError);
+codeToErrorMap.set(0x177b, BankAlreadyExistsError);
 nameToErrorMap.set('BankAlreadyExists', BankAlreadyExistsError);
 
-/** IllegalLiquidation: Illegal liquidation */
-export class IllegalLiquidationError extends ProgramError {
-  override readonly name: string = 'IllegalLiquidation';
+/** ZeroLiquidationAmount: Amount to liquidate must be positive */
+export class ZeroLiquidationAmountError extends ProgramError {
+  override readonly name: string = 'ZeroLiquidationAmount';
 
-  readonly code: number = 0x177d; // 6013
+  readonly code: number = 0x177c; // 6012
 
   constructor(program: Program, cause?: Error) {
-    super('Illegal liquidation', program, cause);
+    super('Amount to liquidate must be positive', program, cause);
   }
 }
-codeToErrorMap.set(0x177d, IllegalLiquidationError);
-nameToErrorMap.set('IllegalLiquidation', IllegalLiquidationError);
+codeToErrorMap.set(0x177c, ZeroLiquidationAmountError);
+nameToErrorMap.set('ZeroLiquidationAmount', ZeroLiquidationAmountError);
 
 /** AccountNotBankrupt: Account is not bankrupt */
 export class AccountNotBankruptError extends ProgramError {
   override readonly name: string = 'AccountNotBankrupt';
 
-  readonly code: number = 0x177e; // 6014
+  readonly code: number = 0x177d; // 6013
 
   constructor(program: Program, cause?: Error) {
     super('Account is not bankrupt', program, cause);
   }
 }
-codeToErrorMap.set(0x177e, AccountNotBankruptError);
+codeToErrorMap.set(0x177d, AccountNotBankruptError);
 nameToErrorMap.set('AccountNotBankrupt', AccountNotBankruptError);
 
 /** BalanceNotBadDebt: Account balance is not bad debt */
 export class BalanceNotBadDebtError extends ProgramError {
   override readonly name: string = 'BalanceNotBadDebt';
 
-  readonly code: number = 0x177f; // 6015
+  readonly code: number = 0x177e; // 6014
 
   constructor(program: Program, cause?: Error) {
     super('Account balance is not bad debt', program, cause);
   }
 }
-codeToErrorMap.set(0x177f, BalanceNotBadDebtError);
+codeToErrorMap.set(0x177e, BalanceNotBadDebtError);
 nameToErrorMap.set('BalanceNotBadDebt', BalanceNotBadDebtError);
 
 /** InvalidConfig: Invalid group config */
 export class InvalidConfigError extends ProgramError {
   override readonly name: string = 'InvalidConfig';
 
-  readonly code: number = 0x1780; // 6016
+  readonly code: number = 0x177f; // 6015
 
   constructor(program: Program, cause?: Error) {
     super('Invalid group config', program, cause);
   }
 }
-codeToErrorMap.set(0x1780, InvalidConfigError);
+codeToErrorMap.set(0x177f, InvalidConfigError);
 nameToErrorMap.set('InvalidConfig', InvalidConfigError);
-
-/** StaleOracle: Stale oracle data */
-export class StaleOracleError extends ProgramError {
-  override readonly name: string = 'StaleOracle';
-
-  readonly code: number = 0x1781; // 6017
-
-  constructor(program: Program, cause?: Error) {
-    super('Stale oracle data', program, cause);
-  }
-}
-codeToErrorMap.set(0x1781, StaleOracleError);
-nameToErrorMap.set('StaleOracle', StaleOracleError);
 
 /** BankPaused: Bank paused */
 export class BankPausedError extends ProgramError {
   override readonly name: string = 'BankPaused';
 
-  readonly code: number = 0x1782; // 6018
+  readonly code: number = 0x1780; // 6016
 
   constructor(program: Program, cause?: Error) {
     super('Bank paused', program, cause);
   }
 }
-codeToErrorMap.set(0x1782, BankPausedError);
+codeToErrorMap.set(0x1780, BankPausedError);
 nameToErrorMap.set('BankPaused', BankPausedError);
 
 /** BankReduceOnly: Bank is ReduceOnly mode */
 export class BankReduceOnlyError extends ProgramError {
   override readonly name: string = 'BankReduceOnly';
 
-  readonly code: number = 0x1783; // 6019
+  readonly code: number = 0x1781; // 6017
 
   constructor(program: Program, cause?: Error) {
     super('Bank is ReduceOnly mode', program, cause);
   }
 }
-codeToErrorMap.set(0x1783, BankReduceOnlyError);
+codeToErrorMap.set(0x1781, BankReduceOnlyError);
 nameToErrorMap.set('BankReduceOnly', BankReduceOnlyError);
 
-/** BankAccoutNotFound: Bank is missing */
-export class BankAccoutNotFoundError extends ProgramError {
-  override readonly name: string = 'BankAccoutNotFound';
+/** BankAccountNotFound: Bank is missing */
+export class BankAccountNotFoundError extends ProgramError {
+  override readonly name: string = 'BankAccountNotFound';
 
-  readonly code: number = 0x1784; // 6020
+  readonly code: number = 0x1782; // 6018
 
   constructor(program: Program, cause?: Error) {
     super('Bank is missing', program, cause);
   }
 }
-codeToErrorMap.set(0x1784, BankAccoutNotFoundError);
-nameToErrorMap.set('BankAccoutNotFound', BankAccoutNotFoundError);
+codeToErrorMap.set(0x1782, BankAccountNotFoundError);
+nameToErrorMap.set('BankAccountNotFound', BankAccountNotFoundError);
 
 /** OperationDepositOnly: Operation is deposit-only */
 export class OperationDepositOnlyError extends ProgramError {
   override readonly name: string = 'OperationDepositOnly';
 
-  readonly code: number = 0x1785; // 6021
+  readonly code: number = 0x1783; // 6019
 
   constructor(program: Program, cause?: Error) {
     super('Operation is deposit-only', program, cause);
   }
 }
-codeToErrorMap.set(0x1785, OperationDepositOnlyError);
+codeToErrorMap.set(0x1783, OperationDepositOnlyError);
 nameToErrorMap.set('OperationDepositOnly', OperationDepositOnlyError);
 
 /** OperationWithdrawOnly: Operation is withdraw-only */
 export class OperationWithdrawOnlyError extends ProgramError {
   override readonly name: string = 'OperationWithdrawOnly';
 
-  readonly code: number = 0x1786; // 6022
+  readonly code: number = 0x1784; // 6020
 
   constructor(program: Program, cause?: Error) {
     super('Operation is withdraw-only', program, cause);
   }
 }
-codeToErrorMap.set(0x1786, OperationWithdrawOnlyError);
+codeToErrorMap.set(0x1784, OperationWithdrawOnlyError);
 nameToErrorMap.set('OperationWithdrawOnly', OperationWithdrawOnlyError);
 
 /** OperationBorrowOnly: Operation is borrow-only */
 export class OperationBorrowOnlyError extends ProgramError {
   override readonly name: string = 'OperationBorrowOnly';
 
-  readonly code: number = 0x1787; // 6023
+  readonly code: number = 0x1785; // 6021
 
   constructor(program: Program, cause?: Error) {
     super('Operation is borrow-only', program, cause);
   }
 }
-codeToErrorMap.set(0x1787, OperationBorrowOnlyError);
+codeToErrorMap.set(0x1785, OperationBorrowOnlyError);
 nameToErrorMap.set('OperationBorrowOnly', OperationBorrowOnlyError);
 
 /** OperationRepayOnly: Operation is repay-only */
 export class OperationRepayOnlyError extends ProgramError {
   override readonly name: string = 'OperationRepayOnly';
 
-  readonly code: number = 0x1788; // 6024
+  readonly code: number = 0x1786; // 6022
 
   constructor(program: Program, cause?: Error) {
     super('Operation is repay-only', program, cause);
   }
 }
-codeToErrorMap.set(0x1788, OperationRepayOnlyError);
+codeToErrorMap.set(0x1786, OperationRepayOnlyError);
 nameToErrorMap.set('OperationRepayOnly', OperationRepayOnlyError);
 
 /** NoAssetFound: No asset found */
 export class NoAssetFoundError extends ProgramError {
   override readonly name: string = 'NoAssetFound';
 
-  readonly code: number = 0x1789; // 6025
+  readonly code: number = 0x1787; // 6023
 
   constructor(program: Program, cause?: Error) {
     super('No asset found', program, cause);
   }
 }
-codeToErrorMap.set(0x1789, NoAssetFoundError);
+codeToErrorMap.set(0x1787, NoAssetFoundError);
 nameToErrorMap.set('NoAssetFound', NoAssetFoundError);
 
 /** NoLiabilityFound: No liability found */
 export class NoLiabilityFoundError extends ProgramError {
   override readonly name: string = 'NoLiabilityFound';
 
-  readonly code: number = 0x178a; // 6026
+  readonly code: number = 0x1788; // 6024
 
   constructor(program: Program, cause?: Error) {
     super('No liability found', program, cause);
   }
 }
-codeToErrorMap.set(0x178a, NoLiabilityFoundError);
+codeToErrorMap.set(0x1788, NoLiabilityFoundError);
 nameToErrorMap.set('NoLiabilityFound', NoLiabilityFoundError);
 
 /** InvalidOracleSetup: Invalid oracle setup */
 export class InvalidOracleSetupError extends ProgramError {
   override readonly name: string = 'InvalidOracleSetup';
 
-  readonly code: number = 0x178b; // 6027
+  readonly code: number = 0x1789; // 6025
 
   constructor(program: Program, cause?: Error) {
     super('Invalid oracle setup', program, cause);
   }
 }
-codeToErrorMap.set(0x178b, InvalidOracleSetupError);
+codeToErrorMap.set(0x1789, InvalidOracleSetupError);
 nameToErrorMap.set('InvalidOracleSetup', InvalidOracleSetupError);
 
 /** IllegalUtilizationRatio: Invalid bank utilization ratio */
 export class IllegalUtilizationRatioError extends ProgramError {
   override readonly name: string = 'IllegalUtilizationRatio';
 
-  readonly code: number = 0x178c; // 6028
+  readonly code: number = 0x178a; // 6026
 
   constructor(program: Program, cause?: Error) {
     super('Invalid bank utilization ratio', program, cause);
   }
 }
-codeToErrorMap.set(0x178c, IllegalUtilizationRatioError);
+codeToErrorMap.set(0x178a, IllegalUtilizationRatioError);
 nameToErrorMap.set('IllegalUtilizationRatio', IllegalUtilizationRatioError);
 
 /** BankLiabilityCapacityExceeded: Bank borrow cap exceeded */
 export class BankLiabilityCapacityExceededError extends ProgramError {
   override readonly name: string = 'BankLiabilityCapacityExceeded';
 
-  readonly code: number = 0x178d; // 6029
+  readonly code: number = 0x178b; // 6027
 
   constructor(program: Program, cause?: Error) {
     super('Bank borrow cap exceeded', program, cause);
   }
 }
-codeToErrorMap.set(0x178d, BankLiabilityCapacityExceededError);
+codeToErrorMap.set(0x178b, BankLiabilityCapacityExceededError);
 nameToErrorMap.set(
   'BankLiabilityCapacityExceeded',
   BankLiabilityCapacityExceededError
@@ -418,30 +396,30 @@ nameToErrorMap.set(
 export class InvalidPriceError extends ProgramError {
   override readonly name: string = 'InvalidPrice';
 
-  readonly code: number = 0x178e; // 6030
+  readonly code: number = 0x178c; // 6028
 
   constructor(program: Program, cause?: Error) {
     super('Invalid Price', program, cause);
   }
 }
-codeToErrorMap.set(0x178e, InvalidPriceError);
+codeToErrorMap.set(0x178c, InvalidPriceError);
 nameToErrorMap.set('InvalidPrice', InvalidPriceError);
 
-/** IsolatedAccountIllegalState: Account can have only one liablity when account is under isolated risk */
+/** IsolatedAccountIllegalState: Account can have only one liability when account is under isolated risk */
 export class IsolatedAccountIllegalStateError extends ProgramError {
   override readonly name: string = 'IsolatedAccountIllegalState';
 
-  readonly code: number = 0x178f; // 6031
+  readonly code: number = 0x178d; // 6029
 
   constructor(program: Program, cause?: Error) {
     super(
-      'Account can have only one liablity when account is under isolated risk',
+      'Account can have only one liability when account is under isolated risk',
       program,
       cause
     );
   }
 }
-codeToErrorMap.set(0x178f, IsolatedAccountIllegalStateError);
+codeToErrorMap.set(0x178d, IsolatedAccountIllegalStateError);
 nameToErrorMap.set(
   'IsolatedAccountIllegalState',
   IsolatedAccountIllegalStateError
@@ -451,39 +429,39 @@ nameToErrorMap.set(
 export class EmissionsAlreadySetupError extends ProgramError {
   override readonly name: string = 'EmissionsAlreadySetup';
 
-  readonly code: number = 0x1790; // 6032
+  readonly code: number = 0x178e; // 6030
 
   constructor(program: Program, cause?: Error) {
     super('Emissions already setup', program, cause);
   }
 }
-codeToErrorMap.set(0x1790, EmissionsAlreadySetupError);
+codeToErrorMap.set(0x178e, EmissionsAlreadySetupError);
 nameToErrorMap.set('EmissionsAlreadySetup', EmissionsAlreadySetupError);
 
 /** OracleNotSetup: Oracle is not set */
 export class OracleNotSetupError extends ProgramError {
   override readonly name: string = 'OracleNotSetup';
 
-  readonly code: number = 0x1791; // 6033
+  readonly code: number = 0x178f; // 6031
 
   constructor(program: Program, cause?: Error) {
     super('Oracle is not set', program, cause);
   }
 }
-codeToErrorMap.set(0x1791, OracleNotSetupError);
+codeToErrorMap.set(0x178f, OracleNotSetupError);
 nameToErrorMap.set('OracleNotSetup', OracleNotSetupError);
 
-/** InvalidSwitchboardDecimalConversion: Invalid swithcboard decimal conversion */
+/** InvalidSwitchboardDecimalConversion: Invalid switchboard decimal conversion */
 export class InvalidSwitchboardDecimalConversionError extends ProgramError {
   override readonly name: string = 'InvalidSwitchboardDecimalConversion';
 
-  readonly code: number = 0x1792; // 6034
+  readonly code: number = 0x1790; // 6032
 
   constructor(program: Program, cause?: Error) {
-    super('Invalid swithcboard decimal conversion', program, cause);
+    super('Invalid switchboard decimal conversion', program, cause);
   }
 }
-codeToErrorMap.set(0x1792, InvalidSwitchboardDecimalConversionError);
+codeToErrorMap.set(0x1790, InvalidSwitchboardDecimalConversionError);
 nameToErrorMap.set(
   'InvalidSwitchboardDecimalConversion',
   InvalidSwitchboardDecimalConversionError
@@ -493,7 +471,7 @@ nameToErrorMap.set(
 export class CannotCloseOutstandingEmissionsError extends ProgramError {
   override readonly name: string = 'CannotCloseOutstandingEmissions';
 
-  readonly code: number = 0x1793; // 6035
+  readonly code: number = 0x1791; // 6033
 
   constructor(program: Program, cause?: Error) {
     super(
@@ -503,7 +481,7 @@ export class CannotCloseOutstandingEmissionsError extends ProgramError {
     );
   }
 }
-codeToErrorMap.set(0x1793, CannotCloseOutstandingEmissionsError);
+codeToErrorMap.set(0x1791, CannotCloseOutstandingEmissionsError);
 nameToErrorMap.set(
   'CannotCloseOutstandingEmissions',
   CannotCloseOutstandingEmissionsError
@@ -513,33 +491,33 @@ nameToErrorMap.set(
 export class EmissionsUpdateErrorError extends ProgramError {
   override readonly name: string = 'EmissionsUpdateError';
 
-  readonly code: number = 0x1794; // 6036
+  readonly code: number = 0x1792; // 6034
 
   constructor(program: Program, cause?: Error) {
     super('Update emissions error', program, cause);
   }
 }
-codeToErrorMap.set(0x1794, EmissionsUpdateErrorError);
+codeToErrorMap.set(0x1792, EmissionsUpdateErrorError);
 nameToErrorMap.set('EmissionsUpdateError', EmissionsUpdateErrorError);
 
 /** AccountDisabled: Account disabled */
 export class AccountDisabledError extends ProgramError {
   override readonly name: string = 'AccountDisabled';
 
-  readonly code: number = 0x1795; // 6037
+  readonly code: number = 0x1793; // 6035
 
   constructor(program: Program, cause?: Error) {
     super('Account disabled', program, cause);
   }
 }
-codeToErrorMap.set(0x1795, AccountDisabledError);
+codeToErrorMap.set(0x1793, AccountDisabledError);
 nameToErrorMap.set('AccountDisabled', AccountDisabledError);
 
 /** AccountTempActiveBalanceLimitExceeded: Account can't temporarily open 3 balances, please close a balance first */
 export class AccountTempActiveBalanceLimitExceededError extends ProgramError {
   override readonly name: string = 'AccountTempActiveBalanceLimitExceeded';
 
-  readonly code: number = 0x1796; // 6038
+  readonly code: number = 0x1794; // 6036
 
   constructor(program: Program, cause?: Error) {
     super(
@@ -549,7 +527,7 @@ export class AccountTempActiveBalanceLimitExceededError extends ProgramError {
     );
   }
 }
-codeToErrorMap.set(0x1796, AccountTempActiveBalanceLimitExceededError);
+codeToErrorMap.set(0x1794, AccountTempActiveBalanceLimitExceededError);
 nameToErrorMap.set(
   'AccountTempActiveBalanceLimitExceeded',
   AccountTempActiveBalanceLimitExceededError
@@ -559,69 +537,552 @@ nameToErrorMap.set(
 export class AccountInFlashloanError extends ProgramError {
   override readonly name: string = 'AccountInFlashloan';
 
-  readonly code: number = 0x1797; // 6039
+  readonly code: number = 0x1795; // 6037
 
   constructor(program: Program, cause?: Error) {
     super('Illegal action during flashloan', program, cause);
   }
 }
-codeToErrorMap.set(0x1797, AccountInFlashloanError);
+codeToErrorMap.set(0x1795, AccountInFlashloanError);
 nameToErrorMap.set('AccountInFlashloan', AccountInFlashloanError);
 
 /** IllegalFlashloan: Illegal flashloan */
 export class IllegalFlashloanError extends ProgramError {
   override readonly name: string = 'IllegalFlashloan';
 
-  readonly code: number = 0x1798; // 6040
+  readonly code: number = 0x1796; // 6038
 
   constructor(program: Program, cause?: Error) {
     super('Illegal flashloan', program, cause);
   }
 }
-codeToErrorMap.set(0x1798, IllegalFlashloanError);
+codeToErrorMap.set(0x1796, IllegalFlashloanError);
 nameToErrorMap.set('IllegalFlashloan', IllegalFlashloanError);
 
 /** IllegalFlag: Illegal flag */
 export class IllegalFlagError extends ProgramError {
   override readonly name: string = 'IllegalFlag';
 
-  readonly code: number = 0x1799; // 6041
+  readonly code: number = 0x1797; // 6039
 
   constructor(program: Program, cause?: Error) {
     super('Illegal flag', program, cause);
   }
 }
-codeToErrorMap.set(0x1799, IllegalFlagError);
+codeToErrorMap.set(0x1797, IllegalFlagError);
 nameToErrorMap.set('IllegalFlag', IllegalFlagError);
 
 /** IllegalBalanceState: Illegal balance state */
 export class IllegalBalanceStateError extends ProgramError {
   override readonly name: string = 'IllegalBalanceState';
 
-  readonly code: number = 0x179a; // 6042
+  readonly code: number = 0x1798; // 6040
 
   constructor(program: Program, cause?: Error) {
     super('Illegal balance state', program, cause);
   }
 }
-codeToErrorMap.set(0x179a, IllegalBalanceStateError);
+codeToErrorMap.set(0x1798, IllegalBalanceStateError);
 nameToErrorMap.set('IllegalBalanceState', IllegalBalanceStateError);
 
 /** IllegalAccountAuthorityTransfer: Illegal account authority transfer */
 export class IllegalAccountAuthorityTransferError extends ProgramError {
   override readonly name: string = 'IllegalAccountAuthorityTransfer';
 
-  readonly code: number = 0x179b; // 6043
+  readonly code: number = 0x1799; // 6041
 
   constructor(program: Program, cause?: Error) {
     super('Illegal account authority transfer', program, cause);
   }
 }
-codeToErrorMap.set(0x179b, IllegalAccountAuthorityTransferError);
+codeToErrorMap.set(0x1799, IllegalAccountAuthorityTransferError);
 nameToErrorMap.set(
   'IllegalAccountAuthorityTransfer',
   IllegalAccountAuthorityTransferError
 );
+
+/** Unauthorized: Unauthorized */
+export class UnauthorizedError extends ProgramError {
+  override readonly name: string = 'Unauthorized';
+
+  readonly code: number = 0x179a; // 6042
+
+  constructor(program: Program, cause?: Error) {
+    super('Unauthorized', program, cause);
+  }
+}
+codeToErrorMap.set(0x179a, UnauthorizedError);
+nameToErrorMap.set('Unauthorized', UnauthorizedError);
+
+/** IllegalAction: Invalid account authority */
+export class IllegalActionError extends ProgramError {
+  override readonly name: string = 'IllegalAction';
+
+  readonly code: number = 0x179b; // 6043
+
+  constructor(program: Program, cause?: Error) {
+    super('Invalid account authority', program, cause);
+  }
+}
+codeToErrorMap.set(0x179b, IllegalActionError);
+nameToErrorMap.set('IllegalAction', IllegalActionError);
+
+/** T22MintRequired: Token22 Banks require mint account as first remaining account */
+export class T22MintRequiredError extends ProgramError {
+  override readonly name: string = 'T22MintRequired';
+
+  readonly code: number = 0x179c; // 6044
+
+  constructor(program: Program, cause?: Error) {
+    super(
+      'Token22 Banks require mint account as first remaining account',
+      program,
+      cause
+    );
+  }
+}
+codeToErrorMap.set(0x179c, T22MintRequiredError);
+nameToErrorMap.set('T22MintRequired', T22MintRequiredError);
+
+/** InvalidFeeAta: Invalid ATA for global fee account */
+export class InvalidFeeAtaError extends ProgramError {
+  override readonly name: string = 'InvalidFeeAta';
+
+  readonly code: number = 0x179d; // 6045
+
+  constructor(program: Program, cause?: Error) {
+    super('Invalid ATA for global fee account', program, cause);
+  }
+}
+codeToErrorMap.set(0x179d, InvalidFeeAtaError);
+nameToErrorMap.set('InvalidFeeAta', InvalidFeeAtaError);
+
+/** AddedStakedPoolManually: Use add pool permissionless instead */
+export class AddedStakedPoolManuallyError extends ProgramError {
+  override readonly name: string = 'AddedStakedPoolManually';
+
+  readonly code: number = 0x179e; // 6046
+
+  constructor(program: Program, cause?: Error) {
+    super('Use add pool permissionless instead', program, cause);
+  }
+}
+codeToErrorMap.set(0x179e, AddedStakedPoolManuallyError);
+nameToErrorMap.set('AddedStakedPoolManually', AddedStakedPoolManuallyError);
+
+/** AssetTagMismatch: Staked SOL accounts can only deposit staked assets and borrow SOL */
+export class AssetTagMismatchError extends ProgramError {
+  override readonly name: string = 'AssetTagMismatch';
+
+  readonly code: number = 0x179f; // 6047
+
+  constructor(program: Program, cause?: Error) {
+    super(
+      'Staked SOL accounts can only deposit staked assets and borrow SOL',
+      program,
+      cause
+    );
+  }
+}
+codeToErrorMap.set(0x179f, AssetTagMismatchError);
+nameToErrorMap.set('AssetTagMismatch', AssetTagMismatchError);
+
+/** StakePoolValidationFailed: Stake pool validation failed: check the stake pool, mint, or sol pool */
+export class StakePoolValidationFailedError extends ProgramError {
+  override readonly name: string = 'StakePoolValidationFailed';
+
+  readonly code: number = 0x17a0; // 6048
+
+  constructor(program: Program, cause?: Error) {
+    super(
+      'Stake pool validation failed: check the stake pool, mint, or sol pool',
+      program,
+      cause
+    );
+  }
+}
+codeToErrorMap.set(0x17a0, StakePoolValidationFailedError);
+nameToErrorMap.set('StakePoolValidationFailed', StakePoolValidationFailedError);
+
+/** SwitchboardStalePrice: Switchboard oracle: stale price */
+export class SwitchboardStalePriceError extends ProgramError {
+  override readonly name: string = 'SwitchboardStalePrice';
+
+  readonly code: number = 0x17a1; // 6049
+
+  constructor(program: Program, cause?: Error) {
+    super('Switchboard oracle: stale price', program, cause);
+  }
+}
+codeToErrorMap.set(0x17a1, SwitchboardStalePriceError);
+nameToErrorMap.set('SwitchboardStalePrice', SwitchboardStalePriceError);
+
+/** PythPushStalePrice: Pyth Push oracle: stale price */
+export class PythPushStalePriceError extends ProgramError {
+  override readonly name: string = 'PythPushStalePrice';
+
+  readonly code: number = 0x17a2; // 6050
+
+  constructor(program: Program, cause?: Error) {
+    super('Pyth Push oracle: stale price', program, cause);
+  }
+}
+codeToErrorMap.set(0x17a2, PythPushStalePriceError);
+nameToErrorMap.set('PythPushStalePrice', PythPushStalePriceError);
+
+/** WrongNumberOfOracleAccounts: Oracle error: wrong number of accounts */
+export class WrongNumberOfOracleAccountsError extends ProgramError {
+  override readonly name: string = 'WrongNumberOfOracleAccounts';
+
+  readonly code: number = 0x17a3; // 6051
+
+  constructor(program: Program, cause?: Error) {
+    super('Oracle error: wrong number of accounts', program, cause);
+  }
+}
+codeToErrorMap.set(0x17a3, WrongNumberOfOracleAccountsError);
+nameToErrorMap.set(
+  'WrongNumberOfOracleAccounts',
+  WrongNumberOfOracleAccountsError
+);
+
+/** WrongOracleAccountKeys: Oracle error: wrong account keys */
+export class WrongOracleAccountKeysError extends ProgramError {
+  override readonly name: string = 'WrongOracleAccountKeys';
+
+  readonly code: number = 0x17a4; // 6052
+
+  constructor(program: Program, cause?: Error) {
+    super('Oracle error: wrong account keys', program, cause);
+  }
+}
+codeToErrorMap.set(0x17a4, WrongOracleAccountKeysError);
+nameToErrorMap.set('WrongOracleAccountKeys', WrongOracleAccountKeysError);
+
+/** PythPushWrongAccountOwner: Pyth Push oracle: wrong account owner */
+export class PythPushWrongAccountOwnerError extends ProgramError {
+  override readonly name: string = 'PythPushWrongAccountOwner';
+
+  readonly code: number = 0x17a5; // 6053
+
+  constructor(program: Program, cause?: Error) {
+    super('Pyth Push oracle: wrong account owner', program, cause);
+  }
+}
+codeToErrorMap.set(0x17a5, PythPushWrongAccountOwnerError);
+nameToErrorMap.set('PythPushWrongAccountOwner', PythPushWrongAccountOwnerError);
+
+/** StakedPythPushWrongAccountOwner: Staked Pyth Push oracle: wrong account owner */
+export class StakedPythPushWrongAccountOwnerError extends ProgramError {
+  override readonly name: string = 'StakedPythPushWrongAccountOwner';
+
+  readonly code: number = 0x17a6; // 6054
+
+  constructor(program: Program, cause?: Error) {
+    super('Staked Pyth Push oracle: wrong account owner', program, cause);
+  }
+}
+codeToErrorMap.set(0x17a6, StakedPythPushWrongAccountOwnerError);
+nameToErrorMap.set(
+  'StakedPythPushWrongAccountOwner',
+  StakedPythPushWrongAccountOwnerError
+);
+
+/** PythPushMismatchedFeedId: Pyth Push oracle: mismatched feed id */
+export class PythPushMismatchedFeedIdError extends ProgramError {
+  override readonly name: string = 'PythPushMismatchedFeedId';
+
+  readonly code: number = 0x17a7; // 6055
+
+  constructor(program: Program, cause?: Error) {
+    super('Pyth Push oracle: mismatched feed id', program, cause);
+  }
+}
+codeToErrorMap.set(0x17a7, PythPushMismatchedFeedIdError);
+nameToErrorMap.set('PythPushMismatchedFeedId', PythPushMismatchedFeedIdError);
+
+/** PythPushInsufficientVerificationLevel: Pyth Push oracle: insufficient verification level */
+export class PythPushInsufficientVerificationLevelError extends ProgramError {
+  override readonly name: string = 'PythPushInsufficientVerificationLevel';
+
+  readonly code: number = 0x17a8; // 6056
+
+  constructor(program: Program, cause?: Error) {
+    super('Pyth Push oracle: insufficient verification level', program, cause);
+  }
+}
+codeToErrorMap.set(0x17a8, PythPushInsufficientVerificationLevelError);
+nameToErrorMap.set(
+  'PythPushInsufficientVerificationLevel',
+  PythPushInsufficientVerificationLevelError
+);
+
+/** PythPushFeedIdMustBe32Bytes: Pyth Push oracle: feed id must be 32 Bytes */
+export class PythPushFeedIdMustBe32BytesError extends ProgramError {
+  override readonly name: string = 'PythPushFeedIdMustBe32Bytes';
+
+  readonly code: number = 0x17a9; // 6057
+
+  constructor(program: Program, cause?: Error) {
+    super('Pyth Push oracle: feed id must be 32 Bytes', program, cause);
+  }
+}
+codeToErrorMap.set(0x17a9, PythPushFeedIdMustBe32BytesError);
+nameToErrorMap.set(
+  'PythPushFeedIdMustBe32Bytes',
+  PythPushFeedIdMustBe32BytesError
+);
+
+/** PythPushFeedIdNonHexCharacter: Pyth Push oracle: feed id contains non-hex characters */
+export class PythPushFeedIdNonHexCharacterError extends ProgramError {
+  override readonly name: string = 'PythPushFeedIdNonHexCharacter';
+
+  readonly code: number = 0x17aa; // 6058
+
+  constructor(program: Program, cause?: Error) {
+    super(
+      'Pyth Push oracle: feed id contains non-hex characters',
+      program,
+      cause
+    );
+  }
+}
+codeToErrorMap.set(0x17aa, PythPushFeedIdNonHexCharacterError);
+nameToErrorMap.set(
+  'PythPushFeedIdNonHexCharacter',
+  PythPushFeedIdNonHexCharacterError
+);
+
+/** SwitchboardWrongAccountOwner: Switchboard oracle: wrong account owner */
+export class SwitchboardWrongAccountOwnerError extends ProgramError {
+  override readonly name: string = 'SwitchboardWrongAccountOwner';
+
+  readonly code: number = 0x17ab; // 6059
+
+  constructor(program: Program, cause?: Error) {
+    super('Switchboard oracle: wrong account owner', program, cause);
+  }
+}
+codeToErrorMap.set(0x17ab, SwitchboardWrongAccountOwnerError);
+nameToErrorMap.set(
+  'SwitchboardWrongAccountOwner',
+  SwitchboardWrongAccountOwnerError
+);
+
+/** PythPushInvalidAccount: Pyth Push oracle: invalid account */
+export class PythPushInvalidAccountError extends ProgramError {
+  override readonly name: string = 'PythPushInvalidAccount';
+
+  readonly code: number = 0x17ac; // 6060
+
+  constructor(program: Program, cause?: Error) {
+    super('Pyth Push oracle: invalid account', program, cause);
+  }
+}
+codeToErrorMap.set(0x17ac, PythPushInvalidAccountError);
+nameToErrorMap.set('PythPushInvalidAccount', PythPushInvalidAccountError);
+
+/** SwitchboardInvalidAccount: Switchboard oracle: invalid account */
+export class SwitchboardInvalidAccountError extends ProgramError {
+  override readonly name: string = 'SwitchboardInvalidAccount';
+
+  readonly code: number = 0x17ad; // 6061
+
+  constructor(program: Program, cause?: Error) {
+    super('Switchboard oracle: invalid account', program, cause);
+  }
+}
+codeToErrorMap.set(0x17ad, SwitchboardInvalidAccountError);
+nameToErrorMap.set('SwitchboardInvalidAccount', SwitchboardInvalidAccountError);
+
+/** MathError: Math error */
+export class MathErrorError extends ProgramError {
+  override readonly name: string = 'MathError';
+
+  readonly code: number = 0x17ae; // 6062
+
+  constructor(program: Program, cause?: Error) {
+    super('Math error', program, cause);
+  }
+}
+codeToErrorMap.set(0x17ae, MathErrorError);
+nameToErrorMap.set('MathError', MathErrorError);
+
+/** InvalidEmissionsDestinationAccount: Invalid emissions destination account */
+export class InvalidEmissionsDestinationAccountError extends ProgramError {
+  override readonly name: string = 'InvalidEmissionsDestinationAccount';
+
+  readonly code: number = 0x17af; // 6063
+
+  constructor(program: Program, cause?: Error) {
+    super('Invalid emissions destination account', program, cause);
+  }
+}
+codeToErrorMap.set(0x17af, InvalidEmissionsDestinationAccountError);
+nameToErrorMap.set(
+  'InvalidEmissionsDestinationAccount',
+  InvalidEmissionsDestinationAccountError
+);
+
+/** SameAssetAndLiabilityBanks: Asset and liability bank cannot be the same */
+export class SameAssetAndLiabilityBanksError extends ProgramError {
+  override readonly name: string = 'SameAssetAndLiabilityBanks';
+
+  readonly code: number = 0x17b0; // 6064
+
+  constructor(program: Program, cause?: Error) {
+    super('Asset and liability bank cannot be the same', program, cause);
+  }
+}
+codeToErrorMap.set(0x17b0, SameAssetAndLiabilityBanksError);
+nameToErrorMap.set(
+  'SameAssetAndLiabilityBanks',
+  SameAssetAndLiabilityBanksError
+);
+
+/** OverliquidationAttempt: Trying to withdraw more assets than available */
+export class OverliquidationAttemptError extends ProgramError {
+  override readonly name: string = 'OverliquidationAttempt';
+
+  readonly code: number = 0x17b1; // 6065
+
+  constructor(program: Program, cause?: Error) {
+    super('Trying to withdraw more assets than available', program, cause);
+  }
+}
+codeToErrorMap.set(0x17b1, OverliquidationAttemptError);
+nameToErrorMap.set('OverliquidationAttempt', OverliquidationAttemptError);
+
+/** NoLiabilitiesInLiabilityBank: Liability bank has no liabilities */
+export class NoLiabilitiesInLiabilityBankError extends ProgramError {
+  override readonly name: string = 'NoLiabilitiesInLiabilityBank';
+
+  readonly code: number = 0x17b2; // 6066
+
+  constructor(program: Program, cause?: Error) {
+    super('Liability bank has no liabilities', program, cause);
+  }
+}
+codeToErrorMap.set(0x17b2, NoLiabilitiesInLiabilityBankError);
+nameToErrorMap.set(
+  'NoLiabilitiesInLiabilityBank',
+  NoLiabilitiesInLiabilityBankError
+);
+
+/** AssetsInLiabilityBank: Liability bank has assets */
+export class AssetsInLiabilityBankError extends ProgramError {
+  override readonly name: string = 'AssetsInLiabilityBank';
+
+  readonly code: number = 0x17b3; // 6067
+
+  constructor(program: Program, cause?: Error) {
+    super('Liability bank has assets', program, cause);
+  }
+}
+codeToErrorMap.set(0x17b3, AssetsInLiabilityBankError);
+nameToErrorMap.set('AssetsInLiabilityBank', AssetsInLiabilityBankError);
+
+/** HealthyAccount: Account is healthy and cannot be liquidated */
+export class HealthyAccountError extends ProgramError {
+  override readonly name: string = 'HealthyAccount';
+
+  readonly code: number = 0x17b4; // 6068
+
+  constructor(program: Program, cause?: Error) {
+    super('Account is healthy and cannot be liquidated', program, cause);
+  }
+}
+codeToErrorMap.set(0x17b4, HealthyAccountError);
+nameToErrorMap.set('HealthyAccount', HealthyAccountError);
+
+/** ExhaustedLiability: Liability payoff too severe, exhausted liability */
+export class ExhaustedLiabilityError extends ProgramError {
+  override readonly name: string = 'ExhaustedLiability';
+
+  readonly code: number = 0x17b5; // 6069
+
+  constructor(program: Program, cause?: Error) {
+    super('Liability payoff too severe, exhausted liability', program, cause);
+  }
+}
+codeToErrorMap.set(0x17b5, ExhaustedLiabilityError);
+nameToErrorMap.set('ExhaustedLiability', ExhaustedLiabilityError);
+
+/** TooSeverePayoff: Liability payoff too severe, liability balance has assets */
+export class TooSeverePayoffError extends ProgramError {
+  override readonly name: string = 'TooSeverePayoff';
+
+  readonly code: number = 0x17b6; // 6070
+
+  constructor(program: Program, cause?: Error) {
+    super(
+      'Liability payoff too severe, liability balance has assets',
+      program,
+      cause
+    );
+  }
+}
+codeToErrorMap.set(0x17b6, TooSeverePayoffError);
+nameToErrorMap.set('TooSeverePayoff', TooSeverePayoffError);
+
+/** TooSevereLiquidation: Liquidation too severe, account above maintenance requirement */
+export class TooSevereLiquidationError extends ProgramError {
+  override readonly name: string = 'TooSevereLiquidation';
+
+  readonly code: number = 0x17b7; // 6071
+
+  constructor(program: Program, cause?: Error) {
+    super(
+      'Liquidation too severe, account above maintenance requirement',
+      program,
+      cause
+    );
+  }
+}
+codeToErrorMap.set(0x17b7, TooSevereLiquidationError);
+nameToErrorMap.set('TooSevereLiquidation', TooSevereLiquidationError);
+
+/** WorseHealthPostLiquidation: Liquidation would worsen account health */
+export class WorseHealthPostLiquidationError extends ProgramError {
+  override readonly name: string = 'WorseHealthPostLiquidation';
+
+  readonly code: number = 0x17b8; // 6072
+
+  constructor(program: Program, cause?: Error) {
+    super('Liquidation would worsen account health', program, cause);
+  }
+}
+codeToErrorMap.set(0x17b8, WorseHealthPostLiquidationError);
+nameToErrorMap.set(
+  'WorseHealthPostLiquidation',
+  WorseHealthPostLiquidationError
+);
+
+/** ArenaBankLimit: Arena groups can only support two banks */
+export class ArenaBankLimitError extends ProgramError {
+  override readonly name: string = 'ArenaBankLimit';
+
+  readonly code: number = 0x17b9; // 6073
+
+  constructor(program: Program, cause?: Error) {
+    super('Arena groups can only support two banks', program, cause);
+  }
+}
+codeToErrorMap.set(0x17b9, ArenaBankLimitError);
+nameToErrorMap.set('ArenaBankLimit', ArenaBankLimitError);
+
+/** ArenaSettingCannotChange: Arena groups cannot return to non-arena status */
+export class ArenaSettingCannotChangeError extends ProgramError {
+  override readonly name: string = 'ArenaSettingCannotChange';
+
+  readonly code: number = 0x17ba; // 6074
+
+  constructor(program: Program, cause?: Error) {
+    super('Arena groups cannot return to non-arena status', program, cause);
+  }
+}
+codeToErrorMap.set(0x17ba, ArenaSettingCannotChangeError);
+nameToErrorMap.set('ArenaSettingCannotChange', ArenaSettingCannotChangeError);
 
 /**
  * Attempts to resolve a custom program error from the provided error code.
