@@ -450,7 +450,7 @@ class PositionRebalanceHelper {
       this.pos.state.liqThresholdBps
     );
 
-    return postRebalanceLiqUtilRate < this.pos.maxBoostToBps;
+    return postRebalanceLiqUtilRate <= this.pos.maxBoostToBps;
   }
 
   private validBoostFromHere() {
