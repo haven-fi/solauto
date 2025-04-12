@@ -1,5 +1,5 @@
 import { PublicKey } from "@solana/web3.js";
-import { Program, publicKey, Umi } from "@metaplex-foundation/umi";
+import { AccountMeta, Program, publicKey, Umi } from "@metaplex-foundation/umi";
 import {
   fromWeb3JsPublicKey,
   toWeb3JsPublicKey,
@@ -16,6 +16,7 @@ import {
   USD_DECIMALS,
 } from "../constants";
 import {
+  Balance,
   Bank,
   deserializeMarginfiAccount,
   fetchBank,
@@ -177,6 +178,34 @@ export function findMarginfiAccounts(
   }
 
   throw new Error(`Marginfi accounts not found by the bank: ${bank}`);
+}
+
+export async function getRemainingAccountsForMarginfiHealthCheck(
+  umi: Umi,
+  balance: Balance
+): Promise<AccountMeta[]> {
+  if (!balance.active) {
+    return [];
+  }
+
+  const priceOracle = publicKey(
+    await getMarginfiPriceOracle(umi, {
+      pk: toWeb3JsPublicKey(balance.bankPk),
+    })
+  );
+
+  return [
+    {
+      pubkey: balance.bankPk,
+      isSigner: false,
+      isWritable: false,
+    },
+    {
+      pubkey: priceOracle,
+      isSigner: false,
+      isWritable: false,
+    },
+  ];
 }
 
 export function calcMarginfiMaxLtvAndLiqThresholdBps(

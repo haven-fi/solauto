@@ -57,7 +57,7 @@ export abstract class FlProviderBase {
     flashLoan: FlashLoanDetails,
     destTokenAccount: PublicKey
   ): TransactionBuilder;
-  abstract flashRepay(flashLoan: FlashLoanDetails): Promise<TransactionBuilder>;
+  abstract flashRepay(flashLoan: FlashLoanDetails): TransactionBuilder;
 
   protected signerFlashBorrow(
     flashLoan: FlashLoanDetails,

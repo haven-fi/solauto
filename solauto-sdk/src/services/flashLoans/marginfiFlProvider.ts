@@ -30,6 +30,7 @@ import {
   getBankLiquidityAvailableBaseUnit,
   getEmptyMarginfiAccountsByAuthority,
   getMarginfiPriceOracle,
+  getRemainingAccountsForMarginfiHealthCheck,
   getTokenAccount,
   rpcAccountCreated,
   safeGetPrice,
@@ -49,8 +50,11 @@ export class MarginfiFlProvider extends FlProviderBase {
   private existingMarginfiAccounts!: MarginfiAccount[];
   private supplyBankLiquiditySource!: Bank;
   private debtBankLiquiditySource!: Bank;
+
   private supplyImfiAccount!: IMFIAccount;
   private debtImfiAccount!: IMFIAccount;
+  private supplyRemainingAccounts!: AccountMeta[];
+  private debtRemainingAccounts!: AccountMeta[];
 
   async initialize() {
     await this.setAvailableBanks();
@@ -62,10 +66,10 @@ export class MarginfiFlProvider extends FlProviderBase {
       this.liquidityBank(TokenType.Supply).group.toString() !==
       this.liquidityBank(TokenType.Debt).group.toString()
     ) {
-      this.setIntermediaryAccount([TokenType.Supply]);
-      this.setIntermediaryAccount([TokenType.Debt]);
+      await this.setIntermediaryAccount([TokenType.Supply]);
+      await this.setIntermediaryAccount([TokenType.Debt]);
     } else {
-      this.setIntermediaryAccount([TokenType.Supply, TokenType.Debt]);
+      await this.setIntermediaryAccount([TokenType.Supply, TokenType.Debt]);
     }
   }
 
@@ -114,7 +118,7 @@ export class MarginfiFlProvider extends FlProviderBase {
     this.debtBankLiquiditySource = debtBanks[0][1];
   }
 
-  private setIntermediaryAccount(sources: TokenType[]) {
+  private async setIntermediaryAccount(sources: TokenType[]) {
     const compatibleMarginfiAccounts = this.existingMarginfiAccounts.filter(
       (x) => x.group.toString() == this.liquidityBank(sources[0]).group
     );
@@ -136,6 +140,16 @@ export class MarginfiFlProvider extends FlProviderBase {
       this.flSigners.push(signer);
     }
 
+    const remainingAccounts = accountData
+      ? (
+          await Promise.all(
+            accountData.lendingAccount.balances.map((balance) =>
+              getRemainingAccountsForMarginfiHealthCheck(this.umi, balance)
+            )
+          )
+        ).flat()
+      : [];
+
     for (const s of sources) {
       const data: IMFIAccount = {
         signer,
@@ -146,8 +160,10 @@ export class MarginfiFlProvider extends FlProviderBase {
       const supply = s === TokenType.Supply;
       if (supply) {
         this.supplyImfiAccount = data;
+        this.supplyRemainingAccounts = remainingAccounts;
       } else {
         this.debtImfiAccount = data;
+        this.debtRemainingAccounts = remainingAccounts;
       }
       consoleLog(
         `${supply ? "Supply" : "Debt"} iMfi account:`,
@@ -278,7 +294,7 @@ export class MarginfiFlProvider extends FlProviderBase {
       );
   }
 
-  async flashRepay(flashLoan: FlashLoanDetails): Promise<TransactionBuilder> {
+  flashRepay(flashLoan: FlashLoanDetails): TransactionBuilder {
     if (flashLoan.signerFlashLoan) {
       return transactionBuilder();
     }
@@ -292,45 +308,19 @@ export class MarginfiFlProvider extends FlProviderBase {
     );
     const iMfiAccount = this.iMfiAccount(flashLoan.liquiditySource)!;
 
-    const remainingAccounts: AccountMeta[] = [];
-    let flBankHadPrevBalance = false;
-
-    if (iMfiAccount?.accountData) {
-      for (const balance of iMfiAccount.accountData.lendingAccount.balances) {
-        if (balance.active) {
-          if (balance.bankPk.toString() === bank.publicKey.toString()) {
-            flBankHadPrevBalance = true;
-          }
-
-          const priceOracle = publicKey(
-            await getMarginfiPriceOracle(this.umi, {
-              pk: toWeb3JsPublicKey(balance.bankPk),
-            })
-          );
-
-          remainingAccounts.push(
-            ...[
-              {
-                pubkey: balance.bankPk,
-                isSigner: false,
-                isWritable: false,
-              },
-              {
-                pubkey: priceOracle,
-                isSigner: false,
-                isWritable: false,
-              },
-            ]
-          );
-        }
-      }
-    }
+    const remainingAccounts: AccountMeta[] =
+      flashLoan.liquiditySource === TokenType.Supply
+        ? this.supplyRemainingAccounts
+        : this.debtRemainingAccounts;
+    let iMfiAccountHadPrevFlBalance = remainingAccounts.find(
+      (x) => x.pubkey.toString() === bank.publicKey.toString()
+    );
 
     return transactionBuilder()
       .add(
         lendingAccountRepay(this.umi, {
           amount: flashLoan.baseUnitAmount,
-          repayAll: !flBankHadPrevBalance,
+          repayAll: !iMfiAccountHadPrevFlBalance,
           bank: bank.publicKey,
           bankLiquidityVault: publicKey(associatedBankAccs.liquidityVault),
           marginfiAccount: publicKey(iMfiAccount.accountPk),
