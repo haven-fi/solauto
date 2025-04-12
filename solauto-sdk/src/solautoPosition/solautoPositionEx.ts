@@ -461,7 +461,7 @@ class PositionRebalanceHelper {
         debtUsd: this.pos.debtUsd(PriceType.Realtime),
       },
       this.pos.boostToBps,
-      { solauto: 25, lpBorrow: 0, flashLoan: 0 }
+      { solauto: 25, lpBorrow: 0, flashLoan: 0 } // Undershoot fees
     );
 
     return this.validRealtimePricesBoost(debtAdjustmentUsd);
