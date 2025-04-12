@@ -489,7 +489,6 @@ impl<'a> Rebalancer<'a> {
 
         if self.rebalance_data().ixs.swap_type == SwapType::ExactOut {
             let (dynamic_balance, _) = self.get_dynamic_balance();
-            println!("dynamic balance {}", dynamic_balance);
             self.finish_rebalance(dynamic_balance)?;
             Ok(RebalanceResult { finished: true })
         } else {

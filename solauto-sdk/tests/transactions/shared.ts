@@ -40,7 +40,6 @@ export async function e2eTransactionTest(
 
   await client.initialize({
     positionId: 1,
-    new: true,
     supplyMint,
     debtMint,
   });
@@ -55,7 +54,7 @@ export async function e2eTransactionTest(
   };
 
   const supplyUsd = 100;
-  const debtUsd = withFlashLoan ? 60 : 10;
+  const debtUsd = withFlashLoan ? 60 : 3;
   const [supplyPrice, debtPrice] = await fetchTokenPrices([
     supplyMint,
     debtMint,

@@ -2,6 +2,7 @@ import bs58 from "bs58";
 import {
   PublicKey,
   TransactionExpiredBlockheightExceededError,
+  VersionedTransaction,
 } from "@solana/web3.js";
 import {
   AddressLookupTableInput,
@@ -154,7 +155,7 @@ class TransactionSet {
     }
 
     const singleTx = await this.getSingleTransaction();
-    const tx = addTxOptimizations(this.txHandler.umi.identity, singleTx, 1, 1)
+    const tx = addTxOptimizations(this.txHandler.umi, singleTx, 1, 1)
       .add(item.tx)
       .setAddressLookupTables(
         await this.lookupTables.getLutInputs([
@@ -443,12 +444,7 @@ export class TransactionsManager {
 
     const updateLut = await client.updateLookupTable();
 
-    if (
-      updateLut &&
-      (updateLut?.new ||
-        updateLut.accountsToAdd.length > 4 ||
-        (client.pos.memecoinPosition && updateLut.accountsToAdd.length >= 2))
-    ) {
+    if (updateLut && (updateLut?.new || updateLut.accountsToAdd.length > 4)) {
       await this.updateLut(updateLut.tx, updateLut.new);
     }
     this.lookupTables.defaultLuts = client.defaultLookupTables();

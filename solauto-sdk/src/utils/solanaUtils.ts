@@ -199,32 +199,38 @@ export async function getAddressLookupInputs(
 }
 
 export function addTxOptimizations(
-  signer: Signer,
-  transaction: TransactionBuilder,
+  umi: Umi,
+  tx: TransactionBuilder,
   computeUnitPrice?: number,
   computeUnitLimit?: number
 ) {
-  return transaction
-    .prepend(
-      computeUnitPrice !== undefined
-        ? setComputeUnitPriceUmiIx(signer, computeUnitPrice)
-        : transactionBuilder()
-    )
-    .prepend(
-      computeUnitLimit
-        ? setComputeUnitLimitUmiIx(signer, computeUnitLimit)
-        : transactionBuilder()
-    );
+  const computePriceIx =
+    computeUnitPrice !== undefined
+      ? setComputeUnitPriceUmiIx(umi.identity, computeUnitPrice)
+      : transactionBuilder();
+  const computeLimitIx = computeUnitLimit
+    ? setComputeUnitLimitUmiIx(umi.identity, computeUnitLimit)
+    : transactionBuilder();
+
+  const allOptimizations = tx.prepend(computePriceIx).prepend(computeLimitIx);
+  const oneOptimization = tx.prepend(computePriceIx);
+  if (allOptimizations.fitsInOneTransaction(umi)) {
+    return allOptimizations;
+  } else if (oneOptimization.fitsInOneTransaction(umi)) {
+    return oneOptimization;
+  } else {
+    return tx;
+  }
 }
 
 export function assembleFinalTransaction(
-  signer: Signer,
+  umi: Umi,
   transaction: TransactionBuilder,
   computeUnitPrice?: number,
   computeUnitLimit?: number
 ) {
   const tx = addTxOptimizations(
-    signer,
+    umi,
     transaction,
     computeUnitPrice,
     computeUnitLimit
@@ -439,12 +445,9 @@ export async function sendSingleOptimizedTransaction(
         await simulateTransaction(
           umi,
           connection,
-          assembleFinalTransaction(
-            umi.identity,
-            tx,
-            undefined,
-            1_400_000
-          ).setBlockhash(blockhash)
+          assembleFinalTransaction(umi, tx, undefined, 1_400_000).setBlockhash(
+            blockhash
+          )
         ),
       3
     );
@@ -465,7 +468,7 @@ export async function sendSingleOptimizedTransaction(
   if (txType !== "only-simulate") {
     onAwaitingSign?.();
     const signedTx = await assembleFinalTransaction(
-      umi.identity,
+      umi,
       tx,
       cuPrice,
       computeUnitLimit

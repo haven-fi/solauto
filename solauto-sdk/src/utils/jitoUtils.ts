@@ -129,6 +129,27 @@ async function simulateJitoBundle(umi: Umi, txs: VersionedTransaction[]) {
   return transactionResults;
 }
 
+
+export function getAdditionalSigners(message: TransactionMessage) {
+  const { numRequiredSignatures, numReadonlySignedAccounts } = message.header;
+
+  const numWritableSigners = numRequiredSignatures - numReadonlySignedAccounts;
+
+  const signersInfo = [];
+  for (let i = 0; i < numRequiredSignatures; i++) {
+    const publicKey = message.accounts[i].toString();
+    const isWritable = i < numWritableSigners;
+
+    signersInfo.push({
+      index: i,
+      publicKey,
+      isWritable,
+    });
+  }
+
+  return signersInfo;
+}
+
 async function umiToVersionedTransactions(
   umi: Umi,
   blockhash: string,
@@ -142,7 +163,7 @@ async function umiToVersionedTransactions(
   let builtTxs = await Promise.all(
     txs.map(async (tx, i) => {
       return assembleFinalTransaction(
-        userSigner,
+        umi,
         tx,
         feeEstimates ? feeEstimates[i] : undefined,
         computeUnitLimits ? computeUnitLimits[i] : undefined
@@ -156,7 +177,7 @@ async function umiToVersionedTransactions(
     builtTxs = await userSigner.signAllTransactions(builtTxs);
     for (const signer of otherSigners) {
       for (let i = 0; i < builtTxs.length; i++) {
-        const requiredSigners = getRequiredSigners(builtTxs[i].message);
+        const requiredSigners = getAdditionalSigners(builtTxs[i].message);
         if (
           requiredSigners
             .map((x) => x.publicKey)
@@ -245,26 +266,6 @@ async function sendJitoBundle(
   const bundleId = resp as string;
   consoleLog("Bundle ID:", bundleId);
   return bundleId ? await pollBundleStatus(umi, bundleId) : [];
-}
-
-export function getRequiredSigners(message: TransactionMessage) {
-  const { numRequiredSignatures, numReadonlySignedAccounts } = message.header;
-
-  const numWritableSigners = numRequiredSignatures - numReadonlySignedAccounts;
-
-  const signersInfo = [];
-  for (let i = 0; i < numRequiredSignatures; i++) {
-    const publicKey = message.accounts[i].toString();
-    const isWritable = i < numWritableSigners;
-
-    signersInfo.push({
-      index: i,
-      publicKey,
-      isWritable,
-    });
-  }
-
-  return signersInfo;
 }
 
 export async function sendJitoBundledTransactions(
