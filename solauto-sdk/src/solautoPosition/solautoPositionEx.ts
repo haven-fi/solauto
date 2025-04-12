@@ -434,7 +434,7 @@ class PositionRebalanceHelper {
 
   validRealtimePricesBoost(debtAdjustmentUsd: number) {
     if (this.pos.lendingPlatform !== LendingPlatform.Marginfi) {
-      // TODO: PK
+      // TODO: LP
       return true;
     }
 
