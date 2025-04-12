@@ -7,8 +7,6 @@ import {
   getSolanaRpcConnection,
   getSolautoManagedPositions,
   LOCAL_IRONFORGE_API_URL,
-  PriceType,
-  safeGetPrice,
   SOLAUTO_PROD_PROGRAM,
 } from "../src";
 

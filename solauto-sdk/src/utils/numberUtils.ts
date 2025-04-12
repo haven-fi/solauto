@@ -1,11 +1,13 @@
+import { PublicKey } from "@solana/web3.js";
 import {
   BASIS_POINTS,
   MIN_REPAY_GAP_BPS,
   OFFSET_FROM_MAX_LTV,
   USD_DECIMALS,
 } from "../constants";
-import { PositionState } from "../generated";
+import { PositionState, PriceType } from "../generated";
 import { RoundAction } from "../types";
+import { safeGetPrice } from "./priceUtils";
 
 export function calcNetWorthUsd(state?: PositionState) {
   return fromRoundedUsdValue(state?.netWorth.baseAmountUsdValue ?? BigInt(0));
@@ -201,5 +203,15 @@ export function maxBoostToBps(maxLtvBps: number, liqThresholdBps: number) {
   return Math.min(
     maxRepayToBps(maxLtvBps, liqThresholdBps),
     getMaxLiqUtilizationRateBps(maxLtvBps, liqThresholdBps, OFFSET_FROM_MAX_LTV)
+  );
+}
+
+export function realtimeUsdToEmaUsd(
+  realtimeAmountUsd: number,
+  mint: PublicKey
+) {
+  return (
+    (realtimeAmountUsd / safeGetPrice(mint, PriceType.Realtime)!) *
+    safeGetPrice(mint, PriceType.Ema)!
   );
 }
