@@ -441,13 +441,15 @@ export class TransactionsManager {
     const items = [...transactions];
     const client = this.txHandler as SolautoClient;
 
-    const updateLookupTable = await client.updateLookupTable();
+    const updateLut = await client.updateLookupTable();
 
     if (
-      updateLookupTable &&
-      (updateLookupTable?.new || updateLookupTable.accountsToAdd.length > 4)
+      updateLut &&
+      (updateLut?.new ||
+        updateLut.accountsToAdd.length > 4 ||
+        (client.pos.memecoinPosition && updateLut.accountsToAdd.length >= 2))
     ) {
-      await this.updateLut(updateLookupTable.tx, updateLookupTable.new);
+      await this.updateLut(updateLut.tx, updateLut.new);
     }
     this.lookupTables.defaultLuts = client.defaultLookupTables();
 
@@ -505,8 +507,8 @@ export class TransactionsManager {
           .map((x) => x.tx!)
       )
     );
-    if (updateLookupTable && !updateLookupTable?.new) {
-      choresBefore = choresBefore.prepend(updateLookupTable.tx);
+    if (updateLut && !updateLut?.new) {
+      choresBefore = choresBefore.prepend(updateLut.tx);
     }
     if (choresBefore.getInstructions().length > 0) {
       const chore = new TransactionItem(

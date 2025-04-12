@@ -114,6 +114,10 @@ export abstract class SolautoPositionEx {
     return this._data.positionId ? this._data.positionId[0] : undefined;
   }
 
+  get selfManaged() {
+    return this.positionId === 0;
+  }
+
   get positionType() {
     return this._data.positionType;
   }
@@ -263,6 +267,10 @@ export abstract class SolautoPositionEx {
 
   abstract maxLtvAndLiqThresholdBps(): Promise<[number, number]>;
   abstract priceOracles(): Promise<PublicKey[]>;
+
+  get memecoinPosition() {
+    return tokenInfo(this.supplyMint).isMeme || tokenInfo(this.debtMint).isMeme;
+  }
 
   private sufficientLiquidityToBoost() {
     const limitsUpToDate =
