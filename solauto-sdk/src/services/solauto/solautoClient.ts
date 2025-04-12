@@ -207,7 +207,6 @@ export abstract class SolautoClient extends ReferralStateManager {
   lutAccountsToAdd(): PublicKey[] {
     return [
       this.authority,
-      ...(this.authorityLutAddress ? [this.authorityLutAddress] : []),
       this.signerSupplyTa,
       this.signerDebtTa,
       this.pos.publicKey,
