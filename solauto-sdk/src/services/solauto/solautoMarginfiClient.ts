@@ -65,7 +65,7 @@ export class SolautoMarginfiClient extends SolautoClient {
 
     this.marginfiGroup = await this.pos.lendingPool();
 
-    if (this.selfManaged) {
+    if (this.pos.selfManaged) {
       this.marginfiAccount =
         args.lpUserAccount ??
         createSignerFromKeypair(this.umi, this.umi.eddsa.generateKeypair());
@@ -187,7 +187,7 @@ export class SolautoMarginfiClient extends SolautoClient {
       signerDebtTa: signerDebtTa,
       positionType: positionType ?? PositionType.Leverage,
       positionData: {
-        positionId: this.positionId!,
+        positionId: this.pos.positionId,
         settings: settings ?? null,
         dca: dca ?? null,
       },
@@ -224,7 +224,7 @@ export class SolautoMarginfiClient extends SolautoClient {
   protocolInteractionIx(args: SolautoActionArgs): TransactionBuilder {
     let tx = super.protocolInteractionIx(args);
 
-    if (this.selfManaged) {
+    if (this.pos.selfManaged) {
       return tx.add(this.marginfiProtocolInteractionIx(args));
     } else {
       return tx.add(this.marginfiSolautoProtocolInteractionIx(args));
@@ -306,7 +306,7 @@ export class SolautoMarginfiClient extends SolautoClient {
     let supplyVaultAuthority: UmiPublicKey | undefined = undefined;
     if (args.__kind === "Deposit" || args.__kind === "Withdraw") {
       positionSupplyTa = publicKey(
-        args.__kind === "Withdraw" || this.selfManaged
+        args.__kind === "Withdraw" || this.pos.selfManaged
           ? this.signerSupplyTa
           : this.positionSupplyTa
       );
@@ -321,7 +321,7 @@ export class SolautoMarginfiClient extends SolautoClient {
     let debtVaultAuthority: UmiPublicKey | undefined = undefined;
     if (args.__kind === "Borrow" || args.__kind === "Repay") {
       positionDebtTa = publicKey(
-        args.__kind === "Borrow" || this.selfManaged
+        args.__kind === "Borrow" || this.pos.selfManaged
           ? this.signerDebtTa
           : this.positionDebtTa
       );
@@ -369,7 +369,7 @@ export class SolautoMarginfiClient extends SolautoClient {
         data.rebalanceType === SolautoRebalanceType.FLSwapThenRebalance);
 
     const addAuthorityTas =
-      this.selfManaged || data.values.tokenBalanceChange !== undefined;
+      this.pos.selfManaged || data.values.tokenBalanceChange !== undefined;
 
     return marginfiRebalance(this.umi, {
       signer: this.signer,

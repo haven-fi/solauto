@@ -44,7 +44,7 @@ export function updateSolautoPosition(
   return new TransactionItem(
     async () => ({
       tx: client.updatePositionIx({
-        positionId: client.positionId,
+        positionId: client.pos.positionId,
         settings,
         dca,
       }),

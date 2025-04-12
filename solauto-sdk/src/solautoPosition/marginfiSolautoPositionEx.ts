@@ -97,11 +97,7 @@ export class MarginfiSolautoPositionEx extends SolautoPositionEx {
   }
 
   async refreshPositionState(priceType?: PriceType): Promise<void> {
-    if (!this.canRefreshPositionState()) {
-      return;
-    }
-
-    const useDesignatedMint = !this._data.position || !this._data.selfManaged;
+    const useDesignatedMint = !this._data.position || !this.selfManaged;
     const resp = await getMarginfiAccountPositionState(
       this.umi,
       { pk: this.lpUserAccount },

@@ -263,7 +263,7 @@ export class RebalanceTxBuilder {
 
   private async refreshBeforeRebalance() {
     if (
-      this.client.selfManaged ||
+      this.client.pos.selfManaged ||
       this.client.contextUpdates.supplyAdjustment > BigInt(0) ||
       this.client.contextUpdates.debtAdjustment > BigInt(0) ||
       !this.client.pos.exists

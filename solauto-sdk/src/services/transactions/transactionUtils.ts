@@ -136,7 +136,7 @@ async function transactionChoresBefore(
     );
   }
 
-  if (client.selfManaged) {
+  if (client.pos.selfManaged) {
     if (
       isMarginfiClient(client) &&
       !(await getSolanaAccountCreated(client.umi, client.marginfiAccountPk))

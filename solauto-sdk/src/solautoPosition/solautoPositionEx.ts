@@ -25,6 +25,7 @@ import {
   debtLiquidityAvailable,
   debtLiquidityUsdAvailable,
   getLiqUtilzationRateBps,
+  getSolautoPositionAccount,
   maxBoostToBps,
   maxRepayFromBps,
   maxRepayToBps,
@@ -58,9 +59,12 @@ interface SolautoPositionExData extends Partial<SolautoPosition> {
   state: PositionState;
 }
 
-interface PositionExArgs {
+export interface PositionExArgs {
   umi: Umi;
-  publicKey: PublicKey;
+  publicKey?: PublicKey;
+  programId?: PublicKey;
+  authority?: PublicKey;
+  positionId?: number;
   data: SolautoPositionExData;
   customArgs?: PositionCustomArgs;
   contextUpdates?: ContextUpdates;
@@ -72,10 +76,12 @@ export abstract class SolautoPositionEx {
 
   public publicKey!: PublicKey;
   public lendingPlatform!: LendingPlatform;
+  public positionId!: number;
+  public authority!: PublicKey;
   protected _data!: SolautoPositionExData;
   protected lp?: PublicKey = undefined;
-  protected lpEnv!: ProgramEnv;
   public lpUserAccount?: PublicKey = undefined;
+  protected lpEnv!: ProgramEnv;
 
   private readonly firstState!: PositionState;
   protected _supplyPrice?: number;
@@ -83,8 +89,17 @@ export abstract class SolautoPositionEx {
 
   constructor(args: PositionExArgs) {
     this.umi = args.umi;
-    this.publicKey = args.publicKey;
     this.contextUpdates = args.contextUpdates;
+
+    this.publicKey =
+      args.publicKey ??
+      getSolautoPositionAccount(
+        args.authority!,
+        args.positionId!,
+        args.programId!
+      );
+    this.positionId = args.positionId ?? args.data.positionId![0];
+    this.authority = args.authority ?? toWeb3JsPublicKey(args.data.authority!);
 
     this.lp = args.customArgs?.lendingPool;
     this.lpUserAccount =
@@ -102,16 +117,6 @@ export abstract class SolautoPositionEx {
 
   get exists() {
     return this._data.position !== undefined;
-  }
-
-  get authority() {
-    return this._data.authority
-      ? toWeb3JsPublicKey(this._data.authority)
-      : PublicKey.default;
-  }
-
-  get positionId() {
-    return this._data.positionId ? this._data.positionId[0] : undefined;
   }
 
   get selfManaged() {
@@ -322,22 +327,11 @@ export abstract class SolautoPositionEx {
   }
 
   eligibleForRefresh(): boolean {
-    if (this._data.selfManaged) return false;
+    if (this.selfManaged) return false;
 
     return (
       currentUnixSeconds() - Number(this.state.lastRefreshed) > 60 * 60 * 24 * 7
     );
-  }
-
-  protected canRefreshPositionState() {
-    if (
-      Number(this.state.lastRefreshed) >
-        currentUnixSeconds() - MIN_POSITION_STATE_FRESHNESS_SECS &&
-      !this.contextUpdates?.positionUpdates()
-    ) {
-      return false;
-    }
-    return true;
   }
 
   abstract refreshPositionState(priceType?: PriceType): Promise<void>;
