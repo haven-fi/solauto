@@ -96,7 +96,7 @@ export abstract class SolautoClient extends ReferralStateManager {
       },
       this.contextUpdates
     );
-    if (this.pos.selfManaged && (!args.supplyMint || !args.debtMint)) {
+    if (this.pos.selfManaged) {
       await this.pos.refreshPositionState();
     }
 
