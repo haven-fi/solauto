@@ -22,7 +22,6 @@ import {
   updatePosition,
 } from "../../generated";
 import {
-  getSolautoPositionAccount,
   getTokenAccount,
   getWalletSplBalances,
   getWrappedInstruction,

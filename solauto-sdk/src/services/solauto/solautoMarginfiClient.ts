@@ -47,7 +47,6 @@ import {
   lendingAccountWithdraw,
   marginfiAccountInitialize,
   safeFetchAllMarginfiAccount,
-  safeFetchMarginfiAccount,
 } from "../../marginfi-sdk";
 import { SolautoClient, SolautoClientArgs } from "./solautoClient";
 
