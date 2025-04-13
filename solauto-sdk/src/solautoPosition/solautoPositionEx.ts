@@ -45,7 +45,7 @@ import {
   getRebalanceValues,
   SolautoFeesBps,
 } from "../services/rebalance";
-import { MIN_POSITION_STATE_FRESHNESS_SECS, TokenInfo } from "../constants";
+import { TokenInfo } from "../constants";
 
 export interface PositionCustomArgs {
   lendingPlatform: LendingPlatform;
