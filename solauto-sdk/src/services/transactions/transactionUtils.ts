@@ -417,6 +417,7 @@ function getSolautoActions(umi: Umi, tx: TransactionBuilder): SolautoAction[] {
           serializer
             .serialize({
               amount: 0,
+              depositUpToLimit: true
             })
             .slice(0, 8)
         );
