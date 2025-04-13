@@ -285,9 +285,7 @@ export abstract class SolautoPositionEx {
   eligibleForRebalance(
     bpsDistanceThreshold: number = 0
   ): RebalanceAction | undefined {
-    return this.rebalanceHelper.eligibleForRebalance(
-      bpsDistanceThreshold
-    );
+    return this.rebalanceHelper.eligibleForRebalance(bpsDistanceThreshold);
   }
 
   eligibleForRefresh(): boolean {
@@ -477,7 +475,6 @@ class PositionRebalanceHelper {
     const realtimeLiqUtilRateBps = this.pos.liqUtilizationRateBps(
       PriceType.Realtime
     );
-    const emaLiqUtilRateBps = this.pos.liqUtilizationRateBps(PriceType.Ema);
 
     if (
       this.pos.repayFromBps - realtimeLiqUtilRateBps <=
@@ -485,12 +482,11 @@ class PositionRebalanceHelper {
     ) {
       return "repay";
     } else if (
-      (realtimeLiqUtilRateBps - this.pos.boostFromBps <= bpsDistanceThreshold ||
-        emaLiqUtilRateBps - this.pos.boostFromBps <= bpsDistanceThreshold) &&
-      this.validBoostFromHere()
+      realtimeLiqUtilRateBps - this.pos.boostFromBps <= bpsDistanceThreshold &&
+      this.validBoostFromHere() &&
+      this.sufficientLiquidityToBoost()
     ) {
-      const sufficientLiquidity = this.sufficientLiquidityToBoost();
-      return sufficientLiquidity ? "boost" : undefined;
+      return "boost";
     }
 
     return undefined;
