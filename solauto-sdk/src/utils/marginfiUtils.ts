@@ -45,6 +45,7 @@ import {
   getMostUpToDatePythOracle,
   getPythPushOracleAddress,
 } from "./pythUtils";
+import { getAccountMeta } from "./solanaUtils";
 
 export function createDynamicMarginfiProgram(env?: ProgramEnv): Program {
   return {
@@ -187,24 +188,12 @@ export async function getRemainingAccountsForMarginfiHealthCheck(
   if (!balance.active) {
     return [];
   }
-
-  const priceOracle = publicKey(
-    await getMarginfiPriceOracle(umi, {
-      pk: toWeb3JsPublicKey(balance.bankPk),
-    })
-  );
-
+  const priceOracle = await getMarginfiPriceOracle(umi, {
+    pk: toWeb3JsPublicKey(balance.bankPk),
+  });
   return [
-    {
-      pubkey: balance.bankPk,
-      isSigner: false,
-      isWritable: false,
-    },
-    {
-      pubkey: priceOracle,
-      isSigner: false,
-      isWritable: false,
-    },
+    getAccountMeta(toWeb3JsPublicKey(balance.bankPk)),
+    getAccountMeta(priceOracle),
   ];
 }
 

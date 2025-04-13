@@ -18,6 +18,7 @@ import {
   createTransferInstruction,
 } from "@solana/spl-token";
 import {
+  AccountMeta,
   AddressLookupTableInput,
   Signer,
   TransactionBuilder,
@@ -28,6 +29,7 @@ import {
 } from "@metaplex-foundation/umi";
 import {
   fromWeb3JsInstruction,
+  fromWeb3JsPublicKey,
   toWeb3JsPublicKey,
   toWeb3JsTransaction,
 } from "@metaplex-foundation/umi-web3js-adapters";
@@ -152,6 +154,14 @@ export function splTokenTransferUmiIx(
     signer,
     createTransferInstruction(fromTa, toTa, authority, amount)
   );
+}
+
+export function getAccountMeta(
+  pubkey: PublicKey,
+  isSigner: boolean = false,
+  isWritable: boolean = false
+): AccountMeta {
+  return { pubkey: fromWeb3JsPublicKey(pubkey), isSigner, isWritable };
 }
 
 export async function getWalletSplBalances(

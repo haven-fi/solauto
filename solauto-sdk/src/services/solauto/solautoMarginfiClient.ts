@@ -36,6 +36,7 @@ import {
   getTokenAccount,
   hasFirstRebalance,
   getRemainingAccountsForMarginfiHealthCheck,
+  getAccountMeta,
 } from "../../utils";
 import {
   Bank,
@@ -271,6 +272,20 @@ export class SolautoMarginfiClient extends SolautoClient {
         });
       }
       case "Borrow": {
+        const remainingAccounts = this.healthCheckRemainingAccounts ?? [];
+        if (
+          !remainingAccounts.find(
+            (x) =>
+              x.pubkey.toString() === this.marginfiDebtAccounts.bank.toString()
+          )
+        ) {
+          remainingAccounts.push(
+            ...[
+              getAccountMeta(new PublicKey(this.marginfiDebtAccounts.bank)),
+              getAccountMeta(this.debtPriceOracle),
+            ]
+          );
+        }
         return lendingAccountBorrow(this.umi, {
           amount: args.fields[0],
           signer: this.signer,
@@ -284,7 +299,7 @@ export class SolautoMarginfiClient extends SolautoClient {
           bankLiquidityVaultAuthority: publicKey(
             this.marginfiDebtAccounts.vaultAuthority
           ),
-        }).addRemainingAccounts(this.healthCheckRemainingAccounts ?? []);
+        }).addRemainingAccounts(remainingAccounts);
       }
       case "Repay": {
         return lendingAccountRepay(this.umi, {
