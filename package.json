@@ -28,7 +28,7 @@
     "create-token-accounts": "cd solauto-sdk && npx ts-node local/createTokenAccounts.ts",
     "prepare-accounts": "pnpm create-token-accounts && pnpm update-lut:solauto && pnpm update-lut:marginfi",
     "log-pos": "cd solauto-sdk && npx ts-node local/logPositions.ts",
-    "log-pos:test": "cd solauto-sdk && npx ts-node local/logPositions.ts --filter false --env Staging"
+    "log-pos:test": "cd solauto-sdk && npx ts-node local/logPositions.ts --filter=false --env=Staging"
   },
   "dependencies": {
     "@metaplex-foundation/kinobi": "^0.18.5",
