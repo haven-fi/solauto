@@ -137,7 +137,7 @@ async function main(filterWhitelist: boolean, programEnv: ProgramEnv = "Prod") {
       `(${pos.authority.toString()} ${pos.positionId})`
     );
     console.log(
-      `${pos.strategyName}: $${formatNumber(pos.netWorthUsd(), 2, 10000, 2)} ${healthText} ${boostText}`
+      `${pos.strategyName}: $${formatNumber(pos.netWorthUsd(), 2, 10000, 2)} ${healthText} ${boostText}\n`
     );
   }
 
