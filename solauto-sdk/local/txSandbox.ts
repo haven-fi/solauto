@@ -2,7 +2,6 @@ import { Keypair, PublicKey } from "@solana/web3.js";
 import { createSignerFromKeypair } from "@metaplex-foundation/umi";
 import { fromWeb3JsKeypair } from "@metaplex-foundation/umi-web3js-adapters";
 import {
-  borrow,
   consoleLog,
   getClient,
   getSolanaRpcConnection,
@@ -13,10 +12,7 @@ import {
   rebalance,
   SOLAUTO_PROD_PROGRAM,
   SOLAUTO_TEST_PROGRAM,
-  toBaseUnit,
-  tokenInfo,
   TransactionsManager,
-  USDC,
 } from "../src";
 import { getSecretKey } from "./shared";
 
@@ -33,7 +29,7 @@ export async function main() {
 
   const signer = createSignerFromKeypair(
     umi,
-    fromWeb3JsKeypair(Keypair.fromSecretKey(getSecretKey()))
+    fromWeb3JsKeypair(Keypair.fromSecretKey(getSecretKey("solauto-manager")))
   );
 
   const client = getClient(LendingPlatform.Marginfi, {
@@ -45,16 +41,14 @@ export async function main() {
   });
 
   await client.initialize({
-    positionId: 0,
-    // authority: new PublicKey("5UqsR2PGzbP8pGPbXEeXx86Gjz2N2UFBAuFZUSVydAEe"),
-    lpUserAccount: new PublicKey(
-      "GEokw9jqbh6d1xUNA3qaeYFFetbSR5Y1nt7C3chwwgSz"
-    ),
+    positionId: 1,
+    authority: new PublicKey("5UqsR2PGzbP8pGPbXEeXx86Gjz2N2UFBAuFZUSVydAEe"),
+    // lpUserAccount: new PublicKey(
+    //   "GEokw9jqbh6d1xUNA3qaeYFFetbSR5Y1nt7C3chwwgSz"
+    // ),
   });
 
-  const transactionItems = [
-    borrow(client, toBaseUnit(0.1, tokenInfo(new PublicKey(USDC)).decimals)),
-  ];
+  const transactionItems = [rebalance(client)];
 
   const txManager = new TransactionsManager(
     client,
