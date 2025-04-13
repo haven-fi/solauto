@@ -17,12 +17,17 @@ import {
   currentUnixSeconds,
   getBatches,
   getLiqUtilzationRateBps,
+  getSolautoPositionAccount,
   retryWithExponentialBackoff,
   toBaseUnit,
   tokenInfo,
   toRoundedUsdValue,
 } from "../utils";
-import { PositionCustomArgs, SolautoPositionEx } from "./solautoPositionEx";
+import {
+  PositionCustomArgs,
+  PositionExArgs,
+  SolautoPositionEx,
+} from "./solautoPositionEx";
 import { MarginfiSolautoPositionEx } from "./marginfiSolautoPositionEx";
 import { assert } from "console";
 
@@ -73,45 +78,45 @@ export async function getPositionExBulk(
 
 export async function getOrCreatePositionEx(
   umi: Umi,
-  publicKey: PublicKey,
+  authority: PublicKey,
+  positionId: number,
+  programId: PublicKey,
   customArgs?: PositionCustomArgs,
   contextUpdates?: ContextUpdates
 ): Promise<SolautoPositionEx> {
+  const publicKey = getSolautoPositionAccount(authority, positionId, programId);
   const data = await safeFetchSolautoPosition(
     umi,
     fromWeb3JsPublicKey(publicKey)
-  );
-
-  if (!data && (!customArgs?.supplyMint || !customArgs.debtMint)) {
-    throw new Error(
-      "Must provide a supply & debt mint if creating a new position"
-    );
-  }
-
-  const placeholderState = createFakePositionState(
-    {
-      mint: customArgs?.supplyMint ?? PublicKey.default,
-    },
-    { mint: customArgs?.debtMint ?? PublicKey.default },
-    0,
-    0
   );
 
   const lendingPlatform = data
     ? data.position.lendingPlatform
     : customArgs!.lendingPlatform;
 
+  const args: PositionExArgs = {
+    umi,
+    publicKey,
+    authority,
+    positionId,
+    programId,
+    data: data ?? {
+      state: createFakePositionState(
+        {
+          mint: customArgs?.supplyMint ?? PublicKey.default,
+        },
+        { mint: customArgs?.debtMint ?? PublicKey.default },
+        0,
+        0
+      ),
+    },
+    customArgs,
+    contextUpdates,
+  };
+
   switch (lendingPlatform) {
     case LendingPlatform.Marginfi:
-      return new MarginfiSolautoPositionEx({
-        umi,
-        publicKey,
-        data: data ?? {
-          state: placeholderState!,
-        },
-        customArgs,
-        contextUpdates,
-      });
+      return new MarginfiSolautoPositionEx(args);
     // TODO: PF
   }
 }

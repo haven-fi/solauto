@@ -25,10 +25,12 @@ import {
   debtLiquidityAvailable,
   debtLiquidityUsdAvailable,
   getLiqUtilzationRateBps,
+  getSolautoPositionAccount,
   maxBoostToBps,
   maxRepayFromBps,
   maxRepayToBps,
   positionStateWithLatestPrices,
+  realtimeUsdToEmaUsd,
   safeGetPrice,
   solautoStrategyName,
   supplyLiquidityDepositable,
@@ -43,7 +45,7 @@ import {
   getRebalanceValues,
   SolautoFeesBps,
 } from "../services/rebalance";
-import { MIN_POSITION_STATE_FRESHNESS_SECS, TokenInfo } from "../constants";
+import { TokenInfo } from "../constants";
 
 export interface PositionCustomArgs {
   lendingPlatform: LendingPlatform;
@@ -58,9 +60,12 @@ interface SolautoPositionExData extends Partial<SolautoPosition> {
   state: PositionState;
 }
 
-interface PositionExArgs {
+export interface PositionExArgs {
   umi: Umi;
-  publicKey: PublicKey;
+  publicKey?: PublicKey;
+  programId?: PublicKey;
+  authority?: PublicKey;
+  positionId?: number;
   data: SolautoPositionExData;
   customArgs?: PositionCustomArgs;
   contextUpdates?: ContextUpdates;
@@ -72,19 +77,32 @@ export abstract class SolautoPositionEx {
 
   public publicKey!: PublicKey;
   public lendingPlatform!: LendingPlatform;
+  public positionId!: number;
+  public authority!: PublicKey;
   protected _data!: SolautoPositionExData;
   protected lp?: PublicKey = undefined;
-  protected lpEnv!: ProgramEnv;
   public lpUserAccount?: PublicKey = undefined;
+  protected lpEnv!: ProgramEnv;
 
   private readonly firstState!: PositionState;
   protected _supplyPrice?: number;
   protected _debtPrice?: number;
 
+  public rebalanceHelper!: PositionRebalanceHelper;
+
   constructor(args: PositionExArgs) {
     this.umi = args.umi;
-    this.publicKey = args.publicKey;
     this.contextUpdates = args.contextUpdates;
+
+    this.publicKey =
+      args.publicKey ??
+      getSolautoPositionAccount(
+        args.authority!,
+        args.positionId!,
+        args.programId!
+      );
+    this.positionId = args.positionId ?? args.data.positionId![0];
+    this.authority = args.authority ?? toWeb3JsPublicKey(args.data.authority!);
 
     this.lp = args.customArgs?.lendingPool;
     this.lpUserAccount =
@@ -96,22 +114,14 @@ export abstract class SolautoPositionEx {
 
     this._data = args.data;
     this.firstState = { ...args.data.state };
+
+    this.rebalanceHelper = new PositionRebalanceHelper(this);
   }
 
   abstract lendingPool(): Promise<PublicKey>;
 
   get exists() {
     return this._data.position !== undefined;
-  }
-
-  get authority() {
-    return this._data.authority
-      ? toWeb3JsPublicKey(this._data.authority)
-      : PublicKey.default;
-  }
-
-  get positionId() {
-    return this._data.positionId ? this._data.positionId[0] : undefined;
   }
 
   get selfManaged() {
@@ -272,72 +282,18 @@ export abstract class SolautoPositionEx {
     return tokenInfo(this.supplyMint).isMeme || tokenInfo(this.debtMint).isMeme;
   }
 
-  private sufficientLiquidityToBoost() {
-    const limitsUpToDate =
-      this.debtLiquidityUsdAvailable !== 0 ||
-      this.supplyLiquidityUsdDepositable !== 0;
-
-    if (limitsUpToDate) {
-      const { debtAdjustmentUsd } = getDebtAdjustment(
-        this.state.liqThresholdBps,
-        { supplyUsd: this.supplyUsd(), debtUsd: this.debtUsd() },
-        this.boostToBps,
-        { solauto: 50, lpBorrow: 50, flashLoan: 50 } // TODO: get true data here instead of magic numbers
-      );
-
-      const sufficientLiquidity =
-        this.debtLiquidityUsdAvailable * 0.95 > debtAdjustmentUsd &&
-        this.supplyLiquidityUsdDepositable * 0.95 > debtAdjustmentUsd;
-
-      if (!sufficientLiquidity) {
-        consoleLog("Insufficient liquidity to further boost");
-      }
-      return sufficientLiquidity;
-    }
-
-    return true;
-  }
-
-  eligibleForRebalance(bpsDistanceThreshold = 0): RebalanceAction | undefined {
-    if (!this.settings || !this.supplyUsd()) {
-      return undefined;
-    }
-
-    const realtimeLiqUtilRateBps = this.liqUtilizationRateBps(
-      PriceType.Realtime
-    );
-    const emaLiqUtilRateBps = this.liqUtilizationRateBps(PriceType.Ema);
-
-    if (this.repayFromBps - realtimeLiqUtilRateBps <= bpsDistanceThreshold) {
-      return "repay";
-    } else if (
-      realtimeLiqUtilRateBps - this.boostFromBps <= bpsDistanceThreshold ||
-      emaLiqUtilRateBps - this.boostFromBps <= bpsDistanceThreshold
-    ) {
-      const sufficientLiquidity = this.sufficientLiquidityToBoost();
-      return sufficientLiquidity ? "boost" : undefined;
-    }
-
-    return undefined;
+  eligibleForRebalance(
+    bpsDistanceThreshold: number = 0
+  ): RebalanceAction | undefined {
+    return this.rebalanceHelper.eligibleForRebalance(bpsDistanceThreshold);
   }
 
   eligibleForRefresh(): boolean {
-    if (this._data.selfManaged) return false;
+    if (this.selfManaged) return false;
 
     return (
       currentUnixSeconds() - Number(this.state.lastRefreshed) > 60 * 60 * 24 * 7
     );
-  }
-
-  protected canRefreshPositionState() {
-    if (
-      Number(this.state.lastRefreshed) >
-        currentUnixSeconds() - MIN_POSITION_STATE_FRESHNESS_SECS &&
-      !this.contextUpdates?.positionUpdates()
-    ) {
-      return false;
-    }
-    return true;
   }
 
   abstract refreshPositionState(priceType?: PriceType): Promise<void>;
@@ -442,5 +398,97 @@ export abstract class SolautoPositionEx {
       this.umi,
       fromWeb3JsPublicKey(this.publicKey)
     );
+  }
+}
+
+class PositionRebalanceHelper {
+  constructor(private pos: SolautoPositionEx) {}
+
+  private sufficientLiquidityToBoost() {
+    const limitsUpToDate =
+      this.pos.debtLiquidityUsdAvailable !== 0 ||
+      this.pos.supplyLiquidityUsdDepositable !== 0;
+
+    if (limitsUpToDate) {
+      const { debtAdjustmentUsd } = getDebtAdjustment(
+        this.pos.state.liqThresholdBps,
+        { supplyUsd: this.pos.supplyUsd(), debtUsd: this.pos.debtUsd() },
+        this.pos.boostToBps,
+        { solauto: 50, lpBorrow: 50, flashLoan: 50 } // Overshoot fees
+      );
+
+      const sufficientLiquidity =
+        this.pos.debtLiquidityUsdAvailable * 0.95 > debtAdjustmentUsd &&
+        this.pos.supplyLiquidityUsdDepositable * 0.95 > debtAdjustmentUsd;
+
+      if (!sufficientLiquidity) {
+        consoleLog("Insufficient liquidity to further boost");
+      }
+      return sufficientLiquidity;
+    }
+
+    return true;
+  }
+
+  validRealtimePricesBoost(debtAdjustmentUsd: number) {
+    if (this.pos.lendingPlatform !== LendingPlatform.Marginfi) {
+      // TODO: LP
+      return true;
+    }
+
+    const postRebalanceLiqUtilRate = getLiqUtilzationRateBps(
+      realtimeUsdToEmaUsd(
+        this.pos.supplyUsd() + debtAdjustmentUsd,
+        this.pos.supplyMint
+      ),
+      realtimeUsdToEmaUsd(
+        this.pos.debtUsd() + debtAdjustmentUsd,
+        this.pos.debtMint
+      ),
+      this.pos.state.liqThresholdBps
+    );
+
+    return postRebalanceLiqUtilRate <= this.pos.maxBoostToBps;
+  }
+
+  private validBoostFromHere() {
+    const { debtAdjustmentUsd } = getDebtAdjustment(
+      this.pos.state.liqThresholdBps,
+      {
+        supplyUsd: this.pos.supplyUsd(PriceType.Realtime),
+        debtUsd: this.pos.debtUsd(PriceType.Realtime),
+      },
+      this.pos.boostToBps,
+      { solauto: 25, lpBorrow: 0, flashLoan: 0 } // Undershoot fees
+    );
+
+    return this.validRealtimePricesBoost(debtAdjustmentUsd);
+  }
+
+  eligibleForRebalance(
+    bpsDistanceThreshold: number
+  ): RebalanceAction | undefined {
+    if (!this.pos.settings || !this.pos.supplyUsd()) {
+      return undefined;
+    }
+
+    const realtimeLiqUtilRateBps = this.pos.liqUtilizationRateBps(
+      PriceType.Realtime
+    );
+
+    if (
+      this.pos.repayFromBps - realtimeLiqUtilRateBps <=
+      bpsDistanceThreshold
+    ) {
+      return "repay";
+    } else if (
+      realtimeLiqUtilRateBps - this.pos.boostFromBps <= bpsDistanceThreshold &&
+      this.validBoostFromHere() &&
+      this.sufficientLiquidityToBoost()
+    ) {
+      return "boost";
+    }
+
+    return undefined;
   }
 }

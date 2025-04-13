@@ -15,6 +15,7 @@ import {
   getTokenAccount,
   hasFirstRebalance,
   hasLastRebalance,
+  realtimeUsdToEmaUsd,
   safeGetPrice,
   tokenInfo,
 } from "../../utils";
@@ -202,31 +203,17 @@ export class RebalanceTxBuilder {
     }
   }
 
-  private realtimeUsdToEmaUsd(realtimeAmountUsd: number, mint: PublicKey) {
-    return (
-      (realtimeAmountUsd / safeGetPrice(mint, PriceType.Realtime)!) *
-      safeGetPrice(mint, PriceType.Ema)!
-    );
-  }
-
   private getInitialRebalanceValues() {
     let rebalanceValues = this.getRebalanceValues();
     if (!rebalanceValues) {
       return undefined;
     }
 
-    const postRebalanceEmaUtilRateBps = getLiqUtilzationRateBps(
-      this.realtimeUsdToEmaUsd(
-        rebalanceValues.endResult.supplyUsd,
-        this.client.pos.supplyMint
-      ),
-      this.realtimeUsdToEmaUsd(
-        rebalanceValues.endResult.debtUsd,
-        this.client.pos.debtMint
-      ),
-      this.client.pos.state.liqThresholdBps
-    );
-    if (postRebalanceEmaUtilRateBps > this.client.pos.maxBoostToBps) {
+    if (
+      !this.client.pos.rebalanceHelper.validRealtimePricesBoost(
+        rebalanceValues.debtAdjustmentUsd
+      )
+    ) {
       this.priceType = PriceType.Ema;
       rebalanceValues = this.getRebalanceValues();
       if (!rebalanceValues) {
@@ -263,7 +250,7 @@ export class RebalanceTxBuilder {
 
   private async refreshBeforeRebalance() {
     if (
-      this.client.selfManaged ||
+      this.client.pos.selfManaged ||
       this.client.contextUpdates.supplyAdjustment > BigInt(0) ||
       this.client.contextUpdates.debtAdjustment > BigInt(0) ||
       !this.client.pos.exists

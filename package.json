@@ -26,9 +26,9 @@
     "update-lut:solauto": "cd solauto-sdk && npx ts-node local/updateSolautoLUT.ts",
     "update-lut:marginfi": "cd solauto-sdk && npx ts-node local/updateMarginfiLUT.ts",
     "create-token-accounts": "cd solauto-sdk && npx ts-node local/createTokenAccounts.ts",
-    "create-ism-accounts": "cd solauto-sdk && npx ts-node local/createISMAccounts.ts",
-    "prepare-accounts": "pnpm create-token-accounts && pnpm create-ism-accounts && pnpm update-lut:solauto && pnpm update-lut:marginfi",
-    "log-positions": "cd solauto-sdk && npx ts-node local/logPositions.ts"
+    "prepare-accounts": "pnpm create-token-accounts && pnpm update-lut:solauto && pnpm update-lut:marginfi",
+    "log-pos": "cd solauto-sdk && npx ts-node local/logPositions.ts",
+    "log-pos:test": "cd solauto-sdk && npx ts-node local/logPositions.ts --filter=false --env=Staging"
   },
   "dependencies": {
     "@metaplex-foundation/kinobi": "^0.18.5",

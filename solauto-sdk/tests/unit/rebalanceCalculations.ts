@@ -92,16 +92,19 @@ async function getFakePosition(
     liqThresholdBps
   );
 
+  const defaultPk = publicKey(PublicKey.default);
   client.pos = new MarginfiSolautoPositionEx({
     umi: client.umi,
     publicKey: PublicKey.default,
     data: {
       state: fakeState,
+      positionId: [1],
+      authority: defaultPk,
       position: {
         lendingPlatform: LendingPlatform.Marginfi,
-        lpUserAccount: publicKey(PublicKey.default),
-        lpSupplyAccount: publicKey(PublicKey.default),
-        lpDebtAccount: publicKey(PublicKey.default),
+        lpUserAccount: defaultPk,
+        lpSupplyAccount: defaultPk,
+        lpDebtAccount: defaultPk,
         settings,
         dca: null,
         padding: [],

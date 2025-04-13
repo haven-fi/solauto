@@ -1,5 +1,5 @@
 import { PublicKey } from "@solana/web3.js";
-import { Program, publicKey, Umi } from "@metaplex-foundation/umi";
+import { AccountMeta, Program, publicKey, Umi } from "@metaplex-foundation/umi";
 import {
   fromWeb3JsPublicKey,
   toWeb3JsPublicKey,
@@ -16,6 +16,7 @@ import {
   USD_DECIMALS,
 } from "../constants";
 import {
+  Balance,
   Bank,
   deserializeMarginfiAccount,
   fetchBank,
@@ -44,6 +45,7 @@ import {
   getMostUpToDatePythOracle,
   getPythPushOracleAddress,
 } from "./pythUtils";
+import { getAccountMeta } from "./solanaUtils";
 
 export function createDynamicMarginfiProgram(env?: ProgramEnv): Program {
   return {
@@ -93,7 +95,6 @@ export async function getAllBankRelatedAccounts(
             getPythPushOracleAddress(oracleKey, MARGINFI_SPONSORED_SHARD_ID),
           ]
         : [oracleKey];
-
     })
     .flat()
     .map((x) => x.toString());
@@ -178,6 +179,22 @@ export function findMarginfiAccounts(
   }
 
   throw new Error(`Marginfi accounts not found by the bank: ${bank}`);
+}
+
+export async function getRemainingAccountsForMarginfiHealthCheck(
+  umi: Umi,
+  balance: Balance
+): Promise<AccountMeta[]> {
+  if (!balance.active) {
+    return [];
+  }
+  const priceOracle = await getMarginfiPriceOracle(umi, {
+    pk: toWeb3JsPublicKey(balance.bankPk),
+  });
+  return [
+    getAccountMeta(toWeb3JsPublicKey(balance.bankPk)),
+    getAccountMeta(priceOracle),
+  ];
 }
 
 export function calcMarginfiMaxLtvAndLiqThresholdBps(
@@ -416,7 +433,10 @@ async function getTokenUsage(
   let originationFee = 0;
 
   if (bank !== null) {
-    [marketPrice] = await fetchTokenPrices([toWeb3JsPublicKey(bank.mint)], priceType);
+    [marketPrice] = await fetchTokenPrices(
+      [toWeb3JsPublicKey(bank.mint)],
+      priceType
+    );
     const [assetShareValue, liabilityShareValue] = getUpToDateShareValues(bank);
     const shareValue = isAsset ? assetShareValue : liabilityShareValue;
     amountUsed = shares * shareValue + Number(amountUsedAdjustment ?? 0);
@@ -466,17 +486,22 @@ type BanksCache = { [group: string]: { [mint: string]: Bank } };
 async function getBank(
   umi: Umi,
   data: BankSelection,
-  marginfiGroup?: PublicKey
+  marginfiGroup: PublicKey
 ) {
-  return data?.banksCache && data.mint && marginfiGroup
-    ? data.banksCache[marginfiGroup!.toString()][data?.mint?.toString()]
-    : data?.mint && data?.mint !== PublicKey.default
+  const mint =
+    data?.mint && !data.mint.equals(PublicKey.default)
+      ? data.mint.toString()
+      : undefined;
+
+  return data?.banksCache && mint
+    ? data.banksCache[marginfiGroup.toString()][mint]
+    : mint && mint !== PublicKey.default.toString()
       ? await safeFetchBank(
           umi,
           publicKey(
             getMarginfiAccounts(undefined, marginfiGroup).bankAccounts[
-              marginfiGroup?.toString() ?? ""
-            ][data?.mint.toString()].bank
+              marginfiGroup.toString()
+            ][mint].bank
           ),
           { commitment: "confirmed" }
         )
@@ -515,8 +540,8 @@ export async function getMarginfiAccountPositionState(
     marginfiGroup = toWeb3JsPublicKey(marginfiAccount.group);
   }
 
-  let supplyBank: Bank | null = await getBank(umi, supply, marginfiGroup);
-  let debtBank: Bank | null = await getBank(umi, debt, marginfiGroup);
+  let supplyBank: Bank | null = await getBank(umi, supply, marginfiGroup!);
+  let debtBank: Bank | null = await getBank(umi, debt, marginfiGroup!);
 
   let supplyUsage: PositionTokenState | undefined = undefined;
   let debtUsage: PositionTokenState | undefined = undefined;
@@ -585,7 +610,7 @@ export async function getMarginfiAccountPositionState(
       supplyBank,
       true,
       0,
-      contextUpdates?.supplyAdjustment,
+      contextUpdates?.supplyAdjustment
     );
   }
 
@@ -613,11 +638,11 @@ export async function getMarginfiAccountPositionState(
       debtBank,
       false,
       0,
-      contextUpdates?.debtAdjustment,
+      contextUpdates?.debtAdjustment
     );
   }
 
-  const supplyPrice = safeGetPrice(supply.mint!)!;
+  const supplyPrice = safeGetPrice(toWeb3JsPublicKey(supplyBank.mint))!;
   let [maxLtvBps, liqThresholdBps] = await getMarginfiMaxLtvAndLiqThresholdBps(
     umi,
     marginfiGroup ?? getMarginfiAccounts(programEnv).defaultGroup,

@@ -7,9 +7,9 @@ import {
   getSolanaRpcConnection,
   getSolautoManagedPositions,
   LOCAL_IRONFORGE_API_URL,
-  PriceType,
-  safeGetPrice,
+  ProgramEnv,
   SOLAUTO_PROD_PROGRAM,
+  SOLAUTO_TEST_PROGRAM,
 } from "../src";
 
 config({ path: path.join(__dirname, ".env") });
@@ -77,10 +77,10 @@ export function formatNumber(
   }
 }
 
-async function main(filterWhitelist: boolean) {
+async function main(filterWhitelist: boolean, programEnv: ProgramEnv = "Prod") {
   const [_, umi] = getSolanaRpcConnection(
     LOCAL_IRONFORGE_API_URL,
-    SOLAUTO_PROD_PROGRAM
+    programEnv === "Prod" ? SOLAUTO_PROD_PROGRAM : SOLAUTO_TEST_PROGRAM
   );
 
   let positions = await getSolautoManagedPositions(umi);
@@ -137,7 +137,7 @@ async function main(filterWhitelist: boolean) {
       `(${pos.authority.toString()} ${pos.positionId})`
     );
     console.log(
-      `${pos.strategyName}: $${formatNumber(pos.netWorthUsd(), 2, 10000, 2)} ${healthText} ${boostText}`
+      `${pos.strategyName}: $${formatNumber(pos.netWorthUsd(), 2, 10000, 2)} ${healthText} ${boostText}\n`
     );
   }
 
@@ -163,5 +163,21 @@ async function main(filterWhitelist: boolean) {
   console.log(`Total net worth: $${formatNumber(netWorth, 2, 10000, 2)}`);
 }
 
-const filterWhitelist = true;
-main(filterWhitelist).then((x) => x);
+const args = process.argv.slice(2); // Skip the first 2 (node + script path)
+
+const parsedArgs: Record<string, string | boolean> = {};
+for (const arg of args) {
+  if (arg.startsWith("--")) {
+    const [key, val] = arg.replace(/^--/, "").split("=");
+    parsedArgs[key] = val ?? true;
+  }
+}
+
+console.log("Parsed flags:", parsedArgs);
+
+const filterWhitelist =
+  "filter" in parsedArgs ? parsedArgs["filter"] === "true" : true;
+const programEnv =
+  "env" in parsedArgs ? (parsedArgs["env"] as ProgramEnv) : undefined;
+
+main(filterWhitelist, programEnv).then((x) => x);

@@ -2,7 +2,6 @@ import bs58 from "bs58";
 import {
   PublicKey,
   TransactionExpiredBlockheightExceededError,
-  VersionedTransaction,
 } from "@solana/web3.js";
 import {
   AddressLookupTableInput,

@@ -22,7 +22,6 @@ import {
   updatePosition,
 } from "../../generated";
 import {
-  getSolautoPositionAccount,
   getTokenAccount,
   getWalletSplBalances,
   getWrappedInstruction,
@@ -55,8 +54,6 @@ export abstract class SolautoClient extends ReferralStateManager {
 
   public authority!: PublicKey;
 
-  public positionId!: number;
-  public selfManaged!: boolean;
   public pos!: SolautoPositionEx;
 
   public positionSupplyTa!: PublicKey;
@@ -79,23 +76,12 @@ export abstract class SolautoClient extends ReferralStateManager {
   async initialize(args: SolautoClientArgs) {
     await super.initialize(args);
 
-    this.positionId = args.positionId ?? 0;
-    this.selfManaged = this.positionId === 0;
-    if (
-      this.selfManaged &&
-      (!args.supplyMint || !args.debtMint || !args.lpUserAccount)
-    ) {
-      throw new Error("Self managed position is missing arguments");
-    }
-
-    const positionPk = getSolautoPositionAccount(
-      this.authority,
-      this.positionId,
-      this.programId
-    );
+    const positionId = args.positionId ?? 0;
     this.pos = await getOrCreatePositionEx(
       this.umi,
-      positionPk,
+      this.authority,
+      positionId,
+      this.programId,
       {
         supplyMint: args.supplyMint,
         debtMint: args.debtMint,
@@ -106,7 +92,7 @@ export abstract class SolautoClient extends ReferralStateManager {
       },
       this.contextUpdates
     );
-    if (this.pos.selfManaged && (!args.supplyMint || !args.debtMint)) {
+    if (this.pos.selfManaged) {
       await this.pos.refreshPositionState();
     }
 
@@ -441,7 +427,7 @@ export abstract class SolautoClient extends ReferralStateManager {
   protocolInteractionIx(args: SolautoActionArgs): TransactionBuilder {
     let tx = transactionBuilder();
 
-    if (!this.selfManaged) {
+    if (!this.pos.selfManaged) {
       if (args.__kind === "Deposit") {
         tx = tx.add(
           splTokenTransferUmiIx(

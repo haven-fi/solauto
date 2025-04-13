@@ -43,6 +43,9 @@ export async function main() {
   await client.initialize({
     positionId: 1,
     authority: new PublicKey("5UqsR2PGzbP8pGPbXEeXx86Gjz2N2UFBAuFZUSVydAEe"),
+    // lpUserAccount: new PublicKey(
+    //   "GEokw9jqbh6d1xUNA3qaeYFFetbSR5Y1nt7C3chwwgSz"
+    // ),
   });
 
   const transactionItems = [rebalance(client)];
