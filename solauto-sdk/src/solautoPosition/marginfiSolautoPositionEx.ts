@@ -14,6 +14,7 @@ import {
   getBankLiquidityAvailableBaseUnit,
   getMarginfiAccountPositionState,
   getMarginfiPriceOracle,
+  validPubkey,
 } from "../utils";
 import { getMarginfiAccounts } from "../constants";
 import { SolautoPositionEx } from "./solautoPositionEx";
@@ -31,14 +32,10 @@ export class MarginfiSolautoPositionEx extends SolautoPositionEx {
       return this.lp;
     }
 
-    if (
-      !this.marginfiAccountData &&
-      this.lpUserAccount &&
-      !this.lpUserAccount.equals(PublicKey.default)
-    ) {
+    if (!this.marginfiAccountData && validPubkey(this.lpUserAccount)) {
       this.marginfiAccountData = await fetchMarginfiAccount(
         this.umi,
-        publicKey(this.lpUserAccount),
+        publicKey(this.lpUserAccount!),
         { commitment: "confirmed" }
       );
       this.lp = toWeb3JsPublicKey(this.marginfiAccountData.group);
@@ -97,7 +94,11 @@ export class MarginfiSolautoPositionEx extends SolautoPositionEx {
   }
 
   async refreshPositionState(priceType?: PriceType): Promise<void> {
-    const useDesignatedMint = !this._data.position || !this.selfManaged;
+    const useDesignatedMint =
+      !this.exists ||
+      !this.selfManaged ||
+      (this.selfManaged && !validPubkey(this.lpUserAccount));
+
     const resp = await getMarginfiAccountPositionState(
       this.umi,
       { pk: this.lpUserAccount },

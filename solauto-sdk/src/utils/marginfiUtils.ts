@@ -31,7 +31,7 @@ import {
 } from "../marginfi-sdk";
 import { ContextUpdates } from "./solautoUtils";
 import { fetchTokenPrices, safeGetPrice } from "./priceUtils";
-import { currentUnixSeconds } from "./generalUtils";
+import { currentUnixSeconds, validPubkey } from "./generalUtils";
 import {
   bytesToI80F48,
   calcNetWorthUsd,
@@ -245,7 +245,7 @@ export async function getMarginfiMaxLtvAndLiqThresholdBps(
   },
   supplyPrice?: number
 ): Promise<[number, number]> {
-  if (!supply.bank && supply.mint.equals(PublicKey.default)) {
+  if (!supply.bank && !validPubkey(supply.mint)) {
     return [0, 0];
   }
 
@@ -264,10 +264,7 @@ export async function getMarginfiMaxLtvAndLiqThresholdBps(
     );
   }
 
-  if (
-    (!debt.bank || debt.bank === null) &&
-    !debt.mint.equals(PublicKey.default)
-  ) {
+  if ((!debt.bank || debt.bank === null) && !validPubkey(debt.mint)) {
     debt.bank = await safeFetchBank(
       umi,
       publicKey(
@@ -488,10 +485,7 @@ async function getBank(
   data: BankSelection,
   marginfiGroup: PublicKey
 ) {
-  const mint =
-    data?.mint && !data.mint.equals(PublicKey.default)
-      ? data.mint.toString()
-      : undefined;
+  const mint = validPubkey(data.mint) ? data.mint!.toString() : undefined;
 
   return data?.banksCache && mint
     ? data.banksCache[marginfiGroup.toString()][mint]
@@ -523,8 +517,8 @@ export async function getMarginfiAccountPositionState(
 > {
   let marginfiAccount =
     lpUserAccount.data ??
-    (lpUserAccount.pk
-      ? await safeFetchMarginfiAccount(umi, publicKey(lpUserAccount.pk), {
+    (validPubkey(lpUserAccount.pk)
+      ? await safeFetchMarginfiAccount(umi, publicKey(lpUserAccount.pk!), {
           commitment: "confirmed",
         })
       : null);

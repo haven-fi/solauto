@@ -83,10 +83,13 @@ export abstract class SolautoPositionEx {
   protected lp?: PublicKey = undefined;
   public lpUserAccount?: PublicKey = undefined;
   protected lpEnv!: ProgramEnv;
+  private _supplyMint?: PublicKey;
+  private _debtMint?: PublicKey;
 
   private readonly firstState!: PositionState;
-  protected _supplyPrice?: number;
-  protected _debtPrice?: number;
+
+  private _supplyPrice?: number;
+  private _debtPrice?: number;
 
   public rebalanceHelper!: PositionRebalanceHelper;
 
@@ -104,6 +107,8 @@ export abstract class SolautoPositionEx {
     this.positionId = args.positionId ?? args.data.positionId![0];
     this.authority = args.authority ?? toWeb3JsPublicKey(args.data.authority!);
 
+    this._supplyMint = args.customArgs?.supplyMint;
+    this._debtMint = args.customArgs?.debtMint;
     this.lp = args.customArgs?.lendingPool;
     this.lpUserAccount =
       args.customArgs?.lpUserAccount ??
@@ -169,7 +174,7 @@ export abstract class SolautoPositionEx {
   }
 
   get supplyMint(): PublicKey {
-    return toWeb3JsPublicKey(this.state.supply.mint);
+    return this._supplyMint ?? toWeb3JsPublicKey(this.state.supply.mint);
   }
 
   get supplyMintInfo(): TokenInfo {
@@ -177,7 +182,7 @@ export abstract class SolautoPositionEx {
   }
 
   get debtMint(): PublicKey {
-    return toWeb3JsPublicKey(this.state.debt.mint);
+    return this._debtMint ?? toWeb3JsPublicKey(this.state.debt.mint);
   }
 
   get debtMintInfo(): TokenInfo {

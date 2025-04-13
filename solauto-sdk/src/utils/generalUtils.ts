@@ -1,6 +1,6 @@
 import axios from "axios";
 import { PublicKey } from "@solana/web3.js";
-import { MaybeRpcAccount, publicKey, Umi } from "@metaplex-foundation/umi";
+import { MaybeRpcAccount, publicKey, Umi, PublicKey as UmiPublicKey } from "@metaplex-foundation/umi";
 import { TOKEN_INFO, TokenInfo } from "../constants";
 
 export function buildHeliusApiUrl(heliusApiKey: string) {
@@ -195,4 +195,8 @@ export function u16ToArrayBufferLE(value: number): Uint8Array {
 
   // Return the buffer
   return new Uint8Array(buffer);
+}
+
+export function validPubkey(pubkey?: PublicKey | UmiPublicKey | string) {
+  return Boolean(pubkey) && pubkey!.toString() !== PublicKey.default.toString();
 }

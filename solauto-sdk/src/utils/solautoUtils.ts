@@ -41,6 +41,7 @@ import {
   findMarginfiAccounts,
   getAllMarginfiAccountsByAuthority,
 } from "./marginfiUtils";
+import { validPubkey } from "./generalUtils";
 
 export function createDynamicSolautoProgram(programId?: PublicKey): Program {
   return {
@@ -179,9 +180,8 @@ export async function getSolautoManagedPositions(
         findMarginfiAccounts(
           toWeb3JsPublicKey(position.position.lpSupplyAccount)
         ).mint,
-        findMarginfiAccounts(
-          toWeb3JsPublicKey(position.position.lpDebtAccount)
-        ).mint,
+        findMarginfiAccounts(toWeb3JsPublicKey(position.position.lpDebtAccount))
+          .mint,
       ];
     }
     // TODO: PF
@@ -285,10 +285,7 @@ export async function getAllPositionsByAuthority(
           true
         );
         marginfiPositions = marginfiPositions.filter(
-          (x) =>
-            x.supplyMint &&
-            (x.debtMint!.equals(PublicKey.default) ||
-              ALL_SUPPORTED_TOKENS.includes(x.debtMint!.toString()))
+          (x) => validPubkey(x.supplyMint) && validPubkey(x.debtMint)
         );
         return marginfiPositions.map((x) => ({
           publicKey: x.marginfiAccount,
