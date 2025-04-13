@@ -21,7 +21,6 @@ export const SOLAUTO_TEST_PROGRAM = new PublicKey(
 
 (globalThis as any).SHOW_LOGS = false;
 
-export const MIN_POSITION_STATE_FRESHNESS_SECS = 5;
 export const MIN_REPAY_GAP_BPS = 50;
 export const MIN_BOOST_GAP_BPS = 50;
 export const MIN_USD_SUPPORTED_POSITION = 1000;
