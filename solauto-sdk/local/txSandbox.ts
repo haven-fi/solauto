@@ -17,7 +17,7 @@ import {
 import { getSecretKey } from "./shared";
 
 const payForTransaction = false;
-const testProgram = true;
+const testProgram = false;
 const lpEnv: ProgramEnv = "Prod";
 
 export async function main() {
@@ -29,7 +29,7 @@ export async function main() {
 
   const signer = createSignerFromKeypair(
     umi,
-    fromWeb3JsKeypair(Keypair.fromSecretKey(getSecretKey("solauto-manager")))
+    fromWeb3JsKeypair(Keypair.fromSecretKey(getSecretKey()))
   );
 
   const client = getClient(LendingPlatform.Marginfi, {
@@ -54,7 +54,7 @@ export async function main() {
     client,
     undefined,
     payForTransaction ? "normal" : "only-simulate",
-    PriorityFeeSetting.Min,
+    PriorityFeeSetting.High,
     true,
     undefined,
     { totalRetries: 5 }

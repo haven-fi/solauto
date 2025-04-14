@@ -471,7 +471,7 @@ export async function sendSingleOptimizedTransaction(
   let cuPrice: number | undefined;
   if (prioritySetting !== PriorityFeeSetting.None) {
     cuPrice = await getComputeUnitPriceEstimate(umi, tx, prioritySetting);
-    cuPrice = Math.min(cuPrice ?? 0, 100 * 1_000_000);
+    cuPrice = Math.min(cuPrice ?? 0, 100_000_000);
     consoleLog("Compute unit price: ", cuPrice);
   }
 

@@ -27,10 +27,12 @@ export async function e2eTransactionTest(
   signer: Signer,
   testProgram: boolean,
   lendingPlatform: LendingPlatform,
-  withFlashLoan: boolean
+  withFlashLoan: boolean,
+  showLogs?: boolean
 ) {
   const client = getClient(lendingPlatform, {
     signer,
+    showLogs,
     rpcUrl: LOCAL_IRONFORGE_API_URL,
     programId: testProgram ? SOLAUTO_TEST_PROGRAM : SOLAUTO_PROD_PROGRAM,
   });
