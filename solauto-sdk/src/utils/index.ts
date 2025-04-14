@@ -3,7 +3,7 @@ export * from "./generalUtils";
 export * from "./instructionUtils";
 export * from "./jitoUtils";
 export * from "./jupiterUtils";
-export * from "./marginfiUtils";
+export * from "./marginfi";
 export * from "./numberUtils";
 export * from "./solautoUtils";
 export * from "./solanaUtils";

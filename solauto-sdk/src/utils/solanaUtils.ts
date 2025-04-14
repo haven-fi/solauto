@@ -47,7 +47,7 @@ import {
   retryWithExponentialBackoff,
 } from "./generalUtils";
 import { createDynamicSolautoProgram } from "./solautoUtils";
-import { createDynamicMarginfiProgram } from "./marginfiUtils";
+import { createDynamicMarginfiProgram } from "./marginfi";
 
 export function getSolanaRpcConnection(
   rpcUrl: string,
