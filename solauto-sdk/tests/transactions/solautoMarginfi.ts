@@ -5,7 +5,7 @@ import { e2eTransactionTest } from "./shared";
 
 describe("Solauto Marginfi tests", async () => {
   const signer = setupTest();
-  const testProgram = true;
+  const testProgram = false;
 
   it("open - deposit - borrow - rebalance to 0 - withdraw - close", async () => {
     await e2eTransactionTest(

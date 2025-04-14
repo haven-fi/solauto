@@ -223,11 +223,14 @@ export function addTxOptimizations(
     : transactionBuilder();
 
   const allOptimizations = tx.prepend(computePriceIx).prepend(computeLimitIx);
-  const oneOptimization = tx.prepend(computePriceIx);
+  const withCuPrice = tx.prepend(computePriceIx);
+  const withCuLimit = tx.prepend(computeLimitIx);
   if (allOptimizations.fitsInOneTransaction(umi)) {
     return allOptimizations;
-  } else if (oneOptimization.fitsInOneTransaction(umi)) {
-    return oneOptimization;
+  } else if (withCuPrice.fitsInOneTransaction(umi)) {
+    return withCuPrice;
+  } else if (withCuLimit.fitsInOneTransaction(umi)) {
+    return withCuLimit;
   } else {
     return tx;
   }
@@ -448,7 +451,7 @@ export async function sendSingleOptimizedTransaction(
 
   const blockhash = await connection.getLatestBlockhash("confirmed");
 
-  let computeUnitLimit = undefined;
+  let cuLimit = undefined;
   if (txType !== "skip-simulation") {
     const simulationResult = await retryWithExponentialBackoff(
       async () =>
@@ -461,28 +464,20 @@ export async function sendSingleOptimizedTransaction(
         ),
       3
     );
-    computeUnitLimit = Math.round(simulationResult.value.unitsConsumed! * 1.15);
-    consoleLog("Compute unit limit: ", computeUnitLimit);
+    cuLimit = Math.round(simulationResult.value.unitsConsumed! * 1.15);
+    consoleLog("Compute unit limit: ", cuLimit);
   }
 
   let cuPrice: number | undefined;
   if (prioritySetting !== PriorityFeeSetting.None) {
     cuPrice = await getComputeUnitPriceEstimate(umi, tx, prioritySetting);
-    if (!cuPrice) {
-      cuPrice = 1_000_000;
-    }
-    cuPrice = Math.min(cuPrice, 100 * 1_000_000);
+    cuPrice = Math.min(cuPrice ?? 0, 100 * 1_000_000);
     consoleLog("Compute unit price: ", cuPrice);
   }
 
   if (txType !== "only-simulate") {
     onAwaitingSign?.();
-    const signedTx = await assembleFinalTransaction(
-      umi,
-      tx,
-      cuPrice,
-      computeUnitLimit
-    )
+    const signedTx = await assembleFinalTransaction(umi, tx, cuPrice, cuLimit)
       .setBlockhash(blockhash)
       .buildAndSign(umi);
     const txSig = await spamSendTransactionUntilConfirmed(
