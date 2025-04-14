@@ -6,10 +6,7 @@ import {
   STANDARD_LUT_ACCOUNTS,
   SWITCHBOARD_PRICE_FEED_IDS,
   ALL_SUPPORTED_TOKENS,
-  getAllMarginfiAccountsByAuthority,
-  getSolanaRpcConnection,
   getTokenAccounts,
-  LOCAL_IRONFORGE_API_URL,
 } from "../src";
 import { updateLookupTable } from "./shared";
 
@@ -26,10 +23,6 @@ const solautoFeeWalletTokenAccounts = getTokenAccounts(
 );
 
 export async function updateSolautoLut(additionalAccounts?: string[]) {
-  const [_, umi] = getSolanaRpcConnection(
-    LOCAL_IRONFORGE_API_URL
-  );
-
   return updateLookupTable(
     [
       ...STANDARD_LUT_ACCOUNTS,
