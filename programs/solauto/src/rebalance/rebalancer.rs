@@ -3,7 +3,7 @@ use std::{
     ops::{Add, Mul},
 };
 
-use solana_program::{entrypoint::ProgramResult, program_error::ProgramError, pubkey::Pubkey};
+use solana_program::{entrypoint::ProgramResult, msg, program_error::ProgramError, pubkey::Pubkey};
 
 use crate::{
     check,
@@ -451,23 +451,21 @@ impl<'a> Rebalancer<'a> {
             from_rounded_usd_value(self.rebalance_data().values.target_supply_usd);
         let target_debt_usd = from_rounded_usd_value(self.rebalance_data().values.target_debt_usd);
 
+        msg!(
+            "Supply expected vs. actual: {}, {}",
+            target_supply_usd, curr_supply_usd
+        );
+        msg!(
+            "Debt expected vs. actual: {}, {}",
+            target_debt_usd, curr_debt_usd
+        );
         check!(
             value_gte_with_threshold(curr_supply_usd, target_supply_usd, 0.1),
-            SolautoError::InvalidRebalanceMade,
-            format!(
-                "Supply expected vs. actual: {}, {}",
-                target_supply_usd, curr_supply_usd
-            )
-            .as_str()
+            SolautoError::InvalidRebalanceMade
         );
         check!(
             value_lte_with_threshold(curr_debt_usd, target_debt_usd, 0.1),
-            SolautoError::InvalidRebalanceMade,
-            format!(
-                "Debt expected vs. actual: {}, {}",
-                target_debt_usd, curr_debt_usd
-            )
-            .as_str()
+            SolautoError::InvalidRebalanceMade
         );
 
         self.data.solauto_position.data.rebalance = RebalanceData::default();
