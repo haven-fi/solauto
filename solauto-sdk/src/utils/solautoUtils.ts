@@ -37,11 +37,8 @@ import {
   toRoundedUsdValue,
 } from "./numberUtils";
 import { fetchTokenPrices } from "./priceUtils";
-import {
-  findMarginfiAccounts,
-  getAllMarginfiAccountsByAuthority,
-} from "./marginfiUtils";
 import { validPubkey } from "./generalUtils";
+import { findMarginfiAccounts, getAllMarginfiAccountsByAuthority } from "./marginfi";
 
 export function createDynamicSolautoProgram(programId?: PublicKey): Program {
   return {
