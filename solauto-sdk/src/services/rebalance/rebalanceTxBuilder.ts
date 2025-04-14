@@ -210,7 +210,7 @@ export class RebalanceTxBuilder {
     }
 
     if (
-      !this.client.pos.rebalanceHelper.validRealtimePricesBoost(
+      !this.client.pos.rebalance.validRealtimePricesBoost(
         rebalanceValues.debtAdjustmentUsd
       )
     ) {

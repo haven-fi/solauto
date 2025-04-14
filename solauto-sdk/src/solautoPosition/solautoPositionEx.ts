@@ -91,7 +91,7 @@ export abstract class SolautoPositionEx {
   private _supplyPrice?: number;
   private _debtPrice?: number;
 
-  public rebalanceHelper!: PositionRebalanceHelper;
+  public rebalance!: PositionRebalanceHelper;
 
   constructor(args: PositionExArgs) {
     this.umi = args.umi;
@@ -120,7 +120,7 @@ export abstract class SolautoPositionEx {
     this._data = args.data;
     this.firstState = { ...args.data.state };
 
-    this.rebalanceHelper = new PositionRebalanceHelper(this);
+    this.rebalance = new PositionRebalanceHelper(this);
   }
 
   abstract lendingPool(): Promise<PublicKey>;
@@ -288,9 +288,13 @@ export abstract class SolautoPositionEx {
   }
 
   eligibleForRebalance(
-    bpsDistanceThreshold: number = 0
+    bpsDistanceThreshold: number = 0,
+    skipExtraChecks?: boolean
   ): RebalanceAction | undefined {
-    return this.rebalanceHelper.eligibleForRebalance(bpsDistanceThreshold);
+    return this.rebalance.eligibleForRebalance(
+      bpsDistanceThreshold,
+      skipExtraChecks
+    );
   }
 
   eligibleForRefresh(): boolean {
@@ -457,11 +461,21 @@ class PositionRebalanceHelper {
   }
 
   private validBoostFromHere() {
+    const realtimeSupplyUsd = this.pos.supplyUsd(PriceType.Realtime);
+    const realtimeDebtUsd = this.pos.debtUsd(PriceType.Realtime);
+
+    if (
+      realtimeSupplyUsd === this.pos.supplyUsd(PriceType.Ema) &&
+      realtimeDebtUsd === this.pos.debtUsd(PriceType.Ema)
+    ) {
+      return true;
+    }
+
     const { debtAdjustmentUsd } = getDebtAdjustment(
       this.pos.state.liqThresholdBps,
       {
-        supplyUsd: this.pos.supplyUsd(PriceType.Realtime),
-        debtUsd: this.pos.debtUsd(PriceType.Realtime),
+        supplyUsd: realtimeSupplyUsd,
+        debtUsd: realtimeDebtUsd,
       },
       this.pos.boostToBps,
       { solauto: 25, lpBorrow: 0, flashLoan: 0 } // Undershoot fees
@@ -471,7 +485,8 @@ class PositionRebalanceHelper {
   }
 
   eligibleForRebalance(
-    bpsDistanceThreshold: number
+    bpsDistanceThreshold: number,
+    skipExtraChecks?: boolean
   ): RebalanceAction | undefined {
     if (!this.pos.settings || !this.pos.supplyUsd()) {
       return undefined;
@@ -488,8 +503,8 @@ class PositionRebalanceHelper {
       return "repay";
     } else if (
       realtimeLiqUtilRateBps - this.pos.boostFromBps <= bpsDistanceThreshold &&
-      this.validBoostFromHere() &&
-      this.sufficientLiquidityToBoost()
+      (!skipExtraChecks ||
+        (this.validBoostFromHere() && this.sufficientLiquidityToBoost()))
     ) {
       return "boost";
     }

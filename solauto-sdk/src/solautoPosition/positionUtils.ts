@@ -29,7 +29,6 @@ import {
   SolautoPositionEx,
 } from "./solautoPositionEx";
 import { MarginfiSolautoPositionEx } from "./marginfiSolautoPositionEx";
-import { assert } from "console";
 
 export function createSolautoSettings(
   settings: SolautoSettingsParametersInpArgs
