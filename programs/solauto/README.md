@@ -68,10 +68,6 @@ The most crucial instruction and the core logic of the program: rebalance the So
 
 More info can be found in the [rebalance section.](#rebalance)
 
-#### Cancel DCA
-
-Cancels the active DCA on the Solauto position. Only allowed to be invoked by the Solauto position authority.
-
 #### Close position
 
 Close the Solauto position and return all account rents. Only allowed to be invoked by the Solauto position authority.
@@ -86,7 +82,6 @@ A rebalance can be successful under one of the 4 conditions:
 
 - A boost (if liq utilization rate is < boost_from)
 - A repay (if liq utilization rate is > repay_from)
-- A DCA period is eligible
 - A target liquidation utilization rate has been provided, and the position authority is signing
 
 If none of the conditions are met, the Solauto rebalance instruction will fail.

@@ -73,13 +73,5 @@ fn initialize_solauto_position<'a, 'b>(
         debt_mint,
     )?;
 
-    // solauto_utils::initiate_dca_in_if_necessary(
-    //     token_program,
-    //     solauto_position,
-    //     Some(position_debt_ta),
-    //     signer,
-    //     signer_debt_ta,
-    // )?;
-
     ix_utils::update_data(solauto_position)
 }

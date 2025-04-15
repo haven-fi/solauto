@@ -18,8 +18,6 @@ use crate::{
     },
 };
 
-use super::automation::DCASettings;
-
 #[repr(C, align(8))]
 #[derive(ShankType, BorshSerialize, Clone, Debug, Default, Copy, Pod, Zeroable)]
 pub struct TokenAmount {

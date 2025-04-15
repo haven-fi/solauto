@@ -156,17 +156,6 @@ pub fn validate_position_settings(solauto_position: &SolautoPosition) -> Program
     Ok(())
 }
 
-// pub fn validate_dca_settings(
-//     position: &PositionData,
-//     current_unix_timestamp: u64,
-// ) -> ProgramResult {
-//     if position.dca.is_active() {
-//         return Ok(());
-//     }
-
-//     validate_automation_settings(&position.dca.automation, current_unix_timestamp)
-// }
-
 pub fn validate_automation_settings(
     automation: &AutomationSettings,
     current_unix_timestamp: u64,

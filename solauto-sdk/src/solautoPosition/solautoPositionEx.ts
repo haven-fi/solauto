@@ -5,7 +5,6 @@ import {
   toWeb3JsPublicKey,
 } from "@metaplex-foundation/umi-web3js-adapters";
 import {
-  DCASettings,
   fetchSolautoPosition,
   LendingPlatform,
   PositionState,
@@ -168,17 +167,6 @@ export abstract class SolautoPositionEx {
 
   updateSettings(settings: SolautoSettingsParameters) {
     this.data.position!.settings = settings;
-  }
-
-  // TODO: DCA
-  get dca(): DCASettings | undefined {
-    // return this.contextUpdates?.dca ?? this.data.position?.dca;
-    return undefined;
-  }
-
-  // TODO: DCA
-  updateDca(dca: DCASettings) {
-    // this.data.position!.dca = dca;
   }
 
   get supplyMint(): PublicKey {

@@ -57,10 +57,6 @@ pub fn process_marginfi_open_position_instruction<'a>(
     if !solauto_position.data.self_managed.val {
         let current_timestamp = Clock::get()?.unix_timestamp as u64;
         validation_utils::validate_position_settings(&solauto_position.data)?;
-        // validation_utils::validate_dca_settings(
-        //     &solauto_position.data.position,
-        //     current_timestamp,
-        // )?;
     }
 
     if ctx.accounts.referred_by_supply_ta.is_some() {
