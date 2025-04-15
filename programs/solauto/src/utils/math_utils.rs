@@ -69,7 +69,11 @@ pub fn to_bps(value: f64) -> u16 {
 
 #[inline(always)]
 pub fn i80f48_to_u64(value: I80F48) -> u64 {
-    value.to_num::<u64>()
+    if value < 0.0 {
+        0
+    } else {
+        value.to_num::<u64>()
+    }
 }
 
 #[inline(always)]

@@ -302,6 +302,15 @@ export abstract class SolautoPositionEx {
     );
   }
 
+  protected canRefreshPositionState() {
+    if (
+      currentUnixSeconds() - Number(this.state.lastRefreshed) > 3 ||
+      this.contextUpdates?.positionUpdates()
+    ) {
+      return true;
+    }
+  }
+
   abstract refreshPositionState(priceType?: PriceType): Promise<void>;
 
   async utilizationRateBpsDrift(priceType?: PriceType) {
