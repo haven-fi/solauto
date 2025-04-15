@@ -304,7 +304,7 @@ export abstract class SolautoPositionEx {
 
   protected canRefreshPositionState() {
     if (
-      currentUnixSeconds() - Number(this.state.lastRefreshed) > 3 ||
+      currentUnixSeconds() - Number(this.state.lastRefreshed) > 5 ||
       this.contextUpdates?.positionUpdates()
     ) {
       return true;
