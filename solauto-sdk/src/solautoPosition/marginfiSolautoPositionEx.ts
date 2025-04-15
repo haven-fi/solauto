@@ -1,12 +1,6 @@
 import { PublicKey } from "@solana/web3.js";
-import {
-  Bank,
-  fetchMarginfiAccount,
-  MarginfiAccount,
-  safeFetchAllBank,
-} from "../marginfi-sdk";
+import { Bank, safeFetchAllBank } from "../marginfi-sdk";
 import { publicKey } from "@metaplex-foundation/umi";
-import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 import {
   calcMarginfiMaxLtvAndLiqThresholdBps,
   fetchTokenPrices,
@@ -23,34 +17,12 @@ import { LendingPlatform, PriceType } from "../generated";
 export class MarginfiSolautoPositionEx extends SolautoPositionEx {
   lendingPlatform = LendingPlatform.Marginfi;
 
-  private marginfiAccountData: MarginfiAccount | null = null;
   private supplyBank: Bank | null = null;
   private debtBank: Bank | null = null;
 
-  public async lendingPool(): Promise<PublicKey> {
-    if (this.lp) {
-      return this.lp;
-    }
-
-    if (!this.marginfiAccountData && validPubkey(this.lpUserAccount)) {
-      this.marginfiAccountData = await fetchMarginfiAccount(
-        this.umi,
-        publicKey(this.lpUserAccount!),
-        { commitment: "confirmed" }
-      );
-      this.lp = toWeb3JsPublicKey(this.marginfiAccountData.group);
-    }
-
-    if (!this.lp) {
-      this.lp = getMarginfiAccounts(this.lpEnv).defaultGroup;
-    }
-
-    return this.lp;
-  }
-
   async getBanks(): Promise<Bank[]> {
     if (!this.supplyBank || !this.debtBank) {
-      const group = (await this.lendingPool()).toString();
+      const group = this.lpPoolAccount.toString();
       const bankAccounts = getMarginfiAccounts(this.lpEnv).bankAccounts;
       const supplyBank = bankAccounts[group][this.supplyMint.toString()].bank;
       const debtBank = bankAccounts[group][this.debtMint.toString()].bank;
@@ -102,10 +74,9 @@ export class MarginfiSolautoPositionEx extends SolautoPositionEx {
     const resp = await getMarginfiAccountPositionState(
       this.umi,
       { pk: this.lpUserAccount },
-      await this.lendingPool(),
+      this._lpPoolAccount,
       useDesignatedMint ? { mint: this.supplyMint } : undefined,
       useDesignatedMint ? { mint: this.debtMint } : undefined,
-      this.lpEnv,
       this.contextUpdates,
       priceType
     );
@@ -113,6 +84,7 @@ export class MarginfiSolautoPositionEx extends SolautoPositionEx {
     if (resp) {
       this.supplyBank = resp.supplyBank;
       this.debtBank = resp.debtBank;
+      this._lpPoolAccount = resp.marginfiGroup;
       this._data.state = resp.state;
     }
   }

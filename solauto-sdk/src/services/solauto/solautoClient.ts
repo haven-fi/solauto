@@ -44,7 +44,7 @@ export interface SolautoClientArgs extends ReferralStateManagerArgs {
   positionId?: number;
   supplyMint?: PublicKey;
   debtMint?: PublicKey;
-  lendingPool?: PublicKey;
+  lpPoolAccount?: PublicKey;
   lpUserAccount?: PublicKey;
 }
 
@@ -85,16 +85,13 @@ export abstract class SolautoClient extends ReferralStateManager {
       {
         supplyMint: args.supplyMint,
         debtMint: args.debtMint,
-        lendingPool: args.lendingPool,
+        lpPoolAccount: args.lpPoolAccount,
         lpUserAccount: args.lpUserAccount,
         lendingPlatform: this.lendingPlatform,
         lpEnv: this.lpEnv,
       },
       this.contextUpdates
     );
-    if (this.pos.selfManaged) {
-      await this.pos.refreshPositionState();
-    }
 
     this.positionSupplyTa = getTokenAccount(
       this.pos.publicKey,
@@ -146,6 +143,7 @@ export abstract class SolautoClient extends ReferralStateManager {
     this.log("Position settings: ", this.pos.settings);
     this.log("Supply mint:", this.pos.supplyMint.toString());
     this.log("Debt mint:", this.pos.debtMint.toString());
+    this.log("LP pool:", this.pos.lpPoolAccount.toString());
   }
 
   referredBySupplyTa(): PublicKey | undefined {

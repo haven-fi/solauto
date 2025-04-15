@@ -23,7 +23,7 @@ import {
 import { getSecretKey } from "./shared";
 
 const payForTransaction = false;
-const testProgram = true;
+const testProgram = false;
 const lpEnv: ProgramEnv = "Prod";
 
 let [, umi] = getSolanaRpcConnection(
@@ -34,7 +34,7 @@ let [, umi] = getSolanaRpcConnection(
 
 const signer = createSignerFromKeypair(
   umi,
-  fromWeb3JsKeypair(Keypair.fromSecretKey(getSecretKey("solauto-manager")))
+  fromWeb3JsKeypair(Keypair.fromSecretKey(getSecretKey()))
 );
 
 export async function main() {
@@ -47,7 +47,7 @@ export async function main() {
   });
 
   await client.initialize({
-    positionId: 5,
+    positionId: 2,
     authority: new PublicKey("5UqsR2PGzbP8pGPbXEeXx86Gjz2N2UFBAuFZUSVydAEe"),
     // lpUserAccount: new PublicKey(
     //   "GEokw9jqbh6d1xUNA3qaeYFFetbSR5Y1nt7C3chwwgSz"

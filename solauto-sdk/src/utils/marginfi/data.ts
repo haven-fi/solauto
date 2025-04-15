@@ -1,8 +1,6 @@
 import { PublicKey } from "@solana/web3.js";
 import { publicKey, Umi } from "@metaplex-foundation/umi";
-import {
-  toWeb3JsPublicKey,
-} from "@metaplex-foundation/umi-web3js-adapters";
+import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 import { ProgramEnv } from "../../types";
 import { PositionState, PositionTokenState, PriceType } from "../../generated";
 import {
@@ -31,7 +29,10 @@ import {
   toBaseUnit,
   toBps,
 } from "../numberUtils";
-import { calcMarginfiMaxLtvAndLiqThresholdBps, marginfiAccountEmpty } from "./general";
+import {
+  calcMarginfiMaxLtvAndLiqThresholdBps,
+  marginfiAccountEmpty,
+} from "./general";
 
 export async function getMarginfiMaxLtvAndLiqThresholdBps(
   umi: Umi,
@@ -309,11 +310,15 @@ export async function getMarginfiAccountPositionState(
   marginfiGroup?: PublicKey,
   supply?: BankSelection,
   debt?: BankSelection,
-  programEnv?: ProgramEnv,
   contextUpdates?: ContextUpdates,
   priceType?: PriceType
 ): Promise<
-  | { supplyBank: Bank | null; debtBank: Bank | null; state: PositionState }
+  | {
+      supplyBank: Bank | null;
+      debtBank: Bank | null;
+      marginfiGroup: PublicKey;
+      state: PositionState;
+    }
   | undefined
 > {
   let marginfiAccount =
@@ -437,10 +442,13 @@ export async function getMarginfiAccountPositionState(
     );
   }
 
+  if (!marginfiGroup) {
+    marginfiGroup = toWeb3JsPublicKey(supplyBank.group);
+  }
   const supplyPrice = safeGetPrice(toWeb3JsPublicKey(supplyBank.mint))!;
   let [maxLtvBps, liqThresholdBps] = await getMarginfiMaxLtvAndLiqThresholdBps(
     umi,
-    marginfiGroup ?? getMarginfiAccounts(programEnv).defaultGroup,
+    marginfiGroup,
     {
       mint: toWeb3JsPublicKey(supplyBank.mint),
       bank: supplyBank,
@@ -463,6 +471,7 @@ export async function getMarginfiAccountPositionState(
   return {
     supplyBank,
     debtBank,
+    marginfiGroup,
     state: {
       liqUtilizationRateBps: getLiqUtilzationRateBps(
         supplyUsd,

@@ -51,7 +51,7 @@ export interface PositionCustomArgs {
   lendingPlatform: LendingPlatform;
   supplyMint?: PublicKey;
   debtMint?: PublicKey;
-  lendingPool?: PublicKey;
+  lpPoolAccount?: PublicKey;
   lpUserAccount?: PublicKey;
   lpEnv?: ProgramEnv;
 }
@@ -79,12 +79,12 @@ export abstract class SolautoPositionEx {
   public lendingPlatform!: LendingPlatform;
   public positionId!: number;
   public authority!: PublicKey;
-  protected _data!: SolautoPositionExData;
-  protected lp?: PublicKey = undefined;
+  protected _lpPoolAccount?: PublicKey;
   public lpUserAccount?: PublicKey = undefined;
   protected lpEnv!: ProgramEnv;
   private _supplyMint?: PublicKey;
   private _debtMint?: PublicKey;
+  protected _data!: SolautoPositionExData;
 
   private readonly firstState!: PositionState;
 
@@ -107,23 +107,21 @@ export abstract class SolautoPositionEx {
     this.positionId = args.positionId ?? args.data.positionId![0];
     this.authority = args.authority ?? toWeb3JsPublicKey(args.data.authority!);
 
-    this._supplyMint = args.customArgs?.supplyMint;
-    this._debtMint = args.customArgs?.debtMint;
-    this.lp = args.customArgs?.lendingPool;
+    this._lpPoolAccount = args.customArgs?.lpPoolAccount;
     this.lpUserAccount =
       args.customArgs?.lpUserAccount ??
       (args.data.position
         ? toWeb3JsPublicKey(args.data.position!.lpUserAccount)
         : undefined);
     this.lpEnv = args.customArgs?.lpEnv ?? "Prod";
+    this._supplyMint = args.customArgs?.supplyMint;
+    this._debtMint = args.customArgs?.debtMint;
 
     this._data = args.data;
     this.firstState = { ...args.data.state };
 
     this.rebalance = new PositionRebalanceHelper(this);
   }
-
-  abstract lendingPool(): Promise<PublicKey>;
 
   get exists() {
     return this._data.position !== undefined;
@@ -139,6 +137,13 @@ export abstract class SolautoPositionEx {
 
   get strategyName() {
     return solautoStrategyName(this.supplyMint, this.debtMint);
+  }
+
+  get lpPoolAccount() {
+    return (
+      this._lpPoolAccount ??
+      toWeb3JsPublicKey(this.data.position!.lpPoolAccount)
+    );
   }
 
   liqUtilizationRateBps(priceType?: PriceType): number {
@@ -491,7 +496,7 @@ class PositionRebalanceHelper {
     bpsDistanceThreshold: number,
     skipExtraChecks?: boolean
   ): RebalanceAction | undefined {
-    if (!this.pos.settings || !this.pos.supplyUsd()) {
+    if (this.pos.selfManaged || !this.pos.supplyUsd()) {
       return undefined;
     }
 

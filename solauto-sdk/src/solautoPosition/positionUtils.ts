@@ -113,11 +113,18 @@ export async function getOrCreatePositionEx(
     contextUpdates,
   };
 
+  let position: SolautoPositionEx;
   switch (lendingPlatform) {
     case LendingPlatform.Marginfi:
-      return new MarginfiSolautoPositionEx(args);
+      position = new MarginfiSolautoPositionEx(args);
     // TODO: PF
   }
+
+  if (position.selfManaged) {
+    await position.refreshPositionState();
+  }
+
+  return position;
 }
 
 interface AssetProps {

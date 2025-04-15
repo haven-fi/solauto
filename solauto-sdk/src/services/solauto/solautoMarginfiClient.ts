@@ -75,7 +75,7 @@ export class SolautoMarginfiClient extends SolautoClient {
 
     this.mfiAccounts = getMarginfiAccounts(this.lpEnv);
 
-    this.marginfiGroup = await this.pos.lendingPool();
+    this.marginfiGroup = this.pos.lpPoolAccount;
 
     if (this.pos.selfManaged) {
       this.marginfiAccount =
