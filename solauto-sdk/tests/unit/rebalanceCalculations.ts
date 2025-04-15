@@ -20,6 +20,7 @@ import {
   SolautoFeesBps,
   createFakePositionState,
   MarginfiSolautoPositionEx,
+  getMarginfiAccounts,
 } from "../../src";
 
 const signer = setupTest(undefined, true);
@@ -65,6 +66,7 @@ async function getFakePosition(
   });
   await client.initialize({
     positionId: 1,
+    lpPoolAccount: getMarginfiAccounts().defaultGroup,
     supplyMint: new PublicKey(NATIVE_MINT),
     debtMint: new PublicKey(USDC),
   });
@@ -105,8 +107,8 @@ async function getFakePosition(
         lpUserAccount: defaultPk,
         lpSupplyAccount: defaultPk,
         lpDebtAccount: defaultPk,
+        lpPoolAccount: defaultPk,
         settings,
-        dca: null,
         padding: [],
         padding1: [],
       },

@@ -77,6 +77,7 @@ const supplyMint = new PublicKey(NATIVE_MINT);
 const debtMint = new PublicKey(USDC);
 await client.initialize({
   positionId: 1,
+  lpPoolAccount: solauto.getMarginfiAccounts().defaultGroup,
   supplyMint,
   debtMint,
 });

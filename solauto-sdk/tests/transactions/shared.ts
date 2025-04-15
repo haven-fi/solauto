@@ -21,6 +21,7 @@ import {
   rebalance,
   withdraw,
   closeSolautoPosition,
+  getMarginfiAccounts,
 } from "../../src";
 
 export async function e2eTransactionTest(
@@ -42,6 +43,7 @@ export async function e2eTransactionTest(
 
   await client.initialize({
     positionId: 1,
+    lpPoolAccount: getMarginfiAccounts().defaultGroup,
     supplyMint,
     debtMint,
   });
