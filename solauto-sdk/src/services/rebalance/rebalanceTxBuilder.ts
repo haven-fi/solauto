@@ -90,19 +90,21 @@ export class RebalanceTxBuilder {
       liquidityAvailable: bigint,
       tokenMint: PublicKey
     ) => {
-      return (
-        amountNeededUsd >
+      const liquidityUsd =
         fromBaseUnit(liquidityAvailable, tokenInfo(tokenMint).decimals) *
-          (safeGetPrice(tokenMint) ?? 0) *
-          0.95
-      );
+        (safeGetPrice(tokenMint) ?? 0);
+      consoleLog(liquidityUsd);
+      return amountNeededUsd > liquidityUsd * 0.95;
     };
 
+    consoleLog("Supply liquidity available:", supplyLiquidityAvailable);
     const insufficientSupplyLiquidity = insufficientLiquidity(
       debtAdjustmentUsd,
       supplyLiquidityAvailable,
       this.client.pos.supplyMint
     );
+
+    consoleLog("Debt liquidity available:", debtLiquidityAvailable);
     const insufficientDebtLiquidity = insufficientLiquidity(
       debtAdjustmentUsd,
       debtLiquidityAvailable,
@@ -172,6 +174,7 @@ export class RebalanceTxBuilder {
     );
 
     if ((attemptNum ?? 0) >= 3 || stdFlLiquiditySource === undefined) {
+      consoleLog("Checking signer liquidity");
       const { supplyBalance, debtBalance } = await this.client.signerBalances();
       const signerFlLiquiditySource = this.getFlLiquiditySource(
         supplyBalance,
