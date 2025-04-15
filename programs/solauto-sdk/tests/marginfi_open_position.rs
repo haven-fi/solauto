@@ -56,53 +56,6 @@ mod open_position {
         assert!(position.lp_pool_account == data.marginfi_group);
     }
 
-    // TODO: DCA
-    // #[tokio::test]
-    // async fn std_open_position_with_dca() {
-    //     let args = GeneralArgs::new();
-    //     let mut data = MarginfiTestData::new(&args).await;
-    //     data.test_prefixtures().await
-    //         .unwrap()
-    //         .general.create_referral_state_accounts().await
-    //         .unwrap();
-
-    //     let dca_amount = 50_000;
-    //     data.general
-    //         .mint_tokens_to_ta(
-    //             data.general.debt_mint,
-    //             data.general.signer_debt_ta,
-    //             dca_amount
-    //         ).await
-    //         .unwrap();
-
-    //     let active_dca = DCASettingsInp {
-    //         automation: AutomationSettingsInp {
-    //             unix_start_date: (Utc::now().timestamp() as u64) - 1,
-    //             interval_seconds: 60 * 60 * 24,
-    //             periods_passed: 0,
-    //             target_periods: 5,
-    //         },
-    //         dca_in_base_unit: dca_amount,
-    //         token_type: TokenType::Debt
-    //     };
-    //     data.open_position(
-    //         Some(data.general.default_settings.clone()),
-    //         Some(active_dca.clone())
-    //     ).await.unwrap();
-
-    //     let position_account = data.general.deserialize_account_data::<SolautoPosition>(
-    //         data.general.solauto_position
-    //     ).await;
-    //     let position = &position_account.position;
-    //     assert!(&position.dca.automation.target_periods == &active_dca.automation.target_periods);
-    //     assert!(position.dca.dca_in_base_unit == dca_amount);
-
-    //     let position_debt_ta = data.general.unpack_account_data::<TokenAccount>(
-    //         data.general.position_debt_ta.clone()
-    //     ).await;
-    //     assert!(position_debt_ta.amount == dca_amount);
-    // }
-
     #[tokio::test]
     async fn incorrect_signer() {
         let temp_account = Keypair::new();
