@@ -178,7 +178,7 @@ impl<'a> MarginfiClient<'a> {
         price_oracle: &'a AccountInfo<'a>,
         price_type: PriceType,
         mut max_ltv: f64,
-    ) -> Result<(RefreshedTokenState, f64), ProgramError> {
+    ) -> Result<(RefreshedTokenState, f64, Pubkey), ProgramError> {
         let bank = DeserializedAccount::<Bank>::zerocopy(Some(supply_bank))?.unwrap();
 
         let asset_share_value = I80F48::from_le_bytes(bank.data.asset_share_value.value);
@@ -208,6 +208,7 @@ impl<'a> MarginfiClient<'a> {
             max_ltv = max_ltv * discount_factor;
         }
 
+        let lp_pool_account = bank.data.group;
         Ok((
             RefreshedTokenState {
                 mint: bank.data.mint,
@@ -218,6 +219,7 @@ impl<'a> MarginfiClient<'a> {
                 borrow_fee_bps: None,
             },
             max_ltv,
+            lp_pool_account,
         ))
     }
 
@@ -293,7 +295,7 @@ impl<'a> MarginfiClient<'a> {
             price_type,
         )?;
 
-        let (supply, max_ltv) = MarginfiClient::get_supply_token_usage(
+        let (supply, max_ltv, lp_pool_account) = MarginfiClient::get_supply_token_usage(
             account_balances,
             supply_bank,
             supply_price_oracle,
@@ -306,6 +308,7 @@ impl<'a> MarginfiClient<'a> {
             liq_threshold,
             supply,
             debt,
+            lp_pool_account,
         })
     }
 
@@ -454,7 +457,7 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
             },
             LendingAccountDepositInstructionArgs {
                 amount: base_unit_amount,
-                deposit_up_to_limit: Some(true)
+                deposit_up_to_limit: Some(true),
             },
         );
 

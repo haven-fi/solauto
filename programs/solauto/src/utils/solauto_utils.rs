@@ -52,6 +52,7 @@ pub fn create_new_solauto_position<'a>(
     debt_mint: &'a AccountInfo<'a>,
     lp_debt_account: &'a AccountInfo<'a>,
     lp_user_account: &'a AccountInfo<'a>,
+    lp_pool_account: &'a AccountInfo<'a>,
     max_ltv: f64,
     liq_threshold: f64,
 ) -> Result<DeserializedAccount<'a, SolautoPosition>, ProgramError> {
@@ -84,10 +85,11 @@ pub fn create_new_solauto_position<'a>(
         position_data.lp_user_account = *lp_user_account.key;
         position_data.lp_supply_account = *lp_supply_account.key;
         position_data.lp_debt_account = *lp_debt_account.key;
+        position_data.lp_pool_account = *lp_pool_account.key;
 
-        if update_position_data.dca.is_some() {
-            position_data.dca = DCASettings::from(*update_position_data.dca.as_ref().unwrap());
-        }
+        // if update_position_data.dca.is_some() {
+        //     position_data.dca = DCASettings::from(*update_position_data.dca.as_ref().unwrap());
+        // }
 
         Box::new(SolautoPosition::new(
             update_position_data.position_id,
@@ -190,109 +192,109 @@ pub fn create_or_update_referral_state<'a>(
     Ok(referral_state_account)
 }
 
-pub fn initiate_dca_in_if_necessary<'a, 'b>(
-    token_program: &'a AccountInfo<'a>,
-    solauto_position: &'b mut DeserializedAccount<'a, SolautoPosition>,
-    position_debt_ta: Option<&'a AccountInfo<'a>>,
-    signer: &'a AccountInfo<'a>,
-    signer_dca_ta: Option<&'a AccountInfo<'a>>,
-) -> ProgramResult {
-    if solauto_position.data.self_managed.val {
-        return Ok(());
-    }
+// pub fn initiate_dca_in_if_necessary<'a, 'b>(
+//     token_program: &'a AccountInfo<'a>,
+//     solauto_position: &'b mut DeserializedAccount<'a, SolautoPosition>,
+//     position_debt_ta: Option<&'a AccountInfo<'a>>,
+//     signer: &'a AccountInfo<'a>,
+//     signer_dca_ta: Option<&'a AccountInfo<'a>>,
+// ) -> ProgramResult {
+//     if solauto_position.data.self_managed.val {
+//         return Ok(());
+//     }
 
-    let position = &mut solauto_position.data.position;
-    if !position.dca.is_active() {
-        return Ok(());
-    }
+//     let position = &mut solauto_position.data.position;
+//     if !position.dca.is_active() {
+//         return Ok(());
+//     }
 
-    if !position.dca.dca_in() {
-        return Ok(());
-    }
+//     if !position.dca.dca_in() {
+//         return Ok(());
+//     }
 
-    check!(
-        position_debt_ta.is_some() && signer_dca_ta.is_some(),
-        SolautoError::IncorrectAccounts
-    );
+//     check!(
+//         position_debt_ta.is_some() && signer_dca_ta.is_some(),
+//         SolautoError::IncorrectAccounts
+//     );
 
-    check!(
-        correct_token_account(
-            position_debt_ta.unwrap().key,
-            solauto_position.account_info.key,
-            &solauto_position.data.state.debt.mint
-        ),
-        SolautoError::IncorrectAccounts
-    );
+//     check!(
+//         correct_token_account(
+//             position_debt_ta.unwrap().key,
+//             solauto_position.account_info.key,
+//             &solauto_position.data.state.debt.mint
+//         ),
+//         SolautoError::IncorrectAccounts
+//     );
 
-    let signer_token_account = TokenAccount::unpack(&signer_dca_ta.unwrap().data.borrow())?;
-    let balance = signer_token_account.amount;
+//     let signer_token_account = TokenAccount::unpack(&signer_dca_ta.unwrap().data.borrow())?;
+//     let balance = signer_token_account.amount;
 
-    check!(
-        position.dca.dca_in_base_unit <= balance,
-        SolautoError::IncorrectInstructions
-    );
+//     check!(
+//         position.dca.dca_in_base_unit <= balance,
+//         SolautoError::IncorrectInstructions
+//     );
 
-    spl_token_transfer(
-        token_program,
-        SplTokenTransferArgs {
-            source: signer_dca_ta.unwrap(),
-            authority: signer,
-            recipient: position_debt_ta.unwrap(),
-            amount: position.dca.dca_in_base_unit,
-            authority_seeds: None,
-        },
-    )?;
+//     spl_token_transfer(
+//         token_program,
+//         SplTokenTransferArgs {
+//             source: signer_dca_ta.unwrap(),
+//             authority: signer,
+//             recipient: position_debt_ta.unwrap(),
+//             amount: position.dca.dca_in_base_unit,
+//             authority_seeds: None,
+//         },
+//     )?;
 
-    Ok(())
-}
+//     Ok(())
+// }
 
-pub fn cancel_dca_in<'a, 'b>(
-    signer: &'a AccountInfo<'a>,
-    system_program: &'a AccountInfo<'a>,
-    token_program: &'a AccountInfo<'a>,
-    solauto_position: &'b mut DeserializedAccount<'a, SolautoPosition>,
-    dca_mint: Option<&'a AccountInfo<'a>>,
-    position_dca_ta: Option<&'a AccountInfo<'a>>,
-    signer_dca_ta: Option<&'a AccountInfo<'a>>,
-) -> ProgramResult {
-    let active_dca = &solauto_position.data.position.dca;
+// pub fn cancel_dca_in<'a, 'b>(
+//     signer: &'a AccountInfo<'a>,
+//     system_program: &'a AccountInfo<'a>,
+//     token_program: &'a AccountInfo<'a>,
+//     solauto_position: &'b mut DeserializedAccount<'a, SolautoPosition>,
+//     dca_mint: Option<&'a AccountInfo<'a>>,
+//     position_dca_ta: Option<&'a AccountInfo<'a>>,
+//     signer_dca_ta: Option<&'a AccountInfo<'a>>,
+// ) -> ProgramResult {
+//     let active_dca = &solauto_position.data.position.dca;
 
-    if active_dca.dca_in() {
-        check!(
-            dca_mint.is_some() && position_dca_ta.is_some() && signer_dca_ta.is_some(),
-            SolautoError::IncorrectAccounts
-        );
+//     if active_dca.dca_in() {
+//         check!(
+//             dca_mint.is_some() && position_dca_ta.is_some() && signer_dca_ta.is_some(),
+//             SolautoError::IncorrectAccounts
+//         );
 
-        let dca_ta_current_balance =
-            TokenAccount::unpack(&position_dca_ta.unwrap().data.borrow())?.amount;
-        if dca_ta_current_balance == 0 {
-            return Ok(());
-        }
+//         let dca_ta_current_balance =
+//             TokenAccount::unpack(&position_dca_ta.unwrap().data.borrow())?.amount;
+//         if dca_ta_current_balance == 0 {
+//             return Ok(());
+//         }
 
-        init_ata_if_needed(
-            token_program,
-            system_program,
-            signer,
-            signer,
-            signer_dca_ta.unwrap(),
-            dca_mint.unwrap(),
-        )?;
+//         init_ata_if_needed(
+//             token_program,
+//             system_program,
+//             signer,
+//             signer,
+//             signer_dca_ta.unwrap(),
+//             dca_mint.unwrap(),
+//         )?;
 
-        spl_token_transfer(
-            token_program,
-            SplTokenTransferArgs {
-                source: position_dca_ta.unwrap(),
-                authority: solauto_position.account_info,
-                recipient: signer_dca_ta.unwrap(),
-                amount: dca_ta_current_balance,
-                authority_seeds: Some(&solauto_position.data.seeds_with_bump()),
-            },
-        )?;
-    }
+//         spl_token_transfer(
+//             token_program,
+//             SplTokenTransferArgs {
+//                 source: position_dca_ta.unwrap(),
+//                 authority: solauto_position.account_info,
+//                 recipient: signer_dca_ta.unwrap(),
+//                 amount: dca_ta_current_balance,
+//                 authority_seeds: Some(&solauto_position.data.seeds_with_bump()),
+//             },
+//         )?;
+//     }
 
-    solauto_position.data.position.dca = DCASettings::default();
-    Ok(())
-}
+//     solauto_position.data.position.dca = DCASettings::default();
+//     Ok(())
+// }
 
 pub fn update_token_state(token_state: &mut PositionTokenState, token_data: &RefreshedTokenState) {
     token_state.decimals = token_data.decimals;

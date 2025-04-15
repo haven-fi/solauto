@@ -453,11 +453,13 @@ impl<'a> Rebalancer<'a> {
 
         msg!(
             "Supply expected vs. actual: {}, {}",
-            target_supply_usd, curr_supply_usd
+            target_supply_usd,
+            curr_supply_usd
         );
         msg!(
             "Debt expected vs. actual: {}, {}",
-            target_debt_usd, curr_debt_usd
+            target_debt_usd,
+            curr_debt_usd
         );
         check!(
             value_gte_with_threshold(curr_supply_usd, target_supply_usd, 0.1),

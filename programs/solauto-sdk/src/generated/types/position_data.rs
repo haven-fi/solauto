@@ -5,7 +5,6 @@
 //! [https://github.com/metaplex-foundation/kinobi]
 //!
 
-use crate::generated::types::DCASettings;
 use crate::generated::types::LendingPlatform;
 use crate::generated::types::SolautoSettingsParameters;
 use borsh::BorshDeserialize;
@@ -33,6 +32,10 @@ pub struct PositionData {
     )]
     pub lp_debt_account: Pubkey,
     pub settings: SolautoSettingsParameters,
-    pub dca: DCASettings,
-    pub padding: [u32; 4],
+    #[cfg_attr(
+        feature = "serde",
+        serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
+    )]
+    pub lp_pool_account: Pubkey,
+    pub padding: [u32; 20],
 }

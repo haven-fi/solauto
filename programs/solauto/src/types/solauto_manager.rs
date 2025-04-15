@@ -244,6 +244,7 @@ impl<'a> SolautoManager<'a> {
 
         solauto_position.state.max_ltv_bps = to_bps(updated_data.max_ltv);
         solauto_position.state.liq_threshold_bps = to_bps(updated_data.liq_threshold);
+        solauto_position.position.lp_pool_account = updated_data.lp_pool_account;
 
         update_token_state(&mut solauto_position.state.supply, &updated_data.supply);
         update_token_state(&mut solauto_position.state.debt, &updated_data.debt);

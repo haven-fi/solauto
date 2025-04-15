@@ -106,6 +106,7 @@ pub struct RefreshStateProps {
     pub liq_threshold: f64,
     pub supply: RefreshedTokenState,
     pub debt: RefreshedTokenState,
+    pub lp_pool_account: Pubkey, // TODO: remove me
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, PartialEq)]

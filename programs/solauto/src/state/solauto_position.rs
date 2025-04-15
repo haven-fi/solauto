@@ -160,8 +160,8 @@ pub struct PositionData {
     pub lp_supply_account: Pubkey,
     pub lp_debt_account: Pubkey,
     pub settings: SolautoSettingsParameters,
-    pub dca: DCASettings,
-    _padding: [u32; 4],
+    pub lp_pool_account: Pubkey,
+    _padding: [u32; 20],
 }
 
 #[repr(u8)]

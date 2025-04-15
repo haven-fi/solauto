@@ -85,44 +85,45 @@ pub fn process_close_position_instruction<'a>(accounts: &'a [AccountInfo<'a>]) -
 }
 
 pub fn process_cancel_dca<'a>(accounts: &'a [AccountInfo<'a>]) -> ProgramResult {
-    msg!("Instruction: Cancel DCA");
-    let ctx = CancelDCAAccounts::context(accounts)?;
-    let mut solauto_position =
-        DeserializedAccount::<SolautoPosition>::zerocopy(Some(ctx.accounts.solauto_position))?
-            .unwrap();
+    // msg!("Instruction: Cancel DCA");
+    // let ctx = CancelDCAAccounts::context(accounts)?;
+    // let mut solauto_position =
+    //     DeserializedAccount::<SolautoPosition>::zerocopy(Some(ctx.accounts.solauto_position))?
+    //         .unwrap();
 
-    validation_utils::validate_instruction(ctx.accounts.signer, &solauto_position, true, true)?;
-    validation_utils::validate_standard_programs(
-        Some(ctx.accounts.system_program),
-        Some(ctx.accounts.token_program),
-        Some(ctx.accounts.ata_program),
-        None,
-        None,
-    )?;
+    // validation_utils::validate_instruction(ctx.accounts.signer, &solauto_position, true, true)?;
+    // validation_utils::validate_standard_programs(
+    //     Some(ctx.accounts.system_program),
+    //     Some(ctx.accounts.token_program),
+    //     Some(ctx.accounts.ata_program),
+    //     None,
+    //     None,
+    // )?;
 
-    check!(
-        solauto_position.data.position.dca.is_active(),
-        SolautoError::IncorrectInstructions
-    );
+    // check!(
+    //     solauto_position.data.position.dca.is_active(),
+    //     SolautoError::IncorrectInstructions
+    // );
 
-    validation_utils::validate_token_account(
-        &solauto_position,
-        ctx.accounts.position_dca_ta,
-        Some(solauto_position.data.position.dca.token_type),
-        None,
-    )?;
+    // validation_utils::validate_token_account(
+    //     &solauto_position,
+    //     ctx.accounts.position_dca_ta,
+    //     Some(solauto_position.data.position.dca.token_type),
+    //     None,
+    // )?;
 
-    solauto_utils::cancel_dca_in(
-        ctx.accounts.signer,
-        ctx.accounts.system_program,
-        ctx.accounts.token_program,
-        &mut solauto_position,
-        ctx.accounts.dca_mint,
-        ctx.accounts.position_dca_ta,
-        ctx.accounts.signer_dca_ta,
-    )?;
+    // solauto_utils::cancel_dca_in(
+    //     ctx.accounts.signer,
+    //     ctx.accounts.system_program,
+    //     ctx.accounts.token_program,
+    //     &mut solauto_position,
+    //     ctx.accounts.dca_mint,
+    //     ctx.accounts.position_dca_ta,
+    //     ctx.accounts.signer_dca_ta,
+    // )?;
 
-    validation_utils::validate_position_settings(&solauto_position.data)?;
+    // validation_utils::validate_position_settings(&solauto_position.data)?;
 
-    ix_utils::update_data(&mut solauto_position)
+    // ix_utils::update_data(&mut solauto_position)
+    Ok(())
 }

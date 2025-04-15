@@ -165,12 +165,15 @@ export abstract class SolautoPositionEx {
     this.data.position!.settings = settings;
   }
 
+  // TODO: DCA
   get dca(): DCASettings | undefined {
-    return this.contextUpdates?.dca ?? this.data.position?.dca;
+    // return this.contextUpdates?.dca ?? this.data.position?.dca;
+    return undefined;
   }
 
+  // TODO: DCA
   updateDca(dca: DCASettings) {
-    this.data.position!.dca = dca;
+    // this.data.position!.dca = dca;
   }
 
   get supplyMint(): PublicKey {

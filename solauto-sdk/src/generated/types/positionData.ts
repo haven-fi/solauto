@@ -16,13 +16,10 @@ import {
   u8,
 } from '@metaplex-foundation/umi/serializers';
 import {
-  DCASettings,
-  DCASettingsArgs,
   LendingPlatform,
   LendingPlatformArgs,
   SolautoSettingsParameters,
   SolautoSettingsParametersArgs,
-  getDCASettingsSerializer,
   getLendingPlatformSerializer,
   getSolautoSettingsParametersSerializer,
 } from '.';
@@ -34,7 +31,7 @@ export type PositionData = {
   lpSupplyAccount: PublicKey;
   lpDebtAccount: PublicKey;
   settings: SolautoSettingsParameters;
-  dca: DCASettings;
+  lpPoolAccount: PublicKey;
   padding: Array<number>;
 };
 
@@ -45,7 +42,7 @@ export type PositionDataArgs = {
   lpSupplyAccount: PublicKey;
   lpDebtAccount: PublicKey;
   settings: SolautoSettingsParametersArgs;
-  dca: DCASettingsArgs;
+  lpPoolAccount: PublicKey;
   padding: Array<number>;
 };
 
@@ -61,8 +58,8 @@ export function getPositionDataSerializer(): Serializer<
       ['lpSupplyAccount', publicKeySerializer()],
       ['lpDebtAccount', publicKeySerializer()],
       ['settings', getSolautoSettingsParametersSerializer()],
-      ['dca', getDCASettingsSerializer()],
-      ['padding', array(u32(), { size: 4 })],
+      ['lpPoolAccount', publicKeySerializer()],
+      ['padding', array(u32(), { size: 20 })],
     ],
     { description: 'PositionData' }
   ) as Serializer<PositionDataArgs, PositionData>;

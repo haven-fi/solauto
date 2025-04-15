@@ -1293,17 +1293,15 @@
             }
           },
           {
-            "name": "dca",
-            "type": {
-              "defined": "DCASettings"
-            }
+            "name": "lpPoolAccount",
+            "type": "publicKey"
           },
           {
             "name": "padding",
             "type": {
               "array": [
                 "u32",
-                4
+                20
               ]
             }
           }

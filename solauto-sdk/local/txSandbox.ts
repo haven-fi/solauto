@@ -4,6 +4,7 @@ import { fromWeb3JsKeypair } from "@metaplex-foundation/umi-web3js-adapters";
 import {
   consoleLog,
   getClient,
+  getPositionExBulk,
   getSolanaRpcConnection,
   LendingPlatform,
   LOCAL_IRONFORGE_API_URL,
@@ -17,7 +18,7 @@ import {
 import { getSecretKey } from "./shared";
 
 const payForTransaction = false;
-const testProgram = false;
+const testProgram = true;
 const lpEnv: ProgramEnv = "Prod";
 
 export async function main() {
