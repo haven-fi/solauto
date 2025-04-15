@@ -101,7 +101,7 @@ async function refreshAll() {
     );
   }
 
-  const txBatches = getBatches(transactionItems, 10);
+  const txBatches = getBatches(transactionItems, 15);
 
   for (const batch of txBatches) {
     const txManager = new TransactionsManager(
