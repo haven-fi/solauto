@@ -34,7 +34,7 @@ let [, umi] = getSolanaRpcConnection(
 
 const signer = createSignerFromKeypair(
   umi,
-  fromWeb3JsKeypair(Keypair.fromSecretKey(getSecretKey()))
+  fromWeb3JsKeypair(Keypair.fromSecretKey(getSecretKey("solauto-manager")))
 );
 
 export async function main() {
@@ -47,7 +47,7 @@ export async function main() {
   });
 
   await client.initialize({
-    positionId: 2,
+    positionId: 1,
     authority: new PublicKey("5UqsR2PGzbP8pGPbXEeXx86Gjz2N2UFBAuFZUSVydAEe"),
     // lpUserAccount: new PublicKey(
     //   "GEokw9jqbh6d1xUNA3qaeYFFetbSR5Y1nt7C3chwwgSz"
