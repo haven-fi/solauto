@@ -19,6 +19,7 @@ import { LendingPlatform, PriceType } from "../generated";
 
 export class MarginfiSolautoPositionEx extends SolautoPositionEx {
   lendingPlatform = LendingPlatform.Marginfi;
+  maxLtvPriceType = PriceType.Ema;
 
   private supplyBank: Bank | null = null;
   private debtBank: Bank | null = null;

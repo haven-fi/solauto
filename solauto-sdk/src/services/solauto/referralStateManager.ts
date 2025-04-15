@@ -87,7 +87,7 @@ export class ReferralStateManager extends TxHandler {
         : undefined;
   }
 
-  isReferred(): boolean {
+  get isReferred(): boolean {
     return Boolean(this.referredByState);
   }
 

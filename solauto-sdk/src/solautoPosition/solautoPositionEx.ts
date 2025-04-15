@@ -91,6 +91,7 @@ export abstract class SolautoPositionEx {
   private _debtPrice?: number;
 
   public rebalance!: PositionRebalanceHelper;
+  public maxLtvPriceType!: PriceType;
 
   constructor(args: PositionExArgs) {
     this.umi = args.umi;
@@ -436,8 +437,7 @@ class PositionRebalanceHelper {
   }
 
   validRealtimePricesBoost(debtAdjustmentUsd: number) {
-    if (this.pos.lendingPlatform !== LendingPlatform.Marginfi) {
-      // TODO: LP
+    if (this.pos.maxLtvPriceType !== PriceType.Ema) {
       return true;
     }
 

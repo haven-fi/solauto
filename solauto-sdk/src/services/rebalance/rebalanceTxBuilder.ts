@@ -10,7 +10,7 @@ import {
 import {
   consoleLog,
   fromBaseUnit,
-  getLiqUtilzationRateBps,
+  fromBps,
   getMaxLiqUtilizationRateBps,
   getTokenAccount,
   hasFirstRebalance,
@@ -20,6 +20,7 @@ import {
   tokenInfo,
 } from "../../utils";
 import {
+  LendingPlatform,
   PositionTokenState,
   PriceType,
   RebalanceDirection,
@@ -29,7 +30,11 @@ import {
   TokenBalanceChangeType,
   TokenType,
 } from "../../generated";
-import { getRebalanceValues, RebalanceValues } from "./rebalanceValues";
+import {
+  applyDebtAdjustmentUsd,
+  getRebalanceValues,
+  RebalanceValues,
+} from "./rebalanceValues";
 import { SolautoFeesBps } from "./solautoFees";
 import { RebalanceSwapManager } from "./rebalanceSwapManager";
 
@@ -39,6 +44,7 @@ export class RebalanceTxBuilder {
   private swapManager!: RebalanceSwapManager;
   private flRequirements?: FlashLoanRequirements;
   private priceType: PriceType = PriceType.Realtime;
+  private flFeeBps?: number;
 
   constructor(
     private client: SolautoClient,
@@ -47,7 +53,9 @@ export class RebalanceTxBuilder {
 
   private shouldProceedWithRebalance() {
     if (this.client.pos.selfManaged && !this.targetLiqUtilizationRateBps) {
-      throw new Error("A target rate must be provided for self managed position rebalances");
+      throw new Error(
+        "A target rate must be provided for self managed position rebalances"
+      );
     }
 
     return (
@@ -57,17 +65,17 @@ export class RebalanceTxBuilder {
     );
   }
 
-  private getRebalanceValues(flFee?: number) {
+  private getRebalanceValues() {
     return getRebalanceValues(
       this.client.pos,
       this.priceType,
       this.targetLiqUtilizationRateBps,
       SolautoFeesBps.create(
-        this.client.isReferred(),
+        this.client.isReferred,
         this.targetLiqUtilizationRateBps,
         this.client.pos.netWorthUsd(this.priceType)
       ),
-      flFee ?? 0
+      this.flRequirements?.flFeeBps ?? 0
     );
   }
 
@@ -112,15 +120,55 @@ export class RebalanceTxBuilder {
     }
   }
 
+  private intermediaryLiqUtilizationRateBps() {
+    if (
+      this.client.pos.maxLtvPriceType !== PriceType.Ema ||
+      this.priceType === PriceType.Ema ||
+      this.values.rebalanceDirection === RebalanceDirection.Repay
+    ) {
+      return this.values.intermediaryLiqUtilizationRateBps;
+    }
+
+    const fees = new SolautoFeesBps(
+      this.client.isReferred,
+      this.targetLiqUtilizationRateBps,
+      this.client.pos.netWorthUsd(PriceType.Realtime)
+    );
+
+    const { intermediaryLiqUtilizationRateBps } = applyDebtAdjustmentUsd(
+      this.values.debtAdjustmentUsd,
+      {
+        supplyUsd: realtimeUsdToEmaUsd(
+          this.client.pos.supplyUsd(PriceType.Realtime),
+          this.client.pos.supplyMint
+        ),
+        debtUsd: realtimeUsdToEmaUsd(
+          this.client.pos.debtUsd(PriceType.Realtime),
+          this.client.pos.debtMint
+        ),
+      },
+      fromBps(this.client.pos.state.liqThresholdBps),
+      {
+        solauto: fees.getSolautoFeesBps(this.values.rebalanceDirection).total,
+        lpBorrow: this.client.pos.state.debt.borrowFeeBps,
+        flashLoan: this.flRequirements?.flFeeBps ?? 0,
+      }
+    );
+
+    return intermediaryLiqUtilizationRateBps;
+  }
+
   private async flashLoanRequirements(
     attemptNum: number
   ): Promise<FlashLoanRequirements | undefined> {
+    const intermediaryLiqUtilizationRateBps =
+      this.intermediaryLiqUtilizationRateBps();
     const maxLtvRateBps = getMaxLiqUtilizationRateBps(
       this.client.pos.state.maxLtvBps,
       this.client.pos.state.liqThresholdBps,
-      0.015
+      0.005
     );
-    if (this.values.intermediaryLiqUtilizationRateBps < maxLtvRateBps) {
+    if (intermediaryLiqUtilizationRateBps < maxLtvRateBps) {
       return undefined;
     }
 
@@ -237,7 +285,7 @@ export class RebalanceTxBuilder {
 
     this.flRequirements = await this.flashLoanRequirements(attemptNum);
     if (this.flRequirements?.flFeeBps) {
-      this.values = this.getRebalanceValues(this.flRequirements.flFeeBps)!;
+      this.values = this.getRebalanceValues()!;
     }
 
     this.swapManager = new RebalanceSwapManager(
