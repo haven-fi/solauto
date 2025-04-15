@@ -169,9 +169,6 @@ export abstract class SolautoClient extends ReferralStateManager {
         if (this.contextUpdates.settings) {
           this.pos.updateSettings(this.contextUpdates.settings);
         }
-        if (this.contextUpdates.dca) {
-          this.pos.updateDca(this.contextUpdates.dca);
-        }
         // All other live position updates can be derived by getting a fresh position state, so we don't need to do anything else form contextUpdates
       }
     }
@@ -391,24 +388,6 @@ export abstract class SolautoClient extends ReferralStateManager {
     let dcaMint: UmiPublicKey | undefined = undefined;
     let positionDcaTa: UmiPublicKey | undefined = undefined;
     let signerDcaTa: UmiPublicKey | undefined = undefined;
-
-    const currDca = this.pos.dca!;
-    if (currDca.dcaInBaseUnit > 0) {
-      if (currDca.tokenType === TokenType.Supply) {
-        dcaMint = publicKey(this.pos.supplyMint);
-        positionDcaTa = publicKey(this.positionSupplyTa);
-        signerDcaTa = publicKey(this.signerSupplyTa);
-      } else {
-        dcaMint = publicKey(this.pos.debtMint);
-        positionDcaTa = publicKey(this.positionDebtTa);
-        signerDcaTa = publicKey(this.signerDebtTa);
-      }
-
-      this.contextUpdates.new({
-        type: "cancellingDca",
-        value: this.pos.dca!.tokenType,
-      });
-    }
 
     return cancelDCA(this.umi, {
       signer: this.signer,
