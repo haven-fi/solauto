@@ -8,6 +8,9 @@ import {
   getBankLiquidityAvailableBaseUnit,
   getMarginfiAccountPositionState,
   getMarginfiPriceOracle,
+  safeGetPrice,
+  tokenInfo,
+  toRoundedUsdValue,
   validPubkey,
 } from "../utils";
 import { getMarginfiAccounts } from "../constants";
@@ -56,6 +59,43 @@ export class MarginfiSolautoPositionEx extends SolautoPositionEx {
     );
 
     return [maxLtvBps, liqThresholdBps];
+  }
+
+  private getUpToDateLiquidityAvailable(
+    banks: Bank[],
+    mint: PublicKey,
+    availableToDeposit: boolean
+  ) {
+    const bank = banks.find(
+      (x) =>
+        x.group.toString() === this.lpPoolAccount.toString() &&
+        x.mint.toString() === mint.toString()
+    );
+
+    const baseUnit = getBankLiquidityAvailableBaseUnit(
+      bank!,
+      availableToDeposit
+    );
+    return {
+      baseUnit: baseUnit,
+      baseAmountUsdValue: toRoundedUsdValue(
+        fromBaseUnit(baseUnit, tokenInfo(mint).decimals) *
+          (safeGetPrice(mint) ?? 0)
+      ),
+    };
+  }
+
+  updateSupplyLiquidityDepositable(banks: Bank[]) {
+    this._data.state.supply.amountCanBeUsed =
+      this.getUpToDateLiquidityAvailable(banks, this.supplyMint, true);
+  }
+
+  updateDebtLiquidityAvailable(banks: Bank[]) {
+    this._data.state.debt.amountCanBeUsed = this.getUpToDateLiquidityAvailable(
+      banks,
+      this.debtMint,
+      false
+    );
   }
 
   get supplyLiquidityAvailable(): number {
