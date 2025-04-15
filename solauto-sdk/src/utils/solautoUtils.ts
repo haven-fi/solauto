@@ -26,7 +26,11 @@ import {
   SolautoMarginfiClient,
   TxHandlerProps,
 } from "../services";
-import { createSolautoSettings } from "../solautoPosition";
+import {
+  createSolautoSettings,
+  MarginfiSolautoPositionEx,
+  SolautoPositionEx,
+} from "../solautoPosition";
 import { getReferralState } from "./accountUtils";
 import {
   calcTotalDebt,
@@ -38,7 +42,10 @@ import {
 } from "./numberUtils";
 import { fetchTokenPrices } from "./priceUtils";
 import { validPubkey } from "./generalUtils";
-import { findMarginfiAccounts, getAllMarginfiAccountsByAuthority } from "./marginfi";
+import {
+  findMarginfiAccounts,
+  getAllMarginfiAccountsByAuthority,
+} from "./marginfi";
 
 export function createDynamicSolautoProgram(programId?: PublicKey): Program {
   return {
@@ -440,16 +447,23 @@ export function getClient(
     return new SolautoMarginfiClient(txHandlerProps);
   } else {
     throw new Error("Lending platform not yet supported");
-    // TODO: PF
+    // TODO: LP
   }
 }
 
+// TODO: LP
 export function isMarginfiClient(
   client: SolautoClient
 ): client is SolautoMarginfiClient {
   return client.lendingPlatform === LendingPlatform.Marginfi;
 }
-// TODO: PF
+
+// TODO: LP
+export function isMarginfiPosition(
+  pos: SolautoPositionEx
+): pos is MarginfiSolautoPositionEx {
+  return pos.lendingPlatform === LendingPlatform.Marginfi;
+}
 
 export function hasFirstRebalance(rebalanceType: SolautoRebalanceType) {
   return [
