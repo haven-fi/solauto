@@ -138,14 +138,8 @@ export class RebalanceTxBuilder {
     const { intermediaryLiqUtilizationRateBps } = applyDebtAdjustmentUsd(
       this.values.debtAdjustmentUsd,
       {
-        supplyUsd: realtimeUsdToEmaUsd(
-          this.client.pos.supplyUsd(PriceType.Realtime),
-          this.client.pos.supplyMint
-        ),
-        debtUsd: realtimeUsdToEmaUsd(
-          this.client.pos.debtUsd(PriceType.Realtime),
-          this.client.pos.debtMint
-        ),
+        supplyUsd: this.client.pos.supplyUsd(PriceType.Ema),
+        debtUsd: this.client.pos.debtUsd(PriceType.Ema),
       },
       fromBps(this.client.pos.state.liqThresholdBps),
       {
