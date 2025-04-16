@@ -44,11 +44,11 @@ export class RebalanceTxBuilder {
   private swapManager!: RebalanceSwapManager;
   private flRequirements?: FlashLoanRequirements;
   private priceType: PriceType = PriceType.Realtime;
-  private flFeeBps?: number;
 
   constructor(
     private client: SolautoClient,
-    private targetLiqUtilizationRateBps?: number
+    private targetLiqUtilizationRateBps?: number,
+    private optimizeSize?: boolean
   ) {}
 
   private shouldProceedWithRebalance() {
@@ -173,7 +173,7 @@ export class RebalanceTxBuilder {
       this.client.flProvider.liquidityAvailable(TokenType.Debt)
     );
 
-    if ((attemptNum ?? 0) >= 3 || stdFlLiquiditySource === undefined) {
+    if (stdFlLiquiditySource === undefined || this.optimizeSize) {
       consoleLog("Checking signer liquidity");
       const { supplyBalance, debtBalance } = await this.client.signerBalances();
       const signerFlLiquiditySource = this.getFlLiquiditySource(

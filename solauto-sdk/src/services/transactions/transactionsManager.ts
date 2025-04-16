@@ -88,7 +88,8 @@ export class TransactionItem {
 
   constructor(
     public fetchTx: (
-      attemptNum: number
+      attemptNum: number,
+      prevError?: Error
     ) => Promise<TransactionItemInputs | undefined>,
     public name?: string
   ) {}
@@ -98,8 +99,8 @@ export class TransactionItem {
     this.initialized = true;
   }
 
-  async refetch(attemptNum: number) {
-    const resp = await this.fetchTx(attemptNum);
+  async refetch(attemptNum: number, prevError?: Error) {
+    const resp = await this.fetchTx(attemptNum, prevError);
     this.tx = resp?.tx;
     this.lookupTableAddresses = resp?.lookupTableAddresses ?? [];
     this.orderPrio = resp?.orderPrio ?? 0;
@@ -182,9 +183,9 @@ class TransactionSet {
     await this.txHandler.resetLiveTxUpdates();
   }
 
-  async refetchAll(attemptNum: number) {
+  async refetchAll(attemptNum: number, prevError?: Error) {
     for (const item of this.items) {
-      await item.refetch(attemptNum);
+      await item.refetch(attemptNum, prevError);
     }
   }
 
@@ -593,7 +594,8 @@ export class TransactionsManager {
         if (attemptNum > 0) {
           const refreshedSets = await this.refreshItemSets(
             itemSets,
-            attemptNum
+            attemptNum,
+            prevError
           );
           if (!refreshedSets || !refreshedSets.length) {
             return;
@@ -734,6 +736,7 @@ export class TransactionsManager {
           const refreshedSets = await this.refreshItemSets(
             itemSets,
             attemptNum,
+            prevError,
             currentIndex
           );
           itemSet = refreshedSets ? refreshedSets[0] : undefined;
@@ -766,16 +769,17 @@ export class TransactionsManager {
   private async refreshItemSets(
     itemSets: TransactionSet[],
     attemptNum: number,
+    prevError?: Error,
     currentIndex?: number
   ): Promise<TransactionSet[] | undefined> {
     if (currentIndex !== undefined) {
       const itemSet = itemSets[currentIndex];
       await itemSet.reset();
-      await itemSet.refetchAll(attemptNum);
+      await itemSet.refetchAll(attemptNum, prevError);
     } else {
       await Promise.all(itemSets.map((itemSet) => itemSet.reset()));
       await Promise.all(
-        itemSets.map((itemSet) => itemSet.refetchAll(attemptNum))
+        itemSets.map((itemSet) => itemSet.refetchAll(attemptNum, prevError))
       );
     }
 

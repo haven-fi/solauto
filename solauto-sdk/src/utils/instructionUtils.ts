@@ -9,6 +9,7 @@ import {
   SolautoClient,
   SwapInput,
   TransactionItem,
+  TransactionTooLargeError,
 } from "../services";
 import { PublicKey } from "@solana/web3.js";
 import { tokenInfo } from "./generalUtils";
@@ -123,10 +124,11 @@ export function rebalance(
   targetLiqUtilizationRateBps?: number
 ) {
   return new TransactionItem(
-    async (attemptNum) =>
+    async (attemptNum, prevError) =>
       await new RebalanceTxBuilder(
         client,
-        targetLiqUtilizationRateBps
+        targetLiqUtilizationRateBps,
+        attemptNum > 2 && prevError instanceof TransactionTooLargeError
       ).buildRebalanceTx(attemptNum),
     "rebalance"
   );
