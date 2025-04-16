@@ -154,9 +154,9 @@ export class RebalanceTxBuilder {
     return intermediaryLiqUtilizationRateBps;
   }
 
-  private async flashLoanRequirements(
-    attemptNum: number
-  ): Promise<FlashLoanRequirements | undefined> {
+  private async flashLoanRequirements(): Promise<
+    FlashLoanRequirements | undefined
+  > {
     const intermediaryLiqUtilizationRateBps =
       this.intermediaryLiqUtilizationRateBps();
     const maxLtvRateBps = getMaxLiqUtilizationRateBps(
@@ -280,7 +280,7 @@ export class RebalanceTxBuilder {
     }
     this.values = rebalanceValues;
 
-    this.flRequirements = await this.flashLoanRequirements(attemptNum);
+    this.flRequirements = await this.flashLoanRequirements();
     if (this.flRequirements?.flFeeBps) {
       this.values = this.getRebalanceValues()!;
     }
