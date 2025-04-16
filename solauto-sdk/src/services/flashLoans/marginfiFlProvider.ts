@@ -225,6 +225,10 @@ export class MarginfiFlProvider extends FlProviderBase {
     ];
   }
 
+  liquiditySource(source: TokenType): PublicKey {
+    return toWeb3JsPublicKey(this.liquidityBank(source).publicKey);
+  }
+
   private liquidityBank(source: TokenType): Bank {
     return source === TokenType.Supply
       ? this.supplyBankLiquiditySource

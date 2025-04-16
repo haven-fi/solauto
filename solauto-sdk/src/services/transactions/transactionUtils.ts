@@ -145,7 +145,7 @@ async function transactionChoresBefore(
         client.marginfiAccountInitialize(client.marginfiAccount as Signer)
       );
     }
-    // TODO: PF
+    // TODO: LP
 
     if (!client.pos.exists) {
       chores = chores.add(client.openPositionIx());
@@ -517,7 +517,7 @@ function getSolautoActions(umi: Umi, tx: TransactionBuilder): SolautoAction[] {
       } catch {}
     }
 
-    // TODO: PF
+    // TODO: LP
   });
 
   return solautoActions;

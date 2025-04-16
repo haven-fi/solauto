@@ -162,7 +162,7 @@ export class RebalanceTxBuilder {
     const maxLtvRateBps = getMaxLiqUtilizationRateBps(
       this.client.pos.state.maxLtvBps,
       this.client.pos.state.liqThresholdBps,
-      0.005
+      0.01
     );
     if (intermediaryLiqUtilizationRateBps < maxLtvRateBps) {
       return undefined;

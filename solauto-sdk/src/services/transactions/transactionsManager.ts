@@ -707,6 +707,7 @@ export class TransactionsManager {
         undefined,
         errorInfo
       );
+      consoleLog(errorString);
 
       if (!errorDetails.canBeIgnored) {
         throw new Error(errorInfo);
@@ -874,6 +875,7 @@ export class TransactionsManager {
         undefined,
         errorInfo
       );
+      consoleLog(errorString);
 
       if (!errorDetails.canBeIgnored) {
         throw new Error(errorInfo);

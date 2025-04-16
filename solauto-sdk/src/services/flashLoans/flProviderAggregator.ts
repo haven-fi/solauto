@@ -29,7 +29,7 @@ export class FlProviderAggregator extends FlProviderBase {
   }
 
   async initialize() {
-    // TODO: PF
+    // TODO: LP
     // Once we have more than one, set the right fl provider for each liquidity source
     await this.marginfiFlProvider.initialize();
   }
@@ -39,7 +39,7 @@ export class FlProviderAggregator extends FlProviderBase {
   }
 
   otherSigners(): Signer[] {
-    // TODO: PF
+    // TODO: LP
     return [...this.flSigners, ...this.marginfiFlProvider.otherSigners()];
   }
 
@@ -53,8 +53,12 @@ export class FlProviderAggregator extends FlProviderBase {
   }
 
   private flProvider(source: TokenType): FlProviderBase {
-    // TODO: PF
+    // TODO: LP
     return this.marginfiFlProvider;
+  }
+
+  liquiditySource(source: TokenType): PublicKey {
+    return this.flProvider(source).liquiditySource(source);
   }
 
   liquidityAvailable(source: TokenType): bigint {

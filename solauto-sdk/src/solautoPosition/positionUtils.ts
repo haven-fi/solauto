@@ -70,7 +70,7 @@ export async function getPositionExBulk(
           publicKey: toWeb3JsPublicKey(x.publicKey),
           data: x,
         });
-      // TODO: PF
+      // TODO: LP
     }
   });
 }
@@ -117,7 +117,7 @@ export async function getOrCreatePositionEx(
   switch (lendingPlatform) {
     case LendingPlatform.Marginfi:
       position = new MarginfiSolautoPositionEx(args);
-    // TODO: PF
+    // TODO: LP
   }
 
   if (position.selfManaged) {

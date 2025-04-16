@@ -52,6 +52,8 @@ export abstract class FlProviderBase {
     );
   }
 
+  abstract liquiditySource(source: TokenType): PublicKey;
+
   abstract flFeeBps(source: TokenType, signerFlashLoan?: boolean): number;
   abstract flashBorrow(
     flashLoan: FlashLoanDetails,

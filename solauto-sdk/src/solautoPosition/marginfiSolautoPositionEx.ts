@@ -24,16 +24,17 @@ export class MarginfiSolautoPositionEx extends SolautoPositionEx {
   private supplyBank: Bank | null = null;
   private debtBank: Bank | null = null;
 
+  private getBankAccounts(mint: PublicKey) {
+    const group = this.lpPoolAccount.toString();
+    const bankAccounts = getMarginfiAccounts(this.lpEnv).bankAccounts;
+    return bankAccounts[group][mint.toString()];
+  }
+
   async getBanks(): Promise<Bank[]> {
     if (!this.supplyBank || !this.debtBank) {
-      const group = this.lpPoolAccount.toString();
-      const bankAccounts = getMarginfiAccounts(this.lpEnv).bankAccounts;
-      const supplyBank = bankAccounts[group][this.supplyMint.toString()].bank;
-      const debtBank = bankAccounts[group][this.debtMint.toString()].bank;
-
       [this.supplyBank, this.debtBank] = await safeFetchAllBank(this.umi, [
-        publicKey(supplyBank),
-        publicKey(debtBank),
+        publicKey(this.lpSupplyAccount),
+        publicKey(this.lpDebtAccount),
       ]);
     }
 
@@ -97,6 +98,14 @@ export class MarginfiSolautoPositionEx extends SolautoPositionEx {
       this.debtMint,
       false
     );
+  }
+
+  get lpSupplyAccount() {
+    return new PublicKey(this.getBankAccounts(this.supplyMint).bank);
+  }
+
+  get lpDebtAccount() {
+    return new PublicKey(this.getBankAccounts(this.debtMint).bank);
   }
 
   get supplyLiquidityAvailable(): number {
