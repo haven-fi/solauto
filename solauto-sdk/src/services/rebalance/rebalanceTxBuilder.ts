@@ -15,12 +15,10 @@ import {
   getTokenAccount,
   hasFirstRebalance,
   hasLastRebalance,
-  realtimeUsdToEmaUsd,
   safeGetPrice,
   tokenInfo,
 } from "../../utils";
 import {
-  LendingPlatform,
   PositionTokenState,
   PriceType,
   RebalanceDirection,
@@ -162,7 +160,7 @@ export class RebalanceTxBuilder {
     const maxLtvRateBps = getMaxLiqUtilizationRateBps(
       this.client.pos.state.maxLtvBps,
       this.client.pos.state.liqThresholdBps,
-      0.01
+      0.015
     );
     if (intermediaryLiqUtilizationRateBps < maxLtvRateBps) {
       return undefined;
