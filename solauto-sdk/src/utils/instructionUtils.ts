@@ -12,7 +12,6 @@ import {
   TransactionTooLargeError,
 } from "../services";
 import { PublicKey } from "@solana/web3.js";
-import { tokenInfo } from "./generalUtils";
 import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 
 export function openSolautoPosition(
