@@ -48,7 +48,7 @@ interface RetryConfig {
   retryDelay?: number;
 }
 
-export interface TransactionManagerArgs<T extends TxHandler> {
+export interface TransactionsManagerArgs<T extends TxHandler> {
   txHandler: T;
   statusCallback?: (statuses: TransactionManagerStatuses) => void;
   txRunType?: TransactionRunType;
@@ -73,7 +73,7 @@ export class TransactionsManager<T extends TxHandler> {
 
   updateOracleTxName = "update oracle";
 
-  constructor(args: TransactionManagerArgs<T>) {
+  constructor(args: TransactionsManagerArgs<T>) {
     this.txHandler = args.txHandler;
     this.statusCallback = args.statusCallback;
     this.txRunType = args.txRunType;
