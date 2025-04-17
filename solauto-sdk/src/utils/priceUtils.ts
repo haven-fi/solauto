@@ -9,9 +9,9 @@ import {
 import { fromBaseUnit, toBaseUnit } from "./numberUtils";
 import {
   consoleLog,
+  createRecord,
   currentUnixSeconds,
   retryWithExponentialBackoff,
-  zip,
 } from "./generalUtils";
 import { getJupPriceData } from "./jupiterUtils";
 import { PriceType } from "../generated";
@@ -26,64 +26,61 @@ export async function fetchTokenPrices(
   priceType: PriceType = PriceType.Realtime
 ): Promise<number[]> {
   const currentTime = currentUnixSeconds();
-  if (
-    !mints.some(
-      (mint) =>
-        !(mint.toString() in PRICES) ||
-        currentTime - PRICES[mint.toString()].time > 3
+  const mintStrs = mints.map((x) => x.toString());
+  const cachedPrices: Record<string, PriceResult> = Object.fromEntries(
+    Object.entries(PRICES).filter(
+      ([mint, price]) =>
+        mintStrs.includes(mint) && currentTime - price.time <= 3
     )
-  ) {
-    return mints.map((mint) => {
-      const priceData = PRICES[mint.toString()];
-      return priceType === PriceType.Ema
-        ? priceData.emaPrice
-        : priceData.realtimePrice;
-    });
-  }
+  );
 
-  const pythMints = mints.filter((x) => x.toString() in PYTH_PRICE_FEED_IDS);
-  const switchboardMints = mints.filter(
+  const newMints = mintStrs
+    .filter((x) => !Object.keys(cachedPrices).includes(x))
+    .map((x) => new PublicKey(x));
+  const pythMints = newMints.filter((x) => x.toString() in PYTH_PRICE_FEED_IDS);
+  const switchboardMints = newMints.filter(
     (x) => x.toString() in Object.keys(SWITCHBOARD_PRICE_FEED_IDS)
   );
-  const otherMints = mints.filter(
+  const otherMints = newMints.filter(
     (x) => !pythMints.includes(x) && !switchboardMints.includes(x)
   );
+  const newPrices: Record<string, PriceResult> = Object.assign(
+    {},
+    ...(await Promise.all([
+      getPythPrices(pythMints),
+      getSwitchboardPrices(switchboardMints),
+      getJupTokenPrices(otherMints),
+    ]))
+  );
 
-  const [pythData, switchboardData, jupData] = await Promise.all([
-    zip(pythMints, await getPythPrices(pythMints, priceType)),
-    zip(switchboardMints, await getSwitchboardPrices(switchboardMints)),
-    zip(otherMints, await getJupTokenPrices(otherMints)),
-  ]);
-
-  const prices = mints.map((mint) => {
-    const item = [...pythData, ...switchboardData, ...jupData].find((data) =>
-      data[0].equals(mint)
-    );
-    return item ? item[1] : { realtimePrice: 0 };
-  });
-
-  for (var i = 0; i < mints.length; i++) {
-    const realtimePrice = prices[i].realtimePrice;
-    PRICES[mints[i].toString()] = {
+  for (const mint of newMints) {
+    const realtimePrice = newPrices[mint.toString()].realtimePrice;
+    PRICES[mint.toString()] = {
       realtimePrice,
-      emaPrice: prices[i].emaPrice ?? realtimePrice,
+      emaPrice: newPrices[mint.toString()].emaPrice ?? realtimePrice,
       time: currentUnixSeconds(),
     };
   }
 
-  return prices.map((x) =>
-    priceType === PriceType.Ema
-      ? (x.emaPrice ?? x.realtimePrice)
-      : x.realtimePrice
-  );
+  const prices: Record<string, PriceResult> = {
+    ...PRICES,
+    ...newPrices,
+  };
+
+  return mints.map((x) => {
+    const priceResult = prices[x.toString()];
+    const realtimePrice = priceResult.realtimePrice;
+    return priceType === PriceType.Ema
+      ? (priceResult.emaPrice ?? realtimePrice)
+      : realtimePrice;
+  });
 }
 
 export async function getPythPrices(
-  mints: PublicKey[],
-  priceType: PriceType
-): Promise<PriceResult[]> {
+  mints: PublicKey[]
+): Promise<Record<string, PriceResult>> {
   if (mints.length === 0) {
-    return [];
+    return {};
   }
 
   const priceFeedIds = mints.map(
@@ -127,7 +124,10 @@ export async function getPythPrices(
     200
   );
 
-  return prices;
+  return createRecord(
+    mints.map((x) => x.toString()),
+    prices
+  );
 }
 
 function getSortedPriceData(
@@ -148,15 +148,15 @@ function getSortedPriceData(
 
 export async function getSwitchboardPrices(
   mints: PublicKey[]
-): Promise<PriceResult[]> {
+): Promise<Record<string, PriceResult>> {
   if (mints.length === 0) {
-    return [];
+    return {};
   }
 
   const { CrossbarClient } = SwbCommon;
   const crossbar = CrossbarClient.default();
 
-  let prices: Record<string, number> = {};
+  let prices: Record<string, PriceResult> = {};
   try {
     prices = await retryWithExponentialBackoff(
       async () => {
@@ -172,11 +172,11 @@ export async function getSwitchboardPrices(
           throw new Error("Unable to fetch Switchboard prices");
         }
 
-        const finalMap: Record<string, number> = {};
+        const finalMap: Record<string, PriceResult> = {};
         for (const item of resp) {
           for (const [k, v] of Object.entries(SWITCHBOARD_PRICE_FEED_IDS)) {
             if (item.feedHash === v.feedHash) {
-              finalMap[k] = Number(item.results[0]);
+              finalMap[k] = { realtimePrice: Number(item.results[0]) };
             }
           }
         }
@@ -190,42 +190,32 @@ export async function getSwitchboardPrices(
   }
 
   const missingMints = mints.filter((x) => !prices[x.toString()]);
-  const jupPrices = zip(
-    missingMints,
-    await getJupTokenPrices(missingMints.map((x) => new PublicKey(x)))
-  ).reduce(
-    (acc, [key, value]) => {
-      acc[key.toString()] = value.realtimePrice;
-      return acc;
-    },
-    {} as Record<string, number>
+  const jupPrices = await getJupTokenPrices(
+    missingMints.map((x) => new PublicKey(x))
   );
 
-  return Object.values(
-    getSortedPriceData({ ...prices, ...jupPrices }, mints)
-  ).map((x) => {
-    return { realtimePrice: x };
-  });
+  return { ...prices, ...jupPrices };
 }
 
 export async function getJupTokenPrices(
   mints: PublicKey[]
-): Promise<PriceResult[]> {
+): Promise<Record<string, PriceResult>> {
   if (mints.length == 0) {
-    return [];
+    return {};
   }
 
   const data = getSortedPriceData(await getJupPriceData(mints), mints);
 
-  const prices = Object.values(data).map((x) =>
-    x !== null && typeof x === "object" && "price" in x
-      ? parseFloat(x.price as string)
-      : 0
+  const prices: Record<string, PriceResult> = Object.fromEntries(
+    Object.entries(data).map(([mint, x]) => [
+      mint,
+      x !== null && typeof x === "object" && "price" in x
+        ? { realtimePrice: parseFloat(x.price as string) }
+        : { realtimePrice: 0 },
+    ])
   );
 
-  return prices.map((x) => {
-    return { realtimePrice: x };
-  });
+  return prices;
 }
 
 export function safeGetPrice(

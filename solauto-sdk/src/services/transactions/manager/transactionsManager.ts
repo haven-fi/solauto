@@ -470,9 +470,9 @@ export class TransactionsManager<T extends TxHandler> {
       await itemSet.refetchAll(attemptNum, prevError);
     } else {
       await Promise.all(itemSets.map((itemSet) => itemSet.reset()));
-      await Promise.all(
-        itemSets.map((itemSet) => itemSet.refetchAll(attemptNum, prevError))
-      );
+      for (const itemSet of itemSets) {
+        await itemSet.refetchAll(attemptNum, prevError);
+      }
     }
 
     const newItemSets = await this.assembleTransactionSets(
