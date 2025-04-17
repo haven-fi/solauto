@@ -13,7 +13,7 @@ describe("Solauto Marginfi tests", async () => {
       testProgram,
       LendingPlatform.Marginfi,
       false,
-      true
+      false
     );
   });
 
@@ -23,7 +23,7 @@ describe("Solauto Marginfi tests", async () => {
       testProgram,
       LendingPlatform.Marginfi,
       true,
-      true
+      false
     );
   });
 });

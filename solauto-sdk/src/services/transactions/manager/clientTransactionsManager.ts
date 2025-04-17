@@ -78,7 +78,7 @@ export class ClientTransactionsManager extends TransactionsManager<SolautoClient
       choresBefore.prepend(updateLutTx);
     }
 
-    if (choresBefore.getInstructions().length > 0) {
+    if (choresBefore.getInstructions().length) {
       const chore = new TransactionItem(
         async () => ({ tx: choresBefore }),
         CHORES_TX_NAME
@@ -91,7 +91,7 @@ export class ClientTransactionsManager extends TransactionsManager<SolautoClient
       );
     }
 
-    if (choresAfter.getInstructions().length > 0) {
+    if (choresAfter.getInstructions().length) {
       const chore = new TransactionItem(
         async () => ({ tx: choresAfter }),
         CHORES_TX_NAME
@@ -116,13 +116,13 @@ export class ClientTransactionsManager extends TransactionsManager<SolautoClient
     }
     this.lookupTables.defaultLuts = client.defaultLookupTables();
 
-    this.addSwbOraclePullTxs(items);
+    await this.addSwbOraclePullTxs(items);
 
     for (const item of items) {
       await item.initialize();
     }
 
-    this.addChoreTxs(
+    await this.addChoreTxs(
       items,
       updateLut && !updateLut?.new ? updateLut.tx : undefined
     );
