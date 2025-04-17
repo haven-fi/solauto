@@ -17,7 +17,7 @@ const client = solauto.getClient(solauto.LendingPlatform.MARGINFI, {
 // Initialize the client
 const supplyMint = new PublicKey(NATIVE_MINT);
 const debtMint = new PublicKey(USDC);
-await client.initialize({
+await client.initializeNewSolautoPosition({
   positionId: 1,
   lpPoolAccount: solauto.getMarginfiAccounts().defaultGroup,
   supplyMint,
@@ -84,9 +84,8 @@ const client = solauto.getClient(solauto.LendingPlatform.MARGINFI, {
 });
 
 // Initialize the client
-await client.initialize({
+await client.initializeExistingSolautoPosition({
   positionId: myPositionId,
-  authority: "[POSITION AUTHORITY]",
 });
 
 const transactionItems = [

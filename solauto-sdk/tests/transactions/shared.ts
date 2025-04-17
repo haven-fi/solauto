@@ -41,7 +41,7 @@ export async function e2eTransactionTest(
   const supplyMint = new PublicKey(NATIVE_MINT);
   const debtMint = new PublicKey(USDC);
 
-  await client.initialize({
+  await client.initializeNewSolautoPosition({
     positionId: 1,
     lpPoolAccount: getMarginfiAccounts().defaultGroup,
     supplyMint,

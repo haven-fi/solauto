@@ -48,6 +48,26 @@ export interface SolautoClientArgs extends ReferralStateManagerArgs {
   lpUserAccount?: PublicKey;
 }
 
+export type ExistingSolautoPositionArgs = Required<
+  Pick<SolautoClientArgs, "positionId">
+> &
+  Partial<Pick<SolautoClientArgs, "authority">>;
+
+export type NewSolautoPositionArgs = Required<
+  Pick<
+    SolautoClientArgs,
+    "positionId" | "supplyMint" | "debtMint" | "lpPoolAccount"
+  >
+>;
+
+export type ExistingSelfManagedPositionArgs = Required<
+  Pick<SolautoClientArgs, "lpUserAccount">
+>;
+
+export type NewSelfManagedPositionArgs = Required<
+  Pick<SolautoClientArgs, "supplyMint" | "debtMint" | "lpPoolAccount">
+>;
+
 export abstract class SolautoClient extends ReferralStateManager {
   public lendingPlatform!: LendingPlatform;
   public lpEnv!: ProgramEnv;
@@ -72,6 +92,24 @@ export abstract class SolautoClient extends ReferralStateManager {
 
   private signerSupplyBalance: bigint | undefined;
   private signerDebtBalance: bigint | undefined;
+
+  async initializeExistingSolautoPosition(args: ExistingSolautoPositionArgs) {
+    await this.initialize(args);
+  }
+
+  async initializeNewSolautoPosition(args: NewSolautoPositionArgs) {
+    await this.initialize(args);
+  }
+
+  async initializeExistingSelfManagedPosition(
+    args: ExistingSelfManagedPositionArgs
+  ) {
+    await this.initialize(args);
+  }
+
+  async initializeNewSelfManagedPosition(args: NewSelfManagedPositionArgs) {
+    await this.initialize(args);
+  }
 
   async initialize(args: SolautoClientArgs) {
     await super.initialize(args);

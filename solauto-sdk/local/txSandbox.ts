@@ -46,7 +46,7 @@ export async function main() {
     lpEnv,
   });
 
-  await client.initialize({
+  await client.initializeExistingSolautoPosition({
     positionId: 3,
     authority: new PublicKey("61rtn5tzVkesapo6Cz83SPoShUfAePSxJsqniuF2wRKC"),
     // lpUserAccount: new PublicKey(
