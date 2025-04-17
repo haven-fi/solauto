@@ -240,43 +240,41 @@ export abstract class SolautoPositionEx {
     return this._supplyPrice ?? safeGetPrice(this.supplyMint, priceType);
   }
 
-  
   get totalDebt() {
     return calcTotalDebt(this.state);
   }
-  
+
   debtUsd(priceType?: PriceType) {
     const debtPrice = this.debtPrice(priceType);
     return debtPrice
-    ? calcTotalDebt(this.state) * debtPrice
-    : calcDebtUsd(this.state);
+      ? calcTotalDebt(this.state) * debtPrice
+      : calcDebtUsd(this.state);
   }
-  
+
   protected debtPrice(priceType?: PriceType) {
     return this._debtPrice ?? safeGetPrice(this.debtMint, priceType);
   }
-  
-  
+
   get supplyLiquidityDepositable() {
     return supplyLiquidityDepositable(this.state);
   }
-  
+
   get supplyLiquidityUsdDepositable() {
     return supplyLiquidityUsdDepositable(this.state);
   }
-  
+
   get supplyLiquidityUsdAvailable() {
     return this.supplyLiquidityAvailable * (this.supplyPrice() ?? 0);
   }
-  
+
   get debtLiquidityAvailable() {
     return debtLiquidityAvailable(this.state);
   }
-  
+
   get debtLiquidityUsdAvailable() {
     return debtLiquidityUsdAvailable(this.state);
   }
-  
+
   abstract get lpSupplyAccount(): PublicKey;
   abstract get lpDebtAccount(): PublicKey;
   abstract get supplyLiquidityAvailable(): number;
@@ -308,6 +306,7 @@ export abstract class SolautoPositionEx {
 
   protected canRefreshPositionState() {
     if (
+      this.state.maxLtvBps === 0 ||
       currentUnixSeconds() - Number(this.state.lastRefreshed) > 5 ||
       this.contextUpdates?.positionUpdates()
     ) {
