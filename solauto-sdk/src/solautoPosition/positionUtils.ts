@@ -198,7 +198,7 @@ export function createFakePositionState(
     },
     maxLtvBps,
     liqThresholdBps,
-    lastRefreshed: BigInt(currentUnixSeconds()),
+    lastRefreshed: BigInt(currentUnixSeconds() - 100),
     padding1: [],
     padding2: [],
     padding: [],
