@@ -311,7 +311,7 @@ export class RebalanceTxBuilder {
     );
     consoleLog("Liq utilization rate diff:", utilizationRateDiff);
 
-    if (utilizationRateDiff >= 10) {
+    if (utilizationRateDiff >= 5) {
       consoleLog("Refreshing before rebalance");
       return true;
     }
