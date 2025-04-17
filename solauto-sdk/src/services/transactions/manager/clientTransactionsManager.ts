@@ -45,11 +45,11 @@ export class ClientTransactionsManager extends TransactionsManager<SolautoClient
 
     if (txs.find((x) => x.oracleInteractor) && switchboardMints.length) {
       this.txHandler.log("Requires oracle update(s)...");
-      const txs = switchboardMints.map(
+      const oracleTxs = switchboardMints.map(
         (x) =>
           new TransactionItem(
             async () =>
-              buildSwbSubmitResponseTx(
+              await buildSwbSubmitResponseTx(
                 this.txHandler.connection,
                 this.txHandler.signer,
                 x
@@ -57,7 +57,7 @@ export class ClientTransactionsManager extends TransactionsManager<SolautoClient
             this.updateOracleTxName
           )
       );
-      txs.unshift(...txs);
+      txs.unshift(...oracleTxs);
     }
   }
 
