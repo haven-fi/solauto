@@ -82,7 +82,8 @@ export function borrow(client: SolautoClient, baseUnitAmount: bigint) {
         fields: [baseUnitAmount],
       }),
     }),
-    "borrow"
+    "borrow",
+    true
   );
 }
 
@@ -98,7 +99,8 @@ export function withdraw(client: SolautoClient, amount: "All" | bigint) {
         ],
       }),
     }),
-    "withdraw"
+    "withdraw",
+    true
   );
 }
 
@@ -129,7 +131,8 @@ export function rebalance(
         targetLiqUtilizationRateBps,
         attemptNum > 2 && prevError instanceof TransactionTooLargeError
       ).buildRebalanceTx(attemptNum),
-    "rebalance"
+    "rebalance",
+    true
   );
 }
 

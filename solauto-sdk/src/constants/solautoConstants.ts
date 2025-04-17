@@ -31,6 +31,8 @@ export const REFERRER_PERCENTAGE = 0.15;
 
 export const PRICES: { [key: string]: { realtimePrice: number; emaPrice: number; time: number } } = {};
 
+export const CHORES_TX_NAME = "account chores";
+
 export const JITO_TIP_ACCOUNTS = [
   "96gYZGLnJYVFmbjzopPSU6QiEV5fGqZNyN9nmNhvrZU5",
   "HFqU5x63VTqvQss8hp11i4wVV8bD44PvwucfZ2bU7gRe",

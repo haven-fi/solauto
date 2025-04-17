@@ -13,7 +13,6 @@ import {
   SOLAUTO_TEST_PROGRAM,
   SolautoSettingsParametersInpArgs,
   toBaseUnit,
-  TransactionsManager,
   USDC,
   deposit,
   openSolautoPosition,
@@ -22,6 +21,7 @@ import {
   withdraw,
   closeSolautoPosition,
   getMarginfiAccounts,
+  ClientTransactionsManager,
 } from "../../src";
 
 export async function e2eTransactionTest(
@@ -79,8 +79,11 @@ export async function e2eTransactionTest(
     closeSolautoPosition(client),
   ];
 
-  const txManager = new TransactionsManager(client, undefined, "only-simulate");
-  const statuses = await txManager.clientSend(transactionItems);
+  const txManager = new ClientTransactionsManager({
+    txHandler: client,
+    txRunType: "only-simulate",
+  });
+  const statuses = await txManager.send(transactionItems);
 
   consoleLog(statuses);
 }

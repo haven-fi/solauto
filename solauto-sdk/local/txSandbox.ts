@@ -2,6 +2,7 @@ import { Keypair, PublicKey } from "@solana/web3.js";
 import { createSignerFromKeypair } from "@metaplex-foundation/umi";
 import { fromWeb3JsKeypair } from "@metaplex-foundation/umi-web3js-adapters";
 import {
+  ClientTransactionsManager,
   consoleLog,
   getBatches,
   getClient,
@@ -18,11 +19,10 @@ import {
   SOLAUTO_TEST_PROGRAM,
   SolautoClient,
   TransactionItem,
-  TransactionsManager,
 } from "../src";
 import { getSecretKey } from "./shared";
 
-const payForTransaction = true;
+const payForTransaction = false;
 const testProgram = false;
 const lpEnv: ProgramEnv = "Prod";
 
@@ -47,8 +47,8 @@ export async function main() {
   });
 
   await client.initializeExistingSolautoPosition({
-    positionId: 3,
-    authority: new PublicKey("61rtn5tzVkesapo6Cz83SPoShUfAePSxJsqniuF2wRKC"),
+    positionId: 1,
+    authority: new PublicKey("5UqsR2PGzbP8pGPbXEeXx86Gjz2N2UFBAuFZUSVydAEe"),
     // lpUserAccount: new PublicKey(
     //   "GEokw9jqbh6d1xUNA3qaeYFFetbSR5Y1nt7C3chwwgSz"
     // ),
@@ -56,16 +56,13 @@ export async function main() {
 
   const transactionItems = [rebalance(client)];
 
-  const txManager = new TransactionsManager(
-    client,
-    undefined,
-    payForTransaction ? "normal" : "only-simulate",
-    PriorityFeeSetting.High,
-    true,
-    undefined,
-    { totalRetries: 5 }
-  );
-  const statuses = await txManager.clientSend(transactionItems);
+  const txManager = new ClientTransactionsManager({
+    txHandler: client,
+    txRunType: payForTransaction ? "normal" : "only-simulate",
+    priorityFeeSetting: PriorityFeeSetting.Default,
+    retryConfig: { totalRetries: 5 },
+  });
+  const statuses = await txManager.send(transactionItems);
   consoleLog(statuses);
 }
 
@@ -104,15 +101,12 @@ async function refreshAll() {
   const txBatches = getBatches(transactionItems, 15);
 
   for (const batch of txBatches) {
-    const txManager = new TransactionsManager(
-      client!,
-      undefined,
-      payForTransaction ? "normal" : "only-simulate",
-      PriorityFeeSetting.High,
-      true,
-      undefined,
-      { totalRetries: 5 }
-    );
+    const txManager = new ClientTransactionsManager({
+      txHandler: client!,
+      txRunType: payForTransaction ? "normal" : "only-simulate",
+      priorityFeeSetting: PriorityFeeSetting.Default,
+      retryConfig: { totalRetries: 5 },
+    });
     const statuses = await txManager.send(batch);
     consoleLog(statuses);
   }

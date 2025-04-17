@@ -66,9 +66,10 @@ const transactionItems = [
 ];
 
 // Send all transactions atomically
-const statuses = await new solauto.TransactionsManager(client).clientSend(
-  transactionItems
-);
+const txManager = await new solauto.ClientTransactionsManager({
+  txHandler: client,
+});
+const statuses = txManager.send(transactionItems);
 ```
 
 ## Rebalancing an existing position
@@ -95,7 +96,8 @@ const transactionItems = [
   ),
 ];
 
-const statuses = await new solauto.TransactionsManager(client).clientSend(
-  transactionItems
-);
+const txManager = await new solauto.ClientTransactionsManager({
+  txHandler: client,
+});
+const statuses = txManager.send(transactionItems);
 ```

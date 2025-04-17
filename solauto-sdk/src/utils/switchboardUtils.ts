@@ -8,10 +8,14 @@ import { Signer, transactionBuilder } from "@metaplex-foundation/umi";
 import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 import { AnchorProvider, Idl, Program } from "@coral-xyz/anchor";
 import * as OnDemand from "@switchboard-xyz/on-demand";
+import Big from "big.js";
 import switchboardIdl from "../idls/switchboard.json";
-import { SWITCHBOARD_PRICE_FEED_IDS } from "../constants";
+import { PRICES, SWITCHBOARD_PRICE_FEED_IDS } from "../constants";
 import { TransactionItemInputs } from "../types";
-import { retryWithExponentialBackoff } from "./generalUtils";
+import {
+  currentUnixSeconds,
+  retryWithExponentialBackoff,
+} from "./generalUtils";
 import { getWrappedInstruction } from "./solanaUtils";
 
 export function getPullFeed(
@@ -62,6 +66,13 @@ export async function buildSwbSubmitResponseTx(
     throw new Error("Unable to fetch SWB crank IX");
   }
 
+  const price = (responses[0].value as Big).toNumber();
+  PRICES[mint.toString()] = {
+    realtimePrice: price,
+    emaPrice: price,
+    time: currentUnixSeconds(),
+  };
+
   return {
     tx: transactionBuilder([getWrappedInstruction(signer, pullIx!)]),
     lookupTableAddresses: responses
@@ -96,4 +107,8 @@ export async function getSwitchboardFeedData(
   );
 
   return results;
+}
+
+export function isSwitchboardMint(mint: PublicKey | string) {
+  return Object.keys(SWITCHBOARD_PRICE_FEED_IDS).includes(mint.toString());
 }
