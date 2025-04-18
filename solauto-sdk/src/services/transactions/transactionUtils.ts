@@ -622,7 +622,7 @@ export function getErrorInfo(
       txs[txIdx],
       1,
       !simulationSuccessful ? 1 : undefined
-    ).getInstructions().length - txs.length;
+    ).getInstructions().length - txs[txIdx].getInstructions().length;
 
   try {
     if (error instanceof BundleSimulationError) {
