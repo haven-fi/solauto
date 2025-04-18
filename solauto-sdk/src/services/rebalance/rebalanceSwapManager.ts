@@ -4,7 +4,7 @@ import { FlashLoanRequirements } from "../../types";
 import { SolautoClient } from "../solauto";
 import { JupSwapManager, SwapParams, SwapInput } from "../swap";
 import { RebalanceValues } from "./rebalanceValues";
-import { RebalanceDirection, TokenType } from "../../generated";
+import { PriceType, RebalanceDirection, TokenType } from "../../generated";
 import {
   consoleLog,
   fromBaseUnit,
@@ -25,7 +25,8 @@ export class RebalanceSwapManager {
     private client: SolautoClient,
     private values: RebalanceValues,
     private flRequirements?: FlashLoanRequirements,
-    private targetLiqUtilizationRateBps?: number
+    private targetLiqUtilizationRateBps?: number,
+    private priceType?: PriceType
   ) {
     this.jupSwapManager = new JupSwapManager(client.signer);
   }
@@ -39,16 +40,16 @@ export class RebalanceSwapManager {
   }
 
   private postRebalanceLiqUtilizationRateBps(swapOutputAmount?: bigint) {
-    let supplyUsd = this.client.pos.supplyUsd();
+    let supplyUsd = this.client.pos.supplyUsd(this.priceType);
     // TODO: add token balance change
-    let debtUsd = this.client.pos.debtUsd();
+    let debtUsd = this.client.pos.debtUsd(this.priceType);
 
     const outputToken = this.isBoost()
       ? this.client.pos.supplyMint
       : this.client.pos.debtMint;
     const swapOutputUsd = swapOutputAmount
       ? fromBaseUnit(swapOutputAmount, tokenInfo(outputToken).decimals) *
-        (safeGetPrice(outputToken) ?? 0)
+        (safeGetPrice(outputToken, this.priceType) ?? 0)
       : this.usdToSwap();
 
     supplyUsd = this.isBoost()
@@ -110,7 +111,7 @@ export class RebalanceSwapManager {
       : this.client.pos.state.debt;
 
     let inputAmount = toBaseUnit(
-      this.usdToSwap() / safeGetPrice(input.mint)!,
+      this.usdToSwap() / safeGetPrice(input.mint, this.priceType)!,
       input.decimals
     );
 
@@ -139,7 +140,7 @@ export class RebalanceSwapManager {
           )
         )
       : toBaseUnit(
-          this.usdToSwap() / safeGetPrice(output.mint)!,
+          this.usdToSwap() / safeGetPrice(output.mint, this.priceType)!,
           output.decimals
         );
 

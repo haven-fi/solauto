@@ -53,12 +53,17 @@ export async function buildSwbSubmitResponseTx(
 ): Promise<TransactionItemInputs | undefined> {
   const feed = getPullFeed(conn, mint, toWeb3JsPublicKey(signer.publicKey));
   const [pullIx, responses] = await retryWithExponentialBackoff(
-    async () =>
-      await feed.fetchUpdateIx({
+    async () => {
+      const res = await feed.fetchUpdateIx({
         chain: "solana",
         network: "mainnet-beta",
-      }),
-    2,
+      });
+      if (!res[1] || !res[1][0].value) {
+        throw new Error("Unable to fetch Switchboard pull IX");
+      }
+      return res;
+    },
+    3,
     200
   );
 

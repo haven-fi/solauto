@@ -287,7 +287,8 @@ export class RebalanceTxBuilder {
       this.client,
       this.values,
       this.flRequirements,
-      this.targetLiqUtilizationRateBps
+      this.targetLiqUtilizationRateBps,
+      this.priceType
     );
     await this.swapManager.setSwapParams(attemptNum);
 
