@@ -40,6 +40,7 @@ import {
   getTokenAccount,
   getTokenAccountData,
   isMarginfiClient,
+  addTxOptimizations,
 } from "../../utils";
 import {
   createMarginfiProgram,
@@ -417,7 +418,7 @@ function getSolautoActions(umi: Umi, tx: TransactionBuilder): SolautoAction[] {
           serializer
             .serialize({
               amount: 0,
-              depositUpToLimit: true
+              depositUpToLimit: true,
             })
             .slice(0, 8)
         );
@@ -614,12 +615,21 @@ export function getErrorInfo(
   let errCode: number | undefined;
   let errName: string | undefined;
 
-  const computeIxs = simulationSuccessful ? 2 : 1; // sub ixs to account for computeUnitLimit and computeUnitPrice that get added
+  // sub ixs to account for computeUnitLimit and computeUnitPrice that get added
+  const getComputeIxs = (txIdx: number) =>
+    addTxOptimizations(
+      umi,
+      txs[txIdx],
+      1,
+      !simulationSuccessful ? 1 : undefined
+    ).getInstructions().length - txs.length;
 
   try {
     if (error instanceof BundleSimulationError) {
       errTxIdx = error.details.transactionIdx;
-      errIxIdx = error.details.instructionIdx - computeIxs;
+      errIxIdx =
+        error.details.instructionIdx -
+        getComputeIxs(error.details.transactionIdx);
       errCode = error.details.errorCode;
     } else if (
       typeof error === "object" &&
@@ -627,7 +637,7 @@ export function getErrorInfo(
     ) {
       const err = (error as any)["InstructionError"];
 
-      errIxIdx = err[0] - computeIxs;
+      errIxIdx = err[0] - getComputeIxs(0);
       errCode =
         typeof err[1] === "object" && "Custom" in err[1]
           ? err[1]["Custom"]
