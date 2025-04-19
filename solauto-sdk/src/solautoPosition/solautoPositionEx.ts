@@ -364,7 +364,7 @@ export abstract class SolautoPositionEx {
     this._data.state.netWorth.baseAmountUsdValue =
       toRoundedUsdValue(netWorthUsd);
     this._data.state.netWorth.baseUnit = toBaseUnit(
-      netWorthUsd / (supplyPrice ?? safeGetPrice(this.supplyMint) ?? 0),
+      netWorthUsd / (supplyPrice ?? this.supplyPrice()!),
       this.supplyMintInfo.decimals
     );
   }

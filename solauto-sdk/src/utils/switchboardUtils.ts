@@ -74,7 +74,7 @@ export async function buildSwbSubmitResponseTx(
   const price = (responses[0].value as Big).toNumber();
   PRICES[mint.toString()] = {
     realtimePrice: price,
-    confInterval: 0, // TODO
+    confInterval: price, // TODO: do we need to change if marginfi fixes their stuff?
     emaPrice: price,
     emaConfInterval: 0,
     time: currentUnixSeconds(),

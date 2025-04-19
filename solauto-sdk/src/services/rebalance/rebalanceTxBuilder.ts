@@ -342,8 +342,8 @@ export class RebalanceTxBuilder {
     consoleLog("Rebalance details:", rebalanceDetails);
     consoleLog(
       "Prices:",
-      safeGetPrice(this.client.pos.supplyMint, this.priceType),
-      safeGetPrice(this.client.pos.debtMint, this.priceType)
+      this.client.pos.supplyPrice(this.priceType),
+      this.client.pos.debtPrice(this.priceType)
     );
 
     const firstRebalance = this.client.rebalanceIx(

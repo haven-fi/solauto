@@ -41,15 +41,15 @@ export class RebalanceSwapManager {
 
   private postRebalanceLiqUtilizationRateBps(swapOutputAmount?: bigint) {
     let supplyUsd = this.client.pos.supplyUsd(this.priceType);
-    // TODO: add token balance change
     let debtUsd = this.client.pos.debtUsd(this.priceType);
+    // TODO: add token balance change
 
     const outputToken = this.isBoost()
       ? this.client.pos.supplyMint
       : this.client.pos.debtMint;
     const swapOutputUsd = swapOutputAmount
       ? fromBaseUnit(swapOutputAmount, tokenInfo(outputToken).decimals) *
-        (safeGetPrice(outputToken, this.priceType) ?? 0)
+        safeGetPrice(outputToken, this.priceType)!
       : this.usdToSwap();
 
     supplyUsd = this.isBoost()
