@@ -1,22 +1,16 @@
 import { Keypair, PublicKey } from "@solana/web3.js";
-import { createSignerFromKeypair, publicKey } from "@metaplex-foundation/umi";
+import { createSignerFromKeypair } from "@metaplex-foundation/umi";
 import { fromWeb3JsKeypair } from "@metaplex-foundation/umi-web3js-adapters";
 import {
-  bytesToI80F48,
   ClientTransactionsManager,
   consoleLog,
-  fetchBank,
-  fetchMarginfiAccount,
   getBatches,
   getClient,
-  getLiqUtilzationRateBps,
-  getMaxLiqUtilizationRateBps,
   getPositionExBulk,
   getSolanaRpcConnection,
   getSolautoManagedPositions,
   LendingPlatform,
   LOCAL_IRONFORGE_API_URL,
-  marginfiAccountEmpty,
   PriceType,
   PriorityFeeSetting,
   ProgramEnv,
@@ -60,75 +54,16 @@ export async function main() {
     // ),
   });
 
-  const supplyBank = await fetchBank(
-    umi,
-    publicKey("6cgYhBFWCc5sNHxkvSRhd5H9AdAHR41zKwuF37HmLry5")
-  );
-  const debtBank = await fetchBank(
-    umi,
-    publicKey("3J5rKmCi7JXG6qmiobFJyAidVTnnNAMGj4jomfBxKGRM")
-  );
-  const supplyWeight = bytesToI80F48(supplyBank.config.assetWeightInit.value);
-  const debtWeight = bytesToI80F48(debtBank.config.liabilityWeightInit.value);
+  const transactionItems = [rebalance(client)];
 
-  console.log(
-    getLiqUtilzationRateBps(
-      34.36833665228071,
-      23.61750715267401,
-      client.pos.state.liqThresholdBps
-    ),
-    34.36833665228071 * supplyWeight,
-    23.61750715267401 * debtWeight
-  );
-  console.log(
-    getLiqUtilzationRateBps(
-      34.328721976,
-      23.575158311,
-      client.pos.state.liqThresholdBps
-    ),
-    34.328721976 * supplyWeight,
-    23.575158311 * debtWeight
-  );
-  console.log(
-    getLiqUtilzationRateBps(
-      34.265152701,
-      23.530695876,
-      client.pos.state.liqThresholdBps
-    ),
-    34.265152701 * supplyWeight,
-    23.530695876 * debtWeight
-  );
-  console.log(client.pos.maxBoostToBps);
-  console.log(getMaxLiqUtilizationRateBps(client.pos.state.maxLtvBps, client.pos.state.liqThresholdBps, 0));
-
-  // const debtBank = await fetchBank(
-  //   umi,
-  //   publicKey("3J5rKmCi7JXG6qmiobFJyAidVTnnNAMGj4jomfBxKGRM")
-  // );
-  // const supplyBank = await fetchBank(
-  //   umi,
-  //   publicKey("6cgYhBFWCc5sNHxkvSRhd5H9AdAHR41zKwuF37HmLry5")
-  // );
-
-  // console.log(
-  //   bytesToI80F48(supplyBank.config.assetWeightInit.value),
-  //   bytesToI80F48(debtBank.config.liabilityWeightInit.value)
-  // );
-
-  // await client.pos.refreshPositionState();
-
-  // console.log(await client.pos.utilizationRateBpsDrift());
-
-  // const transactionItems = [rebalance(client)];
-
-  // const txManager = new ClientTransactionsManager({
-  //   txHandler: client,
-  //   txRunType: payForTransaction ? "normal" : "only-simulate",
-  //   priorityFeeSetting: PriorityFeeSetting.Default,
-  //   retryConfig: { totalRetries: 5 },
-  // });
-  // const statuses = await txManager.send(transactionItems);
-  // consoleLog(statuses);
+  const txManager = new ClientTransactionsManager({
+    txHandler: client,
+    txRunType: payForTransaction ? "normal" : "only-simulate",
+    priorityFeeSetting: PriorityFeeSetting.Default,
+    retryConfig: { totalRetries: 5 },
+  });
+  const statuses = await txManager.send(transactionItems);
+  consoleLog(statuses);
 }
 
 async function refreshAll() {

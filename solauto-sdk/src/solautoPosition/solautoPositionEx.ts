@@ -87,8 +87,8 @@ export abstract class SolautoPositionEx {
 
   private readonly firstState!: PositionState;
 
-  private _supplyPrice?: number;
-  private _debtPrice?: number;
+  protected _supplyPrice?: number;
+  protected _debtPrice?: number;
 
   public rebalance!: PositionRebalanceHelper;
   public maxLtvPriceType!: PriceType;
@@ -236,7 +236,7 @@ export abstract class SolautoPositionEx {
       : calcSupplyUsd(this.state);
   }
 
-  protected supplyPrice(priceType?: PriceType) {
+  supplyPrice(priceType?: PriceType) {
     return this._supplyPrice ?? safeGetPrice(this.supplyMint, priceType);
   }
 
@@ -251,7 +251,7 @@ export abstract class SolautoPositionEx {
       : calcDebtUsd(this.state);
   }
 
-  protected debtPrice(priceType?: PriceType) {
+  debtPrice(priceType?: PriceType) {
     return this._debtPrice ?? safeGetPrice(this.debtMint, priceType);
   }
 

@@ -29,7 +29,14 @@ export const OFFSET_FROM_MAX_LTV = 0.005;
 
 export const REFERRER_PERCENTAGE = 0.15;
 
-export const PRICES: { [key: string]: { realtimePrice: number; emaPrice: number; time: number } } = {};
+interface PriceCache {
+  realtimePrice: number;
+  confInterval: number;
+  emaPrice: number;
+  emaConfInterval: number;
+  time: number;
+}
+export const PRICES: { [key: string]: PriceCache } = {};
 
 export const CHORES_TX_NAME = "account chores";
 

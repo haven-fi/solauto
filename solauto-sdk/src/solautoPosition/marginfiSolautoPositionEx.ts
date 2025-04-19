@@ -1,5 +1,5 @@
 import { PublicKey } from "@solana/web3.js";
-import { Bank, safeFetchAllBank } from "../marginfi-sdk";
+import { Bank, PriceBias, safeFetchAllBank } from "../marginfi-sdk";
 import { publicKey } from "@metaplex-foundation/umi";
 import {
   calcMarginfiMaxLtvAndLiqThresholdBps,
@@ -23,6 +23,14 @@ export class MarginfiSolautoPositionEx extends SolautoPositionEx {
 
   private supplyBank: Bank | null = null;
   private debtBank: Bank | null = null;
+
+  supplyPrice(priceType?: PriceType): number | undefined {
+    return this._supplyPrice ?? safeGetPrice(this.supplyMint, priceType, PriceBias.Low);
+  }
+  
+  debtPrice(priceType?: PriceType): number | undefined {
+    return this._debtPrice ?? safeGetPrice(this.debtMint, priceType, PriceBias.High);
+  }
 
   private getBankAccounts(mint: PublicKey) {
     const group = this.lpPoolAccount.toString();

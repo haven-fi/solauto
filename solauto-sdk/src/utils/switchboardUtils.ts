@@ -74,7 +74,9 @@ export async function buildSwbSubmitResponseTx(
   const price = (responses[0].value as Big).toNumber();
   PRICES[mint.toString()] = {
     realtimePrice: price,
+    confInterval: 0, // TODO
     emaPrice: price,
+    emaConfInterval: 0,
     time: currentUnixSeconds(),
   };
 

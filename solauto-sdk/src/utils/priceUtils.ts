@@ -15,15 +15,19 @@ import {
 } from "./generalUtils";
 import { getJupPriceData } from "./jupiterUtils";
 import { PriceType } from "../generated";
+import { PriceBias } from "../marginfi-sdk";
 
 interface PriceResult {
   realtimePrice: number;
+  confInterval?: number;
   emaPrice?: number;
+  emaConfInterval?: number;
 }
 
 export async function fetchTokenPrices(
   mints: PublicKey[],
-  priceType: PriceType = PriceType.Realtime
+  priceType: PriceType = PriceType.Realtime,
+  priceBias?: PriceBias
 ): Promise<number[]> {
   const currentTime = currentUnixSeconds();
   const mintStrs = mints.map((x) => x.toString());
@@ -54,26 +58,18 @@ export async function fetchTokenPrices(
   );
 
   for (const mint of newMints) {
-    const realtimePrice = newPrices[mint.toString()].realtimePrice;
+    const data = newPrices[mint.toString()];
+    const realtimePrice = data.realtimePrice;
     PRICES[mint.toString()] = {
       realtimePrice,
-      emaPrice: newPrices[mint.toString()].emaPrice ?? realtimePrice,
+      confInterval: data.confInterval ?? 0,
+      emaPrice: data.emaPrice ?? realtimePrice,
+      emaConfInterval: data.emaConfInterval ?? 0,
       time: currentUnixSeconds(),
     };
   }
 
-  const prices: Record<string, PriceResult> = {
-    ...PRICES,
-    ...newPrices,
-  };
-
-  return mints.map((x) => {
-    const priceResult = prices[x.toString()];
-    const realtimePrice = priceResult.realtimePrice;
-    return priceType === PriceType.Ema
-      ? (priceResult.emaPrice ?? realtimePrice)
-      : realtimePrice;
-  });
+  return mints.map((x) => safeGetPrice(x, priceType, priceBias)!);
 }
 
 export async function getPythPrices(
@@ -92,7 +88,7 @@ export async function getPythPrices(
       `https://hermes.pyth.network/v2/updates/price/latest?${priceFeedIds.map((x) => `ids%5B%5D=${x}`).join("&")}`
     );
 
-  const derivePrice = (price: number, exponent: number) => {
+  const deriveValue = (price: number, exponent: number) => {
     if (exponent > 0) {
       return Number(toBaseUnit(Number(price), exponent));
     } else if (exponent < 0) {
@@ -113,8 +109,10 @@ export async function getPythPrices(
       const json = await resp.json();
       const prices = json.parsed.map((x: any) => {
         return {
-          realtimePrice: derivePrice(x.price.price, x.price.expo),
-          emaPrice: derivePrice(x.ema_price.price, x.ema_price.expo),
+          realtimePrice: deriveValue(x.price.price, x.price.expo),
+          confInterval: deriveValue(x.price.conf, x.price.expo),
+          emaPrice: deriveValue(x.ema_price.price, x.ema_price.expo),
+          emaConfInterval: deriveValue(x.ema_price.conf, x.ema_price.expo),
         };
       });
 
@@ -220,13 +218,28 @@ export async function getJupTokenPrices(
 
 export function safeGetPrice(
   mint: PublicKey | UmiPublicKey | string | undefined,
-  priceType: PriceType = PriceType.Realtime
+  priceType: PriceType = PriceType.Realtime,
+  priceBias?: PriceBias
 ): number | undefined {
   if (mint && mint?.toString() in PRICES) {
     const priceData = PRICES[mint!.toString()];
-    return priceType === PriceType.Ema
-      ? priceData.emaPrice
-      : priceData.realtimePrice;
+    let price =
+      priceType === PriceType.Ema
+        ? priceData.emaPrice
+        : priceData.realtimePrice;
+
+    if (priceBias !== undefined) {
+      const confInterval = priceType === PriceType.Ema ? priceData.confInterval : priceData.emaConfInterval;
+      const conf = Math.min(confInterval * 1.96, price * 0.05);
+
+      if (priceBias === PriceBias.Low) {
+        price = price - conf;
+      } else {
+        price = price + conf;
+      }
+    }
+
+    return price;
   }
   return undefined;
 }
