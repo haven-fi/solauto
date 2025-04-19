@@ -11,7 +11,7 @@ import {
 import {
   getSolanaRpcConnection,
   getBatches,
-  buildIronforgeApiUrl,
+  LOCAL_IRONFORGE_API_URL,
 } from "../src";
 
 function loadSecretKey(keypairPath: string) {
@@ -26,9 +26,7 @@ export function getSecretKey(keypairFilename: string = "id"): Uint8Array {
 }
 
 const keypair = Keypair.fromSecretKey(getSecretKey("solauto-fees"));
-const [connection, _] = getSolanaRpcConnection(
-  buildIronforgeApiUrl(process.env.IRONFORGE_API_KEY ?? "")
-);
+const [connection, _] = getSolanaRpcConnection(LOCAL_IRONFORGE_API_URL);
 
 export async function createAndSendV0Tx(
   txInstructions: TransactionInstruction[],
