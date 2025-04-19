@@ -621,7 +621,7 @@ export function getErrorInfo(
       umi,
       txs[txIdx],
       1,
-      !simulationSuccessful ? 1 : undefined
+      simulationSuccessful ? 1 : undefined
     ).getInstructions().length - txs[txIdx].getInstructions().length;
 
   try {
