@@ -1,6 +1,6 @@
 use solana_program::{
-    account_info::AccountInfo, clock::Clock,
-    program_error::ProgramError, pubkey::Pubkey, sysvar::Sysvar,
+    account_info::AccountInfo, clock::Clock, program_error::ProgramError, pubkey::Pubkey,
+    sysvar::Sysvar,
 };
 use spl_token::state::{Account as TokenAccount, Mint};
 
@@ -21,9 +21,7 @@ use crate::{
     types::{
         errors::SolautoError,
         instruction::UpdatePositionData,
-        shared::{
-            DeserializedAccount, LendingPlatform, PositionType, RefreshedTokenState,
-        },
+        shared::{DeserializedAccount, LendingPlatform, PositionType, RefreshedTokenState},
     },
 };
 
@@ -83,7 +81,6 @@ pub fn create_new_solauto_position<'a>(
         position_data.lp_supply_account = *lp_supply_account.key;
         position_data.lp_debt_account = *lp_debt_account.key;
         position_data.lp_pool_account = *lp_pool_account.key;
-
 
         Box::new(SolautoPosition::new(
             update_position_data.position_id,
