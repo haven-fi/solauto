@@ -269,6 +269,7 @@ export class TransactionsManager<T extends TxHandler> {
 
   private async processTransactionsAtomically(itemSets: TransactionSet[]) {
     let num = 0;
+    let priorityFeeSetting: PriorityFeeSetting;
     let transactions: TransactionBuilder[] = [];
 
     await retryWithExponentialBackoff(
@@ -282,6 +283,7 @@ export class TransactionsManager<T extends TxHandler> {
         }
 
         num = attemptNum;
+        priorityFeeSetting = this.getUpdatedPriorityFeeSetting(prevError, attemptNum);
 
         if (attemptNum > 0) {
           const refreshedSets = await this.refreshItemSets(
@@ -334,7 +336,7 @@ export class TransactionsManager<T extends TxHandler> {
             this.txHandler.otherSigners,
             transactions,
             this.txRunType,
-            this.getUpdatedPriorityFeeSetting(prevError, attemptNum),
+            priorityFeeSetting,
             () =>
               this.updateStatusForSets(
                 itemSets,
@@ -383,7 +385,8 @@ export class TransactionsManager<T extends TxHandler> {
         itemSets.filter(
           (x) =>
             this.statuses.find((y) => x.name() === y.name)?.simulationSuccessful
-        ).length === itemSets.length
+        ).length === itemSets.length,
+        priorityFeeSetting
       );
 
       const errorString = `${errorDetails.errorName ?? "Unknown error"}: ${errorDetails.errorInfo?.split("\n")[0] ?? "unknown"}`;
@@ -553,7 +556,8 @@ export class TransactionsManager<T extends TxHandler> {
         this.txHandler.umi,
         [tx],
         e,
-        this.statuses.find((x) => x.name === txName)?.simulationSuccessful
+        this.statuses.find((x) => x.name === txName)?.simulationSuccessful,
+        priorityFeeSetting
       );
 
       const errorString = `${errorDetails.errorName ?? "Unknown error"}: ${errorDetails.errorInfo?.split("\n")[0] ?? "unknown"}`;

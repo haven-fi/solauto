@@ -48,6 +48,7 @@ import {
 } from "./generalUtils";
 import { createDynamicSolautoProgram } from "./solautoUtils";
 import { createDynamicMarginfiProgram } from "./marginfi";
+import { usePriorityFee } from "../services";
 
 export function getSolanaRpcConnection(
   rpcUrl: string,
@@ -462,14 +463,14 @@ export async function sendSingleOptimizedTransaction(
             blockhash
           )
         ),
-      3
+      2
     );
     cuLimit = Math.round(simulationResult.value.unitsConsumed! * 1.15);
     consoleLog("Compute unit limit: ", cuLimit);
   }
 
   let cuPrice: number | undefined;
-  if (prioritySetting !== PriorityFeeSetting.None) {
+  if (usePriorityFee(prioritySetting)) {
     cuPrice = await getComputeUnitPriceEstimate(umi, tx, prioritySetting);
     cuPrice = Math.min(cuPrice ?? 0, 100_000_000);
     consoleLog("Compute unit price: ", cuPrice);

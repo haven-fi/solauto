@@ -28,6 +28,7 @@ import {
   retryWithExponentialBackoff,
 } from "./generalUtils";
 import base58 from "bs58";
+import { usePriorityFee } from "../services";
 
 export function getRandomTipAccount(): PublicKey {
   const randomInt = Math.floor(Math.random() * JITO_TIP_ACCOUNTS.length);
@@ -121,7 +122,7 @@ async function simulateJitoBundle(umi: Umi, txs: VersionedTransaction[]) {
     }
 
     return res.value;
-  });
+  }, 2);
 
   const transactionResults =
     simulationResult.transactionResults as SimulatedTransactionResponse[];
@@ -303,7 +304,7 @@ export async function sendJitoBundledTransactions(
   txs[0] = txs[0].prepend(getTipInstruction(userSigner, 150_000));
 
   const feeEstimates =
-    priorityFeeSetting !== PriorityFeeSetting.None
+    usePriorityFee(priorityFeeSetting)
       ? await Promise.all(
           txs.map(
             async (x) =>
