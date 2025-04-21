@@ -7,7 +7,7 @@ use std::{
 
 use crate::{
     constants::{MAX_BASIS_POINTS, MIN_REPAY_GAP_BPS, OFFSET_FROM_MAX_LTV, USD_DECIMALS},
-    types::solauto::{DebtAdjustment, PositionValues, RebalanceFeesBps},
+    types::{shared::TokenType, solauto::{DebtAdjustment, PositionValues, RebalanceFeesBps}},
 };
 
 #[inline(always)]
@@ -148,7 +148,7 @@ pub fn get_max_boost_to_bps(max_ltv_bps: u16, liq_threshold_bps: u16) -> u16 {
     )
 }
 
-pub fn derive_price(price: i64, exponent: i32) -> f64 {
+pub fn derive_value(price: i64, exponent: i32) -> f64 {
     if exponent == 0 {
         price as f64
     } else if exponent < 0 {
@@ -166,6 +166,16 @@ pub fn calc_fee_amount(value: u64, fee_pct_bps: u16) -> u64 {
 pub fn round_to_decimals(value: f64, decimals: u32) -> f64 {
     let multiplier = (10_f64).powi(decimals as i32);
     (value * multiplier).round() / multiplier
+}
+
+pub fn with_conf_interval(price: f64, conf_interval: f64, token_type: TokenType) -> f64 {
+    let final_conf = f64::min(conf_interval, price.mul(0.05));
+
+    if token_type == TokenType::Supply {
+        price - final_conf
+    } else {
+        price + final_conf
+    }
 }
 
 fn apply_debt_adjustment_usd(
