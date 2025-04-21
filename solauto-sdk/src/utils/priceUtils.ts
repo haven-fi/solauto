@@ -42,9 +42,11 @@ export async function fetchTokenPrices(
   const newMints = mintStrs
     .filter((x) => !Object.keys(cachedPrices).includes(x))
     .map((x) => new PublicKey(x));
-  const pythMints = newMints.filter((x) => Object.keys(PYTH_PRICE_FEED_IDS).includes(x.toString()));
-  const switchboardMints = newMints.filter(
-    (x) => Object.keys(SWITCHBOARD_PRICE_FEED_IDS).includes(x.toString())
+  const pythMints = newMints.filter((x) =>
+    Object.keys(PYTH_PRICE_FEED_IDS).includes(x.toString())
+  );
+  const switchboardMints = newMints.filter((x) =>
+    Object.keys(SWITCHBOARD_PRICE_FEED_IDS).includes(x.toString())
   );
   const otherMints = newMints.filter(
     (x) => !pythMints.includes(x) && !switchboardMints.includes(x)
@@ -166,8 +168,8 @@ export async function getSwitchboardPrices(
 
         const data = resp.flatMap((x) => x.results[0]);
         if (
-          data.filter((x) => !x || isNaN(Number(x)) || Number(x) <= 0)
-            .length > 0
+          data.filter((x) => !x || isNaN(Number(x)) || Number(x) <= 0).length >
+          0
         ) {
           throw new Error("Unable to fetch Switchboard prices");
         }
@@ -179,8 +181,6 @@ export async function getSwitchboardPrices(
               const price = Number(item.results[0]);
               finalMap[k] = {
                 realtimePrice: price,
-                confInterval: price, // TODO: do we need to change if marginfi fixes their stuff?
-                emaConfInterval: price,
               };
             }
           }
