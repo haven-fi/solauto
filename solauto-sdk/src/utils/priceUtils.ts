@@ -12,6 +12,7 @@ import {
   createRecord,
   currentUnixSeconds,
   retryWithExponentialBackoff,
+  tokenInfo,
 } from "./generalUtils";
 import { getJupPriceData } from "./jupiterUtils";
 import { PriceType } from "../generated";
@@ -41,9 +42,9 @@ export async function fetchTokenPrices(
   const newMints = mintStrs
     .filter((x) => !Object.keys(cachedPrices).includes(x))
     .map((x) => new PublicKey(x));
-  const pythMints = newMints.filter((x) => x.toString() in PYTH_PRICE_FEED_IDS);
+  const pythMints = newMints.filter((x) => Object.keys(PYTH_PRICE_FEED_IDS).includes(x.toString()));
   const switchboardMints = newMints.filter(
-    (x) => x.toString() in Object.keys(SWITCHBOARD_PRICE_FEED_IDS)
+    (x) => Object.keys(SWITCHBOARD_PRICE_FEED_IDS).includes(x.toString())
   );
   const otherMints = newMints.filter(
     (x) => !pythMints.includes(x) && !switchboardMints.includes(x)
@@ -110,9 +111,10 @@ export async function getPythPrices(
       const prices = json.parsed.map((x: any) => {
         return {
           realtimePrice: deriveValue(x.price.price, x.price.expo),
-          confInterval: deriveValue(x.price.conf, x.price.expo),
+          confInterval: deriveValue(x.price.conf, x.price.expo) * 2.12,
           emaPrice: deriveValue(x.ema_price.price, x.ema_price.expo),
-          emaConfInterval: deriveValue(x.ema_price.conf, x.ema_price.expo),
+          emaConfInterval:
+            deriveValue(x.ema_price.conf, x.ema_price.expo) * 2.12,
         };
       });
 
@@ -162,9 +164,9 @@ export async function getSwitchboardPrices(
           mints.map((x) => SWITCHBOARD_PRICE_FEED_IDS[x.toString()].feedHash)
         );
 
-        const prices = resp.flatMap((x) => x.results[0]);
+        const data = resp.flatMap((x) => x.results[0]);
         if (
-          prices.filter((x) => !x || isNaN(Number(x)) || Number(x) <= 0)
+          data.filter((x) => !x || isNaN(Number(x)) || Number(x) <= 0)
             .length > 0
         ) {
           throw new Error("Unable to fetch Switchboard prices");
@@ -174,7 +176,12 @@ export async function getSwitchboardPrices(
         for (const item of resp) {
           for (const [k, v] of Object.entries(SWITCHBOARD_PRICE_FEED_IDS)) {
             if (item.feedHash === v.feedHash) {
-              finalMap[k] = { realtimePrice: Number(item.results[0]) };
+              const price = Number(item.results[0]);
+              finalMap[k] = {
+                realtimePrice: price,
+                confInterval: price, // TODO: do we need to change if marginfi fixes their stuff?
+                emaConfInterval: price,
+              };
             }
           }
         }
@@ -229,13 +236,16 @@ export function safeGetPrice(
         : priceData.realtimePrice;
 
     if (priceBias !== undefined) {
-      const confInterval = priceType === PriceType.Ema ? priceData.confInterval : priceData.emaConfInterval;
-      const conf = Math.min(confInterval * 1.96, price * 0.05);
+      const confInterval =
+        priceType === PriceType.Ema
+          ? priceData.emaConfInterval
+          : priceData.confInterval;
+      const conf = Math.min(confInterval, price * 0.05);
 
       if (priceBias === PriceBias.Low) {
-        price = price - conf;
+        price -= conf;
       } else {
-        price = price + conf;
+        price += conf;
       }
     }
 
