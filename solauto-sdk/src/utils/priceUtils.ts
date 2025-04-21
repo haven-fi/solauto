@@ -35,7 +35,7 @@ export async function fetchTokenPrices(
   const cachedPrices: Record<string, PriceResult> = Object.fromEntries(
     Object.entries(PRICES).filter(
       ([mint, price]) =>
-        mintStrs.includes(mint) && currentTime - price.time <= 25
+        mintStrs.includes(mint) && currentTime - price.time <= 3
     )
   );
 
