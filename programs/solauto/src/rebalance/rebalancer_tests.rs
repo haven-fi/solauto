@@ -6,8 +6,7 @@ use spl_associated_token_account::get_associated_token_address;
 use crate::{
     constants::SOLAUTO_FEES_WALLET,
     state::solauto_position::{
-        PositionData, PositionState, SolautoPosition, SolautoSettingsParameters,
-        SolautoSettingsParametersInp,
+        PositionData, PositionState, RebalanceData, SolautoPosition, SolautoSettingsParameters, SolautoSettingsParametersInp
     },
     types::{
         instruction::RebalanceSettings,
@@ -23,6 +22,7 @@ use crate::{
             round_to_decimals, to_base_unit,
         },
         solauto_utils::update_token_state,
+        validation_utils,
     },
 };
 
@@ -376,7 +376,8 @@ fn validate_rebalance<'a>(rebalancer: &mut Rebalancer<'a>) {
         "Incorrect supply usd. Expected (left) vs. actual (right)"
     );
 
-    assert!(rebalancer.validate_and_finalize_rebalance().is_ok());
+    assert!(validation_utils::validate_rebalance(rebalancer.data.solauto_position.data).is_ok());
+    rebalancer.data.solauto_position.data.rebalance = RebalanceData::default();
 }
 
 mod tests {

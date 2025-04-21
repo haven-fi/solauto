@@ -55,8 +55,8 @@ export async function main() {
   });
 
   await client.initializeExistingSolautoPosition({
-    positionId: 3,
-    // authority: new PublicKey("rC5dMP5dmSsfQ66rynzfFzuc122Eex9h1RJHVDkeH6D"),
+    positionId: 2,
+    // authority: new PublicKey("EBhRj7jbF2EVE21i19JSuCX1BAbnZFYhoKW64HnaZ3kf"),
     // lpUserAccount: new PublicKey(
     //   "GEokw9jqbh6d1xUNA3qaeYFFetbSR5Y1nt7C3chwwgSz"
     // ),
@@ -85,9 +85,9 @@ export async function main() {
     //   repayToBps: client.pos.maxRepayToBps,
     // }),
     // deposit(client, toBaseUnit(5, client.pos.supplyMintInfo.decimals)),
-    rebalance(client),
-    // withdraw(client, "All"),
-    // closeSolautoPosition(client)
+    rebalance(client, 0),
+    withdraw(client, "All"),
+    closeSolautoPosition(client)
     // new TransactionItem(
     //   async () => ({ tx: client.refreshIx() }),
     //   `refresh`,

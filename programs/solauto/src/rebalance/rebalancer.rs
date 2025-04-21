@@ -443,37 +443,6 @@ impl<'a> Rebalancer<'a> {
         Ok(())
     }
 
-    pub fn validate_and_finalize_rebalance(&mut self) -> ProgramResult {
-        let curr_supply_usd = self.position_data().state.supply.amount_used.usd_value();
-        let curr_debt_usd = self.position_data().state.debt.amount_used.usd_value();
-
-        let target_supply_usd =
-            from_rounded_usd_value(self.rebalance_data().values.target_supply_usd);
-        let target_debt_usd = from_rounded_usd_value(self.rebalance_data().values.target_debt_usd);
-
-        msg!(
-            "Supply expected vs. actual: {}, {}",
-            target_supply_usd,
-            curr_supply_usd
-        );
-        msg!(
-            "Debt expected vs. actual: {}, {}",
-            target_debt_usd,
-            curr_debt_usd
-        );
-        check!(
-            value_gte_with_threshold(curr_supply_usd, target_supply_usd, 0.1),
-            SolautoError::InvalidRebalanceMade
-        );
-        check!(
-            value_lte_with_threshold(curr_debt_usd, target_debt_usd, 0.1),
-            SolautoError::InvalidRebalanceMade
-        );
-
-        self.data.solauto_position.data.rebalance = RebalanceData::default();
-        Ok(())
-    }
-
     fn finish_rebalance(&mut self, dynamic_balance: u64) -> ProgramResult {
         let amount_to_put_in_lp = self.payout_fees(dynamic_balance)?;
         self.put_liquidity_in_lp(amount_to_put_in_lp);

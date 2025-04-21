@@ -21,8 +21,7 @@ use crate::{
     },
     error_if,
     state::{
-        automation::AutomationSettings,
-        referral_state::ReferralState,
+        automation::AutomationSettings, referral_state::ReferralState,
         solauto_position::SolautoPosition,
     },
     types::{
@@ -30,6 +29,7 @@ use crate::{
         instruction::SolautoStandardAccounts,
         shared::{DeserializedAccount, LendingPlatform, TokenType},
     },
+    utils::math_utils::from_rounded_usd_value,
 };
 
 use super::{
@@ -425,6 +425,36 @@ pub fn validate_no_active_balances<'a>(
     }
 }
 
+pub fn validate_rebalance(solauto_position: &SolautoPosition) -> ProgramResult {
+    let curr_supply_usd = solauto_position.state.supply.amount_used.usd_value();
+    let curr_debt_usd = solauto_position.state.debt.amount_used.usd_value();
+
+    let target_supply_usd =
+        from_rounded_usd_value(solauto_position.rebalance.values.target_supply_usd);
+    let target_debt_usd = from_rounded_usd_value(solauto_position.rebalance.values.target_debt_usd);
+
+    msg!(
+        "Supply expected vs. actual: {}, {}",
+        target_supply_usd,
+        curr_supply_usd
+    );
+    msg!(
+        "Debt expected vs. actual: {}, {}",
+        target_debt_usd,
+        curr_debt_usd
+    );
+    check!(
+        value_gte_with_threshold(curr_supply_usd, target_supply_usd, 0.1),
+        SolautoError::InvalidRebalanceMade
+    );
+    check!(
+        value_lte_with_threshold(curr_debt_usd, target_debt_usd, 0.1),
+        SolautoError::InvalidRebalanceMade
+    );
+
+    Ok(())
+}
+
 pub fn correct_token_account(token_account: &Pubkey, wallet: &Pubkey, mint: &Pubkey) -> bool {
     token_account == &get_associated_token_address(wallet, mint)
 }
@@ -456,7 +486,8 @@ mod tests {
         state::{
             automation::{AutomationSettings, AutomationSettingsInp},
             solauto_position::{
-                PositionState, SolautoSettingsParameters, SolautoSettingsParametersInp, PositionData
+                PositionData, PositionState, SolautoSettingsParameters,
+                SolautoSettingsParametersInp,
             },
         },
         types::shared::PositionType,

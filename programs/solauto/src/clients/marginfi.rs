@@ -1,6 +1,5 @@
 use borsh::BorshDeserialize;
 use fixed::types::I80F48;
-use num_traits::ToPrimitive;
 use marginfi_sdk::generated::{
     accounts::{Bank, MarginfiAccount},
     instructions::*,
@@ -186,7 +185,8 @@ impl<'a> MarginfiClient<'a> {
 
         let asset_share_value = I80F48::from_le_bytes(bank.data.asset_share_value.value);
 
-        let market_price = MarginfiClient::load_price(&bank, price_oracle, price_type, TokenType::Supply)?;
+        let market_price =
+            MarginfiClient::load_price(&bank, price_oracle, price_type, TokenType::Supply)?;
 
         let supply_shares = MarginfiClient::get_account_balance(account_balances, &bank, true);
         let base_unit_account_deposits = if supply_shares.is_some() {
@@ -234,7 +234,8 @@ impl<'a> MarginfiClient<'a> {
 
         let liability_share_value = I80F48::from_le_bytes(bank.data.liability_share_value.value);
 
-        let market_price = MarginfiClient::load_price(&bank, price_oracle, price_type, TokenType::Debt)?;
+        let market_price =
+            MarginfiClient::load_price(&bank, price_oracle, price_type, TokenType::Debt)?;
 
         let debt_shares = MarginfiClient::get_account_balance(account_balances, &bank, false);
         let base_unit_account_debt = if debt_shares.is_some() {
@@ -354,7 +355,10 @@ impl<'a> MarginfiClient<'a> {
                     let ema_price = price_feed.price_message.ema_price;
                     let conf = price_feed.price_message.ema_conf;
                     let exponent = price_feed.price_message.exponent;
-                    (derive_value(ema_price, exponent), derive_value(conf as i64, exponent))
+                    (
+                        derive_value(ema_price, exponent),
+                        derive_value(conf as i64, exponent),
+                    )
                 } else {
                     let feed_id = &bank.data.config.oracle_keys[0].to_bytes();
                     let price_result = price_feed
@@ -368,10 +372,17 @@ impl<'a> MarginfiClient<'a> {
                             msg!("Pyth push oracle error: {:?}", e);
                             ProgramError::Custom(0)
                         })?;
-                    (derive_value(price_result.price, price_result.exponent), derive_value(price_result.conf as i64, price_result.exponent))
+                    (
+                        derive_value(price_result.price, price_result.exponent),
+                        derive_value(price_result.conf as i64, price_result.exponent),
+                    )
                 };
 
-                Ok(with_conf_interval(price, conf_interval.mul(CONF_INTERVAL_MULTIPLE), token_type))
+                Ok(with_conf_interval(
+                    price,
+                    conf_interval.mul(CONF_INTERVAL_MULTIPLE),
+                    token_type,
+                ))
             }
             OracleSetup::SwitchboardLegacy => {
                 let data = price_oracle.data.borrow();
@@ -392,8 +403,13 @@ impl<'a> MarginfiClient<'a> {
                 let feed = PullFeedAccountData::parse(data)
                     .map_err(|_| SolautoError::IncorrectAccounts)?;
 
-                let price = feed.result.value().unwrap().to_f64().unwrap();
-                let conf_interval = feed.result.std_dev().unwrap().to_f64().unwrap().mul(STD_DEV_MULTIPLE);
+                let price = (feed.result.value as f64)
+                    // 10^18
+                    .div(1000000000000000000.0);
+                let conf_interval = (feed.result.std_dev as f64)
+                    // 10^18
+                    .div(1000000000000000000.0)
+                    .mul(STD_DEV_MULTIPLE);
 
                 Ok(with_conf_interval(price, conf_interval, token_type))
             }

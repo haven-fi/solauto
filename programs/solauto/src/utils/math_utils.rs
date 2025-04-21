@@ -7,7 +7,10 @@ use std::{
 
 use crate::{
     constants::{MAX_BASIS_POINTS, MIN_REPAY_GAP_BPS, OFFSET_FROM_MAX_LTV, USD_DECIMALS},
-    types::{shared::TokenType, solauto::{DebtAdjustment, PositionValues, RebalanceFeesBps}},
+    types::{
+        shared::TokenType,
+        solauto::{DebtAdjustment, PositionValues, RebalanceFeesBps},
+    },
 };
 
 #[inline(always)]

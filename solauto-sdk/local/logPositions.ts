@@ -7,6 +7,7 @@ import {
   getSolanaRpcConnection,
   getSolautoManagedPositions,
   LOCAL_IRONFORGE_API_URL,
+  PRICES,
   ProgramEnv,
   SOLAUTO_PROD_PROGRAM,
   SOLAUTO_TEST_PROGRAM,
@@ -108,6 +109,7 @@ async function main(filterWhitelist: boolean, programEnv: ProgramEnv = "Prod") {
     )
   );
   await fetchTokenPrices(tokensUsed.map((x) => new PublicKey(x)));
+  console.log(PRICES);
 
   console.log("\n\n");
 

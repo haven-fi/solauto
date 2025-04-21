@@ -17,12 +17,8 @@ use crate::{
         rebalancer::{Rebalancer, RebalancerData, SolautoPositionData, TokenAccountData},
         solauto_fees::SolautoFeesBps,
     },
-    state::solauto_position::SolautoPosition,
-    utils::{
-        solana_utils::spl_token_transfer,
-        solauto_utils::{safe_unpack_token_account, update_token_state},
-        *,
-    },
+    state::solauto_position::{RebalanceData, SolautoPosition},
+    utils::*,
 };
 
 pub struct SolautoManagerAccounts<'a> {
@@ -131,7 +127,7 @@ impl<'a> SolautoManager<'a> {
     fn get_token_account_data(&self, account: Option<&'a AccountInfo<'a>>) -> TokenAccountData {
         TokenAccountData::from(
             *account.unwrap().key,
-            safe_unpack_token_account(account)
+            solauto_utils::safe_unpack_token_account(account)
                 .unwrap()
                 .unwrap()
                 .data
@@ -215,7 +211,7 @@ impl<'a> SolautoManager<'a> {
                         } else {
                             None
                         };
-                    spl_token_transfer(
+                    solana_utils::spl_token_transfer(
                         sm.std_accounts.token_program,
                         SplTokenTransferArgs {
                             amount: data.amount,
@@ -245,8 +241,8 @@ impl<'a> SolautoManager<'a> {
         solauto_position.state.max_ltv_bps = to_bps(updated_data.max_ltv);
         solauto_position.state.liq_threshold_bps = to_bps(updated_data.liq_threshold);
 
-        update_token_state(&mut solauto_position.state.supply, &updated_data.supply);
-        update_token_state(&mut solauto_position.state.debt, &updated_data.debt);
+        solauto_utils::update_token_state(&mut solauto_position.state.supply, &updated_data.supply);
+        solauto_utils::update_token_state(&mut solauto_position.state.debt, &updated_data.debt);
 
         solauto_position.state.net_worth.base_unit = math_utils::net_worth_base_amount(
             solauto_position.state.supply.amount_used.usd_value(),
@@ -301,8 +297,8 @@ impl<'a> SolautoManager<'a> {
         self.execute_cpi_actions(actions)?;
 
         if finished {
-            let mut rebalancer = self.get_rebalancer(rebalance_args);
-            rebalancer.validate_and_finalize_rebalance()?;
+            validation_utils::validate_rebalance(&self.std_accounts.solauto_position.data)?;
+            self.std_accounts.solauto_position.data.rebalance = RebalanceData::default();
         }
 
         Ok(())
