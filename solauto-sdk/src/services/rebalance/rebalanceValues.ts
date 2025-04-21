@@ -110,7 +110,6 @@ export function getDebtAdjustment(
     liqThreshold,
     fees
   );
-  console.log(debtAdjustmentUsd, pos, endResult.newPos);
 
   return {
     debtAdjustmentUsd,
@@ -134,7 +133,6 @@ function getTargetLiqUtilizationRateBps(
     return targetLiqUtilizationRateBps;
   }
 
-  console.log(solautoPosition.liqUtilizationRateBps(PriceType.Realtime), solautoPosition.repayFromBps);
   if (
     solautoPosition.liqUtilizationRateBps(PriceType.Realtime) >=
     solautoPosition.repayFromBps

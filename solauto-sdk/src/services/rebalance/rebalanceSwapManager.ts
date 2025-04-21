@@ -71,12 +71,6 @@ export class RebalanceSwapManager {
     const biasedInputPrice = this.isBoost() ? debtPrice : supplyPrice;
     const biasedOutputPrice = this.isBoost() ? supplyPrice : debtPrice;
 
-    // const biasedInputPrice = inputPrice;
-    // const biasedOutputPrice = outputPrice;
-
-    // const priceDiff = (biasedInputPrice - inputPrice) / 2;
-    // const weightedInputPrice = inputPrice + priceDiff;
-
     let inputAmount = toBaseUnit(
       this.usdToSwap() / biasedInputPrice!,
       input.decimals
@@ -103,10 +97,8 @@ export class RebalanceSwapManager {
 
     const {
       input,
-      inputPrice,
       biasedInputPrice,
       output,
-      outputPrice,
       biasedOutputPrice,
     } = this.swapDetails();
 
@@ -132,18 +124,6 @@ export class RebalanceSwapManager {
       ? swapOutputAmount * biasedOutputPrice
       : this.usdToSwap();
 
-    console.log(
-      (swapInputAmount ?? 0) * inputPrice,
-      swapInputUsd,
-      (swapOutputAmount ?? 0) * outputPrice,
-      swapOutputUsd
-    );
-
-    console.log({
-      isBoost: this.isBoost(),
-      debtAdjustmentUsd: this.isBoost() ? swapInputUsd : swapInputUsd * -1,
-      debtAdjustmentUsdOutput: this.isBoost() ? swapOutputUsd : swapOutputUsd * -1,
-    })
     const res = applyDebtAdjustmentUsd(
       {
         debtAdjustmentUsd: this.isBoost() ? swapInputUsd : swapInputUsd * -1,
@@ -158,19 +138,19 @@ export class RebalanceSwapManager {
       }
     );
 
-    if (isMarginfiPosition(this.client.pos)) {
-      console.log(res.newPos.supplyUsd, res.newPos.debtUsd);
-      console.log(
-        res.newPos.supplyUsd *
-          bytesToI80F48(
-            this.client.pos.supplyBank!.config.assetWeightInit.value
-          ),
-        res.newPos.debtUsd *
-          bytesToI80F48(
-            this.client.pos.debtBank!.config.liabilityWeightInit.value
-          )
-      );
-    }
+    // if (isMarginfiPosition(this.client.pos)) {
+    //   console.log(res.newPos.supplyUsd, res.newPos.debtUsd);
+    //   console.log(
+    //     res.newPos.supplyUsd *
+    //       bytesToI80F48(
+    //         this.client.pos.supplyBank!.config.assetWeightInit.value
+    //       ),
+    //     res.newPos.debtUsd *
+    //       bytesToI80F48(
+    //         this.client.pos.debtBank!.config.liabilityWeightInit.value
+    //       )
+    //   );
+    // }
 
     return getLiqUtilzationRateBps(
       res.newPos.supplyUsd,
@@ -208,7 +188,6 @@ export class RebalanceSwapManager {
         consoleLog("Insufficient swap quote:", swapQuote);
 
         const increment = 0.01 + i * 0.01;
-        console.log(increment);
         swapInput.amount = this.bigIntWithIncrement(
           swapInput.amount,
           this.isBoost() ? increment * -1 : increment
