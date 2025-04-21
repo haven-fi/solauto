@@ -230,7 +230,7 @@ export class SolautoMarginfiClient extends SolautoClient {
     });
   }
 
-  refreshIx(priceType: PriceType): TransactionBuilder {
+  refreshIx(priceType?: PriceType): TransactionBuilder {
     return marginfiRefreshData(this.umi, {
       signer: this.signer,
       marginfiProgram: publicKey(this.mfiAccounts.program),
@@ -241,7 +241,7 @@ export class SolautoMarginfiClient extends SolautoClient {
       debtBank: publicKey(this.marginfiDebtAccounts.bank),
       debtPriceOracle: publicKey(this.debtPriceOracle),
       solautoPosition: publicKey(this.pos.publicKey),
-      priceType,
+      priceType: priceType ?? PriceType.Realtime,
     });
   }
 

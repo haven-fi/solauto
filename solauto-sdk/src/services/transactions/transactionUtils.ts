@@ -56,7 +56,7 @@ import {
   getJupiterErrorFromCode,
   JUPITER_PROGRAM_ID,
 } from "../../jupiter-sdk";
-import { TransactionItemInputs, BundleSimulationError } from "../../types";
+import { TransactionItemInputs, BundleSimulationError, PriorityFeeSetting } from "../../types";
 import { isMarginfiProgram } from "../../constants";
 
 interface wSolTokenUsage {
@@ -604,7 +604,8 @@ export function getErrorInfo(
   umi: Umi,
   txs: TransactionBuilder[],
   error: Error,
-  simulationSuccessful?: boolean
+  simulationSuccessful?: boolean,
+  priorityFeeSetting?: PriorityFeeSetting
 ) {
   let canBeIgnored = false;
   let errorName: string | undefined = undefined;
@@ -620,7 +621,7 @@ export function getErrorInfo(
     addTxOptimizations(
       umi,
       txs[txIdx],
-      1,
+      usePriorityFee(priorityFeeSetting) ? 1 : undefined,
       simulationSuccessful ? 1 : undefined
     ).getInstructions().length - txs[txIdx].getInstructions().length;
 
@@ -723,4 +724,8 @@ export function getErrorInfo(
   consoleLog(errData);
 
   return errData;
+}
+
+export function usePriorityFee(priorityFeeSetting?: PriorityFeeSetting) {
+  return priorityFeeSetting !== undefined && priorityFeeSetting !== PriorityFeeSetting.None;
 }

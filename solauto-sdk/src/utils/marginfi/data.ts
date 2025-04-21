@@ -345,6 +345,10 @@ export async function getMarginfiAccountPositionState(
   let supplyUsage: PositionTokenState | undefined = undefined;
   let debtUsage: PositionTokenState | undefined = undefined;
 
+  if (supply.mint && debt.mint) {
+    await fetchTokenPrices([supply.mint, debt.mint]);
+  }
+
   if (
     marginfiAccount !== null &&
     marginfiAccount.lendingAccount.balances.filter((x) => x.active).length > 0

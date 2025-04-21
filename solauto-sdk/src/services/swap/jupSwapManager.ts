@@ -69,10 +69,10 @@ export class JupSwapManager {
               ? "ExactIn"
               : undefined,
           slippageBps,
-          maxAccounts: !data.exactOut ? 15 + attemptNum * 5 : undefined,
+          maxAccounts: !data.exactOut ? (memeSwap ? 25 : 15) + attemptNum * 5 : undefined,
         }),
-      4,
-      150
+      6,
+      250
     );
   }
 

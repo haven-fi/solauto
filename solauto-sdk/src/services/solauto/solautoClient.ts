@@ -437,7 +437,7 @@ export abstract class SolautoClient extends ReferralStateManager {
     });
   }
 
-  abstract refreshIx(priceType: PriceType): TransactionBuilder;
+  abstract refreshIx(priceType?: PriceType): TransactionBuilder;
 
   protocolInteractionIx(args: SolautoActionArgs): TransactionBuilder {
     let tx = transactionBuilder();

@@ -3,22 +3,30 @@ import { createSignerFromKeypair } from "@metaplex-foundation/umi";
 import { fromWeb3JsKeypair } from "@metaplex-foundation/umi-web3js-adapters";
 import {
   ClientTransactionsManager,
+  closeSolautoPosition,
   consoleLog,
+  deposit,
   getBatches,
   getClient,
+  getMaxLiqUtilizationRateBps,
   getPositionExBulk,
   getSolanaRpcConnection,
   getSolautoManagedPositions,
   LendingPlatform,
   LOCAL_IRONFORGE_API_URL,
+  openSolautoPosition,
   PriceType,
   PriorityFeeSetting,
   ProgramEnv,
   rebalance,
+  RETARDIO,
   SOLAUTO_PROD_PROGRAM,
   SOLAUTO_TEST_PROGRAM,
   SolautoClient,
+  toBaseUnit,
   TransactionItem,
+  USDC,
+  withdraw,
 } from "../src";
 import { getSecretKey } from "./shared";
 
@@ -34,7 +42,7 @@ let [, umi] = getSolanaRpcConnection(
 
 const signer = createSignerFromKeypair(
   umi,
-  fromWeb3JsKeypair(Keypair.fromSecretKey(getSecretKey("solauto-manager")))
+  fromWeb3JsKeypair(Keypair.fromSecretKey(getSecretKey()))
 );
 
 export async function main() {
@@ -47,20 +55,52 @@ export async function main() {
   });
 
   await client.initializeExistingSolautoPosition({
-    positionId: 2,
-    authority: new PublicKey("rC5dMP5dmSsfQ66rynzfFzuc122Eex9h1RJHVDkeH6D"),
+    positionId: 3,
+    // authority: new PublicKey("rC5dMP5dmSsfQ66rynzfFzuc122Eex9h1RJHVDkeH6D"),
     // lpUserAccount: new PublicKey(
     //   "GEokw9jqbh6d1xUNA3qaeYFFetbSR5Y1nt7C3chwwgSz"
     // ),
+    // lpPoolAccount: new PublicKey(
+    //   "EpzY5EYF1A5eFDRfjtsPXSYMPmEx1FXKaXPnouTMF4dm"
+    // ),
+    // supplyMint: new PublicKey(USDC),
+    // debtMint: new PublicKey(RETARDIO),
   });
 
-  const transactionItems = [rebalance(client)];
+  // await client.pos.refreshPositionState();
+
+  // const transactionItems = [
+  //   openSolautoPosition(client, {
+  //     boostGap: 100,
+  //     boostToBps: client.pos.maxBoostToBps,
+  //     repayGap: 100,
+  //     repayToBps: client.pos.maxRepayToBps,
+  //   }),
+  // ];
+  const transactionItems = [
+    // openSolautoPosition(client, {
+    //   boostGap: 100,
+    //   boostToBps: client.pos.maxBoostToBps,
+    //   repayGap: 100,
+    //   repayToBps: client.pos.maxRepayToBps,
+    // }),
+    // deposit(client, toBaseUnit(5, client.pos.supplyMintInfo.decimals)),
+    rebalance(client),
+    // withdraw(client, "All"),
+    // closeSolautoPosition(client)
+    // new TransactionItem(
+    //   async () => ({ tx: client.refreshIx() }),
+    //   `refresh`,
+    //   true
+    // ),
+  ];
 
   const txManager = new ClientTransactionsManager({
     txHandler: client,
     txRunType: payForTransaction ? "normal" : "only-simulate",
     priorityFeeSetting: PriorityFeeSetting.Default,
-    retryConfig: { totalRetries: 5 },
+    retryConfig: { totalRetries: 0 },
+    // atomically: false,
   });
   const statuses = await txManager.send(transactionItems);
   consoleLog(statuses);
@@ -105,7 +145,7 @@ async function refreshAll() {
       txHandler: client!,
       txRunType: payForTransaction ? "normal" : "only-simulate",
       priorityFeeSetting: PriorityFeeSetting.Default,
-      retryConfig: { totalRetries: 5 },
+      retryConfig: { totalRetries: 2 },
     });
     const statuses = await txManager.send(batch);
     consoleLog(statuses);

@@ -3,16 +3,20 @@ import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 import { FlashLoanRequirements } from "../../types";
 import { SolautoClient } from "../solauto";
 import { JupSwapManager, SwapParams, SwapInput } from "../swap";
-import { RebalanceValues } from "./rebalanceValues";
+import { applyDebtAdjustmentUsd, RebalanceValues } from "./rebalanceValues";
 import { PriceType, RebalanceDirection, TokenType } from "../../generated";
 import {
+  bytesToI80F48,
   consoleLog,
   fromBaseUnit,
+  fromBps,
   getLiqUtilzationRateBps,
+  isMarginfiPosition,
   safeGetPrice,
   toBaseUnit,
   tokenInfo,
 } from "../../utils";
+import { SolautoFeesBps } from "./solautoFees";
 
 export class RebalanceSwapManager {
   public swapParams!: SwapParams;
@@ -20,6 +24,7 @@ export class RebalanceSwapManager {
   public flBorrowAmount?: bigint;
 
   private jupSwapManager!: JupSwapManager;
+  private solautoFeeBps!: number;
 
   constructor(
     private client: SolautoClient,
@@ -29,6 +34,11 @@ export class RebalanceSwapManager {
     private priceType?: PriceType
   ) {
     this.jupSwapManager = new JupSwapManager(client.signer);
+    this.solautoFeeBps = SolautoFeesBps.create(
+      this.client.isReferred,
+      this.targetLiqUtilizationRateBps,
+      this.client.pos.netWorthUsd(this.priceType)
+    ).getSolautoFeesBps(values.rebalanceDirection).total;
   }
 
   private isBoost() {
@@ -39,69 +49,6 @@ export class RebalanceSwapManager {
     return Math.abs(this.values.debtAdjustmentUsd);
   }
 
-  private postRebalanceLiqUtilizationRateBps(swapOutputAmount?: bigint) {
-    let supplyUsd = this.client.pos.supplyUsd(this.priceType);
-    let debtUsd = this.client.pos.debtUsd(this.priceType);
-    // TODO: add token balance change
-
-    const outputToken = this.isBoost()
-      ? this.client.pos.supplyMint
-      : this.client.pos.debtMint;
-    const swapOutputUsd = swapOutputAmount
-      ? fromBaseUnit(swapOutputAmount, tokenInfo(outputToken).decimals) *
-        safeGetPrice(outputToken, this.priceType)!
-      : this.usdToSwap();
-
-    supplyUsd = this.isBoost()
-      ? supplyUsd + swapOutputUsd
-      : supplyUsd - this.usdToSwap();
-    debtUsd = this.isBoost()
-      ? debtUsd + this.usdToSwap()
-      : debtUsd - swapOutputUsd;
-
-    return getLiqUtilzationRateBps(
-      supplyUsd,
-      debtUsd,
-      this.client.pos.state.liqThresholdBps ?? 0
-    );
-  }
-
-  private async findSufficientQuote(
-    swapInput: SwapInput,
-    criteria: {
-      minOutputAmount?: bigint;
-      minLiqUtilizationRateBps?: number;
-      maxLiqUtilizationRateBps?: number;
-    }
-  ): Promise<QuoteResponse> {
-    let swapQuote: QuoteResponse;
-    let insufficient: boolean = false;
-
-    for (let i = 0; i < 10; i++) {
-      consoleLog("Finding sufficient quote...");
-      swapQuote = await this.jupSwapManager.getQuote(swapInput);
-
-      const outputAmount = parseInt(swapQuote.outAmount);
-      const postRebalanceRate = this.postRebalanceLiqUtilizationRateBps(
-        BigInt(outputAmount)
-      );
-      insufficient = criteria.minOutputAmount
-        ? outputAmount < Number(criteria.minOutputAmount)
-        : criteria.minLiqUtilizationRateBps
-          ? postRebalanceRate < criteria.minLiqUtilizationRateBps
-          : postRebalanceRate > criteria.maxLiqUtilizationRateBps!;
-
-      if (insufficient) {
-        consoleLog("Insufficient swap quote:", swapQuote);
-        swapInput.amount = this.bigIntWithIncrement(swapInput.amount, 0.01);
-      } else {
-        break;
-      }
-    }
-
-    return swapQuote!;
-  }
-
   private swapDetails() {
     const input = this.isBoost()
       ? this.client.pos.state.debt
@@ -110,16 +57,168 @@ export class RebalanceSwapManager {
       ? this.client.pos.state.supply
       : this.client.pos.state.debt;
 
+    const inputPrice = safeGetPrice(
+      toWeb3JsPublicKey(input.mint),
+      this.priceType
+    )!;
+    const outputPrice = safeGetPrice(
+      toWeb3JsPublicKey(output.mint),
+      this.priceType
+    )!;
+
+    const supplyPrice = this.client.pos.supplyPrice(this.priceType)!;
+    const debtPrice = this.client.pos.debtPrice(this.priceType)!;
+    const biasedInputPrice = this.isBoost() ? debtPrice : supplyPrice;
+    const biasedOutputPrice = this.isBoost() ? supplyPrice : debtPrice;
+
+    // const biasedInputPrice = inputPrice;
+    // const biasedOutputPrice = outputPrice;
+
+    // const priceDiff = (biasedInputPrice - inputPrice) / 2;
+    // const weightedInputPrice = inputPrice + priceDiff;
+
     let inputAmount = toBaseUnit(
-      this.usdToSwap() / safeGetPrice(input.mint, this.priceType)!,
+      this.usdToSwap() / biasedInputPrice!,
       input.decimals
     );
 
     return {
-      input,
-      output,
       inputAmount,
+      input,
+      inputPrice,
+      biasedInputPrice,
+      output,
+      outputPrice,
+      biasedOutputPrice,
     };
+  }
+
+  private postRebalanceLiqUtilizationRateBps(
+    swapOutputAmountBaseUnit?: bigint,
+    swapInputAmountBaseUnit?: bigint
+  ) {
+    let supplyUsd = this.client.pos.supplyUsd(this.priceType);
+    let debtUsd = this.client.pos.debtUsd(this.priceType);
+    // TODO: add token balance change
+
+    const {
+      input,
+      inputPrice,
+      biasedInputPrice,
+      output,
+      outputPrice,
+      biasedOutputPrice,
+    } = this.swapDetails();
+
+    const swapInputAmount = swapInputAmountBaseUnit
+      ? fromBaseUnit(
+          swapInputAmountBaseUnit,
+          tokenInfo(toWeb3JsPublicKey(input.mint)).decimals
+        )
+      : undefined;
+
+    const swapOutputAmount = swapOutputAmountBaseUnit
+      ? fromBaseUnit(
+          swapOutputAmountBaseUnit,
+          tokenInfo(toWeb3JsPublicKey(output.mint)).decimals
+        )
+      : undefined;
+
+    const swapInputUsd = swapInputAmount
+      ? swapInputAmount * biasedInputPrice
+      : this.usdToSwap();
+
+    const swapOutputUsd = swapOutputAmount
+      ? swapOutputAmount * biasedOutputPrice
+      : this.usdToSwap();
+
+    console.log(
+      (swapInputAmount ?? 0) * inputPrice,
+      swapInputUsd,
+      (swapOutputAmount ?? 0) * outputPrice,
+      swapOutputUsd
+    );
+
+    console.log({
+      isBoost: this.isBoost(),
+      debtAdjustmentUsd: this.isBoost() ? swapInputUsd : swapInputUsd * -1,
+      debtAdjustmentUsdOutput: this.isBoost() ? swapOutputUsd : swapOutputUsd * -1,
+    })
+    const res = applyDebtAdjustmentUsd(
+      {
+        debtAdjustmentUsd: this.isBoost() ? swapInputUsd : swapInputUsd * -1,
+        debtAdjustmentUsdOutput: this.isBoost() ? swapOutputUsd : swapOutputUsd * -1,
+      },
+      { supplyUsd, debtUsd },
+      fromBps(this.client.pos.state.liqThresholdBps),
+      {
+        solauto: this.solautoFeeBps,
+        flashLoan: this.flRequirements?.flFeeBps ?? 0,
+        lpBorrow: this.client.pos.state.debt.borrowFeeBps,
+      }
+    );
+
+    if (isMarginfiPosition(this.client.pos)) {
+      console.log(res.newPos.supplyUsd, res.newPos.debtUsd);
+      console.log(
+        res.newPos.supplyUsd *
+          bytesToI80F48(
+            this.client.pos.supplyBank!.config.assetWeightInit.value
+          ),
+        res.newPos.debtUsd *
+          bytesToI80F48(
+            this.client.pos.debtBank!.config.liabilityWeightInit.value
+          )
+      );
+    }
+
+    return getLiqUtilzationRateBps(
+      res.newPos.supplyUsd,
+      res.newPos.debtUsd,
+      this.client.pos.state.liqThresholdBps ?? 0
+    );
+  }
+
+  private async findSufficientQuote(
+    swapInput: SwapInput,
+    criteria: {
+      minOutputAmount?: bigint;
+      maxLiqUtilizationRateBps?: number;
+    }
+  ): Promise<QuoteResponse> {
+    let swapQuote: QuoteResponse;
+    let insufficient: boolean = false;
+
+    for (let i = 0; i < 20; i++) {
+      consoleLog("Finding sufficient quote...");
+      swapQuote = await this.jupSwapManager.getQuote(swapInput);
+
+      const outputAmount = parseInt(swapQuote.outAmount);
+      const postRebalanceRate = this.postRebalanceLiqUtilizationRateBps(
+        BigInt(outputAmount),
+        BigInt(parseInt(swapQuote.inAmount))
+      );
+      const exceedsMinOutput = criteria.minOutputAmount
+      ? outputAmount < Number(criteria.minOutputAmount) : false;
+      const exceedsMaxRate = criteria.maxLiqUtilizationRateBps ? postRebalanceRate > criteria.maxLiqUtilizationRateBps : false;
+      insufficient = exceedsMinOutput || exceedsMaxRate;
+
+      consoleLog(postRebalanceRate, criteria.maxLiqUtilizationRateBps);
+      if (insufficient) {
+        consoleLog("Insufficient swap quote:", swapQuote);
+
+        const increment = 0.01 + i * 0.01;
+        console.log(increment);
+        swapInput.amount = this.bigIntWithIncrement(
+          swapInput.amount,
+          this.isBoost() ? increment * -1 : increment
+        );
+      } else {
+        break;
+      }
+    }
+
+    return swapQuote!;
   }
 
   private bigIntWithIncrement(num: bigint, inc: number) {
@@ -128,7 +227,7 @@ export class RebalanceSwapManager {
 
   async setSwapParams(attemptNum: number) {
     const rebalanceToZero = this.targetLiqUtilizationRateBps === 0;
-    let { input, output, inputAmount } = this.swapDetails();
+    let { input, output, biasedOutputPrice, inputAmount } = this.swapDetails();
 
     let outputAmount = rebalanceToZero
       ? output.amountUsed.baseUnit +
@@ -139,10 +238,7 @@ export class RebalanceSwapManager {
               0.0001
           )
         )
-      : toBaseUnit(
-          this.usdToSwap() / safeGetPrice(output.mint, this.priceType)!,
-          output.decimals
-        );
+      : toBaseUnit(this.usdToSwap() / biasedOutputPrice, output.decimals);
 
     const flashLoanRepayFromDebt =
       !this.isBoost() &&
@@ -176,11 +272,11 @@ export class RebalanceSwapManager {
     };
     consoleLog("Swap input:", swapInput);
 
-    if (exactIn && (rebalanceToZero || this.values.repayingCloseToMaxLtv)) {
+    if (exactIn) {
       this.swapQuote = await this.findSufficientQuote(swapInput, {
         minOutputAmount: rebalanceToZero ? outputAmount : undefined,
-        maxLiqUtilizationRateBps: this.values.repayingCloseToMaxLtv
-          ? this.client.pos.maxRepayToBps - 15
+        maxLiqUtilizationRateBps: !rebalanceToZero
+          ? this.client.pos.maxBoostToBps
           : undefined,
       });
     }

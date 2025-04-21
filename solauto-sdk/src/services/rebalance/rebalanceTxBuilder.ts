@@ -8,13 +8,16 @@ import {
   TransactionItemInputs,
 } from "../../types";
 import {
+  bytesToI80F48,
   consoleLog,
   fromBaseUnit,
   fromBps,
+  getLiqUtilzationRateBps,
   getMaxLiqUtilizationRateBps,
   getTokenAccount,
   hasFirstRebalance,
   hasLastRebalance,
+  isMarginfiPosition,
   safeGetPrice,
   tokenInfo,
 } from "../../utils";
@@ -133,7 +136,7 @@ export class RebalanceTxBuilder {
     );
 
     const { intermediaryLiqUtilizationRateBps } = applyDebtAdjustmentUsd(
-      this.values.debtAdjustmentUsd,
+      { debtAdjustmentUsd: this.values.debtAdjustmentUsd },
       {
         supplyUsd: this.client.pos.supplyUsd(PriceType.Ema),
         debtUsd: this.client.pos.debtUsd(PriceType.Ema),
@@ -342,9 +345,23 @@ export class RebalanceTxBuilder {
     consoleLog("Rebalance details:", rebalanceDetails);
     consoleLog(
       "Prices:",
+      safeGetPrice(this.client.pos.supplyMint, this.priceType),
       this.client.pos.supplyPrice(this.priceType),
+      safeGetPrice(this.client.pos.debtMint, this.priceType),
       this.client.pos.debtPrice(this.priceType)
     );
+
+    if (isMarginfiPosition(this.client.pos)) {
+      const supply =
+        this.values.endResult.supplyUsd *
+        bytesToI80F48(this.client.pos.supplyBank!.config.assetWeightInit.value);
+      const debt =
+        this.values.endResult.debtUsd *
+        bytesToI80F48(
+          this.client.pos.debtBank!.config.liabilityWeightInit.value
+        );
+      consoleLog("Weighted values", supply, debt);
+    }
 
     const firstRebalance = this.client.rebalanceIx(
       RebalanceStep.PreSwap,

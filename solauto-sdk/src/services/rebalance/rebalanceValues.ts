@@ -38,18 +38,23 @@ interface ApplyDebtAdjustmentResult {
 }
 
 export function applyDebtAdjustmentUsd(
-  debtAdjustmentUsd: number,
+  adjustment: { debtAdjustmentUsd: number; debtAdjustmentUsdOutput?: number },
   pos: PositionValues,
   liqThreshold: number,
   fees?: RebalanceFeesBps
 ): ApplyDebtAdjustmentResult {
   const newPos = { ...pos };
-  const isBoost = debtAdjustmentUsd > 0;
+  const isBoost = adjustment.debtAdjustmentUsd > 0;
 
+  if (!adjustment.debtAdjustmentUsdOutput) {
+    adjustment.debtAdjustmentUsdOutput = adjustment.debtAdjustmentUsd;
+  }
   const daMinusSolautoFees =
-    debtAdjustmentUsd - debtAdjustmentUsd * fromBps(fees?.solauto ?? 0);
+    adjustment.debtAdjustmentUsdOutput -
+    adjustment.debtAdjustmentUsdOutput * fromBps(fees?.solauto ?? 0);
+
   const daWithFlashLoan =
-    debtAdjustmentUsd * (1.0 + fromBps(fees?.flashLoan ?? 0));
+    adjustment.debtAdjustmentUsd * (1.0 + fromBps(fees?.flashLoan ?? 0));
 
   let intermediaryLiqUtilizationRateBps = 0;
   if (isBoost) {
@@ -99,17 +104,18 @@ export function getDebtAdjustment(
     : (targetUtilizationRate * liqThreshold * pos.supplyUsd - pos.debtUsd) /
       (actualizedFee - targetUtilizationRate * liqThreshold * (1.0 + flFee));
 
-  const newPos = applyDebtAdjustmentUsd(
-    debtAdjustmentUsd,
+  const endResult = applyDebtAdjustmentUsd(
+    { debtAdjustmentUsd },
     pos,
     liqThreshold,
     fees
   );
+  console.log(debtAdjustmentUsd, pos, endResult.newPos);
 
   return {
     debtAdjustmentUsd,
-    endResult: newPos.newPos,
-    intermediaryLiqUtilizationRateBps: newPos.intermediaryLiqUtilizationRateBps,
+    endResult: endResult.newPos,
+    intermediaryLiqUtilizationRateBps: endResult.intermediaryLiqUtilizationRateBps,
   };
 }
 
@@ -128,6 +134,7 @@ function getTargetLiqUtilizationRateBps(
     return targetLiqUtilizationRateBps;
   }
 
+  console.log(solautoPosition.liqUtilizationRateBps(PriceType.Realtime), solautoPosition.repayFromBps);
   if (
     solautoPosition.liqUtilizationRateBps(PriceType.Realtime) >=
     solautoPosition.repayFromBps
@@ -179,9 +186,10 @@ function getAdjustedPositionValues(
 
 function getRebalanceDirection(
   solautoPosition: SolautoPositionEx,
-  targetLtvBps: number
+  targetLtvBps: number,
+  priceType: number
 ): RebalanceDirection {
-  return solautoPosition.state.liqUtilizationRateBps < targetLtvBps
+  return solautoPosition.liqUtilizationRateBps(priceType) < targetLtvBps
     ? RebalanceDirection.Boost
     : RebalanceDirection.Repay;
 }
@@ -211,7 +219,7 @@ export function getRebalanceValues(
     return undefined;
   }
 
-  const rebalanceDirection = getRebalanceDirection(solautoPosition, targetRate);
+  const rebalanceDirection = getRebalanceDirection(solautoPosition, targetRate, priceType);
 
   const position = getAdjustedPositionValues(
     solautoPosition,

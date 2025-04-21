@@ -21,8 +21,8 @@ export class MarginfiSolautoPositionEx extends SolautoPositionEx {
   lendingPlatform = LendingPlatform.Marginfi;
   maxLtvPriceType = PriceType.Ema;
 
-  private supplyBank: Bank | null = null;
-  private debtBank: Bank | null = null;
+  public supplyBank: Bank | null = null;
+  public debtBank: Bank | null = null;
 
   supplyPrice(priceType?: PriceType): number | undefined {
     return this._supplyPrice ?? safeGetPrice(this.supplyMint, priceType, PriceBias.Low);

@@ -23,7 +23,7 @@ use crate::{
     state::{
         automation::AutomationSettings,
         referral_state::ReferralState,
-        solauto_position::{PositionData, SolautoPosition},
+        solauto_position::SolautoPosition,
     },
     types::{
         errors::SolautoError,
@@ -456,7 +456,7 @@ mod tests {
         state::{
             automation::{AutomationSettings, AutomationSettingsInp},
             solauto_position::{
-                PositionState, SolautoSettingsParameters, SolautoSettingsParametersInp,
+                PositionState, SolautoSettingsParameters, SolautoSettingsParametersInp, PositionData
             },
         },
         types::shared::PositionType,
