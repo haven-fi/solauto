@@ -122,7 +122,7 @@ async function main(filterWhitelist: boolean, programEnv: ProgramEnv = "Prod") {
     const repayFrom = pos.settings!.repayToBps + pos.settings!.repayGap;
     const unhealthy = actionToTake === "repay";
     const healthText = unhealthy
-      ? `(Unhealthy: ${pos.state.liqUtilizationRateBps - repayFrom}bps)`
+      ? `(Unhealthy: ${pos.liqUtilizationRateBps() - repayFrom}bps)`
       : "";
     if (unhealthy) {
       unhealthyPositions += 1;
