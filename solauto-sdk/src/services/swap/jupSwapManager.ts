@@ -21,6 +21,7 @@ import {
   tokenInfo,
 } from "../../utils";
 import { TransactionItemInputs } from "../../types";
+import { TokenInfo } from "../../constants";
 
 export interface SwapInput {
   inputMint: PublicKey;
@@ -53,9 +54,14 @@ export class JupSwapManager {
   constructor(private signer: Signer) {}
 
   public async getQuote(data: SwapInput): Promise<QuoteResponse> {
-    const memeSwap =
-      tokenInfo(data.inputMint).isMeme || tokenInfo(data.outputMint).isMeme;
-    const slippageBps = data.slippageBps ?? (memeSwap ? 250 : 100);
+    const inputMintInfo: TokenInfo | undefined = tokenInfo(data.inputMint);
+    const outputMintInfo: TokenInfo | undefined = tokenInfo(data.outputMint);
+    const lowLiquidityMint =
+      !inputMintInfo ||
+      inputMintInfo?.isMeme ||
+      !outputMintInfo ||
+      outputMintInfo?.isMeme;
+    const slippageBps = data.slippageBps ?? (lowLiquidityMint ? 250 : 100);
 
     return await retryWithExponentialBackoff(
       async (attemptNum: number) =>
@@ -69,7 +75,9 @@ export class JupSwapManager {
               ? "ExactIn"
               : undefined,
           slippageBps,
-          maxAccounts: !data.exactOut ? (memeSwap ? 25 : 15) + attemptNum * 5 : undefined,
+          maxAccounts: !data.exactOut
+            ? (lowLiquidityMint ? 25 : 15) + attemptNum * 5
+            : undefined,
         }),
       6,
       250
