@@ -273,12 +273,14 @@ export async function sendJitoBundledTransactions(
   connection: Connection,
   userSigner: Signer,
   otherSigners: Signer[],
-  txs: TransactionBuilder[],
+  transactions: TransactionBuilder[],
   txType?: TransactionRunType,
   priorityFeeSetting: PriorityFeeSetting = PriorityFeeSetting.Min,
   onAwaitingSign?: () => void,
   abortController?: AbortController
 ): Promise<string[] | undefined> {
+  const txs = [...transactions];
+  
   if (txs.length === 1) {
     const resp = await sendSingleOptimizedTransaction(
       umi,
@@ -304,20 +306,6 @@ export async function sendJitoBundledTransactions(
 
   txs[0] = txs[0].prepend(getTipInstruction(userSigner, 150_000));
 
-  const feeEstimates = usePriorityFee(priorityFeeSetting)
-    ? await Promise.all(
-        txs.map(
-          async (x) =>
-            (await getComputeUnitPriceEstimate(
-              umi,
-              x,
-              priorityFeeSetting,
-              true
-            )) ?? 1000000
-        )
-      )
-    : undefined;
-
   const latestBlockhash = (
     await umi.rpc.getLatestBlockhash({ commitment: "confirmed" })
   ).blockhash;
@@ -335,10 +323,25 @@ export async function sendJitoBundledTransactions(
       otherSigners,
       txs,
       false,
-      feeEstimates
+      undefined,
+      Array(txs.length).map(_ => 1_400_000)
     );
     simulationResults = await simulateJitoBundle(umi, builtTxs);
   }
+
+  const feeEstimates = usePriorityFee(priorityFeeSetting)
+  ? await Promise.all(
+      txs.map(
+        async (x) =>
+          (await getComputeUnitPriceEstimate(
+            umi,
+            x,
+            priorityFeeSetting,
+            true
+          )) ?? 1000000
+      )
+    )
+  : undefined;
 
   if (abortController?.signal.aborted) {
     return;

@@ -626,9 +626,13 @@ export function getErrorInfo(
     addTxOptimizations(
       umi,
       txs[txIdx],
-      usePriorityFee(priorityFeeSetting) ? 1 : undefined,
-      simulationSuccessful ? 1 : undefined
-    ).getInstructions().length - txs[txIdx].getInstructions().length;
+      simulationSuccessful && usePriorityFee(priorityFeeSetting)
+        ? 1
+        : undefined,
+      1
+    ).getInstructions().length -
+    txs[txIdx].getInstructions().length -
+    (txs.length > 1 && txIdx === 0 ? 1 : 0); // Account for jito tip IX
 
   try {
     if (error instanceof BundleSimulationError) {

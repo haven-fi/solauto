@@ -1,6 +1,4 @@
 import {
-  createSolautoProgram,
-  InvalidRebalanceConditionError,
   PriceType,
   RebalanceDirection,
   TokenBalanceChange,
@@ -9,7 +7,6 @@ import {
 import {
   fromBps,
   getLiqUtilzationRateBps,
-  maxRepayToBps,
   toBps,
 } from "../../utils";
 import { SolautoPositionEx } from "../../solautoPosition";
@@ -126,20 +123,21 @@ function getTokenBalanceChange(): TokenBalanceChange | undefined {
 function getTargetLiqUtilizationRateBps(
   solautoPosition: SolautoPositionEx,
   priceType: PriceType,
-  targetLiqUtilizationRateBps: number | undefined,
-  tokenBalanceChange: TokenBalanceChange | undefined
+  targetLiqUtilizationRateBps?: number,
+  tokenBalanceChange?: TokenBalanceChange,
+  bpsDistanceFromRebalance?: number
 ): number | undefined {
   if (targetLiqUtilizationRateBps !== undefined) {
     return targetLiqUtilizationRateBps;
   }
 
   if (
-    solautoPosition.liqUtilizationRateBps(PriceType.Realtime) >=
+    solautoPosition.liqUtilizationRateBps(PriceType.Realtime) + (bpsDistanceFromRebalance ?? 0) >=
     solautoPosition.repayFromBps
   ) {
     return solautoPosition.settings!.repayToBps;
   } else if (
-    solautoPosition.liqUtilizationRateBps(priceType) <=
+    solautoPosition.liqUtilizationRateBps(priceType) - (bpsDistanceFromRebalance ?? 0) <=
     solautoPosition.boostFromBps
   ) {
     return solautoPosition.settings!.boostToBps;
@@ -203,7 +201,8 @@ export function getRebalanceValues(
   priceType: PriceType,
   targetLiqUtilizationRateBps?: number,
   solautoFeeBps?: SolautoFeesBps,
-  flFeeBps?: number
+  flFeeBps?: number,
+  bpsDistanceFromRebalance?: number
 ): RebalanceValues | undefined {
   const tokenBalanceChange = getTokenBalanceChange();
 
@@ -211,7 +210,8 @@ export function getRebalanceValues(
     solautoPosition,
     priceType,
     targetLiqUtilizationRateBps,
-    tokenBalanceChange
+    tokenBalanceChange,
+    bpsDistanceFromRebalance
   );
   if (targetRate === undefined) {
     return undefined;

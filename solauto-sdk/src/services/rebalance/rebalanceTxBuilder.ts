@@ -12,7 +12,6 @@ import {
   consoleLog,
   fromBaseUnit,
   fromBps,
-  getLiqUtilzationRateBps,
   getMaxLiqUtilizationRateBps,
   getTokenAccount,
   hasFirstRebalance,
@@ -77,7 +76,8 @@ export class RebalanceTxBuilder {
         this.targetLiqUtilizationRateBps,
         this.client.pos.netWorthUsd(this.priceType)
       ),
-      this.flRequirements?.flFeeBps ?? 0
+      this.flRequirements?.flFeeBps ?? 0,
+      this.bpsDistanceFromRebalance
     );
   }
 
