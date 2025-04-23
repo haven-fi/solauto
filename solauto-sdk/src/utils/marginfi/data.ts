@@ -218,6 +218,26 @@ export function getBankLiquidityAvailableBaseUnit(
   return BigInt(Math.floor(amountCanBeUsed));
 }
 
+export function getBankLiquidityUsedBaseUnit(
+  bank: Bank | null,
+  asset: boolean
+) {
+  let amountUsed = 0;
+
+  if (bank !== null) {
+    const [assetShareValue, liabilityShareValue] = getUpToDateShareValues(bank);
+
+    const totalDeposited =
+      bytesToI80F48(bank.totalAssetShares.value) * assetShareValue;
+    const totalBorrowed =
+      bytesToI80F48(bank.totalLiabilityShares.value) * liabilityShareValue;
+
+    amountUsed = asset ? totalDeposited : totalBorrowed;
+  }
+
+  return BigInt(Math.floor(amountUsed));
+}
+
 async function getTokenUsage(
   bank: Bank | null,
   isAsset: boolean,

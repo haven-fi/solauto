@@ -278,6 +278,7 @@ export abstract class SolautoPositionEx {
   abstract get lpSupplyAccount(): PublicKey;
   abstract get lpDebtAccount(): PublicKey;
   abstract get supplyLiquidityAvailable(): number;
+  abstract get supplyUsdWithdrawable(): number;
 
   abstract maxLtvAndLiqThresholdBps(): Promise<[number, number]>;
   abstract priceOracles(): Promise<PublicKey[]>;

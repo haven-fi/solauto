@@ -6,6 +6,7 @@ import {
   fetchTokenPrices,
   fromBaseUnit,
   getBankLiquidityAvailableBaseUnit,
+  getBankLiquidityUsedBaseUnit,
   getMarginfiAccountPositionState,
   getMarginfiPriceOracle,
   safeGetPrice,
@@ -25,11 +26,16 @@ export class MarginfiSolautoPositionEx extends SolautoPositionEx {
   public debtBank: Bank | null = null;
 
   supplyPrice(priceType?: PriceType): number | undefined {
-    return this._supplyPrice ?? safeGetPrice(this.supplyMint, priceType, PriceBias.Low);
+    return (
+      this._supplyPrice ??
+      safeGetPrice(this.supplyMint, priceType, PriceBias.Low)
+    );
   }
-  
+
   debtPrice(priceType?: PriceType): number | undefined {
-    return this._debtPrice ?? safeGetPrice(this.debtMint, priceType, PriceBias.High);
+    return (
+      this._debtPrice ?? safeGetPrice(this.debtMint, priceType, PriceBias.High)
+    );
   }
 
   private getBankAccounts(mint: PublicKey) {
@@ -121,6 +127,18 @@ export class MarginfiSolautoPositionEx extends SolautoPositionEx {
       getBankLiquidityAvailableBaseUnit(this.supplyBank, false),
       this.supplyMintInfo.decimals
     );
+  }
+
+  get supplyUsdWithdrawable(): number {
+    const deposits = fromBaseUnit(
+      getBankLiquidityUsedBaseUnit(this.supplyBank, true),
+      this.supplyMintInfo.decimals
+    );
+    const borrows = fromBaseUnit(
+      getBankLiquidityAvailableBaseUnit(this.supplyBank, false),
+      this.supplyMintInfo.decimals
+    );
+    return Math.min((deposits - borrows), this.totalSupply) * this.supplyPrice()!;
   }
 
   async refreshPositionState(priceType?: PriceType): Promise<void> {
