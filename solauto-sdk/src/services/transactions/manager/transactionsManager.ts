@@ -384,7 +384,8 @@ export class TransactionsManager<T extends TxHandler> {
         if (
           error ||
           (this.txRunType !== "only-simulate" &&
-            (!Boolean(txSigs) || txSigs?.length === 0))
+            (!Boolean(txSigs) || txSigs?.length === 0) &&
+            !this.abortController?.signal.aborted)
         ) {
           this.updateStatusForSets(
             itemSets,
