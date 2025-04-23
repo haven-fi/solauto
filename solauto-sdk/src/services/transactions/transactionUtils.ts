@@ -56,7 +56,11 @@ import {
   getJupiterErrorFromCode,
   JUPITER_PROGRAM_ID,
 } from "../../jupiter-sdk";
-import { TransactionItemInputs, BundleSimulationError, PriorityFeeSetting } from "../../types";
+import {
+  TransactionItemInputs,
+  BundleSimulationError,
+  PriorityFeeSetting,
+} from "../../types";
 import { isMarginfiProgram } from "../../constants";
 
 interface wSolTokenUsage {
@@ -219,11 +223,12 @@ async function transactionChoresBefore(
     const tokenAccount = isSolautoAction("Withdraw", solautoAction)
       ? client.signerSupplyTa
       : client.signerDebtTa;
+
     if (accountsGettingCreated.includes(tokenAccount.toString())) {
       continue;
     }
 
-    if (!getSolanaAccountCreated(client.umi, tokenAccount)) {
+    if (!(await getSolanaAccountCreated(client.umi, tokenAccount))) {
       chores = chores.add(
         createAssociatedTokenAccountUmiIx(
           client.signer,
@@ -727,5 +732,8 @@ export function getErrorInfo(
 }
 
 export function usePriorityFee(priorityFeeSetting?: PriorityFeeSetting) {
-  return priorityFeeSetting !== undefined && priorityFeeSetting !== PriorityFeeSetting.None;
+  return (
+    priorityFeeSetting !== undefined &&
+    priorityFeeSetting !== PriorityFeeSetting.None
+  );
 }
