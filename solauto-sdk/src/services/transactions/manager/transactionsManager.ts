@@ -292,7 +292,6 @@ export class TransactionsManager<T extends TxHandler> {
 
   private async processTransactionsAtomically(itemSets: TransactionSet[]) {
     let num = 0;
-    let priorityFeeSetting: PriorityFeeSetting;
     let transactions: TransactionBuilder[] = [];
 
     await retryWithExponentialBackoff(
@@ -306,7 +305,7 @@ export class TransactionsManager<T extends TxHandler> {
         }
 
         num = attemptNum;
-        priorityFeeSetting = this.getUpdatedPriorityFeeSetting(
+        this.priorityFeeSetting = this.getUpdatedPriorityFeeSetting(
           prevError,
           attemptNum
         );
@@ -366,7 +365,7 @@ export class TransactionsManager<T extends TxHandler> {
             this.txHandler.otherSigners,
             transactions,
             this.txRunType,
-            priorityFeeSetting,
+            this.priorityFeeSetting,
             () =>
               this.updateStatusForSets(
                 itemSets,
@@ -418,7 +417,7 @@ export class TransactionsManager<T extends TxHandler> {
           (x) =>
             this.statuses.find((y) => x.name() === y.name)?.simulationSuccessful
         ).length === itemSets.length,
-        priorityFeeSetting
+        this.priorityFeeSetting
       );
 
       const errorString = `${errorDetails.errorName ?? "Unknown error"}: ${errorDetails.errorInfo?.split("\n")[0] ?? "unknown"}`;
@@ -481,11 +480,12 @@ export class TransactionsManager<T extends TxHandler> {
           );
         } else {
           await this.debugAccounts(itemSet, tx);
+          this.priorityFeeSetting = this.getUpdatedPriorityFeeSetting(prevError, attemptNum);
           await this.sendTransaction(
             tx,
             itemSet.name(),
             attemptNum,
-            this.getUpdatedPriorityFeeSetting(prevError, attemptNum)
+            this.priorityFeeSetting
           );
         }
       },
