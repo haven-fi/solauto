@@ -56,6 +56,7 @@ export interface TransactionsManagerArgs<T extends TxHandler> {
   atomically?: boolean;
   errorsToThrow?: ErrorsToThrow;
   retryConfig?: RetryConfig;
+  abortController?: AbortController;
 }
 
 export class TransactionsManager<T extends TxHandler> {
@@ -70,6 +71,7 @@ export class TransactionsManager<T extends TxHandler> {
   protected signableRetries: number;
   protected totalRetries: number;
   protected retryDelay: number;
+  protected abortController?: AbortController;
 
   updateOracleTxName = "update oracle";
 
@@ -80,6 +82,7 @@ export class TransactionsManager<T extends TxHandler> {
     this.priorityFeeSetting = args.priorityFeeSetting ?? PriorityFeeSetting.Min;
     this.atomically = args.atomically ?? true;
     this.errorsToThrow = args.errorsToThrow;
+    this.abortController = args.abortController;
 
     this.lookupTables = new LookupTables(
       this.txHandler.defaultLookupTables(),
@@ -371,7 +374,8 @@ export class TransactionsManager<T extends TxHandler> {
                 attemptNum,
                 undefined,
                 true
-              )
+              ),
+            this.abortController
           );
         } catch (e: any) {
           error = e as Error;
@@ -562,7 +566,8 @@ export class TransactionsManager<T extends TxHandler> {
             attemptNum,
             undefined,
             true
-          )
+          ),
+        this.abortController
       );
       this.updateStatus(
         txName,

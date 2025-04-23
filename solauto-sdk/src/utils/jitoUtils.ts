@@ -130,7 +130,6 @@ async function simulateJitoBundle(umi: Umi, txs: VersionedTransaction[]) {
   return transactionResults;
 }
 
-
 export function getAdditionalSigners(message: TransactionMessage) {
   const { numRequiredSignatures, numReadonlySignedAccounts } = message.header;
 
@@ -277,7 +276,8 @@ export async function sendJitoBundledTransactions(
   txs: TransactionBuilder[],
   txType?: TransactionRunType,
   priorityFeeSetting: PriorityFeeSetting = PriorityFeeSetting.Min,
-  onAwaitingSign?: () => void
+  onAwaitingSign?: () => void,
+  abortController?: AbortController
 ): Promise<string[] | undefined> {
   if (txs.length === 1) {
     const resp = await sendSingleOptimizedTransaction(
@@ -286,7 +286,8 @@ export async function sendJitoBundledTransactions(
       txs[0],
       txType,
       priorityFeeSetting,
-      onAwaitingSign
+      onAwaitingSign,
+      abortController
     );
     return resp ? [base58.encode(resp)] : undefined;
   }
@@ -303,25 +304,27 @@ export async function sendJitoBundledTransactions(
 
   txs[0] = txs[0].prepend(getTipInstruction(userSigner, 150_000));
 
-  const feeEstimates =
-    usePriorityFee(priorityFeeSetting)
-      ? await Promise.all(
-          txs.map(
-            async (x) =>
-              (await getComputeUnitPriceEstimate(
-                umi,
-                x,
-                priorityFeeSetting,
-                true
-              )) ?? 1000000
-          )
+  const feeEstimates = usePriorityFee(priorityFeeSetting)
+    ? await Promise.all(
+        txs.map(
+          async (x) =>
+            (await getComputeUnitPriceEstimate(
+              umi,
+              x,
+              priorityFeeSetting,
+              true
+            )) ?? 1000000
         )
-      : undefined;
+      )
+    : undefined;
 
   const latestBlockhash = (
     await umi.rpc.getLatestBlockhash({ commitment: "confirmed" })
   ).blockhash;
 
+  if (abortController?.signal.aborted) {
+    return;
+  }
   let builtTxs: VersionedTransaction[] = [];
   let simulationResults: SimulatedTransactionResponse[] | undefined;
   if (txType !== "skip-simulation") {
@@ -337,6 +340,9 @@ export async function sendJitoBundledTransactions(
     simulationResults = await simulateJitoBundle(umi, builtTxs);
   }
 
+  if (abortController?.signal.aborted) {
+    return;
+  }
   if (txType !== "only-simulate") {
     onAwaitingSign?.();
 

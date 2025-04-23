@@ -432,7 +432,8 @@ export async function sendSingleOptimizedTransaction(
   tx: TransactionBuilder,
   txType?: TransactionRunType,
   prioritySetting: PriorityFeeSetting = PriorityFeeSetting.Min,
-  onAwaitingSign?: () => void
+  onAwaitingSign?: () => void,
+  abortController?: AbortController
 ): Promise<Uint8Array | undefined> {
   consoleLog("Sending single optimized transaction...");
   consoleLog("Instructions: ", tx.getInstructions().length);
@@ -452,6 +453,9 @@ export async function sendSingleOptimizedTransaction(
 
   const blockhash = await connection.getLatestBlockhash("confirmed");
 
+  if (abortController?.signal.aborted) {
+    return;
+  }
   let cuLimit = undefined;
   if (txType !== "skip-simulation") {
     const simulationResult = await retryWithExponentialBackoff(
@@ -476,6 +480,9 @@ export async function sendSingleOptimizedTransaction(
     consoleLog("Compute unit price: ", cuPrice);
   }
 
+  if (abortController?.signal.aborted) {
+    return;
+  }
   if (txType !== "only-simulate") {
     onAwaitingSign?.();
     const signedTx = await assembleFinalTransaction(umi, tx, cuPrice, cuLimit)
