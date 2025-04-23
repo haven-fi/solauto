@@ -18,7 +18,7 @@ function adjustedTicker(mint?: PublicKey) {
   }
 }
 
-export function ratioName(supplyMint?: PublicKey, debtMint?: PublicKey) {
+export function ratioMintDetails(supplyMint?: PublicKey, debtMint?: PublicKey) {
   if (
     (tokenInfo(supplyMint).isLST && debtMint?.equals(NATIVE_MINT)) ||
     (supplyMint &&
@@ -26,10 +26,15 @@ export function ratioName(supplyMint?: PublicKey, debtMint?: PublicKey) {
       MAJORS_PRIO[supplyMint?.toString() ?? ""] >
         MAJORS_PRIO[debtMint?.toString() ?? ""])
   ) {
-    return `${adjustedTicker(supplyMint)}/${adjustedTicker(debtMint)} Long`;
+    return { order: [supplyMint, debtMint], strategyName: "Long" };
   } else {
-    return `${adjustedTicker(debtMint)}/${adjustedTicker(supplyMint)} Short`;
+    return { order: [debtMint, supplyMint], strategyName: "Short" };
   }
+}
+
+export function ratioName(supplyMint?: PublicKey, debtMint?: PublicKey) {
+  const { order, strategyName } = ratioMintDetails(supplyMint, debtMint);
+  return `${adjustedTicker(order[0])}/${adjustedTicker(order[1])} ${strategyName}`;
 }
 
 export function solautoStrategyName(
