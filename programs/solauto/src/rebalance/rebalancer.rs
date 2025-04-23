@@ -363,7 +363,7 @@ impl<'a> Rebalancer<'a> {
             BareSplTokenTransferArgs {
                 from_wallet: self.data.solauto_position.data.pubkey(),
                 from_wallet_ta: position_ta,
-                to_wallet_ta: self.data.solauto_fees_ta.unwrap(),
+                to_wallet_ta: destination_ta,
                 amount: fee_amount,
             },
         ));
