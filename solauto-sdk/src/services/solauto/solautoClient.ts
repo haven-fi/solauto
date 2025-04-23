@@ -12,6 +12,7 @@ import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 import {
   DCASettingsInpArgs,
   LendingPlatform,
+  PositionType,
   PriceType,
   RebalanceStep,
   SolautoActionArgs,
@@ -340,7 +341,8 @@ export abstract class SolautoClient extends ReferralStateManager {
 
   openPositionIx(
     settings?: SolautoSettingsParametersInpArgs,
-    dca?: DCASettingsInpArgs
+    dca?: DCASettingsInpArgs,
+    positionType?: PositionType
   ): TransactionBuilder {
     if (dca && dca.dcaInBaseUnit > 0) {
       this.contextUpdates.new({

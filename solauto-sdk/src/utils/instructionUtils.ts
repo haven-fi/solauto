@@ -1,6 +1,7 @@
 import { OptionOrNullable, transactionBuilder } from "@metaplex-foundation/umi";
 import {
   DCASettingsInpArgs,
+  PositionType,
   SolautoSettingsParametersInpArgs,
 } from "../generated";
 import {
@@ -17,11 +18,12 @@ import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 export function openSolautoPosition(
   client: SolautoClient,
   settingParams: SolautoSettingsParametersInpArgs,
-  dca?: DCASettingsInpArgs
+  dca?: DCASettingsInpArgs,
+  positionType?: PositionType
 ) {
   return new TransactionItem(
     async () => ({
-      tx: client!.openPositionIx(settingParams, dca),
+      tx: client!.openPositionIx(settingParams, dca, positionType),
     }),
     "open position"
   );
