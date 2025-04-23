@@ -49,7 +49,8 @@ export class RebalanceTxBuilder {
   constructor(
     private client: SolautoClient,
     private targetLiqUtilizationRateBps?: number,
-    private optimizeSize?: boolean
+    private optimizeSize?: boolean,
+    private bpsDistanceFromRebalance?: number
   ) {}
 
   private shouldProceedWithRebalance() {
@@ -62,7 +63,7 @@ export class RebalanceTxBuilder {
     return (
       this.client.pos.supplyUsd() > 0 &&
       (this.targetLiqUtilizationRateBps !== undefined ||
-        this.client.pos.eligibleForRebalance())
+        this.client.pos.eligibleForRebalance(this.bpsDistanceFromRebalance))
     );
   }
 

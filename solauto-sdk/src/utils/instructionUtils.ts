@@ -122,14 +122,16 @@ export function repay(client: SolautoClient, amount: "All" | bigint) {
 
 export function rebalance(
   client: SolautoClient,
-  targetLiqUtilizationRateBps?: number
+  targetLiqUtilizationRateBps?: number,
+  bpsDistanceFromRebalance?: number
 ) {
   return new TransactionItem(
     async (attemptNum, prevError) =>
       await new RebalanceTxBuilder(
         client,
         targetLiqUtilizationRateBps,
-        attemptNum > 2 && prevError instanceof TransactionTooLargeError
+        attemptNum > 2 && prevError instanceof TransactionTooLargeError,
+        bpsDistanceFromRebalance
       ).buildRebalanceTx(attemptNum),
     "rebalance",
     true
