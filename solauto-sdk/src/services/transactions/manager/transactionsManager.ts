@@ -267,6 +267,26 @@ export class TransactionsManager<T extends TxHandler> {
     return this.statuses;
   }
 
+  private shouldProceedToSend(itemSets: TransactionSet[], attemptNum: number) {
+    if (!itemSets) {
+      return false;
+    }
+
+    const newItemSetNames = itemSets.flatMap((x) =>
+      x.items.map((y) => y.name ?? "")
+    );
+    if (
+      newItemSetNames.length === 1 &&
+      newItemSetNames[0] === this.updateOracleTxName
+    ) {
+      consoleLog("Skipping unnecessary oracle update");
+      this.updateStatusForSets(itemSets, TransactionStatus.Skipped, attemptNum);
+      return false;
+    }
+
+    return true;
+  }
+
   private async processTransactionsAtomically(itemSets: TransactionSet[]) {
     let num = 0;
     let priorityFeeSetting: PriorityFeeSetting;
@@ -283,7 +303,10 @@ export class TransactionsManager<T extends TxHandler> {
         }
 
         num = attemptNum;
-        priorityFeeSetting = this.getUpdatedPriorityFeeSetting(prevError, attemptNum);
+        priorityFeeSetting = this.getUpdatedPriorityFeeSetting(
+          prevError,
+          attemptNum
+        );
 
         if (attemptNum > 0) {
           const refreshedSets = await this.refreshItemSets(
@@ -296,6 +319,10 @@ export class TransactionsManager<T extends TxHandler> {
           } else {
             itemSets = refreshedSets;
           }
+        }
+
+        if (!this.shouldProceedToSend(itemSets, attemptNum)) {
+          return;
         }
 
         transactions = [];
@@ -436,7 +463,9 @@ export class TransactionsManager<T extends TxHandler> {
           );
           itemSet = refreshedSets ? refreshedSets[0] : undefined;
         }
-        if (!itemSet) return;
+        if (!itemSet || !this.shouldProceedToSend([itemSet], attemptNum)) {
+          return;
+        }
 
         const tx = await itemSet.getSingleTransaction();
         if (tx.getInstructions().length === 0) {
@@ -486,15 +515,6 @@ export class TransactionsManager<T extends TxHandler> {
           ]
         : itemSets.flatMap((set) => set.items)
     );
-
-    const newItemSetNames = newItemSets.map((x) => x.name());
-    if (
-      newItemSetNames.length === 1 &&
-      newItemSetNames[0] === this.updateOracleTxName
-    ) {
-      consoleLog("Skipping unnecessary oracle update");
-      return undefined;
-    }
 
     if (currentIndex !== undefined && newItemSets.length > 1) {
       itemSets.splice(
