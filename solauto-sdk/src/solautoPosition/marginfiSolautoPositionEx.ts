@@ -135,7 +135,7 @@ export class MarginfiSolautoPositionEx extends SolautoPositionEx {
       this.supplyMintInfo.decimals
     );
     const borrows = fromBaseUnit(
-      getBankLiquidityAvailableBaseUnit(this.supplyBank, false),
+      getBankLiquidityUsedBaseUnit(this.supplyBank, false),
       this.supplyMintInfo.decimals
     );
     return Math.min((deposits - borrows), this.totalSupply) * this.supplyPrice()!;
