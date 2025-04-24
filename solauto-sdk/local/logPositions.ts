@@ -92,12 +92,10 @@ async function main(filterWhitelist: boolean, programEnv: ProgramEnv = "Prod") {
     );
   }
 
-  const positionsEx = (
-    await getPositionExBulk(
-      umi,
-      positions.map((x) => new PublicKey(x.publicKey!))
-    )
-  ).sort((a, b) => a.netWorthUsd() - b.netWorthUsd());
+  const positionsEx = await getPositionExBulk(
+    umi,
+    positions.map((x) => new PublicKey(x.publicKey!))
+  );
 
   const tokensUsed = Array.from(
     new Set(
@@ -114,7 +112,10 @@ async function main(filterWhitelist: boolean, programEnv: ProgramEnv = "Prod") {
   let unhealthyPositions = 0;
   let awaitingBoostPositions = 0;
 
-  for (const pos of positionsEx) {
+  const sortedPositions = positionsEx.sort(
+    (a, b) => a.netWorthUsd() - b.netWorthUsd()
+  );
+  for (const pos of sortedPositions) {
     const actionToTake = pos.eligibleForRebalance(0);
 
     const repayFrom = pos.settings!.repayToBps + pos.settings!.repayGap;
