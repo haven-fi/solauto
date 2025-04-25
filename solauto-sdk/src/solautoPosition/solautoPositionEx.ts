@@ -450,10 +450,6 @@ class PositionRebalanceHelper {
   }
 
   validRealtimePricesBoost(debtAdjustmentUsd: number) {
-    if (this.pos.maxLtvPriceType !== PriceType.Ema) {
-      return true;
-    }
-
     const postRebalanceLiqUtilRate = getLiqUtilzationRateBps(
       realtimeUsdToEmaUsd(
         this.pos.supplyUsd() + debtAdjustmentUsd,
@@ -469,13 +465,14 @@ class PositionRebalanceHelper {
     return postRebalanceLiqUtilRate <= this.pos.maxBoostToBps;
   }
 
-  private validBoostFromHere() {
+  private validBoostFromHere(bpsDistanceThreshold: number = 0) {
     const realtimeSupplyUsd = this.pos.supplyUsd(PriceType.Realtime);
     const realtimeDebtUsd = this.pos.debtUsd(PriceType.Realtime);
 
     if (
-      realtimeSupplyUsd === this.pos.supplyUsd(PriceType.Ema) &&
-      realtimeDebtUsd === this.pos.debtUsd(PriceType.Ema)
+      (realtimeSupplyUsd === this.pos.supplyUsd(PriceType.Ema) &&
+        realtimeDebtUsd === this.pos.debtUsd(PriceType.Ema)) ||
+      this.pos.maxLtvPriceType !== PriceType.Ema
     ) {
       return true;
     }
@@ -490,7 +487,11 @@ class PositionRebalanceHelper {
       { solauto: 25, lpBorrow: 0, flashLoan: 0 } // Undershoot fees
     );
 
-    return this.validRealtimePricesBoost(debtAdjustmentUsd);
+    return (
+      this.validRealtimePricesBoost(debtAdjustmentUsd) ||
+      this.pos.liqUtilizationRateBps(PriceType.Ema) - this.pos.boostFromBps <=
+        bpsDistanceThreshold
+    );
   }
 
   eligibleForRebalance(
