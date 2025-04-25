@@ -514,7 +514,7 @@ class PositionRebalanceHelper {
     } else if (
       realtimeLiqUtilRateBps - this.pos.boostFromBps <= bpsDistanceThreshold &&
       (skipExtraChecks ||
-        (this.validBoostFromHere() && this.sufficientLiquidityToBoost()))
+        (this.validBoostFromHere(bpsDistanceThreshold) && this.sufficientLiquidityToBoost()))
     ) {
       return "boost";
     }
