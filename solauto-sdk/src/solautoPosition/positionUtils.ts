@@ -84,9 +84,9 @@ export async function getOrCreatePositionEx(
   contextUpdates?: ContextUpdates
 ): Promise<SolautoPositionEx> {
   const publicKey = getSolautoPositionAccount(authority, positionId, programId);
-  const data = await safeFetchSolautoPosition(
-    umi,
-    fromWeb3JsPublicKey(publicKey)
+  const data = await retryWithExponentialBackoff(
+    async () =>
+      await safeFetchSolautoPosition(umi, fromWeb3JsPublicKey(publicKey))
   );
 
   const lendingPlatform = data
