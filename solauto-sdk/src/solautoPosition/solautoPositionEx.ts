@@ -388,6 +388,9 @@ export abstract class SolautoPositionEx {
     debtPrice: number,
     targetLiqUtilizationRateBps?: number
   ) {
+    this.updateSupplyPrice(supplyPrice);
+    this.updateDebtPrice(debtPrice);
+    
     this._data.state.lastRefreshed = BigInt(unixTime);
     const rebalance = getRebalanceValues(
       this,
@@ -403,8 +406,6 @@ export abstract class SolautoPositionEx {
       return undefined;
     }
 
-    this.updateSupplyPrice(supplyPrice);
-    this.updateDebtPrice(debtPrice);
     this.updateSupply(rebalance.endResult.supplyUsd, supplyPrice);
     this.updateDebt(rebalance.endResult.debtUsd, debtPrice);
     this.updateNetWorth(supplyPrice);
