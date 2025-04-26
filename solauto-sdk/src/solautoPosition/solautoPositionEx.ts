@@ -403,6 +403,8 @@ export abstract class SolautoPositionEx {
       return undefined;
     }
 
+    this.updateSupplyPrice(supplyPrice);
+    this.updateDebtPrice(debtPrice);
     this.updateSupply(rebalance.endResult.supplyUsd, supplyPrice);
     this.updateDebt(rebalance.endResult.debtUsd, debtPrice);
     this.updateNetWorth(supplyPrice);
