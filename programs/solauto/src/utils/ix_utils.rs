@@ -276,10 +276,7 @@ pub fn validate_rebalance_instructions(
     let prev_ix = -1;
 
     let valid_ixs = match rebalance_type {
-        SolautoRebalanceType::Regular => {
-            jup_swap.matches(next_ix) && solauto_rebalance.matches(ix_2_after)
-        }
-        SolautoRebalanceType::DoubleRebalanceWithFL => {
+        SolautoRebalanceType::Regular | SolautoRebalanceType::DoubleRebalanceWithFL => {
             jup_swap.matches(next_ix) && solauto_rebalance.matches(ix_2_after)
         }
         SolautoRebalanceType::FLSwapThenRebalance => jup_swap.matches(prev_ix),

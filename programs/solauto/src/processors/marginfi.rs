@@ -1,6 +1,4 @@
-use solana_program::{
-    account_info::AccountInfo, clock::Clock, entrypoint::ProgramResult, msg, sysvar::Sysvar,
-};
+use solana_program::{account_info::AccountInfo, entrypoint::ProgramResult, msg};
 
 use crate::{
     check,
@@ -55,7 +53,6 @@ pub fn process_marginfi_open_position_instruction<'a>(
         liq_threshold,
     )?;
     if !solauto_position.data.self_managed.val {
-        let current_timestamp = Clock::get()?.unix_timestamp as u64;
         validation_utils::validate_position_settings(&solauto_position.data)?;
     }
 
@@ -210,7 +207,6 @@ pub fn process_marginfi_rebalance<'a>(
         false,
     )?;
 
-    // TODO: position_authority for later when we want to handle withdrawing from position during rebalances
     check!(
         ctx.accounts.position_authority.is_none()
             || &std_accounts.solauto_position.data.authority

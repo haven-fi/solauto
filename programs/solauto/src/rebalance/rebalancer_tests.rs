@@ -6,7 +6,8 @@ use spl_associated_token_account::get_associated_token_address;
 use crate::{
     constants::SOLAUTO_FEES_WALLET,
     state::solauto_position::{
-        PositionData, PositionState, RebalanceData, SolautoPosition, SolautoSettingsParameters, SolautoSettingsParametersInp
+        PositionData, PositionState, RebalanceData, SolautoPosition, SolautoSettingsParameters,
+        SolautoSettingsParametersInp,
     },
     types::{
         instruction::RebalanceSettings,
