@@ -386,21 +386,24 @@ export abstract class SolautoPositionEx {
     unixTime: number,
     supplyPrice: number,
     debtPrice: number,
-    targetLiqUtilizationRateBps?: number
+    targetLiqUtilizationRateBps?: number,
+    withSolautoFee?: boolean
   ) {
     this.updateSupplyPrice(supplyPrice);
     this.updateDebtPrice(debtPrice);
-    
+
     this._data.state.lastRefreshed = BigInt(unixTime);
     const rebalance = getRebalanceValues(
       this,
       PriceType.Realtime,
       targetLiqUtilizationRateBps,
-      SolautoFeesBps.create(
-        true,
-        targetLiqUtilizationRateBps,
-        this.netWorthUsd()
-      )
+      withSolautoFee
+        ? SolautoFeesBps.create(
+            true,
+            targetLiqUtilizationRateBps,
+            this.netWorthUsd()
+          )
+        : undefined
     );
     if (!rebalance) {
       return undefined;
@@ -517,7 +520,8 @@ class PositionRebalanceHelper {
     } else if (
       realtimeLiqUtilRateBps - this.pos.boostFromBps <= bpsDistanceThreshold &&
       (skipExtraChecks ||
-        (this.validBoostFromHere(bpsDistanceThreshold) && this.sufficientLiquidityToBoost()))
+        (this.validBoostFromHere(bpsDistanceThreshold) &&
+          this.sufficientLiquidityToBoost()))
     ) {
       return "boost";
     }
