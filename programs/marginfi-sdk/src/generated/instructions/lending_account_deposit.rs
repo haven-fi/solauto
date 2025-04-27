@@ -82,12 +82,12 @@ impl LendingAccountDeposit {
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
-struct LendingAccountDepositInstructionData {
+pub struct LendingAccountDepositInstructionData {
     discriminator: [u8; 8],
 }
 
 impl LendingAccountDepositInstructionData {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             discriminator: [171, 94, 235, 103, 82, 64, 212, 140],
         }
@@ -98,6 +98,7 @@ impl LendingAccountDepositInstructionData {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct LendingAccountDepositInstructionArgs {
     pub amount: u64,
+    pub deposit_up_to_limit: Option<bool>,
 }
 
 /// Instruction builder for `LendingAccountDeposit`.
@@ -121,6 +122,7 @@ pub struct LendingAccountDepositBuilder {
     bank_liquidity_vault: Option<solana_program::pubkey::Pubkey>,
     token_program: Option<solana_program::pubkey::Pubkey>,
     amount: Option<u64>,
+    deposit_up_to_limit: Option<bool>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
 
@@ -178,6 +180,12 @@ impl LendingAccountDepositBuilder {
         self.amount = Some(amount);
         self
     }
+    /// `[optional argument]`
+    #[inline(always)]
+    pub fn deposit_up_to_limit(&mut self, deposit_up_to_limit: bool) -> &mut Self {
+        self.deposit_up_to_limit = Some(deposit_up_to_limit);
+        self
+    }
     /// Add an aditional account to the instruction.
     #[inline(always)]
     pub fn add_remaining_account(
@@ -215,6 +223,7 @@ impl LendingAccountDepositBuilder {
         };
         let args = LendingAccountDepositInstructionArgs {
             amount: self.amount.clone().expect("amount is not set"),
+            deposit_up_to_limit: self.deposit_up_to_limit.clone(),
         };
 
         accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
@@ -406,6 +415,7 @@ impl<'a, 'b> LendingAccountDepositCpiBuilder<'a, 'b> {
             bank_liquidity_vault: None,
             token_program: None,
             amount: None,
+            deposit_up_to_limit: None,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
@@ -468,6 +478,12 @@ impl<'a, 'b> LendingAccountDepositCpiBuilder<'a, 'b> {
         self.instruction.amount = Some(amount);
         self
     }
+    /// `[optional argument]`
+    #[inline(always)]
+    pub fn deposit_up_to_limit(&mut self, deposit_up_to_limit: bool) -> &mut Self {
+        self.instruction.deposit_up_to_limit = Some(deposit_up_to_limit);
+        self
+    }
     /// Add an additional account to the instruction.
     #[inline(always)]
     pub fn add_remaining_account(
@@ -511,6 +527,7 @@ impl<'a, 'b> LendingAccountDepositCpiBuilder<'a, 'b> {
     ) -> solana_program::entrypoint::ProgramResult {
         let args = LendingAccountDepositInstructionArgs {
             amount: self.instruction.amount.clone().expect("amount is not set"),
+            deposit_up_to_limit: self.instruction.deposit_up_to_limit.clone(),
         };
         let instruction = LendingAccountDepositCpi {
             __program: self.instruction.__program,
@@ -562,6 +579,7 @@ struct LendingAccountDepositCpiBuilderInstruction<'a, 'b> {
     bank_liquidity_vault: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     token_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     amount: Option<u64>,
+    deposit_up_to_limit: Option<bool>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(
         &'b solana_program::account_info::AccountInfo<'a>,

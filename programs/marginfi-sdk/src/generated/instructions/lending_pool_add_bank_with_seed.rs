@@ -123,12 +123,12 @@ impl LendingPoolAddBankWithSeed {
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
-struct LendingPoolAddBankWithSeedInstructionData {
+pub struct LendingPoolAddBankWithSeedInstructionData {
     discriminator: [u8; 8],
 }
 
 impl LendingPoolAddBankWithSeedInstructionData {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             discriminator: [76, 211, 213, 171, 117, 78, 158, 76],
         }

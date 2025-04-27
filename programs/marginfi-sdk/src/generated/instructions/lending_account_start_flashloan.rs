@@ -59,12 +59,12 @@ impl LendingAccountStartFlashloan {
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
-struct LendingAccountStartFlashloanInstructionData {
+pub struct LendingAccountStartFlashloanInstructionData {
     discriminator: [u8; 8],
 }
 
 impl LendingAccountStartFlashloanInstructionData {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             discriminator: [14, 131, 33, 220, 81, 186, 180, 107],
         }

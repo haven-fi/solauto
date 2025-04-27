@@ -36,47 +36,14 @@ mod update_position {
             ).await
             .unwrap();
 
-
         data.open_position(
-            Some(data.general.default_setting_params.clone()),
+            Some(data.general.default_settings.clone()),
             None
         ).await.unwrap();
 
         let solauto_position = data.general.deserialize_account_data::<SolautoPosition>(
             data.general.solauto_position
         ).await;
-        assert!(solauto_position.position.dca.automation.target_periods == 0);
-        assert!(solauto_position.position.dca.dca_in_base_unit == 0);
-
-        // Update position's settings and add a DCA
-        let dca_out_automation = AutomationSettingsInp {
-            unix_start_date: (Utc::now().timestamp() as u64) - 1,
-            interval_seconds: 60 * 60 * 10,
-            periods_passed: 0,
-            target_periods: 5,
-        };
-        let new_settings = SolautoSettingsParametersInp {
-            boost_to_bps: 2000,
-            boost_gap: 1000,
-            repay_to_bps: 7500,
-            repay_gap: 500,
-            automation: Some(dca_out_automation.clone()),
-            target_boost_to_bps: Some(0),
-        };
-        let new_dca = DCASettingsInp {
-            automation: dca_out_automation,
-            dca_in_base_unit: 0,
-            token_type: TokenType::Debt
-        };
-        data.general
-            .update_position(Some(new_settings.clone()), Some(new_dca.clone())).await
-            .unwrap();
-
-        let solauto_position = data.general.deserialize_account_data::<SolautoPosition>(
-            data.general.solauto_position
-        ).await;
-        assert!(solauto_position.position.setting_params.automation.target_periods == new_settings.automation.as_ref().unwrap().target_periods);
-        assert!(solauto_position.position.dca.dca_in_base_unit == new_dca.dca_in_base_unit);
     }
 
     #[tokio::test]
@@ -89,12 +56,12 @@ mod update_position {
             .unwrap()
             .general.create_referral_state_accounts().await
             .unwrap();
-        data.open_position(Some(data.general.default_setting_params.clone()), None).await.unwrap();
+        data.open_position(Some(data.general.default_settings.clone()), None).await.unwrap();
 
         let tx = Transaction::new_signed_with_payer(
             &[
                 data.general
-                    .update_position_ix(Some(data.general.default_setting_params.clone()), None)
+                    .update_position_ix(Some(data.general.default_settings.clone()), None)
                     .signer(temp_account.pubkey())
                     .instruction(),
             ],
@@ -115,7 +82,7 @@ mod update_position {
             .general.create_referral_state_accounts().await
             .unwrap();
 
-        data.open_position(Some(data.general.default_setting_params.clone()), None).await.unwrap();
+        data.open_position(Some(data.general.default_settings.clone()), None).await.unwrap();
 
         let temp_wallet = Keypair::new().pubkey();
         let fake_debt_ta = get_associated_token_address(

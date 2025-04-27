@@ -8,8 +8,6 @@
 
 import {
   Context,
-  Option,
-  OptionOrNullable,
   Pda,
   PublicKey,
   Signer,
@@ -20,9 +18,7 @@ import {
 import {
   Serializer,
   mapSerializer,
-  option,
   struct,
-  u64,
   u8,
 } from '@metaplex-foundation/umi/serializers';
 import {
@@ -67,13 +63,11 @@ export type MarginfiOpenPositionInstructionData = {
   discriminator: number;
   positionType: PositionType;
   positionData: UpdatePositionData;
-  marginfiAccountSeedIdx: Option<bigint>;
 };
 
 export type MarginfiOpenPositionInstructionDataArgs = {
   positionType: PositionTypeArgs;
   positionData: UpdatePositionDataArgs;
-  marginfiAccountSeedIdx: OptionOrNullable<number | bigint>;
 };
 
 export function getMarginfiOpenPositionInstructionDataSerializer(): Serializer<
@@ -90,7 +84,6 @@ export function getMarginfiOpenPositionInstructionDataSerializer(): Serializer<
         ['discriminator', u8()],
         ['positionType', getPositionTypeSerializer()],
         ['positionData', getUpdatePositionDataSerializer()],
-        ['marginfiAccountSeedIdx', option(u64())],
       ],
       { description: 'MarginfiOpenPositionInstructionData' }
     ),

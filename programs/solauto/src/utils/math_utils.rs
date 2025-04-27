@@ -2,10 +2,16 @@ use fixed::types::I80F48;
 use num_traits::{FromPrimitive, ToPrimitive};
 use std::{
     cmp::min,
-    ops::{Div, Mul},
+    ops::{Add, Div, Mul, Sub},
 };
 
-use crate::constants::{MAX_BASIS_POINTS, MIN_REPAY_GAP_BPS, USD_DECIMALS};
+use crate::{
+    constants::{MAX_BASIS_POINTS, MIN_REPAY_GAP_BPS, OFFSET_FROM_MAX_LTV, USD_DECIMALS},
+    types::{
+        shared::TokenType,
+        solauto::{DebtAdjustment, PositionValues, RebalanceFeesBps},
+    },
+};
 
 #[inline(always)]
 pub fn from_base_unit<T, U, V>(base_units: T, decimals: U) -> V
@@ -20,15 +26,26 @@ where
 }
 
 #[inline(always)]
-pub fn to_base_unit<T: std::fmt::Display, U: std::fmt::Display, V>(value: T, decimals: U) -> V
+pub fn to_base_unit<T, U, V>(value: T, decimals: U) -> V
 where
     T: ToPrimitive,
     U: Into<u32>,
     V: FromPrimitive,
 {
     let factor = (10u64).pow(decimals.into()) as f64;
-    let base_units = value.to_f64().unwrap_or(0.0).mul(factor);
-    V::from_f64(base_units).unwrap()
+    let base_units = value.to_f64().unwrap_or(0.0) * factor;
+    let adjusted = if base_units < 0.0 { 0.0 } else { base_units };
+    V::from_f64(adjusted).unwrap_or_else(|| V::from_f64(0.0).unwrap())
+}
+
+#[inline(always)]
+pub fn to_rounded_usd_value(usd_value: f64) -> u64 {
+    to_base_unit(usd_value, USD_DECIMALS)
+}
+
+#[inline(always)]
+pub fn from_rounded_usd_value(usd_value: u64) -> f64 {
+    from_base_unit(usd_value, USD_DECIMALS)
 }
 
 #[inline(always)]
@@ -36,6 +53,11 @@ pub fn base_unit_to_usd_value(base_unit: u64, decimals: u8, market_price: f64) -
     (base_unit as f64)
         .div((10u64).pow(decimals as u32) as f64)
         .mul(market_price)
+}
+
+#[inline(always)]
+pub fn usd_value_to_base_unit(usd_value: f64, decimals: u8, market_price: f64) -> u64 {
+    to_base_unit(usd_value.abs().div(market_price), decimals)
 }
 
 #[inline(always)]
@@ -50,7 +72,11 @@ pub fn to_bps(value: f64) -> u16 {
 
 #[inline(always)]
 pub fn i80f48_to_u64(value: I80F48) -> u64 {
-    value.to_num::<u64>()
+    if value < 0.0 {
+        0
+    } else {
+        value.to_num::<u64>()
+    }
 }
 
 #[inline(always)]
@@ -69,7 +95,7 @@ pub fn get_liq_utilization_rate_bps(supply_usd: f64, debt_usd: f64, liq_threshol
 
 #[inline(always)]
 pub fn net_worth_usd_base_amount(supply_usd: f64, debt_usd: f64) -> u64 {
-    to_base_unit::<f64, u8, u64>(supply_usd - debt_usd, USD_DECIMALS)
+    to_base_unit(supply_usd - debt_usd, USD_DECIMALS)
 }
 
 #[inline(always)]
@@ -84,38 +110,7 @@ pub fn net_worth_base_amount(
         USD_DECIMALS,
     )
     .div(supply_market_price as f64);
-    to_base_unit::<f64, u8, u64>(supply_net_worth, supply_decimals)
-}
-
-/// Calculates the debt adjustment in USD in order to reach the target_liq_utilization_rate
-///
-/// # Parameters
-/// * `liq_threshold` - The liquidation threshold of the supplied asset
-/// * `total_supply_usd` - Total USD value of supplied asset
-/// * `total_debt_usd` - Total USD value of debt asset
-/// * `target_liq_utilization_rate_bps` - Target utilization rate
-/// * `adjustment_fee_bps` - Adjustment fee. On boosts this would be the Solauto fee. If deleveraging this would be None
-///
-/// # Returns
-/// The USD value of the debt adjustment. Positive if debt needs to increase, negative if debt needs to decrease. This amount is inclusive of the adjustment fee
-///
-pub fn get_std_debt_adjustment_usd(
-    liq_threshold: f64,
-    total_supply_usd: f64,
-    total_debt_usd: f64,
-    target_liq_utilization_rate_bps: u16,
-    adjustment_fee_bps: u16,
-) -> f64 {
-    let adjustment_fee = if adjustment_fee_bps > 0 {
-        from_bps(adjustment_fee_bps)
-    } else {
-        0.0
-    };
-
-    let target_liq_utilization_rate = from_bps(target_liq_utilization_rate_bps);
-
-    (target_liq_utilization_rate * total_supply_usd * liq_threshold - total_debt_usd)
-        / (1.0 - target_liq_utilization_rate * (1.0 - adjustment_fee) * liq_threshold)
+    to_base_unit(supply_net_worth, supply_decimals)
 }
 
 #[inline(always)]
@@ -132,7 +127,11 @@ pub fn get_max_liq_utilization_rate_bps(
 pub fn get_max_repay_from_bps(max_ltv_bps: u16, liq_threshold_bps: u16) -> u16 {
     min(
         9000,
-        get_max_liq_utilization_rate_bps(max_ltv_bps, liq_threshold_bps - 1000, 0.01),
+        get_max_liq_utilization_rate_bps(
+            max_ltv_bps,
+            liq_threshold_bps - 1000,
+            OFFSET_FROM_MAX_LTV,
+        ),
     )
 }
 
@@ -140,7 +139,7 @@ pub fn get_max_repay_from_bps(max_ltv_bps: u16, liq_threshold_bps: u16) -> u16 {
 pub fn get_max_repay_to_bps(max_ltv_bps: u16, liq_threshold_bps: u16) -> u16 {
     min(
         get_max_repay_from_bps(max_ltv_bps, liq_threshold_bps) - MIN_REPAY_GAP_BPS,
-        get_max_liq_utilization_rate_bps(max_ltv_bps, liq_threshold_bps, 0.01),
+        get_max_liq_utilization_rate_bps(max_ltv_bps, liq_threshold_bps, OFFSET_FROM_MAX_LTV),
     )
 }
 
@@ -148,8 +147,94 @@ pub fn get_max_repay_to_bps(max_ltv_bps: u16, liq_threshold_bps: u16) -> u16 {
 pub fn get_max_boost_to_bps(max_ltv_bps: u16, liq_threshold_bps: u16) -> u16 {
     min(
         get_max_repay_to_bps(max_ltv_bps, liq_threshold_bps),
-        get_max_liq_utilization_rate_bps(max_ltv_bps, liq_threshold_bps, 0.01),
+        get_max_liq_utilization_rate_bps(max_ltv_bps, liq_threshold_bps, OFFSET_FROM_MAX_LTV),
     )
+}
+
+pub fn derive_value(price: i64, exponent: i32) -> f64 {
+    if exponent == 0 {
+        price as f64
+    } else if exponent < 0 {
+        from_base_unit(price, exponent.unsigned_abs())
+    } else {
+        to_base_unit(price, exponent.unsigned_abs())
+    }
+}
+
+#[inline(always)]
+pub fn calc_fee_amount(value: u64, fee_pct_bps: u16) -> u64 {
+    (value as f64).mul(from_bps(fee_pct_bps)) as u64
+}
+
+pub fn round_to_decimals(value: f64, decimals: u32) -> f64 {
+    let multiplier = (10_f64).powi(decimals as i32);
+    (value * multiplier).round() / multiplier
+}
+
+pub fn with_conf_interval(price: f64, conf_interval: f64, token_type: TokenType) -> f64 {
+    let final_conf = f64::min(conf_interval, price.mul(0.05));
+
+    if token_type == TokenType::Supply {
+        price - final_conf
+    } else {
+        price + final_conf
+    }
+}
+
+fn apply_debt_adjustment_usd(
+    debt_adjustment_usd: f64,
+    pos: &PositionValues,
+    fees: &RebalanceFeesBps,
+) -> PositionValues {
+    let mut new_pos = pos.clone();
+    let is_boost = debt_adjustment_usd > 0.0;
+
+    let da_minus_solauto_fees =
+        debt_adjustment_usd.sub(debt_adjustment_usd.mul(from_bps(fees.solauto)));
+    let da_with_flash_loan = debt_adjustment_usd.mul(1.0 + from_bps(fees.flash_loan));
+
+    if is_boost {
+        new_pos.supply_usd += da_minus_solauto_fees;
+        new_pos.debt_usd +=
+            da_with_flash_loan.mul_add(from_bps(fees.lp_borrow), da_with_flash_loan);
+    } else {
+        new_pos.supply_usd += da_with_flash_loan;
+        new_pos.debt_usd += da_minus_solauto_fees;
+    }
+
+    new_pos
+}
+
+pub fn get_debt_adjustment(
+    liq_threshold_bps: u16,
+    pos: &PositionValues,
+    target_liq_utilization_rate_bps: u16,
+    fees: &RebalanceFeesBps,
+) -> DebtAdjustment {
+    let liq_threshold = from_bps(liq_threshold_bps);
+    let is_boost = get_liq_utilization_rate_bps(pos.supply_usd, pos.debt_usd, liq_threshold)
+        < target_liq_utilization_rate_bps;
+
+    let target_utilization_rate = from_bps(target_liq_utilization_rate_bps);
+    let actualized_fee = (1.0).sub(from_bps(fees.solauto));
+    let fl_fee = from_bps(fees.flash_loan);
+    let lp_borrow_fee = from_bps(fees.lp_borrow);
+
+    let debt_adjustment_usd = if is_boost {
+        (target_utilization_rate * liq_threshold * pos.supply_usd - pos.debt_usd)
+            / ((1.0).add(lp_borrow_fee).add(fl_fee)
+                - target_utilization_rate * actualized_fee * liq_threshold)
+    } else {
+        (target_utilization_rate * liq_threshold * pos.supply_usd - pos.debt_usd)
+            / (actualized_fee - target_utilization_rate * liq_threshold * (1.0).add(fl_fee))
+    };
+
+    let new_pos = apply_debt_adjustment_usd(debt_adjustment_usd, pos, fees);
+
+    DebtAdjustment {
+        debt_adjustment_usd,
+        end_result: new_pos,
+    }
 }
 
 #[cfg(test)]
@@ -158,58 +243,139 @@ mod tests {
 
     use super::*;
 
-    fn round_to_places(value: f64, places: u32) -> f64 {
-        let multiplier = (10_f64).powi(places as i32);
-        (value * multiplier).round() / multiplier
+    const INIT_ASSET_WEIGHT_1: f64 = 0.8;
+    const MAINT_ASSET_WEIGHT_1: f64 = 0.9;
+    const INIT_ASSET_WEIGHT_2: f64 = 0.5;
+    const MAINT_ASSET_WEIGHT_2: f64 = 0.65;
+    const INIT_LIAB_WEIGHT_1: f64 = 1.25;
+    const MAINT_LIAB_WEIGHT_1: f64 = 1.1;
+
+    struct AssetWeights {
+        pub init_asset_weight: f64,
+        pub init_debt_weight: f64,
+        pub maint_asset_weight: f64,
+        pub maint_debt_weight: f64,
+    }
+
+    impl AssetWeights {
+        pub fn max_ltv(&self) -> f64 {
+            self.init_asset_weight.div(self.init_debt_weight)
+        }
+        pub fn liq_threshold(&self) -> f64 {
+            self.maint_asset_weight.div(self.maint_debt_weight)
+        }
+        pub fn max_boost_to_bps(&self) -> u16 {
+            get_max_boost_to_bps(to_bps(self.max_ltv()), to_bps(self.liq_threshold()))
+        }
     }
 
     fn test_debt_adjustment_calculation(
-        mut supply_usd: f64,
-        mut debt_usd: f64,
+        weights: &AssetWeights,
+        supply_usd: f64,
+        debt_usd: f64,
         target_liq_utilization_rate: f64,
     ) {
-        let supply_weight = 0.899999976158142;
-        let debt_weight = 1.100000023841858;
-        let liq_threshold = supply_weight.div(debt_weight); // ~0.81
+        let AssetWeights {
+            maint_asset_weight,
+            maint_debt_weight,
+            ..
+        } = weights;
+        let liq_threshold = weights.liq_threshold();
 
-        let debt_adjustment = get_std_debt_adjustment_usd(
-            liq_threshold,
+        let is_boost = from_bps(get_liq_utilization_rate_bps(
             supply_usd,
             debt_usd,
-            to_bps(target_liq_utilization_rate),
-            0,
+            liq_threshold,
+        )) < target_liq_utilization_rate;
+
+        let target_liq_utilization_rate_bps = to_bps(target_liq_utilization_rate);
+        let position = PositionValues {
+            supply_usd,
+            debt_usd,
+        };
+        let fees = RebalanceFeesBps {
+            solauto: 50,
+            lp_borrow: 50,
+            flash_loan: 50,
+        };
+        let debt_adjustment = get_debt_adjustment(
+            to_bps(liq_threshold),
+            &position,
+            target_liq_utilization_rate_bps,
+            &fees,
         );
 
-        supply_usd += debt_adjustment;
-        debt_usd += debt_adjustment;
+        let (new_supply_usd, new_debt_usd) = (
+            debt_adjustment.end_result.supply_usd,
+            debt_adjustment.end_result.debt_usd,
+        );
 
         let new_liq_utilization_rate_bps =
-            get_liq_utilization_rate_bps(supply_usd, debt_usd, liq_threshold);
-        assert!(
-            round_to_places(from_bps(new_liq_utilization_rate_bps), 2)
-                == round_to_places(target_liq_utilization_rate, 2)
-        );
+            get_liq_utilization_rate_bps(new_supply_usd, new_debt_usd, liq_threshold);
 
         let marginfi_liq_utilization_rate = (1.0).sub(
-            supply_usd
-                .mul(supply_weight)
-                .sub(debt_usd.mul(debt_weight))
-                .div(supply_usd.mul(supply_weight)),
+            new_supply_usd
+                .mul(maint_asset_weight)
+                .sub(new_debt_usd.mul(maint_debt_weight))
+                .div(new_supply_usd.mul(maint_asset_weight)),
         );
 
-        assert!(
-            round_to_places(marginfi_liq_utilization_rate, 4)
-                == round_to_places(target_liq_utilization_rate, 4)
+        println!(
+            "Boost: {}. {}, {}, {}",
+            is_boost,
+            target_liq_utilization_rate,
+            from_bps(new_liq_utilization_rate_bps),
+            marginfi_liq_utilization_rate
+        );
+
+        assert_eq!(
+            round_to_decimals(from_bps(new_liq_utilization_rate_bps), 3),
+            round_to_decimals(target_liq_utilization_rate, 3)
+        );
+        assert_eq!(
+            round_to_decimals(marginfi_liq_utilization_rate, 3),
+            round_to_decimals(target_liq_utilization_rate, 3)
         );
     }
+
+    fn test_debt_adjustment_for_weights(weights: &AssetWeights) {
+        test_debt_adjustment_calculation(weights, 100.0, 80.0, 0.8);
+        test_debt_adjustment_calculation(weights, 10.0, 2.0, 0.1);
+        test_debt_adjustment_calculation(weights, 30.0, 5.0, 0.5);
+        test_debt_adjustment_calculation(weights, 44334.0, 24534.0, 0.5);
+        test_debt_adjustment_calculation(weights, 7644.0, 434.0, 0.8);
+        test_debt_adjustment_calculation(weights, 10444.0, 7454.0, 0.2);
+        test_debt_adjustment_calculation(weights, 1340444.0, 7454.0, 0.35);
+        test_debt_adjustment_calculation(weights, 1000000.0, 519999.0, 0.65);
+        test_debt_adjustment_calculation(
+            weights,
+            3453.0,
+            1345.0,
+            from_bps(weights.max_boost_to_bps()),
+        );
+    }
+
     #[test]
-    fn test_std_debt_adjustment() {
-        test_debt_adjustment_calculation(100.0, 80.0, 0.8);
-        test_debt_adjustment_calculation(30.0, 24.0, 0.5);
-        test_debt_adjustment_calculation(44334.0, 24534.0, 0.5);
-        test_debt_adjustment_calculation(7644.0, 434.0, 0.8);
-        test_debt_adjustment_calculation(10444.0, 7454.0, 0.2);
-        test_debt_adjustment_calculation(1340444.0, 7454.0, 0.35);
-        test_debt_adjustment_calculation(1000000.0, 519999.0, 0.65);
+    fn test_weights_1_debt_adjustment() {
+        test_debt_adjustment_for_weights(
+            &(AssetWeights {
+                init_asset_weight: INIT_ASSET_WEIGHT_1,
+                init_debt_weight: INIT_LIAB_WEIGHT_1,
+                maint_asset_weight: MAINT_ASSET_WEIGHT_1,
+                maint_debt_weight: MAINT_LIAB_WEIGHT_1,
+            }),
+        );
+    }
+
+    #[test]
+    fn test_weights_2_debt_adjustment() {
+        test_debt_adjustment_for_weights(
+            &(AssetWeights {
+                init_asset_weight: INIT_ASSET_WEIGHT_2,
+                init_debt_weight: INIT_LIAB_WEIGHT_1,
+                maint_asset_weight: MAINT_ASSET_WEIGHT_2,
+                maint_debt_weight: MAINT_LIAB_WEIGHT_1,
+            }),
+        );
     }
 }

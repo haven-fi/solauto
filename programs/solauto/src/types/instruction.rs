@@ -2,11 +2,13 @@ use borsh::BorshDeserialize;
 use shank::{ShankContext, ShankInstruction, ShankType};
 use solana_program::{account_info::AccountInfo, pubkey::Pubkey};
 
-use crate::state::{
-    referral_state::ReferralState,
-    solauto_position::{
-        DCASettingsInp, SolautoPosition, SolautoRebalanceType, SolautoSettingsParametersInp,
+use crate::{
+    state::{
+        automation::DCASettingsInp,
+        referral_state::ReferralState,
+        solauto_position::{SolautoPosition, SolautoSettingsParametersInp},
     },
+    types::shared::SolautoRebalanceType,
 };
 
 use super::shared::*;
@@ -45,7 +47,7 @@ pub enum Instruction {
     #[account(name = "referral_state")]
     #[account(mut, name = "referral_fees_dest_ta")]
     #[account(name = "referral_fees_dest_mint")]
-    #[account(mut, optional, name = "referral_authority")]
+    #[account(mut, name = "referral_authority")]
     #[account(mut, optional, name = "fees_destination_ta")]
     ClaimReferralFees,
 
@@ -65,7 +67,7 @@ pub enum Instruction {
     #[account(name = "token_program")]
     #[account(name = "ata_program")]
     #[account(mut, name = "solauto_position")]
-    #[account(mut, name = "protocol_account")]
+    #[account(mut, name = "lp_user_account")]
     #[account(mut, name = "position_supply_ta")]
     #[account(mut, name = "signer_supply_ta")]
     #[account(mut, name = "position_debt_ta")]
@@ -115,7 +117,7 @@ pub enum Instruction {
     #[account(mut, name = "debt_bank")]
     #[account(name = "debt_price_oracle")]
     #[account(mut, name = "solauto_position")]
-    MarginfiRefreshData,
+    MarginfiRefreshData(PriceType),
 
     /// Marginfi protocol interaction. Can only be invoked by the authority of the position
     #[account(signer, name = "signer")]
@@ -182,8 +184,6 @@ pub struct UpdateReferralStatesArgs {
 pub struct MarginfiOpenPositionData {
     pub position_type: PositionType,
     pub position_data: UpdatePositionData,
-    /// Marginfi account seed index if the position is Solauto-managed
-    pub marginfi_account_seed_idx: Option<u64>,
 }
 
 #[derive(BorshDeserialize, Clone, Debug)]
@@ -191,7 +191,7 @@ pub struct UpdatePositionData {
     /// ID of the Solauto position
     pub position_id: u8,
     /// Setting parameters for the position
-    pub setting_params: Option<SolautoSettingsParametersInp>,
+    pub settings: Option<SolautoSettingsParametersInp>,
     /// New DCA data to initiate on the position
     pub dca: Option<DCASettingsInp>,
 }
@@ -211,10 +211,13 @@ pub enum SolautoAction {
 #[derive(BorshDeserialize, Clone, Debug, Default, ShankType)]
 pub struct RebalanceSettings {
     pub rebalance_type: SolautoRebalanceType,
+    /// The in-amount to use in the token swap. Gets validated by the program.
+    pub swap_in_amount_base_unit: Option<u64>,
     /// Target liq utilization rate. Only used/allowed if signed by the position authority.
     pub target_liq_utilization_rate_bps: Option<u16>,
-    /// The amount to use in the token swap. Gets validated by the program.
-    pub target_in_amount_base_unit: Option<u64>,
+    pub flash_loan_fee_bps: Option<u16>,
+    pub price_type: Option<PriceType>,
+    pub swap_type: Option<SwapType>,
 }
 
 pub struct SolautoStandardAccounts<'a> {

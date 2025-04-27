@@ -803,6 +803,12 @@
         {
           "name": "amount",
           "type": "u64"
+        },
+        {
+          "name": "deposit_up_to_limit",
+          "type": {
+            "option": "bool"
+          }
         }
       ]
     },
@@ -3059,8 +3065,8 @@
   "errors": [
     {
       "code": 6000,
-      "name": "MathError",
-      "msg": "Math error"
+      "name": "InternalLogicError",
+      "msg": "Internal Marginfi logic error"
     },
     {
       "code": 6001,
@@ -3085,7 +3091,7 @@
     {
       "code": 6005,
       "name": "MissingPythOrBankAccount",
-      "msg": "Missing Pyth or Bank account"
+      "msg": "Missing Oracle, Bank, LST mint, or Sol Pool"
     },
     {
       "code": 6006,
@@ -3094,188 +3100,343 @@
     },
     {
       "code": 6007,
-      "name": "InvalidOracleAccount",
-      "msg": "Invalid Pyth account"
-    },
-    {
-      "code": 6008,
       "name": "MissingBankAccount",
       "msg": "Missing Bank account"
     },
     {
-      "code": 6009,
+      "code": 6008,
       "name": "InvalidBankAccount",
       "msg": "Invalid Bank account"
     },
     {
-      "code": 6010,
-      "name": "BadAccountHealth",
-      "msg": "Bad account health"
+      "code": 6009,
+      "name": "RiskEngineInitRejected",
+      "msg": "RiskEngine rejected due to either bad health or stale oracles"
     },
     {
-      "code": 6011,
+      "code": 6010,
       "name": "LendingAccountBalanceSlotsFull",
       "msg": "Lending account balance slots are full"
     },
     {
-      "code": 6012,
+      "code": 6011,
       "name": "BankAlreadyExists",
       "msg": "Bank already exists"
     },
     {
-      "code": 6013,
-      "name": "IllegalLiquidation",
-      "msg": "Illegal liquidation"
+      "code": 6012,
+      "name": "ZeroLiquidationAmount",
+      "msg": "Amount to liquidate must be positive"
     },
     {
-      "code": 6014,
+      "code": 6013,
       "name": "AccountNotBankrupt",
       "msg": "Account is not bankrupt"
     },
     {
-      "code": 6015,
+      "code": 6014,
       "name": "BalanceNotBadDebt",
       "msg": "Account balance is not bad debt"
     },
     {
-      "code": 6016,
+      "code": 6015,
       "name": "InvalidConfig",
       "msg": "Invalid group config"
     },
     {
-      "code": 6017,
-      "name": "StaleOracle",
-      "msg": "Stale oracle data"
-    },
-    {
-      "code": 6018,
+      "code": 6016,
       "name": "BankPaused",
       "msg": "Bank paused"
     },
     {
-      "code": 6019,
+      "code": 6017,
       "name": "BankReduceOnly",
       "msg": "Bank is ReduceOnly mode"
     },
     {
-      "code": 6020,
-      "name": "BankAccoutNotFound",
+      "code": 6018,
+      "name": "BankAccountNotFound",
       "msg": "Bank is missing"
     },
     {
-      "code": 6021,
+      "code": 6019,
       "name": "OperationDepositOnly",
       "msg": "Operation is deposit-only"
     },
     {
-      "code": 6022,
+      "code": 6020,
       "name": "OperationWithdrawOnly",
       "msg": "Operation is withdraw-only"
     },
     {
-      "code": 6023,
+      "code": 6021,
       "name": "OperationBorrowOnly",
       "msg": "Operation is borrow-only"
     },
     {
-      "code": 6024,
+      "code": 6022,
       "name": "OperationRepayOnly",
       "msg": "Operation is repay-only"
     },
     {
-      "code": 6025,
+      "code": 6023,
       "name": "NoAssetFound",
       "msg": "No asset found"
     },
     {
-      "code": 6026,
+      "code": 6024,
       "name": "NoLiabilityFound",
       "msg": "No liability found"
     },
     {
-      "code": 6027,
+      "code": 6025,
       "name": "InvalidOracleSetup",
       "msg": "Invalid oracle setup"
     },
     {
-      "code": 6028,
+      "code": 6026,
       "name": "IllegalUtilizationRatio",
       "msg": "Invalid bank utilization ratio"
     },
     {
-      "code": 6029,
+      "code": 6027,
       "name": "BankLiabilityCapacityExceeded",
       "msg": "Bank borrow cap exceeded"
     },
     {
-      "code": 6030,
+      "code": 6028,
       "name": "InvalidPrice",
       "msg": "Invalid Price"
     },
     {
-      "code": 6031,
+      "code": 6029,
       "name": "IsolatedAccountIllegalState",
-      "msg": "Account can have only one liablity when account is under isolated risk"
+      "msg": "Account can have only one liability when account is under isolated risk"
     },
     {
-      "code": 6032,
+      "code": 6030,
       "name": "EmissionsAlreadySetup",
       "msg": "Emissions already setup"
     },
     {
-      "code": 6033,
+      "code": 6031,
       "name": "OracleNotSetup",
       "msg": "Oracle is not set"
     },
     {
-      "code": 6034,
+      "code": 6032,
       "name": "InvalidSwitchboardDecimalConversion",
-      "msg": "Invalid swithcboard decimal conversion"
+      "msg": "Invalid switchboard decimal conversion"
     },
     {
-      "code": 6035,
+      "code": 6033,
       "name": "CannotCloseOutstandingEmissions",
       "msg": "Cannot close balance because of outstanding emissions"
     },
     {
-      "code": 6036,
+      "code": 6034,
       "name": "EmissionsUpdateError",
       "msg": "Update emissions error"
     },
     {
-      "code": 6037,
+      "code": 6035,
       "name": "AccountDisabled",
       "msg": "Account disabled"
     },
     {
-      "code": 6038,
+      "code": 6036,
       "name": "AccountTempActiveBalanceLimitExceeded",
       "msg": "Account can't temporarily open 3 balances, please close a balance first"
     },
     {
-      "code": 6039,
+      "code": 6037,
       "name": "AccountInFlashloan",
       "msg": "Illegal action during flashloan"
     },
     {
-      "code": 6040,
+      "code": 6038,
       "name": "IllegalFlashloan",
       "msg": "Illegal flashloan"
     },
     {
-      "code": 6041,
+      "code": 6039,
       "name": "IllegalFlag",
       "msg": "Illegal flag"
     },
     {
-      "code": 6042,
+      "code": 6040,
       "name": "IllegalBalanceState",
       "msg": "Illegal balance state"
     },
     {
-      "code": 6043,
+      "code": 6041,
       "name": "IllegalAccountAuthorityTransfer",
       "msg": "Illegal account authority transfer"
+    },
+    {
+      "code": 6042,
+      "name": "Unauthorized",
+      "msg": "Unauthorized"
+    },
+    {
+      "code": 6043,
+      "name": "IllegalAction",
+      "msg": "Invalid account authority"
+    },
+    {
+      "code": 6044,
+      "name": "T22MintRequired",
+      "msg": "Token22 Banks require mint account as first remaining account"
+    },
+    {
+      "code": 6045,
+      "name": "InvalidFeeAta",
+      "msg": "Invalid ATA for global fee account"
+    },
+    {
+      "code": 6046,
+      "name": "AddedStakedPoolManually",
+      "msg": "Use add pool permissionless instead"
+    },
+    {
+      "code": 6047,
+      "name": "AssetTagMismatch",
+      "msg": "Staked SOL accounts can only deposit staked assets and borrow SOL"
+    },
+    {
+      "code": 6048,
+      "name": "StakePoolValidationFailed",
+      "msg": "Stake pool validation failed: check the stake pool, mint, or sol pool"
+    },
+    {
+      "code": 6049,
+      "name": "SwitchboardStalePrice",
+      "msg": "Switchboard oracle: stale price"
+    },
+    {
+      "code": 6050,
+      "name": "PythPushStalePrice",
+      "msg": "Pyth Push oracle: stale price"
+    },
+    {
+      "code": 6051,
+      "name": "WrongNumberOfOracleAccounts",
+      "msg": "Oracle error: wrong number of accounts"
+    },
+    {
+      "code": 6052,
+      "name": "WrongOracleAccountKeys",
+      "msg": "Oracle error: wrong account keys"
+    },
+    {
+      "code": 6053,
+      "name": "PythPushWrongAccountOwner",
+      "msg": "Pyth Push oracle: wrong account owner"
+    },
+    {
+      "code": 6054,
+      "name": "StakedPythPushWrongAccountOwner",
+      "msg": "Staked Pyth Push oracle: wrong account owner"
+    },
+    {
+      "code": 6055,
+      "name": "PythPushMismatchedFeedId",
+      "msg": "Pyth Push oracle: mismatched feed id"
+    },
+    {
+      "code": 6056,
+      "name": "PythPushInsufficientVerificationLevel",
+      "msg": "Pyth Push oracle: insufficient verification level"
+    },
+    {
+      "code": 6057,
+      "name": "PythPushFeedIdMustBe32Bytes",
+      "msg": "Pyth Push oracle: feed id must be 32 Bytes"
+    },
+    {
+      "code": 6058,
+      "name": "PythPushFeedIdNonHexCharacter",
+      "msg": "Pyth Push oracle: feed id contains non-hex characters"
+    },
+    {
+      "code": 6059,
+      "name": "SwitchboardWrongAccountOwner",
+      "msg": "Switchboard oracle: wrong account owner"
+    },
+    {
+      "code": 6060,
+      "name": "PythPushInvalidAccount",
+      "msg": "Pyth Push oracle: invalid account"
+    },
+    {
+      "code": 6061,
+      "name": "SwitchboardInvalidAccount",
+      "msg": "Switchboard oracle: invalid account"
+    },
+    {
+      "code": 6062,
+      "name": "MathError",
+      "msg": "Math error"
+    },
+    {
+      "code": 6063,
+      "name": "InvalidEmissionsDestinationAccount",
+      "msg": "Invalid emissions destination account"
+    },
+    {
+      "code": 6064,
+      "name": "SameAssetAndLiabilityBanks",
+      "msg": "Asset and liability bank cannot be the same"
+    },
+    {
+      "code": 6065,
+      "name": "OverliquidationAttempt",
+      "msg": "Trying to withdraw more assets than available"
+    },
+    {
+      "code": 6066,
+      "name": "NoLiabilitiesInLiabilityBank",
+      "msg": "Liability bank has no liabilities"
+    },
+    {
+      "code": 6067,
+      "name": "AssetsInLiabilityBank",
+      "msg": "Liability bank has assets"
+    },
+    {
+      "code": 6068,
+      "name": "HealthyAccount",
+      "msg": "Account is healthy and cannot be liquidated"
+    },
+    {
+      "code": 6069,
+      "name": "ExhaustedLiability",
+      "msg": "Liability payoff too severe, exhausted liability"
+    },
+    {
+      "code": 6070,
+      "name": "TooSeverePayoff",
+      "msg": "Liability payoff too severe, liability balance has assets"
+    },
+    {
+      "code": 6071,
+      "name": "TooSevereLiquidation",
+      "msg": "Liquidation too severe, account above maintenance requirement"
+    },
+    {
+      "code": 6072,
+      "name": "WorseHealthPostLiquidation",
+      "msg": "Liquidation would worsen account health"
+    },
+    {
+      "code": 6073,
+      "name": "ArenaBankLimit",
+      "msg": "Arena groups can only support two banks"
+    },
+    {
+      "code": 6074,
+      "name": "ArenaSettingCannotChange",
+      "msg": "Arena groups cannot return to non-arena status"
     }
   ],
   "metadata": {

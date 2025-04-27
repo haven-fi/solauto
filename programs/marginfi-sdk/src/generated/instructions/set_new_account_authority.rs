@@ -65,12 +65,12 @@ impl SetNewAccountAuthority {
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
-struct SetNewAccountAuthorityInstructionData {
+pub struct SetNewAccountAuthorityInstructionData {
     discriminator: [u8; 8],
 }
 
 impl SetNewAccountAuthorityInstructionData {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             discriminator: [153, 162, 50, 84, 182, 201, 74, 179],
         }

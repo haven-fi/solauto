@@ -22,5 +22,7 @@ pub struct InterestRateConfig {
     pub insurance_ir_fee: WrappedI80F48,
     pub protocol_fixed_fee_apr: WrappedI80F48,
     pub protocol_ir_fee: WrappedI80F48,
-    pub padding: [[u64; 2]; 8],
+    pub protocol_origination_fee: WrappedI80F48,
+    pub _padding0: [u8; 16],
+    pub _padding1: [[u8; 32]; 3],
 }

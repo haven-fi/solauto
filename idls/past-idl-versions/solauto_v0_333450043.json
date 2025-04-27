@@ -1,0 +1,1688 @@
+{
+  "version": "0.1.0",
+  "name": "solauto",
+  "instructions": [
+    {
+      "name": "UpdateReferralStates",
+      "accounts": [
+        {
+          "name": "signer",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "signerReferralState",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "referredByState",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "referredByAuthority",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true
+        }
+      ],
+      "args": [
+        {
+          "name": "updateReferralStatesArgs",
+          "type": {
+            "defined": "UpdateReferralStatesArgs"
+          }
+        }
+      ],
+      "discriminant": {
+        "type": "u8",
+        "value": 0
+      }
+    },
+    {
+      "name": "ConvertReferralFees",
+      "accounts": [
+        {
+          "name": "signer",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "ataProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "ixsSysvar",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "referralState",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "referralFeesTa",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "intermediaryTa",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": [],
+      "discriminant": {
+        "type": "u8",
+        "value": 1
+      }
+    },
+    {
+      "name": "ClaimReferralFees",
+      "accounts": [
+        {
+          "name": "signer",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "signerWsolTa",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "ataProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "referralState",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "referralFeesDestTa",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "referralFeesDestMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "referralAuthority",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "feesDestinationTa",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        }
+      ],
+      "args": [],
+      "discriminant": {
+        "type": "u8",
+        "value": 2
+      }
+    },
+    {
+      "name": "UpdatePosition",
+      "accounts": [
+        {
+          "name": "signer",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "solautoPosition",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "dcaMint",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "positionDcaTa",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "signerDcaTa",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        }
+      ],
+      "args": [
+        {
+          "name": "updatePositionData",
+          "type": {
+            "defined": "UpdatePositionData"
+          }
+        }
+      ],
+      "discriminant": {
+        "type": "u8",
+        "value": 3
+      }
+    },
+    {
+      "name": "ClosePosition",
+      "accounts": [
+        {
+          "name": "signer",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "ataProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "solautoPosition",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "protocolAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "positionSupplyTa",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "signerSupplyTa",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "positionDebtTa",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "signerDebtTa",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": [],
+      "discriminant": {
+        "type": "u8",
+        "value": 4
+      }
+    },
+    {
+      "name": "CancelDCA",
+      "accounts": [
+        {
+          "name": "signer",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "ataProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "solautoPosition",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "dcaMint",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "positionDcaTa",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "signerDcaTa",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        }
+      ],
+      "args": [],
+      "discriminant": {
+        "type": "u8",
+        "value": 5
+      }
+    },
+    {
+      "name": "MarginfiOpenPosition",
+      "accounts": [
+        {
+          "name": "signer",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "marginfiProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "ataProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "signerReferralState",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "referredByState",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "referredBySupplyTa",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "solautoPosition",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "marginfiGroup",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "marginfiAccount",
+          "isMut": true,
+          "isSigner": false,
+          "isOptionalSigner": true
+        },
+        {
+          "name": "supplyMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "supplyBank",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "positionSupplyTa",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "debtMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "debtBank",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "positionDebtTa",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "signerDebtTa",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        }
+      ],
+      "args": [
+        {
+          "name": "marginfiOpenPositionData",
+          "type": {
+            "defined": "MarginfiOpenPositionData"
+          }
+        }
+      ],
+      "discriminant": {
+        "type": "u8",
+        "value": 6
+      }
+    },
+    {
+      "name": "MarginfiRefreshData",
+      "accounts": [
+        {
+          "name": "signer",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "marginfiProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "marginfiGroup",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "marginfiAccount",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "supplyBank",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "supplyPriceOracle",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "debtBank",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "debtPriceOracle",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "solautoPosition",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": [],
+      "discriminant": {
+        "type": "u8",
+        "value": 7
+      }
+    },
+    {
+      "name": "MarginfiProtocolInteraction",
+      "accounts": [
+        {
+          "name": "signer",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "marginfiProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "ataProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "solautoPosition",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "marginfiGroup",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "marginfiAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "supplyBank",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "supplyPriceOracle",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "positionSupplyTa",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "vaultSupplyTa",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "supplyVaultAuthority",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "debtBank",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "debtPriceOracle",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "positionDebtTa",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "vaultDebtTa",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "debtVaultAuthority",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        }
+      ],
+      "args": [
+        {
+          "name": "solautoAction",
+          "type": {
+            "defined": "SolautoAction"
+          }
+        }
+      ],
+      "discriminant": {
+        "type": "u8",
+        "value": 8
+      }
+    },
+    {
+      "name": "MarginfiRebalance",
+      "accounts": [
+        {
+          "name": "signer",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "marginfiProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "ixsSysvar",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "solautoFeesTa",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "authorityReferralState",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "referredByTa",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "positionAuthority",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "solautoPosition",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "marginfiGroup",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "marginfiAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "intermediaryTa",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "supplyBank",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "supplyPriceOracle",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "positionSupplyTa",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "authoritySupplyTa",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "vaultSupplyTa",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "supplyVaultAuthority",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "debtBank",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "debtPriceOracle",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "positionDebtTa",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "authorityDebtTa",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "vaultDebtTa",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "debtVaultAuthority",
+          "isMut": true,
+          "isSigner": false,
+          "isOptional": true
+        }
+      ],
+      "args": [
+        {
+          "name": "rebalanceSettings",
+          "type": {
+            "defined": "RebalanceSettings"
+          }
+        }
+      ],
+      "discriminant": {
+        "type": "u8",
+        "value": 9
+      }
+    }
+  ],
+  "accounts": [
+    {
+      "name": "ReferralState",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "bump",
+            "type": {
+              "array": [
+                "u8",
+                1
+              ]
+            }
+          },
+          {
+            "name": "padding1",
+            "type": {
+              "array": [
+                "u8",
+                7
+              ]
+            }
+          },
+          {
+            "name": "authority",
+            "type": "publicKey"
+          },
+          {
+            "name": "referredByState",
+            "type": "publicKey"
+          },
+          {
+            "name": "destFeesMint",
+            "type": "publicKey"
+          },
+          {
+            "name": "lookupTable",
+            "type": "publicKey"
+          },
+          {
+            "name": "padding",
+            "type": {
+              "array": [
+                "u8",
+                96
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "SolautoPosition",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "bump",
+            "type": {
+              "array": [
+                "u8",
+                1
+              ]
+            }
+          },
+          {
+            "name": "positionId",
+            "type": {
+              "array": [
+                "u8",
+                1
+              ]
+            }
+          },
+          {
+            "name": "selfManaged",
+            "type": {
+              "defined": "PodBool"
+            }
+          },
+          {
+            "name": "positionType",
+            "type": {
+              "defined": "PositionType"
+            }
+          },
+          {
+            "name": "padding1",
+            "type": {
+              "array": [
+                "u8",
+                4
+              ]
+            }
+          },
+          {
+            "name": "authority",
+            "type": "publicKey"
+          },
+          {
+            "name": "position",
+            "type": {
+              "defined": "PositionData"
+            }
+          },
+          {
+            "name": "state",
+            "type": {
+              "defined": "PositionState"
+            }
+          },
+          {
+            "name": "rebalance",
+            "type": {
+              "defined": "RebalanceData"
+            }
+          },
+          {
+            "name": "padding",
+            "type": {
+              "array": [
+                "u32",
+                32
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "AutomationSettingsInp",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "targetPeriods",
+            "type": "u16"
+          },
+          {
+            "name": "periodsPassed",
+            "type": "u16"
+          },
+          {
+            "name": "unixStartDate",
+            "type": "u64"
+          },
+          {
+            "name": "intervalSeconds",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "AutomationSettings",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "targetPeriods",
+            "type": "u16"
+          },
+          {
+            "name": "periodsPassed",
+            "type": "u16"
+          },
+          {
+            "name": "padding1",
+            "type": {
+              "array": [
+                "u8",
+                4
+              ]
+            }
+          },
+          {
+            "name": "unixStartDate",
+            "type": "u64"
+          },
+          {
+            "name": "intervalSeconds",
+            "type": "u64"
+          },
+          {
+            "name": "padding",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "TokenAmount",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "baseUnit",
+            "type": "u64"
+          },
+          {
+            "name": "baseAmountUsdValue",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PositionTokenUsage",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "mint",
+            "type": "publicKey"
+          },
+          {
+            "name": "decimals",
+            "type": "u8"
+          },
+          {
+            "name": "padding1",
+            "type": {
+              "array": [
+                "u8",
+                7
+              ]
+            }
+          },
+          {
+            "name": "amountUsed",
+            "type": {
+              "defined": "TokenAmount"
+            }
+          },
+          {
+            "name": "amountCanBeUsed",
+            "type": {
+              "defined": "TokenAmount"
+            }
+          },
+          {
+            "name": "baseAmountMarketPriceUsd",
+            "type": "u64"
+          },
+          {
+            "name": "flashLoanFeeBps",
+            "type": "u16"
+          },
+          {
+            "name": "borrowFeeBps",
+            "type": "u16"
+          },
+          {
+            "name": "padding2",
+            "type": {
+              "array": [
+                "u8",
+                4
+              ]
+            }
+          },
+          {
+            "name": "padding",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "DCASettingsInp",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "automation",
+            "type": {
+              "defined": "AutomationSettingsInp"
+            }
+          },
+          {
+            "name": "dcaInBaseUnit",
+            "type": "u64"
+          },
+          {
+            "name": "tokenType",
+            "type": {
+              "defined": "TokenType"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "DCASettings",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "automation",
+            "type": {
+              "defined": "AutomationSettings"
+            }
+          },
+          {
+            "name": "dcaInBaseUnit",
+            "type": "u64"
+          },
+          {
+            "name": "tokenType",
+            "type": {
+              "defined": "TokenType"
+            }
+          },
+          {
+            "name": "padding",
+            "type": {
+              "array": [
+                "u8",
+                31
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "SolautoSettingsParametersInp",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "boostToBps",
+            "type": "u16"
+          },
+          {
+            "name": "boostGap",
+            "type": "u16"
+          },
+          {
+            "name": "repayToBps",
+            "type": "u16"
+          },
+          {
+            "name": "repayGap",
+            "type": "u16"
+          },
+          {
+            "name": "targetBoostToBps",
+            "type": {
+              "option": "u16"
+            }
+          },
+          {
+            "name": "automation",
+            "type": {
+              "option": {
+                "defined": "AutomationSettingsInp"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "SolautoSettingsParameters",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "boostToBps",
+            "type": "u16"
+          },
+          {
+            "name": "boostGap",
+            "type": "u16"
+          },
+          {
+            "name": "repayToBps",
+            "type": "u16"
+          },
+          {
+            "name": "repayGap",
+            "type": "u16"
+          },
+          {
+            "name": "targetBoostToBps",
+            "type": "u16"
+          },
+          {
+            "name": "padding1",
+            "type": {
+              "array": [
+                "u8",
+                6
+              ]
+            }
+          },
+          {
+            "name": "automation",
+            "type": {
+              "defined": "AutomationSettings"
+            }
+          },
+          {
+            "name": "padding",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "PositionState",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "liqUtilizationRateBps",
+            "type": "u16"
+          },
+          {
+            "name": "padding1",
+            "type": {
+              "array": [
+                "u8",
+                6
+              ]
+            }
+          },
+          {
+            "name": "netWorth",
+            "type": {
+              "defined": "TokenAmount"
+            }
+          },
+          {
+            "name": "supply",
+            "type": {
+              "defined": "PositionTokenUsage"
+            }
+          },
+          {
+            "name": "debt",
+            "type": {
+              "defined": "PositionTokenUsage"
+            }
+          },
+          {
+            "name": "maxLtvBps",
+            "type": "u16"
+          },
+          {
+            "name": "liqThresholdBps",
+            "type": "u16"
+          },
+          {
+            "name": "padding2",
+            "type": {
+              "array": [
+                "u8",
+                4
+              ]
+            }
+          },
+          {
+            "name": "lastUpdated",
+            "type": "u64"
+          },
+          {
+            "name": "padding",
+            "type": {
+              "array": [
+                "u32",
+                2
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "PositionData",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "lendingPlatform",
+            "type": {
+              "defined": "LendingPlatform"
+            }
+          },
+          {
+            "name": "padding1",
+            "type": {
+              "array": [
+                "u8",
+                7
+              ]
+            }
+          },
+          {
+            "name": "protocolUserAccount",
+            "type": "publicKey"
+          },
+          {
+            "name": "protocolSupplyAccount",
+            "type": "publicKey"
+          },
+          {
+            "name": "protocolDebtAccount",
+            "type": "publicKey"
+          },
+          {
+            "name": "settingParams",
+            "type": {
+              "defined": "SolautoSettingsParameters"
+            }
+          },
+          {
+            "name": "dca",
+            "type": {
+              "defined": "DCASettings"
+            }
+          },
+          {
+            "name": "padding",
+            "type": {
+              "array": [
+                "u32",
+                4
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "RebalanceData",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "rebalanceType",
+            "type": {
+              "defined": "SolautoRebalanceType"
+            }
+          },
+          {
+            "name": "padding1",
+            "type": {
+              "array": [
+                "u8",
+                7
+              ]
+            }
+          },
+          {
+            "name": "rebalanceDirection",
+            "type": {
+              "defined": "RebalanceDirection"
+            }
+          },
+          {
+            "name": "padding2",
+            "type": {
+              "array": [
+                "u8",
+                7
+              ]
+            }
+          },
+          {
+            "name": "flashLoanAmount",
+            "type": "u64"
+          },
+          {
+            "name": "padding",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "UpdateReferralStatesArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "referralFeesDestMint",
+            "type": {
+              "option": "publicKey"
+            }
+          },
+          {
+            "name": "addressLookupTable",
+            "type": {
+              "option": "publicKey"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "MarginfiOpenPositionData",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "positionType",
+            "type": {
+              "defined": "PositionType"
+            }
+          },
+          {
+            "name": "positionData",
+            "type": {
+              "defined": "UpdatePositionData"
+            }
+          },
+          {
+            "name": "marginfiAccountSeedIdx",
+            "type": {
+              "option": "u64"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "UpdatePositionData",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "positionId",
+            "type": "u8"
+          },
+          {
+            "name": "settingParams",
+            "type": {
+              "option": {
+                "defined": "SolautoSettingsParametersInp"
+              }
+            }
+          },
+          {
+            "name": "dca",
+            "type": {
+              "option": {
+                "defined": "DCASettingsInp"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "RebalanceSettings",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "rebalanceType",
+            "type": {
+              "defined": "SolautoRebalanceType"
+            }
+          },
+          {
+            "name": "targetLiqUtilizationRateBps",
+            "type": {
+              "option": "u16"
+            }
+          },
+          {
+            "name": "targetInAmountBaseUnit",
+            "type": {
+              "option": "u64"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "PodBool",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "val",
+            "type": "bool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "SolautoRebalanceType",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "None"
+          },
+          {
+            "name": "Regular"
+          },
+          {
+            "name": "DoubleRebalanceWithFL"
+          },
+          {
+            "name": "FLSwapThenRebalance"
+          },
+          {
+            "name": "FLRebalanceThenSwap"
+          }
+        ]
+      }
+    },
+    {
+      "name": "SolautoAction",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Deposit",
+            "fields": [
+              "u64"
+            ]
+          },
+          {
+            "name": "Borrow",
+            "fields": [
+              "u64"
+            ]
+          },
+          {
+            "name": "Repay",
+            "fields": [
+              {
+                "defined": "TokenBalanceAmount"
+              }
+            ]
+          },
+          {
+            "name": "Withdraw",
+            "fields": [
+              {
+                "defined": "TokenBalanceAmount"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "LendingPlatform",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Marginfi"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PositionType",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Leverage"
+          },
+          {
+            "name": "SafeLoan"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TokenType",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Supply"
+          },
+          {
+            "name": "Debt"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RebalanceDirection",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Boost"
+          },
+          {
+            "name": "Repay"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TokenBalanceAmount",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Some",
+            "fields": [
+              "u64"
+            ]
+          },
+          {
+            "name": "All"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "code": 0,
+      "name": "IncorrectAccounts",
+      "msg": "Missing or incorrect accounts provided for the given instruction"
+    },
+    {
+      "code": 1,
+      "name": "FailedAccountDeserialization",
+      "msg": "Failed to deserialize account data"
+    },
+    {
+      "code": 2,
+      "name": "InvalidPositionSettings",
+      "msg": "Invalid position settings provided"
+    },
+    {
+      "code": 3,
+      "name": "InvalidDCASettings",
+      "msg": "Invalid DCA configuration provided"
+    },
+    {
+      "code": 4,
+      "name": "InvalidAutomationData",
+      "msg": "Invalid automation settings provided"
+    },
+    {
+      "code": 5,
+      "name": "InvalidRebalanceCondition",
+      "msg": "Invalid position condition to rebalance"
+    },
+    {
+      "code": 6,
+      "name": "InstructionIsCPI",
+      "msg": "Unable to invoke instruction through a CPI"
+    },
+    {
+      "code": 7,
+      "name": "IncorrectInstructions",
+      "msg": "Incorrect set of instructions in the transaction"
+    },
+    {
+      "code": 8,
+      "name": "IncorrectDebtAdjustment",
+      "msg": "Incorrect swap amount provided. Likely due to high price volatility"
+    }
+  ],
+  "metadata": {
+    "origin": "shank",
+    "address": "AutoyKBRaHSBHy9RsmXCZMy6nNFAg5FYijrvZyQcNLV"
+  }
+}

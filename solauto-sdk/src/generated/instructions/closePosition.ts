@@ -33,7 +33,7 @@ export type ClosePositionInstructionAccounts = {
   tokenProgram?: PublicKey | Pda;
   ataProgram?: PublicKey | Pda;
   solautoPosition: PublicKey | Pda;
-  protocolAccount: PublicKey | Pda;
+  lpUserAccount: PublicKey | Pda;
   positionSupplyTa: PublicKey | Pda;
   signerSupplyTa: PublicKey | Pda;
   positionDebtTa: PublicKey | Pda;
@@ -102,10 +102,10 @@ export function closePosition(
       isWritable: true as boolean,
       value: input.solautoPosition ?? null,
     },
-    protocolAccount: {
+    lpUserAccount: {
       index: 5,
       isWritable: true as boolean,
-      value: input.protocolAccount ?? null,
+      value: input.lpUserAccount ?? null,
     },
     positionSupplyTa: {
       index: 6,

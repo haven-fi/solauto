@@ -25,6 +25,7 @@ import {
   ResolvedAccountsWithIndices,
   getAccountMetasAndSigners,
 } from '../shared';
+import { PriceType, PriceTypeArgs, getPriceTypeSerializer } from '../types';
 
 // Accounts.
 export type MarginfiRefreshDataInstructionAccounts = {
@@ -40,9 +41,14 @@ export type MarginfiRefreshDataInstructionAccounts = {
 };
 
 // Data.
-export type MarginfiRefreshDataInstructionData = { discriminator: number };
+export type MarginfiRefreshDataInstructionData = {
+  discriminator: number;
+  priceType: PriceType;
+};
 
-export type MarginfiRefreshDataInstructionDataArgs = {};
+export type MarginfiRefreshDataInstructionDataArgs = {
+  priceType: PriceTypeArgs;
+};
 
 export function getMarginfiRefreshDataInstructionDataSerializer(): Serializer<
   MarginfiRefreshDataInstructionDataArgs,
@@ -53,9 +59,13 @@ export function getMarginfiRefreshDataInstructionDataSerializer(): Serializer<
     any,
     MarginfiRefreshDataInstructionData
   >(
-    struct<MarginfiRefreshDataInstructionData>([['discriminator', u8()]], {
-      description: 'MarginfiRefreshDataInstructionData',
-    }),
+    struct<MarginfiRefreshDataInstructionData>(
+      [
+        ['discriminator', u8()],
+        ['priceType', getPriceTypeSerializer()],
+      ],
+      { description: 'MarginfiRefreshDataInstructionData' }
+    ),
     (value) => ({ ...value, discriminator: 7 })
   ) as Serializer<
     MarginfiRefreshDataInstructionDataArgs,
@@ -63,10 +73,15 @@ export function getMarginfiRefreshDataInstructionDataSerializer(): Serializer<
   >;
 }
 
+// Args.
+export type MarginfiRefreshDataInstructionArgs =
+  MarginfiRefreshDataInstructionDataArgs;
+
 // Instruction.
 export function marginfiRefreshData(
   context: Pick<Context, 'programs'>,
-  input: MarginfiRefreshDataInstructionAccounts
+  input: MarginfiRefreshDataInstructionAccounts &
+    MarginfiRefreshDataInstructionArgs
 ): TransactionBuilder {
   // Program ID.
   const programId = context.programs.getPublicKey(
@@ -123,6 +138,9 @@ export function marginfiRefreshData(
     },
   } satisfies ResolvedAccountsWithIndices;
 
+  // Arguments.
+  const resolvedArgs: MarginfiRefreshDataInstructionArgs = { ...input };
+
   // Accounts in order.
   const orderedAccounts: ResolvedAccount[] = Object.values(
     resolvedAccounts
@@ -136,7 +154,9 @@ export function marginfiRefreshData(
   );
 
   // Data.
-  const data = getMarginfiRefreshDataInstructionDataSerializer().serialize({});
+  const data = getMarginfiRefreshDataInstructionDataSerializer().serialize(
+    resolvedArgs as MarginfiRefreshDataInstructionDataArgs
+  );
 
   // Bytes Created On Chain.
   const bytesCreatedOnChain = 0;

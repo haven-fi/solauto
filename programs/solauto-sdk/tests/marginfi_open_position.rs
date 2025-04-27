@@ -32,15 +32,13 @@ mod open_position {
             .general.create_referral_state_accounts().await
             .unwrap();
 
-        let setting_params = SolautoSettingsParametersInp {
+        let settings = SolautoSettingsParametersInp {
             boost_to_bps: 5000,
             boost_gap: 500,
             repay_to_bps: 7500,
             repay_gap: 500,
-            automation: None,
-            target_boost_to_bps: None,
         };
-        data.open_position(Some(setting_params.clone()), None).await.unwrap();
+        data.open_position(Some(settings.clone()), None).await.unwrap();
 
         let solauto_position = data.general.deserialize_account_data::<SolautoPosition>(
             data.general.solauto_position
@@ -50,57 +48,12 @@ mod open_position {
         assert!(solauto_position.authority == data.general.ctx.payer.pubkey());
 
         let position = &solauto_position.position;
-        assert!(position.setting_params.boost_to_bps == setting_params.boost_to_bps);
+        assert!(position.settings.boost_to_bps == settings.boost_to_bps);
         assert!(position.lending_platform == LendingPlatform::Marginfi);
         assert!(solauto_position.state.supply.mint == data.general.supply_mint.pubkey());
         assert!(solauto_position.state.debt.mint == data.general.debt_mint.pubkey());
-        assert!(position.protocol_user_account == data.marginfi_account);
-    }
-
-    #[tokio::test]
-    async fn std_open_position_with_dca() {
-        let args = GeneralArgs::new();
-        let mut data = MarginfiTestData::new(&args).await;
-        data.test_prefixtures().await
-            .unwrap()
-            .general.create_referral_state_accounts().await
-            .unwrap();
-
-        let dca_amount = 50_000;
-        data.general
-            .mint_tokens_to_ta(
-                data.general.debt_mint,
-                data.general.signer_debt_ta,
-                dca_amount
-            ).await
-            .unwrap();
-
-        let active_dca = DCASettingsInp {
-            automation: AutomationSettingsInp {
-                unix_start_date: (Utc::now().timestamp() as u64) - 1,
-                interval_seconds: 60 * 60 * 24,
-                periods_passed: 0,
-                target_periods: 5,
-            },
-            dca_in_base_unit: dca_amount,
-            token_type: TokenType::Debt
-        };
-        data.open_position(
-            Some(data.general.default_setting_params.clone()),
-            Some(active_dca.clone())
-        ).await.unwrap();
-
-        let position_account = data.general.deserialize_account_data::<SolautoPosition>(
-            data.general.solauto_position
-        ).await;
-        let position = &position_account.position;
-        assert!(&position.dca.automation.target_periods == &active_dca.automation.target_periods);
-        assert!(position.dca.dca_in_base_unit == dca_amount);
-
-        let position_debt_ta = data.general.unpack_account_data::<TokenAccount>(
-            data.general.position_debt_ta.clone()
-        ).await;
-        assert!(position_debt_ta.amount == dca_amount);
+        assert!(position.lp_user_account == data.marginfi_account);
+        assert!(position.lp_pool_account == data.marginfi_group);
     }
 
     #[tokio::test]
@@ -117,7 +70,7 @@ mod open_position {
         let tx = Transaction::new_signed_with_payer(
             &[
                 data
-                    .open_position_ix(Some(data.general.default_setting_params.clone()), None)
+                    .open_position_ix(Some(data.general.default_settings.clone()), None)
                     .signer(temp_account.pubkey())
                     .instruction(),
             ],
@@ -140,7 +93,7 @@ mod open_position {
             .unwrap();
 
         let mut open_position_ix = data.open_position_ix(
-            Some(data.general.default_setting_params.clone()),
+            Some(data.general.default_settings.clone()),
             None
         );
 

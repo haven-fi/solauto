@@ -46,12 +46,12 @@ impl LendingAccountSettleEmissions {
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
-struct LendingAccountSettleEmissionsInstructionData {
+pub struct LendingAccountSettleEmissionsInstructionData {
     discriminator: [u8; 8],
 }
 
 impl LendingAccountSettleEmissionsInstructionData {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             discriminator: [161, 58, 136, 174, 242, 223, 156, 176],
         }

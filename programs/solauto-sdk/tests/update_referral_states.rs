@@ -16,10 +16,10 @@ mod update_referral_states {
 
     #[tokio::test]
     async fn update_referral_states() {
-        // Create referral state for signer
         let args = GeneralArgs::new();
         let mut data = MarginfiTestData::new(&args).await;
 
+        // Create referral state for signer
         data.general
             .execute_instructions(
                 vec![data.general.update_referral_states_ix().instruction()],

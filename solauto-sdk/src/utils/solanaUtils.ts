@@ -1,20 +1,5 @@
 import bs58 from "bs58";
 import {
-  AddressLookupTableInput,
-  Signer,
-  TransactionBuilder,
-  Umi,
-  WrappedInstruction,
-  publicKey,
-  transactionBuilder,
-} from "@metaplex-foundation/umi";
-import {
-  fromWeb3JsInstruction,
-  toWeb3JsPublicKey,
-  toWeb3JsTransaction,
-} from "@metaplex-foundation/umi-web3js-adapters";
-import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
-import {
   AddressLookupTableAccount,
   BlockhashWithExpiryBlockHeight,
   ComputeBudgetProgram,
@@ -32,36 +17,51 @@ import {
   createCloseAccountInstruction,
   createTransferInstruction,
 } from "@solana/spl-token";
-import { getTokenAccount } from "./accountUtils";
 import {
-  arraysAreEqual,
-  consoleLog,
-  retryWithExponentialBackoff,
-} from "./generalUtils";
+  AccountMeta,
+  AddressLookupTableInput,
+  Signer,
+  TransactionBuilder,
+  Umi,
+  WrappedInstruction,
+  publicKey,
+  transactionBuilder,
+} from "@metaplex-foundation/umi";
+import {
+  fromWeb3JsInstruction,
+  fromWeb3JsPublicKey,
+  toWeb3JsPublicKey,
+  toWeb3JsTransaction,
+} from "@metaplex-foundation/umi-web3js-adapters";
+import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
+import { PriorityFeeSetting, ProgramEnv, TransactionRunType } from "../types";
 import {
   getLendingAccountEndFlashloanInstructionDataSerializer,
   getLendingAccountStartFlashloanInstructionDataSerializer,
 } from "../marginfi-sdk";
-import { PriorityFeeSetting, TransactionRunType } from "../types";
-import { createDynamicSolautoProgram } from "./solauto";
-import { SOLAUTO_PROD_PROGRAM } from "../constants";
-
-export function buildHeliusApiUrl(heliusApiKey: string) {
-  return `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`;
-}
-
-export function buildIronforgeApiUrl(ironforgeApiKey: string) {
-  return `https://rpc.ironforge.network/mainnet?apiKey=${ironforgeApiKey}`;
-}
+import { getTokenAccount } from "./accountUtils";
+import {
+  arraysAreEqual,
+  consoleLog,
+  customRpcCall,
+  retryWithExponentialBackoff,
+} from "./generalUtils";
+import { createDynamicSolautoProgram } from "./solautoUtils";
+import { createDynamicMarginfiProgram } from "./marginfi";
+import { usePriorityFee } from "../services";
 
 export function getSolanaRpcConnection(
   rpcUrl: string,
-  programId: PublicKey = SOLAUTO_PROD_PROGRAM
+  programId?: PublicKey,
+  lpEnv?: ProgramEnv
 ): [Connection, Umi] {
-  const connection = new Connection(rpcUrl, "confirmed");
+  const connection = new Connection(rpcUrl, {
+    commitment: "confirmed",
+  });
   const umi = createUmi(connection).use({
     install(umi) {
       umi.programs.add(createDynamicSolautoProgram(programId), false);
+      umi.programs.add(createDynamicMarginfiProgram(lpEnv), false);
     },
   });
   return [connection, umi];
@@ -157,6 +157,34 @@ export function splTokenTransferUmiIx(
   );
 }
 
+export function getAccountMeta(
+  pubkey: PublicKey,
+  isSigner: boolean = false,
+  isWritable: boolean = false
+): AccountMeta {
+  return { pubkey: fromWeb3JsPublicKey(pubkey), isSigner, isWritable };
+}
+
+export async function getWalletSplBalances(
+  conn: Connection,
+  wallet: PublicKey,
+  tokenMints: PublicKey[]
+): Promise<bigint[]> {
+  return await Promise.all(
+    tokenMints.map(async (mint) => {
+      try {
+        const data = await conn.getTokenAccountBalance(
+          getTokenAccount(wallet, mint),
+          "confirmed"
+        );
+        return BigInt(data.value.amount);
+      } catch {
+        return 0n;
+      }
+    })
+  );
+}
+
 export async function getAddressLookupInputs(
   umi: Umi,
   lookupTableAddresses: string[]
@@ -182,32 +210,41 @@ export async function getAddressLookupInputs(
 }
 
 export function addTxOptimizations(
-  signer: Signer,
-  transaction: TransactionBuilder,
+  umi: Umi,
+  tx: TransactionBuilder,
   computeUnitPrice?: number,
   computeUnitLimit?: number
 ) {
-  return transaction
-    .prepend(
-      computeUnitPrice !== undefined
-        ? setComputeUnitPriceUmiIx(signer, computeUnitPrice)
-        : transactionBuilder()
-    )
-    .prepend(
-      computeUnitLimit
-        ? setComputeUnitLimitUmiIx(signer, computeUnitLimit)
-        : transactionBuilder()
-    );
+  const computePriceIx =
+    computeUnitPrice !== undefined
+      ? setComputeUnitPriceUmiIx(umi.identity, computeUnitPrice)
+      : transactionBuilder();
+  const computeLimitIx = computeUnitLimit
+    ? setComputeUnitLimitUmiIx(umi.identity, computeUnitLimit)
+    : transactionBuilder();
+
+  const allOptimizations = tx.prepend(computePriceIx).prepend(computeLimitIx);
+  const withCuPrice = tx.prepend(computePriceIx);
+  const withCuLimit = tx.prepend(computeLimitIx);
+  if (allOptimizations.fitsInOneTransaction(umi)) {
+    return allOptimizations;
+  } else if (withCuPrice.fitsInOneTransaction(umi)) {
+    return withCuPrice;
+  } else if (withCuLimit.fitsInOneTransaction(umi)) {
+    return withCuLimit;
+  } else {
+    return tx;
+  }
 }
 
 export function assembleFinalTransaction(
-  signer: Signer,
+  umi: Umi,
   transaction: TransactionBuilder,
   computeUnitPrice?: number,
   computeUnitLimit?: number
 ) {
   const tx = addTxOptimizations(
-    signer,
+    umi,
     transaction,
     computeUnitPrice,
     computeUnitLimit
@@ -286,6 +323,17 @@ async function simulateTransaction(
   return simulationResult;
 }
 
+export async function getQnComputeUnitPriceEstimate(
+  umi: Umi,
+  programId: PublicKey,
+  blockheight: number = 50
+): Promise<any> {
+  return await customRpcCall(umi, "qn_estimatePriorityFees", {
+    last_n_blocks: blockheight,
+    account: programId.toString(),
+  });
+}
+
 export async function getComputeUnitPriceEstimate(
   umi: Umi,
   tx: TransactionBuilder,
@@ -300,14 +348,25 @@ export async function getComputeUnitPriceEstimate(
     .getInstructions()
     .flatMap((x) => x.keys.flatMap((x) => x.pubkey.toString()));
 
-    let feeEstimate: number | undefined;
+  let feeEstimate: number | undefined;
+  try {
+    const resp = await customRpcCall(umi, "getPriorityFeeEstimate", [
+      {
+        transaction: !useAccounts
+          ? bs58.encode(web3Transaction.serialize())
+          : undefined,
+        accountKeys: useAccounts ? accountKeys : undefined,
+        options: {
+          priorityLevel: prioritySetting.toString(),
+        },
+      },
+    ]);
+    feeEstimate = Math.round((resp as any).priorityFeeEstimate as number);
+  } catch (e) {
     try {
-      const resp = await umi.rpc.call("getPriorityFeeEstimate", [
+      const resp = await customRpcCall(umi, "getPriorityFeeEstimate", [
         {
-          transaction: !useAccounts
-            ? bs58.encode(web3Transaction.serialize())
-            : undefined,
-          accountKeys: useAccounts ? accountKeys : undefined,
+          accountKeys,
           options: {
             priorityLevel: prioritySetting.toString(),
           },
@@ -315,20 +374,9 @@ export async function getComputeUnitPriceEstimate(
       ]);
       feeEstimate = Math.round((resp as any).priorityFeeEstimate as number);
     } catch (e) {
-      try {
-        const resp = await umi.rpc.call("getPriorityFeeEstimate", [
-          {
-            accountKeys,
-            options: {
-              priorityLevel: prioritySetting.toString(),
-            },
-          },
-        ]);
-        feeEstimate = Math.round((resp as any).priorityFeeEstimate as number);
-      } catch (e) {
-        // console.error(e);
-      }
+      // console.error(e);
     }
+  }
 
   return feeEstimate;
 }
@@ -349,9 +397,7 @@ async function spamSendTransactionUntilConfirmed(
       );
       transactionSignature = txSignature;
       consoleLog(`Transaction sent`);
-    } catch (error) {
-      consoleLog("Error sending transaction:", error);
-    }
+    } catch (e) {}
   };
 
   await sendTx();
@@ -386,11 +432,16 @@ export async function sendSingleOptimizedTransaction(
   tx: TransactionBuilder,
   txType?: TransactionRunType,
   prioritySetting: PriorityFeeSetting = PriorityFeeSetting.Min,
-  onAwaitingSign?: () => void
+  onAwaitingSign?: () => void,
+  abortController?: AbortController
 ): Promise<Uint8Array | undefined> {
   consoleLog("Sending single optimized transaction...");
   consoleLog("Instructions: ", tx.getInstructions().length);
   consoleLog("Serialized transaction size: ", tx.getTransactionSize(umi));
+  consoleLog(
+    "Programs: ",
+    tx.getInstructions().map((x) => x.programId)
+  );
 
   const accounts = tx
     .getInstructions()
@@ -402,44 +453,39 @@ export async function sendSingleOptimizedTransaction(
 
   const blockhash = await connection.getLatestBlockhash("confirmed");
 
-  let computeUnitLimit = undefined;
+  if (abortController?.signal.aborted) {
+    return;
+  }
+  let cuLimit = undefined;
   if (txType !== "skip-simulation") {
     const simulationResult = await retryWithExponentialBackoff(
       async () =>
         await simulateTransaction(
           umi,
           connection,
-          assembleFinalTransaction(
-            umi.identity,
-            tx,
-            undefined,
-            1_400_000
-          ).setBlockhash(blockhash)
+          assembleFinalTransaction(umi, tx, undefined, 1_400_000).setBlockhash(
+            blockhash
+          )
         ),
-      3
+      2
     );
-    computeUnitLimit = Math.round(simulationResult.value.unitsConsumed! * 1.15);
-    consoleLog("Compute unit limit: ", computeUnitLimit);
+    cuLimit = Math.round(simulationResult.value.unitsConsumed! * 1.15);
+    consoleLog("Compute unit limit: ", cuLimit);
   }
 
   let cuPrice: number | undefined;
-  if (prioritySetting !== PriorityFeeSetting.None) {
+  if (usePriorityFee(prioritySetting)) {
     cuPrice = await getComputeUnitPriceEstimate(umi, tx, prioritySetting);
-    if (!cuPrice) {
-      cuPrice = 1_000_000;
-    }
-    cuPrice = Math.min(cuPrice, 100 * 1_000_000);
+    cuPrice = Math.min(cuPrice ?? 0, 100_000_000);
     consoleLog("Compute unit price: ", cuPrice);
   }
 
+  if (abortController?.signal.aborted) {
+    return;
+  }
   if (txType !== "only-simulate") {
     onAwaitingSign?.();
-    const signedTx = await assembleFinalTransaction(
-      umi.identity,
-      tx,
-      cuPrice,
-      computeUnitLimit
-    )
+    const signedTx = await assembleFinalTransaction(umi, tx, cuPrice, cuLimit)
       .setBlockhash(blockhash)
       .buildAndSign(umi);
     const txSig = await spamSendTransactionUntilConfirmed(

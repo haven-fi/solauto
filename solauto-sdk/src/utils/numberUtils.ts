@@ -1,5 +1,84 @@
-import { BASIS_POINTS, MIN_REPAY_GAP_BPS } from "../constants";
-import { RebalanceDirection } from "../generated";
+import { PublicKey } from "@solana/web3.js";
+import {
+  BASIS_POINTS,
+  MIN_REPAY_GAP_BPS,
+  OFFSET_FROM_MAX_LTV,
+  USD_DECIMALS,
+} from "../constants";
+import { PositionState, PriceType } from "../generated";
+import { RoundAction } from "../types";
+import { safeGetPrice } from "./priceUtils";
+
+export function calcNetWorthUsd(state?: PositionState) {
+  return fromRoundedUsdValue(state?.netWorth.baseAmountUsdValue ?? BigInt(0));
+}
+
+export function calcSupplyUsd(state?: PositionState) {
+  return fromRoundedUsdValue(
+    state?.supply.amountUsed.baseAmountUsdValue ?? BigInt(0)
+  );
+}
+
+export function calcDebtUsd(state?: PositionState) {
+  return fromRoundedUsdValue(
+    state?.debt.amountUsed.baseAmountUsdValue ?? BigInt(0)
+  );
+}
+
+export function calcNetWorth(state?: PositionState) {
+  return fromBaseUnit(
+    state?.netWorth.baseUnit ?? BigInt(0),
+    state?.supply.decimals ?? 1
+  );
+}
+
+export function calcTotalSupply(state?: PositionState) {
+  return fromBaseUnit(
+    state?.supply.amountUsed.baseUnit ?? BigInt(0),
+    state?.supply.decimals ?? 1
+  );
+}
+
+export function calcTotalDebt(state?: PositionState) {
+  return fromBaseUnit(
+    state?.debt.amountUsed.baseUnit ?? BigInt(0),
+    state?.debt.decimals ?? 1
+  );
+}
+
+export function debtLiquidityAvailable(state?: PositionState) {
+  return fromBaseUnit(
+    state?.debt.amountCanBeUsed.baseUnit ?? BigInt(0),
+    state?.debt.decimals ?? 1
+  );
+}
+
+export function debtLiquidityUsdAvailable(state?: PositionState) {
+  return fromRoundedUsdValue(
+    state?.debt.amountCanBeUsed.baseAmountUsdValue ?? BigInt(0)
+  );
+}
+
+export function supplyLiquidityDepositable(state?: PositionState) {
+  return fromBaseUnit(
+    state?.supply.amountCanBeUsed.baseUnit ?? BigInt(0),
+    state?.supply.decimals ?? 1
+  );
+}
+
+export function supplyLiquidityUsdDepositable(state?: PositionState) {
+  return fromRoundedUsdValue(
+    state?.supply.amountCanBeUsed.baseAmountUsdValue ?? BigInt(0)
+  );
+}
+
+export function fromRoundedUsdValue(number: bigint) {
+  return fromBaseUnit(number, USD_DECIMALS);
+}
+
+export function toRoundedUsdValue(number: number) {
+  return toBaseUnit(number, USD_DECIMALS);
+}
 
 export function getLiqUtilzationRateBps(
   supplyUsd: number,
@@ -13,11 +92,15 @@ export function getLiqUtilzationRateBps(
   return toBps(debtUsd / (supplyUsd * fromBps(liqThresholdBps)));
 }
 
-export function toBaseUnit(value: number, decimals: number): bigint {
+export function toBaseUnit(
+  value: number,
+  decimals: number,
+  roundAction: RoundAction = "Round"
+): bigint {
   if (!decimals) {
     return BigInt(Math.floor(value));
   }
-  return BigInt(Math.round(value * Math.pow(10, decimals)));
+  return BigInt(roundNumber(value * Math.pow(10, decimals), roundAction));
 }
 
 export function fromBaseUnit(value: bigint, decimals: number): number {
@@ -31,8 +114,20 @@ export function fromBps(value: number): number {
   return value / BASIS_POINTS;
 }
 
-export function toBps(value: number): number {
-  return Math.round(value * BASIS_POINTS);
+export function toBps(
+  value: number,
+  roundAction: RoundAction = "Round"
+): number {
+  const bps = value * BASIS_POINTS;
+  return roundNumber(bps, roundAction);
+}
+
+function roundNumber(number: number, roundAction: RoundAction = "Round") {
+  return roundAction === "Round"
+    ? Math.round(number)
+    : roundAction === "Floor"
+      ? Math.floor(number)
+      : Math.ceil(number);
 }
 
 export function bytesToI80F48(bytes: number[]): number {
@@ -75,84 +170,6 @@ export function uint8ArrayToBigInt(uint8Array: Uint8Array): bigint {
   return (BigInt(high) << 32n) | BigInt(low);
 }
 
-export function getDebtAdjustmentUsd(
-  liqThresholdBps: number,
-  supplyUsd: number,
-  debtUsd: number,
-  targetLiqUtilizationRateBps: number,
-  adjustmentFeeBps?: number
-) {
-  const adjustmentFee =
-    adjustmentFeeBps && adjustmentFeeBps > 0 ? fromBps(adjustmentFeeBps) : 0;
-  const liqThreshold = fromBps(liqThresholdBps);
-  const targetLiqUtilizationRate = fromBps(targetLiqUtilizationRateBps);
-
-  const debtAdjustmentUsd =
-    (targetLiqUtilizationRate * supplyUsd * liqThreshold - debtUsd) /
-    (1 - targetLiqUtilizationRate * (1 - adjustmentFee) * liqThreshold);
-  return debtAdjustmentUsd;
-}
-
-export function getSolautoFeesBps(
-  isReferred: boolean,
-  targetLiqUtilizationRateBps: number | undefined,
-  positionNetWorthUsd: number,
-  rebalanceDirection: RebalanceDirection
-): {
-  solauto: number;
-  referrer: number;
-  total: number;
-} {
-  const minSize = 10_000; // Minimum position size
-  const maxSize = 250_000; // Maximum position size
-  const maxFeeBps = 50; // Fee in basis points for minSize (0.5%)
-  const minFeeBps = 25; // Fee in basis points for maxSize (0.25%)
-  const k = 1.5;
-
-  if (
-    targetLiqUtilizationRateBps !== undefined &&
-    targetLiqUtilizationRateBps === 0
-  ) {
-    return {
-      solauto: 0,
-      referrer: 0,
-      total: 0,
-    };
-  }
-
-  let feeBps: number = 0;
-
-  if (
-    targetLiqUtilizationRateBps !== undefined ||
-    rebalanceDirection === RebalanceDirection.Repay
-  ) {
-    feeBps = 25;
-  } else if (positionNetWorthUsd <= minSize) {
-    feeBps = maxFeeBps;
-  } else if (positionNetWorthUsd >= maxSize) {
-    feeBps = minFeeBps;
-  } else {
-    const t =
-      (Math.log(positionNetWorthUsd) - Math.log(minSize)) /
-      (Math.log(maxSize) - Math.log(minSize));
-    feeBps = Math.round(
-      minFeeBps + (maxFeeBps - minFeeBps) * (1 - Math.pow(t, k))
-    );
-  }
-
-  let referrer = 0;
-  if (isReferred) {
-    feeBps *= 0.9;
-    referrer = Math.floor(feeBps * 0.15);
-  }
-
-  return {
-    solauto: feeBps - referrer,
-    referrer,
-    total: feeBps,
-  };
-}
-
 export function getMaxLiqUtilizationRateBps(
   maxLtvBps: number,
   liqThresholdBps: number,
@@ -167,20 +184,34 @@ export function getMaxLiqUtilizationRateBps(
 export function maxRepayFromBps(maxLtvBps: number, liqThresholdBps: number) {
   return Math.min(
     9000,
-    getMaxLiqUtilizationRateBps(maxLtvBps, liqThresholdBps - 1000, 0.01)
+    getMaxLiqUtilizationRateBps(
+      maxLtvBps,
+      liqThresholdBps - 1000,
+      OFFSET_FROM_MAX_LTV
+    )
   );
 }
 
 export function maxRepayToBps(maxLtvBps: number, liqThresholdBps: number) {
   return Math.min(
     maxRepayFromBps(maxLtvBps, liqThresholdBps) - MIN_REPAY_GAP_BPS,
-    getMaxLiqUtilizationRateBps(maxLtvBps, liqThresholdBps, 0.01)
+    getMaxLiqUtilizationRateBps(maxLtvBps, liqThresholdBps, OFFSET_FROM_MAX_LTV)
   );
 }
 
 export function maxBoostToBps(maxLtvBps: number, liqThresholdBps: number) {
   return Math.min(
     maxRepayToBps(maxLtvBps, liqThresholdBps),
-    getMaxLiqUtilizationRateBps(maxLtvBps, liqThresholdBps, 0.01)
+    getMaxLiqUtilizationRateBps(maxLtvBps, liqThresholdBps, OFFSET_FROM_MAX_LTV)
+  );
+}
+
+export function realtimeUsdToEmaUsd(
+  realtimeAmountUsd: number,
+  mint: PublicKey
+) {
+  return (
+    (realtimeAmountUsd / safeGetPrice(mint, PriceType.Realtime)!) *
+    safeGetPrice(mint, PriceType.Ema)!
   );
 }

@@ -22,7 +22,7 @@ mod close_position {
             .unwrap()
             .general.create_referral_state_accounts().await
             .unwrap();
-        data.open_position(Some(data.general.default_setting_params.clone()), None).await.unwrap();
+        data.open_position(Some(data.general.default_settings.clone()), None).await.unwrap();
 
         let current_supply_balance = 3445655;
         data.general
@@ -79,7 +79,7 @@ mod close_position {
             .unwrap()
             .general.create_referral_state_accounts().await
             .unwrap();
-        data.open_position(Some(data.general.default_setting_params.clone()), None).await.unwrap();
+        data.open_position(Some(data.general.default_settings.clone()), None).await.unwrap();
 
         let tx = Transaction::new_signed_with_payer(
             &[data.general.close_position_ix().signer(temp_account.pubkey()).instruction()],
@@ -99,16 +99,14 @@ mod close_position {
             .unwrap()
             .general.create_referral_state_accounts().await
             .unwrap();
-        data.open_position(Some(data.general.default_setting_params.clone()), None).await.unwrap();
+        data.open_position(Some(data.general.default_settings.clone()), None).await.unwrap();
 
         let temp_account = Keypair::new();
         let fake_supply_ta = get_associated_token_address(
             &temp_account.pubkey(),
             &data.general.supply_mint.pubkey()
         );
-        data.general
-            .create_ata(temp_account.pubkey(), &data.general.supply_mint).await
-            .unwrap();
+        data.general.create_ata(temp_account.pubkey(), &data.general.supply_mint).await.unwrap();
 
         // Fake position supply token account
         let err = data.general
@@ -129,19 +127,12 @@ mod close_position {
             &temp_account.pubkey(),
             &data.general.debt_mint.pubkey()
         );
-        data.general
-            .create_ata(temp_account.pubkey(), &data.general.debt_mint).await
-            .unwrap();
+        data.general.create_ata(temp_account.pubkey(), &data.general.debt_mint).await.unwrap();
 
         // Fake position debt token account
         let err = data.general
             .execute_instructions(
-                vec![
-                    data.general
-                        .close_position_ix()
-                        .position_debt_ta(fake_debt_ta)
-                        .instruction()
-                ],
+                vec![data.general.close_position_ix().position_debt_ta(fake_debt_ta).instruction()],
                 None
             ).await
             .unwrap_err();

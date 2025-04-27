@@ -13,11 +13,7 @@ use solana_sdk::{
     system_instruction,
     transaction::Transaction,
 };
-use solauto::{
-    constants::SOLAUTO_FEES_WALLET,
-    instructions::protocol_interaction,
-    state::referral_state::ReferralState,
-};
+use solauto::{ constants::SOLAUTO_FEES_WALLET, state::referral_state::ReferralState };
 use solauto_sdk::{
     generated::{
         instructions::{
@@ -41,7 +37,6 @@ use solauto_sdk::{
 };
 use spl_associated_token_account::{ get_associated_token_address, instruction as ata_instruction };
 use spl_token::{ instruction as token_instruction, state::Mint };
-use rand::{ Rng, thread_rng };
 
 #[macro_export]
 macro_rules! assert_instruction_error {
@@ -120,7 +115,7 @@ pub struct GeneralTestData<'a> {
     pub position_debt_ta: Pubkey,
     pub signer_debt_ta: Pubkey,
 
-    pub default_setting_params: SolautoSettingsParametersInp,
+    pub default_settings: SolautoSettingsParametersInp,
 }
 
 impl<'a> GeneralTestData<'a> {
@@ -204,13 +199,11 @@ impl<'a> GeneralTestData<'a> {
             position_debt_ta,
             signer_debt_ta,
 
-            default_setting_params: SolautoSettingsParametersInp {
+            default_settings: SolautoSettingsParametersInp {
                 boost_to_bps: 5000,
                 boost_gap: 500,
                 repay_to_bps: 7500,
                 repay_gap: 500,
-                automation: None,
-                target_boost_to_bps: None,
             },
         }
     }
@@ -373,7 +366,7 @@ impl<'a> GeneralTestData<'a> {
             .referral_state(self.signer_referral_state)
             .referral_fees_dest_ta(self.signer_referral_dest_ta)
             .referral_fees_dest_mint(self.referral_fees_dest_mint.pubkey())
-            .referral_authority(Some(self.ctx.payer.pubkey()))
+            .referral_authority(self.ctx.payer.pubkey())
             .fees_destination_ta(
                 Some(
                     get_associated_token_address(
@@ -399,13 +392,13 @@ impl<'a> GeneralTestData<'a> {
 
     pub fn update_position_ix(
         &self,
-        setting_params: Option<SolautoSettingsParametersInp>,
+        settings: Option<SolautoSettingsParametersInp>,
         dca: Option<DCASettingsInp>
     ) -> UpdatePositionBuilder {
         let mut builder = UpdatePositionBuilder::new();
         let position_data = UpdatePositionData {
             position_id: self.position_id,
-            setting_params,
+            settings,
             dca,
         };
         builder
@@ -435,7 +428,7 @@ impl<'a> GeneralTestData<'a> {
             .signer_supply_ta(self.signer_supply_ta)
             .position_debt_ta(self.position_debt_ta)
             .signer_debt_ta(self.signer_debt_ta)
-            .protocol_account(self.solauto_position);
+            .lp_user_account(self.solauto_position);
         builder
     }
 
@@ -455,7 +448,6 @@ pub struct MarginfiTestData<'a> {
     pub general: GeneralTestData<'a>,
     pub marginfi_account: Pubkey,
     pub marginfi_account_keypair: Option<Keypair>,
-    pub marginfi_account_seed_idx: Option<u64>,
     pub marginfi_group: Pubkey,
 }
 
@@ -464,16 +456,11 @@ impl<'a> MarginfiTestData<'a> {
         let general = GeneralTestData::new(args, MARGINFI_PROGRAM).await;
         let marginfi_group = Keypair::new().pubkey();
 
-        let marginfi_account_seed_idx = if args.position_id != 0 {
-            let mut rng = thread_rng();
-            let random_number: u64 = rng.gen();
-            Some(random_number)
-        } else {
-            None
-        };
         let (marginfi_account, marginfi_account_keypair) = if args.position_id != 0 {
-            let seed_idx = marginfi_account_seed_idx.unwrap().to_le_bytes();
-            let marginfi_account_seeds = &[general.solauto_position.as_ref(), seed_idx.as_ref()];
+            let marginfi_account_seeds = &[
+                general.solauto_position.as_ref(),
+                marginfi_group.as_ref(),
+            ];
             let (marginfi_account, _) = Pubkey::find_program_address(
                 marginfi_account_seeds.as_slice(),
                 &SOLAUTO_ID
@@ -488,7 +475,6 @@ impl<'a> MarginfiTestData<'a> {
             general,
             marginfi_account,
             marginfi_account_keypair,
-            marginfi_account_seed_idx,
             marginfi_group,
         }
     }
@@ -518,13 +504,13 @@ impl<'a> MarginfiTestData<'a> {
 
     pub fn open_position_ix(
         &self,
-        setting_params: Option<SolautoSettingsParametersInp>,
+        settings: Option<SolautoSettingsParametersInp>,
         dca: Option<DCASettingsInp>
     ) -> MarginfiOpenPositionBuilder {
         let mut builder = MarginfiOpenPositionBuilder::new();
         let position_data = UpdatePositionData {
             position_id: self.general.position_id,
-            setting_params,
+            settings,
             dca,
         };
         builder
@@ -545,9 +531,6 @@ impl<'a> MarginfiTestData<'a> {
             .position_debt_ta(self.general.position_debt_ta)
             .position_type(PositionType::Leverage)
             .position_data(position_data);
-        if self.marginfi_account_seed_idx.is_some() {
-            builder.marginfi_account_seed_idx(self.marginfi_account_seed_idx.unwrap());
-        }
         builder
     }
 

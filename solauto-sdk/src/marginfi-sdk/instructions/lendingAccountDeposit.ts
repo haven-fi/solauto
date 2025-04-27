@@ -8,6 +8,8 @@
 
 import {
   Context,
+  Option,
+  OptionOrNullable,
   Pda,
   PublicKey,
   Signer,
@@ -17,7 +19,9 @@ import {
 import {
   Serializer,
   array,
+  bool,
   mapSerializer,
+  option,
   struct,
   u64,
   u8,
@@ -43,10 +47,12 @@ export type LendingAccountDepositInstructionAccounts = {
 export type LendingAccountDepositInstructionData = {
   discriminator: Array<number>;
   amount: bigint;
+  depositUpToLimit: Option<boolean>;
 };
 
 export type LendingAccountDepositInstructionDataArgs = {
   amount: number | bigint;
+  depositUpToLimit: OptionOrNullable<boolean>;
 };
 
 export function getLendingAccountDepositInstructionDataSerializer(): Serializer<
@@ -62,6 +68,7 @@ export function getLendingAccountDepositInstructionDataSerializer(): Serializer<
       [
         ['discriminator', array(u8(), { size: 8 })],
         ['amount', u64()],
+        ['depositUpToLimit', option(bool())],
       ],
       { description: 'LendingAccountDepositInstructionData' }
     ),

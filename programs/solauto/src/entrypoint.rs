@@ -31,7 +31,9 @@ pub fn process_instruction<'a>(
         Instruction::ClosePosition => process_close_position_instruction(accounts),
         Instruction::CancelDCA => process_cancel_dca(accounts),
 
-        Instruction::MarginfiRefreshData => process_marginfi_refresh_data(accounts),
+        Instruction::MarginfiRefreshData(price_type) => {
+            process_marginfi_refresh_data(accounts, price_type)
+        }
         Instruction::MarginfiProtocolInteraction(action) => {
             process_marginfi_interaction_instruction(accounts, action)
         }

@@ -38,7 +38,7 @@ export type ClaimReferralFeesInstructionAccounts = {
   referralState: PublicKey | Pda;
   referralFeesDestTa: PublicKey | Pda;
   referralFeesDestMint: PublicKey | Pda;
-  referralAuthority?: PublicKey | Pda;
+  referralAuthority: PublicKey | Pda;
   feesDestinationTa?: PublicKey | Pda;
 };
 

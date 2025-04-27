@@ -1,20 +1,22 @@
-import { AnchorProvider, Idl, Program } from "@coral-xyz/anchor";
-import switchboardIdl from "../idls/switchboard.json";
 import {
   Connection,
   PublicKey,
   Transaction,
   VersionedTransaction,
 } from "@solana/web3.js";
-import * as OnDemand from "@switchboard-xyz/on-demand";
-import { SWITCHBOARD_PRICE_FEED_IDS } from "../constants/switchboardConstants";
-import { TransactionItemInputs } from "../types";
 import { Signer, transactionBuilder } from "@metaplex-foundation/umi";
+import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
+import { AnchorProvider, Idl, Program } from "@coral-xyz/anchor";
+import * as OnDemand from "@switchboard-xyz/on-demand";
+import Big from "big.js";
+import switchboardIdl from "../idls/switchboard.json";
+import { PRICES, SWITCHBOARD_PRICE_FEED_IDS } from "../constants";
+import { TransactionItemInputs } from "../types";
 import {
-  fromWeb3JsInstruction,
-  toWeb3JsPublicKey,
-} from "@metaplex-foundation/umi-web3js-adapters";
-import { retryWithExponentialBackoff, zip } from "./generalUtils";
+  currentUnixSeconds,
+  retryWithExponentialBackoff,
+} from "./generalUtils";
+import { getWrappedInstruction } from "./solanaUtils";
 
 export function getPullFeed(
   conn: Connection,
@@ -40,7 +42,7 @@ export function getPullFeed(
   const { PullFeed } = OnDemand;
   return new PullFeed(
     program,
-    new PublicKey(SWITCHBOARD_PRICE_FEED_IDS[mint.toString()])
+    new PublicKey(SWITCHBOARD_PRICE_FEED_IDS[mint.toString()].feedId)
   );
 }
 
@@ -49,25 +51,37 @@ export async function buildSwbSubmitResponseTx(
   signer: Signer,
   mint: PublicKey
 ): Promise<TransactionItemInputs | undefined> {
-  const { CrossbarClient } = OnDemand;
-
-  const crossbar = CrossbarClient.default();
   const feed = getPullFeed(conn, mint, toWeb3JsPublicKey(signer.publicKey));
   const [pullIx, responses] = await retryWithExponentialBackoff(
-    async () =>
-      await feed.fetchUpdateIx({
-        crossbarClient: crossbar,
-      }),
-    8,
+    async () => {
+      const res = await feed.fetchUpdateIx({
+        chain: "solana",
+        network: "mainnet-beta",
+      });
+      if (!res[1] || !res[1][0].value) {
+        throw new Error("Unable to fetch Switchboard pull IX");
+      }
+      return res;
+    },
+    3,
     200
   );
 
+  if (!pullIx) {
+    throw new Error("Unable to fetch SWB crank IX");
+  }
+
+  const price = (responses[0].value as Big).toNumber();
+  PRICES[mint.toString()] = {
+    realtimePrice: price,
+    confInterval: 0,
+    emaPrice: price,
+    emaConfInterval: 0,
+    time: currentUnixSeconds(),
+  };
+
   return {
-    tx: transactionBuilder().add({
-      bytesCreatedOnChain: 0,
-      instruction: fromWeb3JsInstruction(pullIx!),
-      signers: [signer],
-    }),
+    tx: transactionBuilder([getWrappedInstruction(signer, pullIx!)]),
     lookupTableAddresses: responses
       .filter((x) => Boolean(x.oracle.lut?.key))
       .map((x) => x.oracle.lut!.key.toString()),
@@ -100,4 +114,8 @@ export async function getSwitchboardFeedData(
   );
 
   return results;
+}
+
+export function isSwitchboardMint(mint: PublicKey | string) {
+  return Object.keys(SWITCHBOARD_PRICE_FEED_IDS).includes(mint.toString());
 }

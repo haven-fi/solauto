@@ -5,7 +5,6 @@
 //! [https://github.com/metaplex-foundation/kinobi]
 //!
 
-use crate::generated::types::AutomationSettings;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 
@@ -16,8 +15,5 @@ pub struct SolautoSettingsParameters {
     pub boost_gap: u16,
     pub repay_to_bps: u16,
     pub repay_gap: u16,
-    pub target_boost_to_bps: u16,
-    pub padding1: [u8; 6],
-    pub automation: AutomationSettings,
-    pub padding: [u8; 32],
+    pub padding: [u32; 24],
 }

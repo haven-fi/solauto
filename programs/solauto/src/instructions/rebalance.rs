@@ -2,23 +2,26 @@ use std::ops::Sub;
 
 use marginfi_sdk::generated::accounts::Bank;
 use solana_program::{
-    clock::Clock, entrypoint::ProgramResult, msg, program_error::ProgramError, pubkey::Pubkey,
+    clock::Clock, entrypoint::ProgramResult, program_error::ProgramError, pubkey::Pubkey,
     sysvar::Sysvar,
 };
 
 use crate::{
+    check,
     clients::marginfi::MarginfiClient,
-    state::solauto_position::{SolautoPosition, SolautoRebalanceType},
+    rebalance::solauto_fees::SolautoFeesBps,
+    state::solauto_position::SolautoPosition,
     types::{
+        errors::SolautoError,
         instruction::{
             accounts::{Context, MarginfiRebalanceAccounts},
             RebalanceSettings, SolautoStandardAccounts,
         },
         lending_protocol::{LendingProtocolClient, LendingProtocolTokenAccounts},
-        shared::{DeserializedAccount, RebalanceStep},
+        shared::{DeserializedAccount, RebalanceStep, SolautoRebalanceType, TokenType},
         solauto_manager::{SolautoManager, SolautoManagerAccounts},
     },
-    utils::{ix_utils, solauto_utils},
+    utils::ix_utils,
 };
 
 use super::refresh;
@@ -59,10 +62,14 @@ pub fn marginfi_rebalance<'a>(
     let solauto_manager_accounts =
         SolautoManagerAccounts::from(supply_tas, debt_tas, ctx.accounts.intermediary_ta, None)?;
 
-    let rebalance_type = std_accounts.solauto_position.data.rebalance.rebalance_type;
-    if rebalance_step == RebalanceStep::Initial
+    let rebalance_type = std_accounts
+        .solauto_position
+        .data
+        .rebalance
+        .ixs
+        .rebalance_type;
+    if rebalance_step == RebalanceStep::PreSwap
         || rebalance_type == SolautoRebalanceType::FLSwapThenRebalance
-        || rebalance_type == SolautoRebalanceType::FLRebalanceThenSwap
     {
         if needs_refresh(&std_accounts.solauto_position, &args)? {
             refresh::marginfi_refresh_accounts(
@@ -74,28 +81,22 @@ pub fn marginfi_rebalance<'a>(
                 ctx.accounts.debt_bank,
                 ctx.accounts.debt_price_oracle.unwrap(),
                 &mut std_accounts.solauto_position,
+                args.price_type.unwrap().clone(),
             )?;
         } else {
-            std_accounts
-                .solauto_position
-                .data
-                .state
-                .supply
-                .update_market_price(MarginfiClient::load_price(
-                    &DeserializedAccount::<Bank>::zerocopy(Some(ctx.accounts.supply_bank))?
-                        .unwrap(),
-                    ctx.accounts.supply_price_oracle.unwrap(),
-                )?);
-            std_accounts
-                .solauto_position
-                .data
-                .state
-                .debt
-                .update_market_price(MarginfiClient::load_price(
-                    &DeserializedAccount::<Bank>::zerocopy(Some(ctx.accounts.debt_bank))?.unwrap(),
-                    ctx.accounts.debt_price_oracle.unwrap(),
-                )?);
-            std_accounts.solauto_position.data.refresh_state();
+            let supply_price = MarginfiClient::load_price(
+                &DeserializedAccount::<Bank>::zerocopy(Some(ctx.accounts.supply_bank))?.unwrap(),
+                ctx.accounts.supply_price_oracle.unwrap(),
+                args.price_type.unwrap().clone(),
+                TokenType::Supply,
+            )?;
+            let debt_price = MarginfiClient::load_price(
+                &DeserializedAccount::<Bank>::zerocopy(Some(ctx.accounts.debt_bank))?.unwrap(),
+                ctx.accounts.debt_price_oracle.unwrap(),
+                args.price_type.unwrap().clone(),
+                TokenType::Debt,
+            )?;
+            update_token_prices(&mut std_accounts, supply_price, debt_price);
         }
     }
 
@@ -108,6 +109,26 @@ pub fn marginfi_rebalance<'a>(
     )
 }
 
+fn update_token_prices<'a>(
+    std_accounts: &mut Box<SolautoStandardAccounts<'a>>,
+    supply_price: f64,
+    debt_price: f64,
+) {
+    std_accounts
+        .solauto_position
+        .data
+        .state
+        .supply
+        .update_market_price(supply_price);
+    std_accounts
+        .solauto_position
+        .data
+        .state
+        .debt
+        .update_market_price(debt_price);
+    std_accounts.solauto_position.data.refresh_state();
+}
+
 fn needs_refresh(
     solauto_position: &DeserializedAccount<SolautoPosition>,
     args: &RebalanceSettings,
@@ -118,23 +139,8 @@ fn needs_refresh(
 
     let current_timestamp = Clock::get()?.unix_timestamp as u64;
 
-    if solauto_position
-        .data
-        .position
-        .setting_params
-        .automation
-        .is_active()
-    {
-        return Ok(solauto_position
-            .data
-            .position
-            .setting_params
-            .automation
-            .eligible_for_next_period(current_timestamp));
-    }
-
-    // In case we did a refresh in this same transaction before this ix
-    if current_timestamp.sub(solauto_position.data.state.last_updated) <= 2 {
+    // In case we did a refresh recently
+    if current_timestamp.sub(solauto_position.data.state.last_refreshed) <= 2 {
         return Ok(false);
     }
 
@@ -154,16 +160,21 @@ fn rebalance<'a>(
     rebalance_step: RebalanceStep,
     args: RebalanceSettings,
 ) -> ProgramResult {
-    if args.target_liq_utilization_rate_bps.is_some()
-        && std_accounts.signer.key != &std_accounts.solauto_position.data.authority
-    {
-        msg!(
-            "Cannot provide a target liquidation utilization rate if the instruction is not signed by the position authority"
-        );
-        return Err(ProgramError::InvalidInstructionData.into());
-    }
+    check!(
+        args.target_liq_utilization_rate_bps.is_none()
+            || std_accounts.signer.key == &std_accounts.solauto_position.data.authority,
+        SolautoError::NonAuthorityProvidedTargetLTV
+    );
+    check!(
+        std_accounts.authority_referral_state.is_some(),
+        SolautoError::IncorrectAccounts
+    );
+    check!(
+        args.flash_loan_fee_bps.unwrap_or(0) <= 150,
+        SolautoError::IncorrectInstructions
+    );
 
-    let fees_bps = solauto_utils::SolautoFeesBps::from(
+    let fees_bps = SolautoFeesBps::from(
         std_accounts
             .authority_referral_state
             .as_ref()
@@ -186,11 +197,7 @@ fn rebalance<'a>(
         std_accounts,
         Some(fees_bps),
     )?;
-    if rebalance_step == RebalanceStep::Initial {
-        solauto_manager.begin_rebalance(&args)?;
-    } else {
-        solauto_manager.finish_rebalance(&args)?;
-    }
+    solauto_manager.rebalance(args, rebalance_step)?;
 
     ix_utils::update_data(&mut solauto_manager.std_accounts.solauto_position)
 }

@@ -113,4 +113,9 @@ generateSolautoSDK();
 //   "jupiter.json",
 //   "JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4"
 // );
+// generateTypescriptSDKForAnchorIDL(
+//   "pyth-sdk",
+//   "pyth.json",
+//   "pythWSnswVUd12oZpeFP8e9CVaEqJg25g1Vtc2biRsT"
+// );
 // cleanJupiterTsSDK(["programs", "errors", "index.ts"]);

@@ -1,43 +1,43 @@
 import { describe, it } from "mocha";
-import { clusterApiUrl, Connection, PublicKey } from "@solana/web3.js";
 import {
-  MARGINFI_ACCOUNTS,
-  MARGINFI_ACCOUNTS_LOOKUP_TABLE,
-} from "../../src/constants/marginfiAccounts";
+  getMarginfiAccounts,
+  LOCAL_IRONFORGE_API_URL,
+  SOLAUTO_MANAGER,
+  getAllBankRelatedAccounts,
+  getEmptyMarginfiAccountsByAuthority,
+  getSolanaRpcConnection,
+  ProgramEnv,
+} from "../../src";
 
-const conn = new Connection(clusterApiUrl("mainnet-beta"), "confirmed");
+const [conn, umi] = getSolanaRpcConnection(LOCAL_IRONFORGE_API_URL);
+
+async function checkLookupTableAccounts(programEnv: ProgramEnv) {
+  const data = getMarginfiAccounts(programEnv);
+  const lookupTable = await conn.getAddressLookupTable(data.lookupTable);
+  if (lookupTable === null) {
+    throw new Error("Lookup table not found");
+  }
+
+  const ismAccounts = (
+    await getEmptyMarginfiAccountsByAuthority(umi, SOLAUTO_MANAGER)
+  ).map((x) => x.publicKey.toString());
+
+  const bankAccounts = (
+    await getAllBankRelatedAccounts(umi, data.bankAccounts)
+  ).map((x) => x.toString());
+
+  const accountsRequired = [...ismAccounts, ...bankAccounts];
+
+  const existingAccounts =
+    lookupTable.value?.state.addresses.map((x) => x.toString()) ?? [];
+
+  if (accountsRequired.find((x) => !existingAccounts.includes(x.toString()))) {
+    throw new Error("Marginfi accounts lookup table missing an account");
+  }
+}
 
 describe("Assert lookup tables up-to-date", async () => {
   it("marginfi accounts LUT should have everything", async () => {
-    const lookupTable = await conn.getAddressLookupTable(
-      new PublicKey(MARGINFI_ACCOUNTS_LOOKUP_TABLE)
-    );
-    if (lookupTable === null) {
-      throw new Error("Lookup table not found");
-    }
-
-    const existingAccounts =
-      lookupTable.value?.state.addresses.map((x) => x.toString()) ?? [];
-
-    for (const group in MARGINFI_ACCOUNTS) {
-      for (const key in MARGINFI_ACCOUNTS[group]) {
-        if (key === PublicKey.default.toString()) {
-          continue;
-        }
-
-        const accounts = MARGINFI_ACCOUNTS[group][key];
-        const addresses = [
-          group,
-          accounts.bank,
-          accounts.liquidityVault,
-          accounts.vaultAuthority,
-          accounts.priceOracle,
-        ];
-
-        if (addresses.find((x) => !existingAccounts.includes(x.toString()))) {
-          throw new Error("Marginfi accounts lookup table missing an account");
-        }
-      }
-    }
+    await checkLookupTableAccounts("Prod");
   });
 });

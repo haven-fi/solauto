@@ -16,13 +16,10 @@ import {
   u8,
 } from '@metaplex-foundation/umi/serializers';
 import {
-  DCASettings,
-  DCASettingsArgs,
   LendingPlatform,
   LendingPlatformArgs,
   SolautoSettingsParameters,
   SolautoSettingsParametersArgs,
-  getDCASettingsSerializer,
   getLendingPlatformSerializer,
   getSolautoSettingsParametersSerializer,
 } from '.';
@@ -30,22 +27,22 @@ import {
 export type PositionData = {
   lendingPlatform: LendingPlatform;
   padding1: Array<number>;
-  protocolUserAccount: PublicKey;
-  protocolSupplyAccount: PublicKey;
-  protocolDebtAccount: PublicKey;
-  settingParams: SolautoSettingsParameters;
-  dca: DCASettings;
+  lpUserAccount: PublicKey;
+  lpSupplyAccount: PublicKey;
+  lpDebtAccount: PublicKey;
+  settings: SolautoSettingsParameters;
+  lpPoolAccount: PublicKey;
   padding: Array<number>;
 };
 
 export type PositionDataArgs = {
   lendingPlatform: LendingPlatformArgs;
   padding1: Array<number>;
-  protocolUserAccount: PublicKey;
-  protocolSupplyAccount: PublicKey;
-  protocolDebtAccount: PublicKey;
-  settingParams: SolautoSettingsParametersArgs;
-  dca: DCASettingsArgs;
+  lpUserAccount: PublicKey;
+  lpSupplyAccount: PublicKey;
+  lpDebtAccount: PublicKey;
+  settings: SolautoSettingsParametersArgs;
+  lpPoolAccount: PublicKey;
   padding: Array<number>;
 };
 
@@ -57,12 +54,12 @@ export function getPositionDataSerializer(): Serializer<
     [
       ['lendingPlatform', getLendingPlatformSerializer()],
       ['padding1', array(u8(), { size: 7 })],
-      ['protocolUserAccount', publicKeySerializer()],
-      ['protocolSupplyAccount', publicKeySerializer()],
-      ['protocolDebtAccount', publicKeySerializer()],
-      ['settingParams', getSolautoSettingsParametersSerializer()],
-      ['dca', getDCASettingsSerializer()],
-      ['padding', array(u32(), { size: 4 })],
+      ['lpUserAccount', publicKeySerializer()],
+      ['lpSupplyAccount', publicKeySerializer()],
+      ['lpDebtAccount', publicKeySerializer()],
+      ['settings', getSolautoSettingsParametersSerializer()],
+      ['lpPoolAccount', publicKeySerializer()],
+      ['padding', array(u32(), { size: 20 })],
     ],
     { description: 'PositionData' }
   ) as Serializer<PositionDataArgs, PositionData>;

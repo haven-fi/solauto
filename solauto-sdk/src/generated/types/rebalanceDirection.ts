@@ -9,6 +9,7 @@
 import { Serializer, scalarEnum } from '@metaplex-foundation/umi/serializers';
 
 export enum RebalanceDirection {
+  None,
   Boost,
   Repay,
 }

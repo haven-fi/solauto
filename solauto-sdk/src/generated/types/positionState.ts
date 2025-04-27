@@ -16,11 +16,11 @@ import {
   u8,
 } from '@metaplex-foundation/umi/serializers';
 import {
-  PositionTokenUsage,
-  PositionTokenUsageArgs,
+  PositionTokenState,
+  PositionTokenStateArgs,
   TokenAmount,
   TokenAmountArgs,
-  getPositionTokenUsageSerializer,
+  getPositionTokenStateSerializer,
   getTokenAmountSerializer,
 } from '.';
 
@@ -28,12 +28,12 @@ export type PositionState = {
   liqUtilizationRateBps: number;
   padding1: Array<number>;
   netWorth: TokenAmount;
-  supply: PositionTokenUsage;
-  debt: PositionTokenUsage;
+  supply: PositionTokenState;
+  debt: PositionTokenState;
   maxLtvBps: number;
   liqThresholdBps: number;
   padding2: Array<number>;
-  lastUpdated: bigint;
+  lastRefreshed: bigint;
   padding: Array<number>;
 };
 
@@ -41,12 +41,12 @@ export type PositionStateArgs = {
   liqUtilizationRateBps: number;
   padding1: Array<number>;
   netWorth: TokenAmountArgs;
-  supply: PositionTokenUsageArgs;
-  debt: PositionTokenUsageArgs;
+  supply: PositionTokenStateArgs;
+  debt: PositionTokenStateArgs;
   maxLtvBps: number;
   liqThresholdBps: number;
   padding2: Array<number>;
-  lastUpdated: number | bigint;
+  lastRefreshed: number | bigint;
   padding: Array<number>;
 };
 
@@ -59,12 +59,12 @@ export function getPositionStateSerializer(): Serializer<
       ['liqUtilizationRateBps', u16()],
       ['padding1', array(u8(), { size: 6 })],
       ['netWorth', getTokenAmountSerializer()],
-      ['supply', getPositionTokenUsageSerializer()],
-      ['debt', getPositionTokenUsageSerializer()],
+      ['supply', getPositionTokenStateSerializer()],
+      ['debt', getPositionTokenStateSerializer()],
       ['maxLtvBps', u16()],
       ['liqThresholdBps', u16()],
       ['padding2', array(u8(), { size: 4 })],
-      ['lastUpdated', u64()],
+      ['lastRefreshed', u64()],
       ['padding', array(u32(), { size: 2 })],
     ],
     { description: 'PositionState' }

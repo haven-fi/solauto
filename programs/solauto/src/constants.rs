@@ -1,22 +1,11 @@
-use solana_program::pubkey::Pubkey;
+use solana_program::{pubkey, pubkey::Pubkey};
 
-// AprYCPiVeKMCgjQ2ZufwChMzvQ5kFjJo2ekTLSkXsQDm
-pub const SOLAUTO_FEES_WALLET: Pubkey = Pubkey::new_from_array([
-    145, 251, 126, 53, 245, 169, 146, 209, 147, 243, 95, 78, 165, 119, 126, 212, 48, 177, 204, 152,
-    35, 228, 216, 122, 54, 147, 76, 46, 180, 66, 110, 112,
-]);
+pub const SOLAUTO_FEES_WALLET: Pubkey = pubkey!("AprYCPiVeKMCgjQ2ZufwChMzvQ5kFjJo2ekTLSkXsQDm");
+pub const SOLAUTO_MANAGER: Pubkey = pubkey!("MNGRcX4nc7quPdzBbNKJ4ScK5EE73JnwJVGxuJXhHCY");
+pub const WSOL_MINT: Pubkey = pubkey!("So11111111111111111111111111111111111111112");
 
-// MNGRcX4nc7quPdzBbNKJ4ScK5EE73JnwJVGxuJXhHCY
-pub const SOLAUTO_MANAGER: Pubkey = Pubkey::new_from_array([
-    5, 55, 169, 98, 27, 47, 114, 199, 85, 110, 166, 51, 214, 240, 77, 15, 168, 150, 137, 164, 201,
-    23, 114, 118, 157, 17, 1, 163, 52, 164, 52, 29,
-]);
-
-// So11111111111111111111111111111111111111112
-pub const WSOL_MINT: Pubkey = Pubkey::new_from_array([
-    6, 155, 136, 87, 254, 171, 129, 132, 251, 104, 127, 99, 70, 24, 192, 53, 218, 196, 57, 220, 26,
-    235, 59, 85, 152, 160, 240, 0, 0, 0, 0, 1,
-]);
+pub const MARGINFI_PROD_PROGRAM: Pubkey = pubkey!("MFv2hWf31Z9kbCa1snEPYctwafyhdvnV7FZnsebVacA");
+pub const MARGINFI_STAGING_PROGRAM: Pubkey = pubkey!("stag8sTKds2h4KzjUw3zKTsxbqvT4XKHdaR9X9E6Rct");
 
 pub const USD_DECIMALS: u8 = 9;
 
@@ -25,3 +14,7 @@ pub const MIN_REPAY_GAP_BPS: u16 = 50;
 pub const MIN_BOOST_GAP_BPS: u16 = 50;
 
 pub const MAX_BASIS_POINTS: u16 = 10000;
+
+pub const REFERRER_PERCENTAGE: f64 = 0.15;
+
+pub const OFFSET_FROM_MAX_LTV: f64 = 0.005;

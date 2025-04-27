@@ -81,12 +81,12 @@ impl LendingPoolHandleBankruptcy {
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
-struct LendingPoolHandleBankruptcyInstructionData {
+pub struct LendingPoolHandleBankruptcyInstructionData {
     discriminator: [u8; 8],
 }
 
 impl LendingPoolHandleBankruptcyInstructionData {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             discriminator: [162, 11, 56, 139, 90, 128, 70, 173],
         }

@@ -53,12 +53,12 @@ impl MarginfiGroupConfigure {
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
-struct MarginfiGroupConfigureInstructionData {
+pub struct MarginfiGroupConfigureInstructionData {
     discriminator: [u8; 8],
 }
 
 impl MarginfiGroupConfigureInstructionData {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             discriminator: [62, 199, 81, 78, 33, 13, 236, 61],
         }

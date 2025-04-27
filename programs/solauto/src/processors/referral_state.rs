@@ -7,13 +7,15 @@ use solana_program::{
     program_error::ProgramError,
     sysvar::instructions::{load_current_index_checked, load_instruction_at_checked},
 };
-use spl_associated_token_account::get_associated_token_address;
 
 use crate::{
+    check,
     constants::WSOL_MINT,
+    error_if,
     instructions::referral_fees,
     state::referral_state::ReferralState,
     types::{
+        errors::SolautoError,
         instruction::{
             accounts::{
                 ClaimReferralFeesAccounts, ConvertReferralFeesAccounts,
@@ -21,7 +23,7 @@ use crate::{
             },
             UpdateReferralStatesArgs,
         },
-        shared::{DeserializedAccount, SolautoError},
+        shared::DeserializedAccount,
     },
     utils::{ix_utils, solauto_utils, validation_utils},
 };
@@ -33,19 +35,17 @@ pub fn process_update_referral_states<'a>(
     msg!("Instruction: Update referral states");
     let ctx = UpdateReferralStatesAccounts::context(accounts)?;
 
-    if !ctx.accounts.signer.is_signer {
-        msg!("Missing required referral signer");
-        return Err(ProgramError::MissingRequiredSignature.into());
-    }
+    check!(
+        ctx.accounts.signer.is_signer,
+        ProgramError::MissingRequiredSignature
+    );
+    check!(
+        ctx.accounts.referred_by_authority.is_none()
+            || ctx.accounts.referred_by_authority.unwrap().key != ctx.accounts.signer.key,
+        SolautoError::IncorrectAccounts
+    );
 
-    if ctx.accounts.referred_by_authority.is_some()
-        && ctx.accounts.referred_by_authority.unwrap().key == ctx.accounts.signer.key
-    {
-        msg!("Cannot set the referred by as the same as the referral state authority");
-        return Err(SolautoError::IncorrectAccounts.into());
-    }
-
-    validation_utils::validate_sysvar_accounts(
+    validation_utils::validate_standard_programs(
         Some(ctx.accounts.system_program),
         None,
         None,
@@ -92,7 +92,7 @@ pub fn process_convert_referral_fees<'a>(accounts: &'a [AccountInfo<'a>]) -> Pro
         DeserializedAccount::<ReferralState>::zerocopy(Some(ctx.accounts.referral_state))?.unwrap();
 
     validation_utils::validate_referral_signer(&referral_state, ctx.accounts.signer, true)?;
-    validation_utils::validate_sysvar_accounts(
+    validation_utils::validate_standard_programs(
         Some(ctx.accounts.system_program),
         Some(ctx.accounts.token_program),
         Some(ctx.accounts.ata_program),
@@ -100,21 +100,21 @@ pub fn process_convert_referral_fees<'a>(accounts: &'a [AccountInfo<'a>]) -> Pro
         Some(ctx.accounts.ixs_sysvar),
     )?;
 
-    if !validation_utils::token_account_owned_by(
-        ctx.accounts.referral_fees_ta,
-        ctx.accounts.referral_state.key,
-        None,
-    )? {
-        msg!("Provided incorrect token account for the given referral state account");
-        return Err(SolautoError::IncorrectAccounts.into());
-    }
+    check!(
+        validation_utils::token_account_owned_by(
+            ctx.accounts.referral_fees_ta,
+            ctx.accounts.referral_state.key,
+            None
+        )?,
+        SolautoError::IncorrectAccounts
+    );
 
     let current_ix_idx = load_current_index_checked(ctx.accounts.ixs_sysvar)?;
     let current_ix = load_instruction_at_checked(current_ix_idx as usize, ctx.accounts.ixs_sysvar)?;
-    if current_ix.program_id != crate::ID || get_stack_height() > TRANSACTION_LEVEL_STACK_HEIGHT {
-        msg!("Instruction is CPI");
-        return Err(SolautoError::InstructionIsCPI.into());
-    }
+    error_if!(
+        current_ix.program_id != crate::ID || get_stack_height() > TRANSACTION_LEVEL_STACK_HEIGHT,
+        SolautoError::InstructionIsCPI
+    );
 
     let mut index = current_ix_idx;
     loop {
@@ -126,25 +126,12 @@ pub fn process_convert_referral_fees<'a>(accounts: &'a [AccountInfo<'a>]) -> Pro
 
     let jup_swap = ix_utils::InstructionChecker::from_anchor(
         ctx.accounts.ixs_sysvar,
-        JUPITER_ID,
+        vec![JUPITER_ID],
         vec!["route", "shared_accounts_route"],
         current_ix_idx,
     );
 
-    // Continues to break due to the fact that Jupiter keeps changing their program
-    // ix_utils::validate_jup_instruction(
-    //     ctx.accounts.ixs_sysvar,
-    //     (current_ix_idx + 1) as usize,
-    //     &[&get_associated_token_address(
-    //         ctx.accounts.referral_state.key,
-    //         &referral_state.data.dest_fees_mint,
-    //     )],
-    // )?;
-
-    if !jup_swap.matches(1) {
-        msg!("Missing Jup swap as next transaction");
-        return Err(SolautoError::IncorrectInstructions.into());
-    }
+    check!(jup_swap.matches(1), SolautoError::IncorrectInstructions);
 
     referral_fees::convert_referral_fees(ctx, referral_state)
 }
@@ -157,14 +144,7 @@ pub fn process_claim_referral_fees<'a>(accounts: &'a [AccountInfo<'a>]) -> Progr
         DeserializedAccount::<ReferralState>::zerocopy(Some(ctx.accounts.referral_state))?.unwrap();
 
     validation_utils::validate_referral_signer(&referral_state, ctx.accounts.signer, true)?;
-    if ctx.accounts.referral_authority.is_some()
-        && ctx.accounts.referral_authority.unwrap().key != &referral_state.data.authority
-    {
-        msg!("Provided incorrect referral authority");
-        return Err(SolautoError::IncorrectAccounts.into());
-    }
-
-    validation_utils::validate_sysvar_accounts(
+    validation_utils::validate_standard_programs(
         Some(ctx.accounts.system_program),
         Some(ctx.accounts.token_program),
         None,
@@ -172,36 +152,37 @@ pub fn process_claim_referral_fees<'a>(accounts: &'a [AccountInfo<'a>]) -> Progr
         None,
     )?;
 
-    if ctx.accounts.referral_fees_dest_ta.key
-        != &get_associated_token_address(
+    check!(
+        ctx.accounts.referral_authority.key == &referral_state.data.authority,
+        SolautoError::IncorrectAccounts
+    );
+    check!(
+        validation_utils::correct_token_account(
+            ctx.accounts.referral_fees_dest_ta.key,
             ctx.accounts.referral_state.key,
-            &referral_state.data.dest_fees_mint,
-        )
-    {
-        msg!("Provided incorrect referral_fees_dest_ta account");
-        return Err(SolautoError::IncorrectAccounts.into());
-    }
+            &referral_state.data.dest_fees_mint
+        ),
+        SolautoError::IncorrectAccounts
+    );
+    check!(
+        ctx.accounts.referral_fees_dest_mint.key == &referral_state.data.dest_fees_mint,
+        SolautoError::IncorrectAccounts
+    );
+    error_if!(
+        referral_state.data.dest_fees_mint != WSOL_MINT
+            && ctx.accounts.fees_destination_ta.is_none(),
+        SolautoError::IncorrectAccounts
+    );
 
-    if ctx.accounts.referral_fees_dest_mint.key != &referral_state.data.dest_fees_mint {
-        msg!("Provided incorrect referral_fees_dest_mint account");
-        return Err(SolautoError::IncorrectAccounts.into());
-    }
-
-    if referral_state.data.dest_fees_mint != WSOL_MINT && ctx.accounts.fees_destination_ta.is_none()
-    {
-        msg!("Missing fees destination token account when the token mint is not wSOL");
-        return Err(SolautoError::IncorrectAccounts.into());
-    }
-
-    if ctx.accounts.fees_destination_ta.is_some()
-        && ctx.accounts.fees_destination_ta.unwrap().key
-            != &get_associated_token_address(
+    if ctx.accounts.fees_destination_ta.is_some() {
+        check!(
+            validation_utils::correct_token_account(
+                ctx.accounts.fees_destination_ta.unwrap().key,
                 &referral_state.data.authority,
-                &referral_state.data.dest_fees_mint,
-            )
-    {
-        msg!("Provided incorrect fees_destination_ta for the given referral state and destination token mint");
-        return Err(SolautoError::IncorrectAccounts.into());
+                &referral_state.data.dest_fees_mint
+            ),
+            SolautoError::IncorrectAccounts
+        );
     }
 
     referral_fees::claim_referral_fees(ctx, referral_state)

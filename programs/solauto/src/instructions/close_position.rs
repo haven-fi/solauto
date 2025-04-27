@@ -5,7 +5,7 @@ use crate::{
     state::solauto_position::SolautoPosition,
     types::{
         instruction::accounts::{ClosePositionAccounts, Context},
-        shared::DeserializedAccount,
+        shared::{DeserializedAccount, SplTokenTransferArgs},
     },
     utils::{solana_utils, solauto_utils},
 };
@@ -24,11 +24,13 @@ pub fn close_position_ta<'a>(
     if position_ta_data.amount > 0 && position_ta_data.mint != WSOL_MINT {
         solana_utils::spl_token_transfer(
             ctx.accounts.token_program,
-            position_ta,
-            solauto_position.account_info,
-            signer_ta,
-            position_ta_data.amount,
-            Some(solauto_position_seeds),
+            SplTokenTransferArgs {
+                source: position_ta,
+                authority: solauto_position.account_info,
+                recipient: signer_ta,
+                amount: position_ta_data.amount,
+                authority_seeds: Some(solauto_position_seeds),
+            },
         )?;
     }
 

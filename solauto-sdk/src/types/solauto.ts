@@ -1,6 +1,14 @@
 import { PublicKey } from "@solana/web3.js";
-import { LendingPlatform, PositionType } from "../generated";
+import {
+  LendingPlatform,
+  PositionType,
+  PriceType,
+  SolautoRebalanceType,
+  TokenType,
+} from "../generated";
 import { TransactionBuilder } from "@metaplex-foundation/umi";
+import { RebalanceValues } from "../services/rebalance";
+import { QuoteResponse } from "@jup-ag/api";
 
 export interface SolautoPositionDetails {
   publicKey?: PublicKey;
@@ -8,7 +16,7 @@ export interface SolautoPositionDetails {
   positionId: number;
   positionType: PositionType;
   lendingPlatform: LendingPlatform;
-  protocolAccount?: PublicKey;
+  lpUserAccount?: PublicKey;
   supplyMint?: PublicKey;
   debtMint?: PublicKey;
 }
@@ -22,7 +30,9 @@ export enum PriorityFeeSetting {
   VeryHigh = "VeryHigh",
 }
 
-export const priorityFeeSettingValues = Object.values(PriorityFeeSetting) as PriorityFeeSetting[];
+export const priorityFeeSettingValues = Object.values(
+  PriorityFeeSetting
+) as PriorityFeeSetting[];
 
 export type RebalanceAction = "boost" | "repay" | "dca";
 
@@ -31,4 +41,29 @@ export type TransactionRunType = "skip-simulation" | "only-simulate" | "normal";
 export interface TransactionItemInputs {
   tx: TransactionBuilder;
   lookupTableAddresses?: string[];
+  orderPrio?: number;
 }
+
+export interface FlashLoanRequirements {
+  liquiditySource: TokenType;
+  signerFlashLoan?: boolean;
+  flFeeBps?: number;
+}
+
+export interface FlashLoanDetails extends FlashLoanRequirements {
+  baseUnitAmount: bigint;
+  mint: PublicKey;
+}
+
+export interface RebalanceDetails {
+  values: RebalanceValues;
+  rebalanceType: SolautoRebalanceType;
+  flashLoan?: FlashLoanDetails;
+  swapQuote: QuoteResponse;
+  targetLiqUtilizationRateBps?: number;
+  priceType: PriceType;
+}
+
+export type ProgramEnv = "Prod" | "Staging";
+
+export type RoundAction = "Floor" | "Round" | "Ceil";

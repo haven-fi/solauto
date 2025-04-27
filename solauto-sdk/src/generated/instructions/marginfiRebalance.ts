@@ -31,9 +31,15 @@ import {
   getAccountMetasAndSigners,
 } from '../shared';
 import {
+  PriceType,
+  PriceTypeArgs,
   SolautoRebalanceType,
   SolautoRebalanceTypeArgs,
+  SwapType,
+  SwapTypeArgs,
+  getPriceTypeSerializer,
   getSolautoRebalanceTypeSerializer,
+  getSwapTypeSerializer,
 } from '../types';
 
 // Accounts.
@@ -69,14 +75,20 @@ export type MarginfiRebalanceInstructionAccounts = {
 export type MarginfiRebalanceInstructionData = {
   discriminator: number;
   rebalanceType: SolautoRebalanceType;
+  swapInAmountBaseUnit: Option<bigint>;
   targetLiqUtilizationRateBps: Option<number>;
-  targetInAmountBaseUnit: Option<bigint>;
+  flashLoanFeeBps: Option<number>;
+  priceType: Option<PriceType>;
+  swapType: Option<SwapType>;
 };
 
 export type MarginfiRebalanceInstructionDataArgs = {
   rebalanceType: SolautoRebalanceTypeArgs;
+  swapInAmountBaseUnit: OptionOrNullable<number | bigint>;
   targetLiqUtilizationRateBps: OptionOrNullable<number>;
-  targetInAmountBaseUnit: OptionOrNullable<number | bigint>;
+  flashLoanFeeBps: OptionOrNullable<number>;
+  priceType: OptionOrNullable<PriceTypeArgs>;
+  swapType: OptionOrNullable<SwapTypeArgs>;
 };
 
 export function getMarginfiRebalanceInstructionDataSerializer(): Serializer<
@@ -92,8 +104,11 @@ export function getMarginfiRebalanceInstructionDataSerializer(): Serializer<
       [
         ['discriminator', u8()],
         ['rebalanceType', getSolautoRebalanceTypeSerializer()],
+        ['swapInAmountBaseUnit', option(u64())],
         ['targetLiqUtilizationRateBps', option(u16())],
-        ['targetInAmountBaseUnit', option(u64())],
+        ['flashLoanFeeBps', option(u16())],
+        ['priceType', option(getPriceTypeSerializer())],
+        ['swapType', option(getSwapTypeSerializer())],
       ],
       { description: 'MarginfiRebalanceInstructionData' }
     ),

@@ -15,7 +15,6 @@ use self::solana_utils::account_has_data;
 pub fn marginfi_open_position<'a>(
     ctx: Context<'a, MarginfiOpenPositionAccounts<'a>>,
     mut solauto_position: DeserializedAccount<'a, SolautoPosition>,
-    marginfi_account_seed_idx: Option<u64>,
 ) -> ProgramResult {
     initialize_solauto_position(
         &mut solauto_position,
@@ -30,7 +29,7 @@ pub fn marginfi_open_position<'a>(
         ctx.accounts.signer_debt_ta,
     )?;
 
-    MarginfiClient::initialize(&ctx, &solauto_position, marginfi_account_seed_idx)
+    MarginfiClient::initialize(&ctx, &solauto_position)
 }
 
 fn initialize_solauto_position<'a, 'b>(
@@ -72,14 +71,6 @@ fn initialize_solauto_position<'a, 'b>(
         solauto_position.account_info,
         position_debt_ta,
         debt_mint,
-    )?;
-
-    solauto_utils::initiate_dca_in_if_necessary(
-        token_program,
-        solauto_position,
-        Some(position_debt_ta),
-        signer,
-        signer_debt_ta,
     )?;
 
     ix_utils::update_data(solauto_position)

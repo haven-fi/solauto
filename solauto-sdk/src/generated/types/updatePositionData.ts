@@ -24,13 +24,13 @@ import {
 
 export type UpdatePositionData = {
   positionId: number;
-  settingParams: Option<SolautoSettingsParametersInp>;
+  settings: Option<SolautoSettingsParametersInp>;
   dca: Option<DCASettingsInp>;
 };
 
 export type UpdatePositionDataArgs = {
   positionId: number;
-  settingParams: OptionOrNullable<SolautoSettingsParametersInpArgs>;
+  settings: OptionOrNullable<SolautoSettingsParametersInpArgs>;
   dca: OptionOrNullable<DCASettingsInpArgs>;
 };
 
@@ -41,7 +41,7 @@ export function getUpdatePositionDataSerializer(): Serializer<
   return struct<UpdatePositionData>(
     [
       ['positionId', u8()],
-      ['settingParams', option(getSolautoSettingsParametersInpSerializer())],
+      ['settings', option(getSolautoSettingsParametersInpSerializer())],
       ['dca', option(getDCASettingsInpSerializer())],
     ],
     { description: 'UpdatePositionData' }

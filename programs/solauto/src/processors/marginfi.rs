@@ -1,14 +1,13 @@
-use rebalance_utils::get_rebalance_step;
-use solana_program::{
-    account_info::AccountInfo, clock::Clock, entrypoint::ProgramResult, msg,
-    program_error::ProgramError, sysvar::Sysvar,
-};
+use solana_program::{account_info::AccountInfo, entrypoint::ProgramResult, msg};
 
 use crate::{
+    check,
     clients::marginfi::MarginfiClient,
     instructions::{open_position, protocol_interaction, rebalance, refresh},
+    rebalance::utils::set_rebalance_ixs_data,
     state::{referral_state::ReferralState, solauto_position::SolautoPosition},
     types::{
+        errors::SolautoError,
         instruction::{
             accounts::{
                 MarginfiOpenPositionAccounts, MarginfiProtocolInteractionAccounts,
@@ -16,7 +15,7 @@ use crate::{
             },
             MarginfiOpenPositionData, RebalanceSettings, SolautoAction, SolautoStandardAccounts,
         },
-        shared::{DeserializedAccount, LendingPlatform, SolautoError},
+        shared::{DeserializedAccount, LendingPlatform, PriceType},
     },
     utils::*,
 };
@@ -49,20 +48,12 @@ pub fn process_marginfi_open_position_instruction<'a>(
         ctx.accounts.debt_mint,
         ctx.accounts.debt_bank,
         ctx.accounts.marginfi_account,
+        ctx.accounts.marginfi_group,
         max_ltv,
         liq_threshold,
     )?;
     if !solauto_position.data.self_managed.val {
-        let current_timestamp = Clock::get()?.unix_timestamp as u64;
-        validation_utils::validate_position_settings(&solauto_position.data, current_timestamp)?;
-        validation_utils::validate_dca_settings(
-            &solauto_position.data.position,
-            current_timestamp,
-        )?;
-    }
-    if solauto_position.data.self_managed.val && args.marginfi_account_seed_idx.is_some() {
-        msg!("Provided a Marginfi account seed index on a self-managed index");
-        return Err(ProgramError::InvalidInstructionData.into());
+        validation_utils::validate_position_settings(&solauto_position.data)?;
     }
 
     if ctx.accounts.referred_by_supply_ta.is_some() {
@@ -108,14 +99,13 @@ pub fn process_marginfi_open_position_instruction<'a>(
         false,
     )?;
 
-    open_position::marginfi_open_position(
-        ctx,
-        std_accounts.solauto_position,
-        args.marginfi_account_seed_idx,
-    )
+    open_position::marginfi_open_position(ctx, std_accounts.solauto_position)
 }
 
-pub fn process_marginfi_refresh_data<'a>(accounts: &'a [AccountInfo<'a>]) -> ProgramResult {
+pub fn process_marginfi_refresh_data<'a>(
+    accounts: &'a [AccountInfo<'a>],
+    price_type: PriceType,
+) -> ProgramResult {
     msg!("Instruction: Marginfi refresh data");
     let ctx = MarginfiRefreshDataAccounts::context(accounts)?;
     let mut solauto_position =
@@ -148,6 +138,7 @@ pub fn process_marginfi_refresh_data<'a>(accounts: &'a [AccountInfo<'a>]) -> Pro
         ctx.accounts.debt_bank,
         ctx.accounts.debt_price_oracle,
         &mut solauto_position,
+        price_type,
     )
 }
 
@@ -216,23 +207,14 @@ pub fn process_marginfi_rebalance<'a>(
         false,
     )?;
 
-    // TODO: For DCAing-out
-    if ctx.accounts.position_authority.is_some()
-        && &std_accounts.solauto_position.data.authority
-            != ctx.accounts.position_authority.unwrap().key
-    {
-        msg!("Incorrect position authority provided");
-        return Err(SolautoError::IncorrectAccounts.into());
-    }
+    check!(
+        ctx.accounts.position_authority.is_none()
+            || &std_accounts.solauto_position.data.authority
+                == ctx.accounts.position_authority.unwrap().key,
+        SolautoError::IncorrectAccounts
+    );
 
-    let rebalance_step = get_rebalance_step(
-        &mut std_accounts,
-        &args,
-        vec![
-            ctx.accounts.position_supply_ta.key,
-            ctx.accounts.position_debt_ta.key,
-        ],
-    )?;
+    let rebalance_step = set_rebalance_ixs_data(&mut std_accounts, &args)?;
 
     rebalance::marginfi_rebalance(ctx, std_accounts, rebalance_step, args)
 }

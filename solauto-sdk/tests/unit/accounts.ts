@@ -1,31 +1,22 @@
 import { describe, it } from "mocha";
+import { assert } from "chai";
+import { PublicKey } from "@solana/web3.js";
+import { publicKey } from "@metaplex-foundation/umi";
+import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 import {
   ALL_SUPPORTED_TOKENS,
   TOKEN_INFO,
-} from "../../src/constants/tokenConstants";
-import {
-  buildHeliusApiUrl,
-  getSolanaRpcConnection,
-} from "../../src/utils/solanaUtils";
-import { publicKey } from "@metaplex-foundation/umi";
-import { assert } from "chai";
-import {
-  getAllMarginfiAccountsByAuthority,
-  getTokenAccount,
-} from "../../src/utils";
-import {
-  MARGINFI_ACCOUNTS,
   SOLAUTO_FEES_WALLET,
   SOLAUTO_MANAGER,
-} from "../../src/constants";
-import { PublicKey } from "@solana/web3.js";
-import { safeFetchAllMarginfiAccount } from "../../src/marginfi-sdk";
-import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
+  LOCAL_IRONFORGE_API_URL,
+  getMarginfiAccounts,
+  getSolanaRpcConnection,
+  getEmptyMarginfiAccountsByAuthority,
+  getTokenAccount,
+} from "../../src";
 
 async function hasTokenAccounts(wallet: PublicKey) {
-  let [_, umi] = getSolanaRpcConnection(
-    buildHeliusApiUrl(process.env.HELIUS_API_KEY!)
-  );
+  let [_, umi] = getSolanaRpcConnection(LOCAL_IRONFORGE_API_URL);
 
   const tokenAccounts = await umi.rpc.getAccounts(
     ALL_SUPPORTED_TOKENS.map((x) =>
@@ -50,25 +41,18 @@ describe("Assert Solauto fee token accounts are created", async () => {
   });
 
   it("ISM accounts for every supported Marginfi group", async () => {
-    let [_, umi] = getSolanaRpcConnection(
-      buildHeliusApiUrl(process.env.HELIUS_API_KEY!)
-    );
+    let [_, umi] = getSolanaRpcConnection(LOCAL_IRONFORGE_API_URL);
 
-    const ismAccounts = await getAllMarginfiAccountsByAuthority(
+    const ismAccounts = await getEmptyMarginfiAccountsByAuthority(
       umi,
-      SOLAUTO_MANAGER,
-      undefined,
-      false
+      SOLAUTO_MANAGER
     );
-    const ismData = await safeFetchAllMarginfiAccount(
-      umi,
-      ismAccounts.map((x) => publicKey(x.marginfiAccount))
-    );
-    const supportedMarginfiGroups = Object.keys(MARGINFI_ACCOUNTS).map(
-      (x) => new PublicKey(x)
-    );
+    const supportedMarginfiGroups = Object.keys(
+      getMarginfiAccounts("Prod").bankAccounts
+    ).map((x) => new PublicKey(x));
     const missingIsmAccounts = supportedMarginfiGroups.filter(
-      (group) => !ismData.find((x) => group.equals(toWeb3JsPublicKey(x.group)))
+      (group) =>
+        !ismAccounts.find((x) => group.equals(toWeb3JsPublicKey(x.group)))
     );
 
     console.log("Missing ISM accounts", missingIsmAccounts);

@@ -1,0 +1,104 @@
+{
+  "address": "pythWSnswVUd12oZpeFP8e9CVaEqJg25g1Vtc2biRsT",
+  "instructions": [],
+  "accounts": [
+    {
+      "name": "PriceUpdateV2Account",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "writeAuthority",
+            "type": "publicKey"
+          },
+          {
+            "name": "verificationLevel",
+            "type": "u8"
+          },
+          {
+            "name": "priceMessage",
+            "type": {
+              "defined": "PriceMessage"
+            }
+          },
+          {
+            "name": "postedSlot",
+            "type": "u64"
+          }
+        ]
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "PriceMessage",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "feedId",
+            "type": "publicKey"
+          },
+          {
+            "name": "price",
+            "type": "i64"
+          },
+          {
+            "name": "conf",
+            "type": "u64"
+          },
+          {
+            "name": "exponent",
+            "type": "i32"
+          },
+          {
+            "name": "publishTime",
+            "type": "i64"
+          },
+          {
+            "name": "prevPublishTime",
+            "type": "i64"
+          },
+          {
+            "name": "emaPrice",
+            "type": "i64"
+          },
+          {
+            "name": "emaConf",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PriceUpdateV2",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "writeAuthority",
+            "type": "publicKey"
+          },
+          {
+            "name": "verificationLevel",
+            "type": "u8"
+          },
+          {
+            "name": "priceMessage",
+            "type": {
+              "defined": "PriceMessage"
+            }
+          },
+          {
+            "name": "postedSlot",
+            "type": "u64"
+          }
+        ]
+      }
+    }
+  ],
+  "metadata": {
+    "origin": "anchor",
+    "address": "pythWSnswVUd12oZpeFP8e9CVaEqJg25g1Vtc2biRsT"
+  }
+}

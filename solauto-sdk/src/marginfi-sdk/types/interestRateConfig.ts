@@ -11,6 +11,7 @@ import {
   array,
   struct,
   u128,
+  u32,
 } from '@metaplex-foundation/umi/serializers';
 import {
   WrappedI80F48,
@@ -26,7 +27,8 @@ export type InterestRateConfig = {
   insuranceIrFee: WrappedI80F48;
   protocolFixedFeeApr: WrappedI80F48;
   protocolIrFee: WrappedI80F48;
-  padding: Array<bigint>;
+  protocolOriginationFee: WrappedI80F48;
+  padding: Array<number>;
 };
 
 export type InterestRateConfigArgs = {
@@ -37,6 +39,7 @@ export type InterestRateConfigArgs = {
   insuranceIrFee: WrappedI80F48Args;
   protocolFixedFeeApr: WrappedI80F48Args;
   protocolIrFee: WrappedI80F48Args;
+  protocolOriginationFee: WrappedI80F48Args;
   padding: Array<number | bigint>;
 };
 
@@ -53,7 +56,8 @@ export function getInterestRateConfigSerializer(): Serializer<
       ['insuranceIrFee', getWrappedI80F48Serializer()],
       ['protocolFixedFeeApr', getWrappedI80F48Serializer()],
       ['protocolIrFee', getWrappedI80F48Serializer()],
-      ['padding', array(u128(), { size: 8 })],
+      ['protocolOriginationFee', getWrappedI80F48Serializer()],
+      ['padding', array(u32(), { size: 28 })],
     ],
     { description: 'InterestRateConfig' }
   ) as Serializer<InterestRateConfigArgs, InterestRateConfig>;

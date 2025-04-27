@@ -51,7 +51,7 @@ export const ALL_SUPPORTED_TOKENS = [
   HMTR,
 ];
 
-interface TokenInfo {
+export interface TokenInfo {
   ticker: string;
   decimals: number;
   isStableCoin?: boolean;
@@ -118,12 +118,12 @@ export const TOKEN_INFO: { [key: string]: TokenInfo } = {
     decimals: 6,
   },
   [WBTC]: {
-    ticker: "wBTC",
+    ticker: "WBTC",
     decimals: 8,
     isMajor: true,
   },
   [WETH]: {
-    ticker: "wETH",
+    ticker: "WETH",
     decimals: 8,
     isMajor: true,
   },
@@ -175,4 +175,10 @@ export const TOKEN_INFO: { [key: string]: TokenInfo } = {
     decimals: 0,
     isMeme: true,
   },
+};
+
+export const MAJORS_PRIO = {
+  [WBTC]: 0,
+  [WETH]: 1,
+  [NATIVE_MINT.toString()]: 2,
 };

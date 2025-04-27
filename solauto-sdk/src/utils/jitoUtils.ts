@@ -3,11 +3,8 @@ import {
   PublicKey,
   SimulatedTransactionResponse,
   TransactionExpiredBlockheightExceededError,
-  VersionedMessage,
   VersionedTransaction,
 } from "@solana/web3.js";
-import { toWeb3JsTransaction } from "@metaplex-foundation/umi-web3js-adapters";
-import { JITO_BLOCK_ENGINE } from "../constants/solautoConstants";
 import {
   Signer,
   TransactionBuilder,
@@ -15,32 +12,27 @@ import {
   WrappedInstruction,
   TransactionMessage,
 } from "@metaplex-foundation/umi";
+import { toWeb3JsTransaction } from "@metaplex-foundation/umi-web3js-adapters";
+import { JITO_TIP_ACCOUNTS } from "../constants";
+import { PriorityFeeSetting, TransactionRunType } from "../types";
+import { BundleSimulationError } from "../types";
 import {
   assembleFinalTransaction,
   getComputeUnitPriceEstimate,
   sendSingleOptimizedTransaction,
   systemTransferUmiIx,
 } from "./solanaUtils";
-import { consoleLog, retryWithExponentialBackoff } from "./generalUtils";
-import { PriorityFeeSetting, TransactionRunType } from "../types";
-import axios from "axios";
+import {
+  consoleLog,
+  customRpcCall,
+  retryWithExponentialBackoff,
+} from "./generalUtils";
 import base58 from "bs58";
-import { BundleSimulationError } from "../types/transactions";
-import { bs58 } from "@coral-xyz/anchor/dist/cjs/utils/bytes";
+import { usePriorityFee } from "../services";
 
 export function getRandomTipAccount(): PublicKey {
-  const tipAccounts = [
-    "96gYZGLnJYVFmbjzopPSU6QiEV5fGqZNyN9nmNhvrZU5",
-    "HFqU5x63VTqvQss8hp11i4wVV8bD44PvwucfZ2bU7gRe",
-    "Cw8CFyM9FkoMi7K7Crf6HNQqf4uEMzpKw6QNghXLvLkY",
-    "ADaUMid9yfUytqMBgopwjb2DTLSokTSzL1zt6iGPaS49",
-    "DfXygSm4jCyNCybVYYK6DwvWqjKee8pbDmJGcLWNDXjh",
-    "ADuUkR4vqLUMWXxW9gh6D6L8pMSawimctcNZ5pGwDcEt",
-    "DttWaMuVvTiduZRnguLF7jNxTgiMBZ1hyAumKUiL2KRL",
-    "3AVi9Tg9Uo68tJfuvoKvqKNWKkC5wPdSSdeBnizKZ6jT",
-  ];
-  const randomInt = Math.floor(Math.random() * tipAccounts.length);
-  return new PublicKey(tipAccounts[randomInt]);
+  const randomInt = Math.floor(Math.random() * JITO_TIP_ACCOUNTS.length);
+  return new PublicKey(JITO_TIP_ACCOUNTS[randomInt]);
 }
 
 function getTipInstruction(
@@ -80,40 +72,24 @@ function parseJitoErrorMessage(message: string) {
 
 async function simulateJitoBundle(umi: Umi, txs: VersionedTransaction[]) {
   const simulationResult = await retryWithExponentialBackoff(async () => {
-    const resp = await axios.post(
-      umi.rpc.getEndpoint(),
+    const res = await customRpcCall(umi, "simulateBundle", [
       {
-        jsonrpc: "2.0",
-        id: 1,
-        method: "simulateBundle",
-        params: [
-          {
-            encodedTransactions: txs.map((x) =>
-              Buffer.from(x.serialize()).toString("base64")
-            ),
-          },
-          {
-            encoding: "base64",
-            commitment: "confirmed",
-            preExecutionAccountsConfigs: txs.map((_) => {}),
-            postExecutionAccountsConfigs: txs.map((_) => {}),
-            skipSigVerify: true,
-          },
-        ],
+        encodedTransactions: txs.map((x) =>
+          Buffer.from(x.serialize()).toString("base64")
+        ),
       },
       {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
-    );
+        encoding: "base64",
+        commitment: "confirmed",
+        preExecutionAccountsConfigs: txs.map((_) => {}),
+        postExecutionAccountsConfigs: txs.map((_) => {}),
+        skipSigVerify: true,
+      },
+    ]);
 
-    const res = resp.data as any;
-
-    if (res.result && res.result.value && res.result.value.summary.failed) {
-      const resValue = res.result.value;
-      const transactionResults =
-        resValue.transactionResults as SimulatedTransactionResponse[];
+    if (res.value && res.value.summary.failed) {
+      const transactionResults = res.value
+        .transactionResults as SimulatedTransactionResponse[];
       transactionResults.forEach((x) => {
         x.logs?.forEach((y) => {
           consoleLog(y);
@@ -121,7 +97,7 @@ async function simulateJitoBundle(umi: Umi, txs: VersionedTransaction[]) {
       });
 
       const failedTxIdx = transactionResults.length;
-      const txFailure = resValue.summary.failed.error.TransactionFailure;
+      const txFailure = res.value.summary.failed.error.TransactionFailure;
 
       if (txFailure) {
         const info = parseJitoErrorMessage(txFailure[1] as string);
@@ -139,19 +115,39 @@ async function simulateJitoBundle(umi: Umi, txs: VersionedTransaction[]) {
       }
 
       throw new Error(
-        txFailure ? txFailure[1] : resValue.summary.failed.toString()
+        txFailure ? txFailure[1] : res.value.summary.failed.toString()
       );
     } else if (res.error && res.error.message) {
       throw new Error(res.error.message);
     }
 
-    return res;
-  });
+    return res.value;
+  }, 2);
 
   const transactionResults =
     simulationResult.transactionResults as SimulatedTransactionResponse[];
 
   return transactionResults;
+}
+
+export function getAdditionalSigners(message: TransactionMessage) {
+  const { numRequiredSignatures, numReadonlySignedAccounts } = message.header;
+
+  const numWritableSigners = numRequiredSignatures - numReadonlySignedAccounts;
+
+  const signersInfo = [];
+  for (let i = 0; i < numRequiredSignatures; i++) {
+    const publicKey = message.accounts[i].toString();
+    const isWritable = i < numWritableSigners;
+
+    signersInfo.push({
+      index: i,
+      publicKey,
+      isWritable,
+    });
+  }
+
+  return signersInfo;
 }
 
 async function umiToVersionedTransactions(
@@ -167,7 +163,7 @@ async function umiToVersionedTransactions(
   let builtTxs = await Promise.all(
     txs.map(async (tx, i) => {
       return assembleFinalTransaction(
-        userSigner,
+        umi,
         tx,
         feeEstimates ? feeEstimates[i] : undefined,
         computeUnitLimits ? computeUnitLimits[i] : undefined
@@ -181,7 +177,7 @@ async function umiToVersionedTransactions(
     builtTxs = await userSigner.signAllTransactions(builtTxs);
     for (const signer of otherSigners) {
       for (let i = 0; i < builtTxs.length; i++) {
-        const requiredSigners = getRequiredSigners(builtTxs[i].message);
+        const requiredSigners = getAdditionalSigners(builtTxs[i].message);
         if (
           requiredSigners
             .map((x) => x.publicKey)
@@ -196,21 +192,16 @@ async function umiToVersionedTransactions(
   return builtTxs.map((x) => toWeb3JsTransaction(x));
 }
 
-async function getBundleStatus(bundleId: string) {
-  const res = await axios.post(`${JITO_BLOCK_ENGINE}/api/v1/bundles`, {
-    jsonrpc: "2.0",
-    id: 1,
-    method: "getBundleStatuses",
-    params: [[bundleId]],
-  });
-  if (res.data.error) {
-    throw new Error(`Failed to get bundle status: ${res.data.error}`);
+async function getBundleStatus(umi: Umi, bundleId: string) {
+  const res = await customRpcCall(umi, "getBundleStatuses", [[bundleId]]);
+  if (res.error) {
+    throw new Error(`Failed to get bundle status: ${res.error}`);
   }
-
-  return res.data.result;
+  return res;
 }
 
 async function pollBundleStatus(
+  umi: Umi,
   bundleId: string,
   interval = 1000,
   timeout = 40000
@@ -218,7 +209,20 @@ async function pollBundleStatus(
   const endTime = Date.now() + timeout;
   while (Date.now() < endTime) {
     await new Promise((resolve) => setTimeout(resolve, interval));
-    const statuses = await getBundleStatus(bundleId);
+
+    const statuses = await retryWithExponentialBackoff(
+      async () => {
+        const resp = await getBundleStatus(umi, bundleId);
+        // TODO: remove me
+        if (resp?.value?.length > 0 && resp.value[0] === null) {
+          throw new Error("No confirmation status");
+        }
+        return resp;
+      },
+      3,
+      250
+    );
+
     if (statuses?.value?.length > 0) {
       consoleLog("Statuses:", statuses);
       const status = statuses.value[0].confirmation_status;
@@ -243,12 +247,7 @@ async function sendJitoBundle(
 ): Promise<string[]> {
   let resp: any;
   try {
-    resp = await axios.post<{ result: string }>(umi.rpc.getEndpoint(), {
-      jsonrpc: "2.0",
-      id: 1,
-      method: "sendBundle",
-      params: [transactions],
-    });
+    resp = await customRpcCall(umi, "sendBundle", [transactions]);
   } catch (e: any) {
     if (e.response.data.error) {
       console.error("Jito send bundle error:", e.response.data.error);
@@ -258,29 +257,15 @@ async function sendJitoBundle(
     }
   }
 
-  const bundleId = resp.data.result;
-  consoleLog("Bundle ID:", bundleId);
-  return bundleId ? await pollBundleStatus(bundleId) : [];
-}
-
-export function getRequiredSigners(message: TransactionMessage) {
-  const { numRequiredSignatures, numReadonlySignedAccounts } = message.header;
-
-  const numWritableSigners = numRequiredSignatures - numReadonlySignedAccounts;
-
-  const signersInfo = [];
-  for (let i = 0; i < numRequiredSignatures; i++) {
-    const publicKey = message.accounts[i].toString();
-    const isWritable = i < numWritableSigners;
-
-    signersInfo.push({
-      index: i,
-      publicKey,
-      isWritable,
-    });
+  if (resp.error?.message === "All providers failed") {
+    throw new Error(resp.error.responses[0].response.error.message);
+  } else if (resp.error) {
+    throw new Error(resp.error);
   }
 
-  return signersInfo;
+  const bundleId = resp as string;
+  consoleLog("Bundle ID:", bundleId);
+  return bundleId ? await pollBundleStatus(umi, bundleId) : [];
 }
 
 export async function sendJitoBundledTransactions(
@@ -288,11 +273,14 @@ export async function sendJitoBundledTransactions(
   connection: Connection,
   userSigner: Signer,
   otherSigners: Signer[],
-  txs: TransactionBuilder[],
+  transactions: TransactionBuilder[],
   txType?: TransactionRunType,
   priorityFeeSetting: PriorityFeeSetting = PriorityFeeSetting.Min,
-  onAwaitingSign?: () => void
+  onAwaitingSign?: () => void,
+  abortController?: AbortController
 ): Promise<string[] | undefined> {
+  const txs = [...transactions];
+  
   if (txs.length === 1) {
     const resp = await sendSingleOptimizedTransaction(
       umi,
@@ -300,9 +288,10 @@ export async function sendJitoBundledTransactions(
       txs[0],
       txType,
       priorityFeeSetting,
-      onAwaitingSign
+      onAwaitingSign,
+      abortController
     );
-    return resp ? [bs58.encode(resp)] : undefined;
+    return resp ? [base58.encode(resp)] : undefined;
   }
 
   consoleLog("Sending Jito bundle...");
@@ -316,25 +305,14 @@ export async function sendJitoBundledTransactions(
   );
 
   txs[0] = txs[0].prepend(getTipInstruction(userSigner, 150_000));
-  const feeEstimates =
-    priorityFeeSetting !== PriorityFeeSetting.None
-      ? await Promise.all(
-          txs.map(
-            async (x) =>
-              (await getComputeUnitPriceEstimate(
-                umi,
-                x,
-                priorityFeeSetting,
-                true
-              )) ?? 1000000
-          )
-        )
-      : undefined;
 
   const latestBlockhash = (
     await umi.rpc.getLatestBlockhash({ commitment: "confirmed" })
   ).blockhash;
 
+  if (abortController?.signal.aborted) {
+    return;
+  }
   let builtTxs: VersionedTransaction[] = [];
   let simulationResults: SimulatedTransactionResponse[] | undefined;
   if (txType !== "skip-simulation") {
@@ -345,18 +323,29 @@ export async function sendJitoBundledTransactions(
       otherSigners,
       txs,
       false,
-      feeEstimates
-    );
-    consoleLog(
-      builtTxs.map((x) =>
-        x.message.compiledInstructions.map((y) =>
-          x.message.staticAccountKeys[y.programIdIndex].toString()
-        )
-      )
+      undefined,
+      Array(txs.length).map(_ => 1_400_000)
     );
     simulationResults = await simulateJitoBundle(umi, builtTxs);
   }
 
+  const feeEstimates = usePriorityFee(priorityFeeSetting)
+  ? await Promise.all(
+      txs.map(
+        async (x) =>
+          (await getComputeUnitPriceEstimate(
+            umi,
+            x,
+            priorityFeeSetting,
+            true
+          )) ?? 1000000
+      )
+    )
+  : undefined;
+
+  if (abortController?.signal.aborted) {
+    return;
+  }
   if (txType !== "only-simulate") {
     onAwaitingSign?.();
 
@@ -371,6 +360,13 @@ export async function sendJitoBundledTransactions(
       simulationResults
         ? simulationResults.map((x) => x.unitsConsumed! * 1.15)
         : undefined
+    );
+    consoleLog(
+      builtTxs.map((x) =>
+        x.message.compiledInstructions.map((y) =>
+          x.message.staticAccountKeys[y.programIdIndex].toString()
+        )
+      )
     );
 
     const serializedTxs = builtTxs.map((x) => x.serialize());

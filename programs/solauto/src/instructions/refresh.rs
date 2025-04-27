@@ -6,7 +6,10 @@ use solana_program::{
 use crate::{
     clients::marginfi::MarginfiClient,
     state::solauto_position::SolautoPosition,
-    types::{shared::DeserializedAccount, solauto_manager::SolautoManager},
+    types::{
+        shared::{DeserializedAccount, PriceType},
+        solauto_manager::SolautoManager,
+    },
     utils::ix_utils,
 };
 
@@ -19,6 +22,7 @@ pub fn marginfi_refresh_accounts<'a, 'b>(
     debt_bank: &'a AccountInfo<'a>,
     debt_price_oracle: &'a AccountInfo<'a>,
     solauto_position: &'b mut DeserializedAccount<SolautoPosition>,
+    price_type: PriceType,
 ) -> ProgramResult {
     MarginfiClient::refresh_bank(marginfi_program, marginfi_group, supply_bank)?;
     MarginfiClient::refresh_bank(marginfi_program, marginfi_group, debt_bank)?;
@@ -32,6 +36,7 @@ pub fn marginfi_refresh_accounts<'a, 'b>(
         supply_price_oracle,
         debt_bank,
         debt_price_oracle,
+        price_type,
     )?;
 
     SolautoManager::refresh_position(&mut solauto_position.data, updated_state, Clock::get()?)?;

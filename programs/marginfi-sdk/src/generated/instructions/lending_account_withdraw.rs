@@ -88,12 +88,12 @@ impl LendingAccountWithdraw {
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
-struct LendingAccountWithdrawInstructionData {
+pub struct LendingAccountWithdrawInstructionData {
     discriminator: [u8; 8],
 }
 
 impl LendingAccountWithdrawInstructionData {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             discriminator: [36, 72, 74, 19, 210, 210, 192, 192],
         }
@@ -395,7 +395,7 @@ impl<'a, 'b> LendingAccountWithdrawCpi<'a, 'b> {
             accounts,
             data,
         };
-        let mut account_infos = Box::new(Vec::with_capacity(8 + 1 + remaining_accounts.len()));
+        let mut account_infos = Vec::with_capacity(8 + 1 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
         account_infos.push(self.marginfi_group.clone());
         account_infos.push(self.marginfi_account.clone());

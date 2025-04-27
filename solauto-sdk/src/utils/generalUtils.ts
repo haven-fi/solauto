@@ -1,12 +1,62 @@
+import axios from "axios";
 import { PublicKey } from "@solana/web3.js";
-import { MaybeRpcAccount, publicKey, Umi } from "@metaplex-foundation/umi";
-import { LendingPlatform } from "../generated";
+import {
+  MaybeRpcAccount,
+  publicKey,
+  Umi,
+  PublicKey as UmiPublicKey,
+} from "@metaplex-foundation/umi";
+import { TOKEN_INFO, TokenInfo } from "../constants";
+
+export function buildHeliusApiUrl(heliusApiKey: string) {
+  return `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`;
+}
+
+export function buildIronforgeApiUrl(ironforgeApiKey: string) {
+  return `https://rpc.ironforge.network/mainnet?apiKey=${ironforgeApiKey}`;
+}
 
 export function consoleLog(...args: any[]): void {
-  if ((globalThis as any).LOCAL_TEST) {
+  if ((globalThis as any).SHOW_LOGS) {
     console.log(...args);
   }
 }
+
+export function tokenInfo(mint?: PublicKey): TokenInfo {
+  return TOKEN_INFO[mint ? mint.toString() : PublicKey.default.toString()];
+}
+
+export function findMintByTicker(ticker: string): PublicKey {
+  for (const key in TOKEN_INFO) {
+    const account = TOKEN_INFO[key];
+    if (
+      account.ticker.toString().toLowerCase() ===
+      ticker.toString().toLowerCase()
+    ) {
+      return new PublicKey(key);
+    }
+  }
+  throw new Error(`Token mint not found by the ticker: ${ticker}`);
+}
+
+export function tokenInfoByTicker(ticker: string) {
+  for (const key in TOKEN_INFO) {
+    const token = TOKEN_INFO[key];
+    if (token.ticker.toLowerCase() === ticker.toLowerCase()) {
+      return token;
+    }
+  }
+  return undefined;
+}
+
+export function getBatches<T>(items: T[], batchSize: number): T[][] {
+  const batches: T[][] = [];
+  for (let i = 0; i < items.length; i += batchSize) {
+    batches.push(items.slice(i, i + batchSize));
+  }
+  return batches;
+}
+
 export function generateRandomU8(): number {
   return Math.floor(Math.random() * 255 + 1);
 }
@@ -100,12 +150,64 @@ export function retryWithExponentialBackoff<T>(
   });
 }
 
-export function toEnumValue<E extends object>(enumObj: E, value: number): E[keyof E] | undefined {
-  const numericValues = Object.values(enumObj).filter(v => typeof v === "number") as number[];
+export function toEnumValue<E extends object>(
+  enumObj: E,
+  value: number
+): E[keyof E] | undefined {
+  const numericValues = Object.values(enumObj).filter(
+    (v) => typeof v === "number"
+  ) as number[];
 
   if (numericValues.includes(value)) {
     return value as E[keyof E];
   }
-  
+
   return undefined;
+}
+
+export async function customRpcCall(umi: Umi, method: string, params?: any) {
+  const data = (
+    await axios.post(
+      umi.rpc.getEndpoint(),
+      {
+        jsonrpc: "2.0",
+        id: 1,
+        method,
+        params,
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    )
+  ).data;
+
+  if ("result" in data) {
+    return data.result;
+  } else {
+    return data;
+  }
+}
+
+export function u16ToArrayBufferLE(value: number): Uint8Array {
+  // Create a buffer of 2 bytes
+  const buffer = new ArrayBuffer(2);
+  const dataView = new DataView(buffer);
+
+  // Set the Uint16 value in little-endian order
+  dataView.setUint16(0, value, true);
+
+  // Return the buffer
+  return new Uint8Array(buffer);
+}
+
+export function validPubkey(pubkey?: PublicKey | UmiPublicKey | string) {
+  return Boolean(pubkey) && pubkey!.toString() !== PublicKey.default.toString();
+}
+
+export function createRecord<T>(keys: string[], values: T[]): Record<string, T> {
+  return Object.fromEntries(
+    zip(keys, values).map(([k, v]) => [k.toString(), v])
+  );
 }

@@ -2,19 +2,20 @@ use solana_program::{
     account_info::AccountInfo,
     entrypoint::ProgramResult,
     instruction::Instruction,
-    msg,
     program::{invoke, invoke_signed},
     pubkey::Pubkey,
     rent::Rent,
     system_instruction,
     sysvar::Sysvar,
 };
-use spl_associated_token_account::{
-    get_associated_token_address, instruction::create_associated_token_account,
-};
+use spl_associated_token_account::instruction::create_associated_token_account;
 use spl_token::instruction as spl_instruction;
 
-use crate::types::shared::SolautoError;
+use crate::{
+    check,
+    types::{errors::SolautoError, shared::SplTokenTransferArgs},
+    utils::validation_utils::correct_token_account,
+};
 
 pub fn account_has_data(account: &AccountInfo) -> bool {
     !account.data.borrow().is_empty()
@@ -40,10 +41,7 @@ pub fn init_account<'a>(
     account_seed: Option<Vec<&[u8]>>,
     space: usize,
 ) -> ProgramResult {
-    if account_has_data(account) {
-        msg!("{} has already been created", account.key);
-        return Err(SolautoError::IncorrectAccounts.into());
-    }
+    check!(!account_has_data(account), SolautoError::IncorrectAccounts);
 
     let rent = &Rent::from_account_info(rent_sysvar)?;
     let required_lamports = rent
@@ -78,15 +76,10 @@ pub fn init_ata_if_needed<'a, 'b>(
     token_account: &'a AccountInfo<'a>,
     token_mint: &'a AccountInfo<'a>,
 ) -> ProgramResult {
-    if &get_associated_token_address(wallet.key, token_mint.key) != token_account.key {
-        msg!(
-            "Token account {} is not correct for the given token mint ({}) & wallet ({})",
-            token_account.key,
-            token_mint.key,
-            wallet.key
-        );
-        return Err(SolautoError::IncorrectAccounts.into());
-    }
+    check!(
+        correct_token_account(token_account.key, wallet.key, token_mint.key),
+        SolautoError::IncorrectAccounts
+    );
 
     if account_has_data(token_account) {
         return Ok(());
@@ -118,25 +111,25 @@ pub fn system_transfer<'a>(
     )
 }
 
-pub fn spl_token_transfer<'a>(
+pub fn spl_token_transfer<'a, 'b>(
     token_program: &'a AccountInfo<'a>,
-    source: &'a AccountInfo<'a>,
-    authority: &'a AccountInfo<'a>,
-    recipient: &'a AccountInfo<'a>,
-    amount: u64,
-    authority_seeds: Option<&Vec<&[u8]>>,
+    args: SplTokenTransferArgs<'a, 'b>,
 ) -> ProgramResult {
     invoke_instruction(
         &spl_instruction::transfer(
             token_program.key,
-            source.key,
-            recipient.key,
-            authority.key,
+            args.source.key,
+            args.recipient.key,
+            args.authority.key,
             &[],
-            amount,
+            args.amount,
         )?,
-        &[source.clone(), recipient.clone(), authority.clone()],
-        authority_seeds,
+        &[
+            args.source.clone(),
+            args.recipient.clone(),
+            args.authority.clone(),
+        ],
+        args.authority_seeds,
     )
 }
 

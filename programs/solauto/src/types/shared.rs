@@ -11,37 +11,18 @@ use solana_program::{
     program_pack::{IsInitialized, Pack},
 };
 use std::fmt;
-use thiserror::Error;
+
+use crate::derive_pod_traits;
+
+use super::errors::SolautoError;
 
 #[repr(u8)]
-#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, PartialEq, Copy)]
+#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, Default, PartialEq, Copy)]
 pub enum LendingPlatform {
+    #[default]
     Marginfi,
 }
-
-unsafe impl Zeroable for LendingPlatform {}
-unsafe impl Pod for LendingPlatform {}
-
-impl Default for LendingPlatform {
-    fn default() -> Self {
-        LendingPlatform::Marginfi
-    }
-}
-
-#[repr(C)]
-#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, PartialEq, Copy)]
-pub struct PodBool {
-    pub val: bool,
-}
-
-unsafe impl Zeroable for PodBool {}
-unsafe impl Pod for PodBool {}
-
-impl PodBool {
-    pub fn new(val: bool) -> Self {
-        Self { val }
-    }
-}
+derive_pod_traits!(LendingPlatform);
 
 #[repr(u8)]
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, Default, PartialEq, Copy)]
@@ -50,9 +31,7 @@ pub enum PositionType {
     Leverage,
     SafeLoan,
 }
-
-unsafe impl Zeroable for PositionType {}
-unsafe impl Pod for PositionType {}
+derive_pod_traits!(PositionType);
 
 #[repr(u8)]
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, Default, PartialEq, Copy)]
@@ -61,9 +40,7 @@ pub enum TokenType {
     Supply,
     Debt,
 }
-
-unsafe impl Zeroable for TokenType {}
-unsafe impl Pod for TokenType {}
+derive_pod_traits!(TokenType);
 
 impl fmt::Display for TokenType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -75,18 +52,46 @@ impl fmt::Display for TokenType {
 }
 
 #[repr(u8)]
-#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, Default, PartialEq, Copy)]
+#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, Default, PartialEq, Copy)]
 pub enum RebalanceDirection {
     #[default]
+    None,
     Boost,
     Repay,
 }
+derive_pod_traits!(RebalanceDirection);
 
-unsafe impl Zeroable for RebalanceDirection {}
-unsafe impl Pod for RebalanceDirection {}
+#[repr(u8)]
+#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, Default, PartialEq, Copy)]
+pub enum RebalanceStep {
+    #[default]
+    PreSwap,
+    PostSwap,
+}
+derive_pod_traits!(RebalanceStep);
+
+#[repr(u8)]
+#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, Default, PartialEq, Copy)]
+pub enum SolautoRebalanceType {
+    #[default]
+    Regular,
+    DoubleRebalanceWithFL,
+    FLSwapThenRebalance,
+    FLRebalanceThenSwap,
+}
+derive_pod_traits!(SolautoRebalanceType);
+
+#[repr(u8)]
+#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, Default, PartialEq, Copy)]
+pub enum SwapType {
+    #[default]
+    ExactIn,
+    ExactOut,
+}
+derive_pod_traits!(SwapType);
 
 #[derive(Debug)]
-pub struct RefreshedTokenData {
+pub struct RefreshedTokenState {
     pub mint: Pubkey,
     pub decimals: u8,
     pub amount_used: u64,
@@ -99,8 +104,8 @@ pub struct RefreshedTokenData {
 pub struct RefreshStateProps {
     pub max_ltv: f64,
     pub liq_threshold: f64,
-    pub supply: RefreshedTokenData,
-    pub debt: RefreshedTokenData,
+    pub supply: RefreshedTokenState,
+    pub debt: RefreshedTokenState,
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, PartialEq)]
@@ -109,10 +114,42 @@ pub enum TokenBalanceAmount {
     All,
 }
 
-#[derive(Debug, PartialEq)]
-pub enum RebalanceStep {
-    Initial,
-    Final,
+pub struct SplTokenTransferArgs<'a, 'b> {
+    pub source: &'a AccountInfo<'a>,
+    pub authority: &'a AccountInfo<'a>,
+    pub recipient: &'a AccountInfo<'a>,
+    pub amount: u64,
+    pub authority_seeds: Option<&'b Vec<&'b [u8]>>,
+}
+
+#[derive(Clone)]
+pub struct BareSplTokenTransferArgs {
+    pub from_wallet: Pubkey,
+    pub from_wallet_ta: Pubkey,
+    pub to_wallet_ta: Pubkey,
+    pub amount: u64,
+}
+
+#[repr(C)]
+#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, Default, PartialEq, Copy)]
+pub struct PodBool {
+    pub val: bool,
+}
+
+derive_pod_traits!(PodBool);
+
+impl PodBool {
+    pub fn new(val: bool) -> Self {
+        Self { val }
+    }
+}
+
+#[repr(u8)]
+#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, Default, PartialEq, Copy)]
+pub enum PriceType {
+    #[default]
+    Realtime,
+    Ema,
 }
 
 #[derive(Clone)]
@@ -148,33 +185,5 @@ impl<'a, T: Pack + IsInitialized> DeserializedAccount<'a, T> {
             }
             None => Ok(None),
         }
-    }
-}
-
-#[derive(Error, Debug)]
-pub enum SolautoError {
-    #[error("Missing or incorrect accounts provided for the given instruction")]
-    IncorrectAccounts,
-    #[error("Failed to deserialize account data")]
-    FailedAccountDeserialization,
-    #[error("Invalid position settings provided")]
-    InvalidPositionSettings,
-    #[error("Invalid DCA configuration provided")]
-    InvalidDCASettings,
-    #[error("Invalid automation settings provided")]
-    InvalidAutomationData,
-    #[error("Invalid position condition to rebalance")]
-    InvalidRebalanceCondition,
-    #[error("Unable to invoke instruction through a CPI")]
-    InstructionIsCPI,
-    #[error("Incorrect set of instructions in the transaction")]
-    IncorrectInstructions,
-    #[error("Incorrect swap amount provided. Likely due to high price volatility")]
-    IncorrectDebtAdjustment,
-}
-
-impl From<SolautoError> for ProgramError {
-    fn from(e: SolautoError) -> Self {
-        ProgramError::Custom(e as u32)
     }
 }

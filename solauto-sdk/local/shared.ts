@@ -8,7 +8,11 @@ import {
   VersionedTransaction,
   PublicKey,
 } from "@solana/web3.js";
-import { buildHeliusApiUrl, getSolanaRpcConnection } from "../src/utils/solanaUtils";
+import {
+  getSolanaRpcConnection,
+  getBatches,
+  LOCAL_IRONFORGE_API_URL,
+} from "../src";
 
 function loadSecretKey(keypairPath: string) {
   const secretKey = JSON.parse(fs.readFileSync(keypairPath, "utf8"));
@@ -21,20 +25,24 @@ export function getSecretKey(keypairFilename: string = "id"): Uint8Array {
   );
 }
 
-const keypair = Keypair.fromSecretKey(getSecretKey("solauto-auth"));
-const [connection, _] = getSolanaRpcConnection(buildHeliusApiUrl(process.env.HELIUS_API_KEY ?? ""));
+const keypair = Keypair.fromSecretKey(getSecretKey("solauto-fees"));
+const [connection, _] = getSolanaRpcConnection(LOCAL_IRONFORGE_API_URL);
 
-async function createAndSendV0Tx(txInstructions: TransactionInstruction[]) {
+export async function createAndSendV0Tx(
+  txInstructions: TransactionInstruction[],
+  payer: Keypair,
+  otherSigners?: Keypair[]
+) {
   let latestBlockhash = await connection.getLatestBlockhash("finalized");
 
   const messageV0 = new TransactionMessage({
-    payerKey: keypair.publicKey,
+    payerKey: payer.publicKey,
     recentBlockhash: latestBlockhash.blockhash,
     instructions: txInstructions,
   }).compileToV0Message();
   const transaction = new VersionedTransaction(messageV0);
 
-  transaction.sign([keypair]);
+  transaction.sign([payer, ...(otherSigners ?? [])]);
 
   const txid = await connection.sendTransaction(transaction, {
     maxRetries: 5,
@@ -46,7 +54,7 @@ async function createAndSendV0Tx(txInstructions: TransactionInstruction[]) {
     lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
   });
   if (confirmation.value.err) {
-    throw new Error(confirmation.value.err.toString());
+    throw confirmation.value.err;
   }
   console.log(txid);
 }
@@ -61,25 +69,39 @@ async function addAddressesIfNeeded(
     .map((x) => new PublicKey(x));
 
   if (addresses.length > 0) {
-    await createAndSendV0Tx([
-      AddressLookupTableProgram.extendLookupTable({
-        payer: keypair.publicKey,
-        authority: keypair.publicKey,
-        lookupTable: lookupTableAddress,
-        addresses,
-      }),
-    ]);
+    const batches = getBatches(addresses, 20);
+    for (const addressBatch of batches) {
+      console.log(addressBatch.map((x) => x.toString()));
+      await createAndSendV0Tx(
+        [
+          AddressLookupTableProgram.extendLookupTable({
+            payer: keypair.publicKey,
+            authority: keypair.publicKey,
+            lookupTable: lookupTableAddress,
+            addresses: addressBatch,
+          }),
+        ],
+        keypair
+      );
+    }
   }
 }
+
+const CACHE: { [key: string]: string[] } = {};
 
 export async function updateLookupTable(
   accounts: string[],
   lookupTableAddress?: PublicKey
 ) {
-  let lookupTable = lookupTableAddress
-    ? await connection.getAddressLookupTable(lookupTableAddress)
-    : null;
-  if (lookupTable === null) {
+  if (lookupTableAddress && !(lookupTableAddress.toString() in CACHE)) {
+    const lookupTable =
+      await connection.getAddressLookupTable(lookupTableAddress);
+    CACHE[lookupTableAddress.toString()] = (
+      lookupTable?.value?.state?.addresses ?? []
+    ).map((x) => x.toString());
+  }
+
+  if (!lookupTableAddress) {
     const [createLutIx, addr] = AddressLookupTableProgram.createLookupTable({
       authority: keypair.publicKey,
       payer: keypair.publicKey,
@@ -87,11 +109,10 @@ export async function updateLookupTable(
     });
     lookupTableAddress = addr;
     console.log("Lookup Table Address:", lookupTableAddress.toString());
-    createAndSendV0Tx([createLutIx]);
+    await createAndSendV0Tx([createLutIx], keypair);
   }
 
-  const existingAccounts =
-    lookupTable?.value?.state.addresses.map((x) => x.toString()) ?? [];
+  const existingAccounts = CACHE[lookupTableAddress.toString()];
   console.log("Existing accounts: ", existingAccounts.length);
 
   await addAddressesIfNeeded(lookupTableAddress!, existingAccounts, accounts);

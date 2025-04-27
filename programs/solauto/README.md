@@ -2,14 +2,11 @@
 
 Solauto is a program on the Solana blockchain that lets you manage leveraged longs & shorts on auto-pilot to maximize your gains and eliminate the risk of liquidation.
 
-Solauto is (currently only) built on-top of mrgnlend (Marginfi) - a lending and borrowing platform that allows for a wallet to hold & maintain a leverage position through various instructions (lend, borrow, withdraw, repay).
-
-
 ## Definitions
 
-#### Marginfi Account (account state)
+#### LP user account (account state)
 
-A Marginfi account is the Solana state data that keeps track of a wallet's supply & debt states, i.e. how much SOL has been lent, how much USDC has been borrowed, etc.
+An LP (lending platform) user account is the Solana state data that keeps track of a wallet's supply & debt states, i.e. how much SOL has been lent, how much USDC has been borrowed, etc.
 
 #### Solauto referral state (account state)
 
@@ -17,34 +14,29 @@ A Solauto referral state should be 1:1 for each user that interacts with Solauto
 
 A referral state also exists to collect referral fees (in token accounts tied to the referral state). Only the pubkey of the referral statecan claim the referral fees collected in that referral state.
 
-
 #### Solauto position (account state)
 
 A Solauto position is state data that keeps track of various pubkeys, setting parameters, and balances. A Solauto position is a PDA, defined by the seeds [position_id (u8), authority (pubkey)]. A Solauto position can be self-managed or not. Any position_id set as 0 is self-managed. Any position_id > 0 is NOT self-managed.
 
-A self-managed position essentially means it does not take ownership (authority) for the Marginfi account being used in the desired transaction. Any NON self-managed position will sign CPI calls through the Solauto position PDA, as the Solauto position WILL be the authority over the Marginfi account.
-
+A self-managed position essentially means it does not take ownership (authority) for the LP user account being used in the desired transaction. Any NON self-managed position will sign CPI calls through the Solauto position PDA, as the Solauto position WILL be the authority over the LP user account.
 
 #### Solauto manager (wallet)
 
 A special wallet that can sign specific transactions (such as rebalancing), for any NON self-managed Solauto position, with restrictions on the permissions of what it can do. This wallet handles rebalancing Solauto positions, as well as managing DCA actions over time.
 
-
 #### Setting parameters
 
 The most crucial data on a Solauto position. This defines the ranges at when a rebalance is necessary and allowed. It is defined by 4 values: boost_from, boost_to, repay_from, and repay_to. This is what ensures that a leveraged position through Solauto can never get liquidated.
-
 
 ## Program infrastructure
 
 Solauto uses [shank](https://crates.io/crates/shank) to define the instructions & accounts inside of [src/types/instruction.rs](src/types/instruction.rs).
 
-Solauto also imports instruction & account types from marginfi-sdk and jupiter-sdk. These crates are generated with [metaplex kinobi](https://github.com/metaplex-foundation/kinobi) using the idls generated inside of `idls/...`. These should be updated with the idls located on mainnet at all times.
-
+Solauto also imports types from marginfi-sdk and jupiter-sdk. These crates are generated with [metaplex kinobi](https://github.com/metaplex-foundation/kinobi) using the idls generated inside of `idls/...`. These should be updated with the idls located on mainnet at all times.
 
 ## Instructions
 
-####  Update referral states
+#### Update referral states
 
 Required to create a referral state before other instructions. Can be updated to set the referred_by or also the lookup table.
 
@@ -76,15 +68,11 @@ The most crucial instruction and the core logic of the program: rebalance the So
 
 More info can be found in the [rebalance section.](#rebalance)
 
-#### Cancel DCA
-
-Cancels the active DCA on the Solauto position. Only allowed to be invoked by the Solauto position authority.
-
 #### Close position
 
 Close the Solauto position and return all account rents. Only allowed to be invoked by the Solauto position authority.
 
-#### Update position 
+#### Update position
 
 Update the Solauto position setting parameters or active DCA
 
@@ -94,7 +82,6 @@ A rebalance can be successful under one of the 4 conditions:
 
 - A boost (if liq utilization rate is < boost_from)
 - A repay (if liq utilization rate is > repay_from)
-- A DCA period is eligible
 - A target liquidation utilization rate has been provided, and the position authority is signing
 
 If none of the conditions are met, the Solauto rebalance instruction will fail.
@@ -103,7 +90,7 @@ If a rebalance is increasing leverage, Solauto will borrow extra debt, move it t
 
 If a rebalance is decreasing leverage, Solauto will withdraw some supply, move it to a token account, swap it to the debt token, and then repay debt using that balance.
 
-A rebalance will consist of multiple instructions that must exist together in the same transaction. A rebalance will be one of the 3 available sets, depending on the posiiton's state and what must be done.
+A rebalance will consist of multiple instructions that must exist together in the same transaction. A rebalance will be one of the 4 available sets, depending on the posiiton's state and what must be done.
 
 1. Regular
 
@@ -119,14 +106,21 @@ A rebalance will consist of multiple instructions that must exist together in th
 - Rebalance
 - flash repay
 
-3. Single rebalance with flash loan
+3. Flash loan swap then rebalance
 
 - Flash borrow
 - Jup swap
 - Rebalance
 - Flash repay
 
-Depending on the rebalance set type, and the current position's state, the rebalance instruction will behave differently. 
+3. Flash loan rebalance then swap
+
+- Flash borrow
+- Rebalance
+- Jup swap
+- Flash repay
+
+Depending on the rebalance set type, and the current position's state, the rebalance instruction will behave differently.
 
 A rebalance instruction will always validate the jup swap data & accounts to ensure there is no fee taken and the destination goes to the right token account.
 
