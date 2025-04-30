@@ -6,12 +6,10 @@ import { JupSwapManager, SwapParams, SwapInput } from "../swap";
 import { applyDebtAdjustmentUsd, RebalanceValues } from "./rebalanceValues";
 import { PriceType, RebalanceDirection, TokenType } from "../../generated";
 import {
-  bytesToI80F48,
   consoleLog,
   fromBaseUnit,
   fromBps,
   getLiqUtilzationRateBps,
-  isMarginfiPosition,
   safeGetPrice,
   toBaseUnit,
   tokenInfo,
