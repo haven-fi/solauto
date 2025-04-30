@@ -415,7 +415,9 @@ export class TransactionsManager<T extends TxHandler> {
         e,
         itemSets.filter(
           (x) =>
-            this.statuses.find((y) => x.name() === y.name)?.simulationSuccessful
+            this.statuses.find(
+              (y) => x.name() === y.name && y.attemptNum === num
+            )?.simulationSuccessful
         ).length === itemSets.length,
         this.priorityFeeSetting
       );
@@ -480,7 +482,10 @@ export class TransactionsManager<T extends TxHandler> {
           );
         } else {
           await this.debugAccounts(itemSet, tx);
-          this.priorityFeeSetting = this.getUpdatedPriorityFeeSetting(prevError, attemptNum);
+          this.priorityFeeSetting = this.getUpdatedPriorityFeeSetting(
+            prevError,
+            attemptNum
+          );
           await this.sendTransaction(
             tx,
             itemSet.name(),
@@ -582,7 +587,9 @@ export class TransactionsManager<T extends TxHandler> {
         this.txHandler.umi,
         [tx],
         e,
-        this.statuses.find((x) => x.name === txName)?.simulationSuccessful,
+        this.statuses.find(
+          (x) => x.name === txName && x.attemptNum === attemptNum
+        )?.simulationSuccessful,
         priorityFeeSetting
       );
 

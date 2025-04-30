@@ -57,10 +57,8 @@ export class JupSwapManager {
     const inputMintInfo: TokenInfo | undefined = tokenInfo(data.inputMint);
     const outputMintInfo: TokenInfo | undefined = tokenInfo(data.outputMint);
     const lowLiquidityMint =
-      !inputMintInfo ||
-      inputMintInfo?.isMeme ||
-      !outputMintInfo ||
-      outputMintInfo?.isMeme;
+      (!inputMintInfo?.isMajor && !inputMintInfo?.isLST) ||
+      (!outputMintInfo?.isMajor && !outputMintInfo?.isLST);
     const slippageBps = data.slippageBps ?? (lowLiquidityMint ? 250 : 100);
 
     return await retryWithExponentialBackoff(
