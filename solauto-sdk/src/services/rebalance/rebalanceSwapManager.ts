@@ -33,7 +33,7 @@ export class RebalanceSwapManager {
     private targetLiqUtilizationRateBps?: number,
     private priceType?: PriceType
   ) {
-    this.jupSwapManager = new JupSwapManager(client.signer);
+    this.jupSwapManager = new JupSwapManager(client.signer, true);
     this.solautoFeeBps = SolautoFeesBps.create(
       this.client.isReferred,
       this.targetLiqUtilizationRateBps,
