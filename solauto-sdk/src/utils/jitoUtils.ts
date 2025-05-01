@@ -160,17 +160,15 @@ async function umiToVersionedTransactions(
   feeEstimates?: number[],
   computeUnitLimits?: number[]
 ): Promise<VersionedTransaction[]> {
-  let builtTxs = await Promise.all(
-    txs.map(async (tx, i) => {
-      return assembleFinalTransaction(
-        umi,
-        tx,
-        feeEstimates ? feeEstimates[i] : undefined,
-        computeUnitLimits ? computeUnitLimits[i] : undefined
-      )
-        .setBlockhash(blockhash)
-        .build(umi);
-    })
+  let builtTxs = txs.map((tx, i) =>
+    assembleFinalTransaction(
+      umi,
+      tx,
+      feeEstimates ? feeEstimates[i] : undefined,
+      computeUnitLimits ? computeUnitLimits[i] : undefined
+    )
+      .setBlockhash(blockhash)
+      .build(umi)
   );
 
   if (sign) {
@@ -280,7 +278,7 @@ export async function sendJitoBundledTransactions(
   abortController?: AbortController
 ): Promise<string[] | undefined> {
   const txs = [...transactions];
-  
+
   if (txs.length === 1) {
     const resp = await sendSingleOptimizedTransaction(
       umi,
@@ -313,6 +311,7 @@ export async function sendJitoBundledTransactions(
   if (abortController?.signal.aborted) {
     return;
   }
+
   let builtTxs: VersionedTransaction[] = [];
   let simulationResults: SimulatedTransactionResponse[] | undefined;
   if (txType !== "skip-simulation") {
@@ -324,24 +323,24 @@ export async function sendJitoBundledTransactions(
       txs,
       false,
       undefined,
-      Array(txs.length).map(_ => 1_400_000)
+      Array(txs.length).map((_) => 1_400_000)
     );
     simulationResults = await simulateJitoBundle(umi, builtTxs);
   }
 
   const feeEstimates = usePriorityFee(priorityFeeSetting)
-  ? await Promise.all(
-      txs.map(
-        async (x) =>
-          (await getComputeUnitPriceEstimate(
-            umi,
-            x,
-            priorityFeeSetting,
-            true
-          )) ?? 1000000
+    ? await Promise.all(
+        txs.map(
+          async (x) =>
+            (await getComputeUnitPriceEstimate(
+              umi,
+              x,
+              priorityFeeSetting,
+              true
+            )) ?? 1000000
+        )
       )
-    )
-  : undefined;
+    : undefined;
 
   if (abortController?.signal.aborted) {
     return;
