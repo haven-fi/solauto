@@ -211,7 +211,6 @@ async function pollBundleStatus(
     const statuses = await retryWithExponentialBackoff(
       async () => {
         const resp = await getBundleStatus(umi, bundleId);
-        // TODO: remove me
         if (resp?.value?.length > 0 && resp.value[0] === null) {
           throw new Error("No confirmation status");
         }
@@ -323,7 +322,7 @@ export async function sendJitoBundledTransactions(
       txs,
       false,
       undefined,
-      Array(txs.length).map((_) => 1_400_000)
+      Array(txs.length).fill(null).map((_) => 1_400_000)
     );
     simulationResults = await simulateJitoBundle(umi, builtTxs);
   }

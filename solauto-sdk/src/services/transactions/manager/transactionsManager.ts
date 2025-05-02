@@ -33,14 +33,16 @@ export enum TransactionStatus {
   Failed = "Failed",
 }
 
-export type TransactionManagerStatuses = {
+export interface TransactionManagerStatus {
   name: string;
   attemptNum: number;
   status: TransactionStatus;
   moreInfo?: string;
   simulationSuccessful?: boolean;
   txSig?: string;
-}[];
+}
+
+export type TransactionManagerStatuses = TransactionManagerStatus[];
 
 interface RetryConfig {
   signableRetries?: number;
@@ -137,48 +139,34 @@ export class TransactionsManager<T extends TxHandler> {
     return transactionSets;
   }
 
-  private updateStatus(
-    name: string,
-    status: TransactionStatus,
-    attemptNum: number,
-    txSig?: string,
-    simulationSuccessful?: boolean,
-    moreInfo?: string
-  ) {
-    if (!this.statuses.filter((x) => x.name === name)) {
-      this.statuses.push({
-        name,
-        status,
-        txSig,
-        attemptNum,
-        simulationSuccessful,
-        moreInfo,
-      });
+  private updateStatus(args: TransactionManagerStatus, reset?: boolean) {
+    if (!this.statuses.filter((x) => x.name === args.name)) {
+      this.statuses.push(args);
     } else {
       const idx = this.statuses.findIndex(
-        (x) => x.name === name && x.attemptNum === attemptNum
+        (x) => x.name === args.name && x.attemptNum === args.attemptNum
       );
       if (idx !== -1) {
-        this.statuses[idx].status = status;
-        this.statuses[idx].txSig = txSig;
-        if (simulationSuccessful) {
-          this.statuses[idx].simulationSuccessful = simulationSuccessful;
+        this.statuses[idx].status = args.status;
+        this.statuses[idx].txSig = args.txSig;
+        if (args.simulationSuccessful) {
+          this.statuses[idx].simulationSuccessful = args.simulationSuccessful;
         }
-        if (moreInfo) {
-          this.statuses[idx].moreInfo = moreInfo;
+        if (args.moreInfo) {
+          this.statuses[idx].moreInfo = args.moreInfo;
+        }
+        if (reset) {
+          this.statuses[idx].txSig = undefined;
+          this.statuses[idx].simulationSuccessful = undefined;
+          this.statuses[idx].moreInfo = undefined;
         }
       } else {
-        this.statuses.push({
-          name,
-          status,
-          txSig,
-          attemptNum,
-          simulationSuccessful,
-          moreInfo,
-        });
+        this.statuses.push(args);
       }
     }
-    this.txHandler.log(`${name} is ${status.toString().toLowerCase()}`);
+    this.txHandler.log(
+      `${args.name} ${args.attemptNum} is ${args.status.toString().toLowerCase()}`
+    );
     this.statusCallback?.([...this.statuses]);
   }
 
@@ -219,21 +207,19 @@ export class TransactionsManager<T extends TxHandler> {
   }
 
   private updateStatusForSets(
-    itemSets: TransactionSet[],
-    status: TransactionStatus,
-    attemptNum: number,
+    txNames: string[],
+    args: Omit<TransactionManagerStatus, "name">,
     txSigs?: string[],
-    simulationSuccessful?: boolean,
-    moreInfo?: string
+    reset?: boolean
   ) {
-    itemSets.forEach((itemSet, i) => {
+    txNames.forEach((name, i) => {
       this.updateStatus(
-        itemSet.name(),
-        status,
-        attemptNum,
-        txSigs !== undefined ? txSigs[i] : undefined,
-        simulationSuccessful,
-        moreInfo
+        {
+          name,
+          txSig: txSigs && txSigs.length > i ? txSigs[i] : undefined,
+          ...args,
+        },
+        reset
       );
     });
   }
@@ -254,7 +240,13 @@ export class TransactionsManager<T extends TxHandler> {
       return await this.assembleTransactionSets(items);
     }, this.totalRetries);
 
-    this.updateStatusForSets(itemSets, TransactionStatus.Queued, 0);
+    this.updateStatusForSets(
+      itemSets.map((x) => x.name()),
+      {
+        status: TransactionStatus.Queued,
+        attemptNum: 0,
+      }
+    );
     this.txHandler.log("Initial item sets:", itemSets.length);
 
     if (this.atomically) {
@@ -271,7 +263,7 @@ export class TransactionsManager<T extends TxHandler> {
   }
 
   private shouldProceedToSend(itemSets: TransactionSet[], attemptNum: number) {
-    if (!itemSets) {
+    if (itemSets.length === 0) {
       return false;
     }
 
@@ -283,221 +275,28 @@ export class TransactionsManager<T extends TxHandler> {
       newItemSetNames[0] === this.updateOracleTxName
     ) {
       consoleLog("Skipping unnecessary oracle update");
-      this.updateStatusForSets(itemSets, TransactionStatus.Skipped, attemptNum);
+      this.updateStatusForSets(
+        itemSets.map((x) => x.name()),
+        {
+          status: TransactionStatus.Skipped,
+          attemptNum,
+        }
+      );
       return false;
     }
 
     return true;
   }
 
-  private async processTransactionsAtomically(itemSets: TransactionSet[]) {
-    let num = 0;
-    let transactions: TransactionBuilder[] = [];
-
-    await retryWithExponentialBackoff(
-      async (attemptNum, prevError) => {
-        if (
-          prevError &&
-          this.statuses.filter((x) => x.simulationSuccessful).length >
-            this.signableRetries
-        ) {
-          throw prevError;
-        }
-
-        num = attemptNum;
-        this.priorityFeeSetting = this.getUpdatedPriorityFeeSetting(
-          prevError,
-          attemptNum
-        );
-
-        if (attemptNum > 0) {
-          const refreshedSets = await this.refreshItemSets(
-            itemSets,
-            attemptNum,
-            prevError
-          );
-          if (!refreshedSets || !refreshedSets.length) {
-            return;
-          } else {
-            itemSets = refreshedSets;
-          }
-        }
-
-        if (!this.shouldProceedToSend(itemSets, attemptNum)) {
-          return;
-        }
-
-        transactions = [];
-        for (const set of itemSets) {
-          transactions.push(await set.getSingleTransaction());
-        }
-        transactions = transactions.filter(
-          (x) => x.getInstructions().length > 0
-        );
-        if (transactions.length === 0) {
-          this.updateStatusForSets(
-            itemSets,
-            TransactionStatus.Skipped,
-            attemptNum
-          );
-          return;
-        }
-
-        this.updateStatusForSets(
-          itemSets,
-          TransactionStatus.Processing,
-          attemptNum
-        );
-        for (const itemSet of itemSets) {
-          await this.debugAccounts(
-            itemSet,
-            await itemSet.getSingleTransaction()
-          );
-        }
-
-        let txSigs: string[] | undefined;
-        let error: Error | undefined;
-        try {
-          txSigs = await sendJitoBundledTransactions(
-            this.txHandler.umi,
-            this.txHandler.connection,
-            this.txHandler.signer,
-            this.txHandler.otherSigners,
-            transactions,
-            this.txRunType,
-            this.priorityFeeSetting,
-            () =>
-              this.updateStatusForSets(
-                itemSets,
-                TransactionStatus.Processing,
-                attemptNum,
-                undefined,
-                true
-              ),
-            this.abortController
-          );
-        } catch (e: any) {
-          error = e as Error;
-        }
-
-        if (
-          error ||
-          (this.txRunType !== "only-simulate" &&
-            (!Boolean(txSigs) || txSigs?.length === 0) &&
-            !this.abortController?.signal.aborted)
-        ) {
-          this.updateStatusForSets(
-            itemSets,
-            TransactionStatus.Failed,
-            attemptNum,
-            txSigs,
-            undefined,
-            error?.message
-          );
-          throw error ? error : new Error("Unknown error");
-        }
-
-        this.updateStatusForSets(
-          itemSets,
-          TransactionStatus.Successful,
-          attemptNum,
-          txSigs
-        );
-      },
-      this.totalRetries,
-      this.retryDelay,
-      this.errorsToThrow
-    ).catch((e: Error) => {
-      this.txHandler.log("Capturing error info...");
-      const errorDetails = getErrorInfo(
-        this.txHandler.umi,
-        transactions,
-        e,
-        itemSets.filter(
-          (x) =>
-            this.statuses.find(
-              (y) => x.name() === y.name && y.attemptNum === num
-            )?.simulationSuccessful
-        ).length === itemSets.length,
-        this.priorityFeeSetting
-      );
-
-      const errorString = `${errorDetails.errorName ?? "Unknown error"}: ${errorDetails.errorInfo?.split("\n")[0] ?? "unknown"}`;
-      const errorInfo =
-        errorDetails.errorName || errorDetails.errorInfo
-          ? errorString
-          : e.message;
-      this.updateStatusForSets(
-        itemSets,
-        errorDetails.canBeIgnored
-          ? TransactionStatus.Skipped
-          : TransactionStatus.Failed,
-        num,
-        undefined,
-        undefined,
-        errorInfo
-      );
-      consoleLog(errorString);
-
-      if (!errorDetails.canBeIgnored) {
-        throw new Error(errorInfo);
-      }
-    });
-  }
-
-  private async processTransactionSet(
-    itemSets: TransactionSet[],
-    currentIndex: number
-  ) {
-    let itemSet: TransactionSet | undefined = itemSets[currentIndex];
-    await retryWithExponentialBackoff(
-      async (attemptNum, prevError) => {
-        if (
-          prevError &&
-          this.statuses.filter((x) => x.simulationSuccessful).length >
-            this.signableRetries
-        ) {
-          throw prevError;
-        }
-
-        if (currentIndex > 0 || attemptNum > 0) {
-          const refreshedSets = await this.refreshItemSets(
-            itemSets,
-            attemptNum,
-            prevError,
-            currentIndex
-          );
-          itemSet = refreshedSets ? refreshedSets[0] : undefined;
-        }
-        if (!itemSet || !this.shouldProceedToSend([itemSet], attemptNum)) {
-          return;
-        }
-
-        const tx = await itemSet.getSingleTransaction();
-        if (tx.getInstructions().length === 0) {
-          this.updateStatus(
-            itemSet.name(),
-            TransactionStatus.Skipped,
-            attemptNum
-          );
-        } else {
-          await this.debugAccounts(itemSet, tx);
-          this.priorityFeeSetting = this.getUpdatedPriorityFeeSetting(
-            prevError,
-            attemptNum
-          );
-          await this.sendTransaction(
-            tx,
-            itemSet.name(),
-            attemptNum,
-            this.priorityFeeSetting
-          );
-        }
-      },
-      this.totalRetries,
-      this.retryDelay,
-      this.errorsToThrow
+  private getTrueAttemptNum(itemSetName: string) {
+    const prevAttempts = this.statuses.filter(
+      (x) => x.name === itemSetName && x.status !== TransactionStatus.Queued
     );
+    const attemptNum =
+      prevAttempts.length -
+      prevAttempts.filter((x) => x.status === TransactionStatus.Skipped)
+        ?.length;
+    return attemptNum;
   }
 
   private async refreshItemSets(
@@ -550,14 +349,196 @@ export class TransactionsManager<T extends TxHandler> {
     return newItemSets;
   }
 
+  private async processTransactionsAtomically(itemSets: TransactionSet[]) {
+    await retryWithExponentialBackoff(
+      async (retryNum, prevError) => {
+        if (
+          prevError &&
+          this.statuses.filter((x) => x.simulationSuccessful).length >
+            this.signableRetries
+        ) {
+          throw prevError;
+        }
+
+        const attemptNum = Math.max(
+          ...itemSets.map((x) => this.getTrueAttemptNum(x?.name() ?? ""))
+        );
+
+        this.priorityFeeSetting = this.getUpdatedPriorityFeeSetting(
+          prevError,
+          attemptNum
+        );
+
+        if (retryNum > 0) {
+          const refreshedSets = await this.refreshItemSets(
+            itemSets,
+            attemptNum,
+            prevError
+          );
+          if (!refreshedSets || !refreshedSets.length) {
+            return;
+          } else {
+            itemSets = refreshedSets;
+          }
+        }
+
+        if (!this.shouldProceedToSend(itemSets, attemptNum)) {
+          return;
+        }
+
+        await this.sendJitoBundle(itemSets, attemptNum);
+      },
+      this.totalRetries,
+      this.retryDelay,
+      this.errorsToThrow
+    );
+  }
+
+  private async sendJitoBundle(itemSets: TransactionSet[], attemptNum: number) {
+    let transactions: TransactionBuilder[] = [];
+    let txNames: string[] = [];
+
+    try {
+      for (const set of itemSets) {
+        transactions.push(await set.getSingleTransaction());
+      }
+      transactions = transactions.filter((x) => x.getInstructions().length > 0);
+
+      txNames = itemSets.map((x) => x.name());
+      if (transactions.length === 0) {
+        this.updateStatusForSets(txNames, {
+          status: TransactionStatus.Skipped,
+          attemptNum,
+        });
+        return;
+      }
+
+      this.updateStatusForSets(
+        txNames,
+        {
+          status: TransactionStatus.Processing,
+          attemptNum,
+        },
+        undefined,
+        true
+      );
+      for (const itemSet of itemSets) {
+        await this.debugAccounts(itemSet, await itemSet.getSingleTransaction());
+      }
+
+      const txSigs = await sendJitoBundledTransactions(
+        this.txHandler.umi,
+        this.txHandler.connection,
+        this.txHandler.signer,
+        this.txHandler.otherSigners,
+        transactions,
+        this.txRunType,
+        this.priorityFeeSetting,
+        () =>
+          this.updateStatusForSets(txNames, {
+            status: TransactionStatus.Processing,
+            attemptNum,
+            simulationSuccessful: true,
+          }),
+        this.abortController
+      );
+
+      if (
+        this.txRunType !== "only-simulate" &&
+        (!Boolean(txSigs) || txSigs?.length === 0) &&
+        !this.abortController?.signal.aborted
+      ) {
+        this.updateStatusForSets(
+          txNames,
+          {
+            status: TransactionStatus.Failed,
+            attemptNum,
+          },
+          txSigs
+        );
+      }
+
+      this.updateStatusForSets(
+        txNames,
+        { status: TransactionStatus.Successful, attemptNum },
+        txSigs
+      );
+    } catch (e: any) {
+      this.captureErrorInfo(transactions, txNames, attemptNum, e);
+    }
+  }
+
+  private async processTransactionSet(
+    itemSets: TransactionSet[],
+    currentIndex: number
+  ) {
+    let itemSet: TransactionSet | undefined = itemSets[currentIndex];
+    await retryWithExponentialBackoff(
+      async (retryNum, prevError) => {
+        if (
+          prevError &&
+          this.statuses.filter((x) => x.simulationSuccessful).length >
+            this.signableRetries
+        ) {
+          throw prevError;
+        }
+
+        const attemptNum = this.getTrueAttemptNum(itemSet?.name() ?? "");
+        if (currentIndex > 0 || retryNum > 0) {
+          const refreshedSets = await this.refreshItemSets(
+            itemSets,
+            attemptNum,
+            prevError,
+            currentIndex
+          );
+          itemSet = refreshedSets ? refreshedSets[0] : undefined;
+        }
+        if (!itemSet || !this.shouldProceedToSend([itemSet], attemptNum)) {
+          return;
+        }
+
+        const tx = await itemSet.getSingleTransaction();
+        if (tx.getInstructions().length === 0) {
+          this.updateStatus({
+            name: itemSet.name(),
+            status: TransactionStatus.Skipped,
+            attemptNum,
+          });
+        } else {
+          await this.debugAccounts(itemSet, tx);
+          this.priorityFeeSetting = this.getUpdatedPriorityFeeSetting(
+            prevError,
+            attemptNum
+          );
+          await this.sendTransaction(
+            tx,
+            itemSet.name(),
+            attemptNum,
+            this.priorityFeeSetting
+          );
+        }
+      },
+      this.totalRetries,
+      this.retryDelay,
+      this.errorsToThrow
+    );
+  }
+
   protected async sendTransaction(
     tx: TransactionBuilder,
-    txName: string,
+    name: string,
     attemptNum: number,
     priorityFeeSetting?: PriorityFeeSetting,
     txRunType?: TransactionRunType
   ) {
-    this.updateStatus(txName, TransactionStatus.Processing, attemptNum);
+    this.updateStatus(
+      {
+        name,
+        status: TransactionStatus.Processing,
+        attemptNum,
+      },
+      true
+    );
     try {
       const txSig = await sendSingleOptimizedTransaction(
         this.txHandler.umi,
@@ -566,53 +547,60 @@ export class TransactionsManager<T extends TxHandler> {
         txRunType ?? this.txRunType,
         priorityFeeSetting,
         () =>
-          this.updateStatus(
-            txName,
-            TransactionStatus.Processing,
+          this.updateStatus({
+            name,
+            status: TransactionStatus.Processing,
             attemptNum,
-            undefined,
-            true
-          ),
+            simulationSuccessful: true,
+          }),
         this.abortController
       );
-      this.updateStatus(
-        txName,
-        TransactionStatus.Successful,
+      this.updateStatus({
+        name,
+        status: TransactionStatus.Successful,
         attemptNum,
-        txSig ? bs58.encode(txSig) : undefined
-      );
+        txSig: txSig ? bs58.encode(txSig) : undefined,
+      });
     } catch (e: any) {
-      this.txHandler.log("Capturing error info...");
-      const errorDetails = getErrorInfo(
-        this.txHandler.umi,
-        [tx],
-        e,
-        this.statuses.find(
-          (x) => x.name === txName && x.attemptNum === attemptNum
-        )?.simulationSuccessful,
-        priorityFeeSetting
-      );
+      this.captureErrorInfo([tx], [name], attemptNum, e);
+    }
+  }
 
-      const errorString = `${errorDetails.errorName ?? "Unknown error"}: ${errorDetails.errorInfo?.split("\n")[0] ?? "unknown"}`;
-      const errorInfo =
-        errorDetails.errorName || errorDetails.errorInfo
-          ? errorString
-          : e.message;
-      this.updateStatus(
-        txName,
-        errorDetails.canBeIgnored
-          ? TransactionStatus.Skipped
-          : TransactionStatus.Failed,
-        attemptNum,
-        undefined,
-        undefined,
-        errorInfo
-      );
-      consoleLog(errorString);
+  private captureErrorInfo(
+    transactions: TransactionBuilder[],
+    txNames: string[],
+    attemptNum: number,
+    error: any
+  ) {
+    this.txHandler.log("Capturing error info...");
+    const errorDetails = getErrorInfo(
+      this.txHandler.umi,
+      transactions,
+      error,
+      txNames.filter(
+        (x) =>
+          this.statuses.find((y) => x === y.name && y.attemptNum === attemptNum)
+            ?.simulationSuccessful
+      ).length === txNames.length,
+      this.priorityFeeSetting
+    );
 
-      if (!errorDetails.canBeIgnored) {
-        throw new Error(errorInfo);
-      }
+    const errorString = `${errorDetails.errorName ?? "Unknown error"}: ${errorDetails.errorInfo?.split("\n")[0] ?? "unknown"}`;
+    const errorInfo =
+      errorDetails.errorName || errorDetails.errorInfo
+        ? errorString
+        : error.message;
+    this.updateStatusForSets(txNames, {
+      status: errorDetails.canBeIgnored
+        ? TransactionStatus.Skipped
+        : TransactionStatus.Failed,
+      attemptNum,
+      moreInfo: errorInfo,
+    });
+    consoleLog(errorString);
+
+    if (!errorDetails.canBeIgnored) {
+      throw new Error(errorInfo);
     }
   }
 }
