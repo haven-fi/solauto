@@ -288,17 +288,6 @@ export class TransactionsManager<T extends TxHandler> {
     return true;
   }
 
-  private getTrueAttemptNum(itemSetName: string) {
-    const prevAttempts = this.statuses.filter(
-      (x) => x.name === itemSetName && x.status !== TransactionStatus.Queued
-    );
-    const attemptNum =
-      prevAttempts.length -
-      prevAttempts.filter((x) => x.status === TransactionStatus.Skipped)
-        ?.length;
-    return attemptNum;
-  }
-
   private async refreshItemSets(
     itemSets: TransactionSet[],
     attemptNum: number,
@@ -351,7 +340,7 @@ export class TransactionsManager<T extends TxHandler> {
 
   private async processTransactionsAtomically(itemSets: TransactionSet[]) {
     await retryWithExponentialBackoff(
-      async (retryNum, prevError) => {
+      async (attemptNum, prevError) => {
         if (
           prevError &&
           this.statuses.filter((x) => x.simulationSuccessful).length >
@@ -360,16 +349,12 @@ export class TransactionsManager<T extends TxHandler> {
           throw prevError;
         }
 
-        const attemptNum = Math.max(
-          ...itemSets.map((x) => this.getTrueAttemptNum(x?.name() ?? ""))
-        );
-
         this.priorityFeeSetting = this.getUpdatedPriorityFeeSetting(
           prevError,
           attemptNum
         );
 
-        if (retryNum > 0) {
+        if (attemptNum > 0) {
           const refreshedSets = await this.refreshItemSets(
             itemSets,
             attemptNum,
@@ -474,7 +459,7 @@ export class TransactionsManager<T extends TxHandler> {
   ) {
     let itemSet: TransactionSet | undefined = itemSets[currentIndex];
     await retryWithExponentialBackoff(
-      async (retryNum, prevError) => {
+      async (attemptNum, prevError) => {
         if (
           prevError &&
           this.statuses.filter((x) => x.simulationSuccessful).length >
@@ -483,8 +468,7 @@ export class TransactionsManager<T extends TxHandler> {
           throw prevError;
         }
 
-        const attemptNum = this.getTrueAttemptNum(itemSet?.name() ?? "");
-        if (currentIndex > 0 || retryNum > 0) {
+        if (currentIndex > 0 || attemptNum > 0) {
           const refreshedSets = await this.refreshItemSets(
             itemSets,
             attemptNum,
