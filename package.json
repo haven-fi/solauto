@@ -25,6 +25,7 @@
     "sandbox": "cd solauto-sdk && npx ts-node local/txSandbox.ts",
     "update-lut:solauto": "cd solauto-sdk && npx ts-node local/updateSolautoLUT.ts",
     "update-lut:marginfi": "cd solauto-sdk && npx ts-node local/updateMarginfiLUT.ts",
+    "patch-lut": "cd solauto-sdk && npx ts-node local/patchLUT.ts",
     "create-token-accounts": "cd solauto-sdk && npx ts-node local/createTokenAccounts.ts",
     "prepare-accounts": "pnpm create-token-accounts && pnpm update-lut:solauto && pnpm update-lut:marginfi",
     "log-pos": "cd solauto-sdk && npx ts-node local/logPositions.ts",

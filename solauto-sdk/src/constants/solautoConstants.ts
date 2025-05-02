@@ -65,3 +65,6 @@ export const STANDARD_LUT_ACCOUNTS = [
   SYSVAR_INSTRUCTIONS_PUBKEY,
   JUPITER_PROGRAM_ID,
 ].map((x) => x.toString());
+
+// TODO: remove me
+export const PATCH_LUT = "CmPZfu3tkeoMutytxhVKT7Hemuwd5jM65VdLNGdBddxQ";
