@@ -64,6 +64,7 @@ pnpm add @haven-fi/solauto-sdk
 
 ```typescript
 import { PublicKey } from "@solana/web3.js";
+import { NATIVE_MINT } from "@solana/spl-token";
 import * as solauto from "@haven-fi/solauto-sdk";
 
 // Create new Solauto client
@@ -73,8 +74,8 @@ const client = solauto.getClient(solauto.LendingPlatform.MARGINFI, {
 });
 
 // Initialize the client
-const supplyMint = new PublicKey(NATIVE_MINT);
-const debtMint = new PublicKey(USDC);
+const supplyMint = NATIVE_MINT;
+const debtMint = new PublicKey(solauto.USDC);
 await client.initializeNewSolautoPosition({
   positionId: 1,
   lpPoolAccount: solauto.getMarginfiAccounts().defaultGroup,
@@ -133,7 +134,6 @@ const statuses = txManager.send(transactionItems);
 ## Rebalancing an existing position
 
 ```typescript
-import { PublicKey } from "@solana/web3.js";
 import * as solauto from "@haven-fi/solauto-sdk";
 
 // Create new Solauto client
