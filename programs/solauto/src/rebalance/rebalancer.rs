@@ -3,7 +3,7 @@ use std::{
     ops::{Add, Mul},
 };
 
-use solana_program::{entrypoint::ProgramResult, msg, program_error::ProgramError, pubkey::Pubkey};
+use solana_program::{entrypoint::ProgramResult, program_error::ProgramError, pubkey::Pubkey};
 
 use crate::{
     check,
@@ -22,9 +22,7 @@ use crate::{
     },
     utils::{
         math_utils::{calc_fee_amount, from_bps, from_rounded_usd_value, usd_value_to_base_unit},
-        validation_utils::{
-            correct_token_account, value_gte_with_threshold, value_lte_with_threshold,
-        },
+        validation_utils::correct_token_account,
     },
 };
 
