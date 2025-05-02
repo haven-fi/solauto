@@ -24,7 +24,6 @@ async function hasTokenAccounts(wallet: PublicKey) {
     )
   );
   for (let i = 0; i < tokenAccounts.length; i++) {
-    console.log(tokenAccounts[i].publicKey.toString());
     if (!tokenAccounts[i].exists) {
       console.log(
         `Missing ${wallet.toString()} TA for `,
@@ -55,7 +54,9 @@ describe("Assert Solauto fee token accounts are created", async () => {
         !ismAccounts.find((x) => group.equals(toWeb3JsPublicKey(x.group)))
     );
 
-    console.log("Missing ISM accounts", missingIsmAccounts);
+    if (missingIsmAccounts.length > 0) {
+      console.log("Missing ISM accounts", missingIsmAccounts);
+    }
     assert(missingIsmAccounts.length === 0);
   });
 });
