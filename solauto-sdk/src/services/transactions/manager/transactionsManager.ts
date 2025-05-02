@@ -101,7 +101,7 @@ export class TransactionsManager<T extends TxHandler> {
     items: TransactionItem[]
   ): Promise<TransactionSet[]> {
     let transactionSets: TransactionSet[] = [];
-    this.txHandler.log(`Reassembling ${items.length} items`);
+    consoleLog(`Reassembling ${items.length} items`);
 
     const txItems = items.sort((a, b) => a.orderPrio - b.orderPrio);
 
@@ -164,7 +164,7 @@ export class TransactionsManager<T extends TxHandler> {
         this.statuses.push(args);
       }
     }
-    this.txHandler.log(
+    consoleLog(
       `${args.name} ${args.attemptNum} is ${args.status.toString().toLowerCase()}`
     );
     this.statusCallback?.([...this.statuses]);
@@ -178,13 +178,13 @@ export class TransactionsManager<T extends TxHandler> {
       const accountsNotInLut = ixAccounts.filter(
         (x) => !lutAccounts.includes(x)
       );
-      this.txHandler.log(
+      consoleLog(
         `Program ${ix.programId}, data len: ${ix.data.length}, LUT accounts data: ${ix.keys.filter((x) => lutAccounts.includes(x.pubkey)).length * 3}`
       );
       if (accountsNotInLut.length > 0) {
-        this.txHandler.log(`${accountsNotInLut.length} accounts not in LUT:`);
+        consoleLog(`${accountsNotInLut.length} accounts not in LUT:`);
         for (const key of accountsNotInLut) {
-          this.txHandler.log(key.toString());
+          consoleLog(key.toString());
         }
       }
     }
@@ -236,7 +236,7 @@ export class TransactionsManager<T extends TxHandler> {
           await item.initialize();
         }
       }
-      this.txHandler.log("Transaction items:", items.length);
+      consoleLog("Transaction items:", items.length);
       return await this.assembleTransactionSets(items);
     }, this.totalRetries);
 
@@ -247,7 +247,7 @@ export class TransactionsManager<T extends TxHandler> {
         attemptNum: 0,
       }
     );
-    this.txHandler.log("Initial item sets:", itemSets.length);
+    consoleLog("Initial item sets:", itemSets.length);
 
     if (this.atomically) {
       await this.processTransactionsAtomically(itemSets);
@@ -572,7 +572,7 @@ export class TransactionsManager<T extends TxHandler> {
     attemptNum: number,
     error: any
   ) {
-    this.txHandler.log("Capturing error info...");
+    consoleLog("Capturing error info...");
     const errorDetails = getErrorInfo(
       this.txHandler.umi,
       transactions,
