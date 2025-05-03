@@ -2,7 +2,7 @@ import { PublicKey } from "@solana/web3.js";
 import { publicKey, Umi } from "@metaplex-foundation/umi";
 import { PYTH_PUSH_PROGRAM } from "../constants";
 import { u16ToArrayBufferLE, zip } from "./generalUtils";
-import { safeFetchAllPriceUpdateV2Account } from "../pyth-sdk";
+import { safeFetchAllPriceUpdateV2Account } from "../externalSdks/pyth";
 
 export async function getMostUpToDatePythOracle(
   umi: Umi,

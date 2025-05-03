@@ -1,5 +1,5 @@
 import { PublicKey } from "@solana/web3.js";
-import { Bank, PriceBias, safeFetchAllBank } from "../marginfi-sdk";
+import { Bank, PriceBias, safeFetchAllBank } from "../externalSdks/marginfi";
 import { publicKey } from "@metaplex-foundation/umi";
 import {
   calcMarginfiMaxLtvAndLiqThresholdBps,

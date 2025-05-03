@@ -20,7 +20,7 @@ import {
   MarginfiAccount,
   OracleSetup,
   safeFetchAllBank,
-} from "../../marginfi-sdk";
+} from "../../externalSdks/marginfi";
 import { bytesToI80F48, fromBaseUnit, toBps } from "../numberUtils";
 import { getTokenAccountData } from "../accountUtils";
 import {

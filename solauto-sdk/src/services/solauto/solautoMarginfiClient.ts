@@ -47,7 +47,7 @@ import {
   lendingAccountWithdraw,
   marginfiAccountInitialize,
   safeFetchAllMarginfiAccount,
-} from "../../marginfi-sdk";
+} from "../../externalSdks/marginfi";
 import { SolautoClient, SolautoClientArgs } from "./solautoClient";
 
 function isSigner(account: PublicKey | Signer): account is Signer {

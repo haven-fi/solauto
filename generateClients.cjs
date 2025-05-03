@@ -98,7 +98,7 @@ generateSolautoSDK();
 //   "MFv2hWf31Z9kbCa1snEPYctwafyhdvnV7FZnsebVacA"
 // );
 // generateTypescriptSDKForAnchorIDL(
-//   "marginfi-sdk",
+//   "marginfiSdk",
 //   "marginfi.json",
 //   "MFv2hWf31Z9kbCa1snEPYctwafyhdvnV7FZnsebVacA"
 // );
@@ -109,12 +109,12 @@ generateSolautoSDK();
 //   "JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4"
 // );
 // generateTypescriptSDKForAnchorIDL(
-//   "jupiter-sdk",
+//   "jupiterSdk",
 //   "jupiter.json",
 //   "JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4"
 // );
 // generateTypescriptSDKForAnchorIDL(
-//   "pyth-sdk",
+//   "pythSdk",
 //   "pyth.json",
 //   "pythWSnswVUd12oZpeFP8e9CVaEqJg25g1Vtc2biRsT"
 // );

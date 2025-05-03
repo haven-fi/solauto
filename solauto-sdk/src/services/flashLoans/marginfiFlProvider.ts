@@ -19,7 +19,7 @@ import {
   MarginfiAccount,
   marginfiAccountInitialize,
   safeFetchAllBank,
-} from "../../marginfi-sdk";
+} from "../../externalSdks/marginfi";
 import { FlProviderBase } from "./flProviderBase";
 import {
   bytesToI80F48,

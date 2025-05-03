@@ -16,7 +16,7 @@ import {
   OracleSetup,
   safeFetchBank,
   safeFetchMarginfiAccount,
-} from "../../marginfi-sdk";
+} from "../../externalSdks/marginfi";
 import { ContextUpdates } from "../solautoUtils";
 import { fetchTokenPrices, safeGetPrice } from "../priceUtils";
 import { currentUnixSeconds, validPubkey } from "../generalUtils";

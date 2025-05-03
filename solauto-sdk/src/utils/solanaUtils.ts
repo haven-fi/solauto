@@ -38,7 +38,7 @@ import { PriorityFeeSetting, ProgramEnv, TransactionRunType } from "../types";
 import {
   getLendingAccountEndFlashloanInstructionDataSerializer,
   getLendingAccountStartFlashloanInstructionDataSerializer,
-} from "../marginfi-sdk";
+} from "../externalSdks/marginfi";
 import { getTokenAccount } from "./accountUtils";
 import {
   arraysAreEqual,

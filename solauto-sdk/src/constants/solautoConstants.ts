@@ -10,7 +10,7 @@ import {
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
 import { SOLAUTO_MANAGER } from "./generalConstants";
-import { JUPITER_PROGRAM_ID } from "../jupiter-sdk";
+import { JUPITER_PROGRAM_ID } from "../externalSdks/jupiter";
 
 export const SOLAUTO_PROD_PROGRAM = new PublicKey(
   "AutoyKBRaHSBHy9RsmXCZMy6nNFAg5FYijrvZyQcNLV"

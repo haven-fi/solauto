@@ -49,13 +49,13 @@ import {
   getLendingAccountRepayInstructionDataSerializer,
   getLendingAccountWithdrawInstructionDataSerializer,
   getMarginfiErrorFromCode,
-} from "../../marginfi-sdk";
+} from "../../externalSdks/marginfi";
 import { JupSwapManager } from "../swap";
 import {
   createJupiterProgram,
   getJupiterErrorFromCode,
   JUPITER_PROGRAM_ID,
-} from "../../jupiter-sdk";
+} from "../../externalSdks/jupiter";
 import {
   TransactionItemInputs,
   BundleSimulationError,

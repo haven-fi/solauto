@@ -16,7 +16,7 @@ import {
 } from "./generalUtils";
 import { getJupPriceData } from "./jupiterUtils";
 import { PriceType } from "../generated";
-import { PriceBias } from "../marginfi-sdk";
+import { PriceBias } from "../externalSdks/marginfi";
 
 interface PriceResult {
   realtimePrice: number;
