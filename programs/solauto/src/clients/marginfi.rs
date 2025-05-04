@@ -357,11 +357,7 @@ impl<'a> MarginfiClient<'a> {
                     )
                 } else {
                     let feed_id = &bank.data.config.oracle_keys[0].to_bytes();
-                    let price_result = price_feed.get_price_unchecked(feed_id)
-                        .map_err(|e| {
-                            msg!("Pyth push oracle error: {:?}", e);
-                            ProgramError::Custom(0)
-                        })?;
+                    let price_result = price_feed.get_price_unchecked(feed_id).unwrap();
                     (
                         derive_value(price_result.price, price_result.exponent),
                         derive_value(price_result.conf as i64, price_result.exponent),
