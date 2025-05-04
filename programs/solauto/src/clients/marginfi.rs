@@ -334,14 +334,10 @@ impl<'a> MarginfiClient<'a> {
                 let price_feed = SolanaPriceAccount::account_info_to_feed(price_oracle)?;
 
                 let price = if price_type == PriceType::Ema {
-                    let price_result = price_feed
-                        .get_price_no_older_than(clock.unix_timestamp, max_price_age)
-                        .unwrap();
+                    let price_result = price_feed.get_price_unchecked();
                     derive_value(price_result.price, price_result.expo)
                 } else {
-                    let price_result = price_feed
-                        .get_price_no_older_than(clock.unix_timestamp, max_price_age)
-                        .unwrap();
+                    let price_result = price_feed.get_price_unchecked();
                     derive_value(price_result.price, price_result.expo)
                 };
 
@@ -361,13 +357,7 @@ impl<'a> MarginfiClient<'a> {
                     )
                 } else {
                     let feed_id = &bank.data.config.oracle_keys[0].to_bytes();
-                    let price_result = price_feed
-                        .get_price_no_older_than_with_custom_verification_level(
-                            &clock,
-                            max_price_age,
-                            feed_id,
-                            VerificationLevel::Full,
-                        )
+                    let price_result = price_feed.get_price_unchecked(feed_id)
                         .map_err(|e| {
                             msg!("Pyth push oracle error: {:?}", e);
                             ProgramError::Custom(0)
