@@ -43,6 +43,7 @@ async function getMissingAccounts() {
   const users = Array.from(
     new Set(positions.map((x) => x.authority.toString()))
   );
+  const usersRequiringPatchLut = [];
   for (const user of users) {
     const authority = new PublicKey(user);
     const referralState = referralStatesData.find((x) =>
@@ -82,9 +83,12 @@ async function getMissingAccounts() {
       console.log("\nMissing accounts for", referralState.publicKey.toString());
       console.log(missingAccounts);
       allMissingAccounts.push(...missingAccounts);
+      usersRequiringPatchLut.push(user);
     }
   }
 
+  console.log("Users requiring patch LUT:");
+  console.log(Array.from(new Set(usersRequiringPatchLut)));
   return allMissingAccounts;
 }
 
