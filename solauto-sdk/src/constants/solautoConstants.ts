@@ -77,5 +77,3 @@ export const AUTHORITIES_REQUIRING_PATCH_LUT = [
   'F2uk8zsKMex8MztU7saFNq6tNbj4esWnKLJXyfo2egax',
   '9PCRbk8Gvt2zqewLKbxaSyTxA2JMtdQGhMff8EdELXNq'
 ];
-
-
