@@ -207,16 +207,6 @@ export class RebalanceSwapManager {
     const rebalanceToZero = this.targetLiqUtilizationRateBps === 0;
     let { input, output, biasedOutputPrice, inputAmount } = this.swapDetails();
 
-    let outputAmount = rebalanceToZero
-      ? output.amountUsed.baseUnit +
-        BigInt(
-          Math.round(
-            Number(output.amountUsed.baseUnit) *
-              (fromBps(this.solautoFeeBps) + 0.0001)
-          )
-        )
-      : toBaseUnit(this.usdToSwap() / biasedOutputPrice, output.decimals);
-
     const flashLoanRepayFromDebt =
       !this.isBoost() &&
       this.flRequirements &&
@@ -224,6 +214,15 @@ export class RebalanceSwapManager {
 
     const exactOut = flashLoanRepayFromDebt;
     const exactIn = !exactOut;
+
+    const outputPaddingPct =
+      (exactOut ? fromBps(this.solautoFeeBps) : 0) + 0.0001;
+    let outputAmount = rebalanceToZero
+      ? output.amountUsed.baseUnit +
+        BigInt(
+          Math.round(Number(output.amountUsed.baseUnit) * outputPaddingPct)
+        )
+      : toBaseUnit(this.usdToSwap() / biasedOutputPrice, output.decimals);
 
     if (exactIn && (rebalanceToZero || this.values.repayingCloseToMaxLtv)) {
       inputAmount = this.bigIntWithIncrement(inputAmount, 0.005);
