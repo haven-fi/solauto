@@ -1,11 +1,11 @@
-use solana_program::{ account_info::AccountInfo, entrypoint::ProgramResult, msg };
+use solana_program::{account_info::AccountInfo, entrypoint::ProgramResult, msg};
 
 use crate::{
-    instructions::{ close_position, update_position },
+    instructions::{close_position, update_position},
     state::solauto_position::SolautoPosition,
     types::{
         instruction::{
-            accounts::{ ClosePositionAccounts, UpdatePositionAccounts },
+            accounts::{ClosePositionAccounts, UpdatePositionAccounts},
             UpdatePositionData,
         },
         shared::DeserializedAccount,
@@ -15,13 +15,13 @@ use crate::{
 
 pub fn process_update_position_instruction<'a>(
     accounts: &'a [AccountInfo<'a>],
-    args: UpdatePositionData
+    args: UpdatePositionData,
 ) -> ProgramResult {
     msg!("Instruction: Update position");
     let ctx = UpdatePositionAccounts::context(accounts)?;
-    let solauto_position = DeserializedAccount::<SolautoPosition>
-        ::zerocopy(Some(ctx.accounts.solauto_position))?
-        .unwrap();
+    let solauto_position =
+        DeserializedAccount::<SolautoPosition>::zerocopy(Some(ctx.accounts.solauto_position))?
+            .unwrap();
 
     validation_utils::validate_instruction(ctx.accounts.signer, &solauto_position, true, true)?;
     validation_utils::validate_standard_programs(
@@ -29,7 +29,7 @@ pub fn process_update_position_instruction<'a>(
         Some(ctx.accounts.token_program),
         None,
         None,
-        None
+        None,
     )?;
 
     if args.dca.is_some() {
@@ -37,7 +37,7 @@ pub fn process_update_position_instruction<'a>(
             &solauto_position,
             ctx.accounts.position_dca_ta,
             Some(args.dca.as_ref().unwrap().token_type),
-            None
+            None,
         )?;
     }
 
@@ -47,9 +47,9 @@ pub fn process_update_position_instruction<'a>(
 pub fn process_close_position_instruction<'a>(accounts: &'a [AccountInfo<'a>]) -> ProgramResult {
     msg!("Instruction: Close position");
     let ctx = ClosePositionAccounts::context(accounts)?;
-    let solauto_position = DeserializedAccount::<SolautoPosition>
-        ::zerocopy(Some(ctx.accounts.solauto_position))?
-        .unwrap();
+    let solauto_position =
+        DeserializedAccount::<SolautoPosition>::zerocopy(Some(ctx.accounts.solauto_position))?
+            .unwrap();
 
     validation_utils::validate_instruction(ctx.accounts.signer, &solauto_position, true, true)?;
     validation_utils::validate_standard_programs(
@@ -57,25 +57,25 @@ pub fn process_close_position_instruction<'a>(accounts: &'a [AccountInfo<'a>]) -
         Some(ctx.accounts.token_program),
         Some(ctx.accounts.ata_program),
         None,
-        None
+        None,
     )?;
 
     validation_utils::validate_token_accounts(
         &solauto_position,
         Some(ctx.accounts.position_supply_ta),
-        Some(ctx.accounts.position_debt_ta)
+        Some(ctx.accounts.position_debt_ta),
     )?;
 
     validation_utils::validate_token_accounts(
         &solauto_position,
         Some(ctx.accounts.signer_supply_ta),
-        Some(ctx.accounts.signer_debt_ta)
+        Some(ctx.accounts.signer_debt_ta),
     )?;
 
     if !cfg!(feature = "local") {
         validation_utils::validate_no_active_balances(
             ctx.accounts.lp_user_account,
-            solauto_position.data.position.lending_platform
+            solauto_position.data.position.lending_platform,
         )?;
     }
 

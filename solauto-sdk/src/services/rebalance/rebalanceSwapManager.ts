@@ -93,12 +93,8 @@ export class RebalanceSwapManager {
     let debtUsd = this.client.pos.debtUsd(this.priceType);
     // TODO: add token balance change
 
-    const {
-      input,
-      biasedInputPrice,
-      output,
-      biasedOutputPrice,
-    } = this.swapDetails();
+    const { input, biasedInputPrice, output, biasedOutputPrice } =
+      this.swapDetails();
 
     const swapInputAmount = swapInputAmountBaseUnit
       ? fromBaseUnit(
@@ -125,7 +121,9 @@ export class RebalanceSwapManager {
     const res = applyDebtAdjustmentUsd(
       {
         debtAdjustmentUsd: this.isBoost() ? swapInputUsd : swapInputUsd * -1,
-        debtAdjustmentUsdOutput: this.isBoost() ? swapOutputUsd : swapOutputUsd * -1,
+        debtAdjustmentUsdOutput: this.isBoost()
+          ? swapOutputUsd
+          : swapOutputUsd * -1,
       },
       { supplyUsd, debtUsd },
       fromBps(this.client.pos.state.liqThresholdBps),
@@ -177,8 +175,11 @@ export class RebalanceSwapManager {
         BigInt(parseInt(swapQuote.inAmount))
       );
       const exceedsMinOutput = criteria.minOutputAmount
-      ? outputAmount < Number(criteria.minOutputAmount) : false;
-      const exceedsMaxRate = criteria.maxLiqUtilizationRateBps ? postRebalanceRate > criteria.maxLiqUtilizationRateBps : false;
+        ? outputAmount < Number(criteria.minOutputAmount)
+        : false;
+      const exceedsMaxRate = criteria.maxLiqUtilizationRateBps
+        ? postRebalanceRate > criteria.maxLiqUtilizationRateBps
+        : false;
       insufficient = exceedsMinOutput || exceedsMaxRate;
 
       consoleLog(postRebalanceRate, criteria.maxLiqUtilizationRateBps);
@@ -211,8 +212,7 @@ export class RebalanceSwapManager {
         BigInt(
           Math.round(
             Number(output.amountUsed.baseUnit) *
-              // Add this small percentage to account for the APR on the debt between now and the transaction
-              0.0001
+              (fromBps(this.solautoFeeBps) + 0.0001)
           )
         )
       : toBaseUnit(this.usdToSwap() / biasedOutputPrice, output.decimals);
