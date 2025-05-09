@@ -61,16 +61,6 @@ impl SolautoFeesBps {
         let k = 1.5;
 
         let mut fee_bps: f64;
-        if self.target_liq_utilization_rate_bps.is_some()
-            && self.target_liq_utilization_rate_bps.unwrap() == 0
-        {
-            return FeePayout {
-                solauto: 0,
-                referrer: 0,
-                total: 0,
-            };
-        }
-
         if self.target_liq_utilization_rate_bps.is_some() {
             fee_bps = 15.0;
         } else if rebalance_direction == &RebalanceDirection::Repay {

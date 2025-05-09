@@ -1,23 +1,32 @@
+use std::collections::HashMap;
+
 use math_utils::to_bps;
 use solana_program::{
-    account_info::AccountInfo, clock::Clock, entrypoint::ProgramResult, msg,
-    program_error::ProgramError, pubkey::Pubkey,
+    account_info::AccountInfo,
+    clock::Clock,
+    entrypoint::ProgramResult,
+    msg,
+    program_error::ProgramError,
 };
 
 use super::{
-    instruction::{RebalanceSettings, SolautoAction, SolautoStandardAccounts},
-    lending_protocol::{LendingProtocolClient, LendingProtocolTokenAccounts},
+    instruction::{ RebalanceSettings, SolautoAction, SolautoStandardAccounts },
+    lending_protocol::{ LendingProtocolClient, LendingProtocolTokenAccounts },
     shared::{
-        RebalanceStep, RefreshStateProps, SplTokenTransferArgs, TokenBalanceAmount, TokenType,
+        RebalanceStep,
+        RefreshStateProps,
+        SplTokenTransferArgs,
+        TokenBalanceAmount,
+        TokenType,
     },
-    solauto::SolautoCpiAction,
+    solauto::{ SolautoAccount, SolautoCpiAction },
 };
 use crate::{
     rebalance::{
-        rebalancer::{Rebalancer, RebalancerData, SolautoPositionData, TokenAccountData},
+        rebalancer::{ Rebalancer, RebalancerData, SolautoPositionData, TokenAccountData },
         solauto_fees::SolautoFeesBps,
     },
-    state::solauto_position::{RebalanceData, SolautoPosition},
+    state::solauto_position::{ RebalanceData, SolautoPosition },
     utils::*,
 };
 
@@ -32,7 +41,7 @@ impl<'a> SolautoManagerAccounts<'a> {
         supply: LendingProtocolTokenAccounts<'a>,
         debt: LendingProtocolTokenAccounts<'a>,
         intermediary_ta: Option<&'a AccountInfo<'a>>,
-        solauto_fees: Option<SolautoFeesBps>,
+        solauto_fees: Option<SolautoFeesBps>
     ) -> Result<Self, ProgramError> {
         Ok(Self {
             supply,
@@ -55,7 +64,7 @@ impl<'a> SolautoManager<'a> {
         client: Box<dyn LendingProtocolClient<'a> + 'a>,
         accounts: SolautoManagerAccounts<'a>,
         std_accounts: Box<SolautoStandardAccounts<'a>>,
-        solauto_fees_bps: Option<SolautoFeesBps>,
+        solauto_fees_bps: Option<SolautoFeesBps>
     ) -> Result<Self, ProgramError> {
         client.validate(&std_accounts)?;
         Ok(Self {
@@ -80,15 +89,14 @@ impl<'a> SolautoManager<'a> {
     fn borrow(&mut self, base_unit_amount: u64, destination: &'a AccountInfo<'a>) -> ProgramResult {
         msg!("Borrowing {}", base_unit_amount);
         self.update_usage(base_unit_amount as i64, TokenType::Debt);
-        self.client
-            .borrow(base_unit_amount, destination, &self.std_accounts)?;
+        self.client.borrow(base_unit_amount, destination, &self.std_accounts)?;
         Ok(())
     }
 
     fn withdraw(
         &mut self,
         amount: TokenBalanceAmount,
-        destination: &'a AccountInfo<'a>,
+        destination: &'a AccountInfo<'a>
     ) -> ProgramResult {
         let base_unit_amount = match amount {
             TokenBalanceAmount::All => self.position_data().state.supply.amount_used.base_unit,
@@ -97,8 +105,7 @@ impl<'a> SolautoManager<'a> {
 
         msg!("Withdrawing {}", base_unit_amount);
         self.update_usage((base_unit_amount as i64) * -1, TokenType::Supply);
-        self.client
-            .withdraw(amount, destination, &self.std_accounts)?;
+        self.client.withdraw(amount, destination, &self.std_accounts)?;
         Ok(())
     }
 
@@ -117,41 +124,32 @@ impl<'a> SolautoManager<'a> {
     fn update_usage(&mut self, base_unit_amount: i64, token_type: TokenType) {
         let position_data = self.position_data();
         if !position_data.self_managed.val || position_data.rebalance.active() {
-            self.std_accounts
-                .solauto_position
-                .data
-                .update_usage(token_type, base_unit_amount);
+            self.std_accounts.solauto_position.data.update_usage(token_type, base_unit_amount);
         }
     }
 
     fn get_token_account_data(&self, account: Option<&'a AccountInfo<'a>>) -> TokenAccountData {
         TokenAccountData::from(
-            *account.unwrap().key,
-            solauto_utils::safe_unpack_token_account(account)
-                .unwrap()
-                .unwrap()
-                .data
-                .amount,
+            solauto_utils::safe_unpack_token_account(account).unwrap().unwrap().data.amount
         )
     }
 
-    fn pk_to_account_info(&self, pk: Pubkey) -> &'a AccountInfo<'a> {
-        let accounts = [
-            Some(self.std_accounts.solauto_position.account_info),
-            self.accounts.supply.position_ta,
-            self.accounts.supply.authority_ta,
-            self.accounts.debt.position_ta,
-            self.accounts.debt.authority_ta,
-            self.accounts.intermediary_ta,
-            self.std_accounts.solauto_fees_ta,
-            self.std_accounts.referred_by_ta,
-        ];
+    fn to_account_info(&self, acc: &SolautoAccount) -> &'a AccountInfo<'a> {
+        let mut map: HashMap<SolautoAccount, Option<&AccountInfo>> = HashMap::new();
 
-        accounts
-            .iter()
-            .find(|acc| acc.is_some() && acc.unwrap().key == &pk)
-            .unwrap()
-            .unwrap()
+        map.insert(
+            SolautoAccount::SolautoPosition,
+            Some(self.std_accounts.solauto_position.account_info)
+        );
+        map.insert(SolautoAccount::SolautoPositionSupplyTa, self.accounts.supply.position_ta);
+        map.insert(SolautoAccount::SolautoPositionDebtTa, self.accounts.debt.position_ta);
+        map.insert(SolautoAccount::AuthoritySupplyTa, self.accounts.supply.authority_ta);
+        map.insert(SolautoAccount::AuthorityDebtTa, self.accounts.debt.authority_ta);
+        map.insert(SolautoAccount::IntermediaryTa, self.accounts.intermediary_ta);
+        map.insert(SolautoAccount::SolautoFeesTa, self.std_accounts.solauto_fees_ta);
+        map.insert(SolautoAccount::ReferredByTa, self.std_accounts.referred_by_ta);
+
+        map.get(acc).unwrap().unwrap()
     }
 
     fn get_rebalancer(&mut self, rebalance_args: RebalanceSettings) -> Rebalancer {
@@ -165,61 +163,51 @@ impl<'a> SolautoManager<'a> {
                 supply_ta: position_supply_ta,
                 debt_ta: position_debt_ta,
             },
-            authority_supply_ta: self.accounts.supply.authority_ta.map_or(None, |acc| {
-                Some(TokenAccountData::without_balance(*acc.key))
-            }),
-            authority_debt_ta: self.accounts.debt.authority_ta.map_or(None, |acc| {
-                Some(TokenAccountData::without_balance(*acc.key))
-            }),
-            intermediary_ta: TokenAccountData::without_balance(
-                *self.accounts.intermediary_ta.unwrap().key,
-            ),
             solauto_fees_bps: self.solauto_fees_bps.unwrap().clone(),
-            solauto_fees_ta: self
-                .std_accounts
-                .solauto_fees_ta
-                .map_or(None, |acc| Some(*acc.key)),
-            referred_by_state: self
-                .std_accounts
-                .authority_referral_state
+            solauto_fees_ta: self.std_accounts.solauto_fees_ta.map_or(None, |acc| Some(*acc.key)),
+            referred_by_state: self.std_accounts.authority_referral_state
                 .as_ref()
                 .map_or(None, |acc| Some(acc.data.referred_by_state.clone())),
-            referred_by_ta: self
-                .std_accounts
-                .referred_by_ta
-                .map_or(None, |acc| Some(*acc.key)),
+            referred_by_ta: self.std_accounts.referred_by_ta.map_or(None, |acc| Some(*acc.key)),
         })
     }
 
     fn execute_cpi_actions(&mut self, actions: Vec<SolautoCpiAction>) -> ProgramResult {
-        let sm = self;
+        let owned_seeds: Vec<Vec<u8>> = self.std_accounts.solauto_position.data
+            .seeds_with_bump()
+            .iter()
+            .map(|s| s.to_vec())
+            .collect();
+        let seeds_vec: Vec<&[u8]> = owned_seeds
+            .iter()
+            .map(|v| v.as_slice())
+            .collect();
 
         for action in actions {
             match action {
-                SolautoCpiAction::Deposit(amount) => sm.deposit(amount)?,
+                SolautoCpiAction::Deposit(amount) => self.deposit(amount)?,
                 SolautoCpiAction::Withdraw(data) => {
-                    sm.withdraw(data.amount, sm.pk_to_account_info(data.to_wallet_ta))?;
+                    self.withdraw(data.amount, self.to_account_info(&data.to_wallet_ta))?;
                 }
                 SolautoCpiAction::Borrow(data) => {
-                    sm.borrow(data.amount, sm.pk_to_account_info(data.to_wallet_ta))?;
+                    self.borrow(data.amount, self.to_account_info(&data.to_wallet_ta))?;
                 }
-                SolautoCpiAction::Repay(amount) => sm.repay(amount)?,
+                SolautoCpiAction::Repay(amount) => self.repay(amount)?,
                 SolautoCpiAction::SplTokenTransfer(data) => {
-                    let seeds =
-                        if &data.from_wallet == sm.std_accounts.solauto_position.account_info.key {
-                            Some(sm.std_accounts.solauto_position.data.seeds_with_bump())
-                        } else {
-                            None
-                        };
+                    let authority_seeds = if &data.from_wallet == &SolautoAccount::SolautoPosition {
+                        Some(&seeds_vec)
+                    } else {
+                        None
+                    };
                     solana_utils::spl_token_transfer(
-                        sm.std_accounts.token_program,
+                        self.std_accounts.token_program,
                         SplTokenTransferArgs {
                             amount: data.amount,
-                            source: sm.pk_to_account_info(data.from_wallet_ta),
-                            authority: sm.pk_to_account_info(data.from_wallet),
-                            recipient: sm.pk_to_account_info(data.to_wallet_ta),
-                            authority_seeds: seeds.as_ref(),
-                        },
+                            source: self.to_account_info(&data.from_wallet_ta),
+                            authority: self.to_account_info(&data.from_wallet),
+                            recipient: self.to_account_info(&data.to_wallet_ta),
+                            authority_seeds,
+                        }
                     )?;
                 }
             }
@@ -230,7 +218,7 @@ impl<'a> SolautoManager<'a> {
     pub fn refresh_position(
         solauto_position: &mut SolautoPosition,
         updated_data: RefreshStateProps,
-        clock: Clock,
+        clock: Clock
     ) -> ProgramResult {
         // Update mint addresses if self-managed
         if solauto_position.self_managed.val {
@@ -248,11 +236,11 @@ impl<'a> SolautoManager<'a> {
             solauto_position.state.supply.amount_used.usd_value(),
             solauto_position.state.debt.amount_used.usd_value(),
             solauto_position.state.supply.market_price(),
-            solauto_position.state.supply.decimals,
+            solauto_position.state.supply.decimals
         );
         solauto_position.state.net_worth.update_usd_value(
             updated_data.supply.market_price,
-            solauto_position.state.supply.decimals,
+            solauto_position.state.supply.decimals
         );
 
         solauto_position.refresh_state();
@@ -267,10 +255,7 @@ impl<'a> SolautoManager<'a> {
                 self.deposit(base_unit_amount)?;
             }
             SolautoAction::Borrow(base_unit_amount) => {
-                self.borrow(
-                    base_unit_amount,
-                    self.accounts.debt.position_ta.as_ref().unwrap(),
-                )?;
+                self.borrow(base_unit_amount, self.accounts.debt.position_ta.as_ref().unwrap())?;
             }
             SolautoAction::Repay(amount) => {
                 self.repay(amount)?;
@@ -285,7 +270,7 @@ impl<'a> SolautoManager<'a> {
     pub fn rebalance(
         &mut self,
         rebalance_args: RebalanceSettings,
-        rebalance_step: RebalanceStep,
+        rebalance_step: RebalanceStep
     ) -> ProgramResult {
         let (actions, finished) = {
             let mut rebalancer = self.get_rebalancer(rebalance_args.clone());

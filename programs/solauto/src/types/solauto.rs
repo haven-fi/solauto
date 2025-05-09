@@ -1,11 +1,29 @@
-use solana_program::pubkey::Pubkey;
+use super::shared::TokenBalanceAmount;
 
-use super::shared::{BareSplTokenTransferArgs, TokenBalanceAmount};
+#[derive(Clone, Copy, Eq, PartialEq, Hash)]
+pub enum SolautoAccount {
+    SolautoPosition,
+    SolautoPositionSupplyTa,
+    SolautoPositionDebtTa,
+    AuthoritySupplyTa,
+    AuthorityDebtTa,
+    IntermediaryTa,
+    SolautoFeesTa,
+    ReferredByTa
+}
 
 #[derive(Clone)]
 pub struct FromLendingPlatformAction<T> {
     pub amount: T,
-    pub to_wallet_ta: Pubkey,
+    pub to_wallet_ta: SolautoAccount,
+}
+
+#[derive(Clone)]
+pub struct SolautoSplTokenTransferArgs {
+    pub from_wallet: SolautoAccount,
+    pub from_wallet_ta: SolautoAccount,
+    pub to_wallet_ta: SolautoAccount,
+    pub amount: u64,
 }
 
 #[derive(Clone)]
@@ -14,7 +32,7 @@ pub enum SolautoCpiAction {
     Borrow(FromLendingPlatformAction<u64>),
     Repay(TokenBalanceAmount),
     Withdraw(FromLendingPlatformAction<TokenBalanceAmount>),
-    SplTokenTransfer(BareSplTokenTransferArgs),
+    SplTokenTransfer(SolautoSplTokenTransferArgs),
 }
 
 #[derive(Copy, Clone)]
