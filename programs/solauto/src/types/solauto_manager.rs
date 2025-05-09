@@ -22,11 +22,14 @@ use super::{
     solauto::{ SolautoAccount, SolautoCpiAction },
 };
 use crate::{
+    check,
+    constants::SOLAUTO_FEES_WALLET,
     rebalance::{
         rebalancer::{ Rebalancer, RebalancerData, SolautoPositionData, TokenAccountData },
         solauto_fees::SolautoFeesBps,
     },
     state::solauto_position::{ RebalanceData, SolautoPosition },
+    types::errors::SolautoError,
     utils::*,
 };
 
@@ -164,11 +167,8 @@ impl<'a> SolautoManager<'a> {
                 debt_ta: position_debt_ta,
             },
             solauto_fees_bps: self.solauto_fees_bps.unwrap().clone(),
-            solauto_fees_ta: self.std_accounts.solauto_fees_ta.map_or(None, |acc| Some(*acc.key)),
-            referred_by_state: self.std_accounts.authority_referral_state
-                .as_ref()
-                .map_or(None, |acc| Some(acc.data.referred_by_state.clone())),
-            referred_by_ta: self.std_accounts.referred_by_ta.map_or(None, |acc| Some(*acc.key)),
+            referred_by: self.std_accounts.authority_referral_state.is_some() &&
+            self.std_accounts.authority_referral_state.as_ref().unwrap().data.is_referred(),
         })
     }
 
@@ -267,11 +267,46 @@ impl<'a> SolautoManager<'a> {
         Ok(())
     }
 
+    fn validate_fee_token_accounts(&self) -> ProgramResult {
+        let mints = vec![
+            self.std_accounts.solauto_position.data.state.supply.mint,
+            self.std_accounts.solauto_position.data.state.debt.mint
+        ];
+
+        if self.std_accounts.solauto_fees_ta.is_some() {
+            check!(
+                validation_utils::valid_token_account_for_mints(
+                    self.std_accounts.solauto_fees_ta.as_ref().unwrap().key,
+                    &SOLAUTO_FEES_WALLET,
+                    &mints
+                ),
+                SolautoError::IncorrectAccounts
+            );
+        }
+
+        if self.std_accounts.referred_by_ta.is_some() {
+            check!(
+                validation_utils::valid_token_account_for_mints(
+                    self.std_accounts.referred_by_ta.as_ref().unwrap().key,
+                    &self.std_accounts.authority_referral_state
+                        .as_ref()
+                        .unwrap().data.referred_by_state,
+                    &mints
+                ),
+                SolautoError::IncorrectAccounts
+            );
+        }
+
+        Ok(())
+    }
+
     pub fn rebalance(
         &mut self,
         rebalance_args: RebalanceSettings,
         rebalance_step: RebalanceStep
     ) -> ProgramResult {
+        self.validate_fee_token_accounts()?;
+
         let (actions, finished) = {
             let mut rebalancer = self.get_rebalancer(rebalance_args.clone());
             let rebalance_result = rebalancer.rebalance(rebalance_step)?;

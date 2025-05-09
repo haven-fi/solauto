@@ -1,10 +1,8 @@
 use std::ops::{ Div, Mul };
 
 use solana_program::pubkey::Pubkey;
-use spl_associated_token_account::get_associated_token_address;
 
 use crate::{
-    constants::SOLAUTO_FEES_WALLET,
     state::solauto_position::{
         PositionData,
         PositionState,
@@ -129,29 +127,6 @@ fn create_rebalancer<'a>(
     data.pos.rebalance.ixs.active = PodBool::new(true);
     data.pos.rebalance.ixs.swap_type = rebalance_args.swap_type.unwrap_or(SwapType::default());
 
-    let position_supply_ta = get_associated_token_address(
-        &data.pos.pubkey(),
-        &data.pos.state.supply.mint
-    );
-    let position_debt_ta = get_associated_token_address(
-        &data.pos.pubkey(),
-        &data.pos.state.debt.mint
-    );
-    let position_authority_supply_ta = get_associated_token_address(
-        &data.pos.authority,
-        &data.pos.state.supply.mint
-    );
-    let position_authority_debt_ta = get_associated_token_address(
-        &data.pos.authority,
-        &data.pos.state.debt.mint
-    );
-
-    let fees_mint = if data.rebalance_direction == RebalanceDirection::Boost {
-        data.pos.state.supply.mint
-    } else {
-        data.pos.state.debt.mint
-    };
-    let solauto_fees_ta = get_associated_token_address(&SOLAUTO_FEES_WALLET, &fees_mint);
     let solauto_fees = SolautoFeesBps::from_mock(SOLAUTO_FEE_BPS, false);
 
     let rebalancer = Rebalancer::new(RebalancerData {
@@ -162,9 +137,7 @@ fn create_rebalancer<'a>(
             debt_ta: TokenAccountData::from(data.position_debt_ta_balance.unwrap_or(0)),
         },
         solauto_fees_bps: solauto_fees,
-        referred_by_state: None,
-        referred_by_ta: None,
-        solauto_fees_ta: Some(solauto_fees_ta),
+        referred_by: false,
     });
 
     rebalancer

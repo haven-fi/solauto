@@ -1,10 +1,9 @@
 use std::{ cmp::min, ops::{ Add, Mul } };
 
-use solana_program::{ entrypoint::ProgramResult, program_error::ProgramError, pubkey::Pubkey };
+use solana_program::{ entrypoint::ProgramResult, program_error::ProgramError };
 
 use crate::{
     check,
-    constants::SOLAUTO_FEES_WALLET,
     state::solauto_position::{
         PositionTokenState,
         RebalanceData,
@@ -28,9 +27,11 @@ use crate::{
             SolautoSplTokenTransferArgs,
         },
     },
-    utils::{
-        math_utils::{ calc_fee_amount, from_bps, from_rounded_usd_value, usd_value_to_base_unit },
-        validation_utils::correct_token_account,
+    utils::math_utils::{
+        calc_fee_amount,
+        from_bps,
+        from_rounded_usd_value,
+        usd_value_to_base_unit,
     },
 };
 
@@ -61,9 +62,7 @@ pub struct RebalancerData<'a> {
     pub rebalance_args: RebalanceSettings,
     pub solauto_position: SolautoPositionData<'a>,
     pub solauto_fees_bps: SolautoFeesBps,
-    pub solauto_fees_ta: Option<Pubkey>,
-    pub referred_by_state: Option<Pubkey>,
-    pub referred_by_ta: Option<Pubkey>,
+    pub referred_by: bool,
 }
 
 pub struct RebalanceResult {
@@ -350,24 +349,16 @@ impl<'a> Rebalancer<'a> {
 
     fn payout_fees(&mut self, available_balance: u64) -> Result<u64, ProgramError> {
         let rebalance_direction = &self.rebalance_data().values.rebalance_direction;
-        let (token_mint, position_ta) = if self.is_boost() {
-            (self.position_data().state.supply.mint, SolautoAccount::SolautoPositionSupplyTa)
+        let position_ta = if self.is_boost() {
+            SolautoAccount::SolautoPositionSupplyTa
         } else {
-            (self.position_data().state.debt.mint, SolautoAccount::SolautoPositionDebtTa)
+            SolautoAccount::SolautoPositionDebtTa
         };
         let fee_payout = self.data.solauto_fees_bps.fetch_fees(rebalance_direction);
         if fee_payout.total == 0 {
             return Ok(available_balance);
         }
 
-        check!(
-            correct_token_account(
-                self.data.solauto_fees_ta.as_ref().unwrap(),
-                &SOLAUTO_FEES_WALLET,
-                &token_mint
-            ),
-            SolautoError::IncorrectAccounts
-        );
         let solauto_fees = self.payout_fee(
             available_balance,
             fee_payout.solauto,
@@ -375,18 +366,7 @@ impl<'a> Rebalancer<'a> {
             SolautoAccount::SolautoFeesTa
         )?;
 
-        let referrer_fees = if
-            self.data.referred_by_state.is_some() &&
-            self.data.referred_by_state.unwrap() != Pubkey::default()
-        {
-            check!(
-                correct_token_account(
-                    self.data.referred_by_ta.as_ref().unwrap(),
-                    self.data.referred_by_state.as_ref().unwrap(),
-                    &token_mint
-                ),
-                SolautoError::IncorrectAccounts
-            );
+        let referrer_fees = if self.data.referred_by {
             self.payout_fee(
                 available_balance,
                 fee_payout.referrer,

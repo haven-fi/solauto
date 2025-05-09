@@ -1,4 +1,4 @@
-use super::shared::TokenBalanceAmount;
+use super::shared::{ TokenBalanceAmount, TokenType };
 
 #[derive(Clone, Copy, Eq, PartialEq, Hash)]
 pub enum SolautoAccount {
@@ -9,7 +9,9 @@ pub enum SolautoAccount {
     AuthorityDebtTa,
     IntermediaryTa,
     SolautoFeesTa,
-    ReferredByTa
+    ReferredByTa,
+    SupplyMint,
+    DebtMint,
 }
 
 #[derive(Clone)]

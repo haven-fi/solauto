@@ -49,6 +49,9 @@ impl ReferralState {
         seeds.push(&self.bump);
         seeds
     }
+    pub fn is_referred(&self) -> bool {
+        self.referred_by_state != Pubkey::default()
+    }
 }
 
 mod tests {

@@ -2,7 +2,7 @@ use solana_program::{
     account_info::AccountInfo,
     entrypoint::ProgramResult,
     instruction::Instruction,
-    program::{invoke, invoke_signed},
+    program::{ invoke, invoke_signed },
     pubkey::Pubkey,
     rent::Rent,
     system_instruction,
@@ -13,7 +13,7 @@ use spl_token::instruction as spl_instruction;
 
 use crate::{
     check,
-    types::{errors::SolautoError, shared::SplTokenTransferArgs},
+    types::{ errors::SolautoError, shared::SplTokenTransferArgs },
     utils::validation_utils::correct_token_account,
 };
 
@@ -24,7 +24,7 @@ pub fn account_has_data(account: &AccountInfo) -> bool {
 pub fn invoke_instruction(
     instruction: &Instruction,
     account_infos: &[AccountInfo],
-    seeds: Option<&Vec<&[u8]>>,
+    seeds: Option<&Vec<&[u8]>>
 ) -> ProgramResult {
     if let Some(seeds) = seeds {
         invoke_signed(instruction, account_infos, &[seeds.as_slice()])
@@ -39,14 +39,12 @@ pub fn init_account<'a>(
     account: &'a AccountInfo<'a>,
     new_owner: &Pubkey,
     account_seed: Option<Vec<&[u8]>>,
-    space: usize,
+    space: usize
 ) -> ProgramResult {
     check!(!account_has_data(account), SolautoError::IncorrectAccounts);
 
     let rent = &Rent::from_account_info(rent_sysvar)?;
-    let required_lamports = rent
-        .minimum_balance(space)
-        .saturating_sub(account.lamports());
+    let required_lamports = rent.minimum_balance(space).saturating_sub(account.lamports());
     if required_lamports > 0 {
         system_transfer(payer, account, required_lamports, None)?;
     }
@@ -56,13 +54,13 @@ pub fn init_account<'a>(
     invoke_instruction(
         &system_instruction::allocate(account.key, space.try_into().unwrap()),
         accounts,
-        account_seed.as_ref(),
+        account_seed.as_ref()
     )?;
 
     invoke_instruction(
         &system_instruction::assign(account.key, &new_owner),
         accounts,
-        account_seed.as_ref(),
+        account_seed.as_ref()
     )?;
 
     Ok(())
@@ -74,7 +72,7 @@ pub fn init_ata_if_needed<'a, 'b>(
     payer: &'a AccountInfo<'a>,
     wallet: &'a AccountInfo<'a>,
     token_account: &'a AccountInfo<'a>,
-    token_mint: &'a AccountInfo<'a>,
+    token_mint: &'a AccountInfo<'a>
 ) -> ProgramResult {
     check!(
         correct_token_account(token_account.key, wallet.key, token_mint.key),
@@ -94,7 +92,7 @@ pub fn init_ata_if_needed<'a, 'b>(
             token_mint.clone(),
             system_program.clone(),
             token_program.clone(),
-        ],
+        ]
     )
 }
 
@@ -102,18 +100,18 @@ pub fn system_transfer<'a>(
     source: &'a AccountInfo<'a>,
     destination: &'a AccountInfo<'a>,
     lamports: u64,
-    source_seeds: Option<&Vec<&[u8]>>,
+    source_seeds: Option<&Vec<&[u8]>>
 ) -> ProgramResult {
     invoke_instruction(
         &system_instruction::transfer(source.key, destination.key, lamports),
         &[source.clone(), destination.clone()],
-        source_seeds,
+        source_seeds
     )
 }
 
 pub fn spl_token_transfer<'a, 'b>(
     token_program: &'a AccountInfo<'a>,
-    args: SplTokenTransferArgs<'a, 'b>,
+    args: SplTokenTransferArgs<'a, 'b>
 ) -> ProgramResult {
     invoke_instruction(
         &spl_instruction::transfer(
@@ -122,14 +120,10 @@ pub fn spl_token_transfer<'a, 'b>(
             args.recipient.key,
             args.authority.key,
             &[],
-            args.amount,
+            args.amount
         )?,
-        &[
-            args.source.clone(),
-            args.recipient.clone(),
-            args.authority.clone(),
-        ],
-        args.authority_seeds,
+        &[args.source.clone(), args.recipient.clone(), args.authority.clone()],
+        args.authority_seeds
     )
 }
 
@@ -138,7 +132,7 @@ pub fn close_token_account<'a, 'b>(
     account: &'a AccountInfo<'a>,
     sol_destination: &'a AccountInfo<'a>,
     account_owner: &'a AccountInfo<'a>,
-    owner_seeds: Option<&Vec<&[u8]>>,
+    owner_seeds: Option<&Vec<&[u8]>>
 ) -> ProgramResult {
     invoke_instruction(
         &spl_instruction::close_account(
@@ -146,14 +140,10 @@ pub fn close_token_account<'a, 'b>(
             account.key,
             sol_destination.key,
             account_owner.key,
-            &[],
+            &[]
         )?,
-        &[
-            account.clone(),
-            sol_destination.clone(),
-            account_owner.clone(),
-        ],
-        owner_seeds,
+        &[account.clone(), sol_destination.clone(), account_owner.clone()],
+        owner_seeds
     )
 }
 
