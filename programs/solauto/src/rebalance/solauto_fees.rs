@@ -62,7 +62,7 @@ impl SolautoFeesBps {
 
         let mut fee_bps: f64;
         if self.target_liq_utilization_rate_bps.is_some() {
-            fee_bps = 15.0;
+            fee_bps = 10.0;
         } else if rebalance_direction == &RebalanceDirection::Repay {
             fee_bps = 25.0;
         } else if self.position_net_worth_usd <= min_size {
