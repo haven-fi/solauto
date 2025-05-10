@@ -585,7 +585,7 @@ export class TransactionsManager<T extends TxHandler> {
     consoleLog(errorString);
 
     if (!errorDetails.canBeIgnored) {
-      throw new Error(errorInfo);
+      throw error;
     }
   }
 }

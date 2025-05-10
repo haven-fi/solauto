@@ -127,7 +127,7 @@ export function retryWithExponentialBackoff<T>(
           attemptNum++;
 
           if (
-            errorsToThrow &&
+            errorsToThrow?.length &&
             errorsToThrow.some((errorType) => error instanceof errorType)
           ) {
             reject(error);
@@ -206,7 +206,10 @@ export function validPubkey(pubkey?: PublicKey | UmiPublicKey | string) {
   return Boolean(pubkey) && pubkey!.toString() !== PublicKey.default.toString();
 }
 
-export function createRecord<T>(keys: string[], values: T[]): Record<string, T> {
+export function createRecord<T>(
+  keys: string[],
+  values: T[]
+): Record<string, T> {
   return Object.fromEntries(
     zip(keys, values).map(([k, v]) => [k.toString(), v])
   );

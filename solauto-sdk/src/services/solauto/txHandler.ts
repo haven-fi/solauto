@@ -17,7 +17,7 @@ export interface TxHandlerProps {
   lpEnv?: ProgramEnv;
 }
 
-export abstract class TxHandler {
+export class TxHandler {
   public rpcUrl!: string;
   public showLogs = false;
   public programId!: PublicKey;
@@ -64,7 +64,9 @@ export abstract class TxHandler {
     consoleLog(...args);
   }
 
-  abstract defaultLookupTables(): string[];
+  defaultLookupTables(): string[] {
+    return [];
+  }
 
-  abstract resetLiveTxUpdates(success?: boolean): Promise<void>;
+  resetLiveTxUpdates(success?: boolean) {}
 }
