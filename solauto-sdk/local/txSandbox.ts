@@ -1,15 +1,19 @@
 import { Keypair, PublicKey } from "@solana/web3.js";
-import { createSignerFromKeypair } from "@metaplex-foundation/umi";
+import { createSignerFromKeypair, publicKey } from "@metaplex-foundation/umi";
 import { fromWeb3JsKeypair } from "@metaplex-foundation/umi-web3js-adapters";
 import {
+  bytesToI80F48,
   ClientTransactionsManager,
   consoleLog,
+  fetchBank,
+  fetchMarginfiAccount,
   getBatches,
   getClient,
   getPositionExBulk,
   getSolanaRpcConnection,
   getSolautoManagedPositions,
   LendingPlatform,
+  lendingPoolAccrueBankInterest,
   LOCAL_IRONFORGE_API_URL,
   PriceType,
   PriorityFeeSetting,
@@ -21,8 +25,9 @@ import {
   TransactionItem,
 } from "../src";
 import { getSecretKey } from "./shared";
+import { fromBaseUnit } from "../dist";
 
-const payForTransaction = false;
+const payForTransaction = true;
 const testProgram = false;
 const lpEnv: ProgramEnv = "Prod";
 
@@ -47,14 +52,23 @@ export async function main() {
   });
 
   await client.initializeExistingSolautoPosition({
-    positionId: 2,
-    authority: new PublicKey("EBhRj7jbF2EVE21i19JSuCX1BAbnZFYhoKW64HnaZ3kf"),
+    positionId: 1,
+    authority: new PublicKey("5UqsR2PGzbP8pGPbXEeXx86Gjz2N2UFBAuFZUSVydAEe"),
     // lpUserAccount: new PublicKey(
     //   "GEokw9jqbh6d1xUNA3qaeYFFetbSR5Y1nt7C3chwwgSz"
     // ),
   });
 
-  const transactionItems = [rebalance(client)];
+  const transactionItems = [
+    new TransactionItem(async () => ({
+      tx: lendingPoolAccrueBankInterest(umi, {
+        marginfiGroup: publicKey(
+          "DQ2jqDJw9uzTwttf6h6r217BQ7kws3jZbJXDkfbCJa1q"
+        ),
+        bank: publicKey("EXrnNVfLagt3j4hCHSD9WqK75o6dkZBtjpnrSrSC78MA"),
+      }),
+    })),
+  ];
 
   const txManager = new ClientTransactionsManager({
     txHandler: client,
@@ -64,6 +78,34 @@ export async function main() {
   });
   const statuses = await txManager.send(transactionItems);
   consoleLog(statuses);
+
+  await new Promise((resolve) => setTimeout(resolve, 5000));
+
+  const mfiAccount = await fetchMarginfiAccount(
+    umi,
+    publicKey("Fun9UD87tLCxqxoTvpGYAy6Uwk2eevFGDk1VvxpXbd5x")
+  );
+  const bank = await fetchBank(
+    umi,
+    publicKey("EXrnNVfLagt3j4hCHSD9WqK75o6dkZBtjpnrSrSC78MA"),
+    { commitment: "confirmed" }
+  );
+
+  console.log(
+    fromBaseUnit(
+      BigInt(
+        Math.round(
+          bytesToI80F48(
+            mfiAccount.lendingAccount.balances[0].assetShares.value
+          ) * bytesToI80F48(bank.assetShareValue.value)
+        )
+      ),
+      6
+    )
+  );
+  // 1:34pm - $4479.61
+  // 2:51pm - $4513.30
+  // 12:58pm - $4529.16
 }
 
 async function refreshAll() {

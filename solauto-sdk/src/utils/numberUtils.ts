@@ -8,6 +8,8 @@ import {
 import { PositionState, PriceType } from "../generated";
 import { RoundAction } from "../types";
 import { safeGetPrice } from "./priceUtils";
+import { StrategyType, strategyType } from "./stringUtils";
+import { getDebtAdjustment } from "../services";
 
 export function calcNetWorthUsd(state?: PositionState) {
   return fromRoundedUsdValue(state?.netWorth.baseAmountUsdValue ?? BigInt(0));
@@ -213,5 +215,34 @@ export function realtimeUsdToEmaUsd(
   return (
     (realtimeAmountUsd / safeGetPrice(mint, PriceType.Realtime)!) *
     safeGetPrice(mint, PriceType.Ema)!
+  );
+}
+
+export function boostSettingToLeverageFactor(
+  supplyMint: PublicKey,
+  debtMint: PublicKey,
+  boostToBps: number,
+  liqThresholdBps: number
+) {
+  const strategy = strategyType(supplyMint, debtMint);
+  const supplyUsd = 100;
+  const debtUsd = getDebtAdjustment(
+    liqThresholdBps,
+    { supplyUsd: 100, debtUsd: 0 },
+    boostToBps
+  ).debtAdjustmentUsd;
+  return getLeverageFactor(strategy, supplyUsd + debtUsd, debtUsd);
+}
+
+export function getLeverageFactor(
+  strategyType: StrategyType,
+  supplyUsd: number,
+  debtUsd: number
+): number {
+  return (
+    (strategyType === "Long" || strategyType === "Ratio"
+      ? supplyUsd
+      : debtUsd) /
+    (supplyUsd - debtUsd)
   );
 }
