@@ -179,3 +179,5 @@ impl<'a, T: Pack + IsInitialized> DeserializedAccount<'a, T> {
         }
     }
 }
+
+pub type AccountMetaFlags<'a> = (&'a AccountInfo<'a>, bool, bool);

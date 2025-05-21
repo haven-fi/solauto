@@ -28,8 +28,8 @@ use crate::{
         },
         lending_protocol::{LendingProtocolClient, LendingProtocolTokenAccounts},
         shared::{
-            DeserializedAccount, PriceType, RefreshStateProps, RefreshedTokenState,
-            TokenBalanceAmount, TokenType,
+            AccountMetaFlags, DeserializedAccount, PriceType, RefreshStateProps,
+            RefreshedTokenState, TokenBalanceAmount, TokenType,
         },
     },
     utils::{math_utils::*, solana_utils::*, solauto_utils::*, validation_utils::*},
@@ -416,6 +416,26 @@ impl<'a> MarginfiClient<'a> {
         );
         cpi.invoke()
     }
+
+    pub fn compose_remaining_accounts(accounts: Vec<AccountMetaFlags>) -> Vec<AccountMetaFlags> {
+        let mut banks_and_oracles: Vec<(AccountMetaFlags, AccountMetaFlags)> = accounts
+            .chunks(2)
+            .filter_map(|chunk| {
+                if chunk.len() == 2 {
+                    Some((chunk[0], chunk[1]))
+                } else {
+                    None
+                }
+            })
+            .collect();
+
+        banks_and_oracles.sort_by(|a, b| b.0 .0.key.to_string().cmp(&a.0 .0.key.to_string()));
+
+        banks_and_oracles
+            .into_iter()
+            .flat_map(|(a, b)| vec![a, b])
+            .collect()
+    }
 }
 
 impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
@@ -552,7 +572,9 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
                 remaining_accounts.as_slice(),
             )
         } else {
-            cpi.invoke_with_remaining_accounts(remaining_accounts.as_slice())
+            cpi.invoke_with_remaining_accounts(
+                MarginfiClient::compose_remaining_accounts(remaining_accounts).as_slice(),
+            )
         }
     }
 
@@ -581,7 +603,8 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
             },
         );
 
-        let mut remaining_accounts = Vec::with_capacity(4);
+        let mut remaining_accounts: Vec<AccountMetaFlags> =
+            Vec::<AccountMetaFlags>::with_capacity(4);
         remaining_accounts.push((self.supply.bank.account_info, false, false));
         remaining_accounts.push((self.supply.price_oracle.unwrap(), false, false));
         remaining_accounts.push((self.debt.bank.account_info, false, true));
@@ -597,7 +620,9 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
                 remaining_accounts.as_slice(),
             )
         } else {
-            cpi.invoke_with_remaining_accounts(remaining_accounts.as_slice())
+            cpi.invoke_with_remaining_accounts(
+                MarginfiClient::compose_remaining_accounts(remaining_accounts).as_slice(),
+            )
         }
     }
 
