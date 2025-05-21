@@ -37,6 +37,7 @@ import {
   hasFirstRebalance,
   getRemainingAccountsForMarginfiHealthCheck,
   getAccountMeta,
+  composeRemainingAccounts,
 } from "../../utils";
 import {
   Bank,
@@ -299,7 +300,7 @@ export class SolautoMarginfiClient extends SolautoClient {
           bankLiquidityVaultAuthority: publicKey(
             this.marginfiDebtAccounts.vaultAuthority
           ),
-        }).addRemainingAccounts(remainingAccounts);
+        }).addRemainingAccounts(composeRemainingAccounts(remainingAccounts));
       }
       case "Repay": {
         return lendingAccountRepay(this.umi, {
@@ -332,7 +333,9 @@ export class SolautoMarginfiClient extends SolautoClient {
           bankLiquidityVaultAuthority: publicKey(
             this.marginfiSupplyAccounts.vaultAuthority
           ),
-        }).addRemainingAccounts(this.healthCheckRemainingAccounts ?? []);
+        }).addRemainingAccounts(
+          composeRemainingAccounts(this.healthCheckRemainingAccounts ?? [])
+        );
       }
     }
   }

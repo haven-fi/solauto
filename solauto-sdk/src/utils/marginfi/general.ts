@@ -224,3 +224,16 @@ export function marginfiAccountEmpty(marginfiAccount: MarginfiAccount) {
     ) === undefined
   );
 }
+
+export function composeRemainingAccounts(accs: AccountMeta[]): AccountMeta[] {
+  const banksAndOracles: [AccountMeta, AccountMeta][] = accs.reduce(
+    (acc: [AccountMeta, AccountMeta][], _, i) =>
+      i % 2 === 0 ? [...acc, [accs[i], accs[i + 1]]] : acc,
+    []
+  );
+  return banksAndOracles
+    .sort((a, b) =>
+      b[0].pubkey.toString().localeCompare(a[0].pubkey.toString())
+    )
+    .flat();
+}
