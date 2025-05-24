@@ -23,6 +23,7 @@ import {
 import { FlProviderBase } from "./flProviderBase";
 import {
   bytesToI80F48,
+  composeRemainingAccounts,
   consoleLog,
   fetchTokenPrices,
   findMarginfiAccounts,
@@ -342,7 +343,7 @@ export class MarginfiFlProvider extends FlProviderBase {
         lendingAccountEndFlashloan(this.umi, {
           marginfiAccount: publicKey(iMfiAccount.accountPk),
           signer: this.signer,
-        }).addRemainingAccounts(remainingAccounts)
+        }).addRemainingAccounts(composeRemainingAccounts(remainingAccounts))
       );
   }
 
