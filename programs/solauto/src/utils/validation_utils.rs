@@ -444,11 +444,11 @@ pub fn validate_rebalance(solauto_position: &SolautoPosition) -> ProgramResult {
         curr_debt_usd
     );
     check!(
-        value_gte_with_threshold(curr_supply_usd, target_supply_usd, 0.2),
+        value_gte_with_threshold(curr_supply_usd, target_supply_usd, 0.15),
         SolautoError::InvalidRebalanceMade
     );
     check!(
-        value_lte_with_threshold(curr_debt_usd, target_debt_usd, 0.2),
+        value_lte_with_threshold(curr_debt_usd, target_debt_usd, 0.15),
         SolautoError::InvalidRebalanceMade
     );
 
