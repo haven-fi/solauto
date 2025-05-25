@@ -569,7 +569,7 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
                     .data
                     .seeds_with_bump()
                     .as_slice()],
-                remaining_accounts.as_slice(),
+                MarginfiClient::compose_remaining_accounts(remaining_accounts).as_slice(),
             )
         } else {
             cpi.invoke_with_remaining_accounts(
@@ -617,7 +617,7 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
                     .data
                     .seeds_with_bump()
                     .as_slice()],
-                remaining_accounts.as_slice(),
+                MarginfiClient::compose_remaining_accounts(remaining_accounts).as_slice(),
             )
         } else {
             cpi.invoke_with_remaining_accounts(

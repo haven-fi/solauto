@@ -53,7 +53,7 @@ export class RebalanceTxBuilder {
   ) {}
 
   private shouldProceedWithRebalance() {
-    if (this.client.pos.selfManaged && !this.targetLiqUtilizationRateBps) {
+    if (this.client.pos.selfManaged && this.targetLiqUtilizationRateBps === undefined) {
       throw new Error(
         "A target rate must be provided for self managed position rebalances"
       );

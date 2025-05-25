@@ -134,20 +134,6 @@ export class RebalanceSwapManager {
       }
     );
 
-    // if (isMarginfiPosition(this.client.pos)) {
-    //   console.log(res.newPos.supplyUsd, res.newPos.debtUsd);
-    //   console.log(
-    //     res.newPos.supplyUsd *
-    //       bytesToI80F48(
-    //         this.client.pos.supplyBank!.config.assetWeightInit.value
-    //       ),
-    //     res.newPos.debtUsd *
-    //       bytesToI80F48(
-    //         this.client.pos.debtBank!.config.liabilityWeightInit.value
-    //       )
-    //   );
-    // }
-
     return getLiqUtilzationRateBps(
       res.newPos.supplyUsd,
       res.newPos.debtUsd,

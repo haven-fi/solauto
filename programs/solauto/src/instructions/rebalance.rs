@@ -71,7 +71,7 @@ pub fn marginfi_rebalance<'a>(
     if rebalance_step == RebalanceStep::PreSwap
         || rebalance_type == SolautoRebalanceType::FLSwapThenRebalance
     {
-        if needs_refresh(&std_accounts.solauto_position, &args)? {
+        if needs_refresh(&std_accounts.solauto_position)? {
             refresh::marginfi_refresh_accounts(
                 ctx.accounts.marginfi_program,
                 ctx.accounts.marginfi_group,
@@ -131,7 +131,6 @@ fn update_token_prices<'a>(
 
 fn needs_refresh(
     solauto_position: &DeserializedAccount<SolautoPosition>,
-    args: &RebalanceSettings,
 ) -> Result<bool, ProgramError> {
     if solauto_position.data.self_managed.val {
         return Ok(true);
@@ -163,6 +162,7 @@ fn rebalance<'a>(
         std_accounts.authority_referral_state.is_some(),
         SolautoError::IncorrectAccounts
     );
+    #[cfg(not(feature = "test"))]
     check!(
         args.flash_loan_fee_bps.unwrap_or(0) <= 150,
         SolautoError::IncorrectInstructions

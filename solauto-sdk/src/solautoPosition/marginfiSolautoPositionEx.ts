@@ -138,7 +138,7 @@ export class MarginfiSolautoPositionEx extends SolautoPositionEx {
       getBankLiquidityUsedBaseUnit(this.supplyBank, false),
       this.supplyMintInfo.decimals
     );
-    return Math.min((deposits - borrows), this.totalSupply) * this.supplyPrice()!;
+    return Math.min(deposits - borrows, this.totalSupply) * this.supplyPrice()!;
   }
 
   async refreshPositionState(priceType?: PriceType): Promise<void> {
