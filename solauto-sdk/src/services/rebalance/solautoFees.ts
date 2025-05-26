@@ -29,7 +29,11 @@ export class SolautoFeesBps {
 
     let feeBps: number = 0;
     if (this.targetLiqUtilizationRateBps !== undefined) {
-      feeBps = 15;
+      if (this.targetLiqUtilizationRateBps === 0) {
+        feeBps = 15;
+      } else {
+        feeBps = 10;
+      }
     } else if (rebalanceDirection === RebalanceDirection.Repay) {
       feeBps = 25;
     } else if (this.positionNetWorthUsd <= minSize) {
