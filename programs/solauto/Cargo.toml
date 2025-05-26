@@ -14,8 +14,8 @@ no-idl = []
 no-log-ix-name = []
 cpi = ["no-entrypoint"]
 default = []
-test = []
-local = []
+test = ["marginfi-sdk/test"]
+staging = ["marginfi-sdk/staging"]
 
 [net]
 git-fetch-with-cli = true
