@@ -1,4 +1,4 @@
-use super::shared::{TokenBalanceAmount, TokenType};
+use super::shared::TokenBalanceAmount;
 
 #[derive(Clone, Copy, Eq, PartialEq, Hash)]
 pub enum SolautoAccount {
