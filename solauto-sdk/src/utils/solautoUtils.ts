@@ -19,7 +19,7 @@ import {
   getSolautoPositionAccountDataSerializer,
   getSolautoPositionSize,
 } from "../generated";
-import { ALL_SUPPORTED_TOKENS, SOLAUTO_PROD_PROGRAM } from "../constants";
+import { SOLAUTO_PROD_PROGRAM } from "../constants";
 import { SolautoPositionDetails } from "../types";
 import {
   SolautoClient,

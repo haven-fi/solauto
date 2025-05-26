@@ -20,7 +20,7 @@ import {
   MarginfiAccount,
   OracleSetup,
   safeFetchAllBank,
-} from "../../marginfi-sdk";
+} from "../../externalSdks/marginfi";
 import { bytesToI80F48, fromBaseUnit, toBps } from "../numberUtils";
 import { getTokenAccountData } from "../accountUtils";
 import {
@@ -223,4 +223,17 @@ export function marginfiAccountEmpty(marginfiAccount: MarginfiAccount) {
           bytesToI80F48(x.liabilityShares.value) > 0.000001)
     ) === undefined
   );
+}
+
+export function composeRemainingAccounts(accs: AccountMeta[]): AccountMeta[] {
+  const banksAndOracles: [AccountMeta, AccountMeta][] = accs.reduce(
+    (acc: [AccountMeta, AccountMeta][], _, i) =>
+      i % 2 === 0 ? [...acc, [accs[i], accs[i + 1]]] : acc,
+    []
+  );
+  return banksAndOracles
+    .sort((a, b) =>
+      b[0].pubkey.toString().localeCompare(a[0].pubkey.toString())
+    )
+    .flat();
 }

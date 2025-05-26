@@ -1,11 +1,13 @@
 import { describe, it } from "mocha";
-import { LendingPlatform } from "../../src";
+import { LendingPlatform, ProgramEnv } from "../../src";
 import { setupTest } from "../shared";
 import { e2eTransactionTest } from "./shared";
 
 describe("Solauto Marginfi tests", async () => {
   const signer = setupTest();
   const testProgram = false;
+  const showLogs = false;
+  const lpEnv: ProgramEnv = "Prod";
 
   it("open - deposit - borrow - rebalance to 0 - withdraw - close", async () => {
     await e2eTransactionTest(
@@ -13,7 +15,8 @@ describe("Solauto Marginfi tests", async () => {
       testProgram,
       LendingPlatform.Marginfi,
       false,
-      false
+      showLogs,
+      lpEnv
     );
   });
 
@@ -23,7 +26,8 @@ describe("Solauto Marginfi tests", async () => {
       testProgram,
       LendingPlatform.Marginfi,
       true,
-      false
+      showLogs,
+      lpEnv
     );
   });
 });

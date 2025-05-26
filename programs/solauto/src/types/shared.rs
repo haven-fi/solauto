@@ -122,14 +122,6 @@ pub struct SplTokenTransferArgs<'a, 'b> {
     pub authority_seeds: Option<&'b Vec<&'b [u8]>>,
 }
 
-#[derive(Clone)]
-pub struct BareSplTokenTransferArgs {
-    pub from_wallet: Pubkey,
-    pub from_wallet_ta: Pubkey,
-    pub to_wallet_ta: Pubkey,
-    pub amount: u64,
-}
-
 #[repr(C)]
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, ShankType, Default, PartialEq, Copy)]
 pub struct PodBool {
@@ -187,3 +179,5 @@ impl<'a, T: Pack + IsInitialized> DeserializedAccount<'a, T> {
         }
     }
 }
+
+pub type AccountMetaFlags<'a> = (&'a AccountInfo<'a>, bool, bool);

@@ -22,6 +22,7 @@ import {
   closeSolautoPosition,
   getMarginfiAccounts,
   ClientTransactionsManager,
+  ProgramEnv,
 } from "../../src";
 
 export async function e2eTransactionTest(
@@ -29,13 +30,15 @@ export async function e2eTransactionTest(
   testProgram: boolean,
   lendingPlatform: LendingPlatform,
   withFlashLoan: boolean,
-  showLogs?: boolean
+  showLogs?: boolean,
+  lpEnv?: ProgramEnv
 ) {
   const client = getClient(lendingPlatform, {
     signer,
     showLogs,
     rpcUrl: LOCAL_IRONFORGE_API_URL,
     programId: testProgram ? SOLAUTO_TEST_PROGRAM : SOLAUTO_PROD_PROGRAM,
+    lpEnv,
   });
 
   const supplyMint = new PublicKey(NATIVE_MINT);
@@ -43,7 +46,7 @@ export async function e2eTransactionTest(
 
   await client.initializeNewSolautoPosition({
     positionId: 1,
-    lpPoolAccount: getMarginfiAccounts().defaultGroup,
+    lpPoolAccount: getMarginfiAccounts(lpEnv).defaultGroup,
     supplyMint,
     debtMint,
   });

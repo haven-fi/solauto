@@ -6,12 +6,10 @@ import { JupSwapManager, SwapParams, SwapInput } from "../swap";
 import { applyDebtAdjustmentUsd, RebalanceValues } from "./rebalanceValues";
 import { PriceType, RebalanceDirection, TokenType } from "../../generated";
 import {
-  bytesToI80F48,
   consoleLog,
   fromBaseUnit,
   fromBps,
   getLiqUtilzationRateBps,
-  isMarginfiPosition,
   safeGetPrice,
   toBaseUnit,
   tokenInfo,
@@ -33,7 +31,7 @@ export class RebalanceSwapManager {
     private targetLiqUtilizationRateBps?: number,
     private priceType?: PriceType
   ) {
-    this.jupSwapManager = new JupSwapManager(client.signer);
+    this.jupSwapManager = new JupSwapManager(client.signer, true);
     this.solautoFeeBps = SolautoFeesBps.create(
       this.client.isReferred,
       this.targetLiqUtilizationRateBps,
@@ -95,12 +93,8 @@ export class RebalanceSwapManager {
     let debtUsd = this.client.pos.debtUsd(this.priceType);
     // TODO: add token balance change
 
-    const {
-      input,
-      biasedInputPrice,
-      output,
-      biasedOutputPrice,
-    } = this.swapDetails();
+    const { input, biasedInputPrice, output, biasedOutputPrice } =
+      this.swapDetails();
 
     const swapInputAmount = swapInputAmountBaseUnit
       ? fromBaseUnit(
@@ -127,7 +121,9 @@ export class RebalanceSwapManager {
     const res = applyDebtAdjustmentUsd(
       {
         debtAdjustmentUsd: this.isBoost() ? swapInputUsd : swapInputUsd * -1,
-        debtAdjustmentUsdOutput: this.isBoost() ? swapOutputUsd : swapOutputUsd * -1,
+        debtAdjustmentUsdOutput: this.isBoost()
+          ? swapOutputUsd
+          : swapOutputUsd * -1,
       },
       { supplyUsd, debtUsd },
       fromBps(this.client.pos.state.liqThresholdBps),
@@ -137,20 +133,6 @@ export class RebalanceSwapManager {
         lpBorrow: this.client.pos.state.debt.borrowFeeBps,
       }
     );
-
-    // if (isMarginfiPosition(this.client.pos)) {
-    //   console.log(res.newPos.supplyUsd, res.newPos.debtUsd);
-    //   console.log(
-    //     res.newPos.supplyUsd *
-    //       bytesToI80F48(
-    //         this.client.pos.supplyBank!.config.assetWeightInit.value
-    //       ),
-    //     res.newPos.debtUsd *
-    //       bytesToI80F48(
-    //         this.client.pos.debtBank!.config.liabilityWeightInit.value
-    //       )
-    //   );
-    // }
 
     return getLiqUtilzationRateBps(
       res.newPos.supplyUsd,
@@ -179,8 +161,11 @@ export class RebalanceSwapManager {
         BigInt(parseInt(swapQuote.inAmount))
       );
       const exceedsMinOutput = criteria.minOutputAmount
-      ? outputAmount < Number(criteria.minOutputAmount) : false;
-      const exceedsMaxRate = criteria.maxLiqUtilizationRateBps ? postRebalanceRate > criteria.maxLiqUtilizationRateBps : false;
+        ? outputAmount < Number(criteria.minOutputAmount)
+        : false;
+      const exceedsMaxRate = criteria.maxLiqUtilizationRateBps
+        ? postRebalanceRate > criteria.maxLiqUtilizationRateBps
+        : false;
       insufficient = exceedsMinOutput || exceedsMaxRate;
 
       consoleLog(postRebalanceRate, criteria.maxLiqUtilizationRateBps);
@@ -208,17 +193,6 @@ export class RebalanceSwapManager {
     const rebalanceToZero = this.targetLiqUtilizationRateBps === 0;
     let { input, output, biasedOutputPrice, inputAmount } = this.swapDetails();
 
-    let outputAmount = rebalanceToZero
-      ? output.amountUsed.baseUnit +
-        BigInt(
-          Math.round(
-            Number(output.amountUsed.baseUnit) *
-              // Add this small percentage to account for the APR on the debt between now and the transaction
-              0.0001
-          )
-        )
-      : toBaseUnit(this.usdToSwap() / biasedOutputPrice, output.decimals);
-
     const flashLoanRepayFromDebt =
       !this.isBoost() &&
       this.flRequirements &&
@@ -226,6 +200,15 @@ export class RebalanceSwapManager {
 
     const exactOut = flashLoanRepayFromDebt;
     const exactIn = !exactOut;
+
+    const outputPaddingPct =
+      (exactOut ? fromBps(this.solautoFeeBps) : 0) + 0.0001;
+    let outputAmount = rebalanceToZero
+      ? output.amountUsed.baseUnit +
+        BigInt(
+          Math.round(Number(output.amountUsed.baseUnit) * outputPaddingPct)
+        )
+      : toBaseUnit(this.usdToSwap() / biasedOutputPrice, output.decimals);
 
     if (exactIn && (rebalanceToZero || this.values.repayingCloseToMaxLtv)) {
       inputAmount = this.bigIntWithIncrement(inputAmount, 0.005);

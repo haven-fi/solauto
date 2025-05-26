@@ -6,7 +6,7 @@ import { tokenInfo } from "./generalUtils";
 export const StrategyTypes = ["Long", "Short", "Ratio"] as const;
 export type StrategyType = (typeof StrategyTypes)[number];
 
-function adjustedTicker(mint?: PublicKey) {
+export function adjustedTicker(mint?: PublicKey) {
   const info = tokenInfo(mint);
 
   if (info.ticker.toLowerCase() === "wbtc") {

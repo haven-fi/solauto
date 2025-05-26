@@ -5,7 +5,10 @@
 //! [https://github.com/metaplex-foundation/kinobi]
 //!
 
-use solana_program::{pubkey, pubkey::Pubkey};
+use solana_program::{ pubkey, pubkey::Pubkey };
 
-/// `marginfi` program ID.
+#[cfg(feature = "staging")]
+pub const MARGINFI_ID: Pubkey = pubkey!("stag8sTKds2h4KzjUw3zKTsxbqvT4XKHdaR9X9E6Rct");
+
+#[cfg(not(feature = "staging"))]
 pub const MARGINFI_ID: Pubkey = pubkey!("MFv2hWf31Z9kbCa1snEPYctwafyhdvnV7FZnsebVacA");

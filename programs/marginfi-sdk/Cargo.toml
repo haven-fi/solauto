@@ -3,6 +3,11 @@ name = "marginfi-sdk"
 version = "0.1.0"
 edition = "2021"
 
+[features]
+default = []
+test = []
+staging = []
+
 [dependencies]
 solana-program = ">=1.16"
 borsh = "^0.10"

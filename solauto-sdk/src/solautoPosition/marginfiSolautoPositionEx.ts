@@ -1,5 +1,5 @@
 import { PublicKey } from "@solana/web3.js";
-import { Bank, PriceBias, safeFetchAllBank } from "../marginfi-sdk";
+import { Bank, PriceBias, safeFetchAllBank } from "../externalSdks/marginfi";
 import { publicKey } from "@metaplex-foundation/umi";
 import {
   calcMarginfiMaxLtvAndLiqThresholdBps,
@@ -138,7 +138,7 @@ export class MarginfiSolautoPositionEx extends SolautoPositionEx {
       getBankLiquidityUsedBaseUnit(this.supplyBank, false),
       this.supplyMintInfo.decimals
     );
-    return Math.min((deposits - borrows), this.totalSupply) * this.supplyPrice()!;
+    return Math.min(deposits - borrows, this.totalSupply) * this.supplyPrice()!;
   }
 
   async refreshPositionState(priceType?: PriceType): Promise<void> {

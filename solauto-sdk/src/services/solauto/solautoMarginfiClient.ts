@@ -37,6 +37,7 @@ import {
   hasFirstRebalance,
   getRemainingAccountsForMarginfiHealthCheck,
   getAccountMeta,
+  composeRemainingAccounts,
 } from "../../utils";
 import {
   Bank,
@@ -47,7 +48,7 @@ import {
   lendingAccountWithdraw,
   marginfiAccountInitialize,
   safeFetchAllMarginfiAccount,
-} from "../../marginfi-sdk";
+} from "../../externalSdks/marginfi";
 import { SolautoClient, SolautoClientArgs } from "./solautoClient";
 
 function isSigner(account: PublicKey | Signer): account is Signer {
@@ -61,7 +62,7 @@ export class SolautoMarginfiClient extends SolautoClient {
 
   public marginfiAccount!: PublicKey | Signer;
   public marginfiAccountPk!: PublicKey;
-  public healthCheckRemainingAccounts?: AccountMeta[];
+  public healthCheckRemainingAccounts!: AccountMeta[];
   public marginfiGroup!: PublicKey;
 
   public marginfiSupplyAccounts!: MarginfiAssetAccounts;
@@ -76,6 +77,7 @@ export class SolautoMarginfiClient extends SolautoClient {
     this.mfiAccounts = getMarginfiAccounts(this.lpEnv);
 
     this.marginfiGroup = this.pos.lpPoolAccount;
+    this.healthCheckRemainingAccounts = [];
 
     if (this.pos.selfManaged) {
       this.marginfiAccount =
@@ -258,6 +260,18 @@ export class SolautoMarginfiClient extends SolautoClient {
   private marginfiProtocolInteractionIx(args: SolautoActionArgs) {
     switch (args.__kind) {
       case "Deposit": {
+        if (
+          !this.healthCheckRemainingAccounts
+            .map((x) => x.pubkey.toString())
+            .includes(this.marginfiSupplyAccounts.bank)
+        ) {
+          this.healthCheckRemainingAccounts.push(
+            ...[
+              getAccountMeta(new PublicKey(this.marginfiSupplyAccounts.bank)),
+              getAccountMeta(this.supplyPriceOracle),
+            ]
+          );
+        }
         return lendingAccountDeposit(this.umi, {
           signer: this.signer,
           signerTokenAccount: publicKey(this.signerSupplyTa),
@@ -272,7 +286,7 @@ export class SolautoMarginfiClient extends SolautoClient {
         });
       }
       case "Borrow": {
-        const remainingAccounts = this.healthCheckRemainingAccounts ?? [];
+        const remainingAccounts = this.healthCheckRemainingAccounts;
         if (
           !remainingAccounts.find(
             (x) =>
@@ -286,6 +300,7 @@ export class SolautoMarginfiClient extends SolautoClient {
             ]
           );
         }
+
         return lendingAccountBorrow(this.umi, {
           amount: args.fields[0],
           signer: this.signer,
@@ -299,7 +314,7 @@ export class SolautoMarginfiClient extends SolautoClient {
           bankLiquidityVaultAuthority: publicKey(
             this.marginfiDebtAccounts.vaultAuthority
           ),
-        }).addRemainingAccounts(remainingAccounts);
+        }).addRemainingAccounts(composeRemainingAccounts(remainingAccounts));
       }
       case "Repay": {
         return lendingAccountRepay(this.umi, {
@@ -332,7 +347,9 @@ export class SolautoMarginfiClient extends SolautoClient {
           bankLiquidityVaultAuthority: publicKey(
             this.marginfiSupplyAccounts.vaultAuthority
           ),
-        }).addRemainingAccounts(this.healthCheckRemainingAccounts ?? []);
+        }).addRemainingAccounts(
+          composeRemainingAccounts(this.healthCheckRemainingAccounts)
+        );
       }
     }
   }

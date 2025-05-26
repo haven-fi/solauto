@@ -3,11 +3,10 @@ use std::{
     ops::{Add, Mul},
 };
 
-use solana_program::{entrypoint::ProgramResult, msg, program_error::ProgramError, pubkey::Pubkey};
+use solana_program::{entrypoint::ProgramResult, program_error::ProgramError};
 
 use crate::{
     check,
-    constants::SOLAUTO_FEES_WALLET,
     state::solauto_position::{
         PositionTokenState, RebalanceData, SolautoPosition, TokenBalanceChangeType,
     },
@@ -15,16 +14,15 @@ use crate::{
         errors::SolautoError,
         instruction::RebalanceSettings,
         shared::{
-            BareSplTokenTransferArgs, RebalanceDirection, RebalanceStep, SolautoRebalanceType,
-            SwapType, TokenBalanceAmount,
+            RebalanceDirection, RebalanceStep, SolautoRebalanceType, SwapType, TokenBalanceAmount,
         },
-        solauto::{FromLendingPlatformAction, SolautoCpiAction},
+        solauto::{
+            FromLendingPlatformAction, SolautoAccount, SolautoCpiAction,
+            SolautoSplTokenTransferArgs,
+        },
     },
-    utils::{
-        math_utils::{calc_fee_amount, from_bps, from_rounded_usd_value, usd_value_to_base_unit},
-        validation_utils::{
-            correct_token_account, value_gte_with_threshold, value_lte_with_threshold,
-        },
+    utils::math_utils::{
+        calc_fee_amount, from_bps, from_rounded_usd_value, usd_value_to_base_unit,
     },
 };
 
@@ -34,15 +32,14 @@ use super::{
 };
 
 pub struct TokenAccountData {
-    pub pk: Pubkey,
     pub balance: u64,
 }
 impl TokenAccountData {
-    pub fn from(pk: Pubkey, balance: u64) -> Self {
-        Self { pk, balance }
+    pub fn from(balance: u64) -> Self {
+        Self { balance }
     }
-    pub fn without_balance(pk: Pubkey) -> Self {
-        Self { pk, balance: 0 }
+    pub fn new() -> Self {
+        Self { balance: 0 }
     }
 }
 
@@ -55,13 +52,8 @@ pub struct SolautoPositionData<'a> {
 pub struct RebalancerData<'a> {
     pub rebalance_args: RebalanceSettings,
     pub solauto_position: SolautoPositionData<'a>,
-    pub intermediary_ta: TokenAccountData,
-    pub authority_supply_ta: Option<TokenAccountData>,
-    pub authority_debt_ta: Option<TokenAccountData>,
     pub solauto_fees_bps: SolautoFeesBps,
-    pub solauto_fees_ta: Option<Pubkey>,
-    pub referred_by_state: Option<Pubkey>,
-    pub referred_by_ta: Option<Pubkey>,
+    pub referred_by: bool,
 }
 
 pub struct RebalanceResult {
@@ -151,38 +143,50 @@ impl<'a> Rebalancer<'a> {
         }
     }
 
-    fn get_dynamic_balance(&self) -> (u64, &TokenAccountData) {
-        let ta = if self.is_boost() {
-            self.position_supply_ta()
+    fn get_dynamic_balance(&self) -> (u64, SolautoAccount) {
+        let (ta, account) = if self.is_boost() {
+            (
+                self.position_supply_ta(),
+                SolautoAccount::SolautoPositionSupplyTa,
+            )
         } else {
-            self.position_debt_ta()
+            (
+                self.position_debt_ta(),
+                SolautoAccount::SolautoPositionDebtTa,
+            )
         };
 
         let balance = ta.balance;
         // Subtract current balances that are attributed to DCA / limit order in
 
-        (balance, ta)
+        (balance, account)
     }
 
     fn transfer_to_authority_if_needed(&mut self, base_unit_amount: u64) {
         if self.position_data().self_managed.val {
             let (solauto_position_ta, authority_ta) = if self.is_boost() {
-                (self.position_supply_ta().pk, &self.data.authority_supply_ta)
+                (
+                    SolautoAccount::SolautoPositionSupplyTa,
+                    SolautoAccount::AuthoritySupplyTa,
+                )
             } else {
-                (self.position_debt_ta().pk, &self.data.authority_debt_ta)
+                (
+                    SolautoAccount::SolautoPositionDebtTa,
+                    SolautoAccount::AuthorityDebtTa,
+                )
             };
             self.actions.push(SolautoCpiAction::SplTokenTransfer(
-                BareSplTokenTransferArgs {
-                    from_wallet: self.data.solauto_position.data.pubkey(),
+                SolautoSplTokenTransferArgs {
+                    from_wallet: SolautoAccount::SolautoPosition,
                     from_wallet_ta: solauto_position_ta,
-                    to_wallet_ta: authority_ta.as_ref().unwrap().pk,
+                    to_wallet_ta: authority_ta,
                     amount: base_unit_amount,
                 },
             ));
         }
     }
 
-    fn pull_liquidity_from_lp(&mut self, base_unit_amount: u64, destination_ta: Pubkey) {
+    fn pull_liquidity_from_lp(&mut self, base_unit_amount: u64, destination_ta: SolautoAccount) {
         if self.is_boost() {
             self.actions
                 .push(SolautoCpiAction::Borrow(FromLendingPlatformAction {
@@ -257,11 +261,11 @@ impl<'a> Rebalancer<'a> {
                     Some(self.data.solauto_position.debt_ta.balance),
                 );
                 Some(SolautoCpiAction::SplTokenTransfer(
-                    BareSplTokenTransferArgs {
+                    SolautoSplTokenTransferArgs {
                         amount,
-                        from_wallet: self.data.solauto_position.data.pubkey(),
-                        from_wallet_ta: self.position_debt_ta().pk,
-                        to_wallet_ta: self.data.intermediary_ta.pk,
+                        from_wallet: SolautoAccount::SolautoPosition,
+                        from_wallet_ta: SolautoAccount::SolautoPositionDebtTa,
+                        to_wallet_ta: SolautoAccount::IntermediaryTa,
                     },
                 ))
             }
@@ -272,11 +276,11 @@ impl<'a> Rebalancer<'a> {
                     Some(self.position_supply_ta().balance),
                 );
                 Some(SolautoCpiAction::SplTokenTransfer(
-                    BareSplTokenTransferArgs {
+                    SolautoSplTokenTransferArgs {
                         amount,
-                        from_wallet: self.data.solauto_position.data.pubkey(),
-                        from_wallet_ta: self.position_supply_ta().pk,
-                        to_wallet_ta: self.data.intermediary_ta.pk,
+                        from_wallet: SolautoAccount::SolautoPosition,
+                        from_wallet_ta: SolautoAccount::SolautoPositionSupplyTa,
+                        to_wallet_ta: SolautoAccount::IntermediaryTa,
                     },
                 ))
             }
@@ -311,11 +315,11 @@ impl<'a> Rebalancer<'a> {
                     None,
                 );
                 Some(SolautoCpiAction::SplTokenTransfer(
-                    BareSplTokenTransferArgs {
+                    SolautoSplTokenTransferArgs {
                         amount,
-                        from_wallet: self.data.solauto_position.data.pubkey(),
-                        from_wallet_ta: self.position_supply_ta().pk,
-                        to_wallet_ta: self.data.authority_supply_ta.as_ref().unwrap().pk, // TODO: what if this is native mint
+                        from_wallet: SolautoAccount::SolautoPosition,
+                        from_wallet_ta: SolautoAccount::SolautoPositionSupplyTa,
+                        to_wallet_ta: SolautoAccount::AuthoritySupplyTa, // TODO: what if this is native mint
                     },
                 ))
             }
@@ -326,11 +330,11 @@ impl<'a> Rebalancer<'a> {
                     None,
                 );
                 Some(SolautoCpiAction::SplTokenTransfer(
-                    BareSplTokenTransferArgs {
+                    SolautoSplTokenTransferArgs {
                         amount,
-                        from_wallet: self.data.solauto_position.data.pubkey(),
-                        from_wallet_ta: self.position_debt_ta().pk,
-                        to_wallet_ta: self.data.authority_debt_ta.as_ref().unwrap().pk, // TODO: what if this is native mint
+                        from_wallet: SolautoAccount::SolautoPosition,
+                        from_wallet_ta: SolautoAccount::SolautoPositionDebtTa,
+                        to_wallet_ta: SolautoAccount::AuthorityDebtTa, // TODO: what if this is native mint
                     },
                 ))
             }
@@ -348,20 +352,13 @@ impl<'a> Rebalancer<'a> {
         &mut self,
         available_balance: u64,
         fee_pct_bps: u16,
-        token_mint: Pubkey,
-        position_ta: Pubkey,
-        destination_wallet: Pubkey,
-        destination_ta: Pubkey,
+        position_ta: SolautoAccount,
+        destination_ta: SolautoAccount,
     ) -> Result<u64, ProgramError> {
-        check!(
-            correct_token_account(&destination_ta, &destination_wallet, &token_mint),
-            SolautoError::IncorrectAccounts
-        );
-
         let fee_amount = calc_fee_amount(available_balance, fee_pct_bps);
         self.actions.push(SolautoCpiAction::SplTokenTransfer(
-            BareSplTokenTransferArgs {
-                from_wallet: self.data.solauto_position.data.pubkey(),
+            SolautoSplTokenTransferArgs {
+                from_wallet: SolautoAccount::SolautoPosition,
                 from_wallet_ta: position_ta,
                 to_wallet_ta: destination_ta,
                 amount: fee_amount,
@@ -373,16 +370,10 @@ impl<'a> Rebalancer<'a> {
 
     fn payout_fees(&mut self, available_balance: u64) -> Result<u64, ProgramError> {
         let rebalance_direction = &self.rebalance_data().values.rebalance_direction;
-        let (token_mint, position_ta) = if self.is_boost() {
-            (
-                self.position_data().state.supply.mint,
-                self.position_supply_ta().pk,
-            )
+        let position_ta = if self.is_boost() {
+            SolautoAccount::SolautoPositionSupplyTa
         } else {
-            (
-                self.position_data().state.debt.mint,
-                self.position_debt_ta().pk,
-            )
+            SolautoAccount::SolautoPositionDebtTa
         };
         let fee_payout = self.data.solauto_fees_bps.fetch_fees(rebalance_direction);
         if fee_payout.total == 0 {
@@ -392,22 +383,16 @@ impl<'a> Rebalancer<'a> {
         let solauto_fees = self.payout_fee(
             available_balance,
             fee_payout.solauto,
-            token_mint,
             position_ta,
-            SOLAUTO_FEES_WALLET,
-            self.data.solauto_fees_ta.unwrap(),
+            SolautoAccount::SolautoFeesTa,
         )?;
 
-        let referrer_fees = if self.data.referred_by_state.is_some()
-            && self.data.referred_by_state.unwrap() != Pubkey::default()
-        {
+        let referrer_fees = if self.data.referred_by {
             self.payout_fee(
                 available_balance,
                 fee_payout.referrer,
-                token_mint,
                 position_ta,
-                self.data.referred_by_state.unwrap(),
-                self.data.referred_by_ta.unwrap(),
+                SolautoAccount::ReferredByTa,
             )?
         } else {
             0
@@ -437,7 +422,7 @@ impl<'a> Rebalancer<'a> {
                 )
             };
 
-            self.pull_liquidity_from_lp(fl_repay_amount, self.data.intermediary_ta.pk);
+            self.pull_liquidity_from_lp(fl_repay_amount, SolautoAccount::IntermediaryTa);
         }
 
         Ok(())
@@ -462,7 +447,7 @@ impl<'a> Rebalancer<'a> {
             Ok(RebalanceResult { finished: true })
         } else {
             let amount_to_pull_from_lp = amount_to_swap - additional_amount_to_swap;
-            self.pull_liquidity_from_lp(amount_to_pull_from_lp, self.data.intermediary_ta.pk);
+            self.pull_liquidity_from_lp(amount_to_pull_from_lp, SolautoAccount::IntermediaryTa);
             Ok(RebalanceResult { finished: false })
         }
     }
@@ -476,10 +461,10 @@ impl<'a> Rebalancer<'a> {
 
         if self.rebalance_data().ixs.swap_type == SwapType::ExactOut {
             self.actions.push(SolautoCpiAction::SplTokenTransfer(
-                BareSplTokenTransferArgs {
-                    from_wallet: self.data.solauto_position.data.pubkey(),
-                    from_wallet_ta: balance_ta.pk,
-                    to_wallet_ta: self.data.intermediary_ta.pk,
+                SolautoSplTokenTransferArgs {
+                    from_wallet: SolautoAccount::SolautoPosition,
+                    from_wallet_ta: balance_ta,
+                    to_wallet_ta: SolautoAccount::IntermediaryTa,
                     amount: balance_leftover,
                 },
             ));

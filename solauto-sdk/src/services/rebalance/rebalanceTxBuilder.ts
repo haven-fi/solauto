@@ -53,7 +53,7 @@ export class RebalanceTxBuilder {
   ) {}
 
   private shouldProceedWithRebalance() {
-    if (this.client.pos.selfManaged && !this.targetLiqUtilizationRateBps) {
+    if (this.client.pos.selfManaged && this.targetLiqUtilizationRateBps === undefined) {
       throw new Error(
         "A target rate must be provided for self managed position rebalances"
       );
@@ -82,37 +82,38 @@ export class RebalanceTxBuilder {
   }
 
   private getFlLiquiditySource(
+    attemptNum: number,
     supplyLiquidityAvailable: bigint,
     debtLiquidityAvailable: bigint
   ): TokenType | undefined {
     const debtAdjustmentUsd = Math.abs(this.values.debtAdjustmentUsd);
 
-    const insufficientLiquidity = (
-      amountNeededUsd: number,
+    const calcLiquidityAvailable = (
       liquidityAvailable: bigint,
       tokenMint: PublicKey
-    ) => {
-      const liquidityUsd =
-        fromBaseUnit(liquidityAvailable, tokenInfo(tokenMint).decimals) *
-        (safeGetPrice(tokenMint) ?? 0);
-      return amountNeededUsd > liquidityUsd * 0.95;
-    };
+    ) =>
+      fromBaseUnit(liquidityAvailable, tokenInfo(tokenMint).decimals) *
+      (safeGetPrice(tokenMint) ?? 0);
 
-    const insufficientSupplyLiquidity = insufficientLiquidity(
-      debtAdjustmentUsd,
+    const supplyLiquidityUsdAvailable = calcLiquidityAvailable(
       supplyLiquidityAvailable,
       this.client.pos.supplyMint
     );
+    const insufficientSupplyLiquidity =
+      debtAdjustmentUsd > supplyLiquidityUsdAvailable * 0.95;
 
-    const insufficientDebtLiquidity = insufficientLiquidity(
-      debtAdjustmentUsd,
+    const debtLiquidityUsdAvailable = calcLiquidityAvailable(
       debtLiquidityAvailable,
       this.client.pos.debtMint
     );
+    const insufficientDebtLiquidity =
+      debtAdjustmentUsd > debtLiquidityUsdAvailable * 0.95;
 
     let useDebtLiquidity =
       this.values.rebalanceDirection === RebalanceDirection.Boost ||
-      insufficientSupplyLiquidity;
+      insufficientSupplyLiquidity ||
+      (attemptNum > 2 &&
+        debtLiquidityUsdAvailable > supplyLiquidityUsdAvailable * 5);
 
     if (useDebtLiquidity) {
       return !insufficientDebtLiquidity ? TokenType.Debt : undefined;
@@ -153,9 +154,9 @@ export class RebalanceTxBuilder {
     return intermediaryLiqUtilizationRateBps;
   }
 
-  private async flashLoanRequirements(): Promise<
-    FlashLoanRequirements | undefined
-  > {
+  private async flashLoanRequirements(
+    attemptNum: number
+  ): Promise<FlashLoanRequirements | undefined> {
     const intermediaryLiqUtilizationRateBps =
       this.intermediaryLiqUtilizationRateBps();
     const maxLtvRateBps = getMaxLiqUtilizationRateBps(
@@ -168,6 +169,7 @@ export class RebalanceTxBuilder {
     }
 
     const stdFlLiquiditySource = this.getFlLiquiditySource(
+      attemptNum,
       this.client.flProvider.liquidityAvailable(TokenType.Supply),
       this.client.flProvider.liquidityAvailable(TokenType.Debt)
     );
@@ -175,6 +177,7 @@ export class RebalanceTxBuilder {
     if (stdFlLiquiditySource === undefined || this.optimizeSize) {
       const { supplyBalance, debtBalance } = await this.client.signerBalances();
       const signerFlLiquiditySource = this.getFlLiquiditySource(
+        attemptNum,
         supplyBalance,
         debtBalance
       );
@@ -278,7 +281,7 @@ export class RebalanceTxBuilder {
     }
     this.values = rebalanceValues;
 
-    this.flRequirements = await this.flashLoanRequirements();
+    this.flRequirements = await this.flashLoanRequirements(attemptNum);
     if (this.flRequirements?.flFeeBps) {
       this.values = this.getRebalanceValues()!;
     }

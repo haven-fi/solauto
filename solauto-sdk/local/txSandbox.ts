@@ -1,5 +1,5 @@
 import { Keypair, PublicKey } from "@solana/web3.js";
-import { createSignerFromKeypair } from "@metaplex-foundation/umi";
+import { createSignerFromKeypair, publicKey } from "@metaplex-foundation/umi";
 import { fromWeb3JsKeypair } from "@metaplex-foundation/umi-web3js-adapters";
 import {
   ClientTransactionsManager,
@@ -47,8 +47,8 @@ export async function main() {
   });
 
   await client.initializeExistingSolautoPosition({
-    positionId: 2,
-    authority: new PublicKey("EBhRj7jbF2EVE21i19JSuCX1BAbnZFYhoKW64HnaZ3kf"),
+    positionId: 1,
+    authority: new PublicKey("5UqsR2PGzbP8pGPbXEeXx86Gjz2N2UFBAuFZUSVydAEe"),
     // lpUserAccount: new PublicKey(
     //   "GEokw9jqbh6d1xUNA3qaeYFFetbSR5Y1nt7C3chwwgSz"
     // ),

@@ -10,7 +10,7 @@ import {
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
 import { SOLAUTO_MANAGER } from "./generalConstants";
-import { JUPITER_PROGRAM_ID } from "../jupiter-sdk";
+import { JUPITER_PROGRAM_ID } from "../externalSdks/jupiter";
 
 export const SOLAUTO_PROD_PROGRAM = new PublicKey(
   "AutoyKBRaHSBHy9RsmXCZMy6nNFAg5FYijrvZyQcNLV"
@@ -65,3 +65,15 @@ export const STANDARD_LUT_ACCOUNTS = [
   SYSVAR_INSTRUCTIONS_PUBKEY,
   JUPITER_PROGRAM_ID,
 ].map((x) => x.toString());
+
+// TODO: remove me
+export const PATCH_LUT = "CmPZfu3tkeoMutytxhVKT7Hemuwd5jM65VdLNGdBddxQ";
+export const AUTHORITIES_REQUIRING_PATCH_LUT = [
+  'BRgwGasCSz1zA4yqdcvurAGV7ZroAJ9bvDNvdYj7az4X',
+  '5UqsR2PGzbP8pGPbXEeXx86Gjz2N2UFBAuFZUSVydAEe',
+  'HLDgPtVv2Yyzzze462P89igFnyLxaCM3f9hVFmCuAX97',
+  'C4cnE5kDRRnqfiLuWShvoGNDstq6yk91N2PWTxQ6Hmk2',
+  '8Vo5ScTZ1qNTYhMEibq2fekRe5DotmdqpcD2nprmRzJg',
+  'F2uk8zsKMex8MztU7saFNq6tNbj4esWnKLJXyfo2egax',
+  '9PCRbk8Gvt2zqewLKbxaSyTxA2JMtdQGhMff8EdELXNq'
+];

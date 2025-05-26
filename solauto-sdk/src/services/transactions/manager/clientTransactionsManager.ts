@@ -75,7 +75,7 @@ export class ClientTransactionsManager extends TransactionsManager<SolautoClient
     );
 
     if (updateLutTx) {
-      choresBefore.prepend(updateLutTx);
+      choresBefore = choresBefore.prepend(updateLutTx);
     }
 
     if (choresBefore.getInstructions().length) {
@@ -111,7 +111,8 @@ export class ClientTransactionsManager extends TransactionsManager<SolautoClient
 
     const updateLut = await client.updateLookupTable();
 
-    if (updateLut && (updateLut?.new || updateLut.accountsToAdd.length > 4)) {
+    const updateLutInSepTx = updateLut?.new || (updateLut?.accountsToAdd ?? []).length > 4;
+    if (updateLut && updateLutInSepTx) {
       await this.updateLut(updateLut.tx, updateLut.new);
     }
     this.lookupTables.defaultLuts = client.defaultLookupTables();
@@ -124,7 +125,7 @@ export class ClientTransactionsManager extends TransactionsManager<SolautoClient
 
     await this.addChoreTxs(
       items,
-      updateLut && !updateLut?.new ? updateLut.tx : undefined
+      updateLut && !updateLutInSepTx ? updateLut.tx : undefined
     );
 
     const result = await super.send(items).catch((e) => {

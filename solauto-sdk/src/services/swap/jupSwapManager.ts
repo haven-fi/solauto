@@ -51,16 +51,17 @@ export class JupSwapManager {
 
   public jupQuote: QuoteResponse | undefined = undefined;
 
-  constructor(private signer: Signer) {}
+  constructor(
+    private signer: Signer,
+    private limitSize?: boolean
+  ) {}
 
   public async getQuote(data: SwapInput): Promise<QuoteResponse> {
     const inputMintInfo: TokenInfo | undefined = tokenInfo(data.inputMint);
     const outputMintInfo: TokenInfo | undefined = tokenInfo(data.outputMint);
     const lowLiquidityMint =
-      !inputMintInfo ||
-      inputMintInfo?.isMeme ||
-      !outputMintInfo ||
-      outputMintInfo?.isMeme;
+      (!inputMintInfo?.isMajor && !inputMintInfo?.isLST) ||
+      (!outputMintInfo?.isMajor && !outputMintInfo?.isLST);
     const slippageBps = data.slippageBps ?? (lowLiquidityMint ? 250 : 100);
 
     return await retryWithExponentialBackoff(
@@ -75,9 +76,10 @@ export class JupSwapManager {
               ? "ExactIn"
               : undefined,
           slippageBps,
-          maxAccounts: !data.exactOut
-            ? (lowLiquidityMint ? 25 : 15) + attemptNum * 5
-            : undefined,
+          maxAccounts:
+            !data.exactOut && this.limitSize
+              ? (lowLiquidityMint ? 25 : 15) + attemptNum * 5
+              : undefined,
         }),
       6,
       250

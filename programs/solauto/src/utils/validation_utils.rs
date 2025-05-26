@@ -67,7 +67,7 @@ pub fn generic_instruction_validation(
         )?;
     }
 
-    // The solauto_fees_ta is validated at payout before transfer
+    // The solauto_fees_ta is validated during rebalance in solauto_manager.rs because it requires up-to-date state
     Ok(())
 }
 
@@ -256,7 +256,7 @@ pub fn validate_referral_accounts<'a>(
             && referred_by_ta.is_none(),
         SolautoError::IncorrectAccounts
     );
-    // The referred_by_ta is further validated at payout before transfer
+    // The referred_by_ta is validated during rebalance in solauto_manager.rs because it requires up-to-date state
 
     Ok(())
 }
@@ -444,11 +444,11 @@ pub fn validate_rebalance(solauto_position: &SolautoPosition) -> ProgramResult {
         curr_debt_usd
     );
     check!(
-        value_gte_with_threshold(curr_supply_usd, target_supply_usd, 0.1),
+        value_gte_with_threshold(curr_supply_usd, target_supply_usd, 0.15),
         SolautoError::InvalidRebalanceMade
     );
     check!(
-        value_lte_with_threshold(curr_debt_usd, target_debt_usd, 0.1),
+        value_lte_with_threshold(curr_debt_usd, target_debt_usd, 0.15),
         SolautoError::InvalidRebalanceMade
     );
 
@@ -457,6 +457,16 @@ pub fn validate_rebalance(solauto_position: &SolautoPosition) -> ProgramResult {
 
 pub fn correct_token_account(token_account: &Pubkey, wallet: &Pubkey, mint: &Pubkey) -> bool {
     token_account == &get_associated_token_address(wallet, mint)
+}
+
+pub fn valid_token_account_for_mints(
+    token_account: &Pubkey,
+    wallet: &Pubkey,
+    mints: &Vec<Pubkey>,
+) -> bool {
+    mints
+        .iter()
+        .any(|mint| correct_token_account(token_account, wallet, mint))
 }
 
 pub fn value_lte_with_threshold(value: f64, target_value: f64, threshold: f64) -> bool {

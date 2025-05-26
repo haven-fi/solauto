@@ -46,7 +46,7 @@ export async function getPositionExBulk(
   umi: Umi,
   publicKeys: PublicKey[]
 ): Promise<SolautoPositionEx[]> {
-  const batches = getBatches(publicKeys, 50);
+  const batches = getBatches(publicKeys, 100);
 
   const data = (
     await Promise.all(

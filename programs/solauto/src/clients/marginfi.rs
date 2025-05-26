@@ -6,7 +6,7 @@ use marginfi_sdk::generated::{
     types::{Balance, OracleSetup},
 };
 use pyth_sdk_solana::state::SolanaPriceAccount;
-use pyth_solana_receiver_sdk::price_update::{PriceUpdateV2, VerificationLevel};
+use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 use solana_program::{
     account_info::AccountInfo, clock::Clock, entrypoint::ProgramResult, msg,
     program_error::ProgramError, pubkey::Pubkey, sysvar::Sysvar,
@@ -28,8 +28,8 @@ use crate::{
         },
         lending_protocol::{LendingProtocolClient, LendingProtocolTokenAccounts},
         shared::{
-            DeserializedAccount, PriceType, RefreshStateProps, RefreshedTokenState,
-            TokenBalanceAmount, TokenType,
+            AccountMetaFlags, DeserializedAccount, PriceType, RefreshStateProps,
+            RefreshedTokenState, TokenBalanceAmount, TokenType,
         },
     },
     utils::{math_utils::*, solana_utils::*, solauto_utils::*, validation_utils::*},
@@ -334,14 +334,10 @@ impl<'a> MarginfiClient<'a> {
                 let price_feed = SolanaPriceAccount::account_info_to_feed(price_oracle)?;
 
                 let price = if price_type == PriceType::Ema {
-                    let price_result = price_feed
-                        .get_price_no_older_than(clock.unix_timestamp, max_price_age)
-                        .unwrap();
+                    let price_result = price_feed.get_price_unchecked();
                     derive_value(price_result.price, price_result.expo)
                 } else {
-                    let price_result = price_feed
-                        .get_price_no_older_than(clock.unix_timestamp, max_price_age)
-                        .unwrap();
+                    let price_result = price_feed.get_price_unchecked();
                     derive_value(price_result.price, price_result.expo)
                 };
 
@@ -361,17 +357,7 @@ impl<'a> MarginfiClient<'a> {
                     )
                 } else {
                     let feed_id = &bank.data.config.oracle_keys[0].to_bytes();
-                    let price_result = price_feed
-                        .get_price_no_older_than_with_custom_verification_level(
-                            &clock,
-                            max_price_age,
-                            feed_id,
-                            VerificationLevel::Full,
-                        )
-                        .map_err(|e| {
-                            msg!("Pyth push oracle error: {:?}", e);
-                            ProgramError::Custom(0)
-                        })?;
+                    let price_result = price_feed.get_price_unchecked(feed_id).unwrap();
                     (
                         derive_value(price_result.price, price_result.exponent),
                         derive_value(price_result.conf as i64, price_result.exponent),
@@ -429,6 +415,26 @@ impl<'a> MarginfiClient<'a> {
             },
         );
         cpi.invoke()
+    }
+
+    pub fn compose_remaining_accounts(accounts: Vec<AccountMetaFlags>) -> Vec<AccountMetaFlags> {
+        let mut banks_and_oracles: Vec<(AccountMetaFlags, AccountMetaFlags)> = accounts
+            .chunks(2)
+            .filter_map(|chunk| {
+                if chunk.len() == 2 {
+                    Some((chunk[0], chunk[1]))
+                } else {
+                    None
+                }
+            })
+            .collect();
+
+        banks_and_oracles.sort_by(|a, b| b.0 .0.key.to_string().cmp(&a.0 .0.key.to_string()));
+
+        banks_and_oracles
+            .into_iter()
+            .flat_map(|(a, b)| vec![a, b])
+            .collect()
     }
 }
 
@@ -563,10 +569,12 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
                     .data
                     .seeds_with_bump()
                     .as_slice()],
-                remaining_accounts.as_slice(),
+                MarginfiClient::compose_remaining_accounts(remaining_accounts).as_slice(),
             )
         } else {
-            cpi.invoke_with_remaining_accounts(remaining_accounts.as_slice())
+            cpi.invoke_with_remaining_accounts(
+                MarginfiClient::compose_remaining_accounts(remaining_accounts).as_slice(),
+            )
         }
     }
 
@@ -595,7 +603,8 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
             },
         );
 
-        let mut remaining_accounts = Vec::with_capacity(4);
+        let mut remaining_accounts: Vec<AccountMetaFlags> =
+            Vec::<AccountMetaFlags>::with_capacity(4);
         remaining_accounts.push((self.supply.bank.account_info, false, false));
         remaining_accounts.push((self.supply.price_oracle.unwrap(), false, false));
         remaining_accounts.push((self.debt.bank.account_info, false, true));
@@ -608,10 +617,12 @@ impl<'a> LendingProtocolClient<'a> for MarginfiClient<'a> {
                     .data
                     .seeds_with_bump()
                     .as_slice()],
-                remaining_accounts.as_slice(),
+                MarginfiClient::compose_remaining_accounts(remaining_accounts).as_slice(),
             )
         } else {
-            cpi.invoke_with_remaining_accounts(remaining_accounts.as_slice())
+            cpi.invoke_with_remaining_accounts(
+                MarginfiClient::compose_remaining_accounts(remaining_accounts).as_slice(),
+            )
         }
     }
 

@@ -110,6 +110,7 @@ export async function updateLookupTable(
     lookupTableAddress = addr;
     console.log("Lookup Table Address:", lookupTableAddress.toString());
     await createAndSendV0Tx([createLutIx], keypair);
+    CACHE[lookupTableAddress.toString()] = [];
   }
 
   const existingAccounts = CACHE[lookupTableAddress.toString()];

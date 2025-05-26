@@ -1,18 +1,16 @@
 use solana_program::{account_info::AccountInfo, entrypoint::ProgramResult, msg};
 
 use crate::{
-    check,
     instructions::{close_position, update_position},
     state::solauto_position::SolautoPosition,
     types::{
-        errors::SolautoError,
         instruction::{
-            accounts::{CancelDCAAccounts, ClosePositionAccounts, UpdatePositionAccounts},
+            accounts::{ClosePositionAccounts, UpdatePositionAccounts},
             UpdatePositionData,
         },
         shared::DeserializedAccount,
     },
-    utils::{ix_utils, solauto_utils, validation_utils},
+    utils::validation_utils,
 };
 
 pub fn process_update_position_instruction<'a>(

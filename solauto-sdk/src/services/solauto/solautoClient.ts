@@ -29,7 +29,12 @@ import {
   splTokenTransferUmiIx,
   ContextUpdates,
 } from "../../utils";
-import { SOLAUTO_FEES_WALLET, SOLAUTO_LUT } from "../../constants";
+import {
+  AUTHORITIES_REQUIRING_PATCH_LUT,
+  PATCH_LUT,
+  SOLAUTO_FEES_WALLET,
+  SOLAUTO_LUT,
+} from "../../constants";
 import { ProgramEnv, RebalanceDetails } from "../../types";
 import {
   ReferralStateManager,
@@ -220,6 +225,11 @@ export abstract class SolautoClient extends ReferralStateManager {
       SOLAUTO_LUT,
       ...(this.authorityLutAddress
         ? [this.authorityLutAddress.toString()]
+        : []),
+      ...(AUTHORITIES_REQUIRING_PATCH_LUT.includes(
+        this.pos.authority.toString()
+      )
+        ? [PATCH_LUT]
         : []),
     ];
   }
