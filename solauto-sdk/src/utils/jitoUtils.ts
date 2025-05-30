@@ -301,7 +301,7 @@ export async function sendJitoBundledTransactions(
     txs.map((x) => x.getTransactionSize(umi))
   );
 
-  txs[0] = txs[0].prepend(getTipInstruction(userSigner, 150_000));
+  txs[0] = txs[0].prepend(getTipInstruction(userSigner, 250_000));
 
   const latestBlockhash = (
     await umi.rpc.getLatestBlockhash({ commitment: "confirmed" })
