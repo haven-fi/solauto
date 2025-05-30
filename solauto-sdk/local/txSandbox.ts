@@ -22,7 +22,7 @@ import {
 } from "../src";
 import { getSecretKey } from "./shared";
 
-const payForTransaction = false;
+const payForTransaction = true;
 const testProgram = false;
 const lpEnv: ProgramEnv = "Prod";
 
@@ -48,7 +48,7 @@ export async function main() {
 
   await client.initializeExistingSolautoPosition({
     positionId: 1,
-    authority: new PublicKey("5UqsR2PGzbP8pGPbXEeXx86Gjz2N2UFBAuFZUSVydAEe"),
+    authority: new PublicKey("61rtn5tzVkesapo6Cz83SPoShUfAePSxJsqniuF2wRKC"),
     // lpUserAccount: new PublicKey(
     //   "GEokw9jqbh6d1xUNA3qaeYFFetbSR5Y1nt7C3chwwgSz"
     // ),

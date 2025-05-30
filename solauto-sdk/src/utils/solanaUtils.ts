@@ -387,7 +387,7 @@ async function spamSendTransactionUntilConfirmed(
   blockhash: BlockhashWithExpiryBlockHeight,
   spamInterval: number = 1500
 ): Promise<string> {
-  let transactionSignature: string | null = null;
+  let transactionSignature: string | undefined;
 
   const sendTx = async () => {
     try {
@@ -395,7 +395,9 @@ async function spamSendTransactionUntilConfirmed(
         Buffer.from(transaction.serialize()),
         { skipPreflight: true, maxRetries: 0 }
       );
-      transactionSignature = txSignature;
+      if (!transactionSignature) {
+        transactionSignature = txSignature;
+      }
       consoleLog(`Transaction sent`);
     } catch (e) {}
   };
@@ -451,7 +453,9 @@ export async function sendSingleOptimizedTransaction(
     ]);
   consoleLog("Unique account locks: ", Array.from(new Set(accounts)).length);
 
-  const blockhash = await connection.getLatestBlockhash("confirmed");
+  const blockhash = await retryWithExponentialBackoff(
+    async () => await connection.getLatestBlockhash("confirmed")
+  );
 
   if (abortController?.signal.aborted) {
     return;

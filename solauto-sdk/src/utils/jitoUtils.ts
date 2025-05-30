@@ -304,7 +304,9 @@ export async function sendJitoBundledTransactions(
   txs[0] = txs[0].prepend(getTipInstruction(userSigner, 250_000));
 
   const latestBlockhash = (
-    await umi.rpc.getLatestBlockhash({ commitment: "confirmed" })
+    await retryWithExponentialBackoff(
+      async () => await umi.rpc.getLatestBlockhash({ commitment: "confirmed" })
+    )
   ).blockhash;
 
   if (abortController?.signal.aborted) {
@@ -322,7 +324,9 @@ export async function sendJitoBundledTransactions(
       txs,
       false,
       undefined,
-      Array(txs.length).fill(null).map((_) => 1_400_000)
+      Array(txs.length)
+        .fill(null)
+        .map((_) => 1_400_000)
     );
     simulationResults = await simulateJitoBundle(umi, builtTxs);
   }
