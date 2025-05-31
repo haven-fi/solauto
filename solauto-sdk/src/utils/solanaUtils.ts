@@ -393,7 +393,7 @@ async function spamSendTransactionUntilConfirmed(
     try {
       const txSignature = await connection.sendRawTransaction(
         Buffer.from(transaction.serialize()),
-        { skipPreflight: true, maxRetries: 0 }
+        { skipPreflight: true, maxRetries: 3 }
       );
       if (!transactionSignature) {
         transactionSignature = txSignature;
@@ -409,7 +409,7 @@ async function spamSendTransactionUntilConfirmed(
   }, spamInterval);
 
   if (!transactionSignature) {
-    throw new Error("Failed to send");
+    throw new Error("No transaction signature found");
   }
 
   const resp = await connection
