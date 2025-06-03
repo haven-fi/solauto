@@ -80,6 +80,7 @@ export class JupSwapManager {
             !data.exactOut && this.limitSize
               ? (lowLiquidityMint ? 25 : 15) + attemptNum * 5
               : undefined,
+          excludeDexes: ["obric"],
         }),
       6,
       250
@@ -159,6 +160,7 @@ export class JupSwapManager {
       this.adaptSlippageToPriceImpact(data.slippageIncFactor);
     }
     consoleLog("Quote:", this.jupQuote);
+    consoleLog("route plan", this.jupQuote.routePlan);
 
     const instructions = await this.getJupInstructions(data);
 
