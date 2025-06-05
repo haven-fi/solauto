@@ -80,7 +80,7 @@ export class JupSwapManager {
             !data.exactOut && this.limitSize
               ? (lowLiquidityMint ? 25 : 15) + attemptNum * 5
               : undefined,
-          excludeDexes: ["obric"],
+          excludeDexes: ["Obric V2"],
         }),
       6,
       250
