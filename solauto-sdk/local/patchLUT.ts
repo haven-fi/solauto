@@ -10,7 +10,6 @@ import {
   getSolautoManagedPositions,
   getTokenAccount,
   LOCAL_IRONFORGE_API_URL,
-  PATCH_LUT,
   SOLAUTO_PROD_PROGRAM,
 } from "../src";
 import { PublicKey } from "@solana/web3.js";
@@ -93,5 +92,5 @@ async function getMissingAccounts() {
 }
 
 getMissingAccounts().then(async (accs) => {
-  await updateLookupTable(accs, new PublicKey(PATCH_LUT));
+  // await updateLookupTable(accs, new PublicKey(PATCH_LUT));
 });
