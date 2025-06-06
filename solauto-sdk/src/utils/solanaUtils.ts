@@ -331,6 +331,7 @@ export async function getQnComputeUnitPriceEstimate(
   return await customRpcCall(umi, "qn_estimatePriorityFees", {
     last_n_blocks: blockheight,
     account: programId.toString(),
+    api_version: 2
   });
 }
 
