@@ -186,6 +186,9 @@ export async function customRpcCall(umi: Umi, method: string, params?: any) {
   if ("result" in data) {
     return data.result;
   } else {
+    if ("error" in data) {
+      console.log(JSON.stringify(data.error));
+    }
     return data;
   }
 }
