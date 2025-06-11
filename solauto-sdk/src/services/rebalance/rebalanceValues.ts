@@ -132,12 +132,12 @@ function getTargetLiqUtilizationRateBps(
   }
 
   if (
-    solautoPosition.liqUtilizationRateBps(PriceType.Realtime) + (bpsDistanceFromRebalance ?? 0) >=
+    solautoPosition.liqUtilizationRateBps(PriceType.Realtime, true) + (bpsDistanceFromRebalance ?? 0) >=
     solautoPosition.repayFromBps
   ) {
     return solautoPosition.settings!.repayToBps;
   } else if (
-    solautoPosition.liqUtilizationRateBps(priceType) - (bpsDistanceFromRebalance ?? 0) <=
+    solautoPosition.liqUtilizationRateBps(priceType, true) - (bpsDistanceFromRebalance ?? 0) <=
     solautoPosition.boostFromBps
   ) {
     return solautoPosition.settings!.boostToBps;

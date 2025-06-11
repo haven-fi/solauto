@@ -25,16 +25,28 @@ export class MarginfiSolautoPositionEx extends SolautoPositionEx {
   public supplyBank: Bank | null = null;
   public debtBank: Bank | null = null;
 
-  supplyPrice(priceType?: PriceType): number | undefined {
+  supplyPrice(
+    priceType?: PriceType,
+    withoutBias?: boolean
+  ): number | undefined {
     return (
       this._supplyPrice ??
-      safeGetPrice(this.supplyMint, priceType, PriceBias.Low)
+      safeGetPrice(
+        this.supplyMint,
+        priceType,
+        !withoutBias ? PriceBias.Low : undefined
+      )
     );
   }
 
-  debtPrice(priceType?: PriceType): number | undefined {
+  debtPrice(priceType?: PriceType, withoutBias?: boolean): number | undefined {
     return (
-      this._debtPrice ?? safeGetPrice(this.debtMint, priceType, PriceBias.High)
+      this._debtPrice ??
+      safeGetPrice(
+        this.debtMint,
+        priceType,
+        !withoutBias ? PriceBias.High : undefined
+      )
     );
   }
 

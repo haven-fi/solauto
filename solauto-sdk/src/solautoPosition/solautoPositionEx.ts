@@ -146,10 +146,10 @@ export abstract class SolautoPositionEx {
     );
   }
 
-  liqUtilizationRateBps(priceType?: PriceType): number {
+  liqUtilizationRateBps(priceType?: PriceType, withoutBias?: boolean): number {
     return getLiqUtilzationRateBps(
-      this.supplyUsd(priceType),
-      this.debtUsd(priceType),
+      this.supplyUsd(priceType, withoutBias),
+      this.debtUsd(priceType, withoutBias),
       this.state.liqThresholdBps
     );
   }
@@ -229,14 +229,14 @@ export abstract class SolautoPositionEx {
     return calcTotalSupply(this.state);
   }
 
-  supplyUsd(priceType?: PriceType) {
-    const supplyPrice = this.supplyPrice(priceType);
+  supplyUsd(priceType?: PriceType, withoutBias?: boolean) {
+    const supplyPrice = this.supplyPrice(priceType, withoutBias);
     return supplyPrice
       ? calcTotalSupply(this.state) * supplyPrice
       : calcSupplyUsd(this.state);
   }
 
-  supplyPrice(priceType?: PriceType) {
+  supplyPrice(priceType?: PriceType, withoutBias?: boolean) {
     return this._supplyPrice ?? safeGetPrice(this.supplyMint, priceType);
   }
 
@@ -244,14 +244,14 @@ export abstract class SolautoPositionEx {
     return calcTotalDebt(this.state);
   }
 
-  debtUsd(priceType?: PriceType) {
-    const debtPrice = this.debtPrice(priceType);
+  debtUsd(priceType?: PriceType, withoutBias?: boolean) {
+    const debtPrice = this.debtPrice(priceType, withoutBias);
     return debtPrice
       ? calcTotalDebt(this.state) * debtPrice
       : calcDebtUsd(this.state);
   }
 
-  debtPrice(priceType?: PriceType) {
+  debtPrice(priceType?: PriceType, withoutBias?: boolean) {
     return this._debtPrice ?? safeGetPrice(this.debtMint, priceType);
   }
 
@@ -495,7 +495,8 @@ class PositionRebalanceHelper {
 
     return (
       this.validRealtimePricesBoost(debtAdjustmentUsd) ||
-      this.pos.liqUtilizationRateBps(PriceType.Ema) - this.pos.boostFromBps <=
+      this.pos.liqUtilizationRateBps(PriceType.Ema, true) -
+        this.pos.boostFromBps <=
         bpsDistanceThreshold
     );
   }
@@ -509,9 +510,11 @@ class PositionRebalanceHelper {
     }
 
     const realtimeLiqUtilRateBps = this.pos.liqUtilizationRateBps(
-      PriceType.Realtime
+      PriceType.Realtime,
+      true
     );
 
+    console.log(realtimeLiqUtilRateBps, this.pos.boostFromBps);
     if (
       this.pos.repayFromBps - realtimeLiqUtilRateBps <=
       bpsDistanceThreshold
