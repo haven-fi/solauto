@@ -514,7 +514,6 @@ class PositionRebalanceHelper {
       true
     );
 
-    console.log(realtimeLiqUtilRateBps, this.pos.boostFromBps);
     if (
       this.pos.repayFromBps - realtimeLiqUtilRateBps <=
       bpsDistanceThreshold

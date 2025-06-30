@@ -123,7 +123,7 @@ export async function getPythPrices(
       return prices;
     },
     5,
-    200
+    250
   );
 
   return createRecord(

@@ -331,7 +331,7 @@ export async function getQnComputeUnitPriceEstimate(
   return await customRpcCall(umi, "qn_estimatePriorityFees", {
     last_n_blocks: blockheight,
     account: programId.toString(),
-    api_version: 2
+    api_version: 2,
   });
 }
 
@@ -403,7 +403,16 @@ async function spamSendTransactionUntilConfirmed(
     } catch (e) {}
   };
 
-  await sendTx();
+  let i = 0;
+  while (i < 5) {
+    await sendTx();
+    i++;
+    if (!transactionSignature) {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    } else {
+      break;
+    }
+  }
 
   const sendIntervalId = setInterval(async () => {
     await sendTx();

@@ -126,7 +126,7 @@ export class TransactionsManager<T extends TxHandler> {
         ]);
         for (let j = i; j >= 0; j--) {
           const tx = txItems[j];
-          if ((await newSet.fitsWith(tx))) {
+          if (await newSet.fitsWith(tx)) {
             newSet.prepend(tx);
             i--;
           } else {
@@ -585,7 +585,7 @@ export class TransactionsManager<T extends TxHandler> {
     consoleLog(errorString);
 
     if (!errorDetails.canBeIgnored) {
-      throw error;
+      throw errorDetails.errorName ? new Error(errorString) : error;
     }
   }
 }
