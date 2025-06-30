@@ -212,10 +212,15 @@ export async function getJupTokenPrices(
   const data = getSortedPriceData(await getJupPriceData(mints), mints);
 
   const prices: Record<string, PriceResult> = Object.fromEntries(
-    Object.entries(data).map(([mint, x]) => [
+    mints.map((mint) => [
       mint,
-      x !== null && typeof x === "object" && "price" in x
-        ? { realtimePrice: parseFloat(x.price as string) }
+      data !== null &&
+      typeof data === "object" &&
+      typeof data[mint.toString()] === "object" &&
+      "usdPrice" in data[mint.toString()]
+        ? {
+            realtimePrice: parseFloat(data[mint.toString()].usdPrice as string),
+          }
         : { realtimePrice: 0 },
     ])
   );

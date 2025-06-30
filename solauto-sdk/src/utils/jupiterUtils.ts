@@ -1,6 +1,6 @@
 import { PublicKey, TransactionInstruction } from "@solana/web3.js";
 import { Instruction } from "@jup-ag/api";
-import { retryWithExponentialBackoff } from "./generalUtils";
+import { getBatches, retryWithExponentialBackoff } from "./generalUtils";
 
 export function jupIxToSolanaIx(
   instruction: Instruction
@@ -17,31 +17,28 @@ export function jupIxToSolanaIx(
 }
 
 export async function getJupPriceData(mints: PublicKey[]) {
-  const data = await retryWithExponentialBackoff(async () => {
-    const res = await (
-      await fetch(
-        "https://api.jup.ag/price/v2?ids=" +
-          mints.map((x) => x.toString()).join(",") +
-          "&showExtraInfo=true"
-      )
-    ).json();
-    const result = res.data;
-    if (!result || result === null || typeof result !== "object") {
-      throw new Error("Failed to get token prices using Jupiter");
-    }
+  const batches = getBatches(mints, 50);
 
-    const trueData: { [key: string]: any } = Object.entries(
-      result as { [key: string]: any }
-    ).reduce(
-      (acc, [key, val]) =>
-        !val?.extraInfo?.quotedPrice?.sellAt
-          ? { ...acc, [key]: { ...val, price: "0" } }
-          : { ...acc, [key]: val },
-      {}
-    );
+  const results = await Promise.all(
+    batches.map((batch) =>
+      retryWithExponentialBackoff(async () => {
+        const res = await (
+          await fetch(
+            "https://lite-api.jup.ag/price/v3?ids=" +
+              batch.map((x) => x.toString()).join(",")
+          )
+        ).json();
 
-    return trueData;
-  }, 3);
+        if (!res || typeof res !== "object") {
+          throw new Error("Failed to get token prices using Jupiter");
+        }
 
-  return data;
+        return res;
+      }, 4)
+    )
+  );
+
+  const mergedResults = Object.assign({}, ...results);
+
+  return mergedResults;
 }
