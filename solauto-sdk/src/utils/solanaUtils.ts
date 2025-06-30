@@ -403,20 +403,11 @@ async function spamSendTransactionUntilConfirmed(
     } catch (e) {}
   };
 
-  let i = 0;
-  while (i < 5) {
-    await sendTx();
-    i++;
-    if (!transactionSignature) {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-    } else {
-      break;
-    }
-  }
-
   const sendIntervalId = setInterval(async () => {
     await sendTx();
   }, spamInterval);
+
+  await new Promise((resolve) => setTimeout(resolve, spamInterval * 4));
 
   if (!transactionSignature) {
     throw new Error("No transaction signature found");
