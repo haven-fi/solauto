@@ -34,7 +34,7 @@ export async function getJupPriceData(mints: PublicKey[]) {
         }
 
         return res;
-      }, 4)
+      }, 6, 250)
     )
   );
 
