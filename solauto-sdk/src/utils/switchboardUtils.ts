@@ -6,9 +6,10 @@ import {
 } from "@solana/web3.js";
 import { Signer, transactionBuilder } from "@metaplex-foundation/umi";
 import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
-import { AnchorProvider, Program } from "@coral-xyz/anchor";
+import { AnchorProvider, Idl, Program } from "@coral-xyz/anchor";
 import * as OnDemand from "@switchboard-xyz/on-demand";
 import Big from "big.js";
+import switchboardIdl from "../idls/switchboard.json";
 import { PRICES, SWITCHBOARD_PRICE_FEED_IDS } from "../constants";
 import { TransactionItemInputs } from "../types";
 import {
@@ -17,7 +18,7 @@ import {
 } from "./generalUtils";
 import { getWrappedInstruction } from "./solanaUtils";
 
-export async function getPullFeed(
+export function getPullFeed(
   conn: Connection,
   mint: PublicKey,
   wallet?: PublicKey
@@ -36,12 +37,11 @@ export async function getPullFeed(
     dummyWallet,
     AnchorProvider.defaultOptions()
   );
-  const { PullFeed, ON_DEMAND_MAINNET_PID } = OnDemand;
-  const sbProgram = await Program.at(ON_DEMAND_MAINNET_PID, provider);
+  const program = new Program(switchboardIdl as Idl, provider);
 
-  console.log(new PublicKey(SWITCHBOARD_PRICE_FEED_IDS[mint.toString()].feedId).toString())
+  const { PullFeed } = OnDemand;
   return new PullFeed(
-    sbProgram,
+    program,
     new PublicKey(SWITCHBOARD_PRICE_FEED_IDS[mint.toString()].feedId)
   );
 }
@@ -51,18 +51,12 @@ export async function buildSwbSubmitResponseTx(
   signer: Signer,
   mint: PublicKey
 ): Promise<TransactionItemInputs | undefined> {
-  const feed = await getPullFeed(
-    conn,
-    mint,
-    toWeb3JsPublicKey(signer.publicKey)
-  );
-  const gateway = await feed.fetchGatewayUrl();
-  const [pullIxs, responses] = await retryWithExponentialBackoff(
+  const feed = getPullFeed(conn, mint, toWeb3JsPublicKey(signer.publicKey));
+  const [pullIx, responses] = await retryWithExponentialBackoff(
     async () => {
       const res = await feed.fetchUpdateIx({
-        gateway: gateway,
         chain: "solana",
-        network: "mainnet",
+        network: "mainnet-beta",
       });
       if (!res[1] || !res[1][0].value) {
         throw new Error("Unable to fetch Switchboard pull IX");
@@ -73,7 +67,7 @@ export async function buildSwbSubmitResponseTx(
     200
   );
 
-  if (!pullIxs || !pullIxs.length) {
+  if (!pullIx) {
     throw new Error("Unable to fetch SWB crank IX");
   }
 
@@ -87,9 +81,7 @@ export async function buildSwbSubmitResponseTx(
   };
 
   return {
-    tx: transactionBuilder(
-      pullIxs.map((x) => getWrappedInstruction(signer, x))
-    ),
+    tx: transactionBuilder([getWrappedInstruction(signer, pullIx!)]),
     lookupTableAddresses: responses
       .filter((x) => Boolean(x.oracle.lut?.key))
       .map((x) => x.oracle.lut!.key.toString()),
@@ -111,7 +103,7 @@ export async function getSwitchboardFeedData(
 
   const results = await Promise.all(
     mints.map(async (mint) => {
-      const feed = await getPullFeed(conn, mint);
+      const feed = getPullFeed(conn, mint);
       const result = await feed.loadData();
       const price = Number(result.result.value) / Math.pow(10, 18);
       const stale =
