@@ -55,12 +55,16 @@ function fixAnchorIDL(idlFilename, programId) {
         return Object.keys(data).reduce((acc, key) => {
           if (key === "pubkey") {
             acc["publicKey"] = data[key];
+          } else if (typeof data[key] === "string" && data[key] === "pubkey") {
+            acc[key] = "publicKey";
           } else {
             acc[key] = replacePubkeyWithPublicKey(data[key]);
           }
           return acc;
         }, {});
       }
+    } else if (data === "pubkey") {
+      return "publicKey";
     }
     return data;
   }
