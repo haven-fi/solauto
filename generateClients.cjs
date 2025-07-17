@@ -28,6 +28,45 @@ function fixAnchorIDL(idlFilename, programId) {
     origin: "anchor",
     address: programId,
   };
+
+  function flattenDefined(data) {
+    if (typeof data === "object" && data !== null) {
+      if (Array.isArray(data)) {
+        return data.map(flattenDefined);
+      } else if (data.defined && typeof data.defined === "object") {
+        return { ...data, defined: data.defined.name };
+      } else {
+        return Object.keys(data).reduce((acc, key) => {
+          acc[key] = flattenDefined(data[key]);
+          return acc;
+        }, {});
+      }
+    }
+    return data;
+  }
+
+  data = flattenDefined(data);
+
+  function replacePubkeyWithPublicKey(data) {
+    if (typeof data === "object" && data !== null) {
+      if (Array.isArray(data)) {
+        return data.map(replacePubkeyWithPublicKey);
+      } else {
+        return Object.keys(data).reduce((acc, key) => {
+          if (key === "pubkey") {
+            acc["publicKey"] = data[key];
+          } else {
+            acc[key] = replacePubkeyWithPublicKey(data[key]);
+          }
+          return acc;
+        }, {});
+      }
+    }
+    return data;
+  }
+
+  data = replacePubkeyWithPublicKey(data);
+
   fs.writeFileSync(idlFilePath, JSON.stringify(data, null, 2), "utf8");
 }
 
@@ -92,16 +131,16 @@ async function cleanJupiterTsSDK(exclusions = []) {
 
 generateSolautoSDK();
 
-// generateRustSDKForAnchorIDL(
-//   "marginfi-sdk",
-//   "marginfi.json",
-//   "MFv2hWf31Z9kbCa1snEPYctwafyhdvnV7FZnsebVacA"
-// );
-// generateTypescriptSDKForAnchorIDL(
-//   "marginfiSdk",
-//   "marginfi.json",
-//   "MFv2hWf31Z9kbCa1snEPYctwafyhdvnV7FZnsebVacA"
-// );
+generateRustSDKForAnchorIDL(
+  "marginfi-sdk",
+  "marginfi.json",
+  "MFv2hWf31Z9kbCa1snEPYctwafyhdvnV7FZnsebVacA"
+);
+generateTypescriptSDKForAnchorIDL(
+  "marginfiSdk",
+  "marginfi.json",
+  "MFv2hWf31Z9kbCa1snEPYctwafyhdvnV7FZnsebVacA"
+);
 
 // generateRustSDKForAnchorIDL(
 //   "jupiter-sdk",
