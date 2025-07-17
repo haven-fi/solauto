@@ -89,7 +89,9 @@ function generateTypescriptSDKForAnchorIDL(sdkDirName, idlFilename, programId) {
   const kinobi = k.createFromIdls([idlFilePath]);
 
   kinobi.accept(
-    new k.renderJavaScriptVisitor(path.join(typescriptSdkDir, sdkDirName))
+    new k.renderJavaScriptVisitor(
+      path.join(typescriptSdkDir, "externalSdks", sdkDirName)
+    )
   );
 }
 
@@ -137,7 +139,7 @@ generateRustSDKForAnchorIDL(
   "MFv2hWf31Z9kbCa1snEPYctwafyhdvnV7FZnsebVacA"
 );
 generateTypescriptSDKForAnchorIDL(
-  "marginfiSdk",
+  "marginfi",
   "marginfi.json",
   "MFv2hWf31Z9kbCa1snEPYctwafyhdvnV7FZnsebVacA"
 );
@@ -148,12 +150,12 @@ generateTypescriptSDKForAnchorIDL(
 //   "JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4"
 // );
 // generateTypescriptSDKForAnchorIDL(
-//   "jupiterSdk",
+//   "jupiter",
 //   "jupiter.json",
 //   "JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4"
 // );
 // generateTypescriptSDKForAnchorIDL(
-//   "pythSdk",
+//   "pyth",
 //   "pyth.json",
 //   "pythWSnswVUd12oZpeFP8e9CVaEqJg25g1Vtc2biRsT"
 // );
