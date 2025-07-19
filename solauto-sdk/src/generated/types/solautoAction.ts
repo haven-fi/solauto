@@ -90,7 +90,7 @@ export function solautoAction<K extends SolautoActionArgs['__kind']>(
   data?: any
 ): Extract<SolautoActionArgs, { __kind: K }> {
   return Array.isArray(data)
-    ? { __kind: kind, fields: data }
+    ? { __kind: kind, fields: data } as Extract<SolautoActionArgs, { __kind: K }>
     : { __kind: kind, ...(data ?? {}) };
 }
 export function isSolautoAction<K extends SolautoAction['__kind']>(

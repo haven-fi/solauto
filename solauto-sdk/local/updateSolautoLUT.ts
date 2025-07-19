@@ -7,6 +7,7 @@ import {
   SWITCHBOARD_PRICE_FEED_IDS,
   ALL_SUPPORTED_TOKENS,
   getTokenAccounts,
+  PYTH_ORACLE_ACCOUNTS,
 } from "../src";
 import { updateLookupTable } from "./shared";
 
@@ -30,6 +31,7 @@ export async function updateSolautoLut(additionalAccounts?: string[]) {
       ...solautoManagerTokenAccounts.map((x) => x.toString()),
       ...solautoFeeWalletTokenAccounts.map((x) => x.toString()),
       ...Object.values(SWITCHBOARD_PRICE_FEED_IDS).map((x) => x.feedId),
+      ...Object.values(PYTH_ORACLE_ACCOUNTS),
       ...(additionalAccounts ?? []),
     ],
     LOOKUP_TABLE_ADDRESS

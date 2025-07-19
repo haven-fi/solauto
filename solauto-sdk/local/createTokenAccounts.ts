@@ -50,4 +50,4 @@ async function createTokenAccounts(wallet: PublicKey) {
   }
 }
 
-createTokenAccounts(SOLAUTO_FEES_WALLET);
+createTokenAccounts(SOLAUTO_FEES_WALLET).catch((e) => console.log(e));

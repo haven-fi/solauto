@@ -56,7 +56,7 @@ export function tokenBalanceAmount<K extends TokenBalanceAmountArgs['__kind']>(
   data?: any
 ): Extract<TokenBalanceAmountArgs, { __kind: K }> {
   return Array.isArray(data)
-    ? { __kind: kind, fields: data }
+    ? { __kind: kind, fields: data } as Extract<TokenBalanceAmountArgs, { __kind: K }>
     : { __kind: kind, ...(data ?? {}) };
 }
 export function isTokenBalanceAmount<K extends TokenBalanceAmount['__kind']>(

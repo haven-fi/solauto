@@ -24,6 +24,7 @@ export const POPCAT = "7GCihgDB8fe6KNjn2MYtkzZcRjQy3t9GHdC8uHYmW2hr";
 export const RETARDIO = "6ogzHhzdrQr9Pgv6hZ2MNze7UrzBMAFyBBWUYp1Fhitx";
 export const BILLY = "3B5wuUrMEi5yATD7on46hKfej3pfmd7t1RKgrsN3pump";
 export const HMTR = "7JhmUcZrrfhyt5nTSu3AfsrUq2L9992a7AhwdSDxdoL2";
+export const PUMP = "pumpCmXqMfrsAkQ5r49WcJnRayYRqmXz6ae8H7H9Dfn";
 
 export const ALL_SUPPORTED_TOKENS = [
   NATIVE_MINT.toString(),
@@ -49,6 +50,7 @@ export const ALL_SUPPORTED_TOKENS = [
   RETARDIO,
   BILLY,
   HMTR,
+  PUMP,
 ];
 
 export interface TokenInfo {
@@ -193,6 +195,11 @@ export const TOKEN_INFO: { [key: string]: TokenInfo } = {
     decimals: 0,
     isMeme: true,
   },
+  [PUMP]: {
+    ticker: "PUMP",
+    name: "Pump.fun",
+    decimals: 6,
+  }
 };
 
 export const MAJORS_PRIO = {

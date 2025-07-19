@@ -45,4 +45,10 @@ export const PYTH_PRICE_FEED_IDS = {
     "0x72b021217ca3fe68922a19aaf990109cb9d84e9ad004b4d2025ad6f529314419",
   [tokens.WIF]:
     "0x4ca4beeca86f0d164160323817a4e42b10010a724c2217c6ee41b54cd4cc61fc",
+  [tokens.PUMP]:
+    "0x7a01fca212788bba7c5bf8c9efd576a8a722f070d2c17596ff7bb609b8d5c3b9",
+};
+
+export const PYTH_ORACLE_ACCOUNTS = {
+  [tokens.PUMP]: "HMm3GPbdnqGwbkTnUUqCFsH8AMHDdEC3Lg8gcPD3HJSH",
 };
